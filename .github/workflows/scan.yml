@@ -1,19 +1,8 @@
-name: "Hadolint + Bandit"
+name: "Compliance Scans"
 
 on: [push]
 
 jobs:
-  hadolint:
-    runs-on: [rag-runner]
-    name: Hadolint Scan
-    container:
-      image: cache-registry.caas.intel.com/cache/library/python:slim
-    steps:
-      - name: Run Hadolint on Dockerfile(s)
-        uses: intel-innersource/frameworks.actions.hadolint@v1.3
-        with:
-          hadolint_format: tty
-
   bandit:
     runs-on: [rag-runner]
     name: Bandit Scan
@@ -27,3 +16,28 @@ jobs:
       - name: Run Bandit
         id: bandit
         uses: intel-innersource/frameworks.actions.bandit@v1.3
+
+  trivy:
+    runs-on: [rag-runner]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: intel-innersource/frameworks.actions.trivy@main
+        with:
+          TRIVY_REPORT_FORMAT: 'json'
+          TRIVY_SCAN_TYPE: 'fs'
+          TRIVY_OUTPUT_FILE: 'trivy_fs_report_${{ github.sha }}.json'
+          TRIVY_SCAN_PATH: '.'
+          TRIVY_EXIT_CODE: '1'
+          TRIVY_VULN_TYPE: 'os,library'
+          TRIVY_SEVERITY: 'CRITICAL,HIGH'
+          TRIVY_CUSTOM_PARAMS: "--quiet --debug --list-all-pkgs --clear-cache"
+
+      - name: Upload artifacts - csv
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "trivy_fs_report_${{ github.sha }}"
+          path: "trivy_fs_report_${{ github.sha }}.json"

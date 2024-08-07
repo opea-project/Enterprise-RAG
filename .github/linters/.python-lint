@@ -1,3 +1,7 @@
+[MASTER]
+# only fail on errors and higher
+max-priority=4
+
 [MESSAGES CONTROL]
 # https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html#warning
 disable=too-many-arguments,

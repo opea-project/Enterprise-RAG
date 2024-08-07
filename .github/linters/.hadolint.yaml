@@ -1,3 +1,4 @@
+failure-threshold: info
 ignored:
   - DL3006
   - DL3007

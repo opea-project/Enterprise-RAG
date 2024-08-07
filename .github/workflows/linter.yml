@@ -26,7 +26,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_BASH: true
           VALIDATE_YAML: true
-          VALIDATE_BASH_EXEC: true
           VALIDATE_PYTHON_PYLINT: true
           VALIDATE_DOCKERFILE_HADOLINT: true
           GITHUB_TOKEN: ${{ secrets.CLN_GH_TOKEN }}

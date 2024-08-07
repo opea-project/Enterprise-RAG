@@ -1,0 +1,32 @@
+{
+    "IngredientName": "EnterpriseRAG",
+    "Description": "EnterpriseRAG",
+    "SchemaVersion": "1.0",
+    "BuildInfo": {
+        "Name": "EnterpriseRag",
+        "FullName": "EnterpriseRagSourceCode",
+        "SDL": [
+            {
+                "ID": "22078",
+                "URL": "https://sdl-e.app.intel.com/project?id=b418a47f-4b8f-483a-9a87-311efe48845",
+                "Submitter": "sys_owrbuild"
+            }
+        ]
+    },
+    "Protex": [
+        {
+            "Server": "amrprotex007.devtools.intel.com/",
+            "ProjectID": "c_enterpriseaisolution_25528"
+        }
+    ],
+    "StaticSecurityScan": {
+        "ServerURL": "https://sast.intel.com",
+        "ProjectID": "360520"
+    },
+    "AVScan": {},
+    "BinaryScan": {
+        "ServerURL": "https://bdba001.icloud.intel.com",
+        "ServerGroup": "57"
+    },
+    "BanditScan": {}
+}

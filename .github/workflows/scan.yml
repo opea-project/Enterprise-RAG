@@ -1,16 +1,68 @@
 name: "Compliance Scans"
 
-on: [push]
+on:
+  pull_request:
+    branches: [ main ]
+
+  push:
+    branches: [ main ]
+
+  release:
+    types:
+      - created
+      - edited
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
+  SDLScans:
+    runs-on: [rag-runner]
+    name: SDL required
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: SDLE Evidence upload flag
+        id: submit
+        run: |
+          if [ ${{ github.event_name }} == 'release' ]; then
+            echo "submit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "submit=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: SDLe Scans
+        id: compliance
+        uses: intel-innersource/frameworks.actions.idf-central-scan@v1
+        with:
+          config: .github/BuildConfig.json
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # compilation_scan: ''
+          # binary: ''
+          output_directory: ${{ github.WORKSPACE }}/scans_results
+          sdle: ${{ steps.submit.outputs.submit || false }}
+        env:
+           IDFC_USER: ${{ secrets.CLN_SCANS_USER }}@intel.com
+           IDFC_PASSWORD: ${{ secrets.CLN_SCANS_TOKEN }}
+           IDFC_STORAGE_USER: ${{ secrets.CLN_SCANS_USER }}
+           IDFC_STORAGE_PASS: ${{ secrets.CLN_SCANS_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        id: upload-results
+        with:
+          name: IDF_Scans_Results_${{ github.run_id }}
+          path: ${{ github.WORKSPACE }}/scans_results
+          if-no-files-found: error
+          retention-days: 60
+
   bandit:
     runs-on: [rag-runner]
-    name: Bandit Scan
+    name: Bandit
     container:
       image: cache-registry.caas.intel.com/cache/library/python:slim
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
       - name: Run Bandit
@@ -19,9 +71,10 @@ jobs:
 
   trivy:
     runs-on: [rag-runner]
+    name: Trivy fs
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
         uses: intel-innersource/frameworks.actions.trivy@main
@@ -33,7 +86,7 @@ jobs:
           TRIVY_EXIT_CODE: '1'
           TRIVY_VULN_TYPE: 'os,library'
           TRIVY_SEVERITY: 'CRITICAL,HIGH'
-          TRIVY_CUSTOM_PARAMS: "--quiet --debug --list-all-pkgs --clear-cache"
+          TRIVY_CUSTOM_PARAMS: "--debug --list-all-pkgs"
 
       - name: Upload artifacts - csv
         if: always()

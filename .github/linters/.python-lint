@@ -1,10 +1,16 @@
+[MESSAGES CONTROL]
+# https://pylint.readthedocs.io/en/latest/user_guide/messages/messages_overview.html#warning
 disable=too-many-arguments,
         too-many-nested-blocks,
+        missing-module-docstring,
         missing-function-docstring,
         missing-class-docstring,
         line-too-long,
         unused-variable,
         too-many-locals,
+        too-many-return-statements,
         too-few-public-methods,
         no-else-return,
-        invalid-name
+        invalid-name,
+        superfluous-parens,
+        inconsistent-return-statements

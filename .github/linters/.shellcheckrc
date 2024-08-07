@@ -1,5 +1,2 @@
-# set the minimum severity level to error
-severity=error
-
 disable=SC2116
 disable=SC2148

@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          path: repo
       - name: SDLE Evidence upload flag
         id: submit
         run: |
@@ -31,14 +33,16 @@ jobs:
           else
             echo "submit=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Archive repo
+        run: zip -r repo.zip repo/* -x ".git/*" ".github/*"
       - name: SDLe Scans
         id: compliance
         uses: intel-innersource/frameworks.actions.idf-central-scan@v1
         with:
-          config: .github/BuildConfig.json
+          config: repo/.github/BuildConfig.json
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # compilation_scan: ''
-          # binary: ''
+          binary: 'repo.zip'
           output_directory: ${{ github.WORKSPACE }}/scans_results
           sdle: ${{ steps.submit.outputs.submit || false }}
         env:

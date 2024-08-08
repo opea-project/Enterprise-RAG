@@ -27,7 +27,7 @@ jobs:
           VALIDATE_BASH: true
           BASH_SEVERITY: error
           VALIDATE_YAML: true
-          VALIDATE_PYTHON_PYLINT: true
+          VALIDATE_PYTHON_RUFF: true
           VALIDATE_DOCKERFILE_HADOLINT: true
           GITHUB_TOKEN: ${{ secrets.CLN_GH_TOKEN }}
           DEFAULT_BRANCH: main

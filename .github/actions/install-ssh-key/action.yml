@@ -1,0 +1,46 @@
+name: 'Install SSH Key'
+description: 'Installs an SSH key, updates config, and cleans up'
+inputs:
+  key:
+    description: 'SSH private key'
+    required: true
+  name:
+    description: 'Filename for the SSH key'
+    required: true
+  known_hosts:
+    description: 'Known hosts file content (optional)'
+    required: false
+  config:
+    description: 'SSH config'
+    required: false
+    default: ''
+  cleanup:
+    description: 'Cleanup key after execution'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SSH Key
+      shell: bash
+      run: |
+        mkdir -p $HOME/.ssh
+        echo "${{ inputs.key }}" > $HOME/.ssh/${{ inputs.name }}
+        chmod 600 $HOME/.ssh/${{ inputs.name }}
+
+        if [ -n "${{ inputs.config }}" ]; then
+          echo "${{ inputs.config }}" > $HOME/.ssh/config
+          chmod 644 $HOME/.ssh/config
+        fi
+
+        if [ -n "${{ inputs.known_hosts }}" ]; then
+          echo "${{ inputs.known_hosts }}" >> $HOME/.ssh/known_hosts
+          chmod 644 $HOME/.ssh/known_hosts
+        fi
+
+        function cleanup {
+          rm -f $HOME/.ssh/${{ inputs.name }} $HOME/.ssh/config
+        }
+
+        if [ ${{ inputs.cleanup }} == "true" ]; then trap cleanup EXIT; fi

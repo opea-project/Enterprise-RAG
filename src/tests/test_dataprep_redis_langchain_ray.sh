@@ -18,13 +18,13 @@ function build_docker_images() {
 function start_service() {
     echo "Starting redis microservice"
     # redis endpoint
-    docker run -d --name="test-comps-dataprep-redis-ray" --runtime=runc -p 6382:6379 -p 8004:8001 redis/redis-stack:7.2.0-v9
+    docker run -d --name="test-comps-dataprep-redis-langchain-ray" --runtime=runc -p 6382:6379 -p 8004:8001 redis/redis-stack:7.2.0-v9
 
     # dataprep-redis-server endpoint
     export REDIS_URL="redis://${ip_address}:6382"
     export INDEX_NAME="rag-redis"
     echo "Starting dataprep-redis-server"
-    docker run -d --name="test-comps-dataprep-redis-ray-server" --runtime=runc -p 6009:6007 -p 6010:6008 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e REDIS_URL=$REDIS_URL -e INDEX_NAME=$INDEX_NAME -e TEI_ENDPOINT=$TEI_ENDPOINT -e TIMEOUT_SECONDS=600 opea/dataprep-on-ray-redis:latest
+    docker run -d --name="test-comps-dataprep-redis-langchain-ray-server" --runtime=runc -p 6009:6007 -p 6010:6008 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e REDIS_URL=$REDIS_URL -e INDEX_NAME=$INDEX_NAME -e TEI_ENDPOINT=$TEI_ENDPOINT -e TIMEOUT_SECONDS=600 opea/dataprep-on-ray-redis:latest
 
     sleep 10
     echo "Service started successfully"
@@ -41,7 +41,7 @@ function validate_microservice() {
     source activate
     echo "Deep learning is a subset of machine learning that utilizes neural networks with multiple layers to analyze various levels of abstract data representations. It enables computers to identify patterns and make decisions with minimal human intervention by learning from large amounts of data." > dataprep_file.txt
     EXIT_CODE=0
-    python -c "$(cat << 'EOF'
+    python3 -c "$(cat << 'EOF'
 import requests
 import json
 import os
@@ -75,7 +75,7 @@ EOF
     rm -rf dataprep_file.txt
     if [ $EXIT_CODE -ne 0 ]; then
         echo "[ dataprep ] Validation failed. Entire log as below doc "
-        docker container logs test-comps-dataprep-redis-ray-server | tee -a ${LOG_PATH}/dataprep.log
+        docker container logs test-comps-dataprep-redis-langchain-ray-server | tee -a ${LOG_PATH}/dataprep.log
         exit 1
     else
         echo "[ dataprep ] Validation succeed. "
@@ -84,7 +84,7 @@ EOF
 
 
 function stop_docker() {
-    cid=$(docker ps -aq --filter "name=test-comps-dataprep-redis-ray*")
+    cid=$(docker ps -aq --filter "name=test-comps-dataprep-redis-langchain-ray*")
     echo "Stopping the docker containers "${cid}
     if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid && sleep 1s; fi
     echo "Docker containers stopped successfully"
@@ -100,8 +100,6 @@ function main() {
     validate_microservice
 
     stop_docker
-    echo y | docker system prune 2>&1 > /dev/null
-
 }
 
 main

@@ -15,7 +15,7 @@ function start_service() {
     export EMBED_MODEL="Intel/bge-small-en-v1.5-rag-int8-static"
     fastrag_service_port=8000
     unset http_proxy
-    docker run -d --name="test-comps-reranking-fastrag-server" -p ${fastrag_service_port}:8000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e EMBED_MODEL=$EMBED_MODEL opea/reranking-fastrag:comps
+    docker run -d --name="test-comps-reranks-fastrag-server" -p ${fastrag_service_port}:8000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e EMBED_MODEL=$EMBED_MODEL opea/reranking-fastrag:comps
     sleep 3m
 }
 
@@ -25,11 +25,11 @@ function validate_microservice() {
         -X POST \
         -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}]}' \
         -H 'Content-Type: application/json'
-    docker logs test-comps-reranking-fastrag-server
+    docker logs test-comps-reranks-fastrag-server
 }
 
 function stop_docker() {
-    cid=$(docker ps -aq --filter "name=test-comps-rerank*")
+    cid=$(docker ps -aq --filter "name=test-comps-reranks-fastrag-*")
     if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid && sleep 1s; fi
 }
 

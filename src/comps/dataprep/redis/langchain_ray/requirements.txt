@@ -26,3 +26,4 @@ sentence_transformers
 shortuuid
 uvicorn
 virtualenv
+python-multipart

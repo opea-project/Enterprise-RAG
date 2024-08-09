@@ -1,0 +1,107 @@
+name: MicroService-test
+
+on:
+  push:
+    branches: [main]
+
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, ready_for_review, synchronize] # added `ready_for_review` since draft is skipped
+    paths:
+      - src/comps/**
+      - src/tests/**
+      - "!**.md"
+      - "!**.txt"
+      - .github/workflows/microservice-test.yml
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  job1:
+    name: Get-test-matrix
+    uses: ./.github/workflows/reuse-get-test-matrix.yml
+
+  Microservice-test:
+    needs: job1
+    strategy:
+      matrix: ${{ fromJSON(needs.job1.outputs.run_matrix) }}
+      max-parallel: 4
+    runs-on: ${{ matrix.hardware }}
+    continue-on-error: true
+    env:
+      REMOTE_GAUDI_HOST: dcgaudicluster1
+      REMOTE_WORKSPACE: "/tmp/${{ github.sha }}_${{ matrix.service }}"
+    steps:
+      - name: Clean Up Working Directory
+        run: sudo rm -rf ${{github.workspace}}/*
+
+      - name: Checkout out actions
+        uses: actions/checkout@v4
+        with:
+          ref: "refs/pull/${{ github.event.number }}/merge"
+          sparse-checkout: '.github/actions/'
+
+      - name: Install SSH key
+        uses: ./.github/actions/install-ssh-key
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          name: gaudi_id_rsa
+          config: ${{ secrets.SSH_CONFIG }}
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v4
+        with:
+          ref: "refs/pull/${{ github.event.number }}/merge"
+          path: repo
+
+      - name: rsync over SSH
+        run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
+
+      - name: Run microservice test
+        id: run-test
+        uses: ./.github/actions/execute_remote_script
+        with:
+          host: ${{ env.REMOTE_GAUDI_HOST }}
+          run: |
+            cd ${{ env.REMOTE_WORKSPACE }}/src/tests
+            service=$(echo ${{ matrix.service }} | tr '/' '_')
+            if [ -f test_${service}.sh ]; then timeout 30m bash test_${service}.sh; else echo "Test script not found, skip test!"; fi
+
+      - name: Retrieve logs
+        id: get-logs
+        if: ${{ !cancelled() && steps.run-test.outcome != 'skipped' }}
+        continue-on-error: true
+        run: |
+          mkdir -p logs
+          rsync -c ${{ env.REMOTE_GAUDI_HOST }}:${{ env.REMOTE_WORKSPACE }}/src/tests/*.log ./logs
+          echo "Found logs"
+          find ./logs -type f
+
+      - name: Clean up container
+        if: always()
+        uses: ./.github/actions/execute_remote_script
+        with:
+          host: ${{ env.REMOTE_GAUDI_HOST }}
+          run: |
+            service=$(echo ${{ matrix.service }} | tr '_/' '-')
+            cid=$(docker ps -aq --filter "name=test-comps-${service}*")
+            if [[ ! -z "$cid" ]]; then echo "Cleaning up test-comps-${service} containers..." && docker stop $cid && docker rm $cid && sleep 1s; fi
+
+      - name: Clean up workspace
+        if: always()
+        uses: ./.github/actions/execute_remote_script
+        with:
+          host: ${{ env.REMOTE_GAUDI_HOST }}
+          run: |
+            rm -rf ${{ env.REMOTE_WORKSPACE }}
+            echo "Removed workspace"
+
+      - name: Publish pipeline artifact
+        if: ${{ !cancelled() && steps.get-logs.outcome == 'success'}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_${{ matrix.service }}_logs
+          path: ${{ github.workspace }}/logs/*

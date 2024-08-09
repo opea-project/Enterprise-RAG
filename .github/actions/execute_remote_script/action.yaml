@@ -1,0 +1,25 @@
+name: 'Execute remote script'
+
+inputs:
+  run:
+    description: 'Run this script remotely'
+    required: true
+  host:
+    description: 'remote host'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run script
+      run: |
+        ssh ${{ inputs.host }} << 'EOF'
+        echo "Logged in to remote server."
+        ${{ inputs.run }}
+        EOF
+
+        exit_code=$?
+        echo "Logged out from remote server."
+
+        exit $exit_code
+      shell: bash

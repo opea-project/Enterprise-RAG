@@ -7,7 +7,7 @@ set -xe
 WORKPATH=$(dirname "$PWD")
 LOG_PATH="$WORKPATH/tests"
 ip_address=$(hostname -I | awk '{print $1}')
-
+TEST_CONTAINER_PREFIX="test-comps-embeddings-llama-index"
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
@@ -18,17 +18,17 @@ function start_service() {
     tei_endpoint=5001
     model="BAAI/bge-large-en-v1.5"
     revision="refs/pr/5"
-    docker run -d --name="test-comps-embedding-tei-endpoint" -p $tei_endpoint:80 -v ./data:/data -e http_proxy=$http_proxy -e https_proxy=$https_proxy --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
+    docker run -d --name="${TEST_CONTAINER_PREFIX}-tei-endpoint" -p $tei_endpoint:80 -v ./data:/data -e http_proxy=$http_proxy -e https_proxy=$https_proxy --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
     export TEI_EMBEDDING_ENDPOINT="http://${ip_address}:${tei_endpoint}"
     tei_service_port=5010
-    docker run -d --name="test-comps-embedding-tei-server" -e http_proxy=$http_proxy -e https_proxy=$https_proxy -p ${tei_service_port}:6000 --ipc=host -e TEI_EMBEDDING_ENDPOINT=$TEI_EMBEDDING_ENDPOINT  opea/embedding-tei:comps
+    docker run -d --name="${TEST_CONTAINER_PREFIX}-tei-server" -e http_proxy=$http_proxy -e https_proxy=$https_proxy -p ${tei_service_port}:6000 --ipc=host -e TEI_EMBEDDING_ENDPOINT=$TEI_EMBEDDING_ENDPOINT  opea/embedding-tei:comps
     sleep 3m
 }
 
 function validate_microservice() {
     tei_service_port=5010
     URL="http://${ip_address}:$tei_service_port/v1/embeddings"
-    docker logs test-comps-embedding-tei-server >> ${LOG_PATH}/embedding.log
+    docker logs ${TEST_CONTAINER_PREFIX}-tei-server >> ${LOG_PATH}/embedding.log
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST -d '{"text":"What is Deep Learning?"}' -H 'Content-Type: application/json' "$URL")
     if [ "$HTTP_STATUS" -eq 200 ]; then
         echo "[ embedding - llama_index ] HTTP status is 200. Checking content..."
@@ -38,18 +38,18 @@ function validate_microservice() {
             echo "[ embedding - llama_index ] Content is as expected."
         else
             echo "[ embedding - llama_index ] Content does not match the expected result: $CONTENT"
-            docker logs test-comps-embedding-tei-server >> ${LOG_PATH}/embedding.log
+            docker logs ${TEST_CONTAINER_PREFIX}-tei-server >> ${LOG_PATH}/embedding.log
             exit 1
         fi
     else
         echo "[ embedding - llama_index ] HTTP status is not 200. Received status was $HTTP_STATUS"
-        docker logs test-comps-embedding-tei-server >> ${LOG_PATH}/embedding.log
+        docker logs ${TEST_CONTAINER_PREFIX}-tei-server >> ${LOG_PATH}/embedding.log
         exit 1
     fi
 }
 
 function stop_docker() {
-    cid=$(docker ps -aq --filter "name=test-comps-embedding-*")
+    cid=$(docker ps -aq --filter "name=${TEST_CONTAINER_PREFIX}-*")
     if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid && sleep 1s; fi
 }
 

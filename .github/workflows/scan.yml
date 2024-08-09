@@ -3,6 +3,12 @@ name: "Compliance Scans"
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "!docs/**"
+      - "!.github/**"
+      - "!**.md"
+      - "!**.txt"
+      - .github/workflows/scan.yml
 
   push:
     branches: [ main ]

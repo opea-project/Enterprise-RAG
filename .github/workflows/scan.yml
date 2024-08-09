@@ -57,8 +57,35 @@ jobs:
            IDFC_STORAGE_USER: ${{ secrets.CLN_SCANS_USER }}
            IDFC_STORAGE_PASS: ${{ secrets.CLN_SCANS_TOKEN }}
 
+      - name: Check results
+        id: results
+        env:
+          SCAN_SUMMARY: ${{ github.WORKSPACE }}/scans_results/results/scan_sumary.json
+        run: |
+          if ! [ -f ${SCAN_SUMMARY} ]; then
+            echo "Scan summary not found. Try again. If this persists verify BuildConfig.json is correct."
+            exit 1
+          fi
+
+          exit_code=0
+          scan_failures=$(jq ' .scans | to_entries | map(select(.value.failures | tonumber > 0) | .key)' ${SCAN_SUMMARY})
+          scan_errors=$(jq ' .scans | to_entries | map(select(.value.errors | tonumber > 0) | .key)' ${SCAN_SUMMARY})
+
+          if [ "$scan_failures" != "[]" ]; then
+            echo "Detected security issues in:"
+            echo "##################################################"
+            echo "$scan_failures"
+            echo "##################################################"
+            echo "Download IDF_Scans_Results_${{ github.run_id }} for more details."
+            exit_code=1
+          fi
+          if [ "$scan_errors" != "[]" ]; then echo "Scans $scan_errors failed. Try again"; exit_code=1; fi
+
+          exit $exit_code
+
       - uses: actions/upload-artifact@v4
         id: upload-results
+        if: ${{ !cancelled() }}
         with:
           name: IDF_Scans_Results_${{ github.run_id }}
           path: ${{ github.WORKSPACE }}/scans_results
@@ -97,7 +124,7 @@ jobs:
           TRIVY_CUSTOM_PARAMS: "--debug --list-all-pkgs"
 
       - name: Upload artifacts - csv
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: "trivy_fs_report_${{ github.sha }}"

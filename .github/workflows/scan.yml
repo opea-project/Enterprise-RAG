@@ -73,8 +73,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: main
       - name: Run Bandit
         id: bandit
         uses: intel-innersource/frameworks.actions.bandit@v1.3

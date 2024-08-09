@@ -57,7 +57,7 @@ def get_public_ip(timeout: float = 0.3):
     def _get_public_ip(url):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as fp:
+            with urllib.request.urlopen(req, timeout=timeout) as fp: # nosec B310
                 _ip = fp.read().decode().strip()
                 return _ip
         except Exception as e:

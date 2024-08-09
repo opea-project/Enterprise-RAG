@@ -18,7 +18,7 @@ class PIIDetector:
     def detect_pii(self, data):
         import random
 
-        return random.choice([True, False])
+        return random.choice([True, False]) # nosec B311
 
 
 class PIIDetectorWithNER(PIIDetector):

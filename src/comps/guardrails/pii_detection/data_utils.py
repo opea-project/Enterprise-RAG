@@ -6,7 +6,7 @@ import json
 import multiprocessing
 import os
 import re
-import subprocess
+import subprocess # nosec B404
 import unicodedata
 from urllib.parse import urlparse, urlunparse
 import logging 

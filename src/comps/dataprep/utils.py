@@ -11,7 +11,7 @@ import os
 import re
 import shutil
 import signal
-import subprocess
+import subprocess # nosec B404
 import timeit
 import unicodedata
 import urllib.parse

@@ -148,7 +148,7 @@ class HTTPService(BaseService):
         from http import HTTPStatus
 
         try:
-            conn = urllib.request.urlopen(url=f"http://{ctrl_address}", timeout=timeout)
+            conn = urllib.request.urlopen(url=f"http://{ctrl_address}", timeout=timeout) # nosec B310
             return conn.code == HTTPStatus.OK
         except Exception as exc:
             if logger:

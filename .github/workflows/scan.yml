@@ -3,12 +3,6 @@ name: "Compliance Scans"
 on:
   pull_request:
     branches: [ main ]
-    paths:
-      - "!docs/**"
-      - "!.github/**"
-      - "!**.md"
-      - "!**.txt"
-      - .github/workflows/scan.yml
 
   push:
     branches: [ main ]
@@ -27,6 +21,8 @@ jobs:
     runs-on: [rag-runner]
     name: SDL required
     steps:
+      - name: Clean Up Working Directory
+        run: sudo rm -rf ${{github.workspace}}/*
       - name: Checkout code
         uses: actions/checkout@v4
         with:

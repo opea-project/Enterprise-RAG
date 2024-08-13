@@ -29,7 +29,7 @@ Istio Service Mesh can also be leveraged to facilicate communication between mic
 - Access to a Kubernetes v1.11.3+ cluster
 - install make
 - installed docker (need to build docker images)
-- installed golang-go (version 1.21)
+- installed golang-go (version 1.22.1)
 - installed helm. You can follow the instructions [here](https://helm.sh/docs/intro/install/)
 
 #### setup docker

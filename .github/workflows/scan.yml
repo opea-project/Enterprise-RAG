@@ -3,6 +3,11 @@ name: "Compliance Scans"
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "!docs/**"
+      - "!.github/**"
+      - "!**.md"
+      - "!**.txt"
 
   push:
     branches: [ main ]

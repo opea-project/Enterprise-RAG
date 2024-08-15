@@ -3,11 +3,11 @@ name: "Compliance Scans"
 on:
   pull_request:
     branches: [ main ]
-    paths:
-      - "!docs/**"
-      - "!.github/**"
-      - "!**.md"
-      - "!**.txt"
+    paths-ignore:
+      - "docs/**"
+      - ".github/**"
+      - "**.md"
+      - "**.txt"
 
   push:
     branches: [ main ]
@@ -52,6 +52,7 @@ jobs:
           binary: 'repo.zip'
           output_directory: ${{ github.WORKSPACE }}/scans_results
           sdle: ${{ steps.submit.outputs.submit || false }}
+          logfile: IDF_Scans_Results_${{ github.run_id }}.log
         env:
            IDFC_USER: ${{ secrets.CLN_SCANS_USER }}@intel.com
            IDFC_PASSWORD: ${{ secrets.CLN_SCANS_TOKEN }}

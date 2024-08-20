@@ -1,0 +1,7 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+OPENAI_API_KEY:
+    - your-api-key
+OPENAI_API_BASE:
+    - your-api-base-url

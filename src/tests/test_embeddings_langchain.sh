@@ -10,7 +10,7 @@ ip_address=$(hostname -I | awk '{print $1}')
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
-    docker build --no-cache -t opea/embedding-tei:comps -f comps/embeddings/langchain/docker/Dockerfile .
+    docker build --no-cache -t opea/embedding-tei:comps -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -18,11 +18,21 @@ function start_service() {
     model="BAAI/bge-large-en-v1.5"
     revision="refs/pr/5"
     unset http_proxy
-    docker run -d --name="test-comps-embedding-tei-endpoint" -p $tei_endpoint:80 -v ./data:/data --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
-    export TEI_EMBEDDING_ENDPOINT="http://${ip_address}:${tei_endpoint}"
+    docker run -d --rm --name="test-comps-embedding-tei-endpoint" \
+      --runtime runc \
+      -p $tei_endpoint:80 -v ./data:/data --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
     tei_service_port=5002
-    docker run -d --name="test-comps-embedding-tei-server" -e http_proxy=$http_proxy -e https_proxy=$https_proxy -p ${tei_service_port}:6000 --ipc=host -e TEI_EMBEDDING_ENDPOINT=$TEI_EMBEDDING_ENDPOINT  opea/embedding-tei:comps
-    sleep 3m
+    docker run -d --rm --name="test-comps-embedding-tei-server" \
+      --runtime runc \
+      -p ${tei_service_port}:6000 \
+      -e http_proxy=$http_proxy \
+      -e https_proxy=$https_proxy \
+      -e EMBEDDING_MODEL_NAME="${model}" \
+      -e EMBEDDING_MODEL_SERVER="tei" \
+      -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${ip_address}:${tei_endpoint}" \
+      --ipc=host \
+      opea/embedding-tei:comps
+    sleep 1m
 }
 
 function validate_microservice() {
@@ -35,20 +45,24 @@ function validate_microservice() {
 
 function stop_docker() {
     cid=$(docker ps -aq --filter "name=test-comps-embedding-*")
-    if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid && sleep 1s; fi
+    if [[ ! -z "$cid" ]]; then docker stop $cid && sleep 1s; fi
+}
+
+function test_clean() {
+    stop_docker
+    echo y | docker system prune -a
 }
 
 function main() {
 
-    stop_docker
+    test_clean
 
     build_docker_images
     start_service
 
     validate_microservice
 
-    stop_docker
-    echo y | docker system prune
+    test_clean
 
 }
 

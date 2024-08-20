@@ -1,160 +1,127 @@
+TODO: modify README for embedding microservice's docker information
+
 # Embeddings Microservice
 
 The Embedding Microservice is designed to efficiently convert textual strings into vectorized embeddings, facilitating seamless integration into various machine learning and data processing workflows. This service utilizes advanced algorithms to generate high-quality embeddings that capture the semantic essence of the input text, making it ideal for applications in natural language processing, information retrieval, and similar fields.
 
-Key Features:
+**Key Features**
 
-**High Performance**: Optimized for quick and reliable conversion of textual data into vector embeddings.
+- **High Performance**: Optimized for quick and reliable conversion of textual data into vector embeddings.
+- **Scalability**: Built to handle high volumes of requests simultaneously, ensuring robust performance even under heavy loads.
+- **Ease of Integration**: Provides a simple and intuitive API, allowing for straightforward integration into existing systems and workflows.
+- **Customizable**: Supports configuration and customization to meet specific use case requirements, including different embedding models and preprocessing techniques.
 
-**Scalability**: Built to handle high volumes of requests simultaneously, ensuring robust performance even under heavy loads.
+Users are able to configure and build embedding-related services according to their actual needs.
 
-**Ease of Integration**: Provides a simple and intuitive API, allowing for straightforward integration into existing systems and workflows.
+## Example input
 
-**Customizable**: Supports configuration and customization to meet specific use case requirements, including different embedding models and preprocessing techniques.
+Embedding microservice as an input accepts a string of text. Example request can looks as follows:
 
-Users are albe to configure and build embedding-related services according to their actual needs.
+```bash
+curl http://localhost:6000/v1/embeddings\
+  -X POST \
+  -d '{"text":"Hello, world!"}' \
+  -H 'Content-Type: application/json'
+```
 
-# 🚀1. Start Microservice with Python (Option 1)
+## Example output
 
-Currently, we provide two ways to implement the embedding service:
+Output of an embedding microservice is a json that stores an input text, computed embeddings and other parameters.
+```json
+{
+  "id":"d4e67d3c7353b13c3821d241985705b1",
+  "text":"Hello, world!",
+  "embedding":[ 0.024471128, 0.047724035, -0.02704641, 0.0013827643 ],
+  "search_type":"similarity",
+  "k":4,
+  "distance_threshold":null,
+  "fetch_k":20,
+  "lambda_mult":0.5,
+  "score_threshold":0.2
+}
+```
 
-1. Build the embedding model **_locally_** from the server, which is faster, but takes up memory on the local server.
+## 🚀1. Start Microservice
 
-2. Build it based on the **_TEI endpoint_**, which provides more flexibility, but may bring some network latency.
+For all of the implementations of the microservice, you need to install requirements first.
 
-For both of the implementations, you need to install requirements first.
+#### Install requirements
 
-## 1.1 Install Requirements
+To install the requirements, run the following commands:
 
 ```bash
 # run with langchain
-pip install -r langchain/requirements.txt
+pip install -r impl/microservice/requirements/langchain.txt
 # run with llama_index
-pip install -r llama_index/requirements.txt
+pip install -r impl/microservice/requirements/llama_index.txt
 ```
 
-## 1.2 Start Embedding Service
+### 1.1 Start Embedding Model Server
+Currently, we provide 3 ways to implement a model server for an embedding:
 
-You can select one of following ways to start the embedding service:
+1. Build embedding model server based on the [**_TEI endpoint_**](./impl/model-server/tei/), which provides more flexibility, but may bring some network latency.
+2. Utilize [**_Torchserve_**](./impl/model-server/torchserve/), which supports [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch) for a performance boost on Intel-based Hardware.
+3. Utilize [**_Mosec_**](./impl/model-server/mosec/) to run a model server with Intel® Extension for PyTorch* optimizations.
+4. Run an embedding model server with [**_OVMS_**](./impl/model-server/ovms/) - an open source model server built on top of the OpenVINO™ toolkit, which enables optimized inference across a wide range of hardware platforms.
 
-### Start Embedding Service with TEI
+Refer to `README.md` of a particular library to get more information on starting a model server.
 
-First, you need to start a TEI service.
+### 1.2 Start Embedding Microservice with Python (Option 1)
+
+Once you start a chosen model server, it is time to initialize the embedding microservice. You can do so by running following commands:
 
 ```bash
-your_port=8090
-model="BAAI/bge-large-en-v1.5"
-revision="refs/pr/5"
-docker run -p $your_port:80 -v ./data:/data --name tei_server -e http_proxy=$http_proxy -e https_proxy=$https_proxy --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
+EMBEDDING_MODEL_NAME="bge-large-en-v1.5"
+EMBEDDING_MODEL_SERVER="tei"
+FRAMEWORK="langchain"
+EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090"
+python opea_embedding_microservice.py
 ```
 
-Then you need to test your TEI service using the following commands:
+### 1.3 Start Embedding Microservice with Docker (Optional 2)
 
-```bash
-curl localhost:$your_port/embed \
-    -X POST \
-    -d '{"inputs":"What is Deep Learning?"}' \
-    -H 'Content-Type: application/json'
-```
+#### Build Docker Image
 
-Start the embedding service with the TEI_EMBEDDING_ENDPOINT.
+To build the Docker image, follow these steps:
 
-```bash
-# run with langchain
-cd langchain
-# run with llama_index
-cd llama_index
-export TEI_EMBEDDING_ENDPOINT="http://localhost:$yourport"
-export TEI_EMBEDDING_MODEL_NAME="BAAI/bge-large-en-v1.5"
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_API_KEY=${your_langchain_api_key}
-export LANGCHAIN_PROJECT="opea/gen-ai-comps:embeddings"
-python embedding_tei.py
-```
-
-### Start Embedding Service with Local Model
-
-```bash
-# run with langchain
-cd langchain
-# run with llama_index
-cd llama_index
-python local_embedding.py
-```
-
-# 🚀2. Start Microservice with Docker (Optional 2)
-
-## 2.1 Start Embedding Service with TEI
-
-First, you need to start a TEI service.
-
-```bash
-your_port=8090
-model="BAAI/bge-large-en-v1.5"
-revision="refs/pr/5"
-docker run -p $your_port:80 -v ./data:/data --name tei_server -e http_proxy=$http_proxy -e https_proxy=$https_proxy --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
-```
-
-Then you need to test your TEI service using the following commands:
-
-```bash
-curl localhost:$your_port/embed \
-    -X POST \
-    -d '{"inputs":"What is Deep Learning?"}' \
-    -H 'Content-Type: application/json'
-```
-
-Export the `TEI_EMBEDDING_ENDPOINT` for later usage:
-
-```bash
-export TEI_EMBEDDING_ENDPOINT="http://localhost:$yourport"
-export TEI_EMBEDDING_MODEL_NAME="BAAI/bge-large-en-v1.5"
-```
-
-## 2.2 Build Docker Image
-
-### Build Langchain Docker (Option a)
-
+#### Build Langchain Docker (Option a)
 ```bash
 cd ../../
 docker build -t opea/embedding-tei:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/embeddings/langchain/docker/Dockerfile .
 ```
 
-### Build LlamaIndex Docker (Option b)
-
+#### Build LlamaIndex Docker (Option b)
 ```bash
 cd ../../
 docker build -t opea/embedding-tei:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/embeddings/llama_index/docker/Dockerfile .
 ```
 
-## 2.3 Run Docker with CLI
+#### Run the Docker container
+
+#### With CLI
+
+To run the Docker container with CLI, use the following command:
 
 ```bash
 docker run -d --name="embedding-tei-server" -p 6000:6000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e TEI_EMBEDDING_ENDPOINT=$TEI_EMBEDDING_ENDPOINT -e TEI_EMBEDDING_MODEL_NAME=$TEI_EMBEDDING_MODEL_NAME opea/embedding-tei:latest
 ```
 
-## 2.4 Run Docker with Docker Compose
+## 3. Test Embedding Microservice
 
+### 3.1 Check Service Status
+
+To check the status of the microservice, run the following command:
 ```bash
-cd docker
-docker compose -f docker_compose_embedding.yaml up -d
-```
-
-# 🚀3. Consume Embedding Service
-
-## 3.1 Check Service Status
-
-```bash
-curl http://localhost:6000/v1/health_check\
+curl http://localhost:6000/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```
 
-## 3.2 Consume Embedding Service
+### 3.2 Example Embedding Microservice request
 
 ```bash
-curl http://localhost:6000/v1/embeddings\
+curl http://localhost:6000/v1/embeddings \
   -X POST \
-  -d '{"input":"Hello, world!"}' \
+  -d '{"text":"Hello, world!"}' \
   -H 'Content-Type: application/json'
 ```

@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: habana-exporter
+  labels:
+    release: rag-telemetry
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: metric-exporter-ds
+  podMetricsEndpoints:
+  - port: habana-metrics
+
+
+

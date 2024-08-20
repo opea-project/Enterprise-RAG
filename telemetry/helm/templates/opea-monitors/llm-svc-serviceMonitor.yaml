@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: llm-svc
+  labels:
+    release: rag-telemetry
+spec:
+  namespaceSelector:
+    matchNames:
+    - chatqa
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: llm-uservice
+  endpoints:
+  - port: "llm-uservice"

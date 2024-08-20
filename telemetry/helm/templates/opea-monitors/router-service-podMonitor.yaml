@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: router-service
+  labels:
+    release: rag-telemetry
+spec:
+  namespaceSelector:
+    matchNames:
+    - chatqa
+  selector:
+    matchLabels:
+      app: router-service
+  podMetricsEndpoints:
+  - targetPort: 8080
+
+
+

@@ -1,0 +1,7 @@
+prometheus-redis-exporter:
+  redisAddress: redis://redis-vector-db.chatqa.svc.cluster.local:6379
+  serviceMonitor:
+    enabled: true
+    targets:
+      - url: redis://redis-vector-db.chatqa.svc.cluster.local:6379
+        name: redis-vector-db

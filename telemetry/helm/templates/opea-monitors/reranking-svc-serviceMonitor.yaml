@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reranking-svc
+  labels:
+    release: rag-telemetry
+spec:
+  namespaceSelector:
+    matchNames:
+    - chatqa
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: reranking-usvc
+  endpoints:
+  - port: "reranking-usvc"

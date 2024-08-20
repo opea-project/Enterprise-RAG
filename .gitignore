@@ -1,3 +1,8 @@
+# Telemetry
+telemetry/helm/charts
+telemetry/helm/example/GenAIInfra/
+telemetry/helm/example/pcm/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

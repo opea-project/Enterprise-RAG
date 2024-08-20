@@ -3,6 +3,12 @@ telemetry/helm/charts
 telemetry/helm/example/GenAIInfra/
 telemetry/helm/example/pcm/
 
+# Deployment
+./deployment/**/bin/
+./deployment/*.out
+./deployment/**/Chart.lock
+./deployment/**/charts/*.tgz
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

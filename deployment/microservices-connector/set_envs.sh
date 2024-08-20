@@ -23,5 +23,5 @@ done
 
 sed -i -E "s#(repository: ).*#\1$GMC_MANAGER_IMAGE#g" helm/values.yaml
 sed -i -E "s#(tag: ).*#\1latest#g" helm/values.yaml #latest hardcode is greatest
-sed -i -E "s#(image: ).*#\1$GMC_ROUTER_IMAGE#g" helm/gmc-router.yaml
+sed -i -E "s#(image: ).*#\1$GMC_ROUTER_IMAGE#g" config/gmcrouter/gmc-router.yaml
 

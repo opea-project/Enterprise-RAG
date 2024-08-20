@@ -20,7 +20,7 @@ spec:
       containers:
       - name: router-server
         image: opea/gmcrouter:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:

@@ -36,6 +36,18 @@ import (
 
 	mcv1alpha3 "github.com/opea-project/GenAIInfra/microservices-connector/api/v1alpha3"
 	flag "github.com/spf13/pflag"
+
+	// Prometheus and opentelemetry imports
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	api "go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"go.opentelemetry.io/otel/metric"
 )
 
 var (
@@ -70,6 +82,69 @@ type GMCGraphRoutingError struct {
 
 type ReadCloser struct {
 	*bytes.Reader
+}
+
+var (
+	firstTokenLatencyMeasure metric.Float64Histogram
+	nextTokenLatencyMeasure  metric.Float64Histogram
+	allTokenLatencyMeasure   metric.Float64Histogram
+	pipelineLatencyMeasure   metric.Float64Histogram
+)
+
+func init() {
+
+	// The exporter embeds a default OpenTelemetry Reader and
+	// implements prometheus.Collector, allowing it to be used as
+	// both a Reader and Collector.
+	exporter, err := prometheus.New()
+	if err != nil {
+		log.Error(err, "metrics: cannot init prometheus collector")
+	}
+	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
+	otel.SetMeterProvider(provider)
+
+	// ppalucki: Own metrics defintion bellow
+	const meterName = "entrag-telemetry"
+	meter := provider.Meter(meterName)
+
+	firstTokenLatencyMeasure, err = meter.Float64Histogram(
+		"llm.first.token.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the duration of first token generation."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register first token histogram measure")
+	}
+	nextTokenLatencyMeasure, err = meter.Float64Histogram(
+		"llm.next.token.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the duration of generating all but first tokens."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register next token histogram measure")
+	}
+
+	allTokenLatencyMeasure, err = meter.Float64Histogram(
+		"llm.all.token.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the duration to generate response with all tokens."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register all token histogram measure")
+	}
+
+	pipelineLatencyMeasure, err = meter.Float64Histogram(
+		"llm.pipeline.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the duration to going through pipeline steps until first token is being generated (including read data time from client)."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register pipeline histogram measure")
+	}
 }
 
 func (ReadCloser) Close() error {
@@ -173,7 +248,15 @@ func callService(
 	if val := req.Header.Get("Content-Type"); val == "" {
 		req.Header.Add("Content-Type", "application/json")
 	}
-	resp, err := http.DefaultClient.Do(req)
+
+	// Wrap default Go Http client with opentelemetry transport to provide extra metrics/pass context/create spans:
+	// - "http.client.request.size" - "Measures the size of HTTP request messages."  // Outgoing request bytes total
+	// - "http.client.response.size" - "Measures the size of HTTP response messages." // Outgoing response bytes total
+	// - "http.client.duration" - "Measures the duration of outbound HTTP requests."  // Outgoing end to end duration, milliseconds
+	// TODO/traces: span will be created with "client" as default, as middleware it possbile shouldbe "internal"
+	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
+	resp, err := client.Do(req)
 
 	if err != nil {
 		log.Error(err, "An error has occurred while calling service", "service", serviceUrl)
@@ -273,8 +356,8 @@ func handleSwitchPipeline(nodeName string,
 ) (io.ReadCloser, int, error) {
 	currentNode := graph.Spec.Nodes[nodeName]
 	var statusCode int
-	var responseBytes []byte
 	var responseBody io.ReadCloser
+	var responseBytes []byte
 	var err error
 
 	initReqData := make(map[string]interface{})
@@ -294,6 +377,14 @@ func handleSwitchPipeline(nodeName string,
 			)
 			continue
 		}
+
+		// make sure that the process goes to the correct step
+		if route.Condition != "" {
+			if !pickupRouteByCondition(initInput, route.Condition) {
+				continue
+			}
+		}
+
 		log.Info("Current Step Information", "Node Name", nodeName, "Step Index", index)
 		request := input
 		if responseBody != nil {
@@ -315,18 +406,9 @@ func handleSwitchPipeline(nodeName string,
 			request = mergeRequests(responseBytes, initReqData)
 		}
 		log.Info("Print New Request Bytes", "Request Bytes", request)
-		if route.Condition == "" {
-			responseBody, statusCode, err = handleSwitchNode(&route, graph, initInput, request, headers)
-			if err != nil {
-				return nil, statusCode, err
-			}
-		} else {
-			if pickupRouteByCondition(initInput, route.Condition) {
-				responseBody, statusCode, err = handleSwitchNode(&route, graph, initInput, request, headers)
-				if err != nil {
-					return nil, statusCode, err
-				}
-			}
+		responseBody, statusCode, err = handleSwitchNode(&route, graph, initInput, request, headers)
+		if err != nil {
+			return nil, statusCode, err
 		}
 	}
 	return responseBody, statusCode, err
@@ -518,13 +600,15 @@ func routeStep(nodeName string,
 }
 
 func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
-	ctx, cancel := context.WithTimeout(req.Context(), time.Minute)
+
+	ctx, cancel := context.WithTimeout(req.Context(), 1*time.Minute)
 	defer cancel()
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 
+		allTokensStartTime := time.Now()
 		inputBytes, err := io.ReadAll(req.Body)
 		if err != nil {
 			log.Error(err, "failed to read request body")
@@ -533,6 +617,9 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		responseBody, statusCode, err := routeStep(defaultNodeName, *mcGraph, inputBytes, inputBytes, req.Header)
+
+		pipelineLatencyMeasure.Record(ctx, float64(time.Since(allTokensStartTime))/float64(time.Millisecond))
+
 		if err != nil {
 			log.Error(err, "failed to process request")
 			w.Header().Set("Content-Type", "application/json")
@@ -550,9 +637,22 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		}()
 
 		w.Header().Set("Content-Type", "application/json")
+		firstTokenCollected := false
 		buffer := make([]byte, BufferSize)
 		for {
+
+			// measure time of reading another portion of response
+			tokenStartTime := time.Now()
 			n, err := responseBody.Read(buffer)
+			elapsedTimeMilisecond := float64(time.Since(tokenStartTime)) / float64(time.Millisecond)
+
+			if !firstTokenCollected {
+				firstTokenCollected = true
+				firstTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+			} else {
+				nextTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+			}
+
 			if err != nil && err != io.EOF {
 				log.Error(err, "failed to read from response body")
 				http.Error(w, "failed to read from response body", http.StatusInternalServerError)
@@ -562,21 +662,20 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				break
 			}
 
-			sliceBF := buffer[:n]
+			/*sliceBF := buffer[:n]
 			if !bytes.HasPrefix(sliceBF, DONE) {
 				sliceBF = bytes.TrimPrefix(sliceBF, Prefix)
 				sliceBF = bytes.TrimSuffix(sliceBF, Suffix)
 			} else {
 				sliceBF = bytes.Join([][]byte{Newline, sliceBF}, nil)
 			}
+			log.Info("[llm - chat_stream] chunk:", "Buffer", string(sliceBF))*/
 
-			log.Info("[llm - chat_stream] chunk:", "Buffer", string(sliceBF))
 			// Write the chunk to the ResponseWriter
-			if _, err := w.Write(sliceBF); err != nil {
+			if _, err := w.Write(buffer[:n]); err != nil {
 				log.Error(err, "failed to write to ResponseWriter")
 				return
 			}
-
 			// Flush the data to the client immediately
 			if flusher, ok := w.(http.Flusher); ok {
 				flusher.Flush()
@@ -585,6 +684,10 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
+
+		allTokensElapsedTimeMilisecond := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
+		allTokenLatencyMeasure.Record(ctx, allTokensElapsedTimeMilisecond)
+
 	}()
 
 	select {
@@ -728,8 +831,23 @@ func handleMultipartError(writer *multipart.Writer, err error) {
 
 func initializeRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", mcGraphHandler)
-	mux.HandleFunc("/dataprep", mcDataHandler)
+
+	// Wrap connector handlers with otelhttp wrappers
+	// "http.server.request.size" -  Int64Counter -  "Measures the size of HTTP request messages" (Incoming request bytes total)
+	// "http.server.response.size" - Int64Counter  - "Measures the size of HTTP response messages" (Incoming response bytes total)
+	// "http.server.duration" - Float64histogram "Measures the duration of inbound HTTP requests." (Incoming end to end duration, milliseconds)
+	handleFunc := func(pattern string, handlerFunc func(http.ResponseWriter, *http.Request), operation string) {
+		handler := otelhttp.NewHandler(otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc)), operation)
+		mux.Handle(pattern, handler)
+	}
+
+	handleFunc("/", mcGraphHandler, "mcGraphHandler")
+	handleFunc("/dataprep", mcDataHandler, "mcDataHandler")
+
+	promHandler := promhttp.Handler()
+	handleFunc("/metrics", promHandler.ServeHTTP, "metrics")
+	log.Info("Metrics exposed on /metrics.")
+
 	return mux
 }
 

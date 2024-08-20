@@ -58,7 +58,7 @@ on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/rag-telemetry-ku
 
 #### Available metrics and sources:
 
-a) **GMConnector/router** (requires router from branch available here: (https://github.com/opea-project/GenAIInfra/pull/296) or as submodule in /deployment/GenAIInfra:
+a) **GMConnector/router**:
 
 - `http_server_duration_milliseconds_*` histogram,
 - `http_server_request_size_bytes_total`, `http_server_response_size_bytes_total`,
@@ -294,49 +294,10 @@ kubectl get pods -A
 
 - includes manifests for opea micorservices and router
 
-Following instructions are based on `GenAIInfra/microservices-connector/usage_guide.md` to deploy patched gmconnector/router from tihs [PR](https://github.com/opea-project/GenAIInfra/pull/296).
 
-a) Clone patch gmconnector/router source code with instrumented http server/client and custom metrics:
-```
-cd helm
-git clone https://github.com/ppalucki/GenAIInfra example/GenAIInfra
-cd example/GenAIInfra
-git checkout ppalucki-telemetry-poc
-```
+a) Build and push GMConnector using deployment/microservices-connector/README.md
 
-b) Build and push gmcconnector and router images to local registry:
-```
-cd example/GenAIInfra/microservices-connector
-make docker.build docker.push DOCKER_REGISTRY=localhost:5000
-reg ls -k -f localhost:5000/
-```
-
-c) Prepare manifests (microservices and gmc-router) to be used in gmc-config configmap:
-```
-cd example/GenAIInfra/microservices-connector
-export YOUR_HF_TOKEN="PUT YOUR TOKEN HERE"
-`find helm/manifests_common/ -name '*.yaml' -type f -exec sed -i "s#insert-your-huggingface-token-here#$YOUR_HF_TOKEN#g" {} \;`
-git diff
-
-sed -i 's|image: opea/|image: localhost:5000/|' config/gmcrouter/gmc-router.yaml
-sed -i 's/IfNotPresent/Always/g' config/gmcrouter/gmc-router.yaml
-git diff -- config/gmcrouter/gmc-router.yaml
-```
-
-d) Install gmconnector with helm and custom image:
-```
-cd example/GenAIInfra/microservices-connector/helm
-helm install -n default gmc . --set image.repository=localhost:5000/gmcmanager --set image.tag=latest --set image.pullPolicy=Always
-
-# (hack if you don't reinstall gmc connector) use patched gmc-config from ppalucki kind test cluster (router from localhost) 
-kubectl delete -n system configmap gmc-config
-kubectl create -n system -f example/gmc-configs/gmc-config-ppalucki-image-localhost5000-ns-system.yaml
-# (restore from hack) to original jpiasecki gmc-config (gmc-router is missing!?!?)
-kubectl delete -n system configmap gmc-config
-kubectl create -n system -f example/gmc-configs/gmc-config-jpiasecki-original.yaml
-```
-
-e) Install ChatQnA application:
+b) Install ChatQnA application:
 
 ```
 cd example/GenAIInfra/microservices-connector
@@ -344,7 +305,7 @@ kubectl create ns chatqa
 kubectl apply -n chatqa -f config/samples/chatQnA_xeon.yaml
 ```
 
-f) Check application is working as expected (all pods are ready):
+c) Check application is working as expected (all pods are ready):
 
 ```
 kubectl get pods -n chatqa 

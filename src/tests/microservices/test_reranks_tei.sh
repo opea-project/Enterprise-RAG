@@ -4,7 +4,7 @@
 
 set -xe
 
-WORKPATH=$(dirname "$PWD")
+WORKPATH=${PWD}/../..
 ip_address=$(hostname -I | awk '{print $1}')
 function build_docker_images() {
     cd $WORKPATH

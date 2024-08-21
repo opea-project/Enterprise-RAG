@@ -22,5 +22,9 @@ build/
 # Compiled Python files
 *.pyc
 
-# Test files
+# Test output files
 .coverage
+.pytest_cache/
+
+# Ignore the .vscode directory
+.vscode/

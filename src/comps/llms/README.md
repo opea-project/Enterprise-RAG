@@ -1,24 +1,110 @@
-# LLM Microservice
+DISCLAIMER: The solution is verified for streaming and non_streaming modes for TGI on CPU and HPU devices. WIP for VLLM
+
+
+# OPEA LLM Microservice
 
 This microservice, designed for Language Model Inference (LLM), processes input consisting of a query string and associated reranked documents. It constructs a prompt based on the query and documents, which is then used to perform inference with a large language model. The service delivers the inference results as output.
 
-A prerequisite for using this microservice is that users must have a LLM text generation service (etc., TGI, vLLM and Ray) already running. Users need to set the LLM service's endpoint into an environment variable. The microservice utilizes this endpoint to create an LLM object, enabling it to communicate with the LLM service for executing language model operations.
+A prerequisite for using this microservice is that users must have a LLM text generation service (TGI, vLLM or Ray) already running. Users need to set the LLM service's endpoint into an environment variable. The microservice utilizes this endpoint to create an LLM object, enabling it to communicate with the LLM service for executing language model operations.
 
 Overall, this microservice offers a streamlined way to integrate large language model inference into applications, requiring minimal setup from the user beyond initiating a TGI/vLLM/Ray service and configuring the necessary environment variables. This allows for the seamless processing of queries and documents to generate intelligent, context-aware responses.
 
-# 🚀1. Start Microservice with Python (Option 1)
+
+## Example input
+
+LLM microservice as an input accepts a json. An example request can look as follows:
+
+```bash
+curl http://localhost:9000/v1/chat/completions \
+-X POST \
+-d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03, "streaming":false}' \
+-H 'Content-Type: application/json'
+```
+
+## Example output
+
+The output of the LLM microservice is a json that contains the generated text, which is crafted based on the input query provided. The example below illustrates this in non-streaming mode (using streaming:false), as shown in the cURL request above.
+
+```json
+{
+  "id":"fd49a0d75f7f54089572fa30510f8d3a",
+  "text":"\n\nDeep learning is a subset of machine learning that uses algorithms to learn from data",
+  "prompt":"What is Deep Learning?"
+}
+```
+
+## Configuration Options
+
+Configuration for the OPEA LLM Microservice is defined in the [config.ini](./config.ini) file, and can be adjusted there or via correspoding environment variables.
+
+Examplary configuration:
+
+```ini
+# OPEA LLM Microservice Configuration File
+[Logging]
+# env - LOG_LEVEL
+log_level=INFO
+# env - LOG_PATH
+log_path=/tmp/opea/microservices/llm/llm.log
+
+[OPEA_Microservice]
+# env - USVC_NAME
+name=opea_service@llm
+# env - USVC_HOST
+host=0.0.0.0
+# env - USVC_PORT
+port=9000
+
+[Model]
+# env - LLM_NAME
+model_name="Intel/neural-chat-7b-v3-3"
+# env - FRAMEWORK
+framework="langchain"
+# env - MODEL_SERVER
+model_server="tgi"
+# env - LLM_MODEL_SERVER_ENDPOINT
+model_server_endpoint="http://localhost:8080"
+
+```
+
+What each section and option does:
+
+| **Configuration Option**  | **Defaults**                | **Environment Variable**    | **Description**                                                              |
+|---------------------------|-----------------------------|-----------------------------|------------------------------------------------------------------------------|
+| **[Logging]**             |                             |                             | This section contains options related to logging.                            |
+| `log_level`               | Defined in `config.ini`     | `LOG_LEVEL`                 | The logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).                   |
+| `log_path`                | Defined in `config.ini`     | `LOG_PATH`                  | The path to the log file.                                                    |
+| **[OPEA_Microservice]**   |                             |                             | This section contains options related to the microservice itself             |
+| `name`                    | Defined in `config.ini`     | `USVC_NAME`                 | The name of the microservice.                                                |
+| `host`                    | Defined in `config.ini`     | `USVC_HOST`                 | The host of the microservice.                                                |
+| `port`                    | Defined in `config.ini`     | `USVC_PORT`                 | The port of the microservice.                                                |
+| **[Model]**               |                             |                             | This section contains options related to the model server.                   |
+| `model_name`              | Defined in `config.ini`     | `LLM_NAME`                  | The name of the language model                                               |
+| `framework`               | Defined in `config.ini`     | `FRAMEWORK`                 | The framework used for the language model.                                   |
+| `model_server`            | Defined in `config.ini`     | `MODEL_SERVER`              | The model server used for the language model.model.                          |
+| `model_server_endpoint`   | Defined in `config.ini`     | `LLM_MODEL_SERVER_ENDPOINT` | The endpoint of the model server                                             |
+
+
+
+
+# 🚀1. Start OPEA LLM Microservice with Python (Option 1)
 
 To start the LLM microservice, you need to install python packages first.
 
 ## 1.1 Install Requirements
 
 ```bash
-pip install -r requirements.txt
+pip install -r impl/microservice/requirements/requirements.txt
 ```
 
-## 1.2 Start LLM Service
+## 1.2 Start LLM Model Servver
 
-### 1.2.1 Start TGI Service
+The OPEA LLM Microservice interacts with a llm model endpoint that must be operational and reachable at the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` environment variable or the `model_server_endpoint` option in the `Model` section of the [config.ini](config.ini) file.
+
+Depending on the model server you want to use for obtaining scores, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
+
+
+### Start TGI Service
 
 ```bash
 export HF_TOKEN=${your_hf_api_token}
@@ -28,14 +114,14 @@ export LANGCHAIN_PROJECT="opea/gen-ai-comps:llms"
 docker run -p 8008:80 -v ./data:/data --name tgi_service --shm-size 1g ghcr.io/huggingface/text-generation-inference:1.4 --model-id ${your_hf_llm_model}
 ```
 
-### 1.2.2 Start vLLM Service
+### Start vLLM Service
 
 ```bash
 export HUGGINGFACEHUB_API_TOKEN=${your_hf_api_token}
 docker run -it --name vllm_service -p 8008:80 -e HF_TOKEN=${HUGGINGFACEHUB_API_TOKEN} -v ./data:/data vllm:cpu /bin/bash -c "cd / && export VLLM_CPU_KVCACHE_SPACE=40 && python3 -m vllm.entrypoints.openai.api_server --model ${your_hf_llm_model} --port 80"
 ```
 
-## 1.2.3 Start Ray Service
+### Start Ray Service
 
 ```bash
 export HUGGINGFACEHUB_API_TOKEN=${your_hf_api_token}
@@ -45,7 +131,7 @@ docker run -it --runtime=habana --name ray_serve_service -e OMPI_MCA_btl_vader_s
 
 ## 1.3 Verify the LLM Service
 
-### 1.3.1 Verify the TGI Service
+### Verify the TGI Service
 
 ```bash
 curl http://${your_ip}:8008/generate \
@@ -54,7 +140,7 @@ curl http://${your_ip}:8008/generate \
   -H 'Content-Type: application/json'
 ```
 
-### 1.3.2 Verify the vLLM Service
+###  Verify the vLLM Service
 
 ```bash
 curl http://${your_ip}:8008/v1/completions \
@@ -67,7 +153,7 @@ curl http://${your_ip}:8008/v1/completions \
   }'
 ```
 
-### 1.3.3 Verify the Ray Service
+### Verify the Ray Service
 
 ```bash
 curl http://${your_ip}:8008/v1/chat/completions \
@@ -83,175 +169,45 @@ curl http://${your_ip}:8008/v1/chat/completions \
   }'
 ```
 
-## 1.4 Start LLM Service with Python Script
 
-### 1.4.1 Start the TGI Service
+### 1.4. Start Microservice 
 
-```bash
-export TGI_LLM_ENDPOINT="http://${your_ip}:8008"
-python text-generation/tgi/llm.py
-```
+  ```bash
+  $ python opea_llm_microservice.py
 
-### 1.4.2 Start the vLLM Service
 
-```bash
-export vLLM_LLM_ENDPOINT="http://${your_ip}:8008"
-python text-generation/vllm/llm.py
-```
+  INFO:     Waiting for application startup.
+  INFO:     Application startup complete.
+  INFO:     Uvicorn running on http://0.0.0.0:9000 (Press CTRL+C to quit)
+  [2024-08-11 15:45:51,113] [    INFO] - HTTP server setup successful
+  ```
 
-### 1.4.3 Start the Ray Service
+### 🚀2. Start OPEA LLM Microservice with Docker (Option 2)
 
-```bash
-export RAY_Serve_ENDPOINT="http://${your_ip}:8008"
-python text-generation/ray_serve/llm.py
-```
-
-# 🚀2. Start Microservice with Docker (Option 2)
-
-If you start an LLM microservice with docker, the `docker_compose_llm.yaml` file will automatically start a TGI/vLLM service with docker.
-
-## 2.1 Setup Environment Variables
-
-In order to start TGI and LLM services, you need to setup the following environment variables first.
-
-```bash
-export HF_TOKEN=${your_hf_api_token}
-export TGI_LLM_ENDPOINT="http://${your_ip}:8008"
-export LLM_MODEL_ID=${your_hf_llm_model}
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_API_KEY=${your_langchain_api_key}
-export LANGCHAIN_PROJECT="opea/llms"
-```
-
-In order to start vLLM and LLM services, you need to setup the following environment variables first.
-
-```bash
-export HUGGINGFACEHUB_API_TOKEN=${your_hf_api_token}
-export vLLM_LLM_ENDPOINT="http://${your_ip}:8008"
-export LLM_MODEL_ID=${your_hf_llm_model}
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_PROJECT="opea/llms"
-```
-
-In order to start Ray serve and LLM services, you need to setup the following environment variables first.
-
-```bash
-export HUGGINGFACEHUB_API_TOKEN=${your_hf_api_token}
-export RAY_Serve_ENDPOINT="http://${your_ip}:8008"
-export LLM_MODEL=${your_hf_llm_model}
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_PROJECT="opea/llms"
-export CHAT_PROCESSOR="ChatModelLlama"
-```
-
-## 2.2 Build Docker Image
-
-### 2.2.1 TGI
-
+#### 2.1. Build the Docker Image:
+Use the docker build command to create the Docker image. First, navigate to the src directory in the project’s root folder, as this directory contains the necessary source code required for building the image.
 ```bash
 cd ../../
-docker build -t opea/llm-tgi:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/llms/text-generation/tgi/Dockerfile .
+docker build -t opea/llm:latest -f comps/llms/impl/microservice/Dockerfile .
 ```
+Please note that the building process may take a while to complete.
 
-### 2.2.2 vLLM
+#### 2.2. Run the Docker Container:
+Once the image is built, you can run it using the docker run command. Before running the image, ensure the Model Server is already running. Please, refer to the documentation in the [model_server directory](./model_server) for instructions on how to run the specific model.
 
-Build vllm docker.
+For example, assuming the TGI Model is serving rankings at `http://localhost:8008`, you can run the OPEA LLM Microservice with the following command:
 
 ```bash
-bash build_docker_vllm.sh
+docker run -d --name="llm-tei-microservice" \
+  -e LLM_MODEL_SERVER_ENDPOINT=http://localhost:8008 \
+  --net=host \
+  --ipc=host \
+  opea/llm:latest
 ```
 
-Build microservice docker.
+# 3. OPEA LLM Microservice API
 
-```bash
-cd ../../../../
-docker build -t opea/llm-vllm:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/llms/text-generation/vllm/docker/Dockerfile.microservice .
-```
-
-### 2.2.3 Ray Serve
-
-Build Ray Serve docker.
-
-```bash
-bash build_docker_rayserve.sh
-```
-
-Build microservice docker.
-
-```bash
-cd ../../../../
-docker build -t opea/llm-ray:latest --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/llms/text-generation/ray_serve/docker/Dockerfile.microservice .
-```
-
-To start a docker container, you have two options:
-
-- A. Run Docker with CLI
-- B. Run Docker with Docker Compose
-
-You can choose one as needed.
-
-## 2.3 Run Docker with CLI (Option A)
-
-### 2.3.1 TGI
-
-```bash
-docker run -d --name="llm-tgi-server" -p 9000:9000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e TGI_LLM_ENDPOINT=$TGI_LLM_ENDPOINT -e HF_TOKEN=$HF_TOKEN opea/llm-tgi:latest
-```
-
-### 2.3.2 vLLM
-
-Start vllm endpoint.
-
-```bash
-bash launch_vllm_service.sh
-```
-
-Start vllm microservice.
-
-```bash
-docker run --name="llm-vllm-server" -p 9000:9000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e no_proxy=${no_proxy} -e vLLM_LLM_ENDPOINT=$vLLM_LLM_ENDPOINT -e HUGGINGFACEHUB_API_TOKEN=$HUGGINGFACEHUB_API_TOKEN -e LLM_MODEL_ID=$LLM_MODEL_ID opea/llm-vllm:latest
-```
-
-### 2.3.3 Ray Serve
-
-Start Ray Serve endpoint.
-
-```bash
-bash launch_ray_service.sh
-```
-
-Start Ray Serve microservice.
-
-```bash
-docker run -d --name="llm-ray-server" -p 9000:9000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e RAY_Serve_ENDPOINT=$RAY_Serve_ENDPOINT -e HUGGINGFACEHUB_API_TOKEN=$HUGGINGFACEHUB_API_TOKEN -e LLM_MODEL=$LLM_MODEL opea/llm-ray:latest
-```
-
-## 2.4 Run Docker with Docker Compose (Option B)
-
-### 2.4.1 TGI
-
-```bash
-cd text-generation/tgi
-docker compose -f docker_compose_llm.yaml up -d
-```
-
-### 2.4.2 vLLM
-
-```bash
-cd text-generation/vllm
-docker compose -f docker_compose_llm.yaml up -d
-```
-
-### 2.4.3 Ray Serve
-
-```bash
-cd text-genetation/ray_serve
-docker compose -f docker_compose_llm.yaml up -d
-```
-
-# 🚀3. Consume LLM Service
-
-## 3.1 Check Service Status
+## 3.1 Check Status
 
 ```bash
 curl http://${your_ip}:9000/v1/health_check\
@@ -259,7 +215,7 @@ curl http://${your_ip}:9000/v1/health_check\
   -H 'Content-Type: application/json'
 ```
 
-## 3.2 Consume LLM Service
+## 3.2 Usage
 
 You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`.
 
@@ -279,7 +235,17 @@ curl http://${your_ip}:9000/v1/chat/completions \
   -H 'Content-Type: application/json'
 ```
 
-## 4. Validated Model
+## 4. Support Matrix for Model-Server
+
+Support for specific ranking model servers with Dockerfiles or build instruction.
+
+| Model server name                 |  Status   | 
+| ----------------------------------| --------- | 
+| [TGI](./impl/model_server/tgi/)   | &#x2713;  | 
+| [VLLM](./impl/model_server/vllm/) | &#x2713;  |
+| RAY                               | &#x2717;  |
+
+## 5. Validated Model
 
 | Model                     | TGI-Gaudi | vLLM-CPU | vLLM-Gaudi | Ray |
 | ------------------------- | --------- | -------- | ---------- | --- |

@@ -66,17 +66,15 @@ RUN pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pytho
  && ln -s /opt/conda/bin/pip /usr/local/bin/pip3
 
 RUN pip install --no-cache-dir -U \
-    langchain==0.2.3              \
-    langchain-huggingface==0.0.3  \
     sentence_transformers
 
 # Install Pytorch
-RUN pip install --no-cache-dir -U torch==2.3.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir -U torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # Install Intel® Extension for PyTorch*
 RUN pip install --no-cache-dir -U           \
     intel-openmp                            \
-    intel-extension-for-pytorch==2.3.100
+    intel-extension-for-pytorch==2.4.0
 
 RUN python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 
@@ -97,20 +95,22 @@ RUN useradd -m model-server                                 \
  && mkdir -p /home/model-server/tmp /opt/ml/model           \
  && chown -R model-server /home/model-server /opt/ml/model
 
-# add TS entrypoint
-COPY torchserve-entrypoint.py /usr/local/bin/dockerd-entrypoint.py
-COPY config.properties /home/model-server
-COPY upload_dir/*.tar.gz /opt/ml/model
-RUN chmod +x /usr/local/bin/dockerd-entrypoint.py
+# Add TS entrypoint
+COPY docker/torchserve-entrypoint.py /usr/local/bin/dockerd-entrypoint.py
+COPY docker/config.properties /home/model-server
+COPY docker/entrypoint.sh /home/model-server/entrypoint.sh
+COPY model/embedding_handler.py /home/model-server/utils/embedding_handler.py
+COPY model/model-config.yaml /home/model-server/utils/model-config.yaml
 
-## Cleanup ##
-RUN pip cache purge         \
- && rm -rf /tmp/tmp*        \
- && rm -iRf /root/.cache
+RUN chmod +x /usr/local/bin/dockerd-entrypoint.py
+RUN chmod +x /home/model-server/entrypoint.sh
+
+# Cleanup
+RUN pip cache purge && rm -rf /tmp/tmp* && rm -iRf /root/.cache
 
 # INTEL specific ENVs
 ENV KMP_SETTINGS=1
 ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:/opt/conda/lib/libiomp5.so:${LD_PRELOAD}"
 
-ENTRYPOINT ["python", "/usr/local/bin/dockerd-entrypoint.py"]
-CMD ["torchserve", "--start", "--ts-config", "/home/model-server/config.properties", "--model-store", "/home/model-server/"]
+ENTRYPOINT ["/home/model-server/entrypoint.sh"]
+CMD ["torchserve", "--start", "--ts-config", "/home/model-server/config.properties"]

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,12 +11,12 @@ else
     echo "Folder already exists: $folder_path"
 fi
 
-cd model
-torch-model-archiver --force --model-name all-MiniLM-L6-v2 --export-path ../docker/upload_dir/ --version 1.0 --handler embedding_handler.py --config-file model-config.yaml --archive-format tgz
+MODEL_NAME="BAAI/bge-large-en-v1.5"
 
-cd ../docker
-docker build . -t pl-qna-rag-embedding-torchserve --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
+docker build -f docker/Dockerfile . -t pl-qna-rag-embedding-torchserve --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
 
-docker run --rm -it --name embedding-torchserve -p 8090:8090 -p 8091:8091 -p 8092:8092 pl-qna-rag-embedding-torchserve torchserve --start --models all-MiniLM-L6-v2.tar.gz --ts-config /home/model-server/config.properties
+docker run --rm -it --name embedding-torchserve -p 8090:8090 -p 8091:8091 -p 8092:8092 -e MODEL_NAME=$MODEL_NAME pl-qna-rag-embedding-torchserve
 
-# curl http://localhost:8090/predictions/all-MiniLM-L6-v2 -H "Content-Type: text/plain" --data "As of November 30, 2022, the aggregate market values of the Regis trant's Common Stock held by non-affiliates were:Class A$7,831,564,572 Class B136,467,702,472 $144,299,267,044"
+TORCHSERVE_MODEL_NAME=$(echo "$MODEL_NAME" | awk -F'/' '{print $NF}')
+
+curl http://localhost:8090/predictions/${TORCHSERVE_MODEL_NAME} -H "Content-Type: text/plain" --data "What is machine learning?"

@@ -10,6 +10,6 @@ deviceType: cpu
 
 # TorchServe Backend parameters
 handler:
-    model_name: "sentence-transformers/all-MiniLM-L6-v2"
+    model_name: ""
     batch_size: 32
     amp_dtype: "BF16"

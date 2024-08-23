@@ -1,0 +1,34 @@
+name: Conjur test credentials extraction
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  build:
+    runs-on: [rag-runner]   # The machine that will use SDL scan for example
+    environment: default    # As defined in service request Conjur access for GH Workflow / SUB claim
+
+    steps:
+
+      - uses: intel-innersource/frameworks.actions.certs@latest
+
+      - uses: actions/checkout@v4
+
+      - name: Fetch secrets from Conjur
+        uses: intel-innersource/frameworks.actions.conjur-fetch@v1
+        with:
+          host_id: host/github-apps-oidc/43211-raglabel
+          secrets: >
+            FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-test_dummy_user/username|CONJUR_SYNC_USERNAME;
+            FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-test_dummy_user/password|CONJUR_SYNC_PASS
+
+      - name: Echo secrets of test user
+        shell: bash
+        run: |
+          echo "Username $CONJUR_SYNC_USERNAME"
+          echo "conjurpp_pass $CONJUR_SYNC_PASS"

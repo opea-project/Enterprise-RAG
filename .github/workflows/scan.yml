@@ -23,15 +23,31 @@ concurrency:
 
 jobs:
   SDLScans:
+    name: SDL required scan
     runs-on: [rag-runner]
-    name: SDL required
+    environment: default
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
     steps:
       - name: Clean Up Working Directory
         run: sudo rm -rf ${{github.workspace}}/*
+
+      - uses: intel-innersource/frameworks.actions.certs@latest
+
+      - name: Collect credentials from Conjur
+        uses: intel-innersource/frameworks.actions.conjur-fetch@v1
+        with:
+          host_id: host/github-apps-oidc/43211-raglabel
+          secrets: >
+            FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/username|CONJUR_SDL_USERNAME;
+            FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/password|CONJUR_SDL_PASSWORD
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           path: repo
+
       - name: SDLE Evidence upload flag
         id: submit
         run: |
@@ -40,8 +56,10 @@ jobs:
           else
             echo "submit=false" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Archive repo
         run: zip -r repo.zip repo/* -x ".git/*" ".github/*"
+
       - name: SDLe Scans
         id: compliance
         uses: intel-innersource/frameworks.actions.idf-central-scan@v1
@@ -54,10 +72,10 @@ jobs:
           sdle: ${{ steps.submit.outputs.submit || false }}
           logfile: IDF_Scans_Results_${{ github.run_id }}.log
         env:
-           IDFC_USER: ${{ secrets.CLN_SCANS_USER }}@intel.com
-           IDFC_PASSWORD: ${{ secrets.CLN_SCANS_TOKEN }}
-           IDFC_STORAGE_USER: ${{ secrets.CLN_SCANS_USER }}
-           IDFC_STORAGE_PASS: ${{ secrets.CLN_SCANS_TOKEN }}
+           IDFC_USER: ${{ env.CONJUR_SDL_USERNAME }}@intel.com
+           IDFC_PASSWORD: ${{ env.CONJUR_SDL_PASSWORD }}
+           IDFC_STORAGE_USER: ${{ env.CONJUR_SDL_USERNAME }}
+           IDFC_STORAGE_PASS: ${{ env.CONJUR_SDL_PASSWORD }}
 
       - name: Check results
         id: results

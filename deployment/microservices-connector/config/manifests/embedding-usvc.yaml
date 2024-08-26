@@ -14,7 +14,6 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  TEI_EMBEDDING_ENDPOINT: "http://embedding-usvc-tei"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
@@ -93,8 +92,8 @@ spec:
             runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
-          image: "opea/embedding-tei:latest"
-          imagePullPolicy: IfNotPresent
+          image: "localhost:5000/test/embedding-test-langchain"
+          imagePullPolicy: Always
           ports:
             - name: embedding-usvc
               containerPort: 6000

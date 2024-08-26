@@ -14,8 +14,6 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  TEI_EMBEDDING_ENDPOINT: "http://retriever-usvc-tei"
-  EMBED_MODEL: ""
   REDIS_URL: "redis://retriever-usvc-redis-vector-db:6379"
   INDEX_NAME: "rag-redis"
   EASYOCR_MODULE_PATH: "/tmp/.EasyOCR"
@@ -98,8 +96,8 @@ spec:
             runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
-          image: "opea/retriever-redis:latest"
-          imagePullPolicy: IfNotPresent
+          image: "localhost:5000/test/retriever-redis:latest"
+          imagePullPolicy: Always
           ports:
             - name: retriever-usvc
               containerPort: 7000

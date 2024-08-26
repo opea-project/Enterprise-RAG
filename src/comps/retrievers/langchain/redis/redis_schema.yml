@@ -10,5 +10,5 @@ vector:
   - name: content_vector
     algorithm: HNSW
     datatype: FLOAT32
-    dims: 768
+    dims: 1024
     distance_metric: COSINE

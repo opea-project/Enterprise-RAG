@@ -29,6 +29,8 @@ class ServiceType(Enum):
     LVM = 12
     KNOWLEDGE_GRAPH = 13
     WEB_RETRIEVER = 14
+    LLM_GUARD_INPUT_SCANNER = 15
+    LLM_GUARD_OUTPUT_SCANNER = 16
 
 
 class MegaServiceEndpoint(Enum):
@@ -54,6 +56,8 @@ class MegaServiceEndpoint(Enum):
     GUARDRAILS = "/v1/guardrails"
     RAGAS = "/v1/ragas"
     GRAPHS = "/v1/graphs"
+    LLM_GUARD_INPUT_SCANNER = "/v1/llmguardinput"
+    LLM_GUARD_OUTPUT_SCANNER = "/v1/llmguardoutput"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

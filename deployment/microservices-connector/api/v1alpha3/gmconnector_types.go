@@ -69,6 +69,10 @@ const (
 	Tgi StepNameType = "Tgi"
 	// Llm
 	Llm StepNameType = "Llm"
+	// LLMGuardInput
+	LLMGuardInput StepNameType = "LLMGuardInput"
+	// LLMGuardOutput
+	LLMGuardOutput StepNameType = "LLMGuardOutput"
 )
 
 type Executor struct {

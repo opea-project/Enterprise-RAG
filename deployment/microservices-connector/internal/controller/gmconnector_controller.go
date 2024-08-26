@@ -66,6 +66,8 @@ const (
 	SpeechT5Gaudi            = "SpeechT5Gaudi"
 	Whisper                  = "Whisper"
 	WhisperGaudi             = "WhisperGaudi"
+	LLMGuardInput            = "LLMGuardInput"
+	LLMGuardOutput           = "LLMGuardOutput"
 )
 
 var yamlDict = map[string]string{
@@ -91,6 +93,8 @@ var yamlDict = map[string]string{
 	Whisper:                  yaml_dir + "whisper.yaml",
 	WhisperGaudi:             yaml_dir + "whisper_gaudi.yaml",
 	DataPrep:                 yaml_dir + "data-prep.yaml",
+	LLMGuardInput:     		  yaml_dir + "in-guard-usvc.yaml",
+	LLMGuardOutput:    		  yaml_dir + "out-guard-usvc.yaml",
 }
 
 // GMConnectorReconciler reconciles a GMConnector object

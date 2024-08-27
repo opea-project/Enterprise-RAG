@@ -2098,9 +2098,7 @@
       "type": "row"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
-  "tags": [],
   "templating": {
     "list": [
       {
@@ -2155,15 +2153,17 @@
       }
     ]
   },
+  "refresh": "",
   "time": {
-    "from": "now-1h",
+    "from": "now-30m",
     "to": "now-1m"
   },
   "timepicker": {
     "nowDelay": "1m"
   },
-  "timezone": "",
-  "title": "Text Embedding Inference",
+  "timezone": "browser",
+  "tags": ["entrag", "modelserving"],
+  "title": "EnterpriseRAG / ModelServing / Text Embedding Inference",
   "version": 8,
   "weekStart": ""
 }

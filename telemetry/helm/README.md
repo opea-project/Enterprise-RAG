@@ -15,12 +15,11 @@ a) Install "rag-telemetry" release from helm source directory:
 helm dependency build
 helm install -n monitoring --create-namespace rag-telemetry .
 
-# or upgrade (takes more time, show --debug to see progress)
-helm upgrade --debug --install -n monitoring --create-namespace rag-telemetry .
+# or upgrade (slow, takes more time, show --debug to see progress)
+helm upgrade --debug --install -n monitoring --create-namespace rag-telemetry --skip-crds . 
 
-# reinstall
-time helm uninstall -n monitoring rag-telemetry
-time helm install -n monitoring --create-namespace rag-telemetry .
+# reinstall (faster)
+time helm uninstall -n monitoring rag-telemetry ; time helm install -n monitoring --create-namespace rag-telemetry .
 ```
 
 Please check "Extra additions" (not yet merged into helm chart) for **pcm** and **metrics-server**.
@@ -34,7 +33,7 @@ kubectl --namespace monitoring get podmonitors -l "release=rag-telemetry"
 kubectl --namespace monitoring get configmaps 
 ```
 
-c) Access the grafana:
+c) Access the Grafana:
 ```
 kubectl --namespace monitoring port-forward svc/rag-telemetry-grafana 3000:80
 ```
@@ -119,7 +118,7 @@ c) **HABANA metrics exporter**
 
 Example output:
 ```
-podname=`kubectl get pods -n monitoring -l app.kubernetes.io/name=metric-exporter-ds -ojsonpath='{.items[0].metadata.name}'`
+podname=`kubectl get pods -n monitoring -l app.kubernetes.io/name=habana-metric-exporter-ds -ojsonpath='{.items[0].metadata.name}'`
 echo $podname
 curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics"
 curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics" | grep HELP | grep habanalabs
@@ -140,6 +139,15 @@ Example output:
 ```
 curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/tei-embedding-svc:tei/proxy/metrics
 curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/tei-reranking-svc:teirerank/proxy/metrics
+```
+
+e) **torchserver-embedding-**  metrics (TODO, not enabled by default?!):
+
+https://pytorch.org/serve/metrics_api.html 
+
+Example output:
+```
+curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/torchserve-embedding-svc:torchserve/proxy/metrics
 ```
 
 f) **redis-exporter**
@@ -207,7 +215,7 @@ Enabled Kubernetes resources and dependent charts:
   - prometheus-redis-exporter
 
 
-Note: redis dashboard is based on:
+Note: Redis dashboard is based on:
 ```
 cd helm
 curl -sL https://raw.githubusercontent.com/oliver006/redis_exporter/master/contrib/grafana_prometheus_redis_dashboard.json -o files/dashboards/redis-dashboard.json
@@ -340,8 +348,14 @@ helm uninstall -n monitoring rag-telemetry
 ```
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm repo update
-helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace kube-system
+helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring
 ```
+or uninstall
+
+```
+helm uninstall metrics-server --namespace monitoring
+```
+
 
 ##### b) pcm-sensor-server
 
@@ -357,7 +371,8 @@ cd example/pcm
 git checkout ppalucki/helm
 cd deployment/pcm
 
-cd example/pcm/deployment/pcm/README.md
+# check README for further details
+cat example/pcm/deployment/pcm/README.md
 
 # WARN: we're using privilged mode (TODO: consider less unsecure version later access through perf-subsystem)
 requires: msr module

@@ -1,3 +1,5 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 {{- $files := .Files.Glob "files/dashboards/*.json" }}
 {{- if $files }}
 apiVersion: v1

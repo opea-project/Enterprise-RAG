@@ -1,7 +1,9 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 apiVersion: v2
-name: Enterprise-RAG-telemetry
+name: enterprise-rag-telemetry
 type: application
-version: 0.1.0
+version: 0.2.0
 
 dependencies:
   - name: kube-prometheus-stack

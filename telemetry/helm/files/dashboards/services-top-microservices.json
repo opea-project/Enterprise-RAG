@@ -846,9 +846,6 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5m",
-  "schemaVersion": 39,
-  "tags": [],
   "templating": {
     "list": [
       {
@@ -917,13 +914,16 @@
       }
     ]
   },
+  "schemaVersion": 39,
+  "refresh": "",
   "time": {
-    "from": "now-1h",
-    "to": "now"
+    "from": "now-30m",
+    "to": "now-1m"
   },
   "timepicker": {},
   "timezone": "",
-  "title": "EnterpriseRAG Top 7 Services and handlers",
+  "tags": ["entrag", "microservices"],
+  "title": "EnterpriseRAG / Services / Top",
   "uid": "W2gX2zHVk48",
   "version": 7,
   "weekStart": ""

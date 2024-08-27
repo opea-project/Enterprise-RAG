@@ -18,13 +18,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 39,
+  "id": 30,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -131,7 +132,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -237,7 +239,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -345,7 +348,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -484,7 +488,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -586,7 +591,8 @@
         {
           "$$hashKey": "object:766",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
           },
           "disableTextWrap": false,
           "editorMode": "builder",
@@ -607,7 +613,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "description": "",
       "fieldConfig": {
@@ -718,7 +725,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
       },
       "fieldConfig": {
         "defaults": {
@@ -805,7 +813,8 @@
         {
           "$$hashKey": "object:146",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
           },
           "editorMode": "code",
           "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=\"$container_name\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
@@ -821,11 +830,36 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "",
   "schemaVersion": 39,
-  "tags": [],
   "templating": {
     "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "dataprep-microservice",
+          "value": "dataprep-microservice"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P1809F7CD0C75ACF3"
+        },
+        "definition": "label_values(http_requests_total{namespace=\"opea-rag\"},container)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "container_name",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_requests_total{namespace=\"opea-rag\"},container)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
       {
         "current": {
           "selected": false,
@@ -862,40 +896,15 @@
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "embedding-usvc",
-          "value": "embedding-usvc"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(http_requests_total,container)",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "container_name",
-        "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(http_requests_total,container)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
       }
     ]
   },
+  "refresh": "",
   "time": {
     "from": "now-30m",
     "to": "now"
   },
+  "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {
     "refresh_intervals": [
       "3s"
@@ -912,9 +921,10 @@
       "30d"
     ]
   },
-  "timezone": "",
-  "title": "EnterpriseRAG MicroService Dashboard",
-  "uid": "aduqd7fgbf1fkc",
-  "version": 5,
+  "timezone": "browser",
+  "tags": ["todo", "entrag", "microservices"],
+  "title": "EnterpriseRAG / Services / Dataprep (TODO)",
+  "uid": "_eX4mpl1",
+  "version": 12,
   "weekStart": ""
 }

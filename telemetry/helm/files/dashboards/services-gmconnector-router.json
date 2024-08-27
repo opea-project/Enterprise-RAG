@@ -942,9 +942,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5m",
   "schemaVersion": 39,
-  "tags": [],
   "templating": {
     "list": [
       {
@@ -1013,13 +1011,15 @@
       }
     ]
   },
+  "refresh": "",
   "time": {
-    "from": "now-1h",
-    "to": "now"
+    "from": "now-30m",
+    "to": "now-1m"
   },
   "timepicker": {},
-  "timezone": "",
-  "title": "EnterpriseRAG Services and LLM (GMConnector)",
+  "timezone": "browser",
+  "tags": ["entrag", "microservices"],
+  "title": "EnterpriseRAG / Services / GMConnector (router)",
   "uid": "ddusxu5kgjr40e",
   "version": 6,
   "weekStart": ""

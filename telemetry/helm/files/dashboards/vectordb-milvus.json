@@ -12044,12 +12044,6 @@
       "type": "row"
     }
   ],
-  "refresh": false,
-  "schemaVersion": 34,
-  "style": "dark",
-  "tags": [
-    "milvus2.0"
-  ],
   "templating": {
     "list": [
       {
@@ -12231,9 +12225,11 @@
       }
     ]
   },
+  "schemaVersion": 34,
+  "refresh": "1m",
   "time": {
-    "from": "now-6h",
-    "to": "now"
+    "from": "now-30m",
+    "to": "now-1m"
   },
   "timepicker": {
     "hidden": false,
@@ -12263,7 +12259,8 @@
     "type": "timepicker"
   },
   "timezone": "browser",
-  "title": "VectorDB / Milvus2.0 (TODO)",
+  "tags": [ "todo", "entrag", "vectordb"],
+  "title": "EnterpriseRAG / VectorDB / Milvus2.0 (TODO)",
   "uid": "uLf5cJ3Gz",
   "version": 5,
   "weekStart": ""

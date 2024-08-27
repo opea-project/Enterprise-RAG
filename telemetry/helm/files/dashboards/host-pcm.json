@@ -5510,10 +5510,7 @@
       "type": "bargauge"
     }
   ],
-  "refresh": "1s",
   "schemaVersion": 22,
-  "style": "dark",
-  "tags": [],
   "templating": {
     "list": [
       {
@@ -5539,10 +5536,6 @@
       }
     ]
   },
-  "time": {
-    "from": "now-5m",
-    "to": "now"
-  },
   "timepicker": {
     "refresh_intervals": [
       "1s",
@@ -5559,9 +5552,14 @@
       "1d"
     ]
   },
-  "timezone": "",
-  "title": "Intel(r) Performance Counter Monitor (Intel(r) PCM) Dashboard - pcm-dp57c",
-  "uid": "A_CvwTCWk",
+  "refresh": "",
+  "time": {
+    "from": "now-30m",
+    "to": "now-1m"
+  },
+  "timezone": "browser",
+  "tags": ["entrag", "host"],
+  "title": "EnterpriseRAG / Host / Intel(r) Performance Counter Monitor (CPU/Memory)",
   "variables": {
     "list": []
   },

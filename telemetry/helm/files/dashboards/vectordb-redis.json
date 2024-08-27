@@ -1439,9 +1439,6 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "",
-  "schemaVersion": 39,
-  "tags": [],
   "templating": {
     "list": [
       {
@@ -1500,10 +1497,7 @@
       }
     ]
   },
-  "time": {
-    "from": "now-30m",
-    "to": "now"
-  },
+  "schemaVersion": 39,
   "timepicker": {
     "refresh_intervals": [
       "5s",
@@ -1529,8 +1523,14 @@
       "30d"
     ]
   },
+  "refresh": "",
+  "time": {
+    "from": "now-30m",
+    "to": "now-1m"
+  },
   "timezone": "browser",
-  "title": "VectorDB / Redis Dashboard",
+  "tags": ["entrag", "vectordb"],
+  "title": "EnterpriseRAG / VectorDB / Redis",
   "uid": "ddustuj5r0mbke",
   "version": 2,
   "weekStart": ""

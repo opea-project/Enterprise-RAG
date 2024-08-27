@@ -1201,9 +1201,7 @@
         "type": "timeseries"
       }
     ],
-    "refresh": "",
     "schemaVersion": 39,
-    "tags": [],
     "templating": {
       "list": [
         {
@@ -1241,14 +1239,15 @@
         }
       ]
     },
+    "refresh": "",
     "time": {
-      "from": "now-5m",
-      "to": "now"
+      "from": "now-30m",
+      "to": "now-1m"
     },
     "timepicker": {},
-    "timezone": "",
-    "title": "vLLM (TODO)",
-    "uid": "b281712d-8bff-41ef-9f3f-71ad43c05e9b",
+    "timezone": "browser",
+    "tags": ["todo", "entrag", "modelserving"],
+    "title": "EnterpriseRAG / ModelServing / vLLM (TODO)",
     "version": 1,
     "weekStart": ""
   }

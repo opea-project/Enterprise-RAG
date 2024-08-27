@@ -1,3 +1,11 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+habana-exporter:
+  image:
+    # for other possible tags check: https://vault.habana.ai/ui/native/gaudi-metric-exporter/metric-exporter/
+    #tag: 1.16.2-2
+    tag: 1.17.0-495
+
 prometheus-redis-exporter:
   redisAddress: redis://redis-vector-db.chatqa.svc.cluster.local:6379
   serviceMonitor:

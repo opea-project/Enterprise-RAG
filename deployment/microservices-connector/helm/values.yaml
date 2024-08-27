@@ -7,13 +7,42 @@
 
 replicaCount: 1
 
-image:
-  repository: localhost:5000/opea/gmcmanager
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: latest
+proxy:
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ""
 
-imagePullSecrets: []
+
+tokens:
+  hugToken: ""
+
+images:
+  gmcManager:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
+    tag: "latest"
+    pullPolicy: Always
+  gmcRouter:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
+    tag: "latest"
+  embedding-usvc:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding-tei"
+    tag: "latest"
+  reranking-usvc:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
+    tag: "latest"
+  retriever-usvc:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/test/retriever-redis"
+    tag: "latest"
+  torcheserve:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/pl-qna-rag-embedding-torchserve"
+    tag: "latest"
+  llm-uservice:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
+    tag: "latest"
+
+
+imagePullSecrets:
+  - name: regcred
 nameOverride: ""
 fullnameOverride: ""
 

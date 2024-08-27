@@ -15,9 +15,9 @@ metadata:
     app.kubernetes.io/version: "cpu-1.5"
     app.kubernetes.io/managed-by: Helm
 data:
-  http_proxy:  "http://proxy-mu.intel.com:911"
-  https_proxy:  "http://proxy-mu.intel.com:912"
-  no_proxy:  "localhost,10.55.253.38,v4-k8s-vip,v4-vip-bm-test,.perf,10.55.253.36,.svc,.svc.cluster.local,.pod.cluster.local,10.233.0.0/18,10.165.118.166/21"
+  http_proxy:  ""
+  https_proxy:  ""
+  no_proxy:  ""
 ---
 # Source: torchserve/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation

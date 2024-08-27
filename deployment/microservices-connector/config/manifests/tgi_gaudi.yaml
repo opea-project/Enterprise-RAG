@@ -26,6 +26,11 @@ data:
   HF_HOME: "/tmp/.cache/huggingface"
   MAX_INPUT_LENGTH: "1024"
   MAX_TOTAL_TOKENS: "2048"
+  HABANA_VISIBLE_DEVICES: "all"
+  PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
+  OMPI_MCA_btl_vader_single_copy_mechanism: "none"
+  SHARDED: "true"
+  NUM_SHARD: "8"
 ---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -101,12 +106,12 @@ spec:
             - name: http
               containerPort: 2080
               protocol: TCP
-          livenessProbe:
-            failureThreshold: 24
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            tcpSocket:
-              port: http
+          # livenessProbe:
+          #   failureThreshold: 24
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   tcpSocket:
+          #     port: http
           readinessProbe:
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -120,7 +125,7 @@ spec:
               port: http
           resources:
             limits:
-              habana.ai/gaudi: 1
+              habana.ai/gaudi: 8
       volumes:
         - name: model-volume
           hostPath:

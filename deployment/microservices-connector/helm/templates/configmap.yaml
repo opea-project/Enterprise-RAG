@@ -1,5 +1,6 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+# TODO: these makefiles should became templates
 
 apiVersion: v1
 kind: ConfigMap
@@ -8,6 +9,30 @@ metadata:
   labels:
     {{- include "gmc.labels" . | nindent 4 }}
 data:
-{{ (.Files.Glob "manifests_common/*.yaml").AsConfig | indent 2 }}
+  {{- range $path, $_ := .Files.Glob "manifests_common/*.yaml" }}
+  {{ $filename := index (splitList "." ($path | base)) 0 }}
+  {{ $imageKey := index $.Values.images $filename }}
+  {{ $path | base }}: |
+    {{- $content := $.Files.Get $path }}
+    {{- if $imageKey }}
+      {{- $content = regexReplaceAll "(image:\\s*).*" $content (printf "${1}%s:%s" $imageKey.repository $imageKey.tag) }}
+    {{- end }}
+    {{- $content = regexReplaceAll "(.*http_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpProxy) }}
+    {{- $content = regexReplaceAll "(.*https_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpsProxy) }}
+    {{- $content = regexReplaceAll "(.*no_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.noProxy) }}
+    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*).*" $content (printf "$1\"%s\"" $.Values.tokens.hugToken) }}
+    {{- if $.Values.imagePullSecrets }}
+      {{- $imagePullSecrets := toYaml $.Values.imagePullSecrets | nindent 10 }}
+      {{- $content = regexReplaceAllLiteral "containers:" $content (printf "imagePullSecrets:%s\n      containers:" $imagePullSecrets) }}
+    {{- end }}
+    {{- $content | nindent 4 }}
+  {{- end }}
+  # router cannot be an actual template as some parameters are being set by gmc
   gmc-router.yaml: |
-    {{- .Files.Get "gmc-router.yaml" | nindent 4 }}
+    {{- $routerContent := .Files.Get "gmc-router.yaml" }}
+    {{- $routerContent = regexReplaceAll "(image:\\s*).*" $routerContent (printf "${1}%s:%s" .Values.images.gmcRouter.repository .Values.images.gmcRouter.tag) }}
+    {{- if .Values.imagePullSecrets }}
+      {{- $imagePullSecrets := toYaml .Values.imagePullSecrets | nindent 10 }}
+      {{- $routerContent = regexReplaceAllLiteral "containers:" $routerContent (printf "imagePullSecrets:%s\n      containers:" $imagePullSecrets) }}
+    {{- end }}
+    {{- $routerContent | nindent 4 }}

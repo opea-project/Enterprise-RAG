@@ -93,8 +93,8 @@ var yamlDict = map[string]string{
 	Whisper:                  yaml_dir + "whisper.yaml",
 	WhisperGaudi:             yaml_dir + "whisper_gaudi.yaml",
 	DataPrep:                 yaml_dir + "data-prep.yaml",
-	LLMGuardInput:     		  yaml_dir + "in-guard-usvc.yaml",
-	LLMGuardOutput:    		  yaml_dir + "out-guard-usvc.yaml",
+	LLMGuardInput:            yaml_dir + "in-guard-usvc.yaml",
+	LLMGuardOutput:           yaml_dir + "out-guard-usvc.yaml",
 }
 
 // GMConnectorReconciler reconciles a GMConnector object
@@ -238,6 +238,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 	return keyname == "TEI_EMBEDDING_ENDPOINT" ||
 		keyname == "TEI_RERANKING_ENDPOINT" ||
 		keyname == "TGI_LLM_ENDPOINT" ||
+		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		// keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||  // values are currently hardcoded embedding need fix for proper endpoint
 		keyname == "REDIS_URL" ||
 		keyname == "ASR_ENDPOINT" ||

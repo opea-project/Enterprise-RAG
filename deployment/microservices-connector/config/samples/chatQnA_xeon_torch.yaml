@@ -65,6 +65,7 @@ spec:
           config:
             endpoint: /v1/chat/completions
             TGI_LLM_ENDPOINT: tgi-service-m
+            LLM_MODEL_SERVER_ENDPOINT: tgi-service-m
       - name: Tgi
         internalService:
           serviceName: tgi-service-m

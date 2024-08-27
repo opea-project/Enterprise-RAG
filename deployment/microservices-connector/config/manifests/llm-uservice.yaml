@@ -15,6 +15,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 data:
   TGI_LLM_ENDPOINT: "http://llm-uservice-tgi"
+  LLM_MODEL_SERVER_ENDPOINT: "http://llm-uservice-tgi"
   HUGGINGFACEHUB_API_TOKEN: "insert-your-huggingface-token-here"
   HF_HOME: "/tmp/.cache/huggingface"
   http_proxy: ""

@@ -92,7 +92,7 @@ spec:
             runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
-          image: "localhost:5000/test/embedding-test-langchain"
+          image: "localhost:5000/opea/embedding-tei:latest"
           imagePullPolicy: Always
           ports:
             - name: embedding-usvc

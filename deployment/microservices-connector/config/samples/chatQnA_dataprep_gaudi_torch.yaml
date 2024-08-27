@@ -7,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: gmconnector
     app.kubernetes.io/managed-by: kustomize
-    gmc/platform: xeon
+    gmc/platform: gaudi
   name: chatqa
   namespace: chatqa
 spec:
@@ -23,13 +23,15 @@ spec:
           serviceName: embedding-svc
           config:
             endpoint: /v1/embeddings
-            EMBEDDING_MODEL_SERVER_ENDPOINT: http://tei-embedding-svc.chatqa.svc.cluster.local:80 #tmphardcode
+            EMBEDDING_MODEL_SERVER_ENDPOINT: http://torchserve-embedding-svc.chatqa.svc.cluster.local:8090/predictions/bge-large-en-v1.5 #tmphardcode
             EMBEDDING_MODEL_NAME: "BAAI/bge-base-en-v1.5"
-            EMBEDDING_MODEL_SERVER: "tei"
+            EMBEDDING_MODEL_SERVER: "torchserve"
             FRAMEWORK: "langchain"
-      - name: TeiEmbedding
+      - name: TorchserveEmbedding
         internalService:
-          serviceName: tei-embedding-svc
+          serviceName: torchserve-embedding-svc
+          config:
+            MODEL_NAME: "BAAI/bge-large-en-v1.5"
           isDownstreamService: true
       - name: Retriever
         data: $response
@@ -62,11 +64,11 @@ spec:
           serviceName: llm-svc
           config:
             endpoint: /v1/chat/completions
-            TGI_LLM_ENDPOINT: tgi-service-m
-            LLM_MODEL_SERVER_ENDPOINT: tgi-service-m
-      - name: Tgi
+            TGI_LLM_ENDPOINT: tgi-gaudi-svc
+            LLM_MODEL_SERVER_ENDPOINT: tgi-gaudi-svc
+      - name: TgiGaudi
         internalService:
-          serviceName: tgi-service-m
+          serviceName: tgi-gaudi-svc
           config:
             endpoint: /generate
           isDownstreamService: true
@@ -76,5 +78,5 @@ spec:
           config:
             endpoint: /v1/dataprep
             REDIS_URL: redis-vector-db
-            TEI_ENDPOINT: http://tei-embedding-svc.chatqa.svc.cluster.local:80 #tmphardcode
+            TEI_ENDPOINT: http://torchserve-embedding-svc.chatqa.svc.cluster.local:8090/predictions/bge-large-en-v1.5
           isDownstreamService: true

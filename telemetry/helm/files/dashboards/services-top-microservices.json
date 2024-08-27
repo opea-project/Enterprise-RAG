@@ -25,7 +25,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 38,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -180,6 +179,7 @@
           },
           "decimals": 2,
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -263,273 +263,6 @@
         "x": 0,
         "y": 21
       },
-      "id": 14,
-      "panels": [],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "handler Level - Throughput",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "reqps"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "bRate"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "lcd",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "continuous-BlYlRd"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "eRate"
-            },
-            "properties": [
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "mode": "lcd",
-                  "type": "gauge"
-                }
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "continuous-RdYlGr"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Error Rate"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 663
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Rate"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 667
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Service"
-            },
-            "properties": [
-              {
-                "id": "custom.width"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 24,
-        "x": 0,
-        "y": 22
-      },
-      "id": 22,
-      "interval": "5m",
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "topk(7, sum(rate(http_request_duration_seconds_count{container=~\"$container\", handler=~\"$handler\"}[$__range])) by (handler,container)) ",
-          "format": "table",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{handler}}",
-          "range": false,
-          "refId": "Rate"
-        }
-      ],
-      "title": "Top 7 handlers   (APM Table)",
-      "transformations": [
-        {
-          "id": "seriesToColumns",
-          "options": {
-            "byField": "handler"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time 1": true,
-              "Time 2": true
-            },
-            "indexByName": {},
-            "renameByName": {
-              "Value #Error Rate": "Error Rate",
-              "Value #Rate": "Rate",
-              "service_name 1": "Rate in Service",
-              "service_name 2": "Error Rate in Service"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "bRate",
-            "mode": "reduceRow",
-            "reduce": {
-              "include": [
-                "Rate"
-              ],
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "eRate",
-            "mode": "reduceRow",
-            "reduce": {
-              "include": [
-                "Error Rate"
-              ],
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Error Rate": true,
-              "Rate": true,
-              "bRate": false
-            },
-            "indexByName": {
-              "Error Rate": 4,
-              "Error Rate in Service": 6,
-              "Rate": 1,
-              "Rate in Service": 5,
-              "bRate": 2,
-              "eRate": 3,
-              "handler": 0
-            },
-            "renameByName": {
-              "Rate in Service": "Service",
-              "bRate": "Rate",
-              "eRate": "Error Rate",
-              "handler": "handler Name"
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "fields": {},
-            "sort": [
-              {
-                "desc": true,
-                "field": "Rate"
-              }
-            ]
-          }
-        }
-      ],
-      "type": "table"
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "prometheus"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 33
-      },
       "id": 20,
       "panels": [],
       "targets": [
@@ -540,7 +273,7 @@
           "refId": "A"
         }
       ],
-      "title": "handler Level - Latencies",
+      "title": "Handler Level - Latencies",
       "type": "row"
     },
     {
@@ -579,7 +312,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -587,7 +320,7 @@
         "h": 13,
         "w": 12,
         "x": 0,
-        "y": 34
+        "y": 22
       },
       "id": 25,
       "interval": "5m",
@@ -692,7 +425,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -700,7 +433,7 @@
         "h": 13,
         "w": 12,
         "x": 12,
-        "y": 34
+        "y": 22
       },
       "id": 10,
       "interval": "5m",
@@ -797,7 +530,7 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
@@ -805,7 +538,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 35
       },
       "id": 16,
       "interval": "5m",
@@ -846,6 +579,12 @@
       "type": "timeseries"
     }
   ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "entrag",
+    "microservices"
+  ],
   "templating": {
     "list": [
       {
@@ -885,10 +624,16 @@
         "current": {
           "selected": true,
           "text": [
-            "All"
+            "/v1/reranking",
+            "/v1/chat/completions",
+            "/v1/retrieval",
+            "/v1/embeddings"
           ],
           "value": [
-            "$__all"
+            "/v1/reranking",
+            "/v1/chat/completions",
+            "/v1/retrieval",
+            "/v1/embeddings"
           ]
         },
         "datasource": {
@@ -914,17 +659,14 @@
       }
     ]
   },
-  "schemaVersion": 39,
-  "refresh": "",
   "time": {
     "from": "now-30m",
     "to": "now-1m"
   },
   "timepicker": {},
   "timezone": "",
-  "tags": ["entrag", "microservices"],
   "title": "EnterpriseRAG / Services / Top",
   "uid": "W2gX2zHVk48",
-  "version": 7,
+  "version": 1,
   "weekStart": ""
 }

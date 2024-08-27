@@ -2163,7 +2163,7 @@
   },
   "timezone": "browser",
   "tags": ["entrag", "modelserving"],
-  "title": "EnterpriseRAG / ModelServing / Text Embedding Inference",
+  "title": "EnterpriseRAG / ModelServing / Text Embedding Inference (Optional)",
   "version": 8,
   "weekStart": ""
 }

@@ -25,7 +25,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 39,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -39,7 +38,7 @@
       },
       "id": 31,
       "panels": [],
-      "title": "HTTP Server services ",
+      "title": "HTTP Server services (filter by \"Route\")",
       "type": "row"
     },
     {
@@ -72,6 +71,9 @@
       "options": {
         "calculate": false,
         "cellGap": 1,
+        "cellValues": {
+          "unit": ""
+        },
         "color": {
           "exponent": 0.5,
           "fill": "dark-orange",
@@ -112,7 +114,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(increase( http_server_duration_milliseconds_bucket{http_route=~\"$http_route\"}[$__rate_interval])) by (le)",
+          "expr": "sum(increase( http_server_duration_milliseconds_bucket{http_route=~\"$http_route\", http_status_code=~\"$http_status_code\"}[$__rate_interval])) by (le)",
           "format": "heatmap",
           "instant": false,
           "legendFormat": "__auto",
@@ -120,7 +122,7 @@
           "refId": "A"
         }
       ],
-      "title": "HTTP server GMConnector router requests histogram (by http_route) (status=200 only) ",
+      "title": "GMConnector responses histogram (ms)",
       "type": "heatmap"
     },
     {
@@ -196,8 +198,7 @@
           "calcs": [
             "mean",
             "logmin",
-            "max",
-            "delta"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -216,7 +217,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "(increase(http_server_duration_milliseconds_sum{http_route=~\"$http_route\", http_status_code=\"200\"}[$__rate_interval]) / increase(http_server_duration_milliseconds_count{http_route=~\"$http_route\", http_status_code=\"200\"}[$__rate_interval]))",
+          "expr": "avg by (http_route) ((increase(http_server_duration_milliseconds_sum{http_route=~\"$http_route\", http_status_code=\"200\"}[$__rate_interval]) / increase(http_server_duration_milliseconds_count{http_route=~\"$http_route\", http_status_code=\"200\"}[$__rate_interval])))",
           "instant": false,
           "interval": "",
           "legendFormat": "{{http_route}}",
@@ -224,7 +225,110 @@
           "refId": "A"
         }
       ],
-      "title": "Top 7 Router Server Latencies Over Range ",
+      "title": "Top 7 Router Server Average Latencies Over Range (only http_status=200)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "id": 33,
+      "interval": "5m",
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "logmin",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "8.4.7",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "avg by (http_route, http_status_code) (rate(http_server_duration_milliseconds_count[$__rate_interval]))",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "code=[{{http_status_code}}] - {{http_route}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Router Server Rate Load (code/route) ",
       "type": "timeseries"
     },
     {
@@ -236,7 +340,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 34
       },
       "id": 20,
       "panels": [],
@@ -275,7 +379,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 35
       },
       "id": 26,
       "options": {
@@ -329,7 +433,7 @@
           "refId": "A"
         }
       ],
-      "title": "First token latency",
+      "title": "First token latency (ms)",
       "type": "heatmap"
     },
     {
@@ -356,7 +460,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 35
       },
       "id": 27,
       "options": {
@@ -410,7 +514,7 @@
           "refId": "A"
         }
       ],
-      "title": "Next token latency",
+      "title": "Next token latency (ms)",
       "type": "heatmap"
     },
     {
@@ -437,7 +541,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 43
       },
       "id": 28,
       "options": {
@@ -491,7 +595,7 @@
           "refId": "A"
         }
       ],
-      "title": "All tokens latency",
+      "title": "All tokens latency (ms)",
       "type": "heatmap"
     },
     {
@@ -518,7 +622,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 43
       },
       "id": 29,
       "options": {
@@ -572,7 +676,7 @@
           "refId": "A"
         }
       ],
-      "title": "All tokens latency",
+      "title": "Piepeline latency (ms)",
       "type": "heatmap"
     },
     {
@@ -581,11 +685,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 51
       },
       "id": 24,
       "panels": [],
-      "title": "HTTP Client services - Throughput and Latencies",
+      "title": "HTTP Client services - Throughput and Latencies (filter by \"Service\")",
       "type": "row"
     },
     {
@@ -612,7 +716,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 52
       },
       "id": 30,
       "options": {
@@ -666,7 +770,7 @@
           "refId": "A"
         }
       ],
-      "title": "Client latencies requests histogram (be service)",
+      "title": "Client latencies requests histogram (by service) (ms)",
       "type": "heatmap"
     },
     {
@@ -714,7 +818,7 @@
         "h": 13,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 61
       },
       "id": 2,
       "interval": "5m",
@@ -742,7 +846,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "histogram_quantile(0.95, sum(rate(http_client_duration_milliseconds_bucket{net_peer_name=~\"$service\"}[$__rate_interval])) by (le,net_peer_name))",
+          "expr": "histogram_quantile($percentile, sum(rate(http_client_duration_milliseconds_bucket{net_peer_name=~\"$service\"}[$__rate_interval])) by (le,net_peer_name))",
           "hide": false,
           "interval": "",
           "legendFormat": "{{net_peer_name}}",
@@ -750,7 +854,7 @@
           "refId": "C"
         }
       ],
-      "title": "Top 3x3 - Service Latency - quantile95",
+      "title": "Top 3x3 - Service Latency - percentile$percentile",
       "type": "gauge"
     },
     {
@@ -765,6 +869,7 @@
           },
           "decimals": 2,
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -794,7 +899,7 @@
         "h": 13,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 61
       },
       "id": 4,
       "interval": "5m",
@@ -901,7 +1006,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 74
       },
       "id": 16,
       "interval": "5m",
@@ -910,8 +1015,7 @@
           "calcs": [
             "mean",
             "logmin",
-            "max",
-            "delta"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -942,7 +1046,12 @@
       "type": "timeseries"
     }
   ],
+  "refresh": "",
   "schemaVersion": 39,
+  "tags": [
+    "entrag",
+    "microservices"
+  ],
   "templating": {
     "list": [
       {
@@ -960,15 +1069,16 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(http_client_duration_milliseconds_count,net_peer_name)",
+        "definition": "label_values(http_server_duration_milliseconds_count,http_route)",
         "hide": 0,
         "includeAll": true,
+        "label": "Route (as Server)",
         "multi": true,
-        "name": "service",
+        "name": "http_route",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(http_client_duration_milliseconds_count,net_peer_name)",
+          "query": "label_values(http_server_duration_milliseconds_count,http_route)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -992,15 +1102,16 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(http_server_duration_milliseconds_count,http_route)",
+        "definition": "label_values(http_client_duration_milliseconds_count,net_peer_name)",
         "hide": 0,
         "includeAll": true,
+        "label": "Service (as Client)",
         "multi": true,
-        "name": "http_route",
+        "name": "service",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(http_server_duration_milliseconds_count,http_route)",
+          "query": "label_values(http_client_duration_milliseconds_count,net_peer_name)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -1008,19 +1119,97 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "0.99",
+          "value": "0.99"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Percentile",
+        "multi": false,
+        "name": "percentile",
+        "options": [
+          {
+            "selected": false,
+            "text": "0.50",
+            "value": "0.50"
+          },
+          {
+            "selected": false,
+            "text": "0.95",
+            "value": "0.95"
+          },
+          {
+            "selected": true,
+            "text": "0.99",
+            "value": "0.99"
+          },
+          {
+            "selected": false,
+            "text": "0.999",
+            "value": "0.999"
+          },
+          {
+            "selected": false,
+            "text": "0.9999",
+            "value": "0.9999"
+          },
+          {
+            "selected": false,
+            "text": "0.99999",
+            "value": "0.99999"
+          }
+        ],
+        "query": "0.50, 0.95, 0.99, 0.999, 0.9999, 0.99999",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(http_server_duration_milliseconds_count,http_status_code)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "HTTP status code",
+        "multi": true,
+        "name": "http_status_code",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_server_duration_milliseconds_count,http_status_code)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
-  "refresh": "",
   "time": {
     "from": "now-30m",
     "to": "now-1m"
   },
   "timepicker": {},
   "timezone": "browser",
-  "tags": ["entrag", "microservices"],
   "title": "EnterpriseRAG / Services / GMConnector (router)",
   "uid": "ddusxu5kgjr40e",
-  "version": 6,
+  "version": 2,
   "weekStart": ""
 }

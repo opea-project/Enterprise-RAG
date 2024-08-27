@@ -636,7 +636,7 @@
   "timepicker": {},
   "timezone": "",
   "tags": ["todo", "entrag", "vectordb"],
-  "title": "EnterpriseRAG / VectorDB / Qdrant (TODO)",
+  "title": "EnterpriseRAG / VectorDB / Qdrant (Optional)",
   "version": 1,
   "weekStart": ""
 }

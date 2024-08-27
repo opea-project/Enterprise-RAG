@@ -1247,7 +1247,7 @@
     "timepicker": {},
     "timezone": "browser",
     "tags": ["todo", "entrag", "modelserving"],
-    "title": "EnterpriseRAG / ModelServing / vLLM (TODO)",
+    "title": "EnterpriseRAG / ModelServing / vLLM (Optional)",
     "version": 1,
     "weekStart": ""
   }

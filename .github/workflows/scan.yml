@@ -23,18 +23,25 @@ concurrency:
 
 jobs:
   SDLScans:
-    name: SDL required scan
-    runs-on: [rag-runner]
+    runs-on: [innersource.prod.amr.dind]
+    defaults:
+      run:
+        shell: bash
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
+    name: SDL required
     environment: default
     permissions:
       id-token: write # This is required for requesting the JWT
       contents: read  # This is required for actions/checkout
     steps:
+      - name: Unify workspace path
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      - name: Install packages (sudo, zip, jq)
+        run: apt update && apt -y install sudo zip jq
       - name: Clean Up Working Directory
-        run: sudo rm -rf ${{github.workspace}}/*
-
+        run: sudo rm -rf ${{ env.GITHUB_WORKSPACE }}/*
       - uses: intel-innersource/frameworks.actions.certs@latest
-
       - name: Collect credentials from Conjur
         uses: intel-innersource/frameworks.actions.conjur-fetch@v1
         with:
@@ -42,7 +49,6 @@ jobs:
           secrets: >
             FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/username|CONJUR_SDL_USERNAME;
             FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/password|CONJUR_SDL_PASSWORD
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -56,10 +62,8 @@ jobs:
           else
             echo "submit=false" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Archive repo
         run: zip -r repo.zip repo/* -x ".git/*" ".github/*"
-
       - name: SDLe Scans
         id: compliance
         uses: intel-innersource/frameworks.actions.idf-central-scan@v1
@@ -68,7 +72,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # compilation_scan: ''
           binary: 'repo.zip'
-          output_directory: ${{ github.WORKSPACE }}/scans_results
+          output_directory: ${{ env.GITHUB_WORKSPACE }}/scans_results
           sdle: ${{ steps.submit.outputs.submit || false }}
           logfile: IDF_Scans_Results_${{ github.run_id }}.log
         env:
@@ -80,7 +84,7 @@ jobs:
       - name: Check results
         id: results
         env:
-          SCAN_SUMMARY: ${{ github.WORKSPACE }}/scans_results/results/scan_sumary.json
+          SCAN_SUMMARY: ${{ env.GITHUB_WORKSPACE }}/scans_results/results/scan_sumary.json
         run: |
           if ! [ -f ${SCAN_SUMMARY} ]; then
             echo "Scan summary not found. Try again. If this persists verify BuildConfig.json is correct."
@@ -108,12 +112,12 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: IDF_Scans_Results_${{ github.run_id }}
-          path: ${{ github.WORKSPACE }}/scans_results
+          path: ${{ env.GITHUB_WORKSPACE }}/scans_results
           if-no-files-found: error
           retention-days: 60
 
   bandit:
-    runs-on: [rag-runner]
+    runs-on: [innersource.prod.amr.dind]
     name: Bandit
     container:
       image: cache-registry.caas.intel.com/cache/library/python:slim
@@ -125,7 +129,7 @@ jobs:
         uses: intel-innersource/frameworks.actions.bandit@v1.3
 
   trivy:
-    runs-on: [rag-runner]
+    runs-on: [innersource.prod.amr.dind]
     name: Trivy fs
     steps:
       - name: Checkout code

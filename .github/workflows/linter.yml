@@ -9,7 +9,8 @@ on:
 
 jobs:
   lint:
-    runs-on: [rag-runner]
+    runs-on: [innersource.prod.amr.dind]
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
     if: |
       (github.event_name == 'pull_request_review' && github.event.review.state != 'commented') ||
       (github.event_name == 'pull_request') || (github.event_name == 'push')

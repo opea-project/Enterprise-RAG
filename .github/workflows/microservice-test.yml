@@ -27,13 +27,19 @@ jobs:
       matrix: ${{ fromJSON(needs.job1.outputs.run_matrix) }}
       max-parallel: 4
     runs-on: ${{ matrix.hardware }}
+    defaults:
+      run:
+        shell: bash
     continue-on-error: true
     env:
       REMOTE_GAUDI_HOST: dcgaudicluster1
       REMOTE_WORKSPACE: "/tmp/${{ github.sha }}_${{ matrix.service }}"
     steps:
+      - name: Unify workspace path
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
       - name: Clean Up Working Directory
-        run: sudo rm -rf ${{github.workspace}}/*
+        run: sudo rm -rf ${{ env.GITHUB_WORKSPACE }}/*
 
       - name: Checkout out actions
         uses: actions/checkout@v4
@@ -101,4 +107,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test_${{ matrix.service }}_logs
-          path: ${{ github.workspace }}/logs/*
+          path: ${{ env.GITHUB_WORKSPACE }}/logs/*

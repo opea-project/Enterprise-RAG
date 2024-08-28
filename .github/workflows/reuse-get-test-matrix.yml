@@ -14,7 +14,11 @@ on:
 jobs:
   job1:
     name: Get-test-matrix
-    runs-on: [self-hosted, Linux]
+    runs-on: [innersource.prod.amr.dind]
+    defaults:
+      run:
+        shell: bash
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
     outputs:
       run_matrix: ${{ steps.get-test-matrix.outputs.run_matrix }}
     steps:
@@ -49,7 +53,7 @@ jobs:
           services=$(printf '%s\n' "${changed_files[@]}" | cut -d'/' -f3 | grep -vE '*.py' | sort -u) || true
           run_matrix="{\"include\":["
           for service in ${services}; do
-              hardware="rag-runner" # default hardware, set based on the changed files
+              hardware="innersource.prod.amr.dind" # default hardware, set based on the changed files
               if [[ $(ls src/comps/${service} | grep -E "Dockerfile*|docker*") ]]; then
                   run_matrix="${run_matrix}{\"service\":\"${service}\",\"hardware\":\"${hardware}\"},"
               fi
@@ -70,7 +74,7 @@ jobs:
           # add test for src/comps/dataprep/utils.py
           if [[ "${changed_files[@]}" =~ "src/comps/dataprep/utils.py" ]]; then
               service_list=("dataprep/qdrant" "dataprep/redis/langchain")
-              hardware="rag-runner" # default hardware, set based on the changed files
+              hardware="innersource.prod.amr.dind" # default hardware, set based on the changed files
               for service in ${service_list[@]}; do
                   if [ $(echo ${run_matrix} | grep -c ${service}) == 0 ]; then
                       run_matrix="${run_matrix}{\"service\":\"${service}\",\"hardware\":\"${hardware}\"},"
@@ -85,7 +89,7 @@ jobs:
           test_files=$(printf '%s\n' "${changed_files[@]}" | grep -E "src/tests/test_*" | grep -E "*.sh") || true
           for test_file in ${test_files}; do
               service=$(echo $test_file | cut -d'/' -f3 | cut -d'.' -f1 | cut -c6-)
-              hardware="rag-runner" # default hardware, set based on the changed files
+              hardware="innersource.prod.amr.dind" # default hardware, set based on the changed files
               if [ $(echo ${run_matrix_match} | grep -c ${service}) == 0 ]; then
                   run_matrix="${run_matrix}{\"service\":\"${service}\",\"hardware\":\"${hardware}\"},"
               fi

@@ -83,9 +83,9 @@ class OPEAReranker:
         self.host = os.getenv(
             "RERANKING_HOST", _sanitize(config.get("OPEA_Microservice", "host"))
         )
-        self.port = os.getenv(
+        self.port = int(os.getenv(
             "RERANKING_PORT", config.getint("OPEA_Microservice", "port")
-        )
+        ))
         self.service_url = os.getenv(
             "RERANKING_SERVICE_URL", _sanitize(config.get("Service", "url"))
         )

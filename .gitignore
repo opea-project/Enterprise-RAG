@@ -28,3 +28,6 @@ build/
 
 # Ignore the .vscode directory
 .vscode/
+
+# Tox filex
+.tox

@@ -1,7 +1,7 @@
 ### Microservices tests prerequisites
-Install tox
+Install required prerequisites
 ```
-sudo apt install tox
+sudo apt install tox docker-buildx
 ```
 
 ### How to run the tests

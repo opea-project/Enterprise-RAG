@@ -75,7 +75,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
             "datatype": "BYTES",
             "data": texts
         }]
-        
+
         try:
             responses = self.client.post(
                 json={"inputs": input_data}
@@ -151,7 +151,12 @@ class LangchainEmbedding(EmbeddingWrapper):
             raise ValueError("Invalid model server")
 
         if "model" not in kwargs:
-            kwargs["model"] = self._endpoint
+            if self._model_server == "torchserve":
+                self._endpoint = self._endpoint.rstrip('/')
+                kwargs["model"] = self._endpoint + f"/predictions/{self._model_name.split('/')[-1]}"
+            else:
+                kwargs["model"] = self._endpoint
+
         if self._model_server == "ovms":
             kwargs["model_name"] = self._model_name
 

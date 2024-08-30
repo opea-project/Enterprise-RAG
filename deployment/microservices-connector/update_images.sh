@@ -24,7 +24,7 @@ REGISTRY_NAME=${DEFAULT_REGISTRY}
 do_build=false
 do_push=false
 components_to_build=()
-default_components=("gmcManager" "embedding-usvc" "reranking-usvc" "torcheserve" "retriever-usvc" "llm-uservice")
+default_components=("gmcManager" "embedding-usvc" "reranking-usvc" "torcheserve" "retriever-usvc" "llm-uservice" "in-guard")
 
 
 function help() {
@@ -271,6 +271,14 @@ for component in "${components_to_build[@]}"; do
             build_component $path $dockerfile $image_name $image_tag
             ;;
 
+        in-guard)
+            path="${repo_path}/src"
+            dockerfile="comps/guardrails/llm_guard_scanners/input_scanner/impl/microservice/Dockerfile"
+            image_name=opea/in-guard
+            image_tag=latest
+
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
     esac
 done
 

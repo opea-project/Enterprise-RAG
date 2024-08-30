@@ -81,7 +81,8 @@ fi
 
 
 if [ $# -eq 1 ] && [[ ! "$1" == --* ]]; then
-    echo start_deployment "$1"
+    echo "---> Start deployment"
+    start_deployment "$1"
     exit 0
 fi
 
@@ -95,17 +96,21 @@ while [ $# -gt 0 ]; do
                 help
                 exit 1
             fi
-            echo start_deployment "$1"
+            echo "---> Start deployment"
+            start_deployment "$1"
             ;;
         --test)
-            echo bash ./test_connection.sh
+            echo "---> Test connection"
+            bash ./test_connectin.sh
             ;;
         --telemetry)
-            echo start_telemetry
+            echo "---> Start telemetry"
+            start_telemetry
             ;;
         --clear)
-            echo bash ./clear_cluster.sh
-            echo stop_telemetry
+            echo "---> Clear cluster"
+            bash ./clear_cluster.sh
+            stop_telemetry
             ;;
         --help)
             help

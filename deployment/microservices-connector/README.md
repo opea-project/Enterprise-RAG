@@ -31,6 +31,7 @@ Istio Service Mesh can also be leveraged to facilicate communication between mic
 - installed docker (need to build docker images)
 - installed golang-go (version 1.22.1)
 - installed helm. You can follow the instructions [here](https://helm.sh/docs/intro/install/)
+- installed and configured awscli
 
 #### setup docker
 
@@ -66,101 +67,53 @@ sudo vim ~/.docker/config.json
  
 execute `bash install_go.sh` next `source ~/.profile`
 
-### Introduction
+#### install adn configure aws cli
+execute `apt-get install awscli`
+next execute `aws configure` ,type your AWS credentials set region to us-west-2
 
-There are `2` components in this repo:
+### Quick Start using default images.
 
-- 1. `manager`: controller manager to handle GMC CRD
-- 2. `router`: route the traffic among the microservices defined in GMC
+To simplify deployment process the `run_RAG.sh` script has been created.
 
-#### How to build these binaries?
-
-```sh
-make build
+Put in  [values.yaml](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/blob/main/deployment/microservices-connector/helm/values.yaml) your proxy settings for example:
 ```
+proxy:
+  httpProxy: "http://proxy-dmz.intel.com:911"
+  httpsProxy: "http://proxy-dmz.intel.com:912"
+  noProxy: ".intel.com,intel.com,localhost,127.0.0.1,.svc,.svc.cluster.local"
 
-#### How to build docker images for these 2 components?
-
-```sh
-make docker.build
+tokens:
+  hugToken: "<your HF token>"
 ```
+Make sure you have default folder created for opea models `mkdir /mnt/opea-models` 
 
-#### How to delete these components' binaries?
+Next execute defined pipeline defined in [config/samples](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/blob/main/deployment/microservices-connector/config/samples/) 
 
-```sh
-make clean
-```
+Example command:
+`./run_RAG.sh dataprep_xeon_torch`
 
-### push images to local registry
+In the above case the run should end with having all pods defined in [chatQnA_dataprep_xeon_torch.yaml](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/blob/main/deployment/microservices-connector/config/samples/chatQnA_dataprep_xeon_torch.yaml) in running state.
 
-create local registry:
+### Test the solution:
+You can run `./test_connecton.sh` script to test the check if chatqna pipeline is functional. The reply should provide you the output for test question defined the script.
 
-```sh
-docker run -d -p 5000:5000 --name local-registry registry:2
-```
+### Build your own images and push them to your registry. 
 
-next build images and push to local registry:
-
-```sh
-bash update_images.sh
-```
-
-### prepare manifests
-
-Before running the excution we need to update values in manifests 
-```sh
-bash set_envs.sh <your HF token>
-```
-### executing helm chart
-
-This helm chart will install the following components of GMC:
-
-- GMC CRD
-- GenAI Components and GMC Router manifests
-- GMC Manager
-
-**NOTE: Because helm doesn't support updating/deleting CRD, you need to manually delete the CRD before upgrading the GMC helm chart.**
-
-**NOTE:**
-before apply the manifests, please replace your own huggingface tokens in the manifests
-
-**NOTE:**
-GMC manager, GenAI components and GMC router manifests are deployed in any namespace. Here we use `system` as an examep:
-
-```console
-helm install -n system --create-namespace gmc helm
-```
-
-## Check the installation result
-
-Run the command `kubectl get pod -n system` to make sure all pods are running:
+There is a script `update_images.sh` that allows to:
+1. build defined images from source
+2. push images to user defined registry
+Run `./update_images.sh --help` to get detail information.
 
 ```
-NAME                            READY   STATUS    RESTARTS   AGE
-gmc-contoller-8bcb9d469-l6fsj   1/1     Running   0          55s
+root@node1:/home/sdp/applications.ai.enterprise-rag.enterprise-ai-solution/deployment/microservices-connector# ./update_images.sh --help
+Usage: ./update_images.sh [OPTIONS] [COMPONENTS...]
+Options:
+        --build: Build specified components.
+        --push: Push specified components to the registry.
+        --no-build: Don't build specified components. (latest specified will be used)
+        --no-push: Don't push specified components to the registry. (latest specified will be used)
+        --registry: Specify the registry (default is aws, use localhost to setup local registry at p5000).
+Components available: (default as all)
+         gmcManager embedding-usvc reranking-usvc torcheserve retriever-usvc llm-uservice in-guard
+Example: ./update_images.sh --build --push --registry my-registry embedding-usvc reranking-usvc
 ```
-
-## Next step
-
-After the GMC is installed, you can follow the [GMC user guide](../usage_guide.md) for sample use cases.
-
-## Uninstall
-
-**Delete the instances (CRs) from the cluster if you have ever deployed the instances from GMC user guide:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**UnDeploy the GMC manager and GenAI components and GMC router manifest from the cluster:**
-
-```sh
-helm delete -n system gmc
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-kubectl delete crd gmconnectors.gmc.opea.io
-```
-

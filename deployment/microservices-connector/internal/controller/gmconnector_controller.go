@@ -239,11 +239,11 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "TEI_RERANKING_ENDPOINT" ||
 		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
-		// keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||  // values are currently hardcoded embedding need fix for proper endpoint
+		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
 		keyname == "REDIS_URL" ||
 		keyname == "ASR_ENDPOINT" ||
-		keyname == "TTS_ENDPOINT" /*|| hardcode
-		keyname == "TEI_ENDPOINT" */
+		keyname == "TTS_ENDPOINT" ||
+		keyname == "TEI_ENDPOINT"
 }
 
 func findDownStreamService(dsName string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv1alpha3.Router) *mcv1alpha3.Step {

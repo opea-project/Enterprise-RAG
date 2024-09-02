@@ -172,10 +172,7 @@ def register_microservice(
             provider_endpoint=provider_endpoint,
         )
 
-        if service_type == ServiceType.LLM:
-            micro_service.app.router.add_api_route(endpoint, func, methods=["POST"], response_model=None)
-        else:
-            micro_service.app.router.add_api_route(endpoint, func, methods=["POST"])
+        micro_service.app.router.add_api_route(endpoint, func, methods=["POST"])
 
         opea_microservices[name] = micro_service
         return func

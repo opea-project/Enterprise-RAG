@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from fastapi.responses import StreamingResponse
+
+from fastapi.responses import Response
 from langsmith import traceable
-from typing import Union
 
 from comps import (
-    GeneratedDoc,
     LLMParamsDoc,
     MegaServiceEndpoint,
     ServiceType,
@@ -31,11 +30,11 @@ opea_llm = OPEALlm(config_file=config_file)
     host=opea_llm.host,
     port=opea_llm.port,
     input_datatype=LLMParamsDoc,
-    output_datatype=(Union[GeneratedDoc, StreamingResponse]),
+    output_datatype=Response, # can be either "comps.GeneratedDoc" for non-streaming mode, or "fastapi.responses.StreamingResponse" for streaming mode 
 )
 @register_statistics(names=[opea_llm.name])
 @traceable(run_type="llm")
-def process(input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+def process(input: LLMParamsDoc) -> Response:
     return opea_llm.run(input)
 
 if __name__ == "__main__":

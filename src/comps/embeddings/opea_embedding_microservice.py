@@ -1,21 +1,28 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from fastapi import HTTPException
+import os
 import time
-from utils import opea_embedding
+
+from fastapi import HTTPException
+
 from comps import (
     EmbedDoc,
     ServiceType,
     MegaServiceEndpoint,
     TextDoc,
+    change_opea_logger_level,
+    get_opea_logger,
     opea_microservices,
     register_microservice,
     register_statistics,
     statistics_dict,
 )
-import logging
-import os
+
+from utils import opea_embedding
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 # TODO: Find common way of starting the refactored microservices
 def start_embedding_service(opea_embedding: opea_embedding.OPEAEmbedding, opea_microservice_name: str):
@@ -47,7 +54,11 @@ def start_embedding_service(opea_embedding: opea_embedding.OPEAEmbedding, opea_m
 
     opea_microservices[opea_microservice_name].start()
 
+
 if __name__ == "__main__":
+    log_level = os.getenv("OPEA_LOGGER_LEVEL", "INFO")
+    change_opea_logger_level(logger, log_level)
+
     embedding = opea_embedding.OPEAEmbedding(
         model_name=os.getenv("EMBEDDING_MODEL_NAME", "bge-large-en-v1.5"),
         model_server=os.getenv("EMBEDDING_MODEL_SERVER", "tei"),
@@ -57,4 +68,4 @@ if __name__ == "__main__":
 
     opea_microservice_name = "opea_service@opea_embedding"
     start_embedding_service(embedding, opea_microservice_name)
-    logging.info(f"Started OPEA embedding microservice: {opea_microservice_name}")
+    logger.info(f"Started OPEA embedding microservice: {opea_microservice_name}")

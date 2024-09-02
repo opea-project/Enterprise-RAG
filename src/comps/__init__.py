@@ -3,6 +3,34 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# Statistics
+from comps.cores.mega.base_statistics import register_statistics, statistics_dict
+
+# Constants
+from comps.cores.mega.constants import MegaServiceEndpoint, ServiceRoleType, ServiceType
+from comps.cores.mega.gateway import (
+    AudioQnAGateway,
+    ChatQnAGateway,
+    CodeGenGateway,
+    CodeTransGateway,
+    DocSumGateway,
+    FaqGenGateway,
+    Gateway,
+    SearchQnAGateway,
+    TranslationGateway,
+)
+
+# Logger
+from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
+from comps.cores.mega.micro_service import (
+    MicroService,
+    opea_microservices,
+    register_microservice,
+)
+
+# Microservice
+from comps.cores.mega.orchestrator import ServiceOrchestrator
+from comps.cores.mega.orchestrator_with_yaml import ServiceOrchestratorWithYaml
 # Document
 from comps.cores.proto.docarray import (
     Audio2TextDoc,
@@ -10,37 +38,15 @@ from comps.cores.proto.docarray import (
     DocPath,
     EmbedDoc,
     GeneratedDoc,
+    GraphDoc,
     LLMParamsDoc,
-    SearchedDoc,
-    RerankedDoc,
-    TextDoc,
+    LVMDoc,
     RAGASParams,
     RAGASScores,
-    GraphDoc,
-    LVMDoc,
-)
-
-# Constants
-from comps.cores.mega.constants import MegaServiceEndpoint, ServiceRoleType, ServiceType
-
-# Microservice
-from comps.cores.mega.orchestrator import ServiceOrchestrator
-from comps.cores.mega.orchestrator_with_yaml import ServiceOrchestratorWithYaml
-from comps.cores.mega.micro_service import MicroService, register_microservice, opea_microservices
-from comps.cores.mega.gateway import (
-    Gateway,
-    ChatQnAGateway,
-    CodeGenGateway,
-    CodeTransGateway,
-    DocSumGateway,
-    TranslationGateway,
-    SearchQnAGateway,
-    AudioQnAGateway,
-    FaqGenGateway,
+    RerankedDoc,
+    SearchedDoc,
+    TextDoc,
 )
 
 # Telemetry
 from comps.cores.telemetry.opea_telemetry import opea_telemetry
-
-# Statistics
-from comps.cores.mega.base_statistics import statistics_dict, register_statistics

@@ -1,12 +1,16 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import os
 import re
 from typing import List, Optional
 from docarray import BaseDoc
 from abc import ABC,abstractmethod
+
+from comps import get_opea_logger
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 class EmbeddingWrapper(ABC):
     """
@@ -42,7 +46,7 @@ class EmbeddingWrapper(ABC):
         sanitized_value = re.sub(r'[^\w\-]', '', value)
         return sanitized_value
 
-    # TODO: Add additional env checks. Move to separate function available to other microservices. 
+    # TODO: Add additional env checks. Move to separate function available to other microservices.
     def _set_api_config(self, api_config: dict) -> None:
         """
         Sets the API configuration.
@@ -57,10 +61,10 @@ class EmbeddingWrapper(ABC):
                 try:
                     os.environ[sanitized_key] = sanitized_value
                 except Exception as e:
-                    logging.error(f"Error setting environment variable {sanitized_key}: {e}")
+                    logger.exception(f"Error setting environment variable {sanitized_key}: {e}")
                     raise
             else:
-                logging.warning(f"Invalid configuration for {key}: {value}")
+                logger.warning(f"Invalid configuration for {key}: {value}")
 
     @abstractmethod
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -97,12 +101,12 @@ class EmbeddingWrapper(ABC):
         """
         try:
             self.embed_query("test")
-            logging.debug("Embedder initialized successfully.")
+            logger.info("Embedder initialized successfully.")
         except RuntimeError as e:
-            logging.error(f"Error initializing the embedder: {e}")
+            logger.exception(f"Error initializing the embedder: {e}")
             raise
         except Exception as e:
-            logging.error(f"An unexpected error occurred: {e}")
+            logger.exception(f"An unexpected error occurred: {e}")
             raise
 
     @abstractmethod

@@ -1,17 +1,20 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import json
 from typing import List, Optional
 from docarray import BaseDoc
 from langchain_core.embeddings import Embeddings
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
+from comps import get_opea_logger
 from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
 
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
+
 def texts_to_single_line(texts: List[str]) -> List[str]:
-    return [text.replace("\n", " ") for text in texts] 
+    return [text.replace("\n", " ") for text in texts]
 
 class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -22,7 +25,7 @@ class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
             )
             return json.loads(responses.decode())["embedding"]
         except Exception as e:
-            logging.error(f"Error embedding documents: {e}")
+            logger.exception(f"Error embedding documents: {e}")
             raise
 
 class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
@@ -59,12 +62,12 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
             self.client = InferenceClient(
                     model=f"{url}/infer",
                 )
-        except ImportError as e: 
+        except ImportError as e:
             error_message =  "Could not import huggingface_hub python package.\n" \
                              "Please install it with `pip install huggingface_hub`.\n"  \
                              f"Error: {e}"
-            logging.error(error_message)
-            raise ImportError(error_message)
+            logger.exception(error_message)
+            raise
 
         input_name = self.get_input_name(url)
 
@@ -86,7 +89,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
                 if embeddings:
                     return [embeddings]
         except Exception as e:
-            logging.error(f"Error embedding documents: {e}")
+            logger.exception(f"Error embedding documents: {e}")
             raise
 
         return []
@@ -120,9 +123,9 @@ class LangchainEmbedding(EmbeddingWrapper):
             cls._instance = super(LangchainEmbedding, cls).__new__(cls)
             cls._instance._initialize(model_name, model_server, endpoint, api_config)
         else:
-            if (cls._instance._model_name != model_name or 
+            if (cls._instance._model_name != model_name or
                 cls._instance._model_server != model_server):
-                logging.warning(f"Existing LangchainEmbedding instance has different parameters: "
+                logger.warning(f"Existing LangchainEmbedding instance has different parameters: "
                               f"{cls._instance._model_name} != {model_name}, "
                               f"{cls._instance._model_server} != {model_server}, "
                               "Proceeding with the existing instance.")
@@ -148,6 +151,7 @@ class LangchainEmbedding(EmbeddingWrapper):
             ValueError: If the model server is invalid.
         """
         if self._model_server not in SUPPORTED_INTEGRATIONS:
+            logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
             raise ValueError("Invalid model server")
 
         if "model" not in kwargs:

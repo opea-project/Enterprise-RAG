@@ -3,8 +3,8 @@ Run `pytest --disable-warnings --cov=comps/reranks/utils --cov-report=term --cov
 """
 
 import subprocess  # nosec B404
-
 import unittest
+
 from comps.reranks.utils import prompt
 
 

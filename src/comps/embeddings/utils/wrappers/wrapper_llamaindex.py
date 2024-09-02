@@ -1,17 +1,20 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from typing import List, Optional
 from docarray import BaseDoc
 from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
 from llama_index.core.base.embeddings.base import BaseEmbedding
 
+from comps import get_opea_logger
 from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
 
 SUPPORTED_INTEGRATIONS = {
     "tei": TextEmbeddingsInference,
 }
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 class LlamaIndexEmbedding(EmbeddingWrapper):
     """
@@ -45,9 +48,9 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
             cls._instance = super(LlamaIndexEmbedding, cls).__new__(cls)
             cls._instance._initialize(model_name, model_server, endpoint, api_config)
         else:
-            if (cls._instance._model_name != model_name or 
+            if (cls._instance._model_name != model_name or
                 cls._instance._model_server != model_server):
-                logging.warning(f"Existing LlamaIndexEmbedding instance has different parameters: "
+                logger.warning(f"Existing LlamaIndexEmbedding instance has different parameters: "
                               f"{cls._instance._model_name} != {model_name}, "
                               f"{cls._instance._model_server} != {model_server}, "
                               "Proceeding with the existing instance.")
@@ -70,6 +73,10 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
             BaseEmbedding: An instance of the selected embedder.
 
         """
+        if self._model_server not in SUPPORTED_INTEGRATIONS:
+            logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
+            raise ValueError("Invalid model server")
+
         return SUPPORTED_INTEGRATIONS[self._model_server](model_name=self._model_name, base_url=self._endpoint, **kwargs)
 
     def embed_documents(self, input_text: List[str]) -> List[List[float]]:

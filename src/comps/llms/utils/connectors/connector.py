@@ -1,14 +1,17 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from abc import ABC,abstractmethod
 from comps import (
     GeneratedDoc,
     LLMParamsDoc,
+    get_opea_logger
 )
 from typing import Union
 from fastapi.responses import StreamingResponse
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 class LLMConnector(ABC):
     def __init__(self, model_name: str, model_server: str, endpoint: str):
@@ -24,23 +27,24 @@ class LLMConnector(ABC):
             None
         """
         self._model_name = model_name
-        self._endpoint = endpoint
         self._model_server = model_server
+        self._endpoint = endpoint
 
     @abstractmethod
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+        logger.error("generate method in LLMConnector is abstract.")
         raise NotImplementedError
 
     def _validate(self) -> None:
         try:
             test_input = LLMParamsDoc(query="test")
             self.generate(test_input)
-            logging.debug("LLM initialized successfully.")
+            logger.debug("Validation completed. LLM initialized successfully.")
         except RuntimeError as e:
-            logging.error(f"Error initializing the LLM: {e}")
+            logger.exception(f"Error initializing the LLM: {e}")
             raise
         except Exception as e:
-            logging.error(f"An unexpected error occurred: {e}")
+            logger.exception(f"An unexpected error occurred: {e}")
             raise
 
     @abstractmethod
@@ -50,4 +54,5 @@ class LLMConnector(ABC):
         Args:
             **kwargs: The new configuration parameters.
         """
+        logger.error("change_configuration method in LLMConnector is abstract.")
         raise NotImplementedError

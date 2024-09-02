@@ -5,7 +5,7 @@ import abc
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Dict, Optional
 
-from .logger import CustomLogger
+from .logger import get_opea_logger
 
 __all__ = ["BaseService"]
 
@@ -25,7 +25,7 @@ class BaseService:
         self._process_runtime_args()
         self.title = self.runtime_args.title
         self.description = self.runtime_args.description
-        self.logger = CustomLogger(self.name)
+        self.logger = get_opea_logger(self.name)
         self.server = None
 
     def _process_runtime_args(self):

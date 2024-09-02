@@ -1,11 +1,13 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
-from typing import Optional
 from llm_guard import scan_prompt
 from llm_guard.input_scanners import BanSubstrings, InvisibleText, Regex
 from fastapi import HTTPException
+
+from comps import get_opea_logger
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 # Documentation for input scanners https://llm-guard.com/input_scanners/anonymize/
 
@@ -27,7 +29,7 @@ class LLMGuardInputScanner:
             for scanner in config:
                 self._scanners.append(INPUT_SCANNERS[scanner])
         except Exception as e:
-            logging.error(f"An unexpected error occured during initializing LLM Guard input scanners: {e}")
+            logger.exception(f"An unexpected error occured during initializing LLM Guard input scanners: {e}")
             raise
 
 
@@ -43,12 +45,11 @@ class LLMGuardInputScanner:
             sanitized_prompt, results_valid, results_score = scan_prompt(self._scanners, prompt)
             if False in results_valid.values():
                 msg = f"Prompt {prompt} is not valid, scores: {results_score}"
-                logging.error(f"{msg}")
+                logger.error(f"{msg}")
                 raise HTTPException(status_code=400, detail=f"{msg}")
-
             return sanitized_prompt
         except Exception as e:
-            logging.error(f"An unexpected error occured during scanning prompt with LLM Guard input scanners: {e}")
+            logger.exception(f"An unexpected error occured during scanning prompt with LLM Guard input scanners: {e}")
             raise
 
 

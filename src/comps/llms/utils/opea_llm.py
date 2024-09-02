@@ -1,14 +1,16 @@
 import configparser
-import logging
 import os
-import sys
+from typing import Optional, Union
+
 from fastapi.responses import StreamingResponse
 
 from comps import (
-    LLMParamsDoc,
     GeneratedDoc,
+    LLMParamsDoc,
+    get_opea_logger
 )
-from typing import Optional, Union
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class OPEALlm:
@@ -29,29 +31,22 @@ class OPEALlm:
         self._model_server: str
         self._framework: Optional[str] = None
         self._model_server_endpoint: str
-        self._log_level: str
-        self._log_path: str
-        self._logger: logging.Logger
 
         self._load_config()
-        self._setup_logging()
         self._validate_config()
         self._connector = self._get_connector()
 
-        self._logger.info(
-            f"OPEA LLM Microservice has been successfully initialized and is running on {self.host}:{self.port}"
-        )
-        self._logger.info(
+        logger.info(
             f"OPEA LLM Microservice is configured to send requests to service {self._model_server_endpoint}"
         )
 
     def _get_connector(self):
         if self._framework == "langchain":
             from comps.llms.utils.connectors.wrappers import wrapper_langchain
-            return wrapper_langchain.LangchainLLMConnector(self._model_name, self._model_server_endpoint, self._model_server)
+            return wrapper_langchain.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
         else:
             from comps.llms.utils.connectors import generic
-            return generic.GenericLLMConnector(self._model_name, self._model_server_endpoint, self._model_server)
+            return generic.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
 
     def _load_config(self):
         """
@@ -94,50 +89,6 @@ class OPEALlm:
             "FRAMEWORK", _sanitize(config.get("Model", "framework"))
         )
 
-        # Logging
-        self._log_level = os.getenv(
-            "LLM_LOG_LEVEL", config.get("Logging", "log_level")
-        )
-        self._log_path = os.getenv(
-            "LLM_LOG_PATH", config.get("Logging", "log_path")
-        )
-
-    def _setup_logging(self):
-        """Configure the logger based on the log level and log path."""
-        log_level = getattr(logging, self._log_level.upper(), logging.INFO)
-        log_dir = os.path.dirname(self._log_path)
-        try:
-            # ensure the log directory exists and is writable
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-            elif not os.access(log_dir, os.W_OK):
-                raise PermissionError(
-                    f"No write permission for the directory '{log_dir}'"
-                )
-        except (PermissionError, OSError) as e:
-            print(f"Failed to create or access the directory '{log_dir}': {e}")
-            raise PermissionError(
-                f"Failed to create or access the directory '{log_dir}': {e}"
-            )
-
-        # Define the log format string
-        log_format = "[%(asctime)-15s] [%(levelname)8s] [%(name)s] - %(message)s"
-
-        # Basic logging configuration
-        logging.basicConfig(
-            level=log_level,
-            format=log_format,
-            handlers=[logging.StreamHandler(sys.stdout)],
-        )
-        # Get the logger instance for this class
-        self._logger = logging.getLogger(self.__class__.__name__)
-
-        # Create a file handler
-        file_handler = logging.FileHandler(self._log_path)
-        file_handler.setFormatter(logging.Formatter(log_format))
-        file_handler.setLevel(log_level)
-        self._logger.addHandler(file_handler)
-
     def _validate_config(self):
         """Validate the configuration values."""
         try:
@@ -145,13 +96,8 @@ class OPEALlm:
                 raise ValueError("The 'model_name' cannot be empty.")
             if not self._model_server_endpoint:
                 raise ValueError("The 'model_server_endpoint' cannot be empty.")
-            if self._log_level.upper() not in logging._nameToLevel:
-                raise ValueError(
-                    f"The 'log_level' must be one of {list(logging._nameToLevel.keys())}."
-                )
-
-        except Exception as err:
-            self._logger.error(f"Configuration validation error: {err}")
+        except Exception as e:
+            logger.exception(f"Configuration validation error: {e}")
             raise
 
     def run(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:

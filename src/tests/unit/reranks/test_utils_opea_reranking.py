@@ -1,11 +1,8 @@
-import logging
-import os
-import sys
-import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
 import requests
+
 from comps import (
     SearchedDoc,
     TextDoc,
@@ -26,21 +23,7 @@ If you don't know the answer to a question, please don't share false information
 """.strip()
 
 
-# Set up a custom logger for testing purposes.
-# This logger is configured to output logs to stdout only
-def mock_setup_logging(self):
-    self.logger = logging.getLogger(self.name)
-    self.logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    self.logger.addHandler(handler)
-
-
 class TestOPEARerankerSetup(unittest.TestCase):
-    @patch(
-        "comps.reranks.utils.opea_reranking.OPEAReranker._setup_logging",
-        new=mock_setup_logging,
-    )
     def test_init_with_defaults(self):
         """
         Test the setup method of the OPEAReranker class with default configuration.
@@ -50,7 +33,6 @@ class TestOPEARerankerSetup(unittest.TestCase):
 
         Args:
             self: The test case instance.
-            mock_setup_logging: The mock object for the _setup_logging method.
 
         Raises:
             AssertionError: If any of the assertions fail.
@@ -97,18 +79,13 @@ class TestOPEARerankerSetup(unittest.TestCase):
             "RERANKING_SERVICE_URL": "test_url_env:6061/api/v2",
         },
     )
-    @patch(
-        "comps.reranks.utils.opea_reranking.OPEAReranker._setup_logging",
-        new=mock_setup_logging,
-    )
+
     def test_init_with_env_vars(self):
         """
         Test case to verify the setup method when environment variables are used.
 
         This test case checks if the attributes of the test_class object are correctly set
         from the environment variables.
-        Args:
-            mock_setup_logging: A mock object for the setup_logging method.
 
         Returns:
             None
@@ -147,8 +124,6 @@ class TestOPEARerankerValidateConfig(unittest.TestCase):
         self.test_class.host = "test_host"
         self.test_class.port = 1234
         self.test_class.service_url = "test_url:6060/api"
-        self.test_class.log_level = "DEBUG"
-        self.test_class.logger = MagicMock()
 
         # when all config values are provided correctly
         try:
@@ -185,92 +160,7 @@ class TestOPEARerankerValidateConfig(unittest.TestCase):
 
         self.test_class.service_url = "test_url:6060/api"
 
-        # test log levels
-        valid_log_levels = ["DEBUG", "info", "Warning", "Warn", "ERRor", "CRITICAL"]
-        invalid_log_levels = ["INVALID", "ANOTHER_INVALID", "123"]
 
-        # Test valid log levels
-        for level in valid_log_levels:
-            self.test_class.log_level = level
-            try:
-                self.test_class._validate_config()
-            except Exception as e:
-                self.fail(
-                    f"_validate_config raised {type(e)} unexpectedly for log level {level}!"
-                )
-
-        # Test invalid log levels
-        for level in invalid_log_levels:
-            self.test_class.log_level = level
-            with self.assertRaises(ValueError) as context:
-                self.test_class._validate_config()
-            assert (
-                str(context.exception)
-                == f"The 'log_level' must be one of {list(logging._nameToLevel.keys())}."
-            )
-
-
-class TestOPEARerankerLogger(unittest.TestCase):
-    def setUp(self):
-        # self.test_class = opea_reranking.OPEAReranker()
-        self.test_class = opea_reranking.OPEAReranker.__new__(
-            opea_reranking.OPEAReranker
-        )
-        self.test_class.name = "test_name@opea_service"
-        self.test_class.log_path = "/path/to/reranker.log"
-        self.test_class.log_level = "WARNING"
-
-    @patch("os.makedirs", side_effect=PermissionError("Permission denied"))
-    def test_setup_logging_permission_denied_on_folder_creation(self, mock_makedirs):
-        with self.assertRaises(PermissionError) as context:
-            self.test_class._setup_logging()
-
-        assert str(context.exception).startswith(
-            "Failed to create or access the directory"
-        ), "Permission denied error should be raised"
-
-    @patch("os.access", side_effect=os.R_OK)
-    def test_setup_logging_read_only_access(self, mock_access):
-        # Call the _setup_logging method
-        with self.assertRaises(PermissionError) as context:
-            self.test_class._setup_logging()
-
-        assert str(context.exception).startswith(
-            "Failed to create or access the directory"
-        ), "Permission denied error should be raised"
-
-    def test_setup_logging_succesfully(self):
-        # Create a temporary log file
-        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-            self.test_class.log_path = temp_file.name
-            self.test_class._setup_logging()
-
-            # Check if the logger has the correct handler
-            self.assertIsInstance(
-                self.test_class.logger.handlers[0], logging.FileHandler
-            )
-            self.assertEqual(
-                self.test_class.logger.handlers[0].baseFilename,
-                self.test_class.log_path,
-            )
-
-            # Log a message
-            self.test_class.logger.warning("Test message")
-
-            # Check if the log file is created and contains the log message
-            self.assertTrue(os.path.exists(self.test_class.log_path))
-            with open(self.test_class.log_path, "r") as log_file:
-                log_content = log_file.read()
-
-                self.assertIn(
-                    f"[ WARNING] [{self.test_class.name}] - Test message\n", log_content
-                )
-
-
-@patch(
-    "comps.reranks.utils.opea_reranking.OPEAReranker._setup_logging",
-    new=mock_setup_logging,
-)
 @patch.dict(
     "comps.reranks.utils.opea_reranking.statistics_dict",
     {"opea_service@reranking": MagicMock()},

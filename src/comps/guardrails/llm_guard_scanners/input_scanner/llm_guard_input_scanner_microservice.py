@@ -1,19 +1,25 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 import time
-from comps.guardrails.llm_guard_scanners.input_scanner.utils import llm_guard_input_scanner
 
 from comps import (
     LLMParamsDoc,
     ServiceType,
     MegaServiceEndpoint,
+    change_opea_logger_level,
+    get_opea_logger,
     opea_microservices,
     register_microservice,
     register_statistics,
     statistics_dict,
 )
-import logging
+
+from comps.guardrails.llm_guard_scanners.input_scanner.utils import llm_guard_input_scanner
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 def start_llm_guard_input_scanner_service(llm_guard_input_scanner: llm_guard_input_scanner.LLMGuardInputScanner, opea_microservice_name: str):
     """Create the embedding service with the given LLM Guard input scanner.
@@ -42,11 +48,16 @@ def start_llm_guard_input_scanner_service(llm_guard_input_scanner: llm_guard_inp
 
     opea_microservices[opea_microservice_name].start()
 
+
 if __name__ == "__main__":
+    log_level = os.getenv("OPEA_LOGGER_LEVEL", "INFO")
+    change_opea_logger_level(logger, log_level)
+
     try:
+        logger.info("Initializing LLMGuardInputScanner")
         config = ['BanSubstrings', 'InvisibleText', 'Regex'] #TODO: make config configurable through k8s // config.ini
         input_scanner = llm_guard_input_scanner.LLMGuardInputScanner(config)
         opea_microservice_name = "opea_service@llm_guard_input_scanner"
         start_llm_guard_input_scanner_service(input_scanner, opea_microservice_name)
     except Exception as e:
-        logging.exception(f"Error initializing LLMGuardInputScanner: {e}")
+        logger.exception(f"Error initializing LLMGuardInputScanner: {e}")

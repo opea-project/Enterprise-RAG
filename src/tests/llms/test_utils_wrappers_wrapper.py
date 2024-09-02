@@ -5,6 +5,7 @@
 Run `pytest --disable-warnings --cov=comps/llms/utils --cov-report=term --cov-report=html tests/llms` to execute unit test with coverage report.
 """
 
+# FIXME: unit tests not working after rewriting Tomek's code
 import unittest
 from unittest.mock import MagicMock, patch
 from comps.llms.utils.wrappers.wrapper import OPEALlm

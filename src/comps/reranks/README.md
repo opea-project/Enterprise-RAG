@@ -92,9 +92,9 @@ Depending on the model server you want to use for obtaining scores, follow the a
 
 Support for specific ranking model servers with Dockerfiles or build instruction.
 
-| Model server name               |  Status   | 
-| ---------------------------     | --------- | 
-| [TEI](./impl/model_server/tei/) | &#x2713;  | 
+| Model server name               |  Status   |
+| ---------------------------     | --------- |
+| [TEI](./impl/model_server/tei/) | &#x2713;  |
 | OVMS                            | &#x2717;  |
 
 

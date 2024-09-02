@@ -1,14 +1,13 @@
 import configparser
 import heapq
 import json
-import logging
 import os
-import sys
 import time
 from typing import List, TypedDict
 
 import requests
 from comps import (
+    get_opea_logger,
     LLMParamsDoc,
     SearchedDoc,
     TextDoc,
@@ -23,6 +22,8 @@ class RerankScoreItem(TypedDict):
     score: float
 
 RerankScoreResponse = List[RerankScoreItem]
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class OPEAReranker:
@@ -46,18 +47,12 @@ class OPEAReranker:
         self.host = str
         self.port = int
         self.service_url: str
-        self.log_level: str
-        self.log_path: str
-        self.logger: logging.Logger
 
         self._load_config()
-        self._setup_logging()
         self._validate_config()
-        self.logger.info(
-            f"Reranker has been successfully initialized and is running on {self.host}:{self.port}"
-        )
-        self.logger.info(
-            f"Reranker is configured to send requests to service {self.service_url}"
+        # TODO: add validate for model server
+        logger.info(
+            f"Reranker model server is configured to send requests to service {self.service_url}"
         )
 
     def _load_config(self):
@@ -89,49 +84,6 @@ class OPEAReranker:
         self.service_url = os.getenv(
             "RERANKING_SERVICE_URL", _sanitize(config.get("Service", "url"))
         )
-        # logging
-        self.log_level = os.getenv(
-            "RERANKING_LOG_LEVEL", config.get("Logging", "log_level")
-        )
-        self.log_path = os.getenv(
-            "RERANKING_LOG_PATH", config.get("Logging", "log_path")
-        )
-
-    def _setup_logging(self):
-        """Configure the logger based on the log level and log path."""
-        log_level = getattr(logging, self.log_level.upper(), logging.INFO)
-        log_dir = os.path.dirname(self.log_path)
-        try:
-            # ensure the log directory exists and is writable
-            if not os.path.exists(log_dir):
-                os.makedirs(log_dir)
-            elif not os.access(log_dir, os.W_OK):
-                raise PermissionError(
-                    f"No write permission for the directory '{log_dir}'"
-                )
-        except (PermissionError, OSError) as e:
-            print(f"Failed to create or access the directory '{log_dir}': {e}")
-            raise PermissionError(
-                f"Failed to create or access the directory '{log_dir}': {e}"
-            )
-
-        # Define the log format string
-        log_format = "[%(asctime)-15s] [%(levelname)8s] [%(name)s] - %(message)s"
-
-        # Basic logging configuration
-        logging.basicConfig(
-            level=log_level,
-            format=log_format,
-            handlers=[logging.StreamHandler(sys.stdout)],
-        )
-        # Get the logger instance for this class
-        self.logger = logging.getLogger(self.name)
-
-        # Create a file handler
-        file_handler = logging.FileHandler(self.log_path)
-        file_handler.setFormatter(logging.Formatter(log_format))
-        file_handler.setLevel(log_level)
-        self.logger.addHandler(file_handler)
 
     def _validate_config(self):
         """Validate the configuration values."""
@@ -144,13 +96,8 @@ class OPEAReranker:
                 raise ValueError("The 'port' is required.")
             if not self.service_url:
                 raise ValueError("The 'service_url' cannot be empty.")
-            if self.log_level.upper() not in logging._nameToLevel:
-                raise ValueError(
-                    f"The 'log_level' must be one of {list(logging._nameToLevel.keys())}."
-                )
-
         except Exception as err:
-            self.logger.error(f"Configuration validation error: {err}")
+            logger.error(f"Configuration validation error: {err}")
             raise
 
     def run(self, input: SearchedDoc) -> LLMParamsDoc:
@@ -170,7 +117,7 @@ class OPEAReranker:
 
         # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
         if not input.initial_query.strip():
-            self.logger.error("No initial query provided.")
+            logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
 
         # Check if retrieved_docs is not empty and all documents have non-empty 'text' fields
@@ -183,23 +130,23 @@ class OPEAReranker:
                 best_response_list = self._filter_top_n(input.top_n, response_data)
             except Exception as e:
                 best_response_list = [] # Set to empty if no scores are available.
-                self.logger.error(f"Error during request to reranking service: {e}")
-                self.logger.warning(
+                logger.error(f"Error during request to reranking service: {e}")
+                logger.warning(
                     "No scores available to select top documents. Proceeding with all retrieved documents by default."
                 )
-                
+
             query = self._generate_query(
                 input.initial_query, input.retrieved_docs, best_response_list, prompt
             )
 
         else:
-            self.logger.warning(
+            logger.warning(
                 "No retrieved documents found. Using the initial query."
             )
             query = input.initial_query.strip() # Just pass the initial query to the LLM
 
         latency_sec = time.time() - start
-        self.logger.debug(f"Operation latency: {latency_sec} seconds")
+        logger.debug(f"Operation latency: {round(latency_sec, 4)} seconds")
         statistics_dict[self.name].append_latency(latency_sec, None)
         return LLMParamsDoc(query=query)
 
@@ -234,7 +181,7 @@ class OPEAReranker:
                 response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
                 return response.json()
             except requests.exceptions.RequestException as e:
-                self.logger.error(
+                logger.error(
                     f"Error during request to the service (attempt {attempt + 1}): {e}"
                 )
                 time.sleep(3)  # Wait for 3 second before the next attempt

@@ -29,5 +29,8 @@ build/
 # Ignore the .vscode directory
 .vscode/
 
+# Super-Linter output directory
+super-linter-output/
+
 # Tox filex
 .tox

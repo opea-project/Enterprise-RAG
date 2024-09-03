@@ -1,0 +1,16 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#chat-conversation-feed {
+  overflow-y: auto;
+  display: flex;
+  flex: 2;
+  flex-direction: column;
+  justify-content: flex-end;
+  scrollbar-width: thin;
+  margin-bottom: 1rem;
+}
+
+.conversation-welcome-message {
+  padding-inline: 0.75rem;
+}

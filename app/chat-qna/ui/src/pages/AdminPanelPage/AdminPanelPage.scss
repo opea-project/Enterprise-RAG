@@ -1,0 +1,19 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.admin-panel {
+  width: 100%;
+
+  & .admin-panel-tabs {
+    border-bottom: 1px solid lightgray;
+  }
+
+  & .admin-panel-tab {
+    scrollbar-width: thin;
+    position: relative;
+    overflow: auto;
+    padding: 1rem;
+    // 100vh - (app header height + tabs header height)
+    max-height: calc(100vh - 9.75rem);
+  }
+}

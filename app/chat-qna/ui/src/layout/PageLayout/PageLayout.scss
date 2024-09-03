@@ -1,0 +1,11 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+@use "../../assets/styles/variables";
+
+.main-outlet {
+  margin-left: variables.$navigation-drawer-width;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}

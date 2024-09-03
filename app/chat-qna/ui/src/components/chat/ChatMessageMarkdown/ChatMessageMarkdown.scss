@@ -1,0 +1,13 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.custom-pre-markdown,
+.custom-code-markdown {
+  position: relative;
+  white-space: pre;
+}
+
+.custom-paragraph-markdown {
+  font-size: 0.875rem;
+  padding-right: 1rem;
+}

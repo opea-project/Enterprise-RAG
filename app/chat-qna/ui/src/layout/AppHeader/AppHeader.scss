@@ -1,0 +1,19 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.app-header {
+  // required to be displayed over navigation drawer
+  z-index: 1201 !important;
+
+  .app-header-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    & .app-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+}

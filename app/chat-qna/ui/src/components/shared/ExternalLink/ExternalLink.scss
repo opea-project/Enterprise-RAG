@@ -1,0 +1,23 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.external-link-icon-wrapper {
+  display: inline;
+  position: relative;
+  margin-left: 0.375rem;
+  top: 0.0625rem;
+
+  & .external-link-icon {
+    font-size: 0.875rem;
+    position: absolute;
+
+    &.square-icon {
+      top: 0;
+      left: 0;
+    }
+    &.arrow-icon {
+      top: -0.25rem;
+      left: 0.25rem;
+    }
+  }
+}

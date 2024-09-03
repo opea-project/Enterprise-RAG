@@ -1,0 +1,11 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+@use "../../assets/styles/variables";
+
+.navigation-drawer {
+  & .MuiPaper-root {
+    width: variables.$navigation-drawer-width;
+    background-color: #1976d2;
+  }
+}

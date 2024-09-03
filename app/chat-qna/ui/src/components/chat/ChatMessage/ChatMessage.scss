@@ -1,0 +1,15 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.message {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  align-items: flex-start;
+  padding-block: 1rem;
+  position: relative;
+
+  &.bot-message {
+    background-color: #efefef;
+  }
+}

@@ -1,0 +1,25 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+@use "../../../../assets/styles/variables";
+
+.selected-panel {
+  padding-top: 1rem;
+}
+
+.upload-data-panel {
+  position: fixed;
+  bottom: 0;
+  left: variables.$navigation-drawer-width;
+  right: 0;
+  border-top: 1px solid lightgray;
+  padding-block: 0.5rem;
+  padding-inline: 1rem;
+  display: flex;
+  justify-content: end;
+}
+
+.uploading-circular-progress {
+  color: darkgray !important;
+  margin-right: 0.75rem;
+}

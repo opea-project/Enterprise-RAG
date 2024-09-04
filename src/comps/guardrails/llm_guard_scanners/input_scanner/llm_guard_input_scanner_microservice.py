@@ -18,7 +18,7 @@ from comps import (
 
 from comps.guardrails.llm_guard_scanners.input_scanner.utils import llm_guard_input_scanner
 
-logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+logger = get_opea_logger("llm_guard_input_scanner_microservice") # TODO: to be changed to after folder structure changes
 
 
 def start_llm_guard_input_scanner_service(llm_guard_input_scanner: llm_guard_input_scanner.LLMGuardInputScanner, opea_microservice_name: str):

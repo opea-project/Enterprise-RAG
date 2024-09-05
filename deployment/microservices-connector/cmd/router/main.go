@@ -50,24 +50,32 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+const (
+	BufferSize    = 1024
+	MaxGoroutines = 1024
+	ServiceURL    = "serviceUrl"
+	ServiceNode   = "node"
+	DataPrep      = "DataPrep"
+	Parameters    = "parameters"
+)
+
 var (
 	jsonGraph       = flag.String("graph-json", "", "serialized json graph def")
 	log             = logf.Log.WithName("GMCGraphRouter")
 	mcGraph         *mcv1alpha3.GMConnector
 	defaultNodeName = "root"
-	Prefix          = []byte("data: b'")
-	Suffix          = []byte("'\n\n")
-	DONE            = []byte("[DONE]")
-	Newline         = []byte("\n")
-)
-
-const (
-	BufferSize  = 1024
-	ServiceURL  = "serviceUrl"
-	ServiceNode = "node"
-	DataPrep    = "DataPrep"
-	Parameters  = "parameters"
-	Llm         = "Llm"
+	semaphore       = make(chan struct{}, MaxGoroutines)
+	transport       = &http.Transport{
+		MaxIdleConns:          1000,
+		MaxIdleConnsPerHost:   100,
+		IdleConnTimeout:       2 * time.Minute,
+		TLSHandshakeTimeout:   time.Minute,
+		ExpectContinueTimeout: 30 * time.Second,
+	}
+	callClient = &http.Client{
+		Transport: otelhttp.NewTransport(transport),
+		Timeout:   30 * time.Second,
+	}
 )
 
 type EnsembleStepOutput struct {
@@ -226,6 +234,9 @@ func callService(
 	input []byte,
 	headers http.Header,
 ) (io.ReadCloser, int, error) {
+	semaphore <- struct{}{}
+	defer func() { <-semaphore }()
+
 	defer timeTrack(time.Now(), "step", serviceUrl)
 	log.Info("Entering callService", "url", serviceUrl)
 
@@ -239,6 +250,7 @@ func callService(
 			return nil, 400, err
 		}
 	}
+
 	req, err := http.NewRequest("POST", serviceUrl, bytes.NewBuffer(input))
 	if err != nil {
 		log.Error(err, "An error occurred while preparing request object with serviceUrl.", "serviceUrl", serviceUrl)
@@ -248,15 +260,7 @@ func callService(
 	if val := req.Header.Get("Content-Type"); val == "" {
 		req.Header.Add("Content-Type", "application/json")
 	}
-
-	// Wrap default Go Http client with opentelemetry transport to provide extra metrics/pass context/create spans:
-	// - "http.client.request.size" - "Measures the size of HTTP request messages."  // Outgoing request bytes total
-	// - "http.client.response.size" - "Measures the size of HTTP response messages." // Outgoing response bytes total
-	// - "http.client.duration" - "Measures the duration of outbound HTTP requests."  // Outgoing end to end duration, milliseconds
-	// TODO/traces: span will be created with "client" as default, as middleware it possbile shouldbe "internal"
-	client := http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
-
-	resp, err := client.Do(req)
+	resp, err := callClient.Do(req)
 
 	if err != nil {
 		log.Error(err, "An error has occurred while calling service", "service", serviceUrl)
@@ -661,15 +665,6 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			if n == 0 {
 				break
 			}
-
-			/*sliceBF := buffer[:n]
-			if !bytes.HasPrefix(sliceBF, DONE) {
-				sliceBF = bytes.TrimPrefix(sliceBF, Prefix)
-				sliceBF = bytes.TrimSuffix(sliceBF, Suffix)
-			} else {
-				sliceBF = bytes.Join([][]byte{Newline, sliceBF}, nil)
-			}
-			log.Info("[llm - chat_stream] chunk:", "Buffer", string(sliceBF))*/
 
 			// Write the chunk to the ResponseWriter
 			if _, err := w.Write(buffer[:n]); err != nil {

@@ -1,19 +1,19 @@
 name: pull request comment
 on:
   issue_comment:
-    types: [created, edited, deleted]
+    types: [created]
 jobs:
   job01:
-    if: contains(github.event.comment.html_url, '/pull/')    # check if the comments come from pull request, exclude those from issue.
+    if: ${{ (github.event.issue.pull_request) && (github.event.comment.body == '/test') }}
     runs-on: [ innersource.prod.amr.dind ]
     steps:
     - name: Tell SHA
       run: "echo ${{ github.sha }}"
-    - name: say hello
-      if: contains(github.event.comment.body, '/support')   # check the comment if it contains the keywords
-      run: |
-        echo say hello
-    - name: test
-      if: contains(github.event.comment.body, '/test')  # check the comment if it contains the keywords
-      run: |
-        echo test
+
+    - name: Tell event vars
+      run: "echo ${{ github.event.issue.number }}"
+
+    - name: Checkout pull request
+      uses: actions/checkout@v4
+      with:
+        ref: refs/pull/${{ github.event.issue.number }}/head

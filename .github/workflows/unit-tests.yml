@@ -1,0 +1,32 @@
+name: "Unit tests"
+
+on:
+  pull_request:
+    branches: [ main ]
+
+  push:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    name: Run unit tests
+    runs-on: [innersource.prod.amr.dind]
+    defaults:
+      run:
+        shell: bash
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: repo
+      - name: Install test prerequisites
+        run: apt-get update && apt-get -y install tox
+      - name: Trigger unit tests
+        run: |
+          echo "Attempting to run unit tests"
+          cd repo/src
+          tox -e unit
+          exit_code=$?
+          echo "Unit tests finished"
+          exit $exit_code

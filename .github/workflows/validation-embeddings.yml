@@ -1,11 +1,13 @@
 name: "Validation :: Embeddings"
 
 on:
-  push:
-    branches: [ main ]
+  issue_comment:
+    types: [created]
+
 
 jobs:
     validate-embeddings:
+      if: ${{ (github.event.issue.pull_request) && (github.event.comment.body == '/RunTests') }}
       name: "Validation :: Embeddings tests"
       runs-on: [ innersource.prod.amr.dind ]
       container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
@@ -14,7 +16,7 @@ jobs:
           shell: bash
       env:
         REMOTE_GAUDI_HOST: dcgaudicluster1
-        REMOTE_WORKSPACE: "/tmp/${{ github.sha }}"
+        REMOTE_WORKSPACE: "/tmp/${{ github.event.issue.number }}/${{ github.run_number }}/${{ github.run_attempt }}"
       steps:
         - name: Install deps
           run: apt update && apt install -y rsync netcat-openbsd openssh-client
@@ -22,7 +24,7 @@ jobs:
         - name: Checkout actions
           uses: actions/checkout@v4
           with:
-            ref: "refs/pull/${{ github.event.number }}/merge"
+            ref: "refs/pull/${{ github.event.issue.number }}/head"
             sparse-checkout: '.github/actions/'
 
         - name: Install SSH key
@@ -36,7 +38,7 @@ jobs:
         - name: Checkout repo
           uses: actions/checkout@v4
           with:
-            ref: "refs/pull/${{ github.event.number }}/merge"
+            ref: "refs/pull/${{ github.event.issue.number }}/head"
             path: repo
 
         - name: rsync over SSH

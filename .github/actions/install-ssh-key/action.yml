@@ -25,22 +25,21 @@ runs:
     - name: Install SSH Key
       shell: bash
       run: |
-        mkdir -p $HOME/.ssh
-        echo "${{ inputs.key }}" > $HOME/.ssh/${{ inputs.name }}
-        chmod 600 $HOME/.ssh/${{ inputs.name }}
+        mkdir -p /etc/ssh/keys
+        echo "${{ inputs.key }}" > /etc/ssh/keys/${{ inputs.name }}
+        chmod 600 /etc/ssh/keys/${{ inputs.name }}
 
         if [ -n "${{ inputs.config }}" ]; then
-          echo "${{ inputs.config }}" > $HOME/.ssh/config
-          chmod 644 $HOME/.ssh/config
+          echo "${{ inputs.config }}" > /etc/ssh/ssh_config.d/ghworkflow.conf
         fi
 
         if [ -n "${{ inputs.known_hosts }}" ]; then
-          echo "${{ inputs.known_hosts }}" >> $HOME/.ssh/known_hosts
-          chmod 644 $HOME/.ssh/known_hosts
+          echo "${{ inputs.known_hosts }}" >> /etc/ssh/ssh_known_hosts
+          chmod 644 /etc/ssh/ssh_known_hosts
         fi
 
         function cleanup {
-          rm -f $HOME/.ssh/${{ inputs.name }} $HOME/.ssh/config
+          rm -f /etc/ssh/keys/${{ inputs.name }} /etc/ssh/ssh_config.d/ghworkflow.conf
         }
 
         if [ ${{ inputs.cleanup }} == "true" ]; then trap cleanup EXIT; fi

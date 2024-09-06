@@ -1,0 +1,69 @@
+name: "Validation :: Embeddings"
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+    validate-embeddings:
+      name: "Validation :: Embeddings tests"
+      runs-on: [ innersource.prod.amr.dind ]
+      container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
+      defaults:
+        run:
+          shell: bash
+      env:
+        REMOTE_GAUDI_HOST: dcgaudicluster1
+        REMOTE_WORKSPACE: "/tmp/${{ github.sha }}"
+      steps:
+        - name: Install deps
+          run: apt update && apt install -y rsync netcat-openbsd openssh-client
+
+        - name: Checkout actions
+          uses: actions/checkout@v4
+          with:
+            ref: "refs/pull/${{ github.event.number }}/merge"
+            sparse-checkout: '.github/actions/'
+
+        - name: Install SSH key
+          uses: ./.github/actions/install-ssh-key
+          with:
+            key: ${{ secrets.SSH_KEY }}
+            name: enterpriseRAG1
+            config: ${{ secrets.SSH_CONFIG }}
+            known_hosts: ${{ secrets.SSH_GAUDI1_KNOWN_HOSTS }}
+
+        - name: Checkout repo
+          uses: actions/checkout@v4
+          with:
+            ref: "refs/pull/${{ github.event.number }}/merge"
+            path: repo
+
+        - name: rsync over SSH
+          run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
+
+        - name: "Run tests"
+          uses: ./.github/actions/execute_remote_script
+          with:
+            host: ${{ env.REMOTE_GAUDI_HOST }}
+            run: |
+              cd ${{ env.REMOTE_WORKSPACE }}/src
+              tox -e microservices
+
+        - name: Clean up container
+          if: always()
+          uses: ./.github/actions/execute_remote_script
+          with:
+            host: ${{ env.REMOTE_GAUDI_HOST }}
+            run: |
+              cid=$(docker ps -aq --filter "name=test-comps-embeddings*")
+              if [[ ! -z "$cid" ]]; then echo "Cleaning up test-comps-embeddings containers..." && docker stop $cid && docker rm $cid && sleep 1s; fi
+
+        - name: Clean up workspace
+          if: always()
+          uses: ./.github/actions/execute_remote_script
+          with:
+            host: ${{ env.REMOTE_GAUDI_HOST }}
+            run: |
+              rm -rf ${{ env.REMOTE_WORKSPACE }}
+              echo "Workspace has been removed"

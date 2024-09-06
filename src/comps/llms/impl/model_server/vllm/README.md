@@ -1,127 +1,146 @@
-# vLLM Endpoint Serve
+# vLLM LLM Model Server
+
+
+This README provides instructions on how to run a model server using [vLLM](https://github.com/vllm-project/vllm).
 
 [vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library for LLM inference and serving, it delivers state-of-the-art serving throughput with a set of advanced features such as PagedAttention, Continuous batching and etc.. Besides GPUs, vLLM already supported [Intel CPUs](https://www.intel.com/content/www/us/en/products/overview.html) and [Gaudi accelerators](https://habana.ai/products). This guide provides an example on how to launch vLLM serving endpoint on CPU and Gaudi accelerators.
 
-## set up environment variables
+## Start vLLM Model Server
+To get started with vLLM, follow these steps:
 
 ```bash
-export HUGGINGFACEHUB_API_TOKEN=<token>
-export vLLM_ENDPOINT="http://${your_ip}:8008"
-export LLM_MODEL="meta-llama/Meta-Llama-3-8B-Instruct"
+# for hpu device
+chmod +x run_vllm_hpu.sh
+./run_vllm_hpu.sh
+
+# for cpu device
+chmod +x run_vllm_cpu.sh
+./run_vllm_cpu.sh
+```
+The script starts a Docker container running the vLLM model server, which defaults to exposing the service on port `LLM_VLLM_PORT` (default: **8008**). To change the port or the model (Intel/neural-chat-7b-v3-3), please edit the [docker/.env](docker/.env) or edit the Bash script accordingly.
+
+
+**Verify if your vLLM model server is running:**  
+Below examples are presented for hpu device. 
+
+Check the logs to confirm the service is operational:
+```bash
+docker logs -f vllm-gaudi-model-server
 ```
 
-For gated models such as `LLAMA-2`, you will have to pass the environment HUGGINGFACEHUB_API_TOKEN. Please follow this link [huggingface token](https://huggingface.co/docs/hub/security-tokens) to get the access token and export `HUGGINGFACEHUB_API_TOKEN` environment with the token.
+The following log messages indicate that the startup of model server ic completed:
+```bash
+INFO 09-05 12:17:56 habana_model_runner.py:940] [Warmup][Decode][1023/1024] batch_size:2 seq_len:16 free_mem:5.414 GiB
+INFO 09-05 12:17:56 habana_model_runner.py:940] [Warmup][Decode][1024/1024] batch_size:1 seq_len:16 free_mem:5.414 GiB
+INFO 09-05 12:17:56 habana_model_runner.py:1007] Warmup finished in 1689 secs, allocated 2.499 GiB of device memory
+INFO 09-05 12:17:56 habana_executor.py:83] init_cache_engine took 73.7 GiB of device memory (89.21 GiB/94.62 GiB used) and -4.57 GiB of host memory (107.5 GiB/1007 GiB used)
+WARNING 09-05 12:17:56 serving_chat.py:391] No chat template provided. Chat API will not work.
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:80 (Press CTRL+C to quit)
+```
 
-## Set up VLLM Ray Service
-
-### vLLM on CPU
-
-First let's enable VLLM on CPU.
-
-#### Build docker
+**Test your vLLM model server using the following command**:
 
 ```bash
-bash ./build_docker_vllm.sh
+curl http://localhost:8008/v1/completions \
+    -X POST \
+    -d '{"model": "Intel/neural-chat-7b-v3-3", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+    -H "Content-Type: application/json"
 ```
 
-The `build_docker_vllm` accepts one parameter `hw_mode` to specify the hardware mode of the service, with the default being `cpu`, and the optional selection can be `hpu`.
-
-#### Launch vLLM service
-
-```bash
-bash ./launch_vllm_service.sh
+Expected output:
+```json
+{
+  "id": "cmpl-1d9266525da24c5ba747e69208f71332",
+  "object": "text_completion",
+  "created": 1725543426,
+  "model": "Intel/neural-chat-7b-v3-3",
+  "choices": [
+    {
+      "index": 0,
+      "text": "\n\nDeep Learning is a subset of Machine Learning that is concerned with algorithms inspired by the structure and function of the brain. It is a part of Artificial",
+      "logprobs": null,
+      "finish_reason": "length",
+      "stop_reason": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 6,
+    "total_tokens": 38,
+    "completion_tokens": 32
+  }
+}
 ```
 
-If you want to customize the port or model_name, can run:
+## 🚀 Set up vLLM model server along with the OPEA LLM Microservice with Docker Compose
 
-```bash
-bash ./launch_vllm_service.sh ${port_number} ${model_name}
-```
+To launch vLLM along with the OPEA LLM Microservice, follow these steps:
 
-### vLLM on Gaudi
+1. **Configure the `./docker/.env` file**:
 
-Then we show how to enable VLLM on Gaudi.
+    "Ensure the `./docker/.env` file in the root directory aligns with your requirements:
 
-#### Build docker
+    ```env
+    HF_TOKEN=<your-hf-api-key>
 
-```bash
-bash ./build_docker_vllm.sh hpu
-```
+    HABANA_VISIBLE_DEVICES=all
+    LLM_VLLM_MODEL_NAME="Intel/neural-chat-7b-v3-3"
+    LLM_VLLM_PORT=8008
+    [...]
+    ```
 
-Set `hw_mode` to `hpu`.
+2. **Start the Services using Docker Compose**:
 
-#### Launch vLLM service on single node
+    Build and start the services using Docker Compose:
 
-For small model, we can just use single node.
+    ```bash
+    cd docker
+    docker compose -f docker-compose-hpu.yaml up --build -d
+    ```
 
-```bash
-bash ./launch_vllm_service.sh ${port_number} ${model_name} hpu 1
-```
 
-Set `hw_mode` to `hpu` and `parallel_number` to 1.
+3. **Test the Services**:
 
-The `launch_vllm_service.sh` script accepts 7 parameters:
+    Test the `llm-vllm-model-server` using the following command:
+    ```bash
+    curl http://localhost:8008/v1/completions \
+        -X POST \
+        -d '{"model": "Intel/neural-chat-7b-v3-3", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+        -H "Content-Type: application/json"
+    ```
+    **NOTICE**: First ensure that the model server is operational. Warming up might take a while, and during this phase, the endpoint won't be ready to serve the query.
 
-- port_number: The port number assigned to the vLLM CPU endpoint, with the default being 8008.
-- model_name: The model name utilized for LLM, with the default set to 'meta-llama/Meta-Llama-3-8B-Instruct'.
-- hw_mode: The hardware mode utilized for LLM, with the default set to "cpu", and the optional selection can be "hpu".
-- parallel_number: parallel nodes number for 'hpu' mode
-- block_size: default set to 128 for better performance on HPU
-- max_num_seqs: default set to 256 for better performance on HPU
-- max_seq_len_to_capture: default set to 2048 for better performance on HPU
+    Check the `llm-vllm-microservice` status:
 
-If you want to get more performance tuning tips, can refer to [Performance tuning](https://github.com/HabanaAI/vllm-fork/blob/habana_main/README_GAUDI.md#performance-tips).
+    ```bash
+    curl http://localhost:9000/v1/health_check\
+        -X GET \
+        -H 'Content-Type: application/json'
+    ```
 
-#### Launch vLLM service on multiple nodes
+    Test the `llm-vllm-microservice` for non-streaming mode using the following command:
+    ```bash
+    curl http://localhost:9000/v1/chat/completions \
+        -X POST \
+        -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_p":0.95,"temperature":0.01,"streaming":false}' \
+        -H 'Content-Type: application/json'
+    ```
 
-For large model such as `meta-llama/Meta-Llama-3-70b`, we need to launch on multiple nodes.
+    Test the `llm-vllm-microservice` for non-streaming mode using the following command:
+    ```bash
+    curl http://localhost:9000/v1/chat/completions \
+        -X POST \
+        -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_p":0.95,"temperature":0.01,"streaming":true}' \
+        -H 'Content-Type: application/json'
+    ```
 
-```bash
-bash ./launch_vllm_service.sh ${port_number} ${model_name} hpu ${parallel_number}
-```
+4. **Cleanup the Services using Docker Compose**:
 
-For example, if we run `meta-llama/Meta-Llama-3-70b` with 8 cards, we can use following command.
+    To cleanup the services using Docker Compose:
 
-```bash
-bash ./launch_vllm_service.sh 8008 meta-llama/Meta-Llama-3-70b hpu 8
-```
-
-### Query the service
-
-And then you can make requests like below to check the service status:
-
-```bash
-curl http://${your_ip}:8008/v1/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-  "model": "meta-llama/Meta-Llama-3-8B-Instruct",
-  "prompt": "What is Deep Learning?",
-  "max_tokens": 32,
-  "temperature": 0
-  }'
-```
-
-## Set up OPEA microservice
-
-Then we warp the VLLM service into OPEA microcervice.
-
-### Build docker
-
-```bash
-bash build_docker_microservice.sh
-```
-
-### Launch the microservice
-
-```bash
-bash launch_microservice.sh
-```
-
-### Query the microservice
-
-```bash
-curl http://${your_ip}:9000/v1/chat/completions \
-  -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_p":0.95,"temperature":0.01,"streaming":false}' \
-  -H 'Content-Type: application/json'
-```
+    ```bash
+    cd docker
+    docker-compose -f docker-compose-hpu.yaml down
+    ```

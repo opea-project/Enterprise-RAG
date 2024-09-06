@@ -41,6 +41,12 @@ jobs:
             ref: "refs/pull/${{ github.event.issue.number }}/head"
             path: repo
 
+        - name: "Create workspace directory"
+          uses: ./.github/actions/execute_remote_script
+          with:
+            host: ${{ env.REMOTE_GAUDI_HOST }}
+            run: mkdir -p ${REMOTE_WORKSPACE}
+
         - name: rsync over SSH
           run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
 

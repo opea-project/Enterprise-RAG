@@ -24,7 +24,7 @@ REGISTRY_NAME=${DEFAULT_REGISTRY}
 do_build=false
 do_push=false
 components_to_build=()
-default_components=("gmcManager" "embedding-usvc" "reranking-usvc" "torcheserve" "retriever-usvc" "llm-uservice" "in-guard")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torcheserve" "retriever-usvc" "ingestion-usvc" "llm-uservice" "in-guard")
 
 
 function help() {
@@ -224,6 +224,7 @@ for component in "${components_to_build[@]}"; do
                 tag_and_push $REGISTRY_NAME opea/gmcrouter latest
             fi
             ;;
+
         embedding-usvc)
             path="${repo_path}/src"
             dockerfile="comps/embeddings/impl/microservice/Dockerfile"
@@ -253,10 +254,28 @@ for component in "${components_to_build[@]}"; do
             build_component $path $dockerfile $image_name $image_tag
             ;;
 
+        dataprep-usvc)
+            path="${repo_path}/src/comps/"
+            dockerfile="dataprep/impl/microservice/Dockerfile"
+            image_name=opea/dataprep
+            image_tag=latest
+
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
+
         retriever-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/retrievers/langchain/redis/docker/Dockerfile"
-            image_name=test/retriever-redis
+            path="${repo_path}/src/comps"
+            dockerfile="retrievers/impl/microservice/Dockerfile"
+            image_name=opea/retriever
+            image_tag=latest
+
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
+
+        ingestion-usvc)
+            path="${repo_path}/src/comps"
+            dockerfile="ingestion/impl/microservice/Dockerfile"
+            image_name=opea/ingestion
             image_tag=latest
 
             build_component $path $dockerfile $image_name $image_tag

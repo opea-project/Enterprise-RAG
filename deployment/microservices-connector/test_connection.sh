@@ -61,7 +61,7 @@ export accessUrl=$(kubectl get gmc -n $NAMESPACE -o jsonpath="{.items[?(@.metada
 
 JSON_PAYLOAD='
 {
-  "text": "What is the revenue of Nike in 2023?",
+  "docs": { "text": "What is AVX512?" },
   "parameters": {
     "max_new_tokens": 150,
     "do_sample": true,

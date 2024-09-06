@@ -18,27 +18,35 @@ tokens:
 
 images:
   gmcManager:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
+    repository: "localhost:5000/opea/gmcmanager"
     tag: "latest"
     pullPolicy: Always
   gmcRouter:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
+    repository: "localhost:5000/opea/gmcrouter"
+    tag: "latest"
+  dataprep-usvc:
+    repository: "localhost:5000/test/dataprep"
     tag: "latest"
   embedding-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding-tei"
+    repository: "localhost:5000/opea/embedding-tei"
     tag: "latest"
   reranking-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
-    tag: "latest"
-  retriever-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/test/retriever-redis"
+    repository: "localhost:5000/opea/reranking"
     tag: "latest"
   torcheserve:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/pl-qna-rag-embedding-torchserve"
+    repository: "localhost:5000/pl-qna-rag-embedding-torchserve"
+    tag: "latest"
+  retriever-usvc:
+    repository: "localhost:5000/test/retriever"
+    tag: "latest"
+  ingestion-usvc:
+    repository: "localhost:5000/test/ingestion"
     tag: "latest"
   llm-uservice:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
+    repository: "localhost:5000/opea/llm"
     tag: "latest"
+
+
 
 
 imagePullSecrets:

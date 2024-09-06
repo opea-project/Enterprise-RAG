@@ -1,0 +1,8 @@
+fastapi
+opentelemetry-api
+opentelemetry-exporter-otlp
+opentelemetry-sdk
+prometheus-fastapi-instrumentator
+numpy
+docarray[full]
+uvicorn

@@ -14,16 +14,8 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  REDIS_URL: "redis://retriever-usvc-redis-vector-db:6379"
-  INDEX_NAME: "rag-redis"
-  EASYOCR_MODULE_PATH: "/tmp/.EasyOCR"
-  http_proxy: ""
-  https_proxy: ""
-  no_proxy: ""
-  LANGCHAIN_TRACING_V2: "false"
-  LANGCHAIN_API_KEY: "insert-your-langchain-key-here"
-  LANGCHAIN_PROJECT: "opea-retriever-service"
-  HF_HOME: "/tmp/.cache/huggingface"
+  VECTOR_STORE: redis
+  REDIS_URL: "redis://redis-vector-db:6379"
 ---
 # Source: retriever-usvc/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -42,8 +34,8 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 7000
-      targetPort: 7000
+    - port: 6620
+      targetPort: 6620
       protocol: TCP
       name: retriever-usvc
   selector:
@@ -96,11 +88,11 @@ spec:
             runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
-          image: "localhost:5000/test/retriever-redis:latest"
+          image: "opea/retriever:latest"
           imagePullPolicy: Always
           ports:
             - name: retriever-usvc
-              containerPort: 7000
+              containerPort: 6620
               protocol: TCP
           volumeMounts:
             - mountPath: /tmp

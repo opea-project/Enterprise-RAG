@@ -37,7 +37,7 @@ spec:
           serviceName: retriever-svc
           config:
             endpoint: /v1/retrieval
-            REDIS_URL: redis-vector-db
+            REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
             EMBED_MODEL: "BAAI/bge-base-en-v1.5"
       - name: VectorDB
         internalService:

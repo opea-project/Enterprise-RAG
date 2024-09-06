@@ -119,12 +119,12 @@ docker.build: manager-image router-image
 # Build manager Docker image
 manager-image:
 	@echo "Building manager Docker image..."
-	$(CONTAINER_TOOL) build -t $(DOCKER_REGISTRY)/${CTR_IMG}:$(VERSION) -f Dockerfile.manager .
+	$(CONTAINER_TOOL) build --build-arg https_proxy --build-arg http_proxy -t $(DOCKER_REGISTRY)/${CTR_IMG}:$(VERSION) -f Dockerfile.manager .
 
 # Build router Docker image
 router-image:
 	@echo "Building router Docker image..."
-	$(CONTAINER_TOOL) build -t $(DOCKER_REGISTRY)/${ROUTER_IMG}:$(VERSION) -f Dockerfile.router .
+	$(CONTAINER_TOOL) build --build-arg https_proxy --build-arg http_proxy -t $(DOCKER_REGISTRY)/${ROUTER_IMG}:$(VERSION) -f Dockerfile.router .
 
 # Publish manager and router docker images
 .PHONY: docker.push

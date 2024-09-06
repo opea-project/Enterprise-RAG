@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -18,7 +18,10 @@ class TopologyInfo:
 
 class TextDoc(BaseDoc, TopologyInfo):
     text: str
+    metadata: Optional[dict] = {}
 
+class TextDocList(BaseDoc):
+    docs: Union[TextDoc, List[TextDoc]]
 
 class Base64ByteStrDoc(BaseDoc):
     byte_str: str
@@ -41,7 +44,10 @@ class EmbedDoc(BaseDoc):
     fetch_k: int = 20
     lambda_mult: float = 0.5
     score_threshold: float = 0.2
+    metadata: Optional[dict] = {}
 
+class EmbedDocList(BaseDoc):
+    docs: Union[EmbedDoc, List[EmbedDoc]]
 
 class Audio2TextDoc(AudioDoc):
     url: Optional[AudioUrl] = Field(
@@ -57,6 +63,14 @@ class Audio2TextDoc(AudioDoc):
         default="auto",
     )
 
+
+class DataPrepFile(BaseDoc):
+    data64: str
+    filename: str
+
+class DataPrepInput(BaseDoc):
+    files: List[DataPrepFile] = []
+    links: List[str] = []
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
@@ -130,3 +144,4 @@ class LVMDoc(BaseDoc):
     image: str
     prompt: str
     max_new_tokens: conint(ge=0, le=1024) = 512
+

@@ -31,6 +31,7 @@ class ServiceType(Enum):
     WEB_RETRIEVER = 14
     LLM_GUARD_INPUT_SCANNER = 15
     LLM_GUARD_OUTPUT_SCANNER = 16
+    INGESTION = 17
 
 
 class MegaServiceEndpoint(Enum):
@@ -58,6 +59,8 @@ class MegaServiceEndpoint(Enum):
     GRAPHS = "/v1/graphs"
     LLM_GUARD_INPUT_SCANNER = "/v1/llmguardinput"
     LLM_GUARD_OUTPUT_SCANNER = "/v1/llmguardoutput"
+    INGEST = "/v1/ingestion"
+    DATAPREP = '/v1/dataprep'
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

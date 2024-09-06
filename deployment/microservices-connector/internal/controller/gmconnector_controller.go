@@ -68,6 +68,7 @@ const (
 	WhisperGaudi             = "WhisperGaudi"
 	LLMGuardInput            = "LLMGuardInput"
 	LLMGuardOutput           = "LLMGuardOutput"
+	Ingestion                = "Ingestion"
 )
 
 var yamlDict = map[string]string{
@@ -92,9 +93,10 @@ var yamlDict = map[string]string{
 	SpeechT5Gaudi:            yaml_dir + "speecht5_gaudi.yaml",
 	Whisper:                  yaml_dir + "whisper.yaml",
 	WhisperGaudi:             yaml_dir + "whisper_gaudi.yaml",
-	DataPrep:                 yaml_dir + "data-prep.yaml",
+	DataPrep:                 yaml_dir + "dataprep-usvc.yaml",
 	LLMGuardInput:            yaml_dir + "in-guard-usvc.yaml",
 	LLMGuardOutput:           yaml_dir + "out-guard-usvc.yaml",
+	Ingestion:                yaml_dir + "ingestion-usvc.yaml",
 }
 
 // GMConnectorReconciler reconciles a GMConnector object
@@ -240,7 +242,6 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
-		keyname == "REDIS_URL" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT"

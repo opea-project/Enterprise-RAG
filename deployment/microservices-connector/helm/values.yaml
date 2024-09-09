@@ -12,41 +12,41 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
-
 tokens:
   hugToken: ""
 
 images:
   gmcManager:
-    repository: "localhost:5000/opea/gmcmanager"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
+    tag: "PR45"
     pullPolicy: Always
   gmcRouter:
-    repository: "localhost:5000/opea/gmcrouter"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
+    tag: "PR45"
   dataprep-usvc:
-    repository: "localhost:5000/test/dataprep"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/dataprep"
+    tag: "PR45"
   embedding-usvc:
-    repository: "localhost:5000/opea/embedding-tei"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding-tei"
+    tag: "PR45"
   reranking-usvc:
-    repository: "localhost:5000/opea/reranking"
-    tag: "latest"
-  torcheserve:
-    repository: "localhost:5000/pl-qna-rag-embedding-torchserve"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
+    tag: "PR45"
   retriever-usvc:
-    repository: "localhost:5000/test/retriever"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/retriever"
+    tag: "PR45"
+  torcheserve:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/pl-qna-rag-embedding-torchserve"
+    tag: "PR45"
   ingestion-usvc:
-    repository: "localhost:5000/test/ingestion"
-    tag: "latest"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/ingestion"
+    tag: "PR45"
   llm-uservice:
-    repository: "localhost:5000/opea/llm"
-    tag: "latest"
-
-
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
+    tag: "PR45"
+  in-guard:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/in-guard"
+    tag: "PR45"
 
 
 imagePullSecrets:

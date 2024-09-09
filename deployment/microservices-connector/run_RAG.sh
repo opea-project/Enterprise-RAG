@@ -29,7 +29,10 @@ function start_deployment() {
 
     helm install -n system --create-namespace gmc helm
     namespace=chatqa
+    dataprep_namespace=dataprep
     kubectl get namespace $namespace || kubectl create namespace $namespace
+    kubectl get namespace $dataprep_namespace || kubectl create namespace $dataprep_namespace
+    kubectl apply -f $(pwd)/config/samples/dataprep_xeon.yaml
     kubectl apply -f $(pwd)/config/samples/chatQnA_$1.yaml
     kubectl create deployment client-test -n $namespace --image=python:3.8.13 -- sleep infinity
 }

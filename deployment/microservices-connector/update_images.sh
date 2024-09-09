@@ -36,7 +36,7 @@ function help() {
     echo -e "\t--no-push: Don't push specified components to the registry. (latest specified will be used)"
     echo -e "\t--registry: Specify the registry (default is $DEFAULT_REGISTRY, use localhost to setup local registry at p5000)."
     echo -e "Components available: (default as all)"
-    echo -e "\t ${default_components[@]}"
+    echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
 }
 
@@ -76,7 +76,7 @@ fi
 echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build"
 echo "do_push = $do_push"
-echo "components_to_build = ${components_to_build[@]}"
+echo "components_to_build = ${components_to_build[*]}"
 
 
 setup_local_registry() {
@@ -97,7 +97,7 @@ setup_local_registry() {
 
 tag_and_push() {
     if [[ "$do_push" == false ]]; then
-        echo "skip pushing $@"
+        echo "skip pushing $*"
         return
     fi
 
@@ -156,7 +156,8 @@ docker_login_aws() {
 
     echo "${ecr_password}" | \
     docker login --username AWS --password-stdin "${ecr_registry_url}" > /dev/null 2>&1
-
+    
+    create_or_replace_secret "dataprep" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "system" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "chatqa" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
 
@@ -182,7 +183,7 @@ use_proxy=""
 
 build_component() {
     if [[ "$do_build" == false ]]; then
-        echo "skip pushing $@"
+        echo "skip pushing $*"
         return
     fi
 

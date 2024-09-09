@@ -8,6 +8,7 @@ import { Button, TextField } from "@mui/material";
 import { ChangeEvent, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
+import endpoints from "@/api/endpoints.json";
 import {
   addMessage,
   selectIsMessageStreamed,
@@ -15,8 +16,6 @@ import {
   updateMessage,
 } from "@/store/conversationFeed.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-const CHAT_QNA_ENDPOINT = import.meta.env.VITE_CHAT_QNA_URL;
 
 const PromptInput = () => {
   const dispatch = useAppDispatch();
@@ -48,7 +47,7 @@ const PromptInput = () => {
     dispatch(addMessage(newMessage));
 
     const requestBody = {
-      text: prompt,
+      docs: { text: prompt },
       parameters: {
         max_new_tokens: 256,
         do_sample: true,
@@ -56,10 +55,11 @@ const PromptInput = () => {
       },
     };
 
+    const url = window.location.origin + endpoints.chat;
     const ctrl = new AbortController();
 
     try {
-      await fetchEventSource(CHAT_QNA_ENDPOINT, {
+      await fetchEventSource(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sessionStorage.getItem("token")}`,

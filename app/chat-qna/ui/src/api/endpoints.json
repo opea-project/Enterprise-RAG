@@ -1,0 +1,4 @@
+{
+  "chat": "/api/v1/chatqna",
+  "dataprep": "/api/v1/dataprep"
+}

@@ -1,11 +1,9 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import endpoints from "@/api/endpoints.json";
 import { LinkForIngestion } from "@/models/dataIngestion";
 import { documentToBase64 } from "@/utils";
-
-const DATA_INGESTION_SERVICE_URL = import.meta.env.VITE_DATA_INGESTION_URL;
-const DATA_INGESTION_ENDPOINT = "/v1/dataprep";
 
 interface DataIngestionRequest {
   files?: { filename: string; data64: unknown }[];
@@ -14,13 +12,15 @@ interface DataIngestionRequest {
 
 class DataIngestionService {
   async postDataToIngest(documents: File[], links: LinkForIngestion[]) {
-    const url = DATA_INGESTION_SERVICE_URL + DATA_INGESTION_ENDPOINT;
+    const url = window.location.origin + endpoints.dataprep;
     const body: DataIngestionRequest = {};
 
     body.files = [];
     for (const document of documents) {
       const filename = document.name;
-      const data64 = await documentToBase64(document);
+      const data64 = ((await documentToBase64(document)) as string).split(
+        ",",
+      )[1];
 
       body.files.push({
         filename,

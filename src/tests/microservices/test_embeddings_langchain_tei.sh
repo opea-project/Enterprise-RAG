@@ -20,7 +20,7 @@ MICROSERVICE_API_PORT=5005
 MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
-function test_fail() {
+function fail_test() {
     echo "FAIL: ${1}" 1>&2
     test_clean
     exit 1
@@ -28,8 +28,6 @@ function test_fail() {
 
 function build_docker_images() {
     cd $WORKPATH
-    echo $(pwd)
-
     docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
@@ -73,13 +71,13 @@ function validate_microservice() {
 
     http_status=$(echo $http_response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     if [ "$http_status" -ne "200" ]; then
-        test_fail "HTTP status is not 200. Received status was $http_status"
+        fail_test "HTTP status is not 200. Received status was $http_status"
 		fi
 
     http_content=$(echo "$http_response" | sed 's/HTTPSTATUS.*//')
 		echo "${http_content}" | jq; parse_return_code=$?
 		if [ "${parse_return_code}" -ne "0" ]; then
-        test_fail "HTTP response content is not json parsable. Response content was: ${http_content}"
+        fail_test "HTTP response content is not json parsable. Response content was: ${http_content}"
 		fi
 
 		set -e

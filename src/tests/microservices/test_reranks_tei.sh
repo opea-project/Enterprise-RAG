@@ -4,63 +4,120 @@
 
 set -xe
 
-WORKPATH=${PWD}/../..
-ip_address=$(hostname -I | awk '{print $1}')
-function build_docker_images() {
-    cd $WORKPATH
-    docker build --no-cache -t opea/reranking-tei:comps -f comps/reranks/tei/docker/Dockerfile .
-}
+WORKPATH=$(dirname "$(dirname "$PWD")")
+IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
-function start_service() {
-    tei_endpoint=5006
-    # Remember to set HF_TOKEN before invoking this test!
-    export HF_TOKEN=${HF_TOKEN}
-    model=BAAI/bge-reranker-large
-    revision=refs/pr/4
-    volume=$PWD/data
-    docker run -d --name="test-comps-reranking-tei-endpoint" -p $tei_endpoint:80 -v $volume:/data --pull always ghcr.io/huggingface/text-embeddings-inference:cpu-1.2 --model-id $model --revision $revision
+CONTAINER_NAME_BASE="test-reranks"
 
-    export TEI_RERANKING_ENDPOINT="http://${ip_address}:${tei_endpoint}"
-    tei_service_port=5007
-    unset http_proxy
-    docker run -d --name="test-comps-reranking-tei-server" -p ${tei_service_port}:8000 --ipc=host -e http_proxy=$http_proxy -e https_proxy=$https_proxy -e TEI_RERANKING_ENDPOINT=$TEI_RERANKING_ENDPOINT -e HF_TOKEN=$HF_TOKEN opea/reranking-tei:comps
-    sleep 3m
-}
+MODEL_SERVER_CONTAINER_NAME="${CONTAINER_NAME_BASE}-model-server"
+MODEL_SERVER_IMAGE_NAME="ghcr.io/huggingface/text-embeddings-inference:cpu-1.2"
+MODEL_SERVER_HOST_PORT=5006
 
-function validate_microservice() {
-    tei_service_port=5007
-    local CONTENT=$(curl http://${ip_address}:${tei_service_port}/v1/reranking \
-        -X POST \
-        -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}]}' \
-        -H 'Content-Type: application/json')
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
+MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
+MICROSERVICE_API_PORT=5007
 
-    if echo "$CONTENT" | grep -q "### Search results:"; then
-        echo "Content is as expected."
-    else
-        echo "Content does not match the expected result: $CONTENT"
-        docker logs test-comps-reranking-tei-server
-        docker logs test-comps-reranking-tei-endpoint
-        exit 1
+function check_prerequisites() {
+    if [ -z "${HF_TOKEN}" ]; then
+        fail "HF_TOKEN environment variable is not set. Exiting."
     fi
 }
 
-function stop_docker() {
-    cid=$(docker ps -aq --filter "name=test-comps-rerank*")
-    if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid && sleep 1s; fi
+function fail() {
+    echo "FAIL: ${1}" 1>&2
+    cleanup
+    exit 1
+}
+
+function build_docker_images() {
+    cd $WORKPATH
+    docker build --no-cache \
+        -t ${MICROSERVICE_IMAGE_NAME} \
+        -f comps/reranks/impl/microservice/Dockerfile .
+}
+
+function start_service() {
+    model="BAAI/bge-reranker-large"
+    revision="refs/pr/4"
+
+    docker run -d --rm --name="${MODEL_SERVER_CONTAINER_NAME}" \
+        -p ${MODEL_SERVER_HOST_PORT}:80 \
+        -v ./data:/data \
+        --pull always \
+        ${MODEL_SERVER_IMAGE_NAME} \
+        --model-id $model \
+        --revision $revision \
+
+    export TEI_RERANKING_ENDPOINT="http://${IP_ADDRESS}:${MODEL_SERVER_HOST_PORT}"
+
+    docker run -d --rm --name="${MICROSERVICE_CONTAINER_NAME}" \
+        -p ${MICROSERVICE_API_PORT}:8000 \
+        --ipc=host \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e TEI_RERANKING_ENDPOINT=$TEI_RERANKING_ENDPOINT \
+        -e HF_TOKEN=$HF_TOKEN \
+        ${MICROSERVICE_IMAGE_NAME}
+
+    sleep 1m
+}
+
+function validate_microservice() {
+    # Command errors here are not exceptions, but handled as test fails.
+    set +e
+
+    unset http_proxy
+    http_response=$(curl \
+        --write-out "HTTPSTATUS:%{http_code}" \
+        http://${IP_ADDRESS}:${MICROSERVICE_API_PORT}/v1/reranking \
+        -X POST \
+        -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}]}' \
+        -H 'Content-Type: application/json' \
+    )
+
+    http_status=$(echo $http_response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+    if [ "$http_status" -ne "200" ]; then
+        fail "HTTP status is not 200. Received status was $http_status"
+		fi
+
+    http_content=$(echo "$http_response" | sed 's/HTTPSTATUS.*//')
+    echo "${http_content}" | jq; parse_return_code=$?
+		if [ "${parse_return_code}" -ne "0" ]; then
+        fail "HTTP response content is not json parsable. Response content was: ${http_content}"
+		fi
+
+		set -e
+}
+
+function stop_containers() {
+    cid=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
+    if [[ ! -z "$cid" ]]; then docker stop $cid && sleep 1s ; fi
+}
+
+function remove_images() {
+    # Remove images and the build cache
+    iid=$(docker images \
+      --filter=reference=${MODEL_SERVER_IMAGE_NAME} \
+      --filter=reference=${MICROSERVICE_IMAGE_NAME} \
+      --format "{{.ID}}" \
+    )
+    if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
+
+    docker buildx prune -f
+}
+
+function cleanup() {
+    stop_containers
+    remove_images
 }
 
 function main() {
-
-    stop_docker
-
+    check_prerequisites
+    cleanup
     build_docker_images
     start_service
-
     validate_microservice
-
-    stop_docker
-    echo y | docker system prune
-
+    cleanup
 }
 
 main

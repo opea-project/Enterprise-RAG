@@ -20,11 +20,12 @@ trap 'error_handler' ERR
 # DEFAULT_REGISTRY=ger-is-registry.caas.intel.com/ai-validation
 DEFAULT_REGISTRY=aws
 REGISTRY_NAME=${DEFAULT_REGISTRY}
+VERSION=latest
 
 do_build=false
 do_push=false
 components_to_build=()
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torcheserve" "retriever-usvc" "ingestion-usvc" "llm-uservice" "in-guard")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc")
 
 
 function help() {
@@ -32,9 +33,10 @@ function help() {
     echo -e "Options:"
     echo -e "\t--build: Build specified components."
     echo -e "\t--push: Push specified components to the registry."
-    echo -e "\t--no-build: Don't build specified components. (latest specified will be used)"
-    echo -e "\t--no-push: Don't push specified components to the registry. (latest specified will be used)"
-    echo -e "\t--registry: Specify the registry (default is $DEFAULT_REGISTRY, use localhost to setup local registry at p5000)."
+    echo -e "\t--no-build: Don't build specified components. (specified version will be used; defaults to latest)"
+    echo -e "\t--no-push: Don't push specified components to the registry. (specified version will be used; defaults to latest)"
+    echo -e "\t--registry: Specify the registry. (default is $DEFAULT_REGISTRY, use localhost to setup local registry at p5000)"
+    echo -e "\t--version: Specify the version. (default is latest)"
     echo -e "Components available: (default as all)"
     echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
@@ -58,6 +60,10 @@ while [ $# -gt 0 ]; do
             shift
             REGISTRY_NAME=${1}
             ;;
+        --version)
+            shift
+            VERSION=${1}
+            ;;
         --help)
             help
             exit 0
@@ -76,6 +82,7 @@ fi
 echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build"
 echo "do_push = $do_push"
+echo "VERSION = $VERSION"
 echo "components_to_build = ${components_to_build[*]}"
 
 
@@ -156,7 +163,7 @@ docker_login_aws() {
 
     echo "${ecr_password}" | \
     docker login --username AWS --password-stdin "${ecr_registry_url}" > /dev/null 2>&1
-    
+
     create_or_replace_secret "dataprep" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "system" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "chatqa" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
@@ -209,38 +216,39 @@ for component in "${components_to_build[@]}"; do
     if [[ "$do_push" == true ]]; then
         helm_values_info+="  $component:\n"
     fi
-
     case $component in
         gmcManager)
+            path="${repo_path}/deployment/microservices-connector"
             if [[ "$do_build" == true ]]; then
+                cd $path
                 make build
-                make docker.build
+                make docker.build VERSION=$VERSION
             fi
 
             if [[ "$do_push" == true ]]; then
-                tag_and_push $REGISTRY_NAME opea/gmcmanager latest
+                tag_and_push $REGISTRY_NAME opea/gmcmanager $VERSION
                 helm_values_info+="    pullPolicy: Always\n"
 
                 helm_values_info+="  gmcRouter:\n"
-                tag_and_push $REGISTRY_NAME opea/gmcrouter latest
+                tag_and_push $REGISTRY_NAME opea/gmcrouter $VERSION
             fi
             ;;
 
         embedding-usvc)
             path="${repo_path}/src"
             dockerfile="comps/embeddings/impl/microservice/Dockerfile"
-            image_name=opea/embedding-tei
-            image_tag=latest
+            image_name=opea/embedding
+            image_tag=$VERSION
             additional_args="--target langchain"
 
             build_component $path $dockerfile $image_name $image_tag "$additional_args"
             ;;
 
-        torcheserve)
+        torchserve)
             path="${repo_path}/src/comps/embeddings/impl/model-server/torchserve"
             dockerfile="docker/Dockerfile"
-            image_name=pl-qna-rag-embedding-torchserve
-            image_tag=latest
+            image_name=opea/torchserve
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
@@ -250,7 +258,7 @@ for component in "${components_to_build[@]}"; do
             dockerfile="comps/reranks/impl/microservice/Dockerfile"
             image_name=opea/reranking
             image_name=opea/reranking
-            image_tag=latest
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
@@ -259,7 +267,7 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/src/comps/"
             dockerfile="dataprep/impl/microservice/Dockerfile"
             image_name=opea/dataprep
-            image_tag=latest
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
@@ -268,7 +276,7 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/src/comps"
             dockerfile="retrievers/impl/microservice/Dockerfile"
             image_name=opea/retriever
-            image_tag=latest
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
@@ -277,25 +285,43 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/src/comps"
             dockerfile="ingestion/impl/microservice/Dockerfile"
             image_name=opea/ingestion
-            image_tag=latest
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
 
-        llm-uservice)
+        llm-usvc)
             path="${repo_path}/src"
             dockerfile="comps/llms/impl/microservice/Dockerfile"
             image_name=opea/llm
-            image_tag=latest
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
 
-        in-guard)
+        in-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_scanners/input_scanner/impl/microservice/Dockerfile"
             image_name=opea/in-guard
-            image_tag=latest
+            image_tag=$VERSION
+
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
+
+        out-guard-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/guardrails/llm_guard_scanners/output_scanner/impl/microservice/Dockerfile"
+            image_name=opea/out-guard
+            image_tag=$VERSION
+
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
+
+        ui-usvc)
+            path="${repo_path}/app/chat-qna"
+            dockerfile="ui/Dockerfile"
+            image_name=opea/chatqna-conversation-ui
+            image_tag=$VERSION
 
             build_component $path $dockerfile $image_name $image_tag
             ;;

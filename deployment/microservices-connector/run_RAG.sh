@@ -13,11 +13,11 @@ function help() {
     echo -e "\tPipelines available:\n$available_pipelines"
     echo -e "\t--test: Run connection test."
     echo -e "\t--telemetry: Start telemetry services."
+    echo -e "\t--dataprep: Start dataprep pipeline."
     echo -e "\t--clear: Clear the cluster and stop telemetry services."
     echo -e "\t--help: Display this help message."
-    echo -e "Example: $0 --deploy dataprep_gaudi"
-    echo -e "Example: $0 --deploy dataprep_gaudi_torch --telemetry"
-    echo -e "Example: $0 dataprep_gaudi"
+    echo -e "Example: $0 --deploy gaudi"
+    echo -e "Example: $0 --deploy gaudi_torch --telemetry --dataprep"
 }
 
 
@@ -25,14 +25,11 @@ function start_deployment() {
     cd "${repo_path}/deployment/microservices-connector"
 
     # just logging into aws
-    ./update_images.sh --registry aws --no-build --no-push
+    ./update_images.sh --registry aws --no-build --no-push > /dev/null
 
     helm install -n system --create-namespace gmc helm
     namespace=chatqa
-    dataprep_namespace=dataprep
     kubectl get namespace $namespace || kubectl create namespace $namespace
-    kubectl get namespace $dataprep_namespace || kubectl create namespace $dataprep_namespace
-    kubectl apply -f $(pwd)/config/samples/dataprep_xeon.yaml
     kubectl apply -f $(pwd)/config/samples/chatQnA_$1.yaml
     kubectl create deployment client-test -n $namespace --image=python:3.8.13 -- sleep infinity
 }
@@ -54,14 +51,26 @@ function start_telemetry() {
 }
 
 
+function start_dataprep() {
+    cd "${repo_path}/deployment/microservices-connector"
+
+    namespace=dataprep
+    kubectl get namespace $namespace || kubectl create namespace $namespace
+    kubectl apply -f $(pwd)/config/samples/dataprep_xeon.yaml
+}
+
+
 kill_process() {
     local pattern=$1
     local PID=$(pgrep -f "$pattern")
-    local full_command=$(ps -p $PID -o cmd)
+    if [ $? -ne 0 ]; then
 
-    if [ ! -z "$PID" ]; then
-        echo "Killing $full_command with PID $PID"
-        kill -2 $PID
+        local full_command=$(ps -p $PID -o cmd)
+
+        if [ ! -z "$PID" ]; then
+            echo "Killing $full_command with PID $PID"
+            kill -2 $PID
+        fi
     fi
 }
 
@@ -110,10 +119,17 @@ while [ $# -gt 0 ]; do
             echo "---> Start telemetry"
             start_telemetry
             ;;
+        --dataprep)
+            echo "--> Start dataprep pipeline"
+            start_dataprep
+            ;;
         --clear)
             echo "---> Clear cluster"
             bash ./clear_cluster.sh
-            stop_telemetry
+            helm status -n monitoring rag-telemetry > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                stop_telemetry
+            fi
             ;;
         --help)
             help

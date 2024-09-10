@@ -18,35 +18,41 @@ tokens:
 images:
   gmcManager:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
-    tag: "PR45"
+    tag: "PR104"
     pullPolicy: Always
   gmcRouter:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
-    tag: "PR45"
+    tag: "PR104"
   dataprep-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/dataprep"
-    tag: "PR45"
+    tag: "PR104"
   embedding-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding-tei"
-    tag: "PR45"
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding"
+    tag: "PR104"
   reranking-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
-    tag: "PR45"
+    tag: "PR104"
+  torchserve:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/torchserve"
+    tag: "PR104"
   retriever-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/retriever"
-    tag: "PR45"
-  torcheserve:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/pl-qna-rag-embedding-torchserve"
-    tag: "PR45"
+    tag: "PR104"
   ingestion-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/ingestion"
-    tag: "PR45"
-  llm-uservice:
+    tag: "PR104"
+  llm-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
-    tag: "PR45"
-  in-guard:
+    tag: "PR104"
+  in-guard-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/in-guard"
-    tag: "PR45"
+    tag: "PR104"
+  out-guard-usvc:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/out-guard"
+    tag: "PR104"
+  ui-usvc:
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
+    tag: "PR104"
 
 
 imagePullSecrets:

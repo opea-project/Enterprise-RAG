@@ -1,21 +1,21 @@
 ---
-# Source: llm-uservice/templates/configmap.yaml
+# Source: llm-usvc/templates/configmap.yaml
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: llm-uservice-config
+  name: llm-usvc-config
   labels:
-    helm.sh/chart: llm-uservice-0.8.0
-    app.kubernetes.io/name: llm-uservice
-    app.kubernetes.io/instance: llm-uservice
+    helm.sh/chart: llm-usvc-0.8.0
+    app.kubernetes.io/name: llm-usvc
+    app.kubernetes.io/instance: llm-usvc
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  TGI_LLM_ENDPOINT: "http://llm-uservice-tgi"
-  LLM_MODEL_SERVER_ENDPOINT: "http://llm-uservice-tgi"
+  TGI_LLM_ENDPOINT: "http://llm-usvc-tgi"
+  LLM_MODEL_SERVER_ENDPOINT: "http://llm-usvc-tgi"
   HUGGINGFACEHUB_API_TOKEN: "insert-your-huggingface-token-here"
   HF_HOME: "/tmp/.cache/huggingface"
   http_proxy: ""
@@ -23,20 +23,20 @@ data:
   no_proxy: ""
   LANGCHAIN_TRACING_V2: "false"
   LANGCHAIN_API_KEY: insert-your-langchain-key-here
-  LANGCHAIN_PROJECT: "opea-llm-uservice"
+  LANGCHAIN_PROJECT: "opea-llm-usvc"
 ---
-# Source: llm-uservice/templates/service.yaml
+# Source: llm-usvc/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: llm-uservice
+  name: llm-usvc
   labels:
-    helm.sh/chart: llm-uservice-0.8.0
-    app.kubernetes.io/name: llm-uservice
-    app.kubernetes.io/instance: llm-uservice
+    helm.sh/chart: llm-usvc-0.8.0
+    app.kubernetes.io/name: llm-usvc
+    app.kubernetes.io/instance: llm-usvc
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -45,44 +45,44 @@ spec:
     - port: 9000
       targetPort: 9000
       protocol: TCP
-      name: llm-uservice
+      name: llm-usvc
   selector:
-    app.kubernetes.io/name: llm-uservice
-    app.kubernetes.io/instance: llm-uservice
+    app.kubernetes.io/name: llm-usvc
+    app.kubernetes.io/instance: llm-usvc
 ---
-# Source: llm-uservice/templates/deployment.yaml
+# Source: llm-usvc/templates/deployment.yaml
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llm-uservice
+  name: llm-usvc
   labels:
-    helm.sh/chart: llm-uservice-0.8.0
-    app.kubernetes.io/name: llm-uservice
-    app.kubernetes.io/instance: llm-uservice
+    helm.sh/chart: llm-usvc-0.8.0
+    app.kubernetes.io/name: llm-usvc
+    app.kubernetes.io/instance: llm-usvc
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: llm-uservice
-      app.kubernetes.io/instance: llm-uservice
+      app.kubernetes.io/name: llm-usvc
+      app.kubernetes.io/instance: llm-usvc
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: llm-uservice
-        app.kubernetes.io/instance: llm-uservice
+        app.kubernetes.io/name: llm-usvc
+        app.kubernetes.io/instance: llm-usvc
     spec:
       securityContext:
         {}
       containers:
-        - name: llm-uservice
+        - name: llm-usvc
           envFrom:
             - configMapRef:
-                name: llm-uservice-config
+                name: llm-usvc-config
             - configMapRef:
                 name: extra-env-config
                 optional: true
@@ -99,7 +99,7 @@ spec:
           image: "opea/llm-tgi:latest"
           imagePullPolicy: IfNotPresent
           ports:
-            - name: llm-uservice
+            - name: llm-usvc
               containerPort: 9000
               protocol: TCP
           volumeMounts:
@@ -109,20 +109,20 @@ spec:
             failureThreshold: 24
             httpGet:
               path: v1/health_check
-              port: llm-uservice
+              port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 5
           readinessProbe:
             httpGet:
               path: v1/health_check
-              port: llm-uservice
+              port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 5
           startupProbe:
             failureThreshold: 120
             httpGet:
               path: v1/health_check
-              port: llm-uservice
+              port: llm-usvc
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:

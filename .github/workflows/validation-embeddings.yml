@@ -11,6 +11,10 @@ jobs:
       name: "Validation :: Embeddings tests"
       runs-on: [ innersource.prod.amr.dind ]
       container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
+      environment: default
+      permissions:
+        id-token: write
+        contents: read
       defaults:
         run:
           shell: bash
@@ -19,7 +23,7 @@ jobs:
         REMOTE_WORKSPACE: "/tmp/${{ github.event.issue.number }}/${{ github.run_number }}/${{ github.run_attempt }}"
       steps:
         - name: Install deps
-          run: apt update && apt install -y rsync netcat-openbsd openssh-client
+          run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests
 
         - name: Checkout actions
           uses: actions/checkout@v4
@@ -57,6 +61,29 @@ jobs:
             run: |
               cd ${{ env.REMOTE_WORKSPACE }}/src
               tox -e microservices
+
+        - uses: intel-innersource/frameworks.actions.certs@latest
+          if: always()
+
+        - name: Collect jira_token from Conjur
+          if: always()
+          uses: intel-innersource/frameworks.actions.conjur-fetch@v1
+          with:
+            host_id: host/github-apps-oidc/43211-raglabel
+            secrets: >
+              FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-jira_token/password|JIRA_TOKEN
+
+        - name: Download allure-results
+          if: always()
+          run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results repo/src/tests/microservices
+
+        - name: Upload results to Zephyr
+          if: always()
+          run: |
+            echo "Attempting to upload results to Zephyr"
+            cd repo/src/tests/microservices
+            python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }}
+            echo "Uploading results to Zephyr finished"
 
         - name: Clean up container
           if: always()

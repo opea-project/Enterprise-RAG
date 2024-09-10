@@ -54,7 +54,7 @@ jobs:
           with:
             host_id: host/github-apps-oidc/43211-raglabel
             secrets: >
-              FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-jira_token/password|JIRA_TOKEN
+              FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-jira_token/password|JIRA_TOKEN;
               FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-hugging_face_token/password|HF_TOKEN
 
         - name: "Create workspace directory"

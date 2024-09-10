@@ -11,47 +11,49 @@ RUN apt-get install -y --no-install-recommends --fix-missing \
     libgl1-mesa-glx \
     libjemalloc-dev \
     vim && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash user && \
-    mkdir -p /home/user && \
-    chown -R user /home/user/
-
-WORKDIR /home/user/
-
-COPY comps/cores /home/user/comps/cores
-COPY comps/__init__.py  /home/user/comps/__init__.py
-COPY comps/embeddings/utils /home/user/comps/embeddings/utils
-COPY comps/embeddings/opea_embedding_microservice.py /home/user/comps/embeddings/opea_embedding_microservice.py
-
-ENV PYTHONPATH=/home/user
-ENV PATH=/home/user/.local/bin:${PATH}
-
-WORKDIR /home/user/comps/embeddings
-RUN touch __init__.py
+RUN useradd -m -s /bin/bash user
 
 USER user
+ENV PATH="$PATH:/home/user/.local/bin"
+ENV PYTHONPATH=$PYTHONPATH:/home/user
+
+COPY ./comps/embeddings/impl/microservice/requirements.txt /tmp/requirements.txt
+
+RUN pip install --no-cache-dir --upgrade pip setuptools && \
+    pip install --no-cache-dir -r /tmp/requirements.txt
+
+WORKDIR /home/user
+COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
+COPY --chown=user:user ./comps/cores ./comps/cores
+COPY --chown=user:user ./comps/embeddings/utils ./comps/embeddings/utils
+COPY --chown=user:user ./comps/embeddings/opea_embedding_microservice.py ./comps/embeddings/opea_embedding_microservice.py
+
+WORKDIR /home/user/comps/embeddings
+CMD ["python", "opea_embedding_microservice.py"]
 
 # llama_index
 FROM base AS llama_index
 
-COPY comps/embeddings/impl/microservice/requirements/llama_index.txt /home/user/comps/embeddings/requirements/llama_index.txt
+WORKDIR /home/user
+COPY ./comps/embeddings/impl/microservice/requirements/llama_index.txt /tmp/llama-requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements/llama_index.txt
+    pip install --no-cache-dir -r /tmp/llama-requirements.txt
 
-ENTRYPOINT ["python", "opea_embedding_microservice.py"]
+WORKDIR /home/user/comps/embeddings
 
 # langchain
 FROM base AS langchain
 
 ARG ARCH="cpu"
 
-COPY comps/embeddings/impl/microservice/requirements/langchain.txt /home/user/comps/embeddings/requirements/langchain.txt
+WORKDIR /home/user
+COPY ./comps/embeddings/impl/microservice/requirements/langchain.txt /tmp/langchain-requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
     if [ ${ARCH} = "cpu" ]; then pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; fi && \
-    pip install --no-cache-dir -r requirements/langchain.txt
+    pip install --no-cache-dir -r /tmp/langchain-requirements.txt
 
-ENTRYPOINT ["python", "opea_embedding_microservice.py"]
+WORKDIR /home/user/comps/embeddings

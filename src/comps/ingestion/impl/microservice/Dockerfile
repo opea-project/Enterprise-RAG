@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8
 
 RUN apt-get -y update && \ 
     apt-get install --no-install-recommends --fix-missing -y nano && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash user && \
     mkdir -p /home/user/comps && \
@@ -15,18 +15,21 @@ RUN useradd -m -s /bin/bash user && \
 
 USER user
 ENV PATH="$PATH:/home/user/.local/bin"
+ENV PYTHONPATH=$PYTHONPATH:/home/user
 
-COPY ingestion/impl/microservice/requirements.txt /tmp/ingestion-requirements.txt
-COPY vectorstores/impl/requirements.txt /tmp/vectorstores-requirements.txt
+COPY ./comps/ingestion/impl/microservice/requirements.txt /tmp/ingestion-requirements.txt
+COPY ./comps/vectorstores/impl/requirements.txt /tmp/vectorstores-requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip setuptools && \
     pip install --no-cache-dir -r /tmp/ingestion-requirements.txt && \
     pip install --no-cache-dir -r /tmp/vectorstores-requirements.txt
 
 WORKDIR /home/user
-COPY ./cores ./comps/cores
-COPY ./ingestion ./comps/ingestion
-COPY ./vectorstores ./comps/vectorstores
+COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
+COPY --chown=user:user ./comps/cores ./comps/cores
+COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
+COPY --chown=user:user ./comps/ingestion/utils ./comps/ingestion/utils
+COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
 
-ENV PYTHONPATH=$PYTHONPATH:/home/user
-CMD ["python3", "comps/ingestion/opea_ingestion_microservice.py"]
+WORKDIR /home/user/comps/ingestion
+CMD ["python", "opea_ingestion_microservice.py"]

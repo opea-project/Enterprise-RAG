@@ -17,25 +17,23 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missin
     procps && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -u 1000 user && \
-mkdir -p /home/user && \
-chown -R user /home/user/
+RUN useradd -m -s /bin/bash user && \
+    mkdir -p /home/user/comps && \
+    chown -R user /home/user/
 
 USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+ENV PATH="$PATH:/home/user/.local/bin"
+ENV PYTHONPATH=$PYTHONPATH:/home/user
 
-COPY comps/cores /home/user/comps/cores
-COPY comps/__init__.py  /home/user/comps/__init__.py
-COPY comps/guardrails/llm_guard_scanners/output_scanner/impl/microservice/requirements.txt /home/user/requirements.txt
-COPY comps/guardrails/llm_guard_scanners/output_scanner/utils /home/user/comps/guardrails/llm_guard_scanners/output_scanner/utils
-COPY comps/guardrails/llm_guard_scanners/output_scanner/llm_guard_output_scanner_microservice.py /home/user/llm_guard_output_scanner_microservice.py
-
-# Set up a working directory
-WORKDIR /home/user/
-
+COPY ./comps/guardrails/llm_guard_scanners/output_scanner/impl/microservice/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r /tmp/requirements.txt
 
-ENTRYPOINT ["python", "llm_guard_output_scanner_microservice.py"]
+WORKDIR /home/user/
+COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
+COPY --chown=user:user ./comps/cores ./comps/cores
+COPY --chown=user:user ./comps/guardrails/llm_guard_scanners/output_scanner/utils ./comps/guardrails/llm_guard_scanners/output_scanner/utils
+COPY --chown=user:user ./comps/guardrails/llm_guard_scanners/output_scanner/llm_guard_output_scanner_microservice.py ./llm_guard_output_scanner_microservice.py
 
+WORKDIR /home/user/comps/guardrails/llm_guard_scanners/output_scanner
+CMD ["python", "llm_guard_output_scanner_microservice.py"]

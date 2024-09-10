@@ -264,8 +264,8 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         dataprep-usvc)
-            path="${repo_path}/src/comps/"
-            dockerfile="dataprep/impl/microservice/Dockerfile"
+            path="${repo_path}/src"
+            dockerfile="comps/dataprep/impl/microservice/Dockerfile"
             image_name=opea/dataprep
             image_tag=$VERSION
 
@@ -273,8 +273,8 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         retriever-usvc)
-            path="${repo_path}/src/comps"
-            dockerfile="retrievers/impl/microservice/Dockerfile"
+            path="${repo_path}/src"
+            dockerfile="comps/retrievers/impl/microservice/Dockerfile"
             image_name=opea/retriever
             image_tag=$VERSION
 
@@ -282,8 +282,8 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         ingestion-usvc)
-            path="${repo_path}/src/comps"
-            dockerfile="ingestion/impl/microservice/Dockerfile"
+            path="${repo_path}/src"
+            dockerfile="comps/ingestion/impl/microservice/Dockerfile"
             image_name=opea/ingestion
             image_tag=$VERSION
 

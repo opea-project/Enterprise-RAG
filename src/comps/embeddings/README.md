@@ -50,9 +50,15 @@ For all of the implementations of the microservice, you need to install requirem
 To install the requirements, run the following commands:
 
 ```bash
-# run with langchain
+# First, install essential requirements for the microservice
+pip install -r impl/microservice/requirements.txt
+
+# Next, install specific model server requirements, depending on choosen model server:
+
+# For langchain model server, use the following command:
 pip install -r impl/microservice/requirements/langchain.txt
-# run with llama_index
+
+# for llama_index model server, use the following command:
 pip install -r impl/microservice/requirements/llama_index.txt
 ```
 

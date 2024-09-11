@@ -94,7 +94,7 @@ To start the LLM microservice, you need to install python packages first.
 ## 1.1 Install Requirements
 
 ```bash
-pip install -r impl/microservice/requirements/requirements.txt
+pip install -r impl/microservice/requirements.txt
 ```
 
 ## 1.2 Start LLM Model Servver

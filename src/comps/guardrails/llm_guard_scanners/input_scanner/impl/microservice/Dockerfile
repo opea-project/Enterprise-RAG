@@ -17,9 +17,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missin
     procps && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash user && \
-    mkdir -p /home/user/comps && \
-    chown -R user /home/user/
+RUN useradd -m -s /bin/bash user
 
 USER user
 ENV PATH="$PATH:/home/user/.local/bin"
@@ -30,10 +28,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /home/user/
-COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
+COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
+COPY --chown=user:user ./comps/__init__.py ./comps/guardrails/__init__.py
+COPY --chown=user:user ./comps/__init__.py ./comps/guardrails/llm_guard_scanners/__init__.py
 COPY --chown=user:user ./comps/guardrails/llm_guard_scanners/input_scanner/utils ./comps/guardrails/llm_guard_scanners/input_scanner/utils
-COPY --chown=user:user ./comps/guardrails/llm_guard_scanners/input_scanner/llm_guard_input_scanner_microservice.py ./llm_guard_input_scanner_microservice.py
+COPY --chown=user:user ./comps/guardrails/llm_guard_scanners/input_scanner/llm_guard_input_scanner_microservice.py ./comps/guardrails/llm_guard_scanners/input_scanner/llm_guard_input_scanner_microservice.py
 
 WORKDIR /home/user/comps/guardrails/llm_guard_scanners/input_scanner
 CMD ["python", "llm_guard_input_scanner_microservice.py"]

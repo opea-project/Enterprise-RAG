@@ -9,9 +9,7 @@ RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash user && \
-    mkdir -p /home/user/comps && \
-    chown -R user /home/user/
+RUN useradd -m -s /bin/bash user
 
 USER user
 ENV PATH="$PATH:/home/user/.local/bin"

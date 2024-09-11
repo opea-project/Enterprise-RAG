@@ -318,8 +318,8 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         ui-usvc)
-            path="${repo_path}/app/chat-qna"
-            dockerfile="ui/Dockerfile"
+            path="${repo_path}/app/chat-qna/ui"
+            dockerfile="Dockerfile"
             image_name=opea/chatqna-conversation-ui
             image_tag=$VERSION
 

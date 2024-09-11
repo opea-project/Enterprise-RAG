@@ -19,13 +19,13 @@ MICROSERVICE_API_PORT=5007
 
 function check_prerequisites() {
     if [ -z "${HF_TOKEN}" ]; then
-        fail "HF_TOKEN environment variable is not set. Exiting."
+        test_fail "HF_TOKEN environment variable is not set. Exiting."
     fi
 }
 
-function fail() {
+function test_fail() {
     echo "FAIL: ${1}" 1>&2
-    cleanup
+    test_clean
     exit 1
 }
 
@@ -40,7 +40,7 @@ function start_service() {
     model="BAAI/bge-reranker-large"
     revision="refs/pr/4"
 
-    docker run -d --rm --name="${MODEL_SERVER_CONTAINER_NAME}" \
+    docker run -d --name="${MODEL_SERVER_CONTAINER_NAME}" \
         -p ${MODEL_SERVER_HOST_PORT}:80 \
         -v ./data:/data \
         --pull always \
@@ -50,7 +50,7 @@ function start_service() {
 
     export TEI_RERANKING_ENDPOINT="http://${IP_ADDRESS}:${MODEL_SERVER_HOST_PORT}"
 
-    docker run -d --rm --name="${MICROSERVICE_CONTAINER_NAME}" \
+    docker run -d --name="${MICROSERVICE_CONTAINER_NAME}" \
         -p ${MICROSERVICE_API_PORT}:8000 \
         --ipc=host \
         -e http_proxy=$http_proxy \
@@ -60,6 +60,23 @@ function start_service() {
         ${MICROSERVICE_IMAGE_NAME}
 
     sleep 1m
+}
+
+function check_containers() {
+  container_names=("${ENDPOINT_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
+  failed_containers="false"
+
+  for name in "${container_names[@]}"; do
+    if [ "$( docker container inspect -f '{{.State.Status}}' "${name}" )" != "running" ]; then
+      echo "Container '${name}' failed. Print logs:"
+      docker logs "${name}"
+      failed_containers="true"
+    fi
+  done
+
+  if [[ "${failed_containers}" == "true" ]]; then
+    test_fail "There are failed containers"
+  fi
 }
 
 function validate_microservice() {
@@ -77,21 +94,25 @@ function validate_microservice() {
 
     http_status=$(echo $http_response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
     if [ "$http_status" -ne "200" ]; then
-        fail "HTTP status is not 200. Received status was $http_status"
+        test_fail "HTTP status is not 200. Received status was $http_status"
 		fi
 
     http_content=$(echo "$http_response" | sed 's/HTTPSTATUS.*//')
     echo "${http_content}" | jq; parse_return_code=$?
 		if [ "${parse_return_code}" -ne "0" ]; then
-        fail "HTTP response content is not json parsable. Response content was: ${http_content}"
+        test_fail "HTTP response content is not json parsable. Response content was: ${http_content}"
 		fi
 
 		set -e
 }
 
-function stop_containers() {
-    cid=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
-    if [[ ! -z "$cid" ]]; then docker stop $cid && sleep 1s ; fi
+function purge_containers() {
+    cids=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
+    if [[ ! -z "$cids" ]]
+    then
+      docker stop $cids
+      docker rm $cids
+    fi
 }
 
 function remove_images() {
@@ -106,18 +127,21 @@ function remove_images() {
     docker buildx prune -f
 }
 
-function cleanup() {
-    stop_containers
+function test_clean() {
+    purge_containers
     remove_images
 }
 
 function main() {
     check_prerequisites
-    cleanup
+    test_clean
+
     build_docker_images
     start_service
+    check_containers
     validate_microservice
-    cleanup
+
+    test_clean
 }
 
 main

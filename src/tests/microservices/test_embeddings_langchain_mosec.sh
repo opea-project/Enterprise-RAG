@@ -39,14 +39,14 @@ function start_service() {
     internal_communication_port=5001  # Port for communication between microservice and endpoint
     unset http_proxy
 
-    docker run -d --rm --name ${ENDPOINT_CONTAINER_NAME} \
+    docker run -d --name ${ENDPOINT_CONTAINER_NAME} \
         --runtime runc \
         --cap-add SYS_NICE \
         -p $internal_communication_port:8000 \
         ${ENDPOINT_IMAGE_NAME}
     sleep 1m
 
-    docker run -d --rm --name ${MICROSERVICE_CONTAINER_NAME} \
+    docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
         --runtime runc \
         -p ${MICROSERVICE_API_PORT}:6000 \
         -e http_proxy=$http_proxy \
@@ -57,6 +57,23 @@ function start_service() {
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
     sleep 1m
+}
+
+function check_containers() {
+  container_names=("${ENDPOINT_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
+  failed_containers="false"
+
+  for name in "${container_names[@]}"; do
+    if [ "$( docker container inspect -f '{{.State.Status}}' "${name}" )" != "running" ]; then
+      echo "Container '${name}' failed. Print logs:"
+      docker logs "${name}"
+      failed_containers="true"
+    fi
+  done
+
+  if [[ "${failed_containers}" == "true" ]]; then
+    test_fail "There are failed containers"
+  fi
 }
 
 function validate_microservice() {
@@ -85,9 +102,13 @@ function validate_microservice() {
 		set -e
 }
 
-function stop_containers() {
-    cid=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
-    if [[ ! -z "$cid" ]]; then docker stop $cid && sleep 1s; fi
+function purge_containers() {
+    cids=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
+    if [[ ! -z "$cids" ]]
+    then
+      docker stop $cids
+      docker rm $cids
+    fi
 }
 
 function remove_images() {
@@ -103,7 +124,7 @@ function remove_images() {
 }
 
 function test_clean() {
-    stop_containers
+    purge_containers
     remove_images
 }
 
@@ -113,7 +134,7 @@ function main() {
 
     build_docker_images
     start_service
-
+    check_containers
     validate_microservice
 
     test_clean

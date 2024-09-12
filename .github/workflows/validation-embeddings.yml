@@ -69,12 +69,12 @@ jobs:
         - name: "Run tests"
           uses: ./.github/actions/execute_remote_script
           env:
-            HF_TOKEN: ${HF_TOKEN}
+            HF_TOKEN: ${{ env.HF_TOKEN }}
           with:
             host: ${{ env.REMOTE_GAUDI_HOST }}
             run: |
               cd ${{ env.REMOTE_WORKSPACE }}/src
-              tox -e microservices
+              HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
 
         - name: Download allure-results
           if: always()

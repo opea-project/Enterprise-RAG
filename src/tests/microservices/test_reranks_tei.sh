@@ -63,7 +63,7 @@ function start_service() {
 }
 
 function check_containers() {
-  container_names=("${ENDPOINT_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
+  container_names=("${MODEL_SERVER_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
   failed_containers="false"
 
   for name in "${container_names[@]}"; do

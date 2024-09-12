@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
+from typing import Union
 from utils import opea_retriever
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
-from comps.cores.proto.docarray import EmbedDocList, SearchedDoc
+from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, SearchedDoc
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
 from comps.cores.mega.base_statistics import register_statistics, statistics_dict
 
@@ -18,19 +19,19 @@ def start_ingestion_service(opea_retriever: opea_retriever.OPEARetriever, opea_m
         endpoint=str(MegaServiceEndpoint.RETRIEVAL),
         host="0.0.0.0",
         port=6620,
-        input_datatype=EmbedDocList,
+        input_datatype=Union[EmbedDoc, EmbedDocList],
         output_datatype=SearchedDoc,
     )
     @register_statistics(names=[opea_microservice_name])
-    def retrieve(input: EmbedDocList) -> SearchedDoc:
+    def retrieve(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         start = time.time()
         vector = []
 
         # only one doc is allowed
-        if not isinstance(input, (list, tuple)):
-            vector = input.docs # EmbedDoc
+        if isinstance(input, EmbedDocList):
+            vector = input.docs[0] # EmbedDocList[0]
         else:
-            vector = input.docs[0] # List[EmbedDoc][0]
+            vector = input # EmbedDoc
 
         result_vectors = opea_retriever.retrieve(vector)
         statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)

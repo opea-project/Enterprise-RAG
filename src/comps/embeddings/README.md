@@ -24,6 +24,15 @@ curl http://localhost:6000/v1/embeddings\
   -H 'Content-Type: application/json'
 ```
 
+or, alternatively, like this:
+
+```bash
+curl http://localhost:6000/v1/embeddings\
+  -X POST \
+  -d '{docs: ["text":"Hello, world!", "text":"Hello, world!"]}' \
+  -H 'Content-Type: application/json'
+```
+
 ## Example output
 
 Output of an embedding microservice is a json that stores an input text, computed embeddings and other parameters.

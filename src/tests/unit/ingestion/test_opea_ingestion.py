@@ -28,7 +28,7 @@ def mock_vectorstore():
 
 def test_ingest_multiple_docs(mock_vectorstore):
     docs = [
-        EmbedDoc(text="doc1", embedding=[1,2,3]), 
+        EmbedDoc(text="doc1", embedding=[1,2,3]),
         EmbedDoc(text="doc2", embedding=[1,2,3])
     ]
     input_docs = EmbedDocList(docs=docs)
@@ -40,9 +40,9 @@ def test_ingest_multiple_docs(mock_vectorstore):
 def test_ingest_single_docs(mock_vectorstore):
     doc = EmbedDoc(text="doc1", embedding=[1,2,3])
 
-    input_docs = EmbedDocList(docs=doc)
+    input_docs = EmbedDocList(docs=[doc])
     ingestion = OPEAIngestion("redis")
     result = ingestion.ingest(input_docs)
 
-    assert isinstance(result.docs, EmbedDoc)
-    assert result.docs.text == "doc1"
+    assert isinstance(result.docs[0], EmbedDoc)
+    assert result.docs[0].text == "doc1"

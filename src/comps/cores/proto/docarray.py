@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -21,7 +21,7 @@ class TextDoc(BaseDoc, TopologyInfo):
     metadata: Optional[dict] = {}
 
 class TextDocList(BaseDoc):
-    docs: Union[TextDoc, List[TextDoc]]
+    docs: List[TextDoc]
 
 class Base64ByteStrDoc(BaseDoc):
     byte_str: str
@@ -47,7 +47,7 @@ class EmbedDoc(BaseDoc):
     metadata: Optional[dict] = {}
 
 class EmbedDocList(BaseDoc):
-    docs: Union[EmbedDoc, List[EmbedDoc]]
+    docs: List[EmbedDoc]
 
 class Audio2TextDoc(AudioDoc):
     url: Optional[AudioUrl] = Field(

@@ -5,10 +5,10 @@ import os
 import time
 
 from fastapi import HTTPException
-from comps.cores.proto.docarray import EmbedDocList, TextDocList
+from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
+from typing import Union
 from utils import opea_embedding
 from comps import (
-    EmbedDoc,
     ServiceType,
     MegaServiceEndpoint,
     change_opea_logger_level,
@@ -37,17 +37,17 @@ def start_embedding_service(opea_embedding: opea_embedding.OPEAEmbedding, opea_m
         endpoint=str(MegaServiceEndpoint.EMBEDDINGS),
         host="0.0.0.0",
         port=6000,
-        input_datatype=TextDocList,
-        output_datatype=EmbedDocList,
+        input_datatype=Union[TextDoc, TextDocList],
+        output_datatype=Union[EmbedDoc, EmbedDocList],
     )
     @register_statistics(names=[opea_microservice_name])
-    def embedding(input: TextDocList) -> EmbedDocList:
+    def embedding(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
         start = time.time()
         docs = []
-        docs_to_parse = input.docs
-
-        if not isinstance(docs_to_parse, (list, tuple)):
-            docs_to_parse = [docs_to_parse]
+        if isinstance(input, TextDoc):
+            docs_to_parse = [input]
+        else:
+            docs_to_parse = input.docs
 
         for doc in docs_to_parse:
             if doc.text.strip() == "":
@@ -60,12 +60,12 @@ def start_embedding_service(opea_embedding: opea_embedding.OPEAEmbedding, opea_m
         if len(docs) == 0:
             raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
 
-        statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)        
-        
-        if not isinstance(input.docs, (list, tuple)):
-            return EmbedDocList(docs=docs[0]) # return TextDoc
+        statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)
+
+        if isinstance(input, TextDoc):
+            return docs[0] # return EmbedDoc
         else:
-            return EmbedDocList(docs=docs) # return List[TextDoc]
+            return EmbedDocList(docs=docs) # return EmbedDocList
 
     opea_microservices[opea_microservice_name].start()
 

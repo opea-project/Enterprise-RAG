@@ -6,8 +6,9 @@ telemetry/helm/example/pcm/
 # Deployment
 deployment/**/bin/
 deployment/*.out
-deployment/**/Chart.lock
-deployment/**/charts/*.tgz
+Chart.lock
+**/charts/*.tgz
+nohup*.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -15,44 +15,48 @@ proxy:
 tokens:
   hugToken: ""
 
+
+# Common tag for all images. Override if needed for specific images.
+common_tag: &tag "PR118"
+
 images:
   gmcManager:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
-    tag: "PR118"
+    tag: *tag
     pullPolicy: Always
   gmcRouter:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
-    tag: "PR118"
+    tag: *tag
   dataprep-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/dataprep"
-    tag: "PR118"
+    tag: *tag
   embedding-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding"
-    tag: "PR118"
+    tag: *tag
   reranking-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
-    tag: "PR118"
+    tag: *tag
   torchserve:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/torchserve"
-    tag: "PR118"
+    tag: *tag
   retriever-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/retriever"
-    tag: "PR118"
+    tag: *tag
   ingestion-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/ingestion"
-    tag: "PR118"
+    tag: *tag
   llm-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
-    tag: "PR118"
+    tag: *tag
   in-guard-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/in-guard"
-    tag: "PR118"
+    tag: *tag
   out-guard-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/out-guard"
-    tag: "PR118"
+    tag: *tag
   ui-usvc:
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
-    tag: "PR118"
+    tag: *tag
 
 
 imagePullSecrets:

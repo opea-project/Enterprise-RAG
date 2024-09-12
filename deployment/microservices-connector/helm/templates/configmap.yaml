@@ -12,6 +12,7 @@ data:
   {{- range $path, $_ := .Files.Glob "manifests_common/*.yaml" }}
   {{ $filename := index (splitList "." ($path | base)) 0 }}
   {{ $imageKey := index $.Values.images $filename }}
+  {{ $hugToken := required "The hugToken value is required and must be set in values.yaml" $.Values.tokens.hugToken }}
   {{ $path | base }}: |
     {{- $content := $.Files.Get $path }}
     {{- if $imageKey }}
@@ -20,7 +21,7 @@ data:
     {{- $content = regexReplaceAll "(.*http_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpProxy) }}
     {{- $content = regexReplaceAll "(.*https_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpsProxy) }}
     {{- $content = regexReplaceAll "(.*no_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.noProxy) }}
-    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*).*" $content (printf "$1\"%s\"" $.Values.tokens.hugToken) }}
+    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*).*" $content (printf "$1\"%s\"" $hugToken) }}
     {{- if $.Values.imagePullSecrets }}
       {{- $imagePullSecrets := toYaml $.Values.imagePullSecrets | nindent 10 }}
       {{- $content = regexReplaceAllLiteral "containers:" $content (printf "imagePullSecrets:%s\n      containers:" $imagePullSecrets) }}

@@ -1,3 +1,4 @@
+{{ if index .Values "habana-exporter" "enabled" }}
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
@@ -5,13 +6,11 @@ kind: PodMonitor
 metadata:
   name: habana-exporter
   labels:
-    release: rag-telemetry
+    release: {{.Release.Name}}
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: habana-metric-exporter-ds
   podMetricsEndpoints:
   - port: habana-metrics
-
-
-
+{{ end }}

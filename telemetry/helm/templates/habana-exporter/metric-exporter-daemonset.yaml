@@ -1,3 +1,4 @@
+{{ if index .Values "habana-exporter" "enabled" }}
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: apps/v1
@@ -53,3 +54,4 @@ spec:
         - name: pod-resources
           hostPath:
             path: /var/lib/kubelet/pod-resources
+{{- end }}

@@ -1,14 +1,21 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: v2
-name: enterprise-rag-telemetry
+name: telemetry
 type: application
 version: 0.2.0
 
 dependencies:
+  # built-in sub charts
+  - name: logs
+    version: "0.2.0"
+    condition: logs.enabled
+  # external/3rd party subcharts
   - name: kube-prometheus-stack
+    condition: kube-prometheus-stack.enabled
     repository: https://prometheus-community.github.io/helm-charts
     version: "61.7.*"
   - name: prometheus-redis-exporter
+    condition: prometheus-redis-exporter.enabled
     repository: https://prometheus-community.github.io/helm-charts
     version: "6.5.0"

@@ -76,11 +76,22 @@ function start_telemetry() {
 
     helm repo update
     helm dependency build
-    helm install -n monitoring --create-namespace rag-telemetry .
+    # telemetry/base (metrics)
+    helm install -n monitoring --create-namespace telemetry .
+    # telemetry/logs
+
+    # Please remember prerequesites from telemetry/helm/charts/logs/README.md must be met (volumes/image)
+    # helm install -n monitoring telemetry-logs charts/logs                                          # simple version without journald/unit logs
+    # Set own image with --set otelcol-logs.image.repository="$REGISTRY/otelcol-contrib-journalctl"
+    helm install -n monitoring telemetry-logs -f charts/logs/values-journalctl.yaml charts/logs     # custom image version with journald/unit logs
 
     # wait for telemetry pods to be ready
     printf "waiting until telemetry is ready. "
     wait_for_condition check_pods "monitoring"
+    # Please remember prerequesites from telemetry/helm/charts/logs/README.md must be met (volumes/image)
+    # helm install -n monitoring telemetry-logs charts/logs                                          # simple version without journald/unit logs
+    # Set own image with --set otelcol-logs.image.repository="$REGISTRY/otelcol-contrib-journalctl"
+    helm install -n monitoring telemetry-logs -f charts/logs/values-journalctl.yaml charts/logs     # custom image version with journald/unit logs
 
     nohup kubectl --namespace monitoring port-forward svc/rag-telemetry-grafana $GRAFANA_FPORT:80 >> nohup_grafana.out 2>&1 &
     nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
@@ -113,7 +124,8 @@ kill_process() {
 function stop_telemetry() {
     cd "${repo_path}/telemetry/helm"
 
-    helm uninstall -n monitoring rag-telemetry
+    helm uninstall -n monitoring telemetry-logs
+    helm uninstall -n monitoring telemetry
 
     kill_process "kubectl --namespace monitoring port-forward"
     kill_process "kubectl proxy"

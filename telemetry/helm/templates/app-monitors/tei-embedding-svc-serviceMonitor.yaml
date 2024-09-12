@@ -1,17 +1,19 @@
+{{- if index .Values "app-monitors" "enabled" }}
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: reranking-svc
+  name: tei-embedding-svc
   labels:
-    release: rag-telemetry
+    release: {{.Release.Name}}
 spec:
   namespaceSelector:
     matchNames:
     - chatqa
   selector:
     matchLabels:
-      app.kubernetes.io/instance: reranking-usvc
+      app.kubernetes.io/instance: tei
   endpoints:
-  - port: "reranking-usvc"
+  - port: "tei"
+{{- end }}

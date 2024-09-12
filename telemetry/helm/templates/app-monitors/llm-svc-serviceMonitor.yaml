@@ -1,20 +1,20 @@
+{{- if index .Values "app-monitors" "enabled" }}
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
-  name: router-service
+  name: llm-svc
   labels:
-    release: rag-telemetry
+    release: {{.Release.Name}}
+spec:
 spec:
   namespaceSelector:
     matchNames:
     - chatqa
   selector:
     matchLabels:
-      app: router-service
-  podMetricsEndpoints:
-  - targetPort: 8080
-
-
-
+      app.kubernetes.io/instance: llm-uservice
+  endpoints:
+  - port: "llm-uservice"
+{{- end }}

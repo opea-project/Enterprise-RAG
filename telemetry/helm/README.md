@@ -1,219 +1,118 @@
-### Helm chart for install telemetry services for Enterprice RAG
+# Enterprise-RAG Telemetry Helm Chart
 
-#### Assumptions/current state/limitations:
+### Assumptions/current state/limitations:
 
 - ChatQnA application is deployed to "chatqa" namespace (check instructions below).
 - All telemetry components will be deployed to `monitoring` namespace.
 - `kubectl proxy` is running in background (for testing).
 - localhost:5000 docker registry is deployed  e.g. with `docker run -d -p 5000:5000 --name local-registry registry:2` or use kind creation script: `example/kind-with-registry-opea-models-mount.sh`
 
-#### Getting started (install telemetry only)
+### Getting started
 
-a) Install "rag-telemetry" release from helm source directory:
+Following instruction deploy only telemetry components.
+
+#### I) Install **metrics pipeline** telemetry.
+
+This is metrics pipeline and Grafana deployed from helm source **base** directory:
 
 ```
-helm dependency build
-helm install -n monitoring --create-namespace rag-telemetry .
-
-# or upgrade (slow, takes more time, show --debug to see progress)
-helm upgrade --debug --install -n monitoring --create-namespace rag-telemetry --skip-crds . 
-
-# reinstall (faster)
-time helm uninstall -n monitoring rag-telemetry ; time helm install -n monitoring --create-namespace rag-telemetry .
+helm install telemetry -n monitoring --create-namespace .
 ```
+
+Base chart deploys:
+
+- Grafana with configured data sources and dashboards
+- Prometheus operator, Prometehus and AlertManager instances and Prometheus monitors (for Enterprise RAG components)
+- Extra exporters: Habana, Redis, node-exporter, kube-state-metrics
 
 Please check "Extra additions" (not yet merged into helm chart) for **pcm** and **metrics-server**.
 
+#### II) Install **logs pipeline** telemetry.
 
-b) Check deployed components pods/monitors and configmaps:
+This uses "logs" subchart from helm **charts/logs** chart directory:
+
+The **metrics** telemetry requires "a) metric pipeline" to be deployed first.
+
+**WARNING**: Before deploying, make sure that prerequisites/requirements described [logs/README.md](charts/logs/README.md#prerequisites-imagesvolumes) are met (persistent volumes and images).
+
+##### II a) Install loki and otelcol (with journalctl support) 
+
+This is **recommended** method but requires custom image.
+
 ```
-kubectl --namespace monitoring get pods 
-kubectl --namespace monitoring get servicemonitors -l "release=rag-telemetry"
-kubectl --namespace monitoring get podmonitors -l "release=rag-telemetry"
-kubectl --namespace monitoring get configmaps 
+helm install telemetry-logs -n monitoring -f charts/logs/values-journalctl.yaml charts/logs
 ```
 
-c) Access the Grafana:
+**Note** This step is explicit, because of helm [bug](https://github.com/helm/helm/pull/12879), causing that "logs" subchart cannot be deployed together with "telemetry" chart on single node setup (as subchart it cannot nullify required log-writer pod anti affinity and two replicas at least).
+
+##### II b) [Alternatively to IIa] Install loki and otelcol (default image without journalctl support):
 ```
-kubectl --namespace monitoring port-forward svc/rag-telemetry-grafana 3000:80
+helm install telemetry-logs -n monitoring charts/logs
+```
+
+"logs" chart deploys:
+- loki as logs backend and Grafana datasource,
+- opentelemetry collector in daemonset mode as logs collector only,
+- Optionally: OpenSearch, Promtail
+
+Check [logs README.md](charts/logs/README.md#optional-components) for details.
+
+#### III) Verification and access
+
+##### III a) Access the Grafana:
+```
+kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
 ```
 on `https://127.0.0.1:3000`
 using admin/prom-operator.
 
 
-d) (For debugging only) Access the Prometheus with kubectl proxy:
+##### III b) Access the Prometheus with kubectl proxy:
+
+For debugging only purposes:
 ```
 kubectl proxy
 ```
 
-on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/rag-telemetry-kube-prometh-prometheus:http-web/proxy/graph`
+on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-prometheus:http-web/proxy/graph`
 
-Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/rag-telemetry-kube-prometh-prometheus:http-web/proxy/targets?search=&scrapePool=` .
+Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-prometheus:http-web/proxy/targets?search=&scrapePool=` .
 
-e) Access alert manager:
+##### III c) Access alert manager:
 
-on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/rag-telemetry-kube-prometh-alertmanager:http-web/proxy/#/alerts`
+on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-alertmanager:http-web/proxy/#/alerts`
 
+### Available metrics and sources:
 
-#### Available metrics and sources:
+Check [metrics files](METRICS.md) how to check existing metrics.
 
-a) **GMConnector/router**:
+### Bill of materials
 
-- `http_server_duration_milliseconds_*` histogram,
-- `http_server_request_size_bytes_total`, `http_server_response_size_bytes_total`,
-- `http_client_duration_milliseconds_*` histogram,
-- `http_client_request_size_bytes_total`, `http_client_response_size_bytes_total`,
-- `llm_all_token_latency_milliseconds_bucket`, `llm_first_token_latency_milliseconds_bucket`, `llm_pipeline_latency_milliseconds_bucket`, `llm_next_token_latency_milliseconds_bucket`,
+Telemetry including following components:
 
-Example:
-```
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/metrics
-```
-
-b) **opea-microservices** (instrumentation using https://github.com/trallnag/prometheus-fastapi-instrumentator):
-
-- `http_requests_total` counter, labels: **status** and **method**
-- `http_request_size_bytes` summary (count/sum), labels: **handler**,
-- `http_response_size_bytes` summary (count/sum), labels:: **handler**,
-- `http_request_duration_seconds_` histogram with labels: **handler**, **method** (extra: service, pod, container, endpoint, service)
-- `http_request_duration_highr_seconds_` histogram (no labels),
-- `process_resident_memory_bytes`, `process_cpu_seconds_total`, ...
-
-Example:
-```
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/llm-svc:llm-uservice/proxy/metrics
-```
-
-c) **HABANA metrics exporter**
-
-  - `habanalabs_clock_soc_max_mhz`,
-  - `habanalabs_clock_soc_mhz`,
-  - `habanalabs_device_config`,
-  - `habanalabs_ecc_feature_mode`,
-  - `habanalabs_energy`,
-  - `habanalabs_kube_info`,
-  - `habanalabs_memory_free_bytes`,
-  - `habanalabs_memory_total_bytes`,
-  - `habanalabs_memory_used_bytes`,
-  - `habanalabs_nic_port_status`,
-  - `habanalabs_pci_link_speed`,
-  - `habanalabs_pci_link_width`,
-  - `habanalabs_pcie_receive_throughput`,
-  - `habanalabs_pcie_replay_count`,
-  - `habanalabs_pcie_rx`,
-  - `habanalabs_pcie_transmit_throughput`,
-  - `habanalabs_pcie_tx`,
-  - `habanalabs_pending_rows_state`,
-  - `habanalabs_pending_rows_with_double_bit_ecc_errors`,
-  - `habanalabs_pending_rows_with_single_bit_ecc_errors`,
-  - `habanalabs_power_default_limit_mW`,
-  - `habanalabs_power_mW`,
-  - `habanalabs_temperature_onboard`,
-  - `habanalabs_temperature_onchip`,
-  - `habanalabs_temperature_threshold_gpu`,
-  - `habanalabs_temperature_threshold_memory`,
-  - `habanalabs_temperature_threshold_shutdown`,
-  - `habanalabs_temperature_threshold_slowdown`,
-  - `habanalabs_utilization`
-
-Example output:
-```
-podname=`kubectl get pods -n monitoring -l app.kubernetes.io/name=habana-metric-exporter-ds -ojsonpath='{.items[0].metadata.name}'`
-echo $podname
-curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics"
-curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics" | grep HELP | grep habanalabs
-```
-   
-d) **TGI** metrics (Broken):
-
-Example output:
-```
-curl -v -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/tgi-service-m:tgi/proxy/metrics
-```
-
-Check the issue: https://github.com/huggingface/text-generation-inference/issues/2184
-
-e) **TEI**  metrics:
-
-Example output:
-```
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/tei-embedding-svc:tei/proxy/metrics
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/tei-reranking-svc:teirerank/proxy/metrics
-```
-
-e) **torchserver-embedding-**  metrics (TODO, not enabled by default?!):
-
-https://pytorch.org/serve/metrics_api.html 
-
-Example output:
-```
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/torchserve-embedding-svc:torchserve/proxy/metrics
-```
-
-f) **redis-exporter**
-
-Example output:
-```
-curl -sL http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/rag-telemetry-prometheus-redis-exporter:redis-exporter/proxy/metrics
-```
-- `redis_latency_percentiles_usec` 
-- `redis_up`
-
-g) **node-exporter** metrics:
-
-Example output:
-```
-podname=`kubectl get pods -n monitoring -l app.kubernetes.io/name=prometheus-node-exporter -ojsonpath='{.items[0].metadata.name}'`
-echo $podname
-curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics"
-curl -sL "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics" | grep HELP | grep node_
-```
-
-- `node_cpu_seconds_total`  ...
-
-
-h) **pcm** metrics (installed seperately, BROKEN) - check instructions below
-```
-podname=`kubectl -n monitoring get pod -l app.kubernetes.io/component=pcm-sensor-server -ojsonpath='{.items[0].metadata.name}'`
-echo $podname
-curl -Ls http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics 
-```
-- `DRAM_Writes`, `Instructions_Retired_Any` ...
-
-#### Enabling Redis dashboard (manually) TODO
-
-1) login to Grafana
-2) Go to Administration/Plugins and data/Plugins
-3) Search for "redis"
-4) Click "Redis by Redis" and install
-5) Click "Add new data source"
-6) Set Address: to `redis://redis-vector-db.chatqa.svc.cluster.local:6379`
-7) Click "Dashboards" tab
-8) Import Redis dashboard
-
-#### BOM
-
-Enabled Kubernetes resources and dependent charts:
-
-- opea-components serviceMonitors for ChatQnA application: templates/opea-monitors/
-- opea-components Grafana dashboards: files/dasboards/
-- subcharts:
-  -  https://docs.habana.ai/en/latest/Orchestration/Prometheus_Metric_Exporter.html
-
-  - kube-prometheus-stack:
-    - alertmanager
-    - exporters (service/endpoints and serviceMonitors): core-dns, kube-api-server, kube-controller-manager, kube-dns, kube-etcd, kube-proxy, kube-scheduler, kubelet
-    - grafana dashboards: alertmanager-overview, apiserver, cluster-total, etcd, grafana-overview, k8s-resources-, kubelet, ...
-    - prometheus-operator
-    - prometheus (single prometheus instance based using Prometheus operator CRD)
-      - rules (for Kubernetes derived metrics)
-    - thanos-ruler
-    - subcharts:
-        - grafana
-        - kube-state-metrics
-        - prometheus-node-exporter
+- application services Prometheus serviceMonitors for ChatQnA application in [templates/app-monitors](templates/app-monitors).
+- infra Prometheus monitors to scrape date from: habana and redis exporter in [templates/infra-monitors](templates/infra-monitors).
+- Grafana dashboards for application and infrastructure in [files/dashboards](files/dashboards).
+- Habana exporter based on [this](https://docs.habana.ai/en/latest/Orchestration/Prometheus_Metric_Exporter.html)
+- subcharts (depedency):
+  - logs (subchart):
+    - loki
+    - opentelemetry-collector
+    - (optional) OpenSearch
+    - (optional) promtail
   - prometheus-redis-exporter
-
+  - kube-prometheus-stack:
+    - Prometheus operator
+    - Prometheus (single prometheus instance based using Prometheus operator CRD) with alerts and rules (for Kubernetes derived metrics)
+    - AlertManager
+    - Extra Kubernetes exporters: core-dns, kube-api-server, kube-controller-manager, kube-dns, kube-etcd, kube-proxy, kube-scheduler, kubelet
+    - Grafana dashboards: alertmanager-overview, apiserver, cluster-total, etcd, grafana-overview, k8s-resources-, kubelet, ...
+    - Thanos-ruler
+    - Subcharts:
+      - grafana
+      - kube-state-metrics
+      - prometheus-node-exporter
+	
 
 Note: Redis dashboard is based on:
 ```
@@ -222,128 +121,15 @@ curl -sL https://raw.githubusercontent.com/oliver006/redis_exporter/master/contr
 head files/dashboards/redis-dashboard.json
 ```
 
-#### Regenerating opea-components serviceMonitors:
-
-Requirements:
-- access to Kubernetes with deployed ChatQnA application (with Kubernetes services):
-- jq command line tool
-
-##### Check ChatQnA services:
-```
-kubectl get service -n chatqa -ojson | jq -r '.items[] | .metadata.labels["app.kubernetes.io/instance"] + " " + .metadata.name + " " + .spec.ports[].name + " " + (.spec.ports[].port|tostring)' | while read -r app_instance service_name port_name port; do 
-echo app_instance=$app_instance service_name=$service_name port_name=$port_name port=$port
-done
-```
-
-Generate using below bash template:
-
-based on: https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitorSpec
-```
-kubectl get service -n chatqa -ojson | jq -r '.items[] | .metadata.labels["app.kubernetes.io/instance"] + " " + .metadata.name + " " + .spec.ports[].name + " " + (.spec.ports[].port|tostring)' | while read -r app_instance service_name port_name port; do 
-cat >templates/opea-monitors/${service_name}-serviceMonitor.yaml  <<EOF
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: ${service_name}
-  labels:
-    release: rag-telemetry
-spec:
-  namespaceSelector:
-    matchNames:
-    - chatqa
-  selector:
-    matchLabels:
-      app.kubernetes.io/instance: ${app_instance}
-  endpoints:
-  - port: "${port_name}"
-EOF
-done
-```
-
-Remove invalid router-service serviceMonitor (missing standard kubernetes labels):
-
-```
-rm templates/opea-monitors/8080-serviceMonitor.yaml
-```
-
-Check router-service `templates/opea-monitors/router-service-podMonitor.yaml`.
-
-Spec help: https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.PodMonitorSpec
-
-Test it with:
-```
-kubectl apply -n chatqa -f templates/opea-monitors/router-service-podMonitor.yaml
-```
-
 #### Update HABANA prometheus exporter
 ```
 cd templates/habana-exporter
 wget https://vault.habana.ai/artifactory/gaudi-metric-exporter/yaml/1.17.0/metric-exporter-daemonset.yaml -O metric-exporter-daemonset.yaml
 ```
 
-#### Deploy OPEA ChatQnA application with patched GMConnector router
+### Extra additions
 
-##### (Optionally) Create local kind-based cluster with registry and models mounted
-
-**requires kind installed**
-
-```
-mkdir -p /opea-models
-du -sm /opea-models
-bash example/kind-with-registry-opea-models-mount.sh
-kind export kubeconfig
-docker ps # expected kind-control-plane and kind-registry
-docker exec -ti kind-control-plane ls -l /opea-models/                                                                      # required by chatqna "no GMC"
-docker exec -ti kind-control-plane bash -c "mkdir -p /mnt/ ; ln -sv /opea-models /mnt/opea-models; ls -l /mnt/opea-models/" # required by chatqn  "with GMC"
-kubectl get pods -A
-```
-
-##### Build and install GMConnector itself 
-
-- includes manifests for opea micorservices and router
-
-
-a) Build and push GMConnector using deployment/microservices-connector/README.md
-
-b) Install ChatQnA application:
-
-```
-cd example/GenAIInfra/microservices-connector
-kubectl create ns chatqa
-kubectl apply -n chatqa -f config/samples/chatQnA_xeon.yaml
-```
-
-c) Check application is working as expected (all pods are ready):
-
-```
-kubectl get pods -n chatqa 
-```
-
-and send chat query:
-
-```
-kubectl proxy # in background
-curl -sL -N http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/v1/ -H "Content-Type: application/json" -d '{"text":"What is the revenue of Nike in 2023?","parameters":{"max_new_tokens":17, "do_sample": true}}'
-```
-
-or stress test in loop for metrics:
-```
-while sleep 1 ; do curl -sL -N http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/v1/ -H "Content-Type: application/json" -d '{"text":"What is the revenue of Nike in 2023?","parameters":{"max_new_tokens":17, "do_sample": true}}'; done
-```
-
-Now go and install telemetry (above).
-
-#### Uninstall ChatQnA app, GMConnector operator and telemetry
-
-```
-kubectl delete namespace chatqa
-helm uninstall -n default gmc
-helm uninstall -n monitoring rag-telemetry
-```
-
-#### Extra additions (kubernetes metrics-server)
-
-##### a) metrics-server
+#### a) metrics-server - Kubernetes own "metrics" pipeline
 
 ```
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
@@ -356,8 +142,7 @@ or uninstall
 helm uninstall metrics-server --namespace monitoring
 ```
 
-
-##### b) pcm-sensor-server
+#### b) pcm-sensor-server - XEON telemetry
 
 It is work in progress by ppalucki, so it requires deployemt from source:
 
@@ -374,13 +159,13 @@ cd deployment/pcm
 # check README for further details
 cat example/pcm/deployment/pcm/README.md
 
-# WARN: we're using privilged mode (TODO: consider less unsecure version later access through perf-subsystem)
+# WARN: we are using privilged mode (TODO: consider less unsecure version later access through perf-subsystem)
 requires: msr module
 ssh dcgaudicluster2 
 sudo modprobe msr
 
-helm install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=rag-telemetry
-helm upgrade --install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=rag-telemetry
+helm install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=telemetry
+helm upgrade --install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=telemetry
 ```
 
 b) Check PCM metrics

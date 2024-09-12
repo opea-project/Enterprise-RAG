@@ -4,6 +4,8 @@ extends: default
 
 ignore: |
   deployment/microservices-connector/helm/templates/*.yaml
+  telemetry/helm/charts/logs/templates/*.yaml
+  /workspace/telemetry/helm/charts/logs/templates/*.yaml
 
 rules:
   braces:

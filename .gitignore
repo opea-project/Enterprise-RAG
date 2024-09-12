@@ -1,7 +1,7 @@
 # Telemetry
-telemetry/helm/charts
-telemetry/helm/example/GenAIInfra/
-telemetry/helm/example/pcm/
+/telemetry/helm/charts/*.tgz
+/telemetry/helm/charts/logs/charts/*.tgz
+/telemetry/helm/example/pcm/
 
 # Deployment
 deployment/**/bin/

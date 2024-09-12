@@ -29,7 +29,7 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_BASH: true
           BASH_SEVERITY: error
-          FILTER_REGEX_EXCLUDE: ".*helm/templates/.*.yaml"
+          FILTER_REGEX_EXCLUDE: ".*/templates/.*.yaml"
           VALIDATE_YAML: true
           VALIDATE_PYTHON_RUFF: true
           VALIDATE_DOCKERFILE_HADOLINT: true

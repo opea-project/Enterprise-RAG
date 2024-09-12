@@ -26,7 +26,7 @@ do_build=false
 do_push=false
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl")
 
 
 function help() {
@@ -170,6 +170,7 @@ docker_login_aws() {
     create_or_replace_secret "system" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "chatqa" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
     create_or_replace_secret "rag-ui" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
+    create_or_replace_secret "monitoring" "${ecr_registry_url}" "${ecr_password}" > /dev/null 2>&1;
 
     echo "${ecr_registry_url}"
 }
@@ -331,6 +332,15 @@ for component in "${components_to_build[@]}"; do
 
             build_component $path $dockerfile $image_name $image_tag
             ;;
+
+        otelcol-contrib-journalctl)
+            path="${repo_path}/telemetry/helm/charts/logs/"
+            dockerfile="Dockerfile-otelcol-contrib-journalctl"
+            image_name=otelcol-contrib-journalctl
+            image_tag=$VERSION
+            build_component $path $dockerfile $image_name $image_tag
+            ;;
+
     esac
 done
 

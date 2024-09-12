@@ -1,0 +1,41 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+### =================================================
+### opentelemetry-collector values for opensearch
+### =================================================
+otelcol-logs:
+  alternateConfig:
+    receivers:
+    exporters:
+      # Extra OpenSearch exporter
+      opensearch:
+        http:
+          endpoint: http://opensearch-cluster-master.monitoring:9200
+    service:
+      pipelines:
+        logs:
+          # Extra OpenSearch exporter (list from files do not add, we need pass full list from values.yaml)
+          exporters:
+          - otlphttp/loki
+          - opensearch
+
+### =================================================
+### OpenSearch as exporter for otelcol
+### =================================================
+opensearch:
+  enabled: true
+
+  ### ----------------------
+  singleNode: true
+  opensearchJavaOpts: "-Xms300m -Xmx300m"
+  persistence:
+    enabled: false
+  extraEnvs:
+    - name: "bootstrap.memory_lock"
+      value: "true"
+    - name: "DISABLE_INSTALL_DEMO_CONFIG"
+      value: "true"
+    - name: "DISABLE_SECURITY_PLUGIN"
+      value: "true"
+

@@ -18,10 +18,22 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 39,
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 16,
+      "panels": [],
+      "title": "Metrics",
+      "type": "row"
+    },
     {
       "datasource": {
         "type": "prometheus"
@@ -85,7 +97,7 @@
         "h": 6,
         "w": 11,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "id": 9,
       "options": {
@@ -192,7 +204,7 @@
         "h": 6,
         "w": 13,
         "x": 11,
-        "y": 0
+        "y": 1
       },
       "id": 8,
       "options": {
@@ -297,7 +309,7 @@
         "h": 7,
         "w": 11,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 2,
       "options": {
@@ -438,7 +450,7 @@
         "h": 7,
         "w": 13,
         "x": 11,
-        "y": 6
+        "y": 7
       },
       "id": 13,
       "options": {
@@ -561,7 +573,7 @@
         "h": 5,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 4,
       "options": {
@@ -670,7 +682,7 @@
         "h": 8,
         "w": 11,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 15,
       "options": {
@@ -779,7 +791,7 @@
         "h": 8,
         "w": 13,
         "x": 11,
-        "y": 18
+        "y": 19
       },
       "id": 6,
       "options": {
@@ -819,7 +831,101 @@
       ],
       "title": "Average response time",
       "type": "timeseries"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 17,
+      "panels": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "id": 18,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "builder",
+              "expr": "{k8s_container_name=\"$container_name\"} |= ``",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Logs (all levels)",
+          "type": "logs"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 24,
+            "x": 0,
+            "y": 12
+          },
+          "id": 19,
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": false,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": false
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "loki"
+              },
+              "editorMode": "builder",
+              "expr": "{k8s_container_name=\"$container_name\"} | detected_level = `error`",
+              "queryType": "range",
+              "refId": "A"
+            }
+          ],
+          "title": "Logs (only lines with detected error)",
+          "type": "logs"
+        }
+      ],
+      "title": "Logs",
+      "type": "row"
     }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [
+    "entrag",
+    "microservices"
   ],
   "templating": {
     "list": [
@@ -889,7 +995,10 @@
       }
     ]
   },
-  "schemaVersion": 39,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
   "timepicker": {
     "refresh_intervals": [
       "3s"
@@ -906,15 +1015,9 @@
       "30d"
     ]
   },
-  "refresh": "",
-  "time": {
-    "from": "now-30m",
-    "to": "now"
-  },
   "timezone": "browser",
-  "tags": ["entrag", "microservices"],
   "title": "EnterpriseRAG / Services / Details",
   "uid": "aduqd7fgbf1fkc",
-  "version": 5,
+  "version": 1,
   "weekStart": ""
 }

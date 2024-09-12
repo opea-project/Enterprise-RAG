@@ -23,7 +23,10 @@ class MilvusVectorStore(VectorStoreWrapper):
         """
         url = MilvusVectorStore.format_url_from_env()
         self.batch_size = batch_size
-        self.client = OPEAMilvus(url=url, index_name=index_name)
+        self.client = self._client(url, index_name)
+        
+    def _client(self, url, index_name):
+        OPEAMilvus(url=url, index_name=index_name)
 
     @staticmethod
     def format_url_from_env():

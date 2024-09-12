@@ -4,7 +4,7 @@
 import os
 from comps.vectorstores.impl.redis.opea_redis import OPEARedis
 from comps.vectorstores.utils.wrappers.wrapper import VectorStoreWrapper
-from comps.cores.utils import utils
+from comps.cores.utils.utils import get_boolean_env_var
 
 class RedisVectorStore(VectorStoreWrapper):
     """
@@ -27,7 +27,10 @@ class RedisVectorStore(VectorStoreWrapper):
         """
         url = RedisVectorStore.format_url_from_env()
         self.batch_size = batch_size
-        self.client = OPEARedis(url=url, index_name=index_name)
+        self.client = self._client(url, index_name)
+        
+    def _client(self, url, index_name):
+        OPEARedis(url=url, index_name=index_name)
 
     @staticmethod
     def format_url_from_env():
@@ -43,7 +46,7 @@ class RedisVectorStore(VectorStoreWrapper):
             host = os.getenv("REDIS_HOST", 'localhost')
             port = int(os.getenv("REDIS_PORT", 6379))
 
-            using_ssl = utils.get_boolean_env_var("REDIS_SSL", False)
+            using_ssl = get_boolean_env_var("REDIS_SSL", False)
             schema = "rediss" if using_ssl else "redis"
 
             username = os.getenv("REDIS_USERNAME", "default")

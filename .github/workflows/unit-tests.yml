@@ -21,12 +21,12 @@ jobs:
         with:
           path: repo
       - name: Install test prerequisites
-        run: apt-get update && apt-get -y install tox
+        run: apt-get update && apt-get -y install libgl1-mesa-glx tox
       - name: Trigger unit tests
         run: |
           echo "Attempting to run unit tests"
           cd repo/src
-          tox -e unit
+          tox -e embeddings_unit_tests,dataprep_unit_tests,ingestion_unit_tests,retrievers_unit_tests,reranks_unit_tests,vectorstores_unit_tests
           exit_code=$?
           echo "Unit tests finished"
           exit $exit_code

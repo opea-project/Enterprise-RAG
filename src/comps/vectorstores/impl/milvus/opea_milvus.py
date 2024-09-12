@@ -4,6 +4,6 @@
 from langchain_community.vectorstores import Milvus
 
 class OPEAMilvus(Milvus):
-    def __init__(self, url):
+    def __init__(self, url, index_name):
         # TODO: Implement OPEAMilvus
         raise NotImplementedError

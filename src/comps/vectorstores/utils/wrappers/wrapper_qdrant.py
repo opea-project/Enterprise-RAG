@@ -28,7 +28,7 @@ class QdrantVectorStore(VectorStoreWrapper):
         self.client = self._client(url, index_name)
         
     def _client(self, url, index_name):
-        OPEAQdrant(url=url, index_name=index_name)
+        return OPEAQdrant(url=url, index_name=index_name)
 
     @staticmethod
     def format_url_from_env():

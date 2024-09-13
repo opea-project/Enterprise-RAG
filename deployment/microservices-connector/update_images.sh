@@ -328,7 +328,7 @@ for component in "${components_to_build[@]}"; do
             image_tag=$VERSION
 
             # TODO: generate .env
-            cd $path && bash set_envs.sh
+            # cd $path && bash set_envs.sh
 
             build_component $path $dockerfile $image_name $image_tag
             ;;

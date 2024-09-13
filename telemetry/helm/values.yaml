@@ -11,9 +11,13 @@ kube-prometheus-stack:
   grafana:
     plugins:
       - grafana-opensearch-datasource
-    # resources:
-    #   limits:
-    #     memory: 150Mi
+#    env:
+#      https_proxy: "http://proxy-dmz.intel.com:912"
+#      http_proxy: "http://proxy-dmz.intel.com:911"
+#      no_proxy: ".intel.com,intel.com,localhost,127.0.0.1,.svc,.svc.cluster.local,.pod.cluster.local"
+#    resources:
+#      limits:
+#      memory: 150Mi
 
 ### ============================================================================
 # Prometehus Service/Pod monitors to collect metrics from EntRAG microservices

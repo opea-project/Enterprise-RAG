@@ -26,10 +26,9 @@ function help() {
     # echo -e "\t--auth: Start authentication and authorization services with APISIX and an OIDC-based identity provider (Keycloak). (requires deployment to work)"
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--clear: Clear the cluster and stop auth and telemetry services."
-    echo -e "\t--dataprep: Start dataprep pipeline."
     echo -e "\t--help: Display this help message."
     echo -e "Example: $0 --deploy gaudi"
-    echo -e "Example: $0 --deploy gaudi_torch --telemetry --dataprep"
+    echo -e "Example: $0 --deploy gaudi_torch --telemetry --auth --ui"
 }
 
 
@@ -43,7 +42,7 @@ function start_deployment() {
     cd "${repo_path}/deployment/microservices-connector"
 
     # just logging into aws
-    ./update_images.sh --registry aws --no-build --no-push > /dev/null
+    ./update_images.sh --registry aws --no-build --no-push
 
     local use_proxy=""
     [ -n "$https_proxy" ] && use_proxy+="--set proxy.httpProxy=$https_proxy "
@@ -53,14 +52,15 @@ function start_deployment() {
 
     helm install -n system $use_proxy --create-namespace gmc helm || exit 1
 
+    printf "waiting for gmc to start working"
+    wait_for_condition check_pods "system"
+
     kubectl get namespace $DEPLOYMENT_NS || kubectl create namespace $DEPLOYMENT_NS
     kubectl get namespace $DATAPREP_NS || kubectl create namespace $DATAPREP_NS
 
     kubectl apply -f $(pwd)/config/samples/dataprep_xeon.yaml
     kubectl apply -f $(pwd)/config/samples/chatQnA_$1.yaml
 
-    printf "waiting for gmc to start working"
-    wait_for_condition check_pods "system"
     printf "waiting for chatqa pods to start working"
     wait_for_condition check_pods "$DEPLOYMENT_NS"
     wait_for_condition check_pods "$DATAPREP_NS"
@@ -92,20 +92,10 @@ function start_telemetry() {
     # helm install -n monitoring telemetry-logs charts/logs                                          # simple version without journald/unit logs
     # Set own image with --set otelcol-logs.image.repository="$REGISTRY/otelcol-contrib-journalctl"
     helm install -n monitoring telemetry-logs -f charts/logs/values-journalctl.yaml charts/logs     # custom image version with journald/unit logs
-
-    nohup kubectl --namespace monitoring port-forward svc/rag-telemetry-grafana $GRAFANA_FPORT:80 >> nohup_grafana.out 2>&1 &
+    
+    nohup kubectl --namespace monitoring port-forward svc/telemetry-grafana $GRAFANA_FPORT:80 >> nohup_grafana.out 2>&1 &
     nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
 }
-
-
-function start_dataprep() {
-    cd "${repo_path}/deployment/microservices-connector"
-
-    namespace=dataprep
-    kubectl get namespace $namespace || kubectl create namespace $namespace
-    kubectl apply -f $(pwd)/config/samples/dataprep_xeon.yaml
-}
-
 
 kill_process() {
     local pattern=$1
@@ -184,9 +174,9 @@ wait_for_pods() {
 
 # waits until a provided condition function returns true
 wait_for_condition() {
-    local TIMEOUT=600
+    sleep 30 # safety measures for k8s objects to be created
+    local TIMEOUT=1800
     local END_TIME=$(( $(date +%s) + TIMEOUT ))
-
     while true; do
         local CURRENT_TIME=$(date +%s)
         if [[ "$CURRENT_TIME" -ge "$END_TIME" ]]; then
@@ -239,15 +229,13 @@ EOF
     # Running the server in development mode. DO NOT use this configuration in production.
     helm install keycloak oci://registry-1.docker.io/bitnamicharts/keycloak \
         --version 22.1.0 \
-	--set volumePermissions.enabled=true \
+	    --set volumePermissions.enabled=true \
         --set auth.adminUser=$KEYCLOAK_USER \
         --set auth.adminPassword=$KEYCLOAK_PASS
 
     # Additional sleep as helm command does not wait for deploying PODs 
     # without sleep "wait_for_condition" function might pass as it might start when 
     # there no pods created in default namespace
-    # TODO change default namespace
-    sleep 10
     printf "waiting until keycloak in default namespace is UP"
     wait_for_condition check_pods "default"
     DEFAULT_REALM=master
@@ -258,7 +246,6 @@ EOF
     CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
     wait_for_condition curl --output /dev/null --silent --head --fail "$CONFIGURE_URL"
 
-    # INTROSPECTION_URL=$(curl -s $CONFIGURE_URL | jq -r '.introspection_endpoint ')
     INTROSPECTION_URL=$(curl -s $CONFIGURE_URL | grep -oP '"introspection_endpoint"\s*:\s*"\K[^"]+' | head -n1)
 
     if [[ ! "$INTROSPECTION_URL" =~ ^https?:// ]]; then
@@ -271,37 +258,9 @@ EOF
 
     bash ${repo_path}/auth/keycloak_realm_creator.sh
 
-    # TODO: to be rechecked when apisix is READY to use
-    # cd "${repo_path}/auth/apisix-helm"
-
-    # helm dependency update
-    # helm install auth-apisix . --create-namespace --namespace auth-apisix || exit 1
-
-    # printf "waiting until auth-apisix pods are working"
-    # wait_for_condition check_pods "default"
-
-
-    # cd "${repo_path}/auth/apis-crd-helm"
-    # helm dependency update
-
-    # helm install auth-apisix-crds . --namespace auth-apisix \
-    #   --set oidc.realm=$DEFAULT_REALM \
-    #   --set oidc.client_id=$KEYCLOAK_USER \
-    #   --set oidc.client_secret=$(kubectl get secret --namespace default keycloak -o jsonpath="{.data.admin-password}" | base64 -d) \
-    #   --set oidc.discovery=$CONFIGURE_URL \
-    #   --set oidc.introspection_endpoint=$INTROSPECTION_URL \
-    #   --set chatqna.namespace=$DEPLOYMENT_NS \
-    #   --set chatqna.hostname=localhost \
-    #   --set chatqna.query_api.backend_service=router-service \
-    #   --set chatqna.query_api.service_port=8080 \
-    #   --set chatqna.query_api.service_path=/
-
-    # wait_for_condition check_pods "auth-apisix"
 }
 
 function stop_authentication() {
-    # helm uninstall auth-apisix-crds --namespace auth-apisix
-    # helm uninstall auth-apisix --namespace auth-apisix
 
     kill_process "kubectl port-forward --namespace default svc/keycloak"
     helm uninstall keycloak
@@ -309,7 +268,7 @@ function stop_authentication() {
     kubectl patch pvс data-keycloak-postgresql-0 -p '{"metadata":{"finalizers":null}}'
     kubectl patch pv data-keycloak-postgresql-0 -p '{"metadata":{"finalizers":null}}'
 
-    # volume can be romved only when it's released
+    # volume can be removed only when it's released
     printf "waiting until keycloak pods are terminated."
     wait_for_condition check_pods "default"
 
@@ -323,7 +282,6 @@ function start_ui() {
 
     helm install chatqa-app helm-ui --create-namespace -n $UI_NS
     wait_for_condition check_pods "$UI_NS"
-
     nohup kubectl port-forward --namespace $UI_NS svc/ui-chart $UI_PORT:$UI_PORT >> nohup_ui.out 2>&1 & 
 }
 
@@ -381,19 +339,12 @@ while [ $# -gt 0 ]; do
             echo "---> Start ui"
             start_ui
             ;;
-        --dataprep)
-            echo "--> Start dataprep pipeline"
-            start_dataprep
-            ;;
         --clear)
             echo "---> Clear cluster"
             bash ./clear_cluster.sh
             stop_authentication
             stop_ui
-            helm status -n monitoring rag-telemetry > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                stop_telemetry
-            fi
+            stop_telemetry
             ;;
         --help)
             help

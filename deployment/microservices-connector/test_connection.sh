@@ -63,7 +63,7 @@ JSON_PAYLOAD='
 {
   "text": "What is AVX512?",
   "parameters": {
-    "max_new_tokens": 150,
+    "max_new_tokens": 50,
     "do_sample": true,
     "streaming": true
   }
@@ -74,3 +74,11 @@ echo "Connecting to the server through the pod $CLIENT_POD using URL $accessUrl.
 
 kubectl exec "$CLIENT_POD" -n $NAMESPACE -- \
     curl --no-buffer -s $accessUrl -X POST -d "$JSON_PAYLOAD" -H 'Content-Type: application/json'
+
+test_return_code=$?
+
+if [ $test_return_code -eq 0 ]; then
+    echo "Test finished succesfully"
+else
+    echo "Test failed with return code:$test_return_code"
+fi

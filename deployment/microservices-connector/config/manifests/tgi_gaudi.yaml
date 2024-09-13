@@ -114,13 +114,13 @@ spec:
           #     port: http
           readinessProbe:
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
             tcpSocket:
               port: http
           startupProbe:
             failureThreshold: 120
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
             tcpSocket:
               port: http
           resources:

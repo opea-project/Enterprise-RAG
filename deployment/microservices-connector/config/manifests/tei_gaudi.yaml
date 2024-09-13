@@ -108,20 +108,20 @@ spec:
               path: /health
               port: http
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           readinessProbe:
             httpGet:
               path: /health
               port: http
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           startupProbe:
             failureThreshold: 120
             httpGet:
               path: /health
               port: http
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           resources:
             limits:
               habana.ai/gaudi: 1

@@ -107,20 +107,20 @@ spec:
               path: v1/health_check
               port: embedding-usvc
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           readinessProbe:
             httpGet:
               path: v1/health_check
               port: embedding-usvc
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           startupProbe:
             failureThreshold: 120
             httpGet:
               path: v1/health_check
               port: embedding-usvc
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 60
           resources:
             {}
       volumes:

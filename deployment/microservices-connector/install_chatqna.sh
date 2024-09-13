@@ -70,28 +70,35 @@ function start_deployment() {
 function start_telemetry() {
     cd "${repo_path}/telemetry/helm"
 
-    if ! helm repo list | grep -q 'prometheus-community'; then
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    fi
+    if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi
+    if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi
+    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi
+    if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi
+    if ! helm repo list | grep -q 'metrics-server' ; then helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ ; fi
 
+    ###################################
+    # telemetry (metrics)
+    ##################################
     helm repo update
     helm dependency build
     # telemetry/base (metrics)
     helm install -n monitoring --create-namespace telemetry .
-    # telemetry/logs
 
+    ###################################
+    # telemetry-logs
+    ##################################
+
+    cd "${repo_path}/telemetry/helm/charts/logs"
+    helm repo update
+    helm dependency build
     # Please remember prerequesites from telemetry/helm/charts/logs/README.md must be met (volumes/image)
     # helm install -n monitoring telemetry-logs charts/logs                                          # simple version without journald/unit logs
     # Set own image with --set otelcol-logs.image.repository="$REGISTRY/otelcol-contrib-journalctl"
-    helm install -n monitoring telemetry-logs -f charts/logs/values-journalctl.yaml charts/logs     # custom image version with journald/unit logs
+    helm install -n monitoring telemetry-logs -f values-journalctl.yaml .     # custom image version with journald/unit logs
 
     # wait for telemetry pods to be ready
     printf "waiting until telemetry is ready. "
     wait_for_condition check_pods "monitoring"
-    # Please remember prerequesites from telemetry/helm/charts/logs/README.md must be met (volumes/image)
-    # helm install -n monitoring telemetry-logs charts/logs                                          # simple version without journald/unit logs
-    # Set own image with --set otelcol-logs.image.repository="$REGISTRY/otelcol-contrib-journalctl"
-    helm install -n monitoring telemetry-logs -f charts/logs/values-journalctl.yaml charts/logs     # custom image version with journald/unit logs
     
     nohup kubectl --namespace monitoring port-forward svc/telemetry-grafana $GRAFANA_FPORT:80 >> nohup_grafana.out 2>&1 &
     nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &

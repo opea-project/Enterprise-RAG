@@ -125,7 +125,7 @@ class GenericLLMConnector(LLMConnector):
         if self._model_server not in SUPPORTED_INTEGRATIONS:
             logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
             raise ValueError("Invalid model server")
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, logger)
+        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

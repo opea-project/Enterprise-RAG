@@ -47,8 +47,19 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
     def get_input_name(self, url: str) -> str:
         if self.input_name is None:
             import requests
-            response = requests.get(url)
-            self.input_name = json.loads(response.text)["inputs"][0]["name"]
+            try:
+                response = requests.get(url)
+                response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+                self.input_name = json.loads(response.text)["inputs"][0]["name"]
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request failed: {e}")
+                raise
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decoding failed: {e}")
+                raise
+            except KeyError as e:
+                logger.error(f"Key error: {e}")
+                raise
         return self.input_name
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:

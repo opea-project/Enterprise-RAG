@@ -1,12 +1,7 @@
 # OPEA VectorStore
 This code implements an interface for connecting to multiple vector store databases. Unified vector store interface allows multiple services to use one storage communication class. This code is not meant to be used as a standalone service, rather as a part for services that require database communication such as ingestion service or retriever service.
 
-This readme shows how to:
-- Run an example database server
-- Prepare VectorStore Configuration for selected database
-- Use VectorStore with selected database
-
-#### Support Matrix
+## Support Matrix
 
 Support for specific vector databases:
 
@@ -20,18 +15,9 @@ Support for specific vector databases:
 
 This code is intended to use by other services as an interface to a selected vector store database.
 
-### Prerequisites
-If running locally, install python requirements:
+### Database setup
 
-```bash
-pip install -r impl/requirements.txt
-```
-
-Since this is a library not intended to be running separatly, there is no separate Dockerfile. If you want to see an example usage, check code under `ingestion` or `retriever` folders.
-
-### Vector Store Database Endpoint
-
-If you don't run any vector database yet, you can utilize one of already prepared example `docker-compose.yml` files. This will spin up a database instance that you can use for running OPEA.
+If you don't run any vector database yet, you can utilize one of already prepared example `docker-compose.yml` files. This will spin up a database instance that you can use for storing vector data.
 
 #### Redis
 
@@ -68,38 +54,60 @@ docker compose up -d
 
 To configure VectorStore to use Qdrant, please refer to [QdrantVectorStore](#qdrantvectorstore).
 
-## VectorStore implementations
+### VectorStore implementations
 
 To use VectorStore with a specific database, you should not only select it as shown in the [example usage](#example-usage). Based on available endpoints defined in the [support matrix](#support-matrix) each database endpoint requires some minimum configuration. Configuration parameters for individual databases are shown below.
 
-### RedisVectorStore
+#### RedisVectorStore
 
-Configuration parameters:
-`REDIS_URL` - full url for Redis database endpoint (not set by default)
-or individual parts of the connection string:
-`REDIS_HOST` - Hostname or IP Address of the endpoint (default: `localhost`)
-`REDIS_PORT` - Port of the endpoint (default: `6379`)
-`REDIS_SSL` - Schema to use, if `true` is passed, `rediss://` schema is used (default: `false`)
-`REDIS_USERNAME` (Optional) - Database username (not set by default)
-`REDIS_PASSWORD` (Optional) - Database password (not set by default)
+Configure the full endpoint URL:
 
-### QdrantVectorStore
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| REDIS_URL            | Not set       | Full URL for Redis database endpoint                                        |
 
-Configuration parameters:
-`QDRANT_URL` - full url for Qdrant database endpoint (not set by default)
-or individual parts of the connection string:
-`QDRANT_HOST` - Hostname or IP Address of the endpoint (default: `localhost`)
-`QDRANT_PORT` - Port of the endpoint (default: `6333`)
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| REDIS_HOST           | localhost     | Hostname or IP Address of the Redis endpoint                                |
+| REDIS_PORT           | 6379          | Port of the Redis endpoint                                                  |
+| REDIS_SSL            | false         | Schema to use, if `true` is passed, `rediss://` schema is used              |
+| REDIS_USERNAME       | Not set       | Database username (Optional)                                                |
+| REDIS_PASSWORD       | Not set       | Database password (Optional)                                                |
+
+#### QdrantVectorStore
+
+Configure the full endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| QDRANT_URL           | Not set       | Full URL for Qdrant database endpoint                                       |
+
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| QDRANT_HOST          | localhost     | Hostname or IP Address of the Qdrant endpoint                               |
+| QDRANT_PORT          | 6333          | Port of the Qdrant endpoint                                                 |
+
 
 Default schema is `http`.
 
-### MilvusVectorStore
+#### MilvusVectorStore
 
-Configuration parameters:
-`MILVUS_URL` - full url for Qdrant database endpoint (not set by default)
-or individual parts of the connection string:
-`MILVUS_HOST` - Hostname or IP Address of the endpoint (default: `localhost`)
-`MILVUS_PORT` - Port of the endpoint (default: `19530`)
+Configure the full endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| MILVUS_URL           | Not set       | Full URL for Milvus database endpoint                                       |
+
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| MILVUS_HOST          | localhost     | Hostname or IP Address of the Milvus endpoint                               |
+| MILVUS_PORT          | 19530         | Port of the Milvus endpoint                                                 |
 
 Default schema is `http`.
 
@@ -126,15 +134,61 @@ from comps.vectorstores.utils.opea_vectorstore import OPEAVectorStore
 
 ## VectorStore methods
 
-This class offers two methods:
+This class offers two main methods:
 
-### search(EmbedDoc) -> SearchedDoc
+### search()
 This method allows to search the vector store for similar vectors to the embedding that is passed. Input is an `EmbedDoc` class that included the text embedding for the text query. Based on the predefined embedding, embedding vectors along with the corresponding text is returned. Internal search type and settings are included in the `EmbedDoc` object.
 
-Based on EmbedDoc's `search_type` setting, following methods are passed to individual database implementation (some, might not be available for selected databases):
-- `similarity_search_by_vector`
-- `similarity_search_with_relevance_scores`
-- `max_marginal_relevance_search`
+Based on the selected `search_type` method, additional arguments should be passed:
 
-### add_texts(List[EmbedDoc]) -> List[EmbedDoc]
-This method inserts data directly into the selected vector store database.
+| Search type                      | Search method                             | Arguments                     |
+| -------------------------------- | ----------------------------------------- | ----------------------------- |
+| `similarity`                     | `similarity_search_by_vector`             | `k`                           |
+| `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
+| `similarity_score_threshold`     | `similarity_search_with_relevance_scores` | `k`, `score_threshold`        |
+| `mmr`                            | `max_marginal_relevance_search`           | `k`, `fetch_k`, `lambda_mult` |
+
+Additional search parameters that can be added to the query to configure the search:
+- `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
+- `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)
+- `score_threshold`: The minimum relevance score required for a document to be considered a match in similarity search with relevance scores (default: `None`)
+- `fetch_k`: The number of additional documents to fetch for each retrieved document in max marginal relevance search (default: `20`)
+- `lambda_mult`: A parameter that controls the trade-off between relevance and diversity in max marginal relevance search (default: `0.5`)
+
+### add_texts()
+This method inserts data directly into the selected vector store database. The input is a list of `EmbedDoc` elements. It returns the list of texts saved into a database. 
+
+## Additional Information
+   
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains the implementation of clients for different databases along with example docker compose files for running the database services.
+
+- `utils/`: This directory contains utility scripts and modules that are used by the Vector Store. This also included a common wrapper class and wrappers for each supported vector store database.
+
+The tree view of the main directories and files:
+
+```bash
+.
+├── impl
+│   ├── milvus
+│   │   ├── docker-compose.yml
+│   │   ├── opea_milvus.py
+│   ├── qdrant
+│   │   ├── docker-compose.yml
+│   │   ├── opea_qdrant.py
+│   ├── redis
+│   │   ├── docker-compose.yml
+│   │   ├── opea_redis.py
+│   └── requirements.txt
+├── README.md
+└── utils
+    ├── opea_vectorstore.py
+    └── wrappers
+        ├── wrapper_milvus.py
+        ├── wrapper.py
+        ├── wrapper_qdrant.py
+        └── wrapper_redis.py
+```

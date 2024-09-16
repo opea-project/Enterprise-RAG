@@ -21,6 +21,11 @@ By default, files are saved to a directory under this container. Save path can b
 
 This microservice requires access to external network services for example for downloading models for parsing specific file formats for text extraction.
 
+We offer 2 ways to run this microservice: 
+  - [via Python](#running-the-microservice-via-python-option-1)
+  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+
+
 ### Running the microservice via Python (Option 1)
 
 If running locally, install python requirements:
@@ -32,18 +37,19 @@ pip install -r impl/microservice/requirements.txt
 Then start the microservice:
 
 ```bash
-  python opea_llm_microservice.py
+python opea_llm_microservice.py
 ```
 
 ### Running the microservice via Docker (Option 2)
 
-Using a container is a preffered way to run the microservice.
+Using a container is a preferred way to run the microservice.
 
 #### Build the docker service
 
 Navigate to the `src` directory and use the docker build command to create the image:
 
 ```bash
+cd ../.. # src/ directory
 docker build -t opea/dataprep:latest -f comps/dataprep/impl/microservice/Dockerfile .
 ```
 
@@ -61,21 +67,27 @@ Dataprep microservice as an input accepts a json containing links or files encod
 
 #### File(s) dataprep
 
-Files have to be encoded into Base64:
+Files have to be encoded into Base64. This cURL format allows sending more data than using `-d`.
 
 ```bash
-  content=$(cat file.txt | base64 -w 0)
-  curl http://localhost:9399/v1/dataprep \
-    -X POST -H "Content-Type: application/json" \
-    -d '{ "files": [{"filename": "file.txt", "data64": "${content}"}] }'
+curl -X POST -H "Content-Type: application/json" -d @- http://localhost:9399/v1/dataprep <<JSON_DATA
+{
+  "files": [
+    {
+      "filename": "ia_spec.pdf",
+      "data64": "$(base64 -w 0 ia_spec.pdf)"
+    }
+  ]
+}
+JSON_DATA
 ```
 
 #### Link(s) dataprep
 
 ```bash
-  curl http://localhost:9399/v1/dataprep \
-    -X POST -H 'Content-Type: application/json'
-    -d '{ "links": ["https://intel.com"] }'
+curl http://localhost:9399/v1/dataprep \
+  -X POST -H 'Content-Type: application/json'
+  -d '{ "links": ["https://intel.com"] }'
 ```
 
 ### Example output
@@ -114,11 +126,11 @@ For both files and links the output has the same format, containg the extracted 
    
 ### Project Structure
 
-  The project is organized into several directories:
+The project is organized into several directories:
 
-  - `impl/`: This directory contains the implementation of the supported datapre service.
+- `impl/`: This directory contains the implementation of the supported dataprep service.
 
-  - `utils/`: This directory contains utility scripts and modules that are used by the OPEA Dataprep Microservice. It included the web crawler and script for extracting text from various files.
+- `utils/`: This directory contains utility scripts and modules that are used by the OPEA Dataprep Microservice. It included the web crawler and script for extracting text from various files.
 
 The tree view of the main directories and files:
 

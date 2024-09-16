@@ -47,7 +47,7 @@ const PromptInput = () => {
     dispatch(addMessage(newMessage));
 
     const requestBody = {
-      docs: { text: prompt },
+      text: prompt,
       parameters: {
         max_new_tokens: 256,
         do_sample: true,

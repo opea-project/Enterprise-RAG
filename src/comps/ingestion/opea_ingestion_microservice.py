@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
+
+from fastapi import HTTPException
 from utils import opea_ingestion
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import EmbedDocList
@@ -24,7 +26,13 @@ def start_ingestion_service(opea_ingestion: opea_ingestion.OPEAIngestion, opea_m
     @register_statistics(names=[opea_microservice_name])
     def ingest(input: EmbedDocList) -> EmbedDocList:
         start = time.time()
-        embed_vector = opea_ingestion.ingest(input)
+        
+        embed_vector = None
+        try:
+            embed_vector = opea_ingestion.ingest(input)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error while ingesting documents. {e}")
+
         statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)
         return embed_vector
 

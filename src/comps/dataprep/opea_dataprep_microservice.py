@@ -3,6 +3,8 @@
 
 import os
 import time
+
+from fastapi import HTTPException
 from comps.cores.utils.utils import get_boolean_env_var
 from utils import opea_dataprep
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
@@ -23,11 +25,15 @@ def start_ingestion_service(opea_dataprep: opea_dataprep.OPEADataprep, opea_micr
     )
     @register_statistics(names=[opea_microservice_name])
     async def dataprep(input: DataPrepInput) -> TextDocList:
-
         start = time.time()
-        textdocs = await opea_dataprep.dataprep(input=input)
-        statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)
 
+        textdocs = None
+        try:
+            textdocs = await opea_dataprep.dataprep(input=input)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error while preparing documents. {e}")
+
+        statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)
         return TextDocList(docs=textdocs)
 
     opea_microservices[opea_microservice_name].start()

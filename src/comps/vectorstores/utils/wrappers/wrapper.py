@@ -53,8 +53,9 @@ class VectorStoreWrapper(ABC):
         try:
             if self.client is not None:
                 self.client._create_index_if_not_exist(dim=len(input.embedding))
-        except Exception:
+        except Exception as e:
             logging.exception("Error occured while checking vector store index")
+            raise e
 
     def add_texts(self, input: List[EmbedDoc]) -> List[str]:
         """
@@ -76,8 +77,9 @@ class VectorStoreWrapper(ABC):
                 clean_metadata=False
             )
             return ids
-        except Exception:
+        except Exception as e:
             logging.exception("Error occured while adding texts to vector store")
+            raise e
 
     def _parse_search_results(self, input: EmbedDoc, results: Iterable[any]) -> SearchedDoc:
         """
@@ -109,9 +111,10 @@ class VectorStoreWrapper(ABC):
                 embedding=input.embedding,
                 distance_threshold=input.distance_threshold
             )
-        except Exception:
+            return self._parse_search_results(input=input, results=search_res)
+        except Exception as e:
             logging.exception("Error occured while searching by vector")
-        return self._parse_search_results(input=input, results=search_res)
+            raise e
 
     def similarity_search_with_relevance_scores(self, input: EmbedDoc) -> SearchedDoc:
         """
@@ -129,9 +132,10 @@ class VectorStoreWrapper(ABC):
                 embedding=input.embedding,
                 score_threshold=input.score_threshold
             )
-        except Exception:
+            return self._parse_search_results(input=input, results=search_res)
+        except Exception as e:
             logging.exception("Error occured while searching with relevance scores")
-        return self._parse_search_results(input=input, results=search_res)
+            raise e
 
     def max_marginal_relevance_search(self, input: EmbedDoc) -> SearchedDoc:
         """
@@ -150,6 +154,7 @@ class VectorStoreWrapper(ABC):
                 fetch_k=input.fetch_k,
                 lambda_mult=input.lambda_mult
             )
-        except Exception:
+            return self._parse_search_results(input=input, results=search_res)
+        except Exception as e:
             logging.exception("Error occured while searching with max marginal relevance")
-        return self._parse_search_results(input=input, results=search_res)
+            raise e

@@ -64,10 +64,10 @@ docker build -t opea/retriever:latest -f comps/retrievers/impl/microservice/Dock
 
 #### Run the docker container
 
-Remember, you can pass configuration variables by passing them via `-e` option into docker run command.
+Remember, you can pass configuration variables by passing them via `-e` option into docker run command, such as the vector database configuration and database endpoint.
 
 ```bash
-docker run -d --name="retriever" -p 6620:6620 opea/retriever:latest
+docker run -d --name="retriever" -e VECTOR_STORE=redis -e REDIS_URL=redis://172.17.0.1:6379 -p 6620:6620 opea/retriever:latest
 ```
 
 ### Example input
@@ -99,7 +99,7 @@ Additional search parameters that can be added to the query to configure the sea
 An example request can look as follows:
 
 ```bash
-  curl http://localhost:6620/v1/retriever \
+  curl http://localhost:6620/v1/retrieval \
     -X POST \
     -d '{ "text": "What is Intel AVX-512?", "embeddings": [...], "search_type": "similarity" }' \
     -H 'Content-Type: application/json'
@@ -108,7 +108,7 @@ An example request can look as follows:
 Alternatively, you can pass multiple docs but this will limit the retrieval only to the first element.
 
 ```bash
-  curl http://localhost:6620/v1/retriever \
+  curl http://localhost:6620/v1/retrieval \
     -X POST \
     -d '{ docs: [ { "text": "What is Intel AVX-512?", "embeddings": [...], "search_type": "similarity" } ] }' \
     -H 'Content-Type: application/json'

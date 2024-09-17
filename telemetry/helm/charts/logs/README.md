@@ -74,25 +74,6 @@ Alternatively deploy default version (no custom image, no systemd/journald logs 
 helm install telemetry-logs -n monitoring .
 ```
 
-**Notice**: below is mostly for development purposes
-
-##### 2b) [Alternatively] Install "logs" and "logs-otelcol" as **separate** releases.
-
-Install "loki" logs backend only as **"telemetry-logs"** release `[loki]`:
-```
-helm install telemetry-logs -n monitoring --set otelcol-logs.enabled=false . 
-```
-
-Install "otelcol" logs collector **only** (without journalctl) as **"telemetry-logs-otelcol"** release `[otelcol/default]`:
-```
-helm install telemetry-logs-otelcol -n monitoring --set loki.enabled=false .
-```
-
-Install "otelcol" logs collector (with journalctl) only as **"telemetry-logs-otelcol"** release  `[otelcol/journalctl]`:
-```
-helm upgrade --install telemetry-logs-otelcol -n monitoring -f values-journalctl.yaml -f values-journalctl-devel.yaml --set loki.enabled=false .
-```
-
 #### Optional components.
 
 ##### a) OpenSearch logs backend
@@ -156,7 +137,7 @@ Using `Dockerfile-otelcol-contrib-journalctl` build custom image:
 
 ```
 docker build -f Dockerfile-otelcol-contrib-journalctl -t localhost:5000/otelcol-contrib-journalctl .
-docker push localhost:5000/otelcol-contrib-journalctl
+docker push localhost:5000/otelcol-contrib-journalctl:latest
 ```
 
 Test docker journalctl compatibility with Host OS version:
@@ -178,10 +159,14 @@ docker run -ti --rm --entrypoint journalctl -v /var/log/journal:/var/log/journal
 
 ##### 1b) Number of iwatch open descriptors
 
+
+Check numbers of inotify user instances:
 ```
 ssh dcgaudicluster2
 sudo sysctl -w fs.inotify.max_user_instances=8192
 ```
+
+To make this change **permanent** modify `/etc/sysctl.conf` or `/syc/sysctl.d/` accordingly.
 
 References:
 - https://github.com/kubeflow/manifests/issues/2087
@@ -207,13 +192,30 @@ sudo chmod -R a+rwx /mnt/k8stelemetryvolumes
 kubectl apply -f loki-volumes.yaml -n monitoring
 ```
 
-
-
 ### Troubleshooting
 
-#### Debugging otelcol
+#### OpenTelemetry collector
 
-##### a) Inspect final configuration
+##### a) **telemetry-logs-otelcol-logs-agent** (with journalctl support) pod fails with error in logs:
+
+```
+Error: cannot start pipelines: start stanza: journalctl command exited                                                                                                                                                                                       │
+│ 2024/09/16 11:15:20 collector server run finished with error: cannot start pipelines: start stanza: journalctl command exited  
+```
+
+Check configuration of Host OS:
+```
+cat /proc/sys/fs/inotify/max_user_instances
+```
+
+If number is low (<8000 e.g. on Ubuntu default number is 128), please check how to set correct OS settings in prerequisites [here](#1b-number-of-iwatch-open-descriptors)
+
+Description:
+
+It is caused by journalctl automatically turning off "follow mode" when run by opentelemetry agent with following error
+"Insufficient watch descriptors available. Reverting to -n." (this error is not exposed by otelcol agent, to confirm disable journalctl receiver and attach pod and run `journalctl -f` command).
+
+##### b) Inspect final configuration
 
 ```
 # for installed as "telemetry-logs" release
@@ -224,20 +226,39 @@ kubectl get configmap -n monitoring telemetry-logs-otelcol-otelcol-logs-agent -o
 
 ```
 
-##### b) Check otelcol metrics using dashboard
+##### c) Check otelcol metrics using dashboard
 
 Open "OTEL / OpenTelemetry Collector" Dashboard in Grafana
 
-##### c) Inspect pipelines and traces ending with errors with zpages extension (enabled by default):
+##### d) Inspect pipelines and traces ending with errors with zpages extension (enabled by default):
 ```
 podname=`kubectl get pod -l app.kubernetes.io/name=otelcol-logs -n monitoring -oname | cut -f '2' -d '/'` ; echo $podname
 curl -vs "127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/pipelinez" -o /dev/null
 echo open "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/tracez"
 echo open "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/pipelinez"
 ```
-##### d) Enable and modify "debug exporter"
+##### e) Enable and modify "debug exporter"
 
 Check `values.yaml` file for `otelcol-logs.alternateConfig.exporters.debug` section . Change mode "basic" to "verbose" or "detailed".
+
+##### f) Change level verbosity from "info" to "debug"
+
+Check `values-journalctl-devel.yaml` file for `otelcol-logs.alternateConfig.service.telemetry.logs.level`.  Change from "info" to "debug".
+
+More details [here](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs).
+
+Or with '--set' argument trick: modify otelcol agent daemonset "telemetry-logs-otelcol-logs-agent" spec:
+```
+
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - --config=/conf/relay.yaml
+        - --set=service::telemetry::logs::level=debug
+```
+
 
 #### Debugging OpenSearch
 

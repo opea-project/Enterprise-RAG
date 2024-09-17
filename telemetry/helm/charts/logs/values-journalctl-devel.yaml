@@ -17,8 +17,9 @@ otelcol-logs:
     service:
       telemetry:
         logs:
+          # the same can be achieved by adding pod.container.args: --set=service::telemetry::logs::level=debug
           level: info
-            #level: debug
+          #level: debug
 
       pipelines:
         logs:

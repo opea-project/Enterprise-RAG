@@ -12,10 +12,11 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - NO_PROXY=${NO_PROXY}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-    command: ["--model-id", "${LLM_TGI_MODEL_NAME}", "--max-input-tokens", "256", "--max-total-tokens", "1024"]
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HF_TOKEN: ${HF_TOKEN}
+    command: ["--model-id", "${LLM_TGI_MODEL_NAME}", "--max-input-tokens", "${MAX_INPUT_TOKENS}", "--max-total-tokens", "${MAX_TOTAL_TOKENS}"]
     runtime: runc
     ipc: host
 
@@ -23,21 +24,18 @@ services:
     build:
       context: ../../../../../../
       dockerfile: ./comps/llms/impl/microservice/Dockerfile
-
     container_name: llm-tgi-microservice
     ipc: host
     runtime: runc
     network_mode: host
     environment:
-      - NO_PROXY=${NO_PROXY}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - LLM_MODEL_SERVER_ENDPOINT=http://localhost:${LLM_TGI_PORT}
-      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
-      # Pass the environment variable if it is provided in .env file;
-      # otherwise, use the defaults specified in reranks/config.ini
-      - LLM_SERVICE_LOG_LEVEL:= ${LLM_SERVICE_LOG_LEVEL:-}
-      - LLM_SERVICE_LOG_PATH:= ${LLM_SERVICE_LOG_PATH:-}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      LLM_CONNECTOR: ${LLM_CONNECTOR}
+      LLM_MODEL_NAME: ${LLM_TGI_MODEL_NAME}
+      LLM_MODEL_SERVER: "tgi"
+      LLM_MODEL_SERVER_ENDPOINT: http://localhost:${LLM_TGI_PORT}
+      NO_PROXY: ${NO_PROXY}
     restart: unless-stopped
     depends_on:
       - llm-tgi-model-server

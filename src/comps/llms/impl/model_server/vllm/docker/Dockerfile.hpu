@@ -1,10 +1,10 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM vault.habana.ai/gaudi-docker/1.16.0/ubuntu22.04/habanalabs/pytorch-installer-2.2.2:latest
+FROM vault.habana.ai/gaudi-docker/1.17.0/ubuntu22.04/habanalabs/pytorch-installer-2.3.1:1.17.0-495
 
 ENV LANG=en_US.UTF-8
 WORKDIR /root
 RUN pip install --upgrade-strategy eager optimum[habana]
-RUN pip install -v git+https://github.com/HabanaAI/vllm-fork.git@48c2775
+RUN pip install -v git+https://github.com/HabanaAI/vllm-fork.git@v0.5.3.post1-Gaudi-1.17.0
 CMD ["/bin/bash"]

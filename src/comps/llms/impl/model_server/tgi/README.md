@@ -3,83 +3,91 @@
 This document focuses on using the [Text Generation Inference (TGI)](https://github.com/huggingface/text-generation-inference) as a LLM.
 
 
-## Start TGI Model Server
-To get started with TGI on device CPU, follow these steps:
+## Getting Started
+
+### 0. Prerequisite
+Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the [.env](docker/.env) file.
 
 ```bash
-# for cpu device
-chmod +x run_tgi_cpu.sh
-./run_tgi_cpu.sh
-
-
-# for hpu device
-chmod +x run_tgi_hpu.sh
-./run_tgi_hpu.sh
-
+export HF_TOKEN=${your_hf_api_token}
 ```
-The script starts a Docker container running the TGI model server, which defaults to exposing the service on port `LLM_TGI_PORT` (default: **8008**). To change the port or the model (Intel/neural-chat-7b-v3-3), please edit the Bash script accordingly.
 
+### 🚀 1. Start the TGI Service via script (Option 1)
+1.1. Run the script
 
-**Test your TGI model server using the following command**:
+```bash
+# for HPU device (Gaudi)
+export LLM_DEVICE='hpu'
+
+# for CPU device
+export LLM_DEVICE='cpu'
+
+chmod +x run_tgi.sh
+./run_tgi.sh
+```
+The script initiates a Docker container with the TGI model server running on port `LLM_TGI_PORT` (default: **8008**). Configuration settings are specified in the environment configuration files [docker/.env.hpu](docker/.env.hpu) and [docker/.env.cpu](docker/.env.cpu) files. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
+
+#### 1.2. Verify the TGI Service
 
 ```bash
 curl http://localhost:8008/generate -X POST -d '{"inputs":"What is Deep Learning?","parameters":{"max_new_tokens":17, "do_sample": true}}' -H 'Content-Type: application/json'
 ```
 
 Expected output:
-```
+```json
 {"generated_text":"\n\nDeep learning is part of a broader family of machine learning methods referred to as"}
 ```
 
-## 🚀 Set up TGI model server along with LLM microservice with Docker Compose
-To launch TGI along with the OPEA LLM Microservice, follow these steps:
+### 🚀 2. Deploy TGI Service with OPEA LLM Microservice using Docker Compose (Option 2)
+To launch TGI Service along with the OPEA LLM Microservice, follow these steps:
 
-1. **Modify the `./docker/.env` file**:
+#### 2.1. Modify the environment configuration file to align it to your case
 
-    Modify the `./docker/.env` file in the root directory with the following content:
+For HPU device (Gaudi), modify the `./docker/.env.hpu` file:
+```env
+# HF_TOKEN=<your-hf-api-key>
 
-    ```env
-    ## TGI Model Server Settings ##
-    LLM_TGI_PORT=8008
-    LLM_TGI_MODEL_NAME="Intel/neural-chat-7b-v3-3"
-    HUGGINGFACE_API_KEY=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
-    # HUGGINGFACE_API_KEY=<your-hf-api-key>
+## TGI Model Server Settings ##
+LLM_TGI_MODEL_NAME="mistralai/Mistral-7B-Instruct-v0.1"
+LLM_TGI_PORT=8008
+[...]
 
-    ## Proxy settings ##
-    NO_PROXY=<your-no-proxy>
-    HTTP_PROXY=<your-http-proxy>
-    HTTPS_PROXY=<your-https-proxy>
+## HABANA Settings ##
+HABANA_VISIBLE_DEVICES=all
+SHARDED=true
+[...]
+```
 
-    ## LLM Microservice Settings ##
-    # Logging
-    LOG_LEVEL=INFO
-    LOG_PATH=/tmp/opea/microservices/llm/llm.log
+For CPU device, modify the `./docker/.env.cpu` file:
+```env
+# HF_TOKEN=<your-hf-api-key>
 
-    # OPEA Microservice
-    USVC_NAME=opea_service@llm
-    USVC_HOST=0.0.0.0
-    USVC_PORT=9000
-    ```
-
-2. **Start the Services using Docker Compose**:
-
-    To build and start the services using Docker Compose:
-
-    ```bash
-    cd docker
-
-    # for CPU device
-    docker-compose -f docker-compose-cpu.yaml up  --build -d
-
-    # for HPU device (Gaudi)
-    docker-compose -f docker-compose-hpu.yaml up  --build -d
-
-    ```
+## TGI Model Server Settings ##
+LLM_TGI_MODEL_NAME="mistralai/Mistral-7B-Instruct-v0.1"
+LLM_TGI_PORT=8008
+[...]
+```
 
 
-3. **Test the Services**:
+#### 2.2. Start the Services using Docker Compose
 
-    Test the `llm-tgi-model-server` using the following command:
+To build and start the services using Docker Compose
+
+```bash
+cd docker
+
+# for HPU device (Gaudi)
+docker compose --env-file=.env.hpu -f  docker-compose-hpu.yaml up --build -d
+
+# for CPU device
+docker compose --env-file=.env.cpu -f  docker-compose-cpu.yaml up --build -d
+
+```
+
+
+#### 2.3. Verify the Services
+
+ - Test the `llm-tgi-model-server` using the following command:
 
     ```bash
     curl localhost:8008/generate \
@@ -88,14 +96,14 @@ To launch TGI along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-    Check the `llm-tgi-microservice` status:
+- Check the `llm-tgi-microservice` status:
     ```bash
     curl http://localhost:9000/v1/health_check \
         -X GET \
         -H 'Content-Type: application/json'
     ```
 
-    Test the `llm-tgi-microservice` for non-streaming mode using the following command:
+- Test the `llm-tgi-microservice` for **non-streaming mode** using the following command:
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
@@ -103,7 +111,7 @@ To launch TGI along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-    Test the `llm-tgi-microservice` for non-streaming mode using the following command:
+- Test the `llm-tgi-microservice` for **streaming mode** using the following command:
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
@@ -111,19 +119,17 @@ To launch TGI along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-4. **Cleanup the Services using Docker Compose**:
+#### 2.4. Service Cleanup
 
-    To cleanup the services:
+To cleanup the services, run the following commands:
 
-    ```bash
-    cd docker
+```bash
+cd docker
 
-    # for CPU device
-    docker-compose -f docker-compose-cpu.yaml down
+# for HPU device (Gaudi)
+docker compose -f docker-compose-hpu.yaml down
 
-    # for HPU device (Gaudi)
-    docker-compose -f docker-compose-hpu.yaml down
-    ```
-
-⚠️ **Notice:** For more details on configuration options and instructions please refer to the [OPEA LLM Microservice's README](../../../README.md).
+# for CPU device
+docker compose -f docker-compose-cpu.yaml down
+```
 

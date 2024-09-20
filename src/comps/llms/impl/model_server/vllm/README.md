@@ -1,34 +1,41 @@
 # vLLM LLM Model Server
 
+This document focuses on using the [Virtual Large Language Model (vLLM)](https://github.com/vllm-project/vllm) as a LLM.
 
-This README provides instructions on how to run a model server using [vLLM](https://github.com/vllm-project/vllm).
+vLLM is a fast and easy-to-use library for LLM inference and serving, it delivers state-of-the-art serving throughput with a set of advanced features such as PagedAttention, Continuous batching and etc.. Besides GPUs, vLLM already supported [Intel CPUs](https://www.intel.com/content/www/us/en/products/overview.html) and [Gaudi accelerators](https://habana.ai/products). This guide provides an example on how to launch vLLM serving endpoint on CPU and Gaudi accelerators.
 
-[vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library for LLM inference and serving, it delivers state-of-the-art serving throughput with a set of advanced features such as PagedAttention, Continuous batching and etc.. Besides GPUs, vLLM already supported [Intel CPUs](https://www.intel.com/content/www/us/en/products/overview.html) and [Gaudi accelerators](https://habana.ai/products). This guide provides an example on how to launch vLLM serving endpoint on CPU and Gaudi accelerators.
+## Getting Started
 
-## Start vLLM Model Server
-To get started with vLLM, follow these steps:
+### 0. Prerequisite
+Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the [.env](docker/.env) file.
+```bash
+export HF_TOKEN=${your_hf_api_token}
+```
+
+### 🚀 Start the vLLM Service via script (Option 1)
+1.1. Run the script
 
 ```bash
-# for hpu device
-chmod +x run_vllm_hpu.sh
-./run_vllm_hpu.sh
+# for hpu device (default)
+export LLM_DEVICE='hpu'
 
 # for cpu device
-chmod +x run_vllm_cpu.sh
-./run_vllm_cpu.sh
+export LLM_DEVICE='cpu'
+
+chmod +x run_vllm.sh
+./run_vllm.sh
 ```
-The script starts a Docker container running the vLLM model server, which defaults to exposing the service on port `LLM_VLLM_PORT` (default: **8008**). To change the port or the model (Intel/neural-chat-7b-v3-3), please edit the [docker/.env](docker/.env) or edit the Bash script accordingly.
+The script initiates a Docker container with the vLLM model server running on port `LLM_VLLM_PORT` (default: **8008**). Configuration settings are specified in the environment configuration files [docker/.env.hpu](docker/.env.hpu) and [docker/.env.cpu](docker/.env.cpu) files. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
 
-
-**Verify if your vLLM model server is running:**  
+#### 1.2. Verify the vLLM Service
 Below examples are presented for hpu device. 
 
-Check the logs to confirm the service is operational:
+First, check the logs to confirm the service is operational:
 ```bash
-docker logs -f vllm-gaudi-model-server
+docker logs -f llm-vllm-model-server
 ```
 
-The following log messages indicate that the startup of model server ic completed:
+The following log messages indicate that the startup of model server is completed:
 ```bash
 INFO 09-05 12:17:56 habana_model_runner.py:940] [Warmup][Decode][1023/1024] batch_size:2 seq_len:16 free_mem:5.414 GiB
 INFO 09-05 12:17:56 habana_model_runner.py:940] [Warmup][Decode][1024/1024] batch_size:1 seq_len:16 free_mem:5.414 GiB
@@ -41,12 +48,12 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:80 (Press CTRL+C to quit)
 ```
 
-**Test your vLLM model server using the following command**:
+Send the request to model server:
 
 ```bash
 curl http://localhost:8008/v1/completions \
     -X POST \
-    -d '{"model": "Intel/neural-chat-7b-v3-3", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+    -d '{"model": "mistralai/Mistral-7B-Instruct-v0.1", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
     -H "Content-Type: application/json"
 ```
 
@@ -56,7 +63,7 @@ Expected output:
   "id": "cmpl-1d9266525da24c5ba747e69208f71332",
   "object": "text_completion",
   "created": 1725543426,
-  "model": "Intel/neural-chat-7b-v3-3",
+  "model": "mistralai/Mistral-7B-Instruct-v0.1",
   "choices": [
     {
       "index": 0,
@@ -73,46 +80,57 @@ Expected output:
   }
 }
 ```
+### 🚀 2. Deploy vLLM Service with OPEA LLM Microservice using Docker Compose (Option 2)
 
-## 🚀 Set up vLLM model server along with the OPEA LLM Microservice with Docker Compose
+To launch vLLM Service along with the OPEA LLM Microservice, follow these steps:
 
-To launch vLLM along with the OPEA LLM Microservice, follow these steps:
+#### 2.1. Modify the environment configuration file to align it to your case
 
-1. **Configure the `./docker/.env` file**:
+For HPU device (Gaudi), modify the `./docker/.env.hpu` file:
 
-    "Ensure the `./docker/.env` file in the root directory aligns with your requirements:
+```env
+#HF_TOKEN=<your-hf-api-key>
 
-    ```env
-    HF_TOKEN=<your-hf-api-key>
+## VLLM Model Server Settings ##
+LLM_VLLM_MODEL_NAME="mistralai/Mistral-7B-Instruct-v0.1"
+LLM_VLLM_PORT=8008
 
-    HABANA_VISIBLE_DEVICES=all
-    LLM_VLLM_MODEL_NAME="Intel/neural-chat-7b-v3-3"
-    LLM_VLLM_PORT=8008
-    [...]
-    ```
+HABANA_VISIBLE_DEVICES=all
+OMPI_MCA_btl_vader_single_copy_mechanism=none
+PT_HPU_ENABLE_LAZY_COLLECTIVES=true
+PT_HPU_LAZY_ACC_PAR_MODE=0
+VLLM_CPU_KVCACHE_SPACE=40
+VLLM_DTYPE=bfloat16
+VLLM_MAX_NUM_SEQS=128
+VLLM_SKIP_WARMUP=false
+VLLM_TP_SIZE=1
 
-2. **Start the Services using Docker Compose**:
+[...]
+```
 
-    Build and start the services using Docker Compose:
+#### 2.2. Start the Services using Docker Compose
 
-    ```bash
-    cd docker
-    docker compose -f docker-compose-hpu.yaml up --build -d
-    ```
+To build and start the services using Docker Compose
 
+```bash
+cd docker
 
-3. **Test the Services**:
+# for HPU device (Gaudi)
+docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
+```
 
-    Test the `llm-vllm-model-server` using the following command:
+#### 2.3. Verify the Services
+
+- Test the `llm-vllm-model-server` using the following command:
     ```bash
     curl http://localhost:8008/v1/completions \
         -X POST \
-        -d '{"model": "Intel/neural-chat-7b-v3-3", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+        -d '{"model": "mistralai/Mistral-7B-Instruct-v0.1", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
         -H "Content-Type: application/json"
     ```
     **NOTICE**: First ensure that the model server is operational. Warming up might take a while, and during this phase, the endpoint won't be ready to serve the query.
 
-    Check the `llm-vllm-microservice` status:
+- Check the `llm-vllm-microservice` status:
 
     ```bash
     curl http://localhost:9000/v1/health_check\
@@ -120,7 +138,7 @@ To launch vLLM along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-    Test the `llm-vllm-microservice` for non-streaming mode using the following command:
+- Test the `llm-vllm-microservice` for **non-streaming mode** using the following command:
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
@@ -128,7 +146,7 @@ To launch vLLM along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-    Test the `llm-vllm-microservice` for non-streaming mode using the following command:
+- Test the `llm-vllm-microservice` for **streaming mode** using the following command:
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
@@ -136,11 +154,13 @@ To launch vLLM along with the OPEA LLM Microservice, follow these steps:
         -H 'Content-Type: application/json'
     ```
 
-4. **Cleanup the Services using Docker Compose**:
+#### 2.4. Service Cleanup
 
-    To cleanup the services using Docker Compose:
+To cleanup the services using Docker Compose:
 
-    ```bash
-    cd docker
-    docker-compose -f docker-compose-hpu.yaml down
-    ```
+```bash
+cd docker
+
+# for HPU device (Gaudi)
+docker compose -f docker-compose-hpu.yaml down
+```

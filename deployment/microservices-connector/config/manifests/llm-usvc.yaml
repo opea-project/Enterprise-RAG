@@ -16,7 +16,7 @@ metadata:
 data:
   TGI_LLM_ENDPOINT: "http://llm-usvc-tgi"
   LLM_MODEL_SERVER_ENDPOINT: "http://llm-usvc-tgi"
-  HUGGINGFACEHUB_API_TOKEN: "insert-your-huggingface-token-here"
+  HF_TOKEN: "insert-your-huggingface-token-here"
   HF_HOME: "/tmp/.cache/huggingface"
   http_proxy: ""
   https_proxy: ""

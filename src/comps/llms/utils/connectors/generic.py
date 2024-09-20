@@ -6,7 +6,6 @@ from comps import (
     GeneratedDoc,
     LLMParamsDoc,
     get_opea_logger,
-    statistics_dict,
 )
 from typing import Union
 
@@ -42,7 +41,6 @@ class TGIConnector:
                         logger.debug("[llm - chat_stream] chunk:{chunk_repr}")
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug("[llm - chat_stream] stream response: {chat_response}")
-                    statistics_dict[self.name].append_latency(stream_gen_time[-1], stream_gen_time[0])
                     yield "data: [DONE]\n\n"
                 except Exception as e:
                     logger.error(f"Error streaming from TGI: {e}")

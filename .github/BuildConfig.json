@@ -23,10 +23,13 @@
         "ServerURL": "https://sast.intel.com",
         "ProjectID": "360520"
     },
-    "AVScan": {},
     "BinaryScan": {
         "ServerURL": "https://bdba001.icloud.intel.com",
         "ServerGroup": "57"
     },
-    "BanditScan": {}
+    "TrivyConfig": {
+        "target": "."
+    },
+    "BanditScan": {},
+    "AVScan": {}
 }

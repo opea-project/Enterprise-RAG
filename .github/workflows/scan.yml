@@ -5,7 +5,6 @@ on:
     branches: [ main ]
     paths-ignore:
       - "docs/**"
-      - ".github/**"
       - "**.md"
       - "**.txt"
 
@@ -71,15 +70,15 @@ jobs:
           config: repo/.github/BuildConfig.json
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # compilation_scan: ''
-          binary: 'repo.zip'
+          binary: "repo.zip"
           output_directory: ${{ env.GITHUB_WORKSPACE }}/scans_results
           sdle: ${{ steps.submit.outputs.submit || false }}
           logfile: IDF_Scans_Results_${{ github.run_id }}.log
         env:
-           IDFC_USER: ${{ env.CONJUR_SDL_USERNAME }}@intel.com
-           IDFC_PASSWORD: ${{ env.CONJUR_SDL_PASSWORD }}
-           IDFC_STORAGE_USER: ${{ env.CONJUR_SDL_USERNAME }}
-           IDFC_STORAGE_PASS: ${{ env.CONJUR_SDL_PASSWORD }}
+          IDFC_USER: ${{ env.CONJUR_SDL_USERNAME }}@intel.com
+          IDFC_PASSWORD: ${{ env.CONJUR_SDL_PASSWORD }}
+          IDFC_STORAGE_USER: ${{ env.CONJUR_SDL_USERNAME }}
+          IDFC_STORAGE_PASS: ${{ env.CONJUR_SDL_PASSWORD }}
 
       - name: Check results
         id: results
@@ -115,41 +114,3 @@ jobs:
           path: ${{ env.GITHUB_WORKSPACE }}/scans_results
           if-no-files-found: error
           retention-days: 60
-
-  bandit:
-    runs-on: [innersource.prod.amr.dind]
-    name: Bandit
-    container:
-      image: cache-registry.caas.intel.com/cache/library/python:slim
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Run Bandit
-        id: bandit
-        uses: intel-innersource/frameworks.actions.bandit@v1.3
-
-  trivy:
-    runs-on: [innersource.prod.amr.dind]
-    name: Trivy fs
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: intel-innersource/frameworks.actions.trivy@main
-        with:
-          TRIVY_REPORT_FORMAT: 'json'
-          TRIVY_SCAN_TYPE: 'fs'
-          TRIVY_OUTPUT_FILE: 'trivy_fs_report_${{ github.sha }}.json'
-          TRIVY_SCAN_PATH: '.'
-          TRIVY_EXIT_CODE: '1'
-          TRIVY_VULN_TYPE: 'os,library'
-          TRIVY_SEVERITY: 'CRITICAL,HIGH'
-          TRIVY_CUSTOM_PARAMS: "--debug --list-all-pkgs"
-
-      - name: Upload artifacts - csv
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: "trivy_fs_report_${{ github.sha }}"
-          path: "trivy_fs_report_${{ github.sha }}.json"

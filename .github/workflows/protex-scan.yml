@@ -1,0 +1,26 @@
+name: "Protex Scan"
+
+on:
+  workflow_dispatch:
+    inputs:
+      PR_number:
+        description: 'Pull request number'
+        required: true
+
+jobs:
+  Protex-scan:
+    runs-on: [innersource.prod.amr.dind]
+    container: amr-registry.caas.intel.com/cscripts-ci/protex:latest
+    name: Protex Scan
+    environment: default
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read  # This is required for actions/checkout
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.inputs.PR_number }}/head
+      - name: Protex scan
+        uses: ./.github/actions/protex-scan
+        with:
+          PR-number: ${{ github.event.inputs.PR_number }}

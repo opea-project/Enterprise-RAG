@@ -1,0 +1,23 @@
+name: "Trivy Scan"
+
+on:
+  workflow_dispatch:
+    inputs:
+      PR_number:
+        description: 'Pull request number'
+        required: true
+
+jobs:
+  Trivy-scan:
+    runs-on: [innersource.prod.amr.dind]
+    name: Trivy Scan
+    container:
+      image: cache-registry.caas.intel.com/cache/library/python:3.11
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            ref: refs/pull/${{ github.event.inputs.PR_number }}/head
+      - name: Trivy scan
+        uses: ./.github/actions/trivy-scan
+        with:
+          PR-number: ${{ github.event.inputs.PR_number }}

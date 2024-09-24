@@ -33,5 +33,5 @@ jobs:
           VALIDATE_YAML: true
           VALIDATE_PYTHON_RUFF: true
           VALIDATE_DOCKERFILE_HADOLINT: true
-          GITHUB_TOKEN: ${{ secrets.CLN_GH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           DEFAULT_BRANCH: main

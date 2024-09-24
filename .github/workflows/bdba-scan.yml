@@ -1,0 +1,24 @@
+name: "BDBA Scan"
+
+on:
+  workflow_dispatch:
+    inputs:
+      PR_number:
+        description: 'Pull request number'
+        required: true
+
+jobs:
+  Bdba-scan:
+    runs-on: [innersource.prod.amr.dind]
+    name: BDBA Scan
+    container:
+      image: cache-registry.caas.intel.com/cache/library/python:3.11
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.inputs.PR_number }}/head
+      - name: BDBA scan
+        uses: ./.github/actions/bdba-scan
+        with:
+          bdba-token: ${{ secrets.CLN_BDBA_TOKEN }}
+          PR-number: ${{ github.event.inputs.PR_number }}

@@ -1,0 +1,34 @@
+name: 'BDBA scan'
+
+inputs:
+  bdba-token:
+    description: 'BDBA access token'
+    required: true
+  PR-number:
+    description: 'Pull request number'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        path: repo
+        ref: refs/pull/${{ inputs.PR-number }}/head
+    - name: Install zip
+      run: apt update && apt -y install zip
+      shell: bash
+    - name: Archive repo
+      run: zip -r repo1.zip repo/* -x ".git/*" ".github/*"
+      shell: bash
+    - uses: intel-innersource/frameworks.actions.certs@latest
+    - name: Run BDBA
+      id: bdba
+      env:
+        BDBA_TOKEN: ${{ inputs.bdba-token }}
+      uses: intel-innersource/frameworks.actions.bdba@v1.4.1
+      with:
+        bdba_group: '57'
+        bdba_binary: 'repo1.zip'
+        #sdl_project_id: 22078

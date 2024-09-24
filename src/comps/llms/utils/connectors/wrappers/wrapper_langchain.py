@@ -32,7 +32,7 @@ class TGIConnector:
                     chat_response = ""
                     for text in connector.stream(input.query):
                         chat_response += text
-                        chunk_repr = repr(text.encode("utf-8"))
+                        chunk_repr = repr(text)
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"
@@ -72,7 +72,7 @@ class VLLMConnector:
                     chat_response = ""
                     for text in llm.stream(input.query):
                         chat_response += text
-                        chunk_repr = repr(text.encode("utf-8"))
+                        chunk_repr = repr(text)
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"

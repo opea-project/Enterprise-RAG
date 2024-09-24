@@ -37,7 +37,7 @@ class TGIConnector:
                     for text in generator:
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
-                        chunk_repr = repr(text.encode("utf-8"))
+                        chunk_repr = repr(text)
                         logger.debug("[llm - chat_stream] chunk:{chunk_repr}")
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug("[llm - chat_stream] stream response: {chat_response}")
@@ -81,7 +81,7 @@ class VLLMConnector:
                         text = chunk.choices[0].text
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
-                        chunk_repr = repr(text.encode("utf-8"))
+                        chunk_repr = repr(text)
                         logger.debug(f"[llm - chat_stream] chunk:{chunk_repr}")
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")

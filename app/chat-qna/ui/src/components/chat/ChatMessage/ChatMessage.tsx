@@ -14,7 +14,9 @@ interface ChatMessageProps {
 const ChatMessage = ({ text, isUserMessage }: ChatMessageProps) => (
   <div className={`message ${isUserMessage ? "" : "bot-message"}`}>
     <ChatMessageAvatar isUserMessage={isUserMessage} />
-    <ChatMessageMarkdown text={text} />
+    <div>
+      <ChatMessageMarkdown text={text} />
+    </div>
   </div>
 );
 

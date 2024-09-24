@@ -30,9 +30,11 @@ interface ChatMessageMarkdownProps {
 }
 
 const ChatMessageMarkdown = ({ text }: ChatMessageMarkdownProps) => (
-  <Markdown remarkPlugins={[remarkGfm]} components={customMarkdownComponents}>
-    {text}
-  </Markdown>
+  <section className="chatbot-answer">
+    <Markdown remarkPlugins={[remarkGfm]} components={customMarkdownComponents}>
+      {text}
+    </Markdown>
+  </section>
 );
 
 export default ChatMessageMarkdown;

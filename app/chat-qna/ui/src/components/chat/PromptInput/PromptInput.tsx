@@ -91,13 +91,17 @@ const PromptInput = () => {
               matchedContent.length > 1
             ) {
               const newChunk = matchedContent[1]
-                .replace(/(\\n|<\/s>)/, "")
-                .trimEnd();
+                .replace(/<\/s>/, "")
+                .trimEnd()
+                .replace(/\\n/, "  \n");
               dispatch(
                 updateMessage({ messageId: chatBotMessageId, chunk: newChunk }),
               );
             }
           }
+        },
+        onerror: (err) => {
+          throw new Error(err);
         },
         onclose: () => {
           setPrompt("");

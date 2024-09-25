@@ -1,14 +1,38 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import inspect
 
 from typing import Optional
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from uvicorn import Config, Server
 
 from .base_service import BaseService
 from .base_statistics import collect_all_statistics
+
+
+def generate_lifespan(startup_methods: Optional[list], close_methods: Optional[list]):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if startup_methods is not None and isinstance(startup_methods, list):
+            for method in startup_methods:
+                if inspect.iscoroutinefunction(method):
+                    await method()
+                else:
+                    method()
+
+        yield
+
+        if close_methods is not None and isinstance(close_methods, list):
+            for method in close_methods:
+                if inspect.iscoroutinefunction(method):
+                    await method()
+                else:
+                    method()
+
+    return lifespan
 
 
 class HTTPService(BaseService):
@@ -21,6 +45,8 @@ class HTTPService(BaseService):
         self,
         uvicorn_kwargs: Optional[dict] = None,
         cors: Optional[bool] = True,
+        startup_methods: Optional[list] = None,
+        close_methods: Optional[list] = None,
         **kwargs,
     ):
         """Initialize the HTTPService
@@ -32,6 +58,14 @@ class HTTPService(BaseService):
         super().__init__(**kwargs)
         self.uvicorn_kwargs = uvicorn_kwargs or {}
         self.cors = cors
+        self.startup_methods = startup_methods
+        self.close_methods = close_methods
+
+        self.lifespan_func = None
+        if self.startup_methods is not None and isinstance(self.startup_methods, list) or \
+           self.close_methods is not None and isinstance(self.close_methods, list):
+            self.lifespan_func = generate_lifespan(self.startup_methods, self.close_methods)
+
         self._app = self._create_app()
         Instrumentator().instrument(self._app).expose(self._app)
 
@@ -46,7 +80,7 @@ class HTTPService(BaseService):
 
         :return: a FastAPI application.
         """
-        app = FastAPI(title=self.title, description=self.description)
+        app = FastAPI(title=self.title, description=self.description, lifespan=self.lifespan_func)
 
         if self.cors:
             from fastapi.middleware.cors import CORSMiddleware

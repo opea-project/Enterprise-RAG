@@ -145,3 +145,18 @@ class LVMDoc(BaseDoc):
     prompt: str
     max_new_tokens: conint(ge=0, le=1024) = 512
 
+
+class PromptCreate(BaseDoc):
+    prompt_text: str
+    filename: str
+
+class PromptId(BaseDoc):
+    prompt_id: str
+
+class PromptGet(BaseDoc):
+    filename: Optional[str] = None
+    prompt_id: Optional[str] = None
+    prompt_text: Optional[str] = None
+
+class PromptOutput(BaseDoc):
+    prompts: List[PromptGet]

@@ -31,6 +31,8 @@ class MicroService:
         provider: Optional[str] = None,
         provider_endpoint: Optional[str] = None,
         use_remote_service: Optional[bool] = False,
+        startup_methods: Optional[list] = None,
+        close_methods: Optional[list] = None,
     ):
         """Init the microservice."""
         self.name = f"{name}/{self.__class__.__name__}" if name else self.__class__.__name__
@@ -43,6 +45,8 @@ class MicroService:
         self.input_datatype = input_datatype
         self.output_datatype = output_datatype
         self.use_remote_service = use_remote_service
+        self.startup_methods = startup_methods
+        self.close_methods = close_methods
         self.uvicorn_kwargs = {}
 
         if ssl_keyfile:
@@ -88,7 +92,7 @@ class MicroService:
             "description": "OPEA Microservice Infrastructure",
         }
 
-        return HTTPService(uvicorn_kwargs=self.uvicorn_kwargs, runtime_args=runtime_args)
+        return HTTPService(uvicorn_kwargs=self.uvicorn_kwargs, startup_methods=self.startup_methods, close_methods=self.close_methods, runtime_args=runtime_args)
 
     async def _async_setup(self):
         """The async method setup the runtime.
@@ -154,27 +158,40 @@ def register_microservice(
     output_datatype: Type[Any] = TextDoc,
     provider: Optional[str] = None,
     provider_endpoint: Optional[str] = None,
+    startup_methods: Optional[list] = None,
+    close_methods: Optional[list] = None,
 ):
     def decorator(func):
-        micro_service = MicroService(
-            name=name,
-            service_role=service_role,
-            service_type=service_type,
-            protocol=protocol,
-            host=host,
-            port=port,
-            ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile,
-            endpoint=endpoint,
-            input_datatype=input_datatype,
-            output_datatype=output_datatype,
-            provider=provider,
-            provider_endpoint=provider_endpoint,
-        )
+        if opea_microservices.get(name):
+            micro_service = opea_microservices[name]
+            if micro_service.host != host or micro_service.port != port:
+                err_msg = f"Microservice {name} already registered on host and port: {micro_service.host}:{micro_service.port}" \
+                    f" but new endpoint is being registered on host and port: {host}:{port}. Verify the configuration for the microservice."
+                micro_service.server.logger.error(err_msg)
+                raise ValueError(err_msg)
+        else:
+            micro_service = MicroService(
+                name=name,
+                service_role=service_role,
+                service_type=service_type,
+                protocol=protocol,
+                host=host,
+                port=port,
+                ssl_keyfile=ssl_keyfile,
+                ssl_certfile=ssl_certfile,
+                endpoint=endpoint,
+                input_datatype=input_datatype,
+                output_datatype=output_datatype,
+                provider=provider,
+                provider_endpoint=provider_endpoint,
+                startup_methods=startup_methods,
+                close_methods=close_methods,
+            )
+            opea_microservices[name] = micro_service
 
         micro_service.app.router.add_api_route(endpoint, func, methods=["POST"])
+        micro_service.server.logger.info(f"Registered endpoint: {endpoint}")
 
-        opea_microservices[name] = micro_service
         return func
 
     return decorator

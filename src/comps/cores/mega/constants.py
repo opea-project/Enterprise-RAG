@@ -61,6 +61,7 @@ class MegaServiceEndpoint(Enum):
     LLM_GUARD_OUTPUT_SCANNER = "/v1/llmguardoutput"
     INGEST = "/v1/ingestion"
     DATAPREP = '/v1/dataprep'
+    PROMPT_REGISTRY = '/v1/prompt_registry'
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

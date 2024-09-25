@@ -1,15 +1,15 @@
 #!/bin/bash
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-EMBEDDING_MODEL_NAME="BAAI/bge-large-en-v1.5"
+OVMS_MODEL_NAME="BAAI/bge-large-en-v1.5"
 
 mkdir -p models
-name=$(echo ${model_name} | cut -d "/" -f 2)
+name=$(echo ${OVMS_MODEL_NAME} | cut -d "/" -f 2)
 embeddings_model_name=${name}_embeddings
 tokenizer_model_name=${name}_tokenizer
 
-optimum-cli export openvino --model ${EMBEDDING_MODEL_NAME} --task feature-extraction models/${embeddings_model_name}
-convert_tokenizer -o models/${tokenizer_model_name} --skip-special-tokens ${EMBEDDING_MODEL_NAME}
+optimum-cli export openvino --model ${OVMS_MODEL_NAME} --task feature-extraction models/${embeddings_model_name}
+convert_tokenizer -o models/${tokenizer_model_name} --skip-special-tokens ${OVMS_MODEL_NAME}
 
 python combine_models.py models/${embeddings_model_name} models/${tokenizer_model_name}
 

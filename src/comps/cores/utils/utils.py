@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from typing import Optional
 
 
 def get_boolean_env_var(var_name, default_value=False):
@@ -28,3 +29,18 @@ def get_boolean_env_var(var_name, default_value=False):
         return False
     else:
         return default_value
+
+def sanitize_env(value: Optional[str]) -> Optional[str]:
+    """Remove quotes from a configuration value if present.
+    Args:
+        value (str): The configuration value to sanitize.
+    Returns:
+        str: The sanitized configuration value.
+    """
+    if value is None:
+        return None
+    if value.startswith('"') and value.endswith('"'):
+        value = value[1:-1]
+    elif value.startswith('\'') and value.endswith('\''):
+        value = value[1:-1]
+    return value

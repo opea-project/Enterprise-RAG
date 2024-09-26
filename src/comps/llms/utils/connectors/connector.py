@@ -1,18 +1,16 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from abc import ABC,abstractmethod
-from comps import (
-    GeneratedDoc,
-    LLMParamsDoc,
-    get_opea_logger
-)
+from abc import ABC, abstractmethod
 from typing import Union
+
 from fastapi.responses import StreamingResponse
+
+from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-
+# todo: in _validate both regular mode and streaming mode should be checked
 class LLMConnector(ABC):
     def __init__(self, model_name: str, model_server: str, endpoint: str):
         """
@@ -40,12 +38,9 @@ class LLMConnector(ABC):
             test_input = LLMParamsDoc(query="test")
             self.generate(test_input)
             logger.debug("Validation completed. LLM initialized successfully.")
-        except RuntimeError as e:
-            logger.exception(f"Error initializing the LLM: {e}")
-            raise
         except Exception as e:
-            logger.exception(f"An unexpected error occurred: {e}")
-            raise
+            logger.exception(f"Error initializing the LLM: {e}")
+            raise RuntimeError(f"Error initializing the LLM: {e}")
 
     @abstractmethod
     def change_configuration(self, **kwargs) -> None:

@@ -54,3 +54,6 @@ from comps.cores.proto.docarray import (
 
 # Telemetry
 from comps.cores.telemetry.opea_telemetry import opea_telemetry
+
+# Utils
+from comps.cores.utils.utils import sanitize_env

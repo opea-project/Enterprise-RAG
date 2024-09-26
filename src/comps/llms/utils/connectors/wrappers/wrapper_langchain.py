@@ -1,22 +1,23 @@
-from fastapi.responses import StreamingResponse
-from comps import (
-    GeneratedDoc,
-    LLMParamsDoc,
-    get_opea_logger
-)
-from comps.llms.utils.connectors.connector import LLMConnector
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Union
 
-logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+from fastapi.responses import StreamingResponse
+from langchain_community.llms import VLLMOpenAI
+from langchain_huggingface import HuggingFaceEndpoint
+from requests.exceptions import RequestException
 
+from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
+from comps.llms.utils.connectors.connector import LLMConnector
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class TGIConnector:
     def __init__(self, model_name: str, endpoint: str):
         self._endpoint = endpoint
-        self._model_name = model_name
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        from langchain_huggingface import HuggingFaceEndpoint
         connector = HuggingFaceEndpoint(
             endpoint_url=self._endpoint,
             max_new_tokens=input.max_new_tokens,
@@ -40,14 +41,19 @@ class TGIConnector:
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             except Exception as e:
                 logger.error(f"Error streaming from TGI: {e}")
-                raise
+                raise Exception(f"Error streaming from TGI: {e}")
         else:
             try:
                 response = connector.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query)
+            except RequestException as e:
+                error_code = e.response.status_code if e.response else 'No response'
+                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}', status_code: {error_code}. Check if the endpoint is available and running."
+                logger.error(error_message)
+                raise RequestException(error_message)
             except Exception as e:
                 logger.error(f"Error invoking TGI: {e}")
-                raise
+                raise Exception(f"Error invoking TGI: {e}")
 
 class VLLMConnector:
     def __init__(self, model_name: str, endpoint: str):
@@ -55,16 +61,20 @@ class VLLMConnector:
         self._model_name = model_name
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        from langchain_community.llms import VLLMOpenAI
-        llm = VLLMOpenAI(
-            openai_api_key="EMPTY",
-            openai_api_base=self._endpoint,
-            max_tokens=input.max_new_tokens,
-            model_name=self._model_name,
-            top_p=input.top_p,
-            temperature=input.temperature,
-            streaming=input.streaming,
-        )
+        try: 
+            llm = VLLMOpenAI(
+                openai_api_key="EMPTY",
+                openai_api_base=self._endpoint,
+                max_tokens=input.max_new_tokens,
+                model_name=self._model_name,
+                top_p=input.top_p,
+                temperature=input.temperature,
+                streaming=input.streaming,
+            )
+        except Exception as e:
+            error_message = "Failed to invoke the Langchain VLLM Connector. Check if the endpoint '{self._endpoint}' is correct and the VLLM service is running."
+            logger.error(error_message)
+            raise Exception(f"{error_message}: {e}")
 
         if input.streaming:
             try:
@@ -80,14 +90,14 @@ class VLLMConnector:
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
             except Exception as e:
                 logger.error(f"Error streaming from VLLM: {e}")
-                raise
+                raise Exception(f"Error streaming from VLLM: {e}")
         else:
             try:
                 response = llm.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query)
             except Exception as e:
                 logger.error(f"Error invoking VLLM: {e}")
-                raise
+                raise Exception(f"Error invoking VLLM: {e}")
 
 SUPPORTED_INTEGRATIONS = {
     "tgi": TGIConnector,
@@ -117,8 +127,9 @@ class LangchainLLMConnector(LLMConnector):
 
     def _get_connector(self):
         if self._model_server not in SUPPORTED_INTEGRATIONS:
-            logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
-            raise ValueError("Invalid model server")
+            error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
+            logger.error(error_message)
+            raise ValueError(error_message)
         return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:

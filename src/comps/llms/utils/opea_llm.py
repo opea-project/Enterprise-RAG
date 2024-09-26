@@ -1,4 +1,6 @@
-import os
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Optional, Union
 
 from fastapi.responses import StreamingResponse
@@ -9,29 +11,22 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class OPEALlm:
-    def __init__(self):
+    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic"):
         """
-        Initializes the OPEA LLM Microservice.
+        Initialize the OPEALlm instance with the given parameters.
 
-        The OPEA LLM Microservice is responsible for sending requests to a specified model server endpoint.
-        The configuration parameters are read from environment variables.
-
-        Environment Variables:
-            - LLM_MODEL_NAME: The name of the LLM model.
-            - LLM_MODEL_SERVER: The address of the LLM model server.
-            - LLM_CONNECTOR (Optional): The connector to be used for the LLM model.
-            - LLM_MODEL_SERVER_ENDPOINT: The endpoint of the LLM model server.
+        :param model_name: Name of the LLM model.
+        :param model_server: Server hosting the LLM model.
+        :param model_server_endpoint: Endpoint for the LLM model server.
+        :param connector_name: Connector name for the LLM.
 
         Raises:
             ValueError: If any of the required environment variables are missing or empty.
-
         """
-
-        self._model_name: str = _sanitize(os.getenv('LLM_MODEL_NAME'))
-        self._model_server: str = _sanitize(os.getenv('LLM_MODEL_SERVER'))
-        self._model_server_endpoint: str = _sanitize(os.getenv('LLM_MODEL_SERVER_ENDPOINT'))
-        self._connector: Optional[str] = _sanitize(os.getenv('LLM_CONNECTOR'))
-
+        self._model_name = model_name
+        self._model_server = model_server
+        self._model_server_endpoint = model_server_endpoint
+        self._connector_name = connector_name
         self._validate_config()
         self._connector = self._get_connector()
 
@@ -40,12 +35,14 @@ class OPEALlm:
         )
 
     def _get_connector(self):
-        if self._connector.upper() == "LANGCHAIN":
+        if self._connector_name.upper() == "LANGCHAIN":
             from comps.llms.utils.connectors.wrappers import wrapper_langchain
             return wrapper_langchain.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
-        else:
+        elif self._connector_name.upper() == "GENERIC" or not self._connector_name.strip():
             from comps.llms.utils.connectors import generic
             return generic.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
+        else:
+            raise ValueError(f"Invalid connector name: {self._connector_name}. Expected to be either 'langchain', 'generic', or unset.")
 
     def _validate_config(self):
         """Validate the configuration values."""
@@ -62,20 +59,3 @@ class OPEALlm:
 
     def run(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)
-
-
-def _sanitize(value: str) -> str:
-    """Remove quotes from a configuration value if present.
-
-    Args:
-        value (str): The configuration value to sanitize.
-
-    Returns:
-        str: The sanitized configuration value.
-
-    """
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
-    elif value.startswith('\'') and value.endswith('\''):
-        value = value[1:-1]
-    return value

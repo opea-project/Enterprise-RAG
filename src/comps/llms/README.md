@@ -25,7 +25,7 @@ The configuration for the OPEA LLM Microservice is specified in the [impl/micros
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `LLM_USVC_PORT`                 | The port of the microservice, by default 9000.                                                                        |
 | `LLM_MODEL_NAME`                | The name of language model to be used (e.g., "Intel/neural-chat-7b-v3-3")                                             |
-| `LLM_CONNECTOR`                 | The framework used to connect to the model (e.g., "langchain", "llama_index"). If not set, the generic connection method is used. |
+| `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
 | `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 ## Getting started
@@ -77,7 +77,7 @@ If the model server is running at a different endpoint than the default, update 
 docker run -d --name="llm-microservice" \
   -e LLM_MODEL_SERVER_ENDPOINT="http://localhost:8008" \
   -e LLM_MODEL_NAME="meta-llama/Meta-Llama-3-70B" \
-  -e LLM_FRAMEWORK="langchain" \
+  -e LLM_CONNECTOR="langchain" \
   -e LLM_MODEL_SERVER="vllm" \
   --net=host \
   --ipc=host \
@@ -96,15 +96,15 @@ curl http://localhost:9000/v1/health_check\
 
 ####  3.2. Sending a Request
 
-You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`.
+You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`. See the example below for more of an understanding.
 
 The `streaming` parameter controls the API response format:
- - `streaming=false` returns a complete text string.
+ - `streaming=false` returns a complete text string,
  - `streaming=true` streams the text in real time.
 
 > **NOTE:** Ensure that your model server is running at `LLM_MODEL_SERVER_ENDPOINT` and is ready to accept requests. Be aware that the server may take some time to become fully operational; otherwise, the microservice will return an Internal Server Error.
 
-#### Example input
+**Example Input**
 
 ```bash
 # non-streaming mode
@@ -122,16 +122,37 @@ curl http://localhost:9000/v1/chat/completions \
   -H 'Content-Type: application/json'
 ```
 
-#### Example output
-The example below shows the LLM microservice output in non-streaming mode (streaming=false), where it returns a JSON response with the generated text based on the input query.
+**Example output**
 
-```json
-{
-  "id":"fd49a0d75f7f54089572fa30510f8d3a",
-  "text":"\n\nDeep learning is a subset of machine learning that uses algorithms to learn from data",
-  "prompt":"What is Deep Learning?"
-}
-```
+The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
+
+ - In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+
+    ```json
+    {
+      "id":"fd49a0d75f7f54089572fa30510f8d3a",
+      "text":"\n\nDeep learning is a subset of machine learning that uses algorithms to learn from data",
+      "prompt":"What is Deep Learning?"
+    }
+    ```
+- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+    ```
+    data: '\n'
+    data: 'Deep'
+    data: ' learning'
+    data: ' is'
+    data: ' a'
+    data: ' subset'
+    data: ' of'
+    data: ' machine'
+    data: ' learning'
+    data: ' that'
+    data: ' uses'
+    data: ' artificial'
+    data: ' neural'
+    data: ' networks'
+    data: [DONE]
+    ```
 
 ## Validated Model
 

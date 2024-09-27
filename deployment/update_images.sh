@@ -187,7 +187,7 @@ for component in "${components_to_build[@]}"; do
             image_name=opea/embedding
             additional_args="--target langchain"
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG $additional_args;fi
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG "$additional_args";fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
 

@@ -1,20 +1,21 @@
-import configparser
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import heapq
 import json
-import os
-import time
 from typing import List, TypedDict
 
 import requests
+from docarray import DocList
+from requests.exceptions import RequestException
+
 from comps import (
-    get_opea_logger,
     LLMParamsDoc,
     SearchedDoc,
     TextDoc,
-    statistics_dict,
+    get_opea_logger,
 )
 from comps.reranks.utils import prompt
-from docarray import DocList
 
 
 class RerankScoreItem(TypedDict):
@@ -25,77 +26,31 @@ RerankScoreResponse = List[RerankScoreItem]
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-
 class OPEAReranker:
-    def __init__(self, config_file: str):
+    def __init__(self, service_url: str):
         """
+         Initialize the OPEAReranker instance with the given parameter
         Sets up the reranker.
 
         Args:
-            config_file (str): The path to the configuration file.
+            :param service_url: the URL of the reranking service (e.g. TEI Ranker)
 
-        # Environment variables can override the configuration file settings
-        # - RERANKING_SERVICE_URL: Overrides the URL of the reranking service (e.g. TEI Ranker)
-        # - RERANKING_HOST: Overrides the host of the microservice
-        # - RERANKING_PORT: Overrides the port of the microservice
-        # - RERANKING_NAME: Overrides the name of the microservice
-        # - RERANKING_LOG_LEVEL: Overrides the log level
-        # - RERANKING_LOG_PATH: Overrides the log path
+        Raises:
+            ValueError: If the required param is missing or empty.
         """
-        self.config_file = config_file
-        self.name = str
-        self.host = str
-        self.port = int
-        self.service_url: str
 
-        self._load_config()
+        self._service_url = service_url
         self._validate_config()
         # TODO: add validate for model server
         logger.info(
-            f"Reranker model server is configured to send requests to service {self.service_url}"
-        )
-
-    def _load_config(self):
-        """
-        Loads the configuration from the specified config file.
-
-        Raises:
-            FileNotFoundError: If the configuration file does not exist.
-        """
-
-        if not os.path.exists(self.config_file):
-            raise FileNotFoundError(
-                f"The configuration file {self.config_file} does not exist"
-            )
-
-        config = configparser.ConfigParser()
-        config.read(self.config_file)
-
-        # base configuration
-        self.name = os.getenv(
-            "RERANKING_NAME", _sanitize(config.get("OPEA_Microservice", "name"))
-        )
-        self.host = os.getenv(
-            "RERANKING_HOST", _sanitize(config.get("OPEA_Microservice", "host"))
-        )
-        self.port = int(os.getenv(
-            "RERANKING_PORT", config.getint("OPEA_Microservice", "port")
-        ))
-        self.service_url = os.getenv(
-            "RERANKING_SERVICE_URL", _sanitize(config.get("Service", "url"))
+            f"Reranker model server is configured to send requests to service {self._service_url}"
         )
 
     def _validate_config(self):
         """Validate the configuration values."""
         try:
-            if not self.name:
-                raise ValueError("The 'name' cannot be empty.")
-            if not self.host:
-                raise ValueError("The 'host' cannot be empty.")
-            if not self.port:
-                raise ValueError("The 'port' is required.")
-            if not self.service_url:
-                raise ValueError("The 'service_url' cannot be empty.")
+            if not self._service_url:
+                raise ValueError("The 'RERANKING_SERVICE_URL' cannot be empty.")
         except Exception as err:
             logger.error(f"Configuration validation error: {err}")
             raise
@@ -113,12 +68,14 @@ class OPEAReranker:
         Raises:
             Exception: If there is an error during the reranking process.
         """
-        start = time.time()
-
         # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
         if not input.initial_query.strip():
             logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
+
+        if input.top_n < 1:
+            logger.error(f"Top N value must be greater than 0, but it is {input.top_n}")
+            raise ValueError(f"Top N value must be greater than 0, but it is {input.top_n}")
 
         # Check if retrieved_docs is not empty and all documents have non-empty 'text' fields
         if input.retrieved_docs and all(doc.text for doc in input.retrieved_docs):
@@ -140,28 +97,22 @@ class OPEAReranker:
             )
 
         else:
-            logger.warning(
-                "No retrieved documents found. Using the initial query."
-            )
+            logger.warning("No retrieved documents found. Using the initial query.")
             query = input.initial_query.strip() # Just pass the initial query to the LLM
 
-        latency_sec = time.time() - start
-        logger.debug(f"Operation latency: {round(latency_sec, 4)} seconds")
-        statistics_dict[self.name].append_latency(latency_sec, None)
         return LLMParamsDoc(query=query)
+
 
     def _call_reranker(
         self,
         initial_query: str,
         retrieved_docs: DocList[TextDoc],
-        max_attempts: int = 3,
     ) -> RerankScoreResponse:
         """
         Calls the reranker service to rerank the retrieved documents based on the initial query.
         Args:
             initial_query (str): The initial query string.
             retrieved_docs (DocList[TextDoc]): The list of retrieved documents.
-            max_attempts (int, optional): The maximum number of attempts to reach the service. Defaults to 3.
         Returns:
             RerankScoreResponse: The response from the reranker service.
         Raises:
@@ -171,24 +122,24 @@ class OPEAReranker:
         docs = [doc.text for doc in retrieved_docs]
         data = {"query": initial_query, "texts": docs}
 
-        for attempt in range(max_attempts):
-            try:
-                response = requests.post(
-                    self.service_url,
-                    data=json.dumps(data),
-                    headers={"Content-Type": "application/json"},
-                )
-                response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
-                return response.json()
-            except requests.exceptions.RequestException as e:
-                logger.error(
-                    f"Error during request to the service (attempt {attempt + 1}): {e}"
-                )
-                time.sleep(3)  # Wait for 3 second before the next attempt
-
-        raise requests.exceptions.RequestException(
-            f"Failed {max_attempts} times to reach {self.service_url}."
-        )
+        try:
+            response = requests.post(
+                self._service_url,
+                data=json.dumps(data),
+                headers={"Content-Type": "application/json"},
+            )
+            response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+            return response.json()
+      
+        except RequestException as e:
+            error_code = e.response.status_code if e.response else 'No response'
+            error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_url}', status_code: {error_code}. Check if the service url is reachable."
+            logger.error(error_message)
+            raise RequestException(error_message)
+        except Exception as e:
+            logger.error(f"An error occurred while requesting to the reranking service: {e}")
+            raise Exception(f"An error occurred while requesting to the reranking service: {e}")
+        
 
     def _generate_query(
         self,
@@ -235,18 +186,3 @@ class OPEAReranker:
 
         """
         return heapq.nlargest(top_n, data, key=lambda x: x["score"])
-
-
-def _sanitize(value: str) -> str:
-    """Remove quotes from a configuration value if present.
-
-    Args:
-        value (str): The configuration value to sanitize.
-
-    Returns:
-        str: The sanitized configuration value.
-
-    """
-    if value.startswith('"') and value.endswith('"'):
-        value = value[1:-1]
-    return value

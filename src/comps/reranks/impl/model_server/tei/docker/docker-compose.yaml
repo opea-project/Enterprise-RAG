@@ -13,12 +13,14 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - NO_PROXY=${NO_PROXY}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HF_TOKEN: ${HF_TOKEN}
     command: ["--model-id", "${RERANKER_TEI_MODEL_NAME}"]
     runtime: runc
     ipc: host
+
   reranking_usvc:
     build:
       context: ../../../../../../
@@ -28,19 +30,10 @@ services:
     runtime: runc
     network_mode: host
     environment:
-      - NO_PROXY=${NO_PROXY}
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - HF_TOKEN=${HUGGINGFACE_API_KEY}
-      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
-      - RERANKING_SERVICE_URL=http://localhost:${RERANKER_TEI_PORT}/rerank
-      # Pass the environment variable if it is provided in .env file;
-      # otherwise, use the defaults specified in reranks/config.ini
-      - RERANKING_HOST:= ${RERANKING_HOST:-}
-      - RERANKING_PORT:= ${RERANKING_PORT:-}
-      - RERANKING_NAME:= ${RERANKING_NAME:-}
-      - RERANKIG_LOG_LEVEL:= ${RERANKIG_LOG_LEVEL:-}
-      - RERANKING_LOG_PATH:= ${RERANKING_LOG_PATH:-}
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      RERANKING_SERVICE_URL: http://localhost:${RERANKER_TEI_PORT}/rerank
     restart: unless-stopped
     depends_on:
       - reranking-tei-model-server

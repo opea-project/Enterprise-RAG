@@ -1,4 +1,3 @@
-
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
@@ -34,8 +33,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 WORKDIR /home/user
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
-COPY --chown=user:user ./comps/reranks/config.ini /home/user/comps/reranks/config.ini
 COPY --chown=user:user ./comps/reranks/utils /home/user/comps/reranks/utils
+COPY --chown=user:user ./comps/reranks/impl/microservice/.env ./comps/reranks/impl/microservice/.env
 COPY --chown=user:user ./comps/reranks/opea_reranking_microservice.py /home/user/comps/reranks/opea_reranking_microservice.py
 
 WORKDIR /home/user/comps/reranks

@@ -1,6 +1,5 @@
-"""This file contains the unit tests for the prompt module used by OPEA Reranking Microservice.
-Run `pytest --disable-warnings --cov=comps/reranks/utils --cov-report=term --cov-report=html tests/unit/reranks/test_utils_prompt.py` to execute these tests with coverage report.
-"""
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 import subprocess  # nosec B404
 import unittest

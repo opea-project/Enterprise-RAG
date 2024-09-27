@@ -9,6 +9,9 @@ from docarray.documents import AudioDoc
 from docarray.typing import AudioUrl
 from pydantic import Field, conint, conlist
 
+class ComponentArgument(BaseDoc):
+    name: str
+    data: dict
 
 class TopologyInfo:
     # will not keep forwarding to the downstream nodes in the black list

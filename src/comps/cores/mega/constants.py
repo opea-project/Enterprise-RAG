@@ -62,6 +62,7 @@ class MegaServiceEndpoint(Enum):
     INGEST = "/v1/ingestion"
     DATAPREP = '/v1/dataprep'
     PROMPT_REGISTRY = '/v1/prompt_registry'
+    SYSTEM_FINGERPRINT = '/v1/system_fingerprint'
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

@@ -134,15 +134,46 @@ In the above case the run should end with having all pods defined in [chatQnA_da
 ### Test:
 To verify the functionality of the Chat Q&A pipeline, run the `test_connecton.sh` script. It will execute a test query and display the response.
 
-### Access UI from your local machine
+### Access UI from Your Local Machine
 
-To access UI please forward bellow ports when connecting to server:
+To access the UI on your machine, you need to forward specific ports when connecting to the server.
+Below are some common methods to achieve this, but feel free to use any other method that suits your needs.
+
+#### Common Methods for Port Forwarding
+
+1. **Adding to `.ssh/config` File:**
+
+You can add the following lines to your `~/.ssh/config` file to set up port forwarding:
 
 ```
+Host <your_server_alias>
+    HostName <IP of server host>
     LocalForward 1234 localhost:1234
     LocalForward 4173 localhost:4173
     LocalForward 3000 localhost:3000
-``` 
+```
+Connect to the server using the alias you defined:
 
-Next you can access Enterprise RAG UI by typing in web browser: `http://localhost:4173/` on your local machine.
+`
+ssh <your_server_alias>
+`
+
+2. **Passing with `ssh` Command:**
+
+    Alternatively, you can pass the port forwarding options directly with the `ssh` command:
+
+    ```sh
+    ssh -L 1234:localhost:1234 -L 4173:localhost:4173 -L 3000:localhost:3000 your_username@your_server_address
+    ```
+
+#### Accessing the UI
+
+Once you have set up port forwarding, you can access the Enterprise RAG UI by typing the following URL in your web browser on your local machine:
+
+```plaintext
+http://localhost:4173/
+```
+
+This will allow you to interact with the UI as if it were running locally on your machine.
+ 
 

@@ -14,6 +14,9 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
+  http_proxy: ""
+  https_proxy: ""
+  no_proxy: ""
   CHUNK_SIZE: "512"
   CHUNK_OVERLAP: "64"
 ---

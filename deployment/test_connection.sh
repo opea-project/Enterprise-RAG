@@ -17,6 +17,8 @@ error_handler() {
 trap 'error_handler' ERR
 
 NAMESPACE=chatqa
+CLIENT_POD=""
+accessUrl=""
 
 check_pods() {
     if kubectl get pods -n $NAMESPACE --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
@@ -55,7 +57,6 @@ while true; do
     fi
 done
 
-
 export CLIENT_POD=$(kubectl get pod -n $NAMESPACE -l app=client-test -o jsonpath={.items..metadata.name})
 export accessUrl=$(kubectl get gmc -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.name=='$NAMESPACE')].status.accessUrl}")
 
@@ -63,7 +64,7 @@ JSON_PAYLOAD='
 {
   "text": "What is AVX512?",
   "parameters": {
-    "max_new_tokens": 50,
+    "max_new_tokens": 5,
     "do_sample": true,
     "streaming": true
   }
@@ -77,6 +78,7 @@ kubectl exec "$CLIENT_POD" -n $NAMESPACE -- \
 
 test_return_code=$?
 
+# !TODO returns 0 if curl succeed, but anwer was not proper
 if [ $test_return_code -eq 0 ]; then
     echo "Test finished succesfully"
 else

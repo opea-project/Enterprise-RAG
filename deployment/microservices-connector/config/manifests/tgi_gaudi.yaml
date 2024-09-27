@@ -14,7 +14,7 @@ metadata:
     app.kubernetes.io/version: "2.1.0"
     app.kubernetes.io/managed-by: Helm
 data:
-  MODEL_ID: "Intel/neural-chat-7b-v3-3"
+  MODEL_ID: "mistralai/Mixtral-8x22B-Instruct-v0.1"
   PORT: "2080"
   HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""

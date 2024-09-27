@@ -1,0 +1,506 @@
+#!/bin/bash
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+repo_path=$(realpath "$(pwd)/../")
+manifests_path="$repo_path/deployment/microservices-connector/config/samples"
+gmc_path="$repo_path/deployment/microservices-connector/helm"
+telemetry_path="$repo_path/telemetry/helm"
+telemetry_logs_path="$repo_path/telemetry/helm/charts/logs"
+ui_path="$repo_path/app/chat-qna/helm-ui"
+auth_path="$repo_path/auth/"
+
+available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
+
+KEYCLOAK_FPORT=1234
+GRAFANA_FPORT=3000
+UI_FPORT=4173
+
+PIPELINE=""
+REGISTRY="localhost:5000"
+TAG="latest"
+
+DEPLOYMENT_NS=chatqa
+DATAPREP_NS=dataprep
+TELEMETRY_NS=monitoring
+UI_NS=rag-ui
+AUTH_NS=auth
+GMC_NS=system
+
+# keycloak specific vars
+KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
+DEFAULT_REALM=master
+CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
+
+ECR_REGISTRY_URL=""
+ECR_PASSWORD=""
+
+function usage() {
+    echo -e "Usage: $0 [OPTIONS]"
+    echo -e "Options:"
+    echo -e "\t--aws: Use aws registry."
+    echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
+    echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
+    echo -e "\tPipelines available: $available_pipelines"
+    echo -e "\t--tag <TAG>: Use specific tag for deployment."
+    echo -e "\t--test: Run a connection test."
+    echo -e "\t--telemetry: Start telemetry services."
+    echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
+    echo -e "\t--ui: Start auth and ui services (requires deployment)."
+    echo -e "\t-cd|--clear-deployment: Clear telemetry services."
+    echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
+    echo -e "\t-cu|--clear-ui: Clear auth and ui services."
+    echo -e "\t-ca|--clear-all: Clear the all services."
+    echo -e "\t-h|--help: Display this help message."
+    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui"
+}
+
+# get aws credentials configured via aws-cli
+get_aws_credentials() {
+    local region aws_account_id
+
+    region=$(aws configure get region)
+    aws_account_id=$(aws sts get-caller-identity --query "Account" --output text)
+
+    if [ -z "$region" ] || [ -z "$aws_account_id" ]; then
+        print_log "Error: AWS region or account ID could not be determined."
+        print_log "Please login to aws to be able to pull or push images."
+        exit 1
+    fi
+
+    ECR_REGISTRY_URL="${aws_account_id}.dkr.ecr.${region}.amazonaws.com"
+    ECR_PASSWORD=$(aws ecr get-login-password --region "$region")
+    print_log "Logged into AWS"
+}
+
+print_header() {
+    echo "$1"
+    echo "-----------------------"
+}
+
+print_log() {
+    echo "-->$1"
+}
+
+helm_install() {
+    local path namespace name args
+
+    namespace=$1
+    name=$2
+    path=$3
+    args=$4
+
+    if helm install -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+        print_log "helm installation in $namespace of $name finished succesfully"
+    else
+        print_log "helm installation in $namespace of $name failed. Exiting"
+        exit 1
+    fi
+}
+
+# create secret in given namespace based on aws credentials
+create_or_replace_secret() {
+    local namespace
+    namespace=$1
+
+    # resetting the k8s secret with the ecr login info
+    if kubectl get secret regcred -n "$namespace" > /dev/null 2>&1; then
+        kubectl delete secret regcred -n "$namespace"
+    fi
+    # create docker.config based secrets for registry
+    kubectl create secret docker-registry regcred \
+      --docker-server="$ECR_REGISTRY_URL" \
+      --docker-username=AWS \
+      --docker-password="$ECR_PASSWORD" \
+      -n "$namespace"
+
+    if $?; then print_log "secret regcred at $namespace created"; fi
+}
+
+# check if all pods in a namespace or specific pod by name are ready
+check_pods() {
+    local namespace="$1"
+    local deployment_name="$2"
+
+    if [ -z "$deployment_name" ]; then
+        # Check all pods in the namespace
+        if kubectl get pods -n "$namespace" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
+            return 1
+        else
+            return 0
+        fi
+    else
+        # Check specific pod by deployment name
+        if kubectl get pods -n "$namespace" -l app="$deployment_name" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
+            return 1
+        else
+            return 0
+        fi
+    fi
+}
+
+# waits until a provided condition function returns true
+wait_for_condition() {
+    sleep 5 # safety measures for helm to initialize pod deployments
+    local current_time
+    local timeout=1800
+    local end_time=$(( $(date +%s) + timeout ))
+    while true; do
+        current_time=$(date +%s)
+        if [[ "$current_time" -ge "$end_time" ]]; then
+            print_log "Timeout reached: Condition $* not met after $((timeout / 60)) minutes."
+            return 1
+        fi
+
+        if "$@"; then
+            printf ""
+            return 0
+        else
+            printf '.'
+            sleep 2
+        fi
+    done
+    print_log "Exiting" ; exit 1
+}
+
+kill_process() {
+    local pattern pid full_command
+    pattern=$1
+    pid=$(pgrep -f "$pattern")
+
+    if [ -n "$pid" ]; then
+        full_command=$(ps -p "$pid" -o cmd= | tail -n1)
+
+        if [ -n "$pid" ]; then
+            print_log "Killing '$full_command' with PID $pid"
+            kill -2 "$pid"
+        fi
+    fi
+}
+
+
+# deploys GMConnector, chatqna pipeline and dataprep pipeline
+function start_deployment() {
+    local pipeline=$1
+
+    print_header "Start deployment"
+
+    # set values for helm charts
+    bash set_values.sh -r "$REGISTRY" -t "$TAG"
+
+    # create namespaces
+    kubectl get namespace $GMC_NS > /dev/null 2>&1 || kubectl create namespace $GMC_NS
+    kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
+    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
+
+    # create aws secrets if needed
+    if [[ "$REGISTRY" =~ "aws" ]]; then
+        create_or_replace_secret "$DEPLOYMENT_NS" > /dev/null 2>&1
+        create_or_replace_secret "$DATAPREP_NS" > /dev/null 2>&1
+        create_or_replace_secret "$GMC_NS" > /dev/null 2>&1
+    fi
+
+    helm_install $GMC_NS gmc "$gmc_path "
+
+    print_log "waiting for pods in $GMC_NS are ready"
+    wait_for_condition check_pods "$GMC_NS"
+
+    kubectl apply -f "$manifests_path/chatQnA_$pipeline".yaml
+    print_log "waiting for pods in $DEPLOYMENT_NS are ready"
+    wait_for_condition check_pods "$DEPLOYMENT_NS"
+
+    kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
+    print_log "waiting for pods in $DATAPREP_NS are ready"
+    wait_for_condition check_pods "$DATAPREP_NS"
+}
+
+function clear_deployment() {
+    print_header "Clear deployment"
+
+    kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
+    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
+
+    kubectl get crd gmconnectors.gmc.opea.io > /dev/null 2>&1 && kubectl delete crd gmconnectors.gmc.opea.io
+
+    helm status -n $GMC_NS gmc > /dev/null 2>&1 && helm delete -n $GMC_NS gmc
+    kubectl get ns $GMC_NS > /dev/null 2>&1 && kubectl delete ns $GMC_NS
+}
+
+function start_telemetry() {
+    print_header "Start telemetry"
+
+    kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
+
+    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$TELEMETRY_NS"> /dev/null 2>&1; fi
+
+    # add repo if needed
+    if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi
+    if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi
+    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi
+    if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi
+    if ! helm repo list | grep -q 'metrics-server' ; then helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ ; fi
+
+    # telemetry/base (metrics)
+    helm repo update  > /dev/null
+    helm dependency build "$telemetry_path" > /dev/null
+    helm_install $TELEMETRY_NS telemetry "$telemetry_path" "$HELM_INSTALL_TELEMETRY_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
+
+    # telemetry/logs
+    helm repo update > /dev/null
+    helm dependency build "$telemetry_logs_path"  > /dev/null
+    helm_install "$TELEMETRY_NS" telemetry-logs "$telemetry_logs_path" "$HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
+
+    # wait for telemetry pods to be ready
+    print_log "waiting until pods in $TELEMETRY_NS are ready"
+    wait_for_condition check_pods "$TELEMETRY_NS"
+    
+    print_log "forwarding grafana at $GRAFANA_FPORT port"
+    nohup kubectl --namespace "$TELEMETRY_NS" port-forward svc/telemetry-grafana "$GRAFANA_FPORT":80 >> nohup_grafana.out 2>&1 &
+    nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
+}
+
+function clear_telemetry() {
+    print_header "Clear telemetry"
+
+    helm status -n "$TELEMETRY_NS" telemetry-logs > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry-logs
+    helm status -n "$TELEMETRY_NS" telemetry > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry
+
+    kill_process "kubectl --namespace $TELEMETRY_NS port-forward"
+    kill_process "kubectl proxy"
+}
+
+# !TODO verify comments
+function start_authentication() {
+    local introspection_url
+    # NOTE: these values are for test deployment only
+    # in real developementб it's not recommended to use admin/admin
+    # it's also necessary to create a separate realm and user for setting up apisix
+    local keycloak_user=admin
+    local keycloak_pass=admin
+
+    print_log "Start authentication"
+
+    # Running the server in development mode. DO NOT use this configuration in production. only one helm chart not installed locally not using func().
+    # !TODO is not suppresed:
+    # Pulled: registry-1.docker.io/bitnamicharts/keycloak:22.1.0
+    # Digest: sha256:ecff1cbc22175744a789abb3a5d53f0abbe2461aebdf0200be991c7ed9adf3cf
+    if helm install keycloak oci://registry-1.docker.io/bitnamicharts/keycloak\
+        --version 22.1.0\
+        --create-namespace\
+        --namespace $AUTH_NS\
+	    --set volumePermissions.enabled=true\
+        --set auth.adminUser=$keycloak_user\
+        --set auth.adminPassword=$keycloak_pass 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+        print_log "Helm installation in $AUTH_NS of keycloak finished succesfully"
+    else
+        print_log "Helm installation in $AUTH_NS of keycloak failed. Exiting"
+        exit 1
+    fi
+
+
+    print_log "waiting until pods in $AUTH_NS are ready"
+    wait_for_condition check_pods "$AUTH_NS"
+
+    print_log "forwarding keycloak at $KEYCLOAK_FPORT" port
+    nohup kubectl port-forward --namespace "$AUTH_NS" svc/keycloak $KEYCLOAK_FPORT:80 >> nohup_keycloak.out 2>&1 &
+
+    print_log "verify if $CONFIGURE_URL works"
+    wait_for_condition curl --output /dev/null --silent --head --fail "$CONFIGURE_URL"
+
+    # !TODO verify this code
+    # output: Adding user viktor to realm myrealm
+    introspection_url=$(curl -s $CONFIGURE_URL | grep -oP '"introspection_endpoint"\s*:\s*"\K[^"]+' | head -n1)
+
+    if [[ ! "$introspection_url" =~ ^https?:// ]]; then
+        print_log "Error: Introspection URL '$introspection_url' is not valid."
+        exit 1
+    fi
+
+    bash "$auth_path"/keycloak_realm_creator.sh $AUTH_NS
+}
+
+function clear_authentication() {
+    print_header "Clear authentication"
+
+    helm status -n "$AUTH_NS" keycloak > /dev/null 2>&1 && helm -n "$AUTH_NS" uninstall keycloak
+
+    # if pvc exists add finalizers & remove it
+    if kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1; then
+        kubectl patch pvc -n "$AUTH_NS" data-keycloak-postgresql-0 -p '{"metadata":{"finalizers":null}}'
+
+        print_log "waiting until keycloak pods are terminated."
+        wait_for_condition check_pods "$AUTH_NS"
+
+        kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1 && kubectl delete pvc -n "$AUTH_NS" data-keycloak-postgresql-0
+    fi
+
+
+    kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
+
+    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
+}
+
+
+function start_ui() {
+    print_header "Start ui"
+
+    kubectl get namespace $UI_NS > /dev/null 2>&1 || kubectl create namespace $UI_NS
+
+    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$UI_NS" > /dev/null 2>&1; fi
+
+    helm_install "$UI_NS" chatqa-app "$ui_path" "$HELM_INSTALL_UI_DEFAULT_ARGS"
+
+    print_log "waiting until pods $UI_NS are ready."
+    wait_for_condition check_pods "$UI_NS"
+
+    print_log "forwarding ui at $UI_FPORT port"
+    nohup kubectl port-forward --namespace $UI_NS svc/ui-chart $UI_FPORT:$UI_FPORT >> nohup_ui.out 2>&1 &
+}
+
+
+function clear_ui() {
+    print_header "Clear UI"
+
+    if helm status -n $UI_NS chatqa-app > /dev/null 2>&1; then
+        helm uninstall -n $UI_NS chatqa-app
+    fi
+
+    kubectl get ns $UI_NS > /dev/null 2>&1 && kubectl delete ns $UI_NS
+
+    kill_process "kubectl port-forward --namespace $UI_NS svc/ui-chart"
+}
+
+
+# Initialize flags
+deploy_flag=false
+test_flag=false
+telemetry_flag=false
+ui_flag=false
+clear_deployment_flag=false
+clear_ui_flag=false
+clear_telemetry_flag=false
+clear_all_flag=false
+
+# Parse arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --aws)
+            REGISTRY=205130860845.dkr.ecr.us-west-2.amazonaws.com
+            ;;
+        --kind)
+            DNS_FLAG="--set global.dnsService=kube-dns"
+            ;;
+        -d|--deploy)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --deploy. Please provide a valid pipeline name."
+                usage
+                exit 1
+            fi
+            PIPELINE=$1
+            deploy_flag=true
+            ;;
+        --tag)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --tag. Please provide a valid tag name."
+                usage
+                exit 1
+            fi
+            TAG=$1
+            ;;
+        --test)
+            test_flag=true
+            ;;
+        --telemetry)
+            telemetry_flag=true
+            ;;
+        --registry)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --registry. Please provide a valid registry name."
+                usage
+                exit 1
+            fi
+            REGISTRY=$1
+            ;;
+        --ui)
+            ui_flag=true
+            ;;
+        -cd|--clear-deployment)
+            clear_deployment_flag=true
+            ;;
+        -cu|--clear-ui)
+            clear_ui_flag=true
+            ;;
+        -ct|--clear-telemetry)
+            clear_telemetry_flag=true
+            ;;
+        -ca|--clear-allt)
+            clear_all_flag=true
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Error: unknown action $1"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
+# shellcheck disable=SC2154
+HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy"
+TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
+HELM_INSTALL_UI_DEFAULT_ARGS="--set image.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.tag=$TAG"
+
+HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $DNS_FLAG"
+
+# Execute given arguments
+if [[ "$REGISTRY" =~ "aws" ]]; then
+    print_log "Log into aws"
+    get_aws_credentials
+fi
+
+if $deploy_flag; then
+    start_deployment "$PIPELINE"
+fi
+
+if $telemetry_flag; then
+    start_telemetry
+fi
+
+if $ui_flag; then
+    start_authentication
+    start_ui
+fi
+
+if $test_flag; then
+    print_header "Test connection"
+    bash test_connection.sh
+fi
+
+if $clear_deployment_flag; then
+    clear_deployment
+fi
+
+if $clear_ui_flag; then
+    clear_authentication
+    clear_ui
+fi
+
+if $clear_telemetry_flag; then
+    clear_telemetry
+fi
+
+if $clear_all_flag; then
+    clear_deployment
+    clear_authentication
+    clear_ui
+    clear_telemetry
+fi

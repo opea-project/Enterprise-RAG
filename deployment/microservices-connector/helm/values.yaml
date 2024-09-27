@@ -16,46 +16,59 @@ tokens:
   hugToken: ""
 
 
-# Common tag for all images. Override if needed for specific images.
-common_tag: &tag "PR118"
+# Common tag & repository for all images. Override if needed for specific images.
+common_tag: &tag "latest"
+common_repository: &repo "localhost:5000"
 
 images:
   gmcManager:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcmanager"
+    image: "opea/gmcmanager"
+    repository: *repo
     tag: *tag
     pullPolicy: Always
   gmcRouter:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/gmcrouter"
+    image: "opea/gmcrouter"
+    repository: *repo
     tag: *tag
   dataprep-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/dataprep"
+    image: "opea/dataprep"
+    repository: *repo
     tag: *tag
   embedding-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/embedding"
+    image: "opea/embedding"
+    repository: *repo
     tag: *tag
   reranking-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/reranking"
+    image: "opea/reranking"
+    repository: *repo
     tag: *tag
   torchserve:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/torchserve"
+    image: "opea/torchserve"
+    repository: *repo
     tag: *tag
   retriever-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/retriever"
+    image: "opea/retriever"
+    repository: *repo
     tag: *tag
   ingestion-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/ingestion"
+    image: "opea/ingestion"
+    repository: *repo
     tag: *tag
   llm-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/llm"
+    image: "opea/llm"
+    repository: *repo
     tag: *tag
   in-guard-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/in-guard"
+    image: "opea/in-guard"
+    repository: *repo
     tag: *tag
   out-guard-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/out-guard"
+    image: "opea/out-guard"
+    repository: *repo
     tag: *tag
   ui-usvc:
-    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
+    image: "opea/chatqna-conversation-ui"
+    repository: *repo
     tag: *tag
 
 

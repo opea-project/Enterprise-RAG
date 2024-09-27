@@ -23,7 +23,7 @@ otelcol-logs:
     # keep that in sync with deployment/microservices-connector/helm/values.yaml
     repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/otelcol-contrib-journalctl"
     #repository: "localhost:5000/otelcol-contrib-journalctl" # for development purposes
-    tag: "PR87"
+    tag: "latest"
     pullPolicy: Always
   imagePullSecrets:
   - name: regcred

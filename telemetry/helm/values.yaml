@@ -11,10 +11,10 @@ kube-prometheus-stack:
   grafana:
     plugins:
       - grafana-opensearch-datasource
-#    env:
-#      https_proxy: "http://proxy-dmz.intel.com:912"
-#      http_proxy: "http://proxy-dmz.intel.com:911"
-#      no_proxy: ".intel.com,intel.com,localhost,127.0.0.1,.svc,.svc.cluster.local,.pod.cluster.local"
+    env:
+      https_proxy: ""
+      http_proxy: ""
+      no_proxy: ""
 #    resources:
 #      limits:
 #      memory: 150Mi

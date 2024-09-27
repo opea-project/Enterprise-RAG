@@ -115,13 +115,6 @@ VITE_APISIX_DASHBOARD_URL=<apisix-dashboard-url>
 VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
 ```
 
-### NGINX config
-
-Run `./set_envs.sh` to set required URL values from `.env` for proxy inside NGINX config.
-```bash
-./set_envs.sh
-```
-
 ### Docker image
 
 Build docker image with a tag of your choice:

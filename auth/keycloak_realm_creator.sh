@@ -5,6 +5,8 @@
 
 # set -x
 
+AUTH_NS=${1:-default}
+
 export_realm() {
     local realm_name=$1
     local json_name="${realm_name}.json"
@@ -164,7 +166,7 @@ KEYCLOAK_REALM=master
 KEYCLOAK_CLIENT_ID=admin
 
 # Step 2: Obtain the Admin Password
-ADMIN_PASSWORD=$(kubectl get secret --namespace default keycloak -o jsonpath="{.data.admin-password}" | base64 -d)
+ADMIN_PASSWORD=$(kubectl get secret --namespace $AUTH_NS keycloak -o jsonpath="{.data.admin-password}" | base64 -d)
 
 # Step 3: Obtain an Access Token using admin credentials
 ACCESS_TOKEN=$(curl -X POST "${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token" \

@@ -35,7 +35,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.images.gmcManager.repository }}:{{ .Values.images.gmcManager.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.images.gmcManager.repository }}/{{ .Values.images.gmcManager.image }}:{{ .Values.images.gmcManager.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.images.gmcManager.pullPolicy }}
           ports:
             - name: gmc

@@ -8,7 +8,7 @@ Overall, this microservice offers a streamlined way to integrate large language 
 
 ## Support matrix
 
-Support for specific ranking model servers with Dockerfiles or build instruction.
+Support for specific model servers with Dockerfiles or build instruction.
 
 | Model server name                 |  Status   | 
 | ----------------------------------| --------- | 
@@ -28,13 +28,15 @@ The configuration for the OPEA LLM Microservice is specified in the [impl/micros
 | `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
 | `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
+
+
 ## Getting started
 
 ### Prerequisite: Start LLM Model Server
 
-The OPEA LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible athe the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
+The OPEA LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible at the the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
 
-Depending on the model server you want to use for obtaining scores, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
+Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
 
 ### 🚀1. Start OPEA LLM Microservice with Python (Option 1)
 
@@ -48,8 +50,8 @@ pip install -r impl/microservice/requirements.txt
 
 #### 1.2. Start Microservice 
 
-  ```bash
-  python opea_llm_microservice.py
+```bash
+python opea_llm_microservice.py
 ```
 
 
@@ -122,7 +124,7 @@ curl http://localhost:9000/v1/chat/completions \
   -H 'Content-Type: application/json'
 ```
 
-**Example output**
+**Example Output**
 
 The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
 
@@ -177,7 +179,7 @@ The tree view of the main directories and files:
   │   ├── microservice/
   │   │   ├── .env
   │   │   ├── Dockerfile
-  │   │   └── requirements/requirements.txt
+  │   │   └── requirements.txt
   │   │
   │   ├── model_server/
   │   │   ├── tgi/
@@ -202,6 +204,8 @@ The tree view of the main directories and files:
   └── opea_llm_microservice.py
 ```
 
+#### Tests
+- `src/tests/unit/llms/`: Contains unit tests for the OPEA LLM Microservice components
 
 
 

@@ -13,7 +13,7 @@ export HF_TOKEN=${your_hf_api_token}
 ```
 
 ### 🚀 1. Start the TGI Service via script (Option 1)
-1.1. Run the script
+#### 1.1. Run the script
 
 ```bash
 # for HPU device (Gaudi)

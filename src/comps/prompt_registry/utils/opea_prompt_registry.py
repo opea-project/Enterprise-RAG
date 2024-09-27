@@ -101,9 +101,7 @@ class OPEAPromptRegistryConnector(OPEAMongoConnector):
         """
         try:
             prompts = await PromptDocument.find(PromptDocument.filename == filename).to_list()
-            logger.info(prompts)
             output = [p for p in prompts if text in p.prompt_text]
-            logger.info(output)
         except Exception as e:
             err_name = f"Error retrieving prompts for text: {text}"
             logger.exception(err_name)

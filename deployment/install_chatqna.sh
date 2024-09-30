@@ -298,10 +298,13 @@ function clear_telemetry() {
     print_header "Clear telemetry"
 
     # remove CR manually to allow (helm uninstall doesn't remove it!)
-    kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete crd otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" 
+    kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS"
     helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces
     helm status -n "$TELEMETRY_NS" telemetry-logs > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry-logs
     helm status -n "$TELEMETRY_NS" telemetry > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry
+
+    kubectl get ns $TELEMETRY_TRACES_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_TRACES_NS
+    kubectl get ns $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_NS
 
     kill_process "kubectl --namespace $TELEMETRY_NS port-forward"
     kill_process "kubectl proxy"

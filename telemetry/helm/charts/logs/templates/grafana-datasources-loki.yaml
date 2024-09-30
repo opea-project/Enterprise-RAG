@@ -20,8 +20,27 @@ data:
       url: "http://telemetry-logs-loki-gateway.monitoring"
       access: proxy
       editable: true
+      # TODO example to be validated
+      # correlations:
+      #   - targetUID: tempo
+      #     label: "Tempo traces"
+      #     description: "Related traces stored in Tempo"
+      #   - targetUID: prometheus
+      #     label: "Logs to metrics"
+      #     description: "Related metrics stored in Prometheus"
+      #     config:
+      #       type: query
+      #       target:
+      #         expr: "{ job=\"test\" }"
+      #       field: "traceID"
       jsonData:
         httpHeaderName1: X-Scope-OrgID
+        # TODO example to be validated
+        # derivedFields:
+        #   - name: "traceID"
+        #     matcherRegex: "traceID=(\\w+)"
+        #     url: "$${__value.raw}"
+        #     datasourceUid: tempo
       secureJsonData:
         httpHeaderValue1: 'entrag'
 {{- end }}

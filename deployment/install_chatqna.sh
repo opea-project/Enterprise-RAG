@@ -7,6 +7,7 @@ manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
 telemetry_path="$repo_path/telemetry/helm"
 telemetry_logs_path="$repo_path/telemetry/helm/charts/logs"
+telemetry_traces_path="$repo_path/telemetry/helm/charts/traces"
 ui_path="$repo_path/app/chat-qna/helm-ui"
 auth_path="$repo_path/auth/"
 
@@ -23,6 +24,7 @@ TAG="latest"
 DEPLOYMENT_NS=chatqa
 DATAPREP_NS=dataprep
 TELEMETRY_NS=monitoring
+TELEMETRY_TRACES_NS=monitoring-traces
 UI_NS=rag-ui
 AUTH_NS=auth
 GMC_NS=system
@@ -51,6 +53,7 @@ function usage() {
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
+    echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-h|--help: Display this help message."
     echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui"
 }
@@ -90,10 +93,17 @@ helm_install() {
     path=$3
     args=$4
 
-    if helm install -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "helm installation in $namespace of $name finished succesfully"
+    msg="installation"
+    helm_cmd="install"
+    if [[ "$helm_upgrade" ]]; then
+      helm_cmd="upgrade --install"
+      msg="upgrade or installation"
+    fi
+
+    if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+        print_log "helm $msg in $namespace of $name finished succesfully"
     else
-        print_log "helm installation in $namespace of $name failed. Exiting"
+        print_log "helm $msg in $namespace of $name failed. Exiting"
         exit 1
     fi
 }
@@ -230,38 +240,66 @@ function start_telemetry() {
     print_header "Start telemetry"
 
     kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
+    kubectl get namespace $TELEMETRY_TRACES_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_TRACES_NS
 
     if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$TELEMETRY_NS"> /dev/null 2>&1; fi
+    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$TELEMETRY_TRACES_NS"> /dev/null 2>&1; fi
 
     # add repo if needed
-    if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi
-    if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi
-    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi
-    if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi
+    if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi # for prometheus/k8s/prometheus operator
+    if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi # for grafana/loki/tempo
+    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi # opensearch
+    if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi # opentelemetry collector/opentelemetry operator
+
+    # traces (optional dependecies)
+    if ! helm repo list | grep -q 'jaegertracing' ; then helm repo add jaegertracing  https://jaegertracing.github.io/helm-charts; fi # for jaeger
+    
+    # other metrics-server/pcm...
     if ! helm repo list | grep -q 'metrics-server' ; then helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ ; fi
 
-    # telemetry/base (metrics)
     helm repo update  > /dev/null
+
+    # I) telemetry/base (metrics)
     helm dependency build "$telemetry_path" > /dev/null
     helm_install $TELEMETRY_NS telemetry "$telemetry_path" "$HELM_INSTALL_TELEMETRY_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
 
-    # telemetry/logs
-    helm repo update > /dev/null
+    # II) telemetry/logs
     helm dependency build "$telemetry_logs_path"  > /dev/null
     helm_install "$TELEMETRY_NS" telemetry-logs "$telemetry_logs_path" "$HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
 
-    # wait for telemetry pods to be ready
+    # WAIT I/II) wait for telemetry + telemetry logs pods to be ready
     print_log "waiting until pods in $TELEMETRY_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_NS"
-    
+
     print_log "forwarding grafana at $GRAFANA_FPORT port"
     nohup kubectl --namespace "$TELEMETRY_NS" port-forward svc/telemetry-grafana "$GRAFANA_FPORT":80 >> nohup_grafana.out 2>&1 &
     nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
+
+    # III) telemetry/traces
+    helm dependency build "$telemetry_traces_path"  > /dev/null
+    # IIIa) Two step installation: because of dependency between opentelemetry-operator CRDs and CR create when otelcol-traces are enabled and webhook installation race condition.
+    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "--set otelcol-traces.enabled=false $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
+    sleep 5 # wait for pods, and to be ready for webhook race condition handling
+    # WAIT/CHECK IIIa) telemetry/traces
+    print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
+    wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
+
+    # IIIb) Deploy OpenTelemetry collector and instrumenation for ChatQnA (requires chatqa namespace)
+    kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
+    helm_upgrade=true
+    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "--set otelcol-traces.enabled=true --set otelcol-traces.instrumentation.namespace=$DEPLOYMENT_NS $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
+    # WAIT/CHECK IIIb) telemetry/traces
+    print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
+    wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
+    
 }
 
 function clear_telemetry() {
     print_header "Clear telemetry"
 
+    # remove CR manually to allow (helm uninstall doesn't remove it!)
+    kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete crd otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" 
+    helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces
     helm status -n "$TELEMETRY_NS" telemetry-logs > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry-logs
     helm status -n "$TELEMETRY_NS" telemetry > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry
 
@@ -280,20 +318,27 @@ function start_authentication() {
 
     print_log "Start authentication"
 
+    helm_auth_msg="installation"
+    helm_auth_cmd="install"
+    if [[ "$helm_upgrade" ]]; then
+      helm_auth_cmd="upgrade --install"
+      helm_auth_msg="upgrade or installation"
+    fi
+
     # Running the server in development mode. DO NOT use this configuration in production. only one helm chart not installed locally not using func().
     # !TODO is not suppresed:
     # Pulled: registry-1.docker.io/bitnamicharts/keycloak:22.1.0
     # Digest: sha256:ecff1cbc22175744a789abb3a5d53f0abbe2461aebdf0200be991c7ed9adf3cf
-    if helm install keycloak oci://registry-1.docker.io/bitnamicharts/keycloak\
+    if helm $helm_auth_cmd keycloak oci://registry-1.docker.io/bitnamicharts/keycloak\
         --version 22.1.0\
         --create-namespace\
         --namespace $AUTH_NS\
 	    --set volumePermissions.enabled=true\
         --set auth.adminUser=$keycloak_user\
         --set auth.adminPassword=$keycloak_pass 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "Helm installation in $AUTH_NS of keycloak finished succesfully"
+        print_log "Helm $helm_auth_msg in $AUTH_NS of keycloak finished succesfully"
     else
-        print_log "Helm installation in $AUTH_NS of keycloak failed. Exiting"
+        print_log "Helm $helm_auth_msg in $AUTH_NS of keycloak failed. Exiting"
         exit 1
     fi
 
@@ -388,7 +433,8 @@ while [[ "$#" -gt 0 ]]; do
             REGISTRY=205130860845.dkr.ecr.us-west-2.amazonaws.com
             ;;
         --kind)
-            DNS_FLAG="--set global.dnsService=kube-dns"
+            LOKI_DNS_FLAG="--set loki.global.dnsService=kube-dns"
+            TEMPO_DNS_FLAG="--set tempo.global.dnsService=kube-dns"
             ;;
         -d|--deploy)
             shift
@@ -436,8 +482,11 @@ while [[ "$#" -gt 0 ]]; do
         -ct|--clear-telemetry)
             clear_telemetry_flag=true
             ;;
-        -ca|--clear-allt)
+        -ca|--clear-all)
             clear_all_flag=true
+            ;;
+        --upgrade)
+            helm_upgrade=true
             ;;
         -h|--help)
             usage
@@ -459,7 +508,12 @@ TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-cont
 TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
 HELM_INSTALL_UI_DEFAULT_ARGS="--set image.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.tag=$TAG"
 
-HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $DNS_FLAG"
+HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
+HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
+# Please use following for any additional flag (for development only):
+#HELM_INSTALL_TELEMETRY_EXTRA_ARGS
+#HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
+#HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
 
 # Execute given arguments
 if [[ "$REGISTRY" =~ "aws" ]]; then

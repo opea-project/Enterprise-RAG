@@ -8,71 +8,47 @@ Logs chart allows to deploy "logs" pipeline in following configurations:
 
 
 ```
-pods            -> otelcol/default      -> loki
+pods            -> otelcol-logs-daemonset/default      -> loki
 ```
 
 2) (recommended) Logs pipeline with custom otelcol with journald support:
 
 ```
 pods
-journald        -> otelcol/journalctl   -> loki
+journald        -> otelcol-logs-daemonset/journalctl   -> loki
 ```
 
 3) Logs Pipeline with additional OpenSearch logs backend:
 
 ```
 pods
-journald        -> otelcol              -> loki
-                                          opensearch
+journald        -> otelcol-logs-daemonset              -> loki
+                                                          opensearch
 ```
 
 4) Logs pipeline without otelcol but collects both pods logs and systemd units logs:
 
 ```
 pods
-journald        -> promtail             -> loki
+journald        -> promtail                             -> loki
 ```
 
 5) All above combined
 
 ```
 pods
-journald        -> promtail             -> loki
+journald        -> promtail                             -> loki
 
 pods
-journald        -> otelcol/journalctl   -> loki
-                                           opensearch
+journald        -> otelcol-logs-daemonset/journalctl    -> loki
+                                                           opensearch
 ```
-
-
 
 ### Getting started
 
 #### Install metrics and logs telemetry
 
-##### 1) Install "base telemetry" from parent "deployment/helm" directory
-
-As **"telemetry"** release:
-```
-helm install telemetry -n monitoring ../..
-```
-
-##### 2a) Install "logs" subchart 
-
-(Recommended!) Deploy using custom `otelcol-contrib-journalctl` image for journald logs as **"telemetry-logs"** release `[loki, otelcol/journalctl]`:
-```
-helm install telemetry-logs -n monitoring -f values-journalctl.yaml .
-```
-
-or use local registry and debug for development:
-```
-helm install telemetry-logs -n monitoring -f values-journalctl.yaml -f values-journalctl-devel.yaml .
-```
-
-Alternatively deploy default version (no custom image, no systemd/journald logs available) as **"telemetry-logs"** release `[loki, otelcol/default]`:
-```
-helm install telemetry-logs -n monitoring .
-```
+Please follow instruciton from "base telemetry" [README Installation instruciton section](../../README.md).
 
 #### Optional components.
 
@@ -96,35 +72,6 @@ Deployed as separate helm chart as **"telemetry-logs-promtail"** release `[promt
 
 ```
 helm upgrade --install telemetry-logs-promtail -n monitoring -f values-promtail.yaml .
-```
-
-### Uninstall and data clean up
-
-#### 1) Uninstall **logs** pipeline:
-
-```
-helm uninstall telemetry -n monitoring
-helm uninstall telemetry-logs -n monitoring
-```
-
-**WARNING** data loss:
-
-Clean up old LOKI data 
-```
-kubectl delete pvc -n monitoring -l app.kubernetes.io/instance=telemetry-logs
-kubectl delete pvc -n monitoring -l app=minio,release=telemetry-logs
-kubectl delete -f loki-volumes.yaml
-ssh dcgaudicluster2
-# DANGERUOES !
-sudo find /mnt/k8stelemetryvolumes -mindepth 2 -delete -print
-kubectl create -f loki-volumes.yaml
-```
-
-#### 2) Uninstall optional
-
-```
-helm uninstall telemetry-logs-otelcol -n monitoring
-helm uninstall telemetry-logs-promtail -n monitoring
 ```
 
 ### Prerequisites (images/volumes)

@@ -7,6 +7,15 @@
 - `kubectl proxy` is running in background (for testing).
 - localhost:5000 docker registry is deployed  e.g. with `docker run -d -p 5000:5000 --name local-registry registry:2` or use kind creation script: `example/kind-with-registry-opea-models-mount.sh`
 
+Default Metrics pipeline:
+
+```
+pods    -> Prometheus   -> Grafana
+```
+
+Information:
+- pods and services are directly scrapped by Prometheus, defined by Prometheus-operator CRDs: "PodMonitor" and "ServiceMonitor"
+
 ### Getting started
 
 Following instruction deploy only telemetry components.
@@ -57,9 +66,19 @@ helm install telemetry-logs -n monitoring charts/logs
 
 Check [logs README.md](charts/logs/README.md#optional-components) for details.
 
-#### III) Verification and access
+#### III) Install **traces pipeline** telemetry.
 
-##### III a) Access the Grafana:
+Note two step installation is required because CRD/CD depedency and webhooks race condiation of "OpenTelemetry operator" and created CRs (collector/instrumenation):
+```
+helm install telemetry-traces --create-namespace . -n monitoring-traces --set otelcol-traces.enabled=false
+helm upgrade telemetry-traces --create-namespace . -n monitoring-traces --set otelcol-traces.enabled=true
+```
+
+Check [tracing README.md](charts/traces/README.md) for details.
+
+#### IV) Verification and access
+
+##### IV a) Access the Grafana:
 ```
 kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
 ```
@@ -67,7 +86,7 @@ on `https://127.0.0.1:3000`
 using admin/prom-operator.
 
 
-##### III b) Access the Prometheus with kubectl proxy:
+##### IV b) Access the Prometheus with kubectl proxy:
 
 For debugging only purposes:
 ```
@@ -78,7 +97,7 @@ on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-p
 
 Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-prometheus:http-web/proxy/targets?search=&scrapePool=` .
 
-##### III c) Access alert manager:
+##### IV c) Access alert manager:
 
 on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-alertmanager:http-web/proxy/#/alerts`
 

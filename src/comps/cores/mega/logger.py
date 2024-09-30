@@ -3,6 +3,7 @@
 
 import functools
 import logging
+import os
 
 
 class OPEALogger(logging.Logger):
@@ -47,7 +48,11 @@ def get_opea_logger(name: str = "GenAIComps", log_level: str = "INFO"):
         # Add handler to logger and set log level
         logger.addHandler(handler)
         logger.setLevel(log_level)
-        logger.propagate = False
+
+        if os.environ.get('LOGGING_PROPAGATE', 'false').lower() == 'true':
+            logger.propagate = True
+        else:
+            logger.propagate = False
 
         return logger
     else:

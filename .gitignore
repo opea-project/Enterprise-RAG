@@ -1,6 +1,7 @@
 # Telemetry
 /telemetry/helm/charts/*.tgz
 /telemetry/helm/charts/logs/charts/*.tgz
+/telemetry/helm/charts/traces/charts/*.tgz
 /telemetry/helm/example/pcm/
 
 # Deployment

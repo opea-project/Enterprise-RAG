@@ -10,6 +10,9 @@ dependencies:
   - name: logs
     version: "0.2.0"
     condition: logs.enabled
+  - name: traces
+    version: "0.3.0"
+    condition: traces.enabled
   # external/3rd party subcharts
   - name: kube-prometheus-stack
     condition: kube-prometheus-stack.enabled

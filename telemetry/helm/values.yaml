@@ -18,6 +18,17 @@ kube-prometheus-stack:
 #    resources:
 #      limits:
 #      memory: 150Mi
+    sidecar:
+      datasources:
+        exemplarTraceIdDestinations:
+          datasourceUid: tempo
+          traceIdLabelName: traceID
+  prometheus:
+    prometheusSpec:
+      enableRemoteWriteReceiver: true
+      enableFeatures:
+      - exemplar-storage
+      # - native-histograms
 
   # Fix problem not scraping metrics from kube-prometheus-stack-kube-etcd
   # https://github.com/prometheus-community/helm-charts/issues/204#issuecomment-1003558431
@@ -71,4 +82,16 @@ logs:
   # Until this is fixed, single node deployment with single helm chart are impossible!
   # https://github.com/helm/helm/pull/12879
   #enabled: true # DO NOT ENABLE FOR SINGLE NODE deployments (because of logs.loki.writer.affinity option cannot be disabled!)
+  enabled: false
+
+### ============================================================================
+# TRACES subchart (traces backends and collectors and instrumenation)
+# check: charts/traces/README.md for more details
+### ============================================================================
+traces:
+  # we cannot enable single helm chart installation because of helm chart bug
+  # PLEASE as temporary solution deploy telemetry-traces as another subchart in own namespce
+  # Until this is fixed, single node deployment with single helm chart are impossible!
+  # https://github.com/helm/helm/pull/12879
+  #enabled: true # DO NOT ENABLE FOR SINGLE NODE deployments (because of minio naming conflict)
   enabled: false

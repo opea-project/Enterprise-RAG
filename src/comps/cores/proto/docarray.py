@@ -314,14 +314,14 @@ class LLMParamsDoc(BaseDoc):
     temperature: float = 0.01
     repetition_penalty: float = 1.03
     streaming: bool = True
-    input_guardrail_params: LLMGuardInputGuardrailParams = LLMGuardInputGuardrailParams()
-    output_guardrail_params: LLMGuardOutputGuardrailParams = LLMGuardOutputGuardrailParams()
+    input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
+    output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
-    input_guardrail_params: LLMGuardInputGuardrailParams = LLMGuardInputGuardrailParams()
-    output_guardrail_params: LLMGuardOutputGuardrailParams = LLMGuardOutputGuardrailParams()
+    input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
+    output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class LLMParams(BaseDoc):
     max_new_tokens: int = 1024

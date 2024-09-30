@@ -11,6 +11,10 @@ USING IT MAY OVERWRITE EXISTING CONFIGURATION. Press ctrl+c to cancel. Sleeping 
 
 PREPARE_REMOTE_SCRIPT_PATH=$(pwd)/prepare_remote.sh
 
+GOROOT=/usr/local/go
+GOPATH=$HOME/go
+ENV_FILE_NAME=.env
+
 usage() {
     echo "Usage: $0 -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] [-k user@ip]"
     exit 1
@@ -87,13 +91,18 @@ else
     wget https://go.dev/dl/go1.22.1.linux-amd64.tar.gz
     sudo tar -C /usr/local -xzf go1.22.1.linux-amd64.tar.gz
     rm go1.22.1.linux-amd64.tar.gz
-    echo "
-    export GOROOT=/usr/local/go
-    export GOPATH=$HOME/go
-    export PATH=$GOPATH/bin:$GOROOT/bin:$PATH" >> ~/.profile
 
-    # shellcheck disable=SC1090
-    source ~/.profile
+    if [ -f $ENV_FILE_NAME ]; then
+        echo "$ENV_FILE_NAME exists; continues using the existing file"
+    else
+        cat <<EOL > $ENV_FILE_NAME
+export GOROOT=$GOROOT
+export GOPATH=$GOPATH
+export PATH=$PATH
+EOL
+    fi
+
+    source $ENV_FILE_NAME
 
     if command_exists go; then
         echo "Go installation successful."

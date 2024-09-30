@@ -20,6 +20,8 @@ PIPELINE=gaudi_torch_guard
 TAG=latest
 REGISTRY=localhost:5000
 
+ENV_FILE_NAME=.env
+
 # Parse command-line arguments
 # !TODO this should be changed to use non-positional parameters
 while getopts "g:a:s:r:p:u:n:d:t:y:" opt; do
@@ -47,6 +49,7 @@ fi
 bash configure.sh -a "$AWS_ACCESS_KEY_ID" -s "$AWS_SECRET_ACCESS_KEY" -r "$REGION" -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY"
 
 # Build images & push to local registry
+source $ENV_FILE_NAME
 bash update_images.sh --setup-registry --build --push --registry "$REGISTRY" --tag "$TAG"
 
 # Set helm values

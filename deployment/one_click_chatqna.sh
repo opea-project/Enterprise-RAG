@@ -47,7 +47,7 @@ fi
 bash configure.sh -a "$AWS_ACCESS_KEY_ID" -s "$AWS_SECRET_ACCESS_KEY" -r "$REGION" -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY"
 
 # Build images & push to local registry
-bash update_images.sh --setup-registry --build --push --registry "$REGISTRY" --version "$TAG"
+bash update_images.sh --setup-registry --build --push --registry "$REGISTRY" --tag "$TAG"
 
 # Set helm values
 bash set_values.sh -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY" -g "$HUG_TOKEN"

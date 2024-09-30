@@ -175,8 +175,8 @@ loki:
   # kubectl get svc --namespace=kube-system -l k8s-app=kube-dns  -o jsonpath='{.items..metadata.name}'
   # or disable with extra helm argument: "--set loki.global.dnsService=null" when install telemetry-logs
   global:
-    #dnsService: null # for kind based setup
-    dnsService: "coredns" # for kubespray based setup
+    #dnsService: "kube-dns"   # for kind based setup - WARNING: this cannot be null/nil/""/''/ / because will generate broken resolver value ".kube-system.svc.cluster.local." see https://github.com/helm/helm/pull/12879 or Jira IEASG-166 for more details
+    dnsService: "coredns"     # for kubespray based setup
 
   loki:
     commonConfig:

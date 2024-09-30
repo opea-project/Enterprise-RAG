@@ -67,7 +67,7 @@ class HTTPService(BaseService):
             self.lifespan_func = generate_lifespan(self.startup_methods, self.close_methods)
 
         self._app = self._create_app()
-        Instrumentator().instrument(self._app).expose(self._app)
+        Instrumentator().instrument(self._app, latency_lowr_buckets=(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 7.5, 10, 30, 60)).expose(self._app)
 
     @property
     def app(self):

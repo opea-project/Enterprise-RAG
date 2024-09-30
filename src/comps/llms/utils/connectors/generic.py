@@ -65,7 +65,9 @@ class TGIConnector:
                     yield "data: [ERROR]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator, prompt=input.query)
+            return GeneratedDoc(text=generator, prompt=input.query,
+                                input_guardrail_params=input.input_guardrail_params,
+                                output_guardrail_params=input.output_guardrail_params)
 
 class VLLMConnector:
     def __init__(self, model_name: str, endpoint: str):
@@ -118,7 +120,9 @@ class VLLMConnector:
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator.choices[0].text, prompt=input.query)
+            return GeneratedDoc(text=generator.choices[0].text, prompt=input.query,
+                                input_guardrail_params=input.input_guardrail_params,
+                                output_guardrail_params=input.output_guardrail_params)
 
 SUPPORTED_INTEGRATIONS = {
     "tgi": TGIConnector,

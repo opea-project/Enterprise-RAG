@@ -39,24 +39,25 @@ function start_service() {
     revision="refs/pr/5"
 
     docker run -d --name="${ENDPOINT_CONTAINER_NAME}" \
-      --runtime runc \
-      -p $internal_communication_port:80 \
-      -v ./data:/data \
-      --pull always "${ENDPOINT_IMAGE_NAME}" \
-      --model-id $model \
-      --revision $revision
+        --runtime runc \
+        -p $internal_communication_port:80 \
+        -v ./data:/data \
+        --pull always "${ENDPOINT_IMAGE_NAME}" \
+        --model-id $model \
+        --revision $revision
+    sleep 10s
 
-   docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
-      --runtime runc \
-      -p ${MICROSERVICE_API_PORT}:6000 \
-      -e http_proxy=$http_proxy \
-      -e https_proxy=$https_proxy \
-      -e EMBEDDING_MODEL_NAME="${model}" \
-      -e EMBEDDING_MODEL_SERVER="tei" \
-      -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
-      -e FRAMEWORK=llama_index \
-      --ipc=host \
-      ${MICROSERVICE_IMAGE_NAME}
+    docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
+        --runtime runc \
+        -p ${MICROSERVICE_API_PORT}:6000 \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e EMBEDDING_MODEL_NAME="${model}" \
+        -e EMBEDDING_MODEL_SERVER="tei" \
+        -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
+        -e EMBEDDING_CONNECTOR=llama_index \
+        --ipc=host \
+        ${MICROSERVICE_IMAGE_NAME}
     sleep 1m
 }
 
@@ -104,8 +105,12 @@ function validate_microservice() {
 }
 
 function purge_containers() {
-    cid=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
-    if [[ ! -z "$cid" ]]; then docker stop $cid && sleep 1s; fi
+    cids=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
+    if [[ ! -z "$cids" ]]
+    then
+      docker stop $cids
+      docker rm $cids
+    fi
 }
 
 function remove_images() {

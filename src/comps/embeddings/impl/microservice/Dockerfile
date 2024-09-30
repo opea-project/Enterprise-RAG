@@ -28,6 +28,7 @@ WORKDIR /home/user
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/embeddings/utils ./comps/embeddings/utils
+COPY --chown=user:user ./comps/embeddings/impl/microservice/.env ./comps/embeddings/impl/microservice/.env
 COPY --chown=user:user ./comps/embeddings/opea_embedding_microservice.py ./comps/embeddings/opea_embedding_microservice.py
 
 WORKDIR /home/user/comps/embeddings

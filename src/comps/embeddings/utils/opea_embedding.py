@@ -1,52 +1,58 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# TODO: Implement a Generic Connector
+
 import os
-from typing import Optional
+from typing import Union
 
 import yaml
+from fastapi import HTTPException
 
 from comps import get_opea_logger
+from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class OPEAEmbedding:
     """
-    Singleton class for managing embeddings with different frameworks and model servers.
+    Singleton class for managing embeddings with different frameworks as a connector and model servers.
+    This class ensures that only one instance is created and reused across the application.
     """
 
     _instance = None
 
-    def __new__(cls, model_name: str, model_server: str, framework: Optional[str] = None, endpoint: Optional[str] = None):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, connector: str):
+
         if cls._instance is None:
             cls._instance = super(OPEAEmbedding, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, framework, endpoint)
+            cls._instance._initialize(model_name, model_server, endpoint, connector)
         else:
             if (cls._instance._model_name != model_name or
                 cls._instance._model_server != model_server or
-                cls._instance._framework != framework):
+                cls._instance._connector != connector):
                 logger.warning(f"Existing OPEAEmbedding instance has different parameters: "
                               f"{cls._instance._model_name} != {model_name}, "
                               f"{cls._instance._model_server} != {model_server}, "
-                              f"{cls._instance._framework} != {framework}. "
+                              f"{cls._instance._connector} != {connector}. "
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, framework: Optional[str], endpoint: Optional[str]) -> None:
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, connector: str) -> None:
         """
         Initializes the OPEAEmbedding instance.
 
         Args:
             model_name (str): The name of the model.
             model_server (str): The model server URL.
-            framework (Optional[str]): The framework used for embedding. Defaults to None.
-            endpoint (Optional[str]): The endpoint for the model server. Defaults to None.
+            endpoint (str): The endpoint for the model server.
+            connector (str): The name of the connector framework.
         """
         self._model_name = model_name.lower()
         self._model_server = model_server.lower()
-        self._framework = framework.lower() if framework else None
         self._endpoint = endpoint
+        self._connector = connector.lower()
         self._APIs = []
 
         self._api_config = None
@@ -58,12 +64,47 @@ class OPEAEmbedding:
             "llama_index": self._import_llamaindex
         }
 
-        if self._framework not in self._SUPPORTED_FRAMEWORKS:
-            logger.error(f"Unsupported framework: {self._framework}. "
+        if self._connector not in self._SUPPORTED_FRAMEWORKS:
+            logger.error(f"Unsupported framework: {self._connector}. "
                           f"Supported frameworks: {list(self._SUPPORTED_FRAMEWORKS.keys())}")
-            raise NotImplementedError(f"Unsupported framework: {self._framework}.")
+            raise NotImplementedError(f"Unsupported framework: {self._connector}.")
         else:
-            self._SUPPORTED_FRAMEWORKS[self._framework]()
+            self._SUPPORTED_FRAMEWORKS[self._connector]()
+
+    def run(self, input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
+        """
+        Processes the input document using the OPEAEmbedding.
+
+        Args:
+            input (Union[TextDoc, TextDocList]): The input document to be processed.
+
+        Returns:
+            Union[EmbedDoc, EmbedDocList]: The processed document.
+        """
+
+        docs = []
+        if isinstance(input, TextDoc):
+            docs_to_parse = [input]
+        else:
+            docs_to_parse = input.docs
+
+        for doc in docs_to_parse:
+            if doc.text.strip() == "":
+                continue
+
+            embed_vector = self.embed_query(doc.text)
+            res = EmbedDoc(text=doc.text, embedding=embed_vector, metadata=doc.metadata)
+            docs.append(res)
+
+        if len(docs) == 0:
+            raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
+
+            
+        if isinstance(input, TextDoc):
+            return docs[0] # return EmbedDoc
+        else:
+            return EmbedDocList(docs=docs) # return EmbedDocList
+        
 
     def _import_langchain(self) -> None:
         try:
@@ -74,7 +115,7 @@ class OPEAEmbedding:
             logger.exception("langchain module not found. Ensure it is installed if you need its functionality.")
             raise
         except Exception as e:
-            logger.exception(f"An unexpected error occurred: {e}")
+            logger.exception(f"An unexpected error occurred while initializing the wrapper_langchain module {e}")
             raise
 
     def _import_llamaindex(self) -> None:
@@ -86,7 +127,7 @@ class OPEAEmbedding:
             logger.exception("llama_index module not found. Ensure it is installed if you need its functionality.")
             raise
         except Exception as e:
-            logger.exception(f"An unexpected error occurred: {e}")
+            logger.exception(f"An unexpected error occurred while initializing the wrapper_llamaindex module: {e}")
             raise
 
     def _get_api_config(self) -> dict:

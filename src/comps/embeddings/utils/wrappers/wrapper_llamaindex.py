@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Optional
+
 from docarray import BaseDoc
-from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
 from llama_index.core.base.embeddings.base import BaseEmbedding
+from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
 
 from comps import get_opea_logger
 from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper

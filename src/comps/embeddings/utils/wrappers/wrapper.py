@@ -3,9 +3,10 @@
 
 import os
 import re
+from abc import ABC, abstractmethod
 from typing import List, Optional
+
 from docarray import BaseDoc
-from abc import ABC,abstractmethod
 
 from comps import get_opea_logger
 

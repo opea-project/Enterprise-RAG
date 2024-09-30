@@ -3,6 +3,7 @@
 
 import json
 from typing import List, Optional
+
 from docarray import BaseDoc
 from langchain_core.embeddings import Embeddings
 from langchain_huggingface import HuggingFaceEndpointEmbeddings

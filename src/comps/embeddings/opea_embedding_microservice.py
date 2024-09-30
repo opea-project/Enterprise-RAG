@@ -3,84 +3,86 @@
 
 import os
 import time
-
-from fastapi import HTTPException
-from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
 from typing import Union
-from utils import opea_embedding
+
+from dotenv import load_dotenv
+from fastapi import HTTPException
+
 from comps import (
-    ServiceType,
     MegaServiceEndpoint,
+    ServiceType,
     change_opea_logger_level,
     get_opea_logger,
     opea_microservices,
     register_microservice,
     register_statistics,
+    sanitize_env,
     statistics_dict,
 )
+from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
 
+# from utils import opea_embedding
+from comps.embeddings.utils.opea_embedding import OPEAEmbedding
+
+# Define the unique service name for the microservice
+USVC_NAME='opea_service@opea_embedding'
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
+
+# Initialize the logger for the microservice
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
+# Initialize an instance of the OPEAEmbedding class with environment variables.
+opea_embedding = OPEAEmbedding(
+    model_name=sanitize_env(os.getenv("EMBEDDING_MODEL_NAME")),
+    model_server=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER")),
+    endpoint=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT")),
+    connector=sanitize_env(os.getenv("EMBEDDING_CONNECTOR")),
+)
 
-# TODO: Find common way of starting the refactored microservices
-def start_embedding_service(opea_embedding: opea_embedding.OPEAEmbedding, opea_microservice_name: str):
-    """Create the embedding service with the given OPEAEmbedding instance.
+# Register the microservice with the specified configuration.
+@register_microservice(
+    name=USVC_NAME,
+    service_type=ServiceType.EMBEDDING,
+    endpoint=str(MegaServiceEndpoint.EMBEDDINGS),
+    host="0.0.0.0",
+    port=int(os.getenv('EMBEDDING_USVC_PORT', default=6000)),
+    input_datatype=Union[TextDoc, TextDocList],
+    output_datatype=Union[EmbedDoc, EmbedDocList],
+)
+@register_statistics(names=[USVC_NAME])
+# Define a function to handle processing of input for the microservice. 
+# Its input and output data types must comply with the registered ones above. 
+def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
+    """
+    Process the input document using the OPEAEmbedding.
 
     Args:
-        opea_embedding (embedding_utils.OPEAEmbedding): An instance of OPEAEmbedding class.
-        opea_microservice_name (str): The name of the microservice.
+        input (Union[TextDoc, TextDocList]): The input document to be processed.
     """
+    start = time.time()
 
-    @register_microservice(
-        name=opea_microservice_name,
-        service_type=ServiceType.EMBEDDING,
-        endpoint=str(MegaServiceEndpoint.EMBEDDINGS),
-        host="0.0.0.0",
-        port=6000,
-        input_datatype=Union[TextDoc, TextDocList],
-        output_datatype=Union[EmbedDoc, EmbedDocList],
+    try:
+        # Pass the input to the 'run' method of the microservice instance
+        res = opea_embedding.run(input)
+
+    except ValueError as e:
+        logger.exception(f"An internal error occurred while processing: {str(e)}")
+        raise HTTPException(status_code=400,
+                            detail=f"An internal error occurred while processing: {str(e)}"
+        )
+    except Exception as e:
+         logger.exception(f"An error occurred while processing: {str(e)}")
+         raise HTTPException(status_code=500, 
+                             detail=f"An error occurred while processing: {str(e)}"
     )
-    @register_statistics(names=[opea_microservice_name])
-    def embedding(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
-        start = time.time()
-        docs = []
-        if isinstance(input, TextDoc):
-            docs_to_parse = [input]
-        else:
-            docs_to_parse = input.docs
-
-        for doc in docs_to_parse:
-            if doc.text.strip() == "":
-                continue
-
-            embed_vector = opea_embedding.embed_query(doc.text)
-            res = EmbedDoc(text=doc.text, embedding=embed_vector, metadata=doc.metadata)
-            docs.append(res)
-
-        if len(docs) == 0:
-            raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
-
-        statistics_dict[opea_microservice_name].append_latency(time.time() - start, None)
-
-        if isinstance(input, TextDoc):
-            return docs[0] # return EmbedDoc
-        else:
-            return EmbedDocList(docs=docs) # return EmbedDocList
-
-    opea_microservices[opea_microservice_name].start()
+    statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+    return res
 
 
 if __name__ == "__main__":
-    log_level = os.getenv("OPEA_LOGGER_LEVEL", "INFO")
-    change_opea_logger_level(logger, log_level)
-
-    embedding = opea_embedding.OPEAEmbedding(
-        model_name=os.getenv("EMBEDDING_MODEL_NAME", "bge-large-en-v1.5"),
-        model_server=os.getenv("EMBEDDING_MODEL_SERVER", "tei"),
-        framework=os.getenv("FRAMEWORK", "langchain"),
-        endpoint=os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT", "http://localhost:8090")
-    )
-
-    opea_microservice_name = "opea_service@opea_embedding"
-    start_embedding_service(embedding, opea_microservice_name)
-    logger.info(f"Started OPEA embedding microservice: {opea_microservice_name}")
+    # Start the microservice
+    opea_microservices[USVC_NAME].start()
+    logger.info(f"Started OPEA Microservice: {USVC_NAME}")

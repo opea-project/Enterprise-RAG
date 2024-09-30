@@ -98,7 +98,7 @@ else
         cat <<EOL > $ENV_FILE_NAME
 export GOROOT=$GOROOT
 export GOPATH=$GOPATH
-export PATH=$PATH
+export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 EOL
     fi
 

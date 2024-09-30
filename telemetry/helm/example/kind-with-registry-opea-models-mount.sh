@@ -1,6 +1,11 @@
 #!/bin/sh
 set -o errexit
 
+# Add kind-registry to env no_proxy. It will be used in kind container.
+if ! echo "$no_proxy" | grep -q "kind-registry"; then
+  export no_proxy="${no_proxy},kind-registry"
+fi
+
 # 1. Create registry container unless it already exists
 reg_name='kind-registry'
 reg_port='5000'
@@ -26,6 +31,21 @@ nodes:
   extraMounts:
   - hostPath: /opea-models
     containerPath: /opea-models
+  - hostPath: /mnt/opea-models
+    containerPath: /mnt/opea-models
+  kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    controllerManager:
+      extraArgs:
+        bind-address: 0.0.0.0
+    scheduler:
+      extraArgs:
+        bind-address: 0.0.0.0
+    etcd:
+      local:
+        extraArgs:
+          listen-metrics-urls: http://0.0.0.0:2381
 
 containerdConfigPatches:
 - |-
@@ -68,3 +88,6 @@ data:
     host: "localhost:${reg_port}"
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
+
+# Update kube-proxy cm with proper value of metricsBindAddress
+kubectl get cm kube-proxy -n kube-system -o yaml | sed 's/metricsBindAddress: ""/metricsBindAddress: 0.0.0.0:10249/' | kubectl apply -f -

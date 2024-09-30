@@ -194,3 +194,64 @@ d) Uninstall PCM
 helm uninstall -n monitoring pcm 
 ```
 
+#### Configuration prometheus-kube-stack
+
+When deploying the Prometheus Operator using the `kube-prometheus-stack` Helm chart, additional configuration may be required to monitor certain Kubernetes services. The following sections provide guidance on how to configure monitoring for the `kube-controller-manager`, `kube-etcd`, `kube-proxy`, and `kube-scheduler` components. This issue was well described [here](https://github.com/prometheus-community/helm-charts/issues/204).
+
+##### telemetry-kube-prometheus-kube-etcd
+
+To monitor the `kube-etcd` service, you need to update the `ClusterConfiguration` for `kubeadm` to expose the metrics endpoint. This solution is detailed in a [GitHub issue comment](https://github.com/prometheus-community/helm-charts/issues/204#issuecomment-1003558431)
+
+
+``` yml
+kind: ClusterConfiguration
+etcd:
+  local:
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+```
+
+Then, adjust the `kube-prometheus-stack` Helm chart values to match the `kube-etcd` metrics service port:
+
+``` yml
+kubeEtcd:
+  service:
+    port: 2381
+    targetPort: 2381
+```
+
+##### telemetry-kube-prometheus-kube-proxy
+
+The `kube-proxy` service may have issues with Prometheus instances accessing its metrics. The problem and its solution are documented in the `kube-prometheus-stack` chart [README](https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md#kubeproxy).
+
+To resolve this, modify the `kube-proxy` ConfigMap to set the `metricsBindAddress` to `0.0.0.0:10249`:
+
+```console
+kubectl -n kube-system edit cm kube-proxy
+```
+
+Update the ConfigMap with the following configuration:
+
+```yaml
+apiVersion: v1
+data:
+  config.conf: |-
+    apiVersion: kubeproxy.config.k8s.io/v1alpha1
+    kind: KubeProxyConfiguration
+
+    metricsBindAddress: 0.0.0.0:10249 # Updated line
+
+kind: ConfigMap
+metadata:
+  labels:
+    app: kube-proxy
+  name: kube-proxy
+  namespace: kube-system
+```
+
+##### telemetry-kube-prometheus-kube-scheduler and kube-scheduler-kind-control-plane
+
+Monitoring the `kube-scheduler` service, as well as the `kube-scheduler-kind-control-plane` if you are using kind, requires meeting certain pre-requisites when using `kubeadm`. These pre-requisites are outlined in the [kube-prometheus documentation](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/kube-prometheus-on-kubeadm.md#kubeadm-pre-requisites)
+.
+Ensure that your cluster configuration adheres to these requirements to enable successful monitoring of these components with Prometheus.
+By following these steps, you can configure the `kube-prometheus-stack` Helm chart to monitor key Kubernetes services effectively.

@@ -19,6 +19,13 @@ kube-prometheus-stack:
 #      limits:
 #      memory: 150Mi
 
+  # Fix problem not scraping metrics from kube-prometheus-stack-kube-etcd
+  # https://github.com/prometheus-community/helm-charts/issues/204#issuecomment-1003558431
+  kubeEtcd:
+    service:
+      port: 2381
+      targetPort: 2381
+
 ### ============================================================================
 # Prometehus Service/Pod monitors to collect metrics from EntRAG microservices
 ### ============================================================================

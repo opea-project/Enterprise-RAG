@@ -247,7 +247,7 @@ for component in "${components_to_build[@]}"; do
 
         in-guard-usvc)
             path="${repo_path}/src"
-            dockerfile="comps/guardrails/llm_guard_scanners/input_scanner/impl/microservice/Dockerfile"
+            dockerfile="comps/guardrails/llm_guard_intput_guardrail/impl/microservice/Dockerfile"
             image_name=opea/in-guard
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
@@ -256,7 +256,7 @@ for component in "${components_to_build[@]}"; do
 
         out-guard-usvc)
             path="${repo_path}/src"
-            dockerfile="comps/guardrails/llm_guard_scanners/output_scanner/impl/microservice/Dockerfile"
+            dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
             image_name=opea/out-guard
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi

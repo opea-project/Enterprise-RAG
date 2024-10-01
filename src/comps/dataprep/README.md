@@ -2,6 +2,36 @@
 
 This microservice is designed to extract text from data sent for processing. That data can be sent in form of files and/or links for scraping and further extraction. Result of this microservice can then be passed to embedding microservice and ultimately persisted in the system.
 
+## Support Matrix
+
+Supported files that dataprep can extract data from:
+
+| File Extension | Loader Class                                                                 |
+|----------------|------------------------------------------------------------------------------|
+| doc            | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
+| docx           | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
+| txt            | [LoadTxt](./utils/file_loaders/load_txt.py)                                  |
+| json           | [LoadJson](./utils/file_loaders/load_json.py)                                |
+| jsonl          | [LoadJson](./utils/file_loaders/load_json.py)                                |
+| csv            | [LoadCsv](./utils/file_loaders/load_csv.py)                                  |
+| xlsx           | [LoadXls](./utils/file_loaders/load_xls.py)                                  |
+| xls            | [LoadXls](./utils/file_loaders/load_xls.py)                                  |
+| pdf            | [LoadPdf](./utils/file_loaders/load_pdf.py)                                  |
+| html           | [LoadHtml](./utils/file_loaders/load_html.py)                                |
+| md             | [LoadMd](./utils/file_loaders/load_md.py)                                    |
+| xml            | [LoadXml](./utils/file_loaders/load_xml.py)                                  |
+| yaml           | [LoadYaml](./utils/file_loaders/load_yaml.py)                                |
+| ppt            | [LoadPpt](./utils/file_loaders/load_ppt.py)                                  |
+| pptx           | [LoadPpt](./utils/file_loaders/load_ppt.py)                                  |
+| tiff           | [LoadImage](./utils/file_loaders/load_image.py)                              |
+| jpg            | [LoadImage](./utils/file_loaders/load_image.py)                              |
+| jpeg           | [LoadImage](./utils/file_loaders/load_image.py)                              |
+| png            | [LoadImage](./utils/file_loaders/load_image.py)                              |
+| svg            | [LoadImage](./utils/file_loaders/load_image.py)                              |
+
+If you consider adding additional file support, implement it based on `AbstractLoader` class
+and include that class into the `FileParser`'s `default_mappings` map.
+
 ## Configuration options
 
 Configuration is currently done via environment variables.

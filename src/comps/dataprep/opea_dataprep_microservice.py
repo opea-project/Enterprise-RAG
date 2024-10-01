@@ -3,8 +3,9 @@
 
 import os
 import time
-
-from fastapi import HTTPException
+import base64
+import io
+from fastapi import UploadFile, HTTPException
 from comps.cores.utils.utils import get_boolean_env_var
 from utils import opea_dataprep
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
@@ -12,6 +13,7 @@ from comps.cores.proto.docarray import DataPrepInput, TextDocList
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
 from comps.cores.mega.base_statistics import register_statistics, statistics_dict
 import logging
+
 
 def start_ingestion_service(opea_dataprep: opea_dataprep.OPEADataprep, opea_microservice_name: str):
     @register_microservice(
@@ -27,9 +29,30 @@ def start_ingestion_service(opea_dataprep: opea_dataprep.OPEADataprep, opea_micr
     async def dataprep(input: DataPrepInput) -> TextDocList:
         start = time.time()
 
+        files = input.files
+        link_list = input.links
+
+        logging.debug(f"Dataprep files: {files}")
+        logging.debug(f"Dataprep link list: {link_list}")
+
+        if not files and not link_list:
+            raise HTTPException(status_code=400, detail="Must provide either a file or a string list.")
+
+        decoded_files = []
+        if files:
+            try:
+                for f in files:
+                    file_data = base64.b64decode(f.data64)
+                    binary_file = io.BytesIO(file_data)
+                    decoded_file = UploadFile(filename=f.filename, file=binary_file)
+                    decoded_files.append(decoded_file)
+            except Exception as e:
+                logging.exception(e)
+                raise HTTPException(status_code=500, detail=f"Error while preparing documents. {e}")
+
         textdocs = None
         try:
-            textdocs = await opea_dataprep.dataprep(input=input)
+            textdocs = await opea_dataprep.dataprep(files=decoded_files, link_list=link_list)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error while preparing documents. {e}")
 

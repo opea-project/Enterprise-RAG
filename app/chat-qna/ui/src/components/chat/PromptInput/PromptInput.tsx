@@ -49,7 +49,7 @@ const PromptInput = () => {
     const requestBody = {
       text: prompt,
       parameters: {
-        max_new_tokens: 256,
+        max_new_tokens: 1024,
         do_sample: true,
         streaming: true,
       },

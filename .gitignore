@@ -7,7 +7,6 @@
 # Deployment
 deployment/**/bin/
 deployment/*.out
-Chart.lock
 **/charts/*.tgz
 nohup*.out
 

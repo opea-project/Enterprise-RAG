@@ -100,7 +100,7 @@ class ZephyrConnector:
         if response.status_code != requests.codes.CREATED:
             raise ZephyrApiException(f"Failed to create attachment. Expected 201 status code, "
                                      f"got {response.status_code}")
-        logger.debug(f"Test attachment created")
+        logger.debug("Test attachment created")
 
 
 class ZephyrApiException(Exception):
@@ -119,6 +119,9 @@ def setup_logging():
 def setup_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-t", "--token", required=True, help="Jira token")
+    parser.add_argument("-c", "--test_cycle", required=False,
+                        help="Existing test cycle key. Example: 'IEASG-C204'."
+                             "If not set, a new test cycle will be created")
     return parser.parse_args()
 
 
@@ -129,7 +132,7 @@ def create_test_cycle_name():
 
 def browse_allure_reports():
     allure_dir_path = os.path.join(os.getcwd(), ALLURE_DIR)
-    return [entry.path for entry in os.scandir(allure_dir_path) if entry.name.endswith(".json")]
+    return [entry.path for entry in os.scandir(allure_dir_path) if entry.name.endswith("-result.json")]
 
 
 def get_test_details(report):
@@ -163,7 +166,10 @@ if __name__ == "__main__":
     all_test_succeeded = True
 
     zc = ZephyrConnector(BASE_URL, args.token, logger)
-    test_cycle_key = zc.create_test_cycle(PROJECT_KEY, create_test_cycle_name())
+    if args.test_cycle:
+        test_cycle_key = args.test_cycle
+    else:
+        test_cycle_key = zc.create_test_cycle(PROJECT_KEY, create_test_cycle_name())
 
     for allure_report in browse_allure_reports():
         name, status, issue_key, attachment = get_test_details(allure_report)

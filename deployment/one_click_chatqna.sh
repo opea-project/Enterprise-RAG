@@ -69,5 +69,5 @@ if ! command_exists kubectl; then
     exit 1
 fi
 
-# Install chatqna
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --tag "$TAG" --test
+# Install chatqna & run test
+bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test

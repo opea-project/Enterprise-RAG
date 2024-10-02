@@ -1,9 +1,9 @@
 {
   "proxies": {
     "default": {
-      "httpProxy": "$http_proxy",
-      "httpsProxy": "$https_proxy",
-      "noProxy": "$no_proxy"
+      "httpProxy": "$RAG_HTTP_PROXY",
+      "httpsProxy": "$RAG_HTTPS_PROXY",
+      "noProxy": "$RAG_NO_PROXY"
     }
   }
  }

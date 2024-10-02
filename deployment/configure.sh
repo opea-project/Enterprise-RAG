@@ -71,20 +71,29 @@ else
 fi
 
 # Configure Docker proxy settings if provided
-if [[ -z "$RAG_HTTP_PROXY" || "$RAG_HTTPS_PROXY" || "$RAG_NO_PROXY" ]]; then
+if [[ -n "$RAG_HTTP_PROXY" || "$RAG_HTTPS_PROXY" || "$RAG_NO_PROXY" ]]; then
+    export RAG_HTTP_PROXY
+    export RAG_HTTPS_PROXY
+    export RAG_NO_PROXY
     envsubst < tpl/config.json > tmp.config.json
     if [ -e ~/.docker/config.json ]; then
-        echo "Docker config.json already exists. If you want to proceed remove it and re-run script. Exiting"; exit 1
+        echo "Warning! Docker config.json exists; continues using the existing file"
     else
         if [ ! -d ~/.docker/ ]; then
             mkdir ~/.docker
         fi
         mv tmp.config.json ~/.docker/config.json
-        sudo systemctl start docker
+        sudo systemctl restart docker
+        echo "Created Docker config.json, restarting docker.service"
     fi
 fi
 
 # Install Go if not already installed
+if [ -f $ENV_FILE_NAME ]; then
+    # shellcheck disable=SC1090
+    source $ENV_FILE_NAME
+fi
+
 if command_exists go; then
     echo "Go is already installed."
 else
@@ -93,7 +102,7 @@ else
     rm go1.22.1.linux-amd64.tar.gz
 
     if [ -f $ENV_FILE_NAME ]; then
-        echo "$ENV_FILE_NAME exists; continues using the existing file"
+        echo "Warning! $ENV_FILE_NAME exists; continues using the existing file"
     else
         cat <<EOL > $ENV_FILE_NAME
 export GOROOT=$GOROOT
@@ -102,6 +111,7 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 EOL
     fi
 
+    # shellcheck disable=SC1090
     source $ENV_FILE_NAME
 
     if command_exists go; then

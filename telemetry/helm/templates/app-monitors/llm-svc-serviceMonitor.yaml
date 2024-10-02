@@ -14,7 +14,7 @@ spec:
     - chatqa
   selector:
     matchLabels:
-      app.kubernetes.io/instance: llm-uservice
+      app.kubernetes.io/instance: llm-usvc
   endpoints:
-  - port: "llm-uservice"
+  - port: "llm-usvc"
 {{- end }}

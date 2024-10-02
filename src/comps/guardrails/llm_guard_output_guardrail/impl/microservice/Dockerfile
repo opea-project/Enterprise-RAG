@@ -5,7 +5,7 @@
 # Dockerfile for the RAG LLM Guard output scanners microservice
 # This Dockerfile is used to build the container image for the RAG LMM Guard output scanners microservice.
 
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 ARG ARCH="cpu"
 

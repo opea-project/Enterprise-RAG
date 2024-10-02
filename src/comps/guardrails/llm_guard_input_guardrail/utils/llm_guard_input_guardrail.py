@@ -50,9 +50,7 @@ class OPEALLMGuardInputGuardrail:
             )
             raise
 
-    def scan_llm_input(self, input_doc: LLMParamsDoc) -> tuple[
-        str, dict[str, bool], dict[str, float]
-        ]:
+    def scan_llm_input(self, input_doc: LLMParamsDoc) -> LLMParamsDoc:
         """
         Scan the prompt from an LLMParamsDoc object.
 
@@ -76,7 +74,8 @@ class OPEALLMGuardInputGuardrail:
                 msg = f"Prompt {prompt} is not valid, scores: {results_score}"
                 logger.error(f"{msg}")
                 raise HTTPException(status_code=400, detail=f"{msg}")
-            return sanitized_prompt
+            input_doc.query = sanitized_prompt
+            return input_doc
         except Exception as e:
             logger.exception(
                 f"An unexpected error occured during scanning prompt with \

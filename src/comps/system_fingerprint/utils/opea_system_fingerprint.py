@@ -563,12 +563,12 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             remove_id(
                 self.current_arguments.parameters.reranker.model_dump()))
         packed_parameters.update(
-            {"input_guard":
+            {"input_guardrail_params":
                 remove_id(
                     self.current_arguments.parameters.input_guard.model_dump())
              })
         packed_parameters.update(
-            {"output_guard":
+            {"output_guardrail_params":
                 remove_id(
                     self.current_arguments.parameters.output_guard.model_dump())
              })

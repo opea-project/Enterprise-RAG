@@ -275,8 +275,8 @@ class LLMParams(Document):
 class PackedParams(Document):
     llm: LLMParams = None
     reranker: RerankerParams = None
-    input_guardrail_params: LLMGuardInputGuardrailParams = None
-    output_guardrail_params: LLMGuardOutputGuardrailParams = None
+    input_guard: LLMGuardInputGuardrailParams = None
+    output_guard: LLMGuardOutputGuardrailParams = None
 
 
 class Argument(Document):

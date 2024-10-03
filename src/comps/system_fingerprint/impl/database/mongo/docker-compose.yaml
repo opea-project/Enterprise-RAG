@@ -6,7 +6,7 @@ services:
     image: mongo:8.0.0
     container_name: mongodb
     ports:
-      - ${SYSTEM_FINGERPRINT_MONGO_PORT}:27017
+      - ${SYSTEM_FINGERPRINT_MONGODB_PORT}:27017
     environment:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
@@ -26,9 +26,9 @@ services:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
       no_proxy: ${no_proxy}
-      SYSTEM_FINGERPRINT_MONGO_HOST: ${SYSTEM_FINGERPRINT_MONGO_HOST}
-      SYSTEM_FINGERPRINT_MONGO_PORT: ${SYSTEM_FINGERPRINT_MONGO_PORT}
-      DB_NAME: ${DB_NAME}
+      SYSTEM_FINGERPRINT_MONGODB_HOST: ${SYSTEM_FINGERPRINT_MONGODB_HOST}
+      SYSTEM_FINGERPRINT_MONGODB_PORT: ${SYSTEM_FINGERPRINT_MONGODB_PORT}
+      MONGODB_NAME: ${MONGODB_NAME}
     restart: unless-stopped
     depends_on:
       - mongo

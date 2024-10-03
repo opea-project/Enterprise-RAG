@@ -20,12 +20,12 @@ from typing import Dict
 USVC_NAME = "opea_service@system_fingerprint"
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
-change_opea_logger_level(logger, os.getenv("OPEA_LOGGER_LEVEL", "DEBUG"))
+change_opea_logger_level(logger, os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 mongo_controller = OPEASystemFingerprintController(
     db_name=sanitize_env(os.getenv("MONGODB_NAME")),
     mongodb_host=sanitize_env(os.getenv("SYSTEM_FINGERPRINT_MONGODB_HOST")),
-    mongodb_port=int(os.getenv("SYSTEM_FINGERPRINT_MONGO_PORT")))
+    mongodb_port=int(os.getenv("SYSTEM_FINGERPRINT_MONGODB_PORT")))
 
 
 @register_microservice(

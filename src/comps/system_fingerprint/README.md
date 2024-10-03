@@ -8,9 +8,9 @@ Configuration is done by specifying the MongoDB connection details. Optionally, 
 
 | Environment Variable    | Default Value     | Description |
 |-------------------------|-------------------|-------------|
-| `SYSTEM_FINGERPRINT_MONGO_HOST` | `127.0.0.1` | MongoDB host |
-| `SYSTEM_FINGERPRINT_MONGO_PORT` | `27017` | MongoDB port |
-| `DB_NAME` | `SYSTEM_FINGERPRINT` | Name of MongoDB |
+| `SYSTEM_FINGERPRINT_MONGODB_HOST` | `127.0.0.1` | MongoDB host |
+| `SYSTEM_FINGERPRINT_MONGODB_PORT` | `27017` | MongoDB port |
+| `MONGODB_NAME` | `SYSTEM_FINGERPRINT` | Name of MongoDB |
 | `SYSTEM_FINGERPRINT_USVC_PORT` | `6012` | (Optional) Microservice port |
 
 ## Getting started

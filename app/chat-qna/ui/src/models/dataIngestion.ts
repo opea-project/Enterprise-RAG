@@ -5,5 +5,3 @@ export class LinkForIngestion {
   id: string = "";
   value: string = "";
 }
-
-export type DataIngestionSourceType = "documents" | "links";

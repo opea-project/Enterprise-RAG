@@ -3,23 +3,30 @@
 
 import "./ErrorPage.scss";
 
-import { Link as MuiLink, Typography } from "@mui/material";
-import { isRouteErrorResponse, Link, useRouteError } from "react-router-dom";
+import { useEffect } from "react";
+import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 
 const ErrorPage = () => {
+  useEffect(() => {
+    const theme = localStorage.getItem("theme");
+    if (theme === "dark") {
+      document.body.classList.add("dark");
+    }
+  }, []);
+
   const error = useRouteError();
 
-  let errorMessage = <Typography color="error">An error occurred!</Typography>;
+  let errorMessage = <p className="error">An error occurred!</p>;
   if (isRouteErrorResponse(error)) {
     if (error.status === 404) {
-      errorMessage = <Typography>404 - Page Not Found</Typography>;
+      errorMessage = <p>404 - Page Not Found</p>;
     } else {
       errorMessage = (
-        <Typography color="error">
+        <p className="error">
           An error occurred! <br />
           Error Code: {error.status} <br />
           Error Message: {error.statusText}
-        </Typography>
+        </p>
       );
     }
   }
@@ -27,11 +34,7 @@ const ErrorPage = () => {
   return (
     <div className="error-page">
       {errorMessage}
-      <Link to={"/chat"}>
-        <MuiLink>
-          <Typography>Return to the app</Typography>
-        </MuiLink>
-      </Link>
+      <a href="/chat">Return to the app</a>
     </div>
   );
 };

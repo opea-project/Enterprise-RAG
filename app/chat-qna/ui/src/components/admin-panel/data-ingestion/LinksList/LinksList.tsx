@@ -3,12 +3,10 @@
 
 import "./LinksList.scss";
 
-import DeleteIcon from "@mui/icons-material/Delete";
-import { List, ListItem, Typography } from "@mui/material";
 import { Dispatch, SetStateAction } from "react";
+import { BsTrash } from "react-icons/bs";
 
 import ListHeader from "@/components/admin-panel/data-ingestion/ListHeader/ListHeader";
-import SquareIconButton from "@/components/shared/SquareIconButton/SquareIconButton";
 import { LinkForIngestion } from "@/models/dataIngestion";
 
 interface LinksListProps {
@@ -21,35 +19,30 @@ interface LinksListProps {
 const LinksList = ({
   links,
   setLinks,
-  removeLinkFromList,
   disabled,
+  removeLinkFromList,
 }: LinksListProps) => {
   const clearList = () => {
     setLinks([]);
   };
 
-  const clearListBtnDisabled = links.length === 0 || disabled;
-
   return (
     <>
-      <ListHeader
-        clearListBtnDisabled={clearListBtnDisabled}
-        onClearListBtnClick={clearList}
-      />
-      <List>
+      <ListHeader disabled={disabled} onClearListBtnClick={clearList} />
+      <ul>
         {links.map(({ id, value }) => (
-          <ListItem key={id} className="link-list-item">
-            <Typography variant="body2">{value}</Typography>
-            <SquareIconButton
-              color="error"
+          <li key={id} className="link-list-item">
+            <p className="link-list-item__url">{value}</p>
+            <button
+              className="icon-button-outlined--danger"
               disabled={disabled}
               onClick={() => removeLinkFromList(id)}
             >
-              <DeleteIcon fontSize="small" />
-            </SquareIconButton>
-          </ListItem>
+              <BsTrash size={16} />
+            </button>
+          </li>
         ))}
-      </List>
+      </ul>
     </>
   );
 };

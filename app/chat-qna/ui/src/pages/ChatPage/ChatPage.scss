@@ -2,8 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .chat-page {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 1rem;
+  @apply mx-auto grid h-[calc(100vh-3.5rem)] w-full grid-rows-[1fr_auto] p-4 lg:w-[50rem];
 }

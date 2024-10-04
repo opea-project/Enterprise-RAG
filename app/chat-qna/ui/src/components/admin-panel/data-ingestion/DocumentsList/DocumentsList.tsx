@@ -3,12 +3,10 @@
 
 import "./DocumentsList.scss";
 
-import DeleteIcon from "@mui/icons-material/Delete";
-import { List, ListItem, Typography } from "@mui/material";
 import { Dispatch, SetStateAction } from "react";
+import { BsTrash } from "react-icons/bs";
 
 import ListHeader from "@/components/admin-panel/data-ingestion/ListHeader/ListHeader";
-import SquareIconButton from "@/components/shared/SquareIconButton/SquareIconButton";
 
 const formatFileSize = (fileSize: number) => {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -48,36 +46,31 @@ const DocumentsList = ({
     );
   };
 
-  const clearListBtnDisabled = documents.length === 0 || disabled;
-
   return (
     <>
-      <ListHeader
-        clearListBtnDisabled={clearListBtnDisabled}
-        onClearListBtnClick={clearList}
-      />
-      <List>
+      <ListHeader disabled={disabled} onClearListBtnClick={clearList} />
+      <ul>
         {documents.map((file, index) => (
-          <ListItem
-            key={`document-file-list-item-${index}`}
-            className="file-list-item"
+          <li
+            key={`document-list-item-${index}`}
+            className="document-list-item"
           >
-            <div className="file-list-item-text">
-              <Typography variant="body2">{file.name}</Typography>
-              <Typography className="file-size-text">
+            <div className="document-list-item-text">
+              <p className="document-list-item__file-name">{file.name}</p>
+              <p className="document-list-item__file-size">
                 {formatFileSize(file.size)}
-              </Typography>
+              </p>
             </div>
-            <SquareIconButton
-              color="error"
+            <button
+              className="icon-button-outlined--danger"
               disabled={disabled}
               onClick={() => removeDocumentFromList(index)}
             >
-              <DeleteIcon fontSize="small" />
-            </SquareIconButton>
-          </ListItem>
+              <BsTrash />
+            </button>
+          </li>
         ))}
-      </List>
+      </ul>
     </>
   );
 };

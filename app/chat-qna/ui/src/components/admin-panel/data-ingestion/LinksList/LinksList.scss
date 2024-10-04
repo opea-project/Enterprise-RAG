@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .link-list-item {
-  display: grid !important;
-  grid-template-columns: 1fr 2.25rem;
-  align-items: center;
-  gap: 0.5rem;
+  @apply mb-1 grid grid-cols-[1fr_2.5rem] items-center gap-2 pl-4 hover:bg-light-background-2 dark:hover:bg-dark-background-2;
+}
+
+.link-list-item__url {
+  @apply overflow-hidden text-ellipsis whitespace-nowrap;
 }

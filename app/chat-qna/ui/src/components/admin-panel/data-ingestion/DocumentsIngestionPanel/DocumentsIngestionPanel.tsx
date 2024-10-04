@@ -17,14 +17,17 @@ const DocumentsIngestionPanel = ({
   setDocuments,
   disabled,
 }: DocumentsIngestionPanelProps) => (
-  <>
+  <section>
+    <h2>Documents</h2>
     <DocumentsFileInput setDocuments={setDocuments} disabled={disabled} />
-    <DocumentsList
-      documents={documents}
-      setDocuments={setDocuments}
-      disabled={disabled}
-    />
-  </>
+    {documents.length > 0 && (
+      <DocumentsList
+        documents={documents}
+        setDocuments={setDocuments}
+        disabled={disabled}
+      />
+    )}
+  </section>
 );
 
 export default DocumentsIngestionPanel;

@@ -3,6 +3,8 @@
 
 import "./ChatMessage.scss";
 
+import classNames from "classnames";
+
 import ChatMessageAvatar from "@/components/chat/ChatMessageAvatar/ChatMessageAvatar";
 import ChatMessageMarkdown from "@/components/chat/ChatMessageMarkdown/ChatMessageMarkdown";
 
@@ -12,7 +14,12 @@ interface ChatMessageProps {
 }
 
 const ChatMessage = ({ text, isUserMessage }: ChatMessageProps) => (
-  <div className={`message ${isUserMessage ? "" : "bot-message"}`}>
+  <div
+    className={classNames({
+      "chat-message": true,
+      "chat-user-message": isUserMessage,
+    })}
+  >
     <ChatMessageAvatar isUserMessage={isUserMessage} />
     <div>
       <ChatMessageMarkdown text={text} />

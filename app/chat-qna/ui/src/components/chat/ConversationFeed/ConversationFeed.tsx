@@ -3,43 +3,78 @@
 
 import "./ConversationFeed.scss";
 
-import { Typography } from "@mui/material";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatMessage from "@/components/chat/ChatMessage/ChatMessage";
 import keycloakService from "@/services/keycloakService";
-import { selectMessages } from "@/store/conversationFeed.slice";
+import {
+  selectIsMessageStreamed,
+  selectMessages,
+} from "@/store/conversationFeed.slice";
 import { useAppSelector } from "@/store/hooks";
-
-const conversationFeedId = "chat-conversation-feed";
 
 const ConversationFeed = () => {
   const feedMessages = useAppSelector(selectMessages);
+  const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
+  const conversationFeedRef = useRef<HTMLDivElement>(null);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
-  const scrollDownConversationFeed = () => {
-    const conversationFeed = document.getElementById(conversationFeedId);
-    if (conversationFeed instanceof HTMLElement) {
-      conversationFeed.scroll({
-        behavior: "smooth",
-        top: conversationFeed.scrollHeight,
+  const scrollConversationFeed = (behavior: ScrollBehavior) => {
+    if (conversationFeedRef.current) {
+      conversationFeedRef.current.scroll({
+        behavior,
+        top: conversationFeedRef.current.scrollHeight,
       });
     }
   };
 
   useEffect(() => {
-    scrollDownConversationFeed();
-  }, [feedMessages]);
+    scrollConversationFeed("instant");
+  }, []);
+
+  useEffect(() => {
+    if (isAutoScrollEnabled) {
+      scrollConversationFeed("smooth");
+    }
+  }, [feedMessages, isAutoScrollEnabled]);
+
+  useEffect(() => {
+    let timeout: string | number | NodeJS.Timeout | undefined;
+    if (!isAutoScrollEnabled) {
+      timeout = setTimeout(() => {
+        setIsAutoScrollEnabled(true);
+      }, 5000);
+    }
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [isAutoScrollEnabled]);
+
+  const handleScroll = () => {
+    if (isMessageStreamed) {
+      if (conversationFeedRef.current) {
+        const { clientHeight, scrollTop, scrollHeight } =
+          conversationFeedRef.current;
+        const isScrolledUp = scrollHeight - scrollTop !== clientHeight;
+        setIsAutoScrollEnabled(!isScrolledUp);
+      }
+    } else {
+      setIsAutoScrollEnabled(true);
+    }
+  };
 
   return (
-    <div id={conversationFeedId}>
+    <div
+      ref={conversationFeedRef}
+      className="conversation-feed"
+      onScrollCapture={handleScroll}
+    >
       {feedMessages.length === 0 && (
-        <div className="conversation-welcome-message">
-          <Typography variant="h3">
+        <div className="px-4">
+          <h3 className="welcome-message">
             Welcome, {keycloakService.getUsername()}!
-          </Typography>
-          <Typography>
-            Submit your first prompt to start new conversation
-          </Typography>
+          </h3>
+          <p>Send your first prompt to start new conversation</p>
         </div>
       )}
       {feedMessages.map(({ text, isUserMessage, id }) => (

@@ -15,7 +15,7 @@ node --version
 npm --version
 ```
 
-`--version` option can be replaced with `-v` shorthand_
+`--version` option can be replaced with `-v` shorthand
 
 ## Setup
 
@@ -23,6 +23,7 @@ npm --version
 
 Create `.env` file in this folder.
 The Keycloak adapter for has to be configured by setting the following variables:
+
 ```
 VITE_KEYCLOAK_URL=<keycloak-service-url>
 VITE_KEYCLOAK_REALM=<realm-name>
@@ -31,6 +32,7 @@ VITE_ADMIN_RESOURCE_ROLE=<resource-role-name>
 ```
 
 Additional variables for services must be set in `.env` file:
+
 ```
 VITE_CHAT_QNA_URL=<chat-qna-service-url>
 VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
@@ -52,6 +54,7 @@ By default, it will run on `http://localhost:5147`.
 
 The port and IP address can be changed by setting `--port` and `--host` options
 for npm `dev` script inside `package.json` file.
+
 ```json
 {
   "dev": "vite dev --port 9090 --host 127.0.0.1"
@@ -59,6 +62,7 @@ for npm `dev` script inside `package.json` file.
 ```
 
 These options can also be set via CLI by adding inline options `-- --port <port> --host <ip>`.
+
 ```bash
 npm run dev -- --port 9090 --host 127.0.0.1
 ```
@@ -77,6 +81,7 @@ from `dist` folder at `http://localhost:4173`.
 
 The port of the server can be changed by setting `--port` option
 for npm `preview` script inside `package.json` file.
+
 ```json
 {
   "preview": "vite preview --port 8080"
@@ -84,6 +89,7 @@ for npm `preview` script inside `package.json` file.
 ```
 
 This option can also be set via CLI by adding inline option `-- --port <port>`
+
 ```bash
 npm run preview -- --port 8080
 ```
@@ -92,13 +98,13 @@ npm run preview -- --port 8080
 
 In case of any server configuring and creating build issues please refer to https://vitejs.dev/config/server-options.
 
-
 ## Deployment using Dockerfile
 
 ### Environment variables
 
 Create `.env` file in this folder.
 The Keycloak adapter for has to be configured by setting the following variables:
+
 ```
 VITE_KEYCLOAK_URL=<keycloak-service-url>
 VITE_KEYCLOAK_REALM=<realm-name>
@@ -107,6 +113,7 @@ VITE_ADMIN_RESOURCE_ROLE=<resource-role-name>
 ```
 
 Additional variables for services must be set in `.env` file:
+
 ```
 VITE_CHAT_QNA_URL=<chat-qna-service-url>
 VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
@@ -118,11 +125,13 @@ VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
 ### Docker image
 
 Build docker image with a tag of your choice:
+
 ```bash
 docker build -t rag-ui .
 ```
 
 Create and run a new container from an image:
+
 ```bash
 docker run -dp 127.0.0.1:4173:4173 rag-ui
 ```

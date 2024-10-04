@@ -3,7 +3,7 @@
 
 import "./DocumentsFileInput.scss";
 
-import { Alert, Button, Typography } from "@mui/material";
+import classNames from "classnames";
 import {
   ChangeEvent,
   Dispatch,
@@ -17,7 +17,7 @@ const acceptedFileTypes =
   ".pdf,.html,.txt,.doc,.docx,.ppt,.pptx,.md,.xml,.json,.jsonl,.yaml,.xls,.xlsx,.csv";
 const acceptedFileTypesArray = acceptedFileTypes.split(",");
 
-const validateDocuments = (documents: File[]) => {
+const validateDocuments = (documents: File[] | FileList) => {
   const hasSupportedExtension = Array.from(documents).every((doc) =>
     acceptedFileTypesArray.some((type) => doc.name.endsWith(type)),
   );
@@ -40,11 +40,13 @@ const DocumentsFileInput = ({
 
   const handleFileInputDrop = (event: DragEvent) => {
     event.preventDefault();
-    const newFiles = [...event.dataTransfer.files];
-    const validationMessage = validateDocuments(newFiles);
-    setErrorMessage(validationMessage);
-    if (validationMessage === "") {
-      setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
+    if (!disabled) {
+      const newFiles = [...event.dataTransfer.files];
+      const validationMessage = validateDocuments(newFiles);
+      setErrorMessage(validationMessage);
+      if (validationMessage === "") {
+        setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
+      }
     }
   };
 
@@ -58,41 +60,45 @@ const DocumentsFileInput = ({
 
   const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const newFiles = event.target.files;
+
     if (newFiles) {
-      setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
+      const validationMessage = validateDocuments(newFiles);
+      setErrorMessage(validationMessage);
+      if (validationMessage === "") {
+        setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
+      }
     }
   };
 
   return (
     <>
       {errorMessage !== "" && (
-        <Alert severity="error" className="documents-file-input-error-alert">
-          {errorMessage}
-        </Alert>
+        <p className="documents-file-input-error-alert">{errorMessage}</p>
       )}
       <div
         onDrop={handleFileInputDrop}
         onDragOver={handleFileInputDragOver}
-        className={`documents-file-input-box ${disabled ? "disabled" : ""}`}
+        className={classNames({
+          "documents-file-input-box": true,
+          "documents-file-input-box__disabled": disabled,
+        })}
       >
-        <Typography variant="body1" fontWeight={600}>
-          Drag and Drop files here
-        </Typography>
-        <Typography variant="caption" textAlign="center">
+        <p className="font-medium">Drag and Drop files here</p>
+        <p>
           Supported file formats:{" "}
           {acceptedFileTypes
             .split(",")
             .map((type) => type.replace(".", "").toUpperCase())
             .join(", ")}
-        </Typography>
-        <Typography variant="body2">or</Typography>
-        <Button
-          variant="outlined"
+        </p>
+        <p>or</p>
+        <button
+          className="outlined-button--primary"
           disabled={disabled}
           onClick={handleBrowseFilesButtonClick}
         >
           Browse Files
-        </Button>
+        </button>
         <input
           ref={fileInputRef}
           type="file"
@@ -100,7 +106,7 @@ const DocumentsFileInput = ({
           disabled={disabled}
           multiple
           onChange={handleFileInputChange}
-          className="file-input"
+          className="hidden"
         />
       </div>
     </>

@@ -3,35 +3,53 @@
 
 import "./AdminPanelPage.scss";
 
-import { Tab, Tabs } from "@mui/material";
-import { SyntheticEvent, useState } from "react";
+import classNames from "classnames";
+import { useCallback, useState } from "react";
 
 import ConfigureServicesTab from "@/components/admin-panel/configure-services/ConfigureServicesTab/ConfigureServicesTab";
 import DataIngestionTab from "@/components/admin-panel/data-ingestion/DataIngestionTab/DataIngestionTab";
 import TelemetryTab from "@/components/admin-panel/telemetry/TelemetryTab/TelemetryTab";
 
-const AdminPanelPage = () => {
-  const [tabIndex, setTabIndex] = useState(0);
+const adminPanelTabs = ["Data Ingestion", "Telemetry", "Configure Services"];
 
-  const handleTabChange = (_: SyntheticEvent, selectedTabIndex: number) => {
-    setTabIndex(selectedTabIndex);
+const AdminPanelPage = () => {
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
+  const handleTabBtnClick = (selectedTabIndex: number) => {
+    setSelectedTabIndex(selectedTabIndex);
   };
+
+  const isTabSelected = useCallback(
+    (tabName: string) =>
+      selectedTabIndex === adminPanelTabs.findIndex((tab) => tab === tabName),
+    [selectedTabIndex],
+  );
 
   return (
     <div className="admin-panel">
-      <Tabs
-        value={tabIndex}
-        onChange={handleTabChange}
-        className="admin-panel-tabs"
+      <nav className="admin-panel-tabs">
+        {adminPanelTabs.map((tabName, tabIndex) => (
+          <button
+            key={`tab-button-${tabName}`}
+            className={classNames({
+              "admin-panel-tab-button": true,
+              "active-tab": isTabSelected(tabName),
+            })}
+            onClick={() => handleTabBtnClick(tabIndex)}
+          >
+            {tabName}
+          </button>
+        ))}
+      </nav>
+      <div
+        className={classNames({
+          "admin-panel-tab-content": true,
+          "data-ingestion-tab-content": isTabSelected("Data Ingestion"),
+        })}
       >
-        <Tab label="Data Ingestion" />
-        <Tab label="Telemetry" />
-        <Tab label="Configure Services" />
-      </Tabs>
-      <div className="admin-panel-tab">
-        {tabIndex === 0 && <DataIngestionTab />}
-        {tabIndex === 1 && <TelemetryTab />}
-        {tabIndex === 2 && <ConfigureServicesTab />}
+        {isTabSelected("Data Ingestion") && <DataIngestionTab />}
+        {isTabSelected("Telemetry") && <TelemetryTab />}
+        {isTabSelected("Configure Services") && <ConfigureServicesTab />}
       </div>
     </div>
   );

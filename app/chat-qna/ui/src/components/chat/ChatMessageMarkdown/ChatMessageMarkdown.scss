@@ -2,20 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .chatbot-answer {
+  @apply pr-4;
+
+  & ol {
+    @apply list-decimal;
+  }
+
+  & ul {
+    @apply list-item;
+  }
+
   & ol,
   & ul {
-    padding-left: 2rem;
-    font-size: 0.875rem;
+    @apply pl-8 text-sm;
   }
 
   & .custom-pre-markdown,
   & .custom-code-markdown {
-    position: relative;
-    white-space: pre;
+    @apply relative whitespace-pre-wrap text-sm;
   }
 
   & .custom-paragraph-markdown {
-    font-size: 0.875rem;
-    padding-right: 1rem;
+    @apply pr-4 text-sm;
   }
 }

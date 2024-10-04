@@ -7,14 +7,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@/components/*": ["src/components/*"],
-      "@/layout/*": ["src/layout/*"],
-      "@/pages/*": ["src/pages/*"],
-      "@/router/*": ["src/router/*"],
-      "@/services/*": ["src/services/*"],
-      "@/store/*": ["src/store/*"],
-      "@/theme/*": ["src/theme/*"]
+      "@/*": ["src/*"]
     },
 
     /* Bundler mode */

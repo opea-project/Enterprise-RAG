@@ -1,19 +1,18 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.file-list-item {
-  display: grid !important;
-  grid-template-columns: 1fr 2.25rem;
-  align-items: center;
-  gap: 0.5rem;
+.document-list-item {
+  @apply mb-1 grid grid-cols-[1fr_2.5rem] items-center gap-2 pl-4 hover:bg-light-background-2 dark:hover:bg-dark-background-2;
 
-  & .file-list-item-text {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  & .document-list-item-text {
+    @apply grid grid-cols-[9fr_1fr] items-center gap-4;
 
-    & .file-size-text {
-      color: lightgray;
-      font-size: 0.75rem;
+    & .document-list-item__file-name {
+      @apply overflow-hidden text-ellipsis whitespace-nowrap;
+    }
+
+    & .document-list-item__file-size {
+      @apply text-xs;
     }
   }
 }

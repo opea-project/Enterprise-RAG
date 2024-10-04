@@ -3,12 +3,9 @@
 
 import "./LinkInput.scss";
 
-import AddIcon from "@mui/icons-material/Add";
-import { TextField, Typography } from "@mui/material";
+import classNames from "classnames";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-
-import ClearInputIconButton from "@/components/shared/ClearInputIconButton/ClearInputIconButton";
-import SquareIconButton from "@/components/shared/SquareIconButton/SquareIconButton";
+import { BsPlus } from "react-icons/bs";
 
 const isLinkInvalid = (value: string) => {
   try {
@@ -60,41 +57,32 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
     inputRef.current!.focus();
   };
 
-  const clearInputBtnDisabled = !value || disabled;
   const addLinkBtnDisabled = !value || isInvalid || disabled;
 
   return (
     <div className="link-input-wrapper">
-      <div className="link-input">
-        <TextField
-          inputRef={inputRef}
-          value={value}
-          error={isInvalid}
-          disabled={disabled}
-          placeholder="Enter valid URL (starting with http or https)"
-          onChange={handleLinkInputChange}
-          onKeyDown={handleLinkInputKeyDown}
-          InputProps={{
-            endAdornment: (
-              <ClearInputIconButton
-                disabled={clearInputBtnDisabled}
-                onClick={clearNewFileLinkInput}
-              />
-            ),
-          }}
-        />
-        {isInvalid && (
-          <Typography variant="caption" color="error" className="error-message">
-            Please enter valid URL that starts with protocol (http or https)
-          </Typography>
-        )}
-      </div>
-      <SquareIconButton
+      <input
+        ref={inputRef}
+        value={value}
+        className={classNames({ "input--invalid": isInvalid })}
+        name="link-input"
+        disabled={disabled}
+        placeholder="Enter valid URL (starting with http:// or https://)"
+        onChange={handleLinkInputChange}
+        onKeyDown={handleLinkInputKeyDown}
+      />
+      <button
+        className="icon-button-outlined--primary"
         disabled={addLinkBtnDisabled}
         onClick={handleAddNewLinkItem}
       >
-        <AddIcon fontSize="small" />
-      </SquareIconButton>
+        <BsPlus />
+      </button>
+      {isInvalid && (
+        <p className="link-input-error-message">
+          Please enter valid URL that starts with protocol (http:// or https://)
+        </p>
+      )}
     </div>
   );
 };

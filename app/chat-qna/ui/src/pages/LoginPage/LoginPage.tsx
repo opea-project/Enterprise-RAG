@@ -3,7 +3,7 @@
 
 import "./LoginPage.scss";
 
-import { Button, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
 import keycloakService from "@/services/keycloakService";
@@ -11,14 +11,19 @@ import keycloakService from "@/services/keycloakService";
 const LoginPage = () => {
   const isUserLoggedIn = keycloakService.isLoggedIn();
 
+  useEffect(() => {
+    const theme = localStorage.getItem("theme");
+    if (theme === "dark") {
+      document.body.classList.add("dark");
+    }
+  }, []);
+
   return isUserLoggedIn ? (
     <Navigate to="/chat" />
   ) : (
     <div className="login-page">
-      <Typography variant="login-page-app-name">Enterprise RAG</Typography>
-      <Button size="large" onClick={keycloakService.login}>
-        Login
-      </Button>
+      <p className="login-page-app-name">Enterprise RAG</p>
+      <button onClick={keycloakService.login}>Login</button>
     </div>
   );
 };

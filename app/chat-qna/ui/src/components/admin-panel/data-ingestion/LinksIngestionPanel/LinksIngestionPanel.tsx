@@ -34,15 +34,18 @@ const LinksIngestionPanel = ({
   };
 
   return (
-    <>
+    <section>
+      <h2>Links</h2>
       <LinkInput addLinkToList={addLinkToList} disabled={disabled} />
-      <LinksList
-        links={links}
-        setLinks={setLinks}
-        removeLinkFromList={removeLinkFromList}
-        disabled={disabled}
-      />
-    </>
+      {links.length > 0 && (
+        <LinksList
+          links={links}
+          setLinks={setLinks}
+          disabled={disabled}
+          removeLinkFromList={removeLinkFromList}
+        />
+      )}
+    </section>
   );
 };
 

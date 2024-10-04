@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .login-page {
-  height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  @apply flex h-[100vh] w-full flex-col items-center justify-center gap-4;
+}
+
+.login-page-app-name {
+  @apply text-3xl;
 }

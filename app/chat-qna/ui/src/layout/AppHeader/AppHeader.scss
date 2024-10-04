@@ -2,18 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .app-header {
-  // required to be displayed over navigation drawer
-  z-index: 1201 !important;
+  @apply flex h-[3.5rem] items-center justify-between p-2;
 
-  .app-header-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    & .app-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+  & .app-header__actions {
+    @apply flex items-center;
   }
+}
+
+.app-header__app-name {
+  @apply rounded-lg px-3 text-base leading-10;
+}
+
+.app-header__username {
+  @apply rounded-lg px-3 text-sm font-thin leading-10;
 }

@@ -1,0 +1,14 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.notification-snackbar {
+  @apply absolute right-4 top-16 flex items-center gap-2 p-4 text-light-notification-text drop-shadow dark:text-dark-notification-text;
+
+  &.notification-success {
+    @apply bg-light-notification-success-background dark:bg-dark-notification-success-background;
+  }
+
+  &.notification-error {
+    @apply bg-light-notification-error-background dark:bg-dark-notification-error-background;
+  }
+}

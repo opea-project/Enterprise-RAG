@@ -4,8 +4,15 @@
 import "./PromptInput.scss";
 
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { Button, TextField } from "@mui/material";
-import { ChangeEvent, useState } from "react";
+import classNames from "classnames";
+import {
+  ChangeEvent,
+  KeyboardEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { BsHurricane, BsSendFill } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 
 import endpoints from "@/api/endpoints.json";
@@ -19,17 +26,52 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const PromptInput = () => {
   const dispatch = useAppDispatch();
+  const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const [prompt, setPrompt] = useState("");
+  const [textAreaRows, setTextAreaRows] = useState(1);
 
   const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
 
-  const handlePromptInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    setPrompt(value);
+  useEffect(() => {
+    promptInputRef.current!.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!isMessageStreamed) {
+      promptInputRef.current!.focus();
+    }
+  }, [isMessageStreamed]);
+
+  const handlePromptInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const input = event.target;
+    setPrompt(input.value);
+
+    input.style.height = "auto";
+
+    const verticalPadding = 16;
+    const lineHeight = 24;
+    const textareaScrollHeight = input.scrollHeight - verticalPadding;
+    const newRows = Math.max(Math.ceil(textareaScrollHeight / lineHeight), 1);
+    setTextAreaRows(newRows);
+
+    input.style.height = "";
   };
 
-  const handlePromptInputClear = () => {
-    setPrompt("");
+  useEffect(() => {
+    if (prompt === "") {
+      setTextAreaRows(1);
+    }
+  }, [prompt]);
+
+  const handlePromptInputKeydown: KeyboardEventHandler = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (prompt.trim() !== "" && !isMessageStreamed) {
+        handlePromptInputSubmit().then(() => {
+          promptInputRef.current!.focus();
+        });
+      }
+    }
   };
 
   const handlePromptInputSubmit = async () => {
@@ -118,29 +160,29 @@ const PromptInput = () => {
   const actionsDisabled = prompt === "" || isMessageStreamed;
 
   return (
-    <>
-      <TextField
+    <div className="prompt-input-wrapper">
+      <textarea
+        ref={promptInputRef}
         id="prompt-input"
+        className="w-full"
         value={prompt}
         onChange={handlePromptInputChange}
+        onKeyDown={handlePromptInputKeydown}
         disabled={textFieldDisabled}
-        multiline
-        rows={3}
+        rows={textAreaRows}
         placeholder="Enter your prompt..."
       />
-      <div className="prompt-input-actions">
-        <Button disabled={actionsDisabled} onClick={handlePromptInputSubmit}>
-          Submit
-        </Button>
-        <Button
-          variant="outlined"
-          disabled={actionsDisabled}
-          onClick={handlePromptInputClear}
-        >
-          Clear
-        </Button>
-      </div>
-    </>
+      <button
+        className={classNames({
+          "icon-button": true,
+          "animate-spin": isMessageStreamed,
+        })}
+        disabled={actionsDisabled}
+        onClick={handlePromptInputSubmit}
+      >
+        {isMessageStreamed ? <BsHurricane /> : <BsSendFill />}
+      </button>
+    </div>
   );
 };
 

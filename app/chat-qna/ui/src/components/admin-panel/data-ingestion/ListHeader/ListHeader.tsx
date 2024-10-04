@@ -3,29 +3,33 @@
 
 import "./ListHeader.scss";
 
-import { Button, Typography } from "@mui/material";
+import classNames from "classnames";
 
 interface ListHeaderProps {
   title?: string;
-  clearListBtnDisabled: boolean;
+  disabled: boolean;
   onClearListBtnClick: () => void;
 }
 
 const ListHeader = ({
   title,
-  clearListBtnDisabled,
+  disabled,
   onClearListBtnClick,
 }: ListHeaderProps) => (
-  <header className={`list-header ${title ? "with-title" : ""}`}>
-    {title && <Typography variant="h2">{title}</Typography>}
-    <Button
-      disabled={clearListBtnDisabled}
-      color="error"
-      size="small"
+  <header
+    className={classNames({
+      "list-header": true,
+      "justify-between": title,
+    })}
+  >
+    {title && <h3>{title}</h3>}
+    <button
+      className="outlined-button--danger"
+      disabled={disabled}
       onClick={onClearListBtnClick}
     >
       Clear List
-    </Button>
+    </button>
   </header>
 );
 

@@ -2,18 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .link-input-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 2.25rem;
-  align-items: start;
-  gap: 0.5rem;
+  @apply grid grid-cols-[1fr_2.5rem] items-center gap-x-2 gap-y-1.5;
+}
 
-  & .link-input {
-    display: flex;
-    flex-direction: column;
-
-    & .error-message {
-      padding-left: 0.875rem;
-      padding-block: 0.5rem;
-    }
-  }
+.link-input-error-message {
+  @apply pl-4 text-sm text-light-text-error dark:text-dark-text-error;
 }

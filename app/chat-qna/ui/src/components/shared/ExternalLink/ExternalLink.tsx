@@ -3,9 +3,7 @@
 
 import "./ExternalLink.scss";
 
-import CropSquareIcon from "@mui/icons-material/CropSquare";
-import NorthEastIcon from "@mui/icons-material/NorthEast";
-import { Link } from "@mui/material";
+import { BsBoxArrowUpRight } from "react-icons/bs";
 
 interface ExternalLinkProps {
   text: string;
@@ -13,13 +11,10 @@ interface ExternalLinkProps {
 }
 
 const ExternalLink = ({ text, href }: ExternalLinkProps) => (
-  <Link href={href} target="_blank">
+  <a className="external-link" href={href} target="_blank">
     {text}
-    <span className="external-link-icon-wrapper">
-      <CropSquareIcon className="external-link-icon square-icon" />
-      <NorthEastIcon className="external-link-icon arrow-icon" />
-    </span>
-  </Link>
+    <BsBoxArrowUpRight size={12} />
+  </a>
 );
 
 export default ExternalLink;

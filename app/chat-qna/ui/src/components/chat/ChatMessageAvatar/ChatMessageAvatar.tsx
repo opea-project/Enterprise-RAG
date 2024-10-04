@@ -3,9 +3,7 @@
 
 import "./ChatMessageAvatar.scss";
 
-import MemoryIcon from "@mui/icons-material/Memory";
-import PersonIcon from "@mui/icons-material/Person";
-import { Typography } from "@mui/material";
+import { BsPersonCircle, BsRobot } from "react-icons/bs";
 
 interface ChatMessageAvatarProps {
   isUserMessage: boolean;
@@ -13,10 +11,10 @@ interface ChatMessageAvatarProps {
 
 const ChatMessageAvatar = ({ isUserMessage }: ChatMessageAvatarProps) => (
   <div className="chat-message-avatar">
-    {isUserMessage ? <PersonIcon /> : <MemoryIcon />}
-    <Typography variant="chat-avatar-name-label">
+    {isUserMessage ? <BsPersonCircle size={24} /> : <BsRobot size={24} />}
+    <p className="chat-message-avatar__name">
       {isUserMessage ? "You" : "ChatBot"}
-    </Typography>
+    </p>
   </div>
 );
 

@@ -1,15 +1,13 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ConfigureServicesTab.scss";
-
 import ExternalLink from "@/components/shared/ExternalLink/ExternalLink";
 
 const APISIX_DASHBOARD_URL = import.meta.env.VITE_APISIX_DASHBOARD_URL;
 const KEYCLOAK_ADMIN_PANEL_URL = import.meta.env.VITE_KEYCLOAK_ADMIN_PANEL_URL;
 
 const ConfigureServicesTab = () => (
-  <ul className="configure-services-links-list">
+  <ul className="list-none">
     <li>
       <ExternalLink text="APISIX Dashboard" href={APISIX_DASHBOARD_URL} />
     </li>

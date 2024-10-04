@@ -8,7 +8,7 @@ ENV LANG=C.UTF-8
 ARG ARCH="cpu"
 
 RUN apt-get -y update && \ 
-    apt-get install --no-install-recommends --fix-missing -y nano libreoffice libgl1-mesa-glx tesseract-ocr && \
+    apt-get install --no-install-recommends --fix-missing -y nano libreoffice libgl1-mesa-glx tesseract-ocr libmagic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash user

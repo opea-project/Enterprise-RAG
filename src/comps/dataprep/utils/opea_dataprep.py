@@ -64,7 +64,7 @@ class OPEADataprep:
                 text_docs.extend(textdocs)
             except Exception as e:
                 logging.exception(e)
-                raise ValueError(f"Failed to prase link. Exception: {e}")
+                raise ValueError(f"Failed to parse link. Exception: {e}")
 
         logging.info("Done preprocessing. Created ", len(text_docs), "chunks.")
         return text_docs

@@ -85,13 +85,13 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         """
         try:
             await super().init_async()
-            await self.setup()
+            await self._setup()
         except Exception as e:
             err_msg = "Failed to initialize MongoDB"
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def setup(self) -> None:
+    async def _setup(self) -> None:
         """
         Sets up the system fingerprint by checking and ingesting defaults,
         and updating the current data.
@@ -101,14 +101,14 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
 
         """
         try:
-            await self.check_and_ingest_defaults()
-            await self.update_current_data()
+            await self._check_and_ingest_defaults()
+            await self._update_current_data()
         except Exception as e:
             err_msg = "Failed to setup system fingerprint"
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def get_existing_collections(self) -> None:
+    async def _get_existing_collections(self) -> None:
         """
         Retrieves the existing collections from the database.
 
@@ -122,7 +122,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def update_current_data(self) -> None:
+    async def _update_current_data(self) -> None:
         """
         Update the current data by retrieving the latest fingerprint, arguments, and component details.
 
@@ -139,7 +139,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def check_and_ingest_defaults(self) -> None:
+    async def _check_and_ingest_defaults(self) -> None:
         """
         Checks if the required collections exist and ingests default documents if they are missing.
 
@@ -147,7 +147,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             Exception: If there is an error while checking and ingesting defaults.
         """
         try:
-            await self.get_existing_collections()
+            await self._get_existing_collections()
             required_collections = [
                 Argument.__name__,
                 ComponentDetails.__name__,
@@ -157,14 +157,14 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 name for name in required_collections if name not in self.existing_collections]
 
             for collection_name in missing_collections:
-                await self.create_default_documents(collection_name)
-                await self.get_existing_collections()
+                await self._create_default_documents(collection_name)
+                await self._get_existing_collections()
         except Exception as e:
             err_msg = "Failed to check and ingest defaults"
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def create_default_documents(self, collection_name: str) -> None:
+    async def _create_default_documents(self, collection_name: str) -> None:
         """
         Creates default documents based on the given collection name.
 
@@ -176,16 +176,16 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         """
         try:
             if collection_name == Argument.__name__:
-                default_arguments = await self.create_default_arguments()
+                default_arguments = await self._create_default_arguments()
                 await default_arguments.insert()
 
             if collection_name == ComponentDetails.__name__:
-                default_cfg = await self.create_default_cfg()
+                default_cfg = await self._create_default_cfg()
                 await default_cfg.insert()
                 self.current_component_info = default_cfg
 
             if collection_name == Fingerprint.__name__:
-                await self.update_fingerprint()
+                await self._update_fingerprint()
                 fingerprints = await Fingerprint.find().sort("-timestamp").to_list()
                 if fingerprints:
                     self.current_fingerprint = fingerprints[0]
@@ -194,7 +194,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def create_default_arguments(self) -> Argument:
+    async def _create_default_arguments(self) -> Argument:
         """
         Creates and returns the default arguments for the system fingerprint.
 
@@ -258,7 +258,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def update_fingerprint(self) -> None:
+    async def _update_fingerprint(self) -> None:
         """
         Updates the system fingerprint by retrieving the latest component details and arguments.
         If the fingerprint does not exist in the database, it is inserted.
@@ -291,7 +291,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_name)
             raise Exception(f"{err_name}: {e}")
 
-    async def create_default_cfg(self) -> ComponentDetails:
+    async def _create_default_cfg(self) -> ComponentDetails:
         """
         Creates a default configuration for the system fingerprint component.
 
@@ -322,7 +322,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def get_latest_documents(self) -> Tuple[List[Argument], List[ComponentDetails]]:
+    async def _get_latest_documents(self) -> Tuple[List[Argument], List[ComponentDetails]]:
         """
         Retrieves the latest documents from the database.
 
@@ -351,32 +351,39 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def store(self, document: Document) -> None:
+    async def store_arguments(self, inputs: dict) -> None:
         """
-        Stores the given document in the database.
+        Stores the provided arguments in the database.
 
         Args:
-            document (Document): The document to be stored.
+            inputs (dict): A dictionary containing the arguments to be stored.
 
         Raises:
             Exception: If there is an error while storing the document.
         """
-        try:
-            existing_doc = None
-            if isinstance(document, Argument):
-                query = {"parameters": document.parameters}
-                existing_doc = await Argument.find_one(query)
-            elif isinstance(document, ComponentDetails):
-                query = {"components": document.components}
-                existing_doc = await ComponentDetails.find_one(query)
 
-            if not existing_doc:
-                await document.insert()
-                await self.update_fingerprint()
-            else:
+        arguments = await self._unpack_arguments(
+            [(item.name, item.data) for item in inputs])
+
+        try:
+            is_duplicate = False
+
+            if isinstance(arguments, Argument):
+                latest_doc = await Argument.find_one(sort=[("timestamp", -1)])
+                if latest_doc and latest_doc.parameters == arguments.parameters:
+                    is_duplicate = True
+            elif isinstance(arguments, ComponentDetails):
+                latest_doc = await ComponentDetails.find_one(sort=[("timestamp", -1)])
+                if latest_doc and latest_doc.components == arguments.components:
+                    is_duplicate = True
+
+            if is_duplicate:
                 logger.warning(
-                    "Document with the same values (excluding timestamp) already exists."
-                )
+                    f"Provided duplicate parameters. Skipping storage for {inputs}")
+            else:
+                await arguments.insert()
+                await self._update_fingerprint()
+                logger.info(f"Input {inputs} stored successfully.")
         except Exception as e:
             err_msg = "Failed to store document"
             logger.exception(err_msg)
@@ -401,7 +408,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             logger.exception(err_msg)
             raise Exception(f"{err_msg}: {e}")
 
-    async def unpack_arguments(self, params: List[Tuple[str, dict]]) -> Argument:
+    async def _unpack_arguments(self, params: List[Tuple[str, dict]]) -> Argument:
         """
         Unpacks the arguments from the given list of tuples and assigns them to the corresponding attributes of the `current_arguments` object.
 
@@ -545,7 +552,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         Returns:
             dict: A dictionary containing the packed parameters.
         """
-        await self.update_current_data()
+        await self._update_current_data()
         packed_parameters = {}
 
         def remove_id(d):
@@ -567,9 +574,6 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 remove_id(
                     self.current_arguments.parameters.input_guard.model_dump())
              })
-        packed_parameters.update(
-            {"output_guardrail_params":
-                remove_id(
-                    self.current_arguments.parameters.output_guard.model_dump())
-             })
+        packed_parameters.update({"output_guardrail_params": remove_id(
+            self.current_arguments.parameters.output_guard.model_dump())})
         return {"parameters": packed_parameters}

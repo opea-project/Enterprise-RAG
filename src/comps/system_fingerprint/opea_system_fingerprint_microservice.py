@@ -67,10 +67,7 @@ async def change_arguments(inputs: List[ComponentArgument]) -> None:
     if not inputs:
         raise HTTPException(status_code=400, detail="Input is empty.")
     try:
-        payload = await mongo_controller.unpack_arguments(
-            [(item.name, item.data) for item in inputs])
-        await mongo_controller.store(payload)
-        logger.info("Payload stored successfully")
+        await mongo_controller.store_arguments(inputs)
     except HTTPException as e:
         logger.exception(f"An error occurred: {str(e)}")
         raise HTTPException(

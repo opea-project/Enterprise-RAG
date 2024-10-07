@@ -74,6 +74,17 @@ spec:
     spec:
       securityContext:
         {}
+      initContainers:
+        - name: wait-for-embedding
+          image: alpine/curl
+          command:
+            - sh
+            - -c
+            - |
+                until curl -s $EMBEDDING_MODEL_SERVER_ENDPOINT; do
+                  echo "waiting for embedding model server $EMBEDDING_MODEL_SERVER_ENDPOINT to be ready...";
+                  sleep 2;
+                done;
       containers:
         - name: embedding-usvc
           envFrom:

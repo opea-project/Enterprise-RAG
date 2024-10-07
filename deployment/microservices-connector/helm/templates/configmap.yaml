@@ -16,7 +16,7 @@ data:
   {{ $path | base }}: |
     {{- $content := $.Files.Get $path }}
     {{- if $imageKey }}
-      {{- $content = regexReplaceAll "(image:\\s*).*" $content (printf "${1}%s/%s:%s" $imageKey.repository $imageKey.image $imageKey.tag) }}
+      {{- $content = regexReplaceAll "(?s)(containers:.*?image:\\s*).*?(\n)" $content (printf "${1}%s/%s:%s${2}" $imageKey.repository $imageKey.image $imageKey.tag) }}
     {{- end }}
     {{- $content = regexReplaceAll "(.*http_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpProxy) }}
     {{- $content = regexReplaceAll "(.*https_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpsProxy) }}

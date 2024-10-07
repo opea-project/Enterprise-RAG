@@ -120,6 +120,13 @@ func lookupManifestDir(step string) string {
 	}
 }
 
+func setEnvVars(containers []corev1.Container, envVars []corev1.EnvVar) []corev1.Container {
+	for i := range containers {
+		containers[i].Env = append(containers[i].Env, envVars...)
+	}
+	return containers
+}
+
 func reconcileResource(ctx context.Context, client client.Client, graphNs string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv1alpha3.Router) ([]*unstructured.Unstructured, error) {
 	if stepCfg == nil || nodeCfg == nil {
 		return nil, errors.New("invalid svc config")
@@ -211,11 +218,8 @@ func reconcileResource(ctx context.Context, client client.Client, graphNs string
 				}
 			}
 			if len(newEnvVars) > 0 {
-				for i := range deployment_obj.Spec.Template.Spec.Containers {
-					deployment_obj.Spec.Template.Spec.Containers[i].Env = append(
-						deployment_obj.Spec.Template.Spec.Containers[i].Env,
-						newEnvVars...)
-				}
+				deployment_obj.Spec.Template.Spec.Containers = setEnvVars(deployment_obj.Spec.Template.Spec.Containers, newEnvVars)
+				deployment_obj.Spec.Template.Spec.InitContainers = setEnvVars(deployment_obj.Spec.Template.Spec.InitContainers, newEnvVars)
 			}
 
 			err = scheme.Scheme.Convert(deployment_obj, obj, nil)

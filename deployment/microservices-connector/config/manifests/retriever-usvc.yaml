@@ -70,6 +70,17 @@ spec:
     spec:
       securityContext:
         {}
+      initContainers:
+        - name: wait-for-redis
+          image: redis:alpine
+          command:
+            - sh
+            - -c
+            - |
+                until redis-cli -u $REDIS_URL ping | grep -q PONG; do
+                  echo "waiting for redis server $REDIS_URL to be ready...";
+                  sleep 2;
+                done;
       containers:
         - name: retriever-usvc
           envFrom:

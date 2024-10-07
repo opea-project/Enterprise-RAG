@@ -5,7 +5,6 @@
 
 
 import allure
-import logging
 import kr8s
 import requests
 
@@ -19,16 +18,11 @@ SERVICES = [
     {"selector": "ingestion-usvc", "namespace": "dataprep", "port": 6120},
     {"selector": "llm-svc", "namespace": "chatqa", "port": 9000}
 ]
-IP_ADDRESS = "127.0.0.1"
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T26")
 def test_api_health_checks():
-    # Disable logs that are too verbose and make the output unclear
-    logging.getLogger("httpcore").setLevel(logging.ERROR)
-
     failed_microservices = []
-
     for service in SERVICES:
         pods = kr8s.get("pods",
                         namespace=service["namespace"],

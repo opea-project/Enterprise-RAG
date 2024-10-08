@@ -15,8 +15,25 @@ data:
   {{ $hugToken := required "The hugToken value is required and must be set in values.yaml" $.Values.tokens.hugToken }}
   {{ $path | base }}: |
     {{- $content := $.Files.Get $path }}
-    {{- if $imageKey }}
+    {{- if and $imageKey.repository $imageKey.image $imageKey.tag }}
       {{- $content = regexReplaceAll "(?s)(containers:.*?image:\\s*).*?(\n)" $content (printf "${1}%s/%s:%s${2}" $imageKey.repository $imageKey.image $imageKey.tag) }}
+    {{- end }}
+    {{- if $imageKey.envs }}
+      {{- range $key, $value := $imageKey.envs }}
+        {{- $key := $key }}
+        {{- $value := $value | quote }}
+        {{- $envVar := printf "%s: %s" $key $value | nindent 2 }}
+        {{- $content = regexReplaceAll "(\\s+data:.*)" $content (printf "${1}%s" $envVar) }}
+      {{- end }}
+    {{- end }}
+    {{- if $imageKey.envfile }}
+      {{- $envContent := $.Files.Get (printf "envs/%s" $imageKey.envfile) }}
+      {{- $envContent = regexReplaceAll "#.*" $envContent "" | trim }}
+      {{- $envContent = regexReplaceAll "(?m)\\s+$" $envContent "" }}
+      {{- $envContent = $envContent | replace "=" ": " }}
+      {{- $envContent = regexReplaceAll "(?m)^([^:]+):\\s*[\"']?(.*?)[\"']?$" $envContent "$1: \"$2\"" }}
+      {{- $envContent = $envContent | nindent 2 }}
+      {{- $content = regexReplaceAll "(\\s+data:.*)" $content (printf "${1}%s" $envContent) }}
     {{- end }}
     {{- $content = regexReplaceAll "(.*http_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpProxy) }}
     {{- $content = regexReplaceAll "(.*https_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpsProxy) }}

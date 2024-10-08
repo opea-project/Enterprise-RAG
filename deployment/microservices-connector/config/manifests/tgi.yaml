@@ -14,16 +14,12 @@ metadata:
     app.kubernetes.io/version: "2.1.0"
     app.kubernetes.io/managed-by: Helm
 data:
-  MODEL_ID: "Intel/neural-chat-7b-v3-3"
+  LLM_DEVICE: "cpu"
   PORT: "2080"
   HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
-  HABANA_LOGS: "/tmp/habana_logs"
-  NUMBA_CACHE_DIR: "/tmp"
-  TRANSFORMERS_CACHE: "/tmp/transformers_cache"
-  HF_HOME: "/tmp/.cache/huggingface"
 ---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -89,6 +85,13 @@ spec:
           securityContext:
             {}
           image: "ghcr.io/huggingface/text-generation-inference:2.1.0"
+          args:
+            - --model-id
+            - "$(LLM_TGI_MODEL_NAME)"
+            - --max-input-tokens
+            - "$(MAX_INPUT_TOKENS)"
+            - --max-total-tokens
+            - "$(MAX_TOTAL_TOKENS)"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /data

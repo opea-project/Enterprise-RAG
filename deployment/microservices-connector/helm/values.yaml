@@ -20,6 +20,9 @@ tokens:
 common_tag: &tag "latest"
 common_repository: &repo "localhost:5000"
 
+llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
+llm_model_gaudi: &hpu_model "mistralai/Mistral-7B-Instruct-v0.1"
+
 images:
   gmcManager:
     image: "opea/gmcmanager"
@@ -58,6 +61,9 @@ images:
     image: "opea/llm"
     repository: *repo
     tag: *tag
+    envfile: "src/comps/llms/impl/microservice/.env"
+    envs:
+      LLM_MODEL_NAME: *cpu_model
   in-guard-usvc:
     image: "opea/in-guard"
     repository: *repo
@@ -70,6 +76,14 @@ images:
     image: "opea/chatqna-conversation-ui"
     repository: *repo
     tag: *tag
+  tgi:
+    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.cpu"
+    envs:
+      LLM_TGI_MODEL_NAME: *cpu_model
+  tgi_gaudi:
+    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.hpu"
+    envs:
+      LLM_TGI_MODEL_NAME: *hpu_model
 
 
 imagePullSecrets:

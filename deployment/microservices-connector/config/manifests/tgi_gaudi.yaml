@@ -14,23 +14,12 @@ metadata:
     app.kubernetes.io/version: "2.1.0"
     app.kubernetes.io/managed-by: Helm
 data:
-  MODEL_ID: "mistralai/Mixtral-8x22B-Instruct-v0.1"
+  LLM_DEVICE: "hpu"
   PORT: "2080"
   HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
-  HABANA_LOGS: "/tmp/habana_logs"
-  NUMBA_CACHE_DIR: "/tmp"
-  TRANSFORMERS_CACHE: "/tmp/transformers_cache"
-  HF_HOME: "/tmp/.cache/huggingface"
-  MAX_INPUT_LENGTH: "1024"
-  MAX_TOTAL_TOKENS: "2048"
-  HABANA_VISIBLE_DEVICES: "all"
-  PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
-  OMPI_MCA_btl_vader_single_copy_mechanism: "none"
-  SHARDED: "true"
-  NUM_SHARD: "8"
 ---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -96,6 +85,13 @@ spec:
           securityContext:
             {}
           image: "ghcr.io/huggingface/tgi-gaudi:2.0.4"
+          args:
+            - --model-id
+            - "$(LLM_TGI_MODEL_NAME)"
+            - --max-input-tokens
+            - "$(MAX_INPUT_TOKENS)"
+            - --max-total-tokens
+            - "$(MAX_TOTAL_TOKENS)"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /data

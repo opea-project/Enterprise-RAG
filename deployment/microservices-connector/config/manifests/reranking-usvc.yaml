@@ -14,13 +14,10 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  TEI_RERANKING_ENDPOINT: "http://reranking-usvc-teirerank"
+  RERANKING_SERVICE_ENDPOINT: "http://reranking-usvc-teirerank"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
-  LANGCHAIN_TRACING_V2: "false"
-  LANGCHAIN_API_KEY: "insert-your-langchain-key-here"
-  LANGCHAIN_PROJECT: "opea-reranking-service"
 ---
 # Source: reranking-usvc/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation

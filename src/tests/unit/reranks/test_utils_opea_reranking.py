@@ -26,7 +26,8 @@ If you don't know the answer to a question, please don't share false information
 @pytest.fixture
 def test_class():
     """Fixture to create OPEAReranker instance."""
-    return OPEAReranker(service_url="http:/test:1234/reranks")
+    with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
+        return OPEAReranker(service_endpoint="http:/test:1234")
 
 @pytest.fixture
 def mock_input_data():
@@ -52,7 +53,8 @@ def mock_response_data():
 
 def test_initialization_succeeds_with_valid_params():
     # Assert that the instance is created successfully
-    assert isinstance(OPEAReranker(service_url="http:/test:1234/reranks"), OPEAReranker), "Instance was not created successfully."
+    with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
+        assert isinstance(OPEAReranker(service_endpoint="http:/test:1234/reranks"), OPEAReranker), "Instance was not created successfully."
 
 
 def test_initializaction_raises_exception_when_missing_required_arg():
@@ -60,13 +62,13 @@ def test_initializaction_raises_exception_when_missing_required_arg():
     with pytest.raises(Exception) as context:
         OPEAReranker()
 
-    assert str(context.value).endswith("missing 1 required positional argument: 'service_url'")
+    assert str(context.value).endswith("missing 1 required positional argument: 'service_endpoint'")
 
     # empty string is passed
     with pytest.raises(Exception) as context:
-        OPEAReranker(service_url="")
+        OPEAReranker(service_endpoint="")
 
-    assert str(context.value) == "The 'RERANKING_SERVICE_URL' cannot be empty."
+    assert str(context.value) == "The 'RERANKING_SERVICE_ENDPOINT' cannot be empty."
 
 
 @patch("comps.reranks.utils.opea_reranking.requests.post")
@@ -80,7 +82,7 @@ def test_run_suceeds(mock_post, test_class, mock_input_data, mock_response_data)
     result = test_class.run(mock_input_data)
 
     mock_post.assert_called_once_with(
-        test_class._service_url,
+        test_class._service_endpoint + "/rerank",
         data='{"query": "This is my sample query?", "texts": ["Document 1", "Document 2", "Document 3"]}',
         headers={"Content-Type": "application/json"},
     )
@@ -102,19 +104,14 @@ def test_run_returns_all_docs_when_server_unavailable(mock_post, test_class, moc
     mock_post.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
     mock_post.return_value.json.return_value = None
 
-    # Call the method being tested, ensuring no exception occurs
-    result = test_class.run(mock_input_data)
-
-    # Assert that result.query is not empty and includes all docs
-    assert result.query, "Query is empty"
-    expected_result_query = expected_result_template.format("Document 1 Document 2 Document 3")
-    assert result.query == expected_result_query
+    with pytest.raises(requests.exceptions.RequestException):
+        test_class.run(mock_input_data)
 
 
 @patch("comps.reranks.utils.opea_reranking.requests.post")
 def test_call_reranker_raises_exception_when_server_is_unavailable(mock_post, test_class, mock_input_data):
     initial_query = mock_input_data.initial_query
-    retrieved_docs = mock_input_data.retrieved_docs
+    retrieved_docs = [doc.text for doc in mock_input_data.retrieved_docs]
 
     # Simulate server unavailability
     mock_post.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
@@ -125,7 +122,7 @@ def test_call_reranker_raises_exception_when_server_is_unavailable(mock_post, te
 
     assert mock_post.call_count == 1
     mock_post.assert_called_with(
-        test_class._service_url,
+        test_class._service_endpoint + "/rerank",
         data='{"query": "This is my sample query?", "texts": ["Document 1", "Document 2", "Document 3"]}',
         headers={"Content-Type": "application/json"},
     )

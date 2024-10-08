@@ -19,13 +19,13 @@ The configuration for the OPEA Reranking Microservice is specified in the [impl/
 | Environment Variable        | Description                                                                |
 |-----------------------------|----------------------------------------------------------------------------|
 | `RERANKING_USVC_PORT`       | The port of the microservice, by default 8000                              |
-| `RERANKING_SERVICE_URL`     | The URL of the reranking service, e.g., "http://localhost:6060/rerank" |
+| `RERANKING_SERVICE_ENDPOINT`     | The endpoint of the reranking service, e.g., "http://localhost:6060" |
 
 
 ## Getting started
 
 ### Prerequisite: Start Reranking Model Server
-The OPEA Reranking Microservice interacts with a rerank model endpoint,  twhich must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_URL` env.
+The OPEA Reranking Microservice interacts with a rerank model endpoint,  twhich must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service.
 
@@ -39,7 +39,7 @@ To start the Reranking microservice, you need to install python packages first.
 pip install -r impl/microservice/requirements.txt
 ```
 
-#### 1.2. Start Microservice 
+#### 1.2. Start Microservice
 
 ```bash
 python opea_reranking_microservice.py
@@ -63,11 +63,11 @@ docker run -d --name="reranking-microservice" \
   opea/reranking:latest
 ```
 
-If the model server is running at a different URL than the default, update the `RERANKING_SERVICE_URL` variable accordingly. Here's an example of how to pass configuration using the docker run command:
+If the model server is running at a different URL than the default, update the `RERANKING_SERVICE_ENDPOINT` variable accordingly. Here's an example of how to pass configuration using the docker run command:
 
 ```bash
 docker run -d --name="reranking-microservice" \
-  -e RERANKING_SERVICE_URL=http://localhost:6060/rerank \
+  -e RERANKING_SERVICE_ENDPOINT=http://localhost:6060 \
   --net=host \
   --ipc=host \
   opea/reranking:latest
@@ -78,7 +78,7 @@ docker run -d --name="reranking-microservice" \
 #### 3.1. Check Status
 
 ```bash
-curl http://localhost:8000/v1/health_check\
+curl http://localhost:8000/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```
@@ -141,7 +141,7 @@ The tree view of the main directories and files:
   │   │   │   └── docker/
   │   │   │       ├── docker-compose.yml
   │   │   │       └── .env
-  │   │   │  
+  │   │   │
   │   │   └── ...
   │   └── ...
   │

@@ -91,7 +91,7 @@ docker compose up --build -d
     ```bash
     curl  http://localhost:8000/v1/reranking \
         -X POST \
-        -d '{"initial_query":"What is DL?", 
+        -d '{"initial_query":"What is DL?",
         "retrieved_docs": [{"text":"DL is not..."}, {"text":"DL is..."}]}' \
         -H 'Content-Type: application/json'
     ```

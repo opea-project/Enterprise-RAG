@@ -51,7 +51,7 @@ spec:
           serviceName: reranking-svc
           config:
             endpoint: /v1/reranking
-            TEI_RERANKING_ENDPOINT: tei-reranking-svc
+            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
       - name: TeiReranking
         internalService:
           serviceName: tei-reranking-svc

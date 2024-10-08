@@ -35,7 +35,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 # Initialize an instance of the OPEALlm class with environment variables.
 opea_reranker = OPEAReranker(
-    service_url=sanitize_env(os.getenv('RERANKING_SERVICE_URL')),
+    service_endpoint=sanitize_env(os.getenv('RERANKING_SERVICE_ENDPOINT')),
 )
 
 # Register the microservice with the specified configuration.
@@ -50,8 +50,8 @@ opea_reranker = OPEAReranker(
 )
 @traceable(run_type="llm")
 @register_statistics(names=[USVC_NAME])
-# Define a function to handle processing of input for the microservice. 
-# Its input and output data types must comply with the registered ones above. 
+# Define a function to handle processing of input for the microservice.
+# Its input and output data types must comply with the registered ones above.
 def process(input: SearchedDoc) -> LLMParamsDoc:
     """
     Process the input document using the OPEAReranker.
@@ -73,7 +73,7 @@ def process(input: SearchedDoc) -> LLMParamsDoc:
         )
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
-         raise HTTPException(status_code=500, 
+         raise HTTPException(status_code=500,
                              detail=f"An error occurred while processing: {str(e)}"
     )
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)

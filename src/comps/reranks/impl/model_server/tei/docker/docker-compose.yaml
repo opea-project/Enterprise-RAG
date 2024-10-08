@@ -33,7 +33,7 @@ services:
       NO_PROXY: ${NO_PROXY}
       HTTP_PROXY: ${HTTP_PROXY}
       HTTPS_PROXY: ${HTTPS_PROXY}
-      RERANKING_SERVICE_URL: http://localhost:${RERANKER_TEI_PORT}/rerank
+      RERANKING_SERVICE_ENDPOINT: http://127.0.0.1:${RERANKER_TEI_PORT}
     restart: unless-stopped
     depends_on:
       - reranking-tei-model-server

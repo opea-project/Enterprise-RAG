@@ -7,7 +7,5 @@ spec:
       containers:
       - name: llm-usvc
         env:
-        - name: PYTHONPATH
-          value: "/home/user"
         - name: LOGGING_PROPAGATE
           value: "true"

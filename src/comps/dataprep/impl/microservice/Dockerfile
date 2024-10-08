@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8
 
 ARG ARCH="cpu"
 
-RUN apt-get -y update && \ 
+RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano libreoffice libgl1-mesa-glx tesseract-ocr libmagic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -15,7 +15,7 @@ RUN useradd -m -s /bin/bash user
 
 USER user
 ENV PATH="$PATH:/home/user/.local/bin"
-ENV PYTHONPATH=$PYTHONPATH:/home/user
+ENV PYTHONPATH="/home/user"
 
 COPY ./comps/dataprep/impl/microservice/requirements.txt /tmp/requirements.txt
 

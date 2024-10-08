@@ -21,7 +21,7 @@ RUN useradd -m -s /bin/bash user
 
 USER user
 ENV PATH="$PATH:/home/user/.local/bin"
-ENV PYTHONPATH=$PYTHONPATH:/home/user
+ENV PYTHONPATH="/home/user"
 
 COPY ./comps/guardrails/llm_guard_output_guardrail/impl/microservice/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \

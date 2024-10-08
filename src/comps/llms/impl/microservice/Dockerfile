@@ -11,7 +11,7 @@ ARG ARCH="cpu"
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
     libgl1-mesa-glx \
-    libjemalloc-dev && \ 
+    libjemalloc-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash user && \
@@ -20,7 +20,7 @@ RUN useradd -m -s /bin/bash user && \
 
 USER user
 ENV PATH="/home/user/.local/bin:${PATH}"
-ENV PYTHONPATH=$PYTHONPATH:/home/user
+ENV PYTHONPATH="/home/user"
 
 COPY comps/llms/impl/microservice/requirements.txt /tmp/requirements.txt
 

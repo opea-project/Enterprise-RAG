@@ -22,7 +22,7 @@ RUN useradd -m -s /bin/bash user && \
 
 USER user
 ENV PATH="/home/user/.local/bin:${PATH}"
-ENV PYTHONPATH=$PYTHONPATH:/home/user
+ENV PYTHONPATH="/home/user"
 
 COPY comps/reranks/impl/microservice/requirements.txt /tmp/requirements.txt
 

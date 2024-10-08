@@ -20,6 +20,24 @@ from llm_guard.input_scanners import (
     Toxicity
     )
 
+ENABLED_SCANNERS = {
+    'anonymize': Anonymize,
+    'bancode': BanCode,
+    'bancompetitors': BanCompetitors,
+    'bansubstrings': BanSubstrings,
+    'bantopics': BanTopics,
+    'code': Code,
+    'gibberish': Gibberish,
+    'invisibletext': InvisibleText,
+    'language': Language,
+    'promptinjection': PromptInjection,
+    'regex': Regex,
+    'secrets': Secrets,
+    'sentiment': Sentiment,
+    'tokenlimit': TokenLimit,
+    'toxicity': Toxicity
+}
+
 from comps import get_opea_logger
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
 
@@ -76,7 +94,7 @@ class InputScannersConfig:
             dict: The anonymize scanner configuration.
         """
         return {
-            "Anonymize": {
+            "anonymize": {
                 k.replace("ANONYMIZE_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("ANONYMIZE_")
             }
@@ -93,7 +111,7 @@ class InputScannersConfig:
             dict: The BanCode scanner configuration.
         """
         return {
-            "BanCode": {
+            "bancode": {
                 k.replace("BANCODE_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("BANCODE_")
             }
@@ -110,7 +128,7 @@ class InputScannersConfig:
             dict: The BanCompetitors scanner configuration.
         """
         return {
-            "BanCompetitors": {
+            "bancompetitors": {
                 k.replace("BANCOMPETITORS_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("BANCOMPETITORS_")
             }
@@ -127,7 +145,7 @@ class InputScannersConfig:
             dict: The BanSubstrings scanner configuration.
         """
         return {
-            "BanSubstrings": {
+            "bansubstrings": {
                 k.replace("BANSUBSTRINGS_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("BANSUBSTRINGS_")
             }
@@ -144,7 +162,7 @@ class InputScannersConfig:
             dict: The BanTopics scanner configuration.
         """
         return {
-            "BanTopics": {
+            "bantopics": {
                 k.replace("BANTOPICS_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("BANTOPICS_")
             }
@@ -161,7 +179,7 @@ class InputScannersConfig:
             dict: The Code scanner configuration.
         """
         return {
-            "Code": {
+            "code": {
                 k.replace("CODE_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("CODE_")
             }
@@ -178,7 +196,7 @@ class InputScannersConfig:
             dict: The Gibberish scanner configuration.
         """
         return {
-            "Gibberish": {
+            "gibberish": {
                 k.replace("GIBBERISH_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("GIBBERISH_")
             }
@@ -194,9 +212,9 @@ class InputScannersConfig:
             dict: The InvisibleText scanner configuration.
         """
         return {
-            "InvisibleText": {
-                k.replace("INVISIBLE_TEXT_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("INVISIBLE_TEXT_")
+            "invisibletext": {
+                k.replace("INVISIBLETEXT_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("INVISIBLETEXT_")
             }
         }
 
@@ -211,7 +229,7 @@ class InputScannersConfig:
             dict: The Language scanner configuration.
         """
         return {
-            "Language": {
+            "language": {
                 k.replace("LANGUAGE_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("LANGUAGE_")
             }
@@ -228,7 +246,7 @@ class InputScannersConfig:
             dict: The PromptInjection scanner configuration.
         """
         return {
-            "PromptInjection": {
+            "promptinjection": {
                 k.replace("PROMPTINJECTION_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("PROMPTINJECTION_")
             }
@@ -245,7 +263,7 @@ class InputScannersConfig:
             dict: The Regex scanner configuration.
         """
         return {
-            "Regex": {
+            "regex": {
                 k.replace("REGEX_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("REGEX_")
             }
@@ -262,7 +280,7 @@ class InputScannersConfig:
             dict: The Secrets scanner configuration.
         """
         return {
-            "Secrets": {
+            "secrets": {
                 k.replace("SECRETS_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("SECRETS_")
             }
@@ -279,7 +297,7 @@ class InputScannersConfig:
             dict: The Sentiment scanner configuration.
         """
         return {
-            "Sentiment": {
+            "sentiment": {
                 k.replace("SENTIMENT_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("SENTIMENT_")
             }
@@ -296,7 +314,7 @@ class InputScannersConfig:
             dict: The TokenLimit scanner configuration.
         """
         return {
-            "TokenLimit": {
+            "tokenlimit": {
                 k.replace("TOKENLIMIT_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("TOKENLIMIT_")
             }
@@ -313,7 +331,7 @@ class InputScannersConfig:
             dict: The Toxicity scanner configuration.
         """
         return {
-            "Toxicity": {
+            "toxicity": {
                 k.replace("TOXICITY_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("TOXICITY_")
                 }
@@ -332,7 +350,7 @@ class InputScannersConfig:
             try:
                 logger.info(f"Creating scanner: {scanner}")
                 params = {k: v for k, v in enabled_scanners[scanner].items() if k != "enabled" and k != 'id' and v is not None}
-                scanners.append(globals()[scanner](**params)) # TODO: do differently, vulnerable to not validated env
+                scanners.append(ENABLED_SCANNERS[scanner](**params))
             except Exception as e:
                 logger.exception(
                     f"An unexpected error occured during creating output scanner {scanner}: {e}"
@@ -351,10 +369,9 @@ class InputScannersConfig:
             bool: True if the configuration has changed, False otherwise.
         """
         del current_scanners['id']
-        capitalized_current_scanners = {key.capitalize(): value for key, value in current_scanners.items()}
         if current_scanners != self._input_scanners_config: # TODO: add better comparison, to be tested
             logger.info("Scanners configuration has been changed, re-creating scanners")
             self._input_scanners_config.clear()
-            self._input_scanners_config.update(capitalized_current_scanners)
+            self._input_scanners_config.update(current_scanners)
             return True
         return False

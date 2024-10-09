@@ -241,7 +241,7 @@ func reconcileResource(ctx context.Context, client client.Client, graphNs string
 
 func isDownStreamEndpointKey(keyname string) bool {
 	return keyname == "TEI_EMBEDDING_ENDPOINT" ||
-		keyname == "TEI_RERANKING_ENDPOINT" ||
+		keyname == "RERANKING_SERVICE_ENDPOINT" ||
 		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||

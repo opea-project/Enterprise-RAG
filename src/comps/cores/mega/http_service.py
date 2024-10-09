@@ -5,7 +5,10 @@ import inspect
 from typing import Optional
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from uvicorn import Config, Server
 
@@ -112,6 +115,12 @@ class HTTPService(BaseService):
             """Get the statistics of GenAI services."""
             result = collect_all_statistics()
             return result
+
+        @app.exception_handler(RequestValidationError)
+        async def validation_exception_handler(request: Request, exc: RequestValidationError):
+            self.logger.error(f"A validation error occured: {exc.errors()}. Check whether the request body and all fields you provided are correct.")
+            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}))
 
         return app
 

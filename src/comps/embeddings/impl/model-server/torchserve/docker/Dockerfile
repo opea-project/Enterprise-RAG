@@ -1,92 +1,30 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:22.04
+FROM intel/intel-extension-for-pytorch:2.4.0-pip-base
 
-# Set Env Variables for the images
-ENV DEBIAN_FRONTEND=noninteractive
-ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib"
-ENV LD_LIBRARY_PATH="/opt/conda/lib:${LD_LIBRARY_PATH}"
-ENV PYTHONIOENCODING=UTF-8
 ENV LANG=C.UTF-8
-ENV PATH=/opt/conda/bin:$PATH
+
 ENV TEMP=/home/model-server/tmp
 ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
- && apt-get -y upgrade                          \
- && apt-get install -y --no-install-recommends  \
-    build-essential                             \
-    ca-certificates                             \
-    cmake                                       \
-    curl                                        \
-    git                                         \
-    libjemalloc-dev                             \
-    google-perftools                            \
-    libsm6                                      \
-    libssl-dev                                  \
-    libxext6                                    \
-    libxrender-dev                              \
-    numactl                                     \
-    openjdk-17-jdk                              \
-    openssl                                     \
-    unzip                                       \
-    vim                                         \
-    wget                                        \
-    libjpeg-dev                                 \
-    libpng-dev                                  \
-    zlib1g-dev                                  \
+ && apt-get install -y openjdk-17-jdk           \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean
 
-# Install CondaForge miniconda
-RUN curl -L -o ~/miniforge3.sh https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Miniforge3-23.11.0-0-Linux-x86_64.sh \
- && chmod +x ~/miniforge3.sh                    \
- && ~/miniforge3.sh -b -p /opt/conda            \
- && rm ~/miniforge3.sh                          \
- && /opt/conda/bin/conda install -c conda-forge \
-    python=3.10.13                              \
-    cython                                      \
-    "mkl>=2023.2.0"                             \
-    mkl-include                                 \
-    parso                                       \
-    scipy                                       \
-    requests                                    \
-    libgcc                                      \
-    cmake                                       \
-    packaging                                   \
-    pyyaml                                      \
-    packaging                                   \
- && /opt/conda/bin/conda clean -afy             \
- && rm -rf /etc/apt/sources.list.d/*
-
-# symlink pip for OS use
-RUN pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org \
- && ln -s /opt/conda/bin/pip /usr/local/bin/pip3
-
-RUN pip install --no-cache-dir -U \
-    sentence_transformers
-
-# Install Pytorch
-RUN pip install --no-cache-dir -U torch==2.4.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-# Install Intel® Extension for PyTorch*
-RUN pip install --no-cache-dir -U           \
-    intel-openmp                            \
-    intel-extension-for-pytorch==2.4.0
+RUN pip install --no-cache-dir -U   \
+    sentence_transformers==3.1.1    \
+    transformers==4.45              \
+    diffusers==0.30.3               \
+    accelerate==0.34.2
 
 RUN python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
-
-RUN pip install --no-cache-dir -U   \
-    transformers                    \
-    diffusers                       \
-    accelerate
 
 # Install TorchServe pypi dependencies directly from their requirements.txt file
 RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.11.0/requirements/common.txt \
  && pip install --no-cache-dir -U   \
-    "numpy>=1.22.2,<1.23"           \
     torchserve==0.11.0              \
     torch-model-archiver==0.11.0
 
@@ -96,13 +34,10 @@ RUN useradd -m model-server                                 \
  && chown -R model-server /home/model-server /opt/ml/model
 
 # Add TS entrypoint
-COPY docker/torchserve-entrypoint.py /usr/local/bin/dockerd-entrypoint.py
 COPY docker/config.properties /home/model-server
 COPY docker/entrypoint.sh /home/model-server/entrypoint.sh
 COPY model/embedding_handler.py /home/model-server/utils/embedding_handler.py
 COPY model/model-config.yaml /home/model-server/utils/model-config.yaml
-
-RUN chmod +x /usr/local/bin/dockerd-entrypoint.py
 RUN chmod +x /home/model-server/entrypoint.sh
 
 # Cleanup
@@ -110,7 +45,5 @@ RUN pip cache purge && rm -rf /tmp/tmp* && rm -iRf /root/.cache
 
 # INTEL specific ENVs
 ENV KMP_SETTINGS=1
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:/opt/conda/lib/libiomp5.so:${LD_PRELOAD}"
 
 ENTRYPOINT ["/home/model-server/entrypoint.sh"]
-CMD ["torchserve", "--start", "--ts-config", "/home/model-server/config.properties"]

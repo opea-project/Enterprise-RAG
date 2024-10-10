@@ -37,7 +37,7 @@ spec:
         internalService:
           serviceName: torchserve-embedding-svc
           config:
-            MODEL_NAME: "BAAI/bge-base-en-v1.5"
+            TORCHSERVE_MODEL_NAME: "BAAI/bge-base-en-v1.5"
           isDownstreamService: true
       - name: Ingestion
         data: $response

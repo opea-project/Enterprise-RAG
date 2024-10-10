@@ -75,8 +75,9 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
 
         """
         if self._model_server not in SUPPORTED_INTEGRATIONS:
-            logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
-            raise ValueError("Invalid model server")
+            error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         return SUPPORTED_INTEGRATIONS[self._model_server](model_name=self._model_name, base_url=self._endpoint, **kwargs)
 

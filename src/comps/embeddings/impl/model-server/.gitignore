@@ -4,6 +4,5 @@
 *.tar.gz
 *.rar
 
-upload_dir/
 models/
 tei/data/

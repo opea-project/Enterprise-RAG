@@ -1,15 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
-
-# TorchServe frontend parameters
-minWorkers: 1
-maxWorkers: 4
-maxBatchDelay: 100
-responseTimeout: 1200
-deviceType: cpu
-
-# TorchServe Backend parameters
-handler:
-    model_name: ""
-    batch_size: 32
-    amp_dtype: "BF16"
+minWorkers: {{MIN_WORKERS}}
+maxWorkers: {{MAX_WORKERS}}
+maxBatchDelay: {{MAX_BATCH_DELAY}}
+responseTimeout: {{RESPONSE_TIMEOUT}}

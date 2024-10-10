@@ -163,8 +163,9 @@ class LangchainEmbedding(EmbeddingWrapper):
             ValueError: If the model server is invalid.
         """
         if self._model_server not in SUPPORTED_INTEGRATIONS:
-            logger.error(f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}")
-            raise ValueError("Invalid model server")
+            error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
+            logger.error(error_message)
+            raise ValueError(error_message)
 
         if "model" not in kwargs:
             if self._model_server == "torchserve":

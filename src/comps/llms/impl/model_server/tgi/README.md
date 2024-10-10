@@ -6,7 +6,7 @@ This document focuses on using the [Text Generation Inference (TGI)](https://git
 ## Getting Started
 
 ### 0. Prerequisite
-Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the [.env](docker/.env) file.
+Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the dotenv configuration files.
 
 ```bash
 export HF_TOKEN=${your_hf_api_token}

@@ -60,23 +60,23 @@ from llm_guard.input_scanners.toxicity import (
     DEFAULT_MODEL as TOXICITY_DEFAULT_MODEL
 )
 
-ENABLED_SCANNERS = {
-    'anonymize': Anonymize,
-    'bancode': BanCode,
-    'bancompetitors': BanCompetitors,
-    'bansubstrings': BanSubstrings,
-    'bantopics': BanTopics,
-    'code': Code,
-    'gibberish': Gibberish,
-    'invisibletext': InvisibleText,
-    'language': Language,
-    'promptinjection': PromptInjection,
-    'regex': Regex,
-    'secrets': Secrets,
-    'sentiment': Sentiment,
-    'tokenlimit': TokenLimit,
-    'toxicity': Toxicity
-}
+ENABLED_SCANNERS = [
+    'anonymize',
+    'ban_code',
+    'ban_competitors',
+    'ban_substrings',
+    'ban_topics',
+    'code',
+    'gibberish',
+    'invisible_text',
+    'language',
+    'prompt_injection',
+    'regex',
+    'secrets',
+    'sentiment',
+    'tokenlimit',
+    'toxicity'
+]
 
 from comps import get_opea_logger
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
@@ -153,9 +153,9 @@ class InputScannersConfig:
             dict: The BanCode scanner configuration.
         """
         return {
-            "bancode": {
-                k.replace("BANCODE_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BANCODE_")
+            "ban_code": {
+                k.replace("BAN_CODE_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("BAN_CODE_")
             }
         }
 
@@ -170,9 +170,9 @@ class InputScannersConfig:
             dict: The BanCompetitors scanner configuration.
         """
         return {
-            "bancompetitors": {
-                k.replace("BANCOMPETITORS_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BANCOMPETITORS_")
+            "ban_competitors": {
+                k.replace("BAN_COMPETITORS_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("BAN_COMPETITORS_")
             }
         }
 
@@ -187,9 +187,9 @@ class InputScannersConfig:
             dict: The BanSubstrings scanner configuration.
         """
         return {
-            "bansubstrings": {
-                k.replace("BANSUBSTRINGS_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BANSUBSTRINGS_")
+            "ban_substrings": {
+                k.replace("BAN_SUBSTRINGS_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("BAN_SUBSTRINGS_")
             }
         }
 
@@ -204,9 +204,9 @@ class InputScannersConfig:
             dict: The BanTopics scanner configuration.
         """
         return {
-            "bantopics": {
-                k.replace("BANTOPICS_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BANTOPICS_")
+            "ban_topics": {
+                k.replace("BAN_TOPICS_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("BAN_TOPICS_")
             }
         }
 
@@ -254,9 +254,9 @@ class InputScannersConfig:
             dict: The InvisibleText scanner configuration.
         """
         return {
-            "invisibletext": {
-                k.replace("INVISIBLETEXT_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("INVISIBLETEXT_")
+            "invisible_text": {
+                k.replace("INVISIBLE_TEXT_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("INVISIBLE_TEXT_")
             }
         }
 
@@ -288,9 +288,9 @@ class InputScannersConfig:
             dict: The PromptInjection scanner configuration.
         """
         return {
-            "promptinjection": {
-                k.replace("PROMPTINJECTION_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("PROMPTINJECTION_")
+            "prompt_injection": {
+                k.replace("PROMPT_INJECTION_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("PROMPT_INJECTION_")
             }
         }
 
@@ -356,9 +356,9 @@ class InputScannersConfig:
             dict: The TokenLimit scanner configuration.
         """
         return {
-            "tokenlimit": {
-                k.replace("TOKENLIMIT_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("TOKENLIMIT_")
+            "token_limit": {
+                k.replace("TOKEN_LIMIT_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("TOKEN_LIMIT_")
             }
         }
 
@@ -390,8 +390,12 @@ class InputScannersConfig:
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
 
-        if model_name is not None and model_name in enabled_models:
-            bancode_params['model'] = enabled_models[model_name] # Model class from LLM Guard
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for BanCode scanner: {model_name}")
+                bancode_params['model'] = enabled_models[model_name] # Model class from LLM Guard
+            else:
+                logger.error("Model name is not valid for BanCode scanner")
         if threshold is not None:
             bancode_params['threshold'] = threshold # float
         logger.info(f"Creating BanCode scanner with params: {bancode_params}")
@@ -399,31 +403,41 @@ class InputScannersConfig:
     
     def _create_ban_competitors_scanner(self, scanner_config):
         enabled_models = {'MODEL_V1': BANCOMPETITORS_MODEL_V1}
-        bancompetitors_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
+        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
 
         competitors = scanner_config.get('competitors', None)
         threshold = scanner_config.get('threshold', None)
         redact = scanner_config.get('redact', None)
         model_name = scanner_config.get('model', None)
 
-        if competitors and isinstance(competitors, str):
-            artifacts = set([',', '', '.'])
-            bancompetitors_params['competitors'] = list(set(competitors.split(',') - artifacts)) # list
+        if competitors:
+            if isinstance(competitors, str):
+                artifacts = set([',', '', '.'])
+                ban_competitors_params['competitors'] = list(set(competitors.split(',')) - artifacts) # list
+            elif isinstance(competitors, list):
+                ban_competitors_params['competitors'] = competitors
+            else:
+                logger.error("Provided type is not valid for BanCompetitors scanner")
+                raise Exception("Provided type is not valid for BanCompetitors scanner")
         else:
             logger.error("Competitors list is required for BanCompetitors scanner")
             raise Exception("Competitors list is required for BanCompetitors scanner")
         if threshold is not None:
-            bancompetitors_params['threshold'] = threshold # float
+            ban_competitors_params['threshold'] = threshold # float
         if redact is not None:
-            bancompetitors_params['redact'] = redact
-        if model_name is not None and model_name in enabled_models:
-            bancompetitors_params['model'] = enabled_models[model_name]
-        logger.info(f"Creating BanCompetitors scanner with params: {bancompetitors_params}")
-        return BanCompetitors(**bancompetitors_params)
+            ban_competitors_params['redact'] = redact
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for BanCompetitors scanner: {model_name}")
+                ban_competitors_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for BanCompetitors scanner")
+        logger.info(f"Creating BanCompetitors scanner with params: {ban_competitors_params}")
+        return BanCompetitors(**ban_competitors_params)
     
     def _create_ban_substrings_scanner(self, scanner_config):
         available_match_types = ['str', 'word']
-        ban_substrings_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        ban_substrings_params = {}
 
         substrings = scanner_config.get('substrings', None)
         match_type = scanner_config.get('match_type', None)
@@ -431,9 +445,15 @@ class InputScannersConfig:
         redact = scanner_config.get('redact', None)
         contains_all = scanner_config.get('contains_all', None)
 
-        if substrings and isinstance(substrings, str):
-            artifacts = set([',', '', '.'])
-            ban_substrings_params['substrings'] = list(set(substrings.split(',') - artifacts)) # list
+        if substrings:
+            if isinstance(substrings, str):
+                artifacts = set([',', '', '.'])
+                ban_substrings_params['substrings'] = list(set(substrings.split(',')) - artifacts)# list
+            elif substrings and isinstance(substrings, list):
+                ban_substrings_params['substrings'] = substrings
+            else:
+                logger.error("Provided type is not valid for BanSubstrings scanner")
+                raise Exception("Provided type is not valid for BanSubstrings scanner")
         else:
             logger.error("Substrings list is required for BanSubstrings scanner")
             raise Exception("Substrings list is required for BanSubstrings scanner")
@@ -462,16 +482,26 @@ class InputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         model_name = scanner_config.get('model', None)
 
-        if topics and isinstance(topics, str):
-            artifacts = set([',', '', '.'])
-            ban_topics_params['topics'] = list(set(topics.split(',') - artifacts))
+        if topics:
+            if isinstance(topics, str):
+                artifacts = set([',', '', '.'])
+                ban_topics_params['topics'] = list(set(topics.split(',')) - artifacts)
+            elif isinstance(topics, list):
+                ban_topics_params['topics'] = topics
+            else:
+                logger.error("Provided type is not valid for BanTopics scanner")
+                raise Exception("Provided type is not valid for BanTopics scanner")
         else:
             logger.error("Topics list is required for BanTopics scanner")
             raise Exception("Topics list is required for BanTopics scanner")
         if threshold is not None:
             ban_topics_params['threshold'] = threshold
-        if model_name is not None and model_name in enabled_models:
-            ban_topics_params['model'] = enabled_models[model_name]
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for BanTopics scanner: {model_name}")
+                ban_topics_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for BanTopics scanner")
         logger.info(f"Creating BanTopics scanner with params: {ban_topics_params}")
         return BanTopics(**ban_topics_params)
     
@@ -484,14 +514,24 @@ class InputScannersConfig:
         is_blocked = scanner_config.get('is_blocked', None)
         threshold = scanner_config.get('threshold', None)
 
-        if languages and isinstance(languages, str):
-            artifacts = set([',', '', '.'])
-            code_params['languages'] = list(set(languages.split(',') - artifacts))
+        if languages:
+            if isinstance(languages, str):
+                artifacts = set([',', '', '.'])
+                code_params['languages'] = list(set(languages.split(',')) - artifacts)
+            elif isinstance(languages, list):
+                code_params['languages'] = languages
+            else:
+                logger.error("Provided type is not valid for Code scanner")
+                raise Exception("Provided type is not valid for Code scanner")
         else:
             logger.error("Languages list is required for Code scanner")
             raise Exception("Languages list is required for Code scanner")
-        if model_name is not None and model_name in enabled_models:
-            code_params['model'] = enabled_models[model_name]
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for Code scanner: {model_name}")
+                code_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for Code scanner")
         if is_blocked is not None:
             code_params['is_blocked'] = is_blocked
         if threshold is not None:
@@ -510,8 +550,12 @@ class InputScannersConfig:
 
         if threshold is not None:
             gibberish_params['threshold'] = threshold
-        if model_name is not None and model_name in enabled_models:
-            gibberish_params['model'] = enabled_models[model_name]
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for Gibberish scanner: {model_name}")
+                gibberish_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for Gibberish scanner")
         if match_type is not None and match_type in enabled_match_types:
             gibberish_params['match_type'] = match_type
 
@@ -531,11 +575,24 @@ class InputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
 
-        if valid_languages and isinstance(valid_languages, str):
-            artifacts = set([',', '', '.'])
-            language_params['valid_languages'] = list(set(valid_languages.split(',') - artifacts))
-        if model_name is not None and model_name in enabled_models:
-            language_params['model'] = enabled_models[model_name]
+        if valid_languages:
+            if isinstance(valid_languages, str):
+                artifacts = set([',', '', '.'])
+                language_params['valid_languages'] = list(set(valid_languages.split(',')) - artifacts)
+            elif isinstance(valid_languages, list):
+                language_params['valid_languages'] = valid_languages
+            else:
+                logger.error("Provided type is not valid for Language scanner")
+                raise Exception("Provided type is not valid for Language scanner")
+        else:
+            logger.error("Valid languages list is required for Langudage scanner")
+            raise Exception("Valid languages list is required for Language scanner")
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for Language scanner: {model_name}")
+                language_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for Language scanner")
         if threshold is not None:
             language_params['threshold'] = threshold
         if match_type is not None and match_type in enabled_match_types:
@@ -556,8 +613,12 @@ class InputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
 
-        if model_name is not None and model_name in enabled_models:
-            prompt_injection_params['model'] = enabled_models[model_name]
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for PromptInjection scanner: {model_name}")
+                prompt_injection_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for PromptInjection scanner")
         if threshold is not None:
             prompt_injection_params['threshold'] = threshold
         if match_type is not None and match_type in enabled_match_types:
@@ -574,8 +635,15 @@ class InputScannersConfig:
         match_type = scanner_config.get('match_type', None)
         redact = scanner_config.get('redact', None)
 
-        if patterns and isinstance(patterns, str):
-            regex_params['patterns'] = patterns
+        if patterns:
+            if isinstance(patterns, str):
+                artifacts = set([',', '', '.'])
+                regex_params['valid_languages'] = list(set(patterns.split(',')) - artifacts)
+            elif isinstance(patterns, list):
+                regex_params['valid_languages'] = patterns
+            else:
+                logger.error("Provided type is not valid for Regex scanner")
+                raise Exception("Provided type is not valid for Regex scanner")
         else:
             logger.error("Patterns list is required for Regex scanner")
             raise Exception("Patterns list is required for Regex scanner")
@@ -603,7 +671,7 @@ class InputScannersConfig:
     
     def _create_sentiment_scanner(self, scanner_config):
         enabled_lexicons = ["vader_lexicon"]
-        sentiment_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        sentiment_params = {}
 
         threshold = scanner_config.get('threshold', None)
         lexicon = scanner_config.get('lexicon', None)
@@ -618,19 +686,15 @@ class InputScannersConfig:
     
     def _create_token_limit_scanner(self, scanner_config):
         enabled_encodings = ['cl100k_base'] # TODO: test more encoding from tiktoken
-        # enabled_models = [] # TODO: test models encoding from tiktoken
         token_limit_params = {'use_onnx': scanner_config.get('use_onnx', True)}
 
         limit = scanner_config.get('limit', None)
         encoding_name = scanner_config.get('encoding', None)
-        # model_name = scanner_config.get('model_name', None)
 
         if limit is not None:
             token_limit_params['limit'] = limit
         if encoding_name is not None and encoding_name in enabled_encodings:
             token_limit_params['encoding_name'] = encoding_name
-        # if model_name is not None and model_name in enabled_models:
-        #     token_limit_params['model_name'] = model_name
 
         logger.info(f"Creating TokenLimit scanner with params: {token_limit_params}")
         return TokenLimit(**token_limit_params)
@@ -645,8 +709,12 @@ class InputScannersConfig:
         match_type = scanner_config.get('match_type', None)
 
 
-        if model_name is not None and model_name in enabled_models:
-            toxicity_params['model'] = enabled_models[model_name]
+        if model_name is not None:
+            if model_name in enabled_models:
+                logger.info("Using selected model for Toxicity scanner: {model_name}")
+                toxicity_params['model'] = enabled_models[model_name]
+            else:
+                logger.error("Model name is not valid for Toxicity scanner")
         if threshold is not None:
             toxicity_params['threshold'] = threshold
         if match_type is not None and match_type in enabled_match_types:
@@ -660,23 +728,23 @@ class InputScannersConfig:
             raise Exception(f"Scanner {scanner_name} is not supported")
         if scanner_name == 'anonymize':
             return None # TBD: placeholder for anonymize scanner
-        elif scanner_name == 'bancode':
+        elif scanner_name == 'ban_code':
             return self._create_ban_code_scanner(scanner_config)
-        elif scanner_name == 'bancompetitors':
+        elif scanner_name == 'ban_competitors':
             return self._create_ban_competitors_scanner(scanner_config)
-        elif scanner_name == 'bansubstrings':
+        elif scanner_name == 'ban_substrings':
             return self._create_ban_substrings_scanner(scanner_config)
-        elif scanner_name == 'bantopics':
+        elif scanner_name == 'ban_topics':
             return self._create_ban_topics_scanner(scanner_config)
         elif scanner_name == 'code':
             return self._create_code_scanner(scanner_config)
         elif scanner_name == 'gibberish':
             return self._create_gibberish_scanner(scanner_config)
-        elif scanner_name == 'invisibletext':
+        elif scanner_name == 'invisible_text':
             return self._create_invisible_text_scanner()
         elif scanner_name == 'language':
             return self._create_language_scanner(scanner_config)
-        elif scanner_name == 'promptinjection':
+        elif scanner_name == 'prompt_injection':
             return self._create_prompt_injection_scanner(scanner_config)
         elif scanner_name == 'regex':
             return self._create_regex_scanner(scanner_config)
@@ -684,7 +752,7 @@ class InputScannersConfig:
             return self._create_secrets_scanner(scanner_config)
         elif scanner_name == 'sentiment':
             return self._create_sentiment_scanner(scanner_config)
-        elif scanner_name == 'tokenlimit':
+        elif scanner_name == 'token_limit':
             return self._create_token_limit_scanner(scanner_config)
         elif scanner_name == 'toxicity':
             return self._create_toxicity_scanner(scanner_config)
@@ -711,20 +779,25 @@ class InputScannersConfig:
                 continue
         return [s for s in enabled_scanners_objects if s is not None]
 
-    def changed(self, current_scanners):
+    def changed(self, new_scanners_config):
         """
         Check if the scanners configuration has changed.
 
         Args:
-            current_scanners (dict): The current scanners configuration.
+            new_scanners_config (dict): The current scanners configuration.
 
         Returns:
             bool: True if the configuration has changed, False otherwise.
         """
-        del current_scanners['id']
-        if current_scanners != self._input_scanners_config: # TODO: add better comparison, to be tested
-            logger.info("Scanners configuration has been changed, re-creating scanners")
+        del new_scanners_config['id']
+        newly_enabled_scanners = {k: {in_k: in_v for in_k, in_v in v.items() if in_k != 'id'} for k, v in new_scanners_config.items() if v.get("enabled")}
+        previously_enabled_scanners = {k: v for k, v in self._input_scanners_config.items() if v.get("enabled")}
+        if newly_enabled_scanners == previously_enabled_scanners: # if the enables scanners are the same we do nothing
+            logger.info("No changes in list for enabled scanners. Checking configuration changes...")
+            return False
+        else:
+            logger.warning("Sanners configuration has been changed, re-creating scanners")
             self._input_scanners_config.clear()
-            self._input_scanners_config.update(current_scanners)
+            stripped_new_scanners_config = {k: {in_k: in_v for in_k, in_v in v.items() if in_k != 'id'} for k, v in new_scanners_config.items()}
+            self._input_scanners_config.update(stripped_new_scanners_config)
             return True
-        return False

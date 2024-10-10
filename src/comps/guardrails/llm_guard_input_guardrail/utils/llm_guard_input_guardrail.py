@@ -66,8 +66,8 @@ class OPEALLMGuardInputGuardrail:
             Exception: If an unexpected error occurs during scanning.
         """
         try:
-            # if self._scanners_config.changed(input_doc.input_guardrail_params.dict()): # TODO: to be enabled in v1.0
-            #    self._scanners = self._scanners_config.create_enabled_input_scanners()
+            if self._scanners_config.changed(input_doc.input_guardrail_params.dict()):
+                self._scanners = self._scanners_config.create_enabled_input_scanners()
             prompt = input_doc.query
             sanitized_prompt, results_valid, results_score = scan_prompt(self._scanners, prompt)
             if False in results_valid.values():

@@ -73,7 +73,7 @@ class OPEALLMGuardInputGuardrail:
             if False in results_valid.values():
                 msg = f"Prompt {prompt} is not valid, scores: {results_score}"
                 logger.error(f"{msg}")
-                raise HTTPException(status_code=400, detail=f"{msg}")
+                raise HTTPException(status_code=500, detail=f"{msg}")
             input_doc.query = sanitized_prompt
             return input_doc
         except Exception as e:

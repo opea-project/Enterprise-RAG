@@ -135,3 +135,5 @@ spec:
             sizeLimit: 1Gi
         - name: tmp
           emptyDir: {}
+      # extra time to finish processing buffered requests before pod is forcibly terminated
+      terminationGracePeriodSeconds: 60

@@ -9,6 +9,7 @@ deployment/**/bin/
 deployment/*.out
 **/charts/*.tgz
 nohup*.out
+/deployment/microservices-connector/cover.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

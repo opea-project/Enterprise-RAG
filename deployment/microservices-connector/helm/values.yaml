@@ -118,17 +118,16 @@ securityContext:
 
 resources:
   limits:
-    cpu: 500m
     memory: 128Mi
   requests:
-    cpu: 10m
+    cpu: 500m
     memory: 64Mi
 
 livenessProbe:
   httpGet:
     path: /healthz
     port: gmc
-  initialDelaySeconds: 15
+  initialDelaySeconds: 30
   periodSeconds: 20
 readinessProbe:
   httpGet:
@@ -155,3 +154,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+service:
+  type: ClusterIP

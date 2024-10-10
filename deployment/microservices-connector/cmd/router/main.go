@@ -71,6 +71,9 @@ const (
 	DataPrep      = "DataPrep"
 	Parameters    = "parameters"
 	OtelVersion   = "v0.3.0"
+
+	CallClientTimeoutSeconds   = 3600
+	GraphHandlerTimeoutSeconds = 3600
 )
 
 var (
@@ -397,7 +400,7 @@ func callService(
 			// 	},
 			// ),
 		),
-		Timeout: 30 * time.Second,
+		Timeout: CallClientTimeoutSeconds * time.Second,
 	}
 	resp, err := callClient.Do(req)
 	if err != nil {
@@ -752,7 +755,7 @@ func routeStep(
 }
 
 func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
-	ctx, cancel := context.WithTimeout(req.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(req.Context(), GraphHandlerTimeoutSeconds*time.Second)
 	defer cancel()
 
 	done := make(chan struct{})
@@ -1040,7 +1043,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Info("Listen on :8080")
+	log.Info("Listen on :8080", "GraphTimeout(s):", CallClientTimeoutSeconds, "CallClientTimeout(s):", GraphHandlerTimeoutSeconds)
 	mcRouter := initializeRoutes()
 
 	server := &http.Server{

@@ -7,8 +7,14 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"flag"
+	"fmt"
+	"net/http"
 	"os"
+
+	uzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -28,9 +34,15 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
+const (
+	webhookServiceNameEnv      = "SERVICE_NAME"
+	webhookServiceNamespaceEnv = "NAMESPACE"
+)
+
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme      = runtime.NewScheme()
+	setupLog    = ctrl.Log.WithName("setup")
+	webhookPort = webhook.DefaultPort
 )
 
 func init() {
@@ -38,6 +50,43 @@ func init() {
 
 	utilruntime.Must(mcv1alpha3.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
+}
+
+func logLevelHandler(atomicLevel uzap.AtomicLevel) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			// Return the current log level
+			currentLevel := atomicLevel.Level()
+			fmt.Fprintf(w, "current log level: %s\n", currentLevel.String())
+		case http.MethodPut:
+			// Change the log level
+			var reqBody struct {
+				LogLevel string `json:"log_level"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+				http.Error(w, fmt.Sprintf("invalid request body: %v\n", err), http.StatusBadRequest)
+				return
+			} else {
+				if reqBody.LogLevel == "" {
+					http.Error(w, "log_level field is required\n", http.StatusBadRequest)
+					return
+				}
+			}
+			var zapLevel zapcore.Level
+			if err := zapLevel.UnmarshalText([]byte(reqBody.LogLevel)); err != nil {
+				http.Error(w, fmt.Sprintf("invalid log level: %v\n", err), http.StatusBadRequest)
+				return
+			}
+			atomicLevel.SetLevel(zapLevel)
+			fmt.Fprintf(w, "log level set to %s\n", zapLevel.String())
+			setupLog.V(1).Info("1 log level set to ", "level", zapLevel.String())
+			setupLog.V(2).Info("2 log level set to ", "level", zapLevel.String())
+			setupLog.Info("log level set to ", "level", zapLevel.String())
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }
 
 func main() {
@@ -55,13 +104,26 @@ func main() {
 		"If set the metrics endpoint is served securely")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+	atomicLevel := uzap.NewAtomicLevel()
+	atomicLevel.SetLevel(zapcore.InfoLevel) // Set initial log level
 	opts := zap.Options{
 		Development: true,
+		Level:       atomicLevel,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// Set up an HTTP server to change the log level dynamically
+	http.HandleFunc("/loglevel", logLevelHandler(atomicLevel))
+
+	// Start the HTTP server
+	go func() {
+		if err := http.ListenAndServe(":8008", nil); err != nil {
+			setupLog.Error(err, "HTTP server failed")
+		}
+	}()
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -79,8 +141,41 @@ func main() {
 		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
+	webhookServiceName := controller.GetEnvWithDefault(webhookServiceNameEnv, "gmc-validating-webhook-service")
+	webhookServiceNamespace := controller.GetEnvWithDefault(webhookServiceNamespaceEnv, "system")
+
+	pair, CABytes, err := controller.GenerateX509Cert(webhookServiceName, webhookServiceNamespace)
+	if err != nil {
+		setupLog.Error(err, "failed to generate x509 cert")
+		os.Exit(1)
+	}
+
+	client, err := controller.GetClient()
+	if err != nil {
+		setupLog.Error(err, "unable to get client config")
+		os.Exit(1)
+	}
+
+	if err = controller.CreateOrUpdateValidatingWebhookConfiguration(
+		client,
+		CABytes,
+		int32(webhookPort),
+		webhookServiceName,
+		webhookServiceNamespace); err != nil {
+		setupLog.Error(err, "failed to create or update the validation webhook configuration")
+		os.Exit(1)
+	}
+
 	webhookServer := webhook.NewServer(webhook.Options{
-		TLSOpts: tlsOpts,
+		Port: webhookPort,
+		TLSOpts: []func(*tls.Config){
+			func(cfg *tls.Config) {
+				cfg.GetCertificate = func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
+					return pair, nil
+				}
+				cfg.MinVersion = tls.VersionTLS12
+			},
+		},
 	})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -108,6 +203,11 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err = (&mcv1alpha3.GMConnector{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create validating webhook", "webhook", "gmcValidator")
 		os.Exit(1)
 	}
 

@@ -12,6 +12,8 @@ jobs:
       runs-on: [ innersource.prod.amr.dind ]
       container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
       environment: default
+      concurrency:
+        group: validation
       permissions:
         id-token: write
         contents: read

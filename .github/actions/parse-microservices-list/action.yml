@@ -1,0 +1,23 @@
+name: 'Parse list of microservices'
+description: ''
+inputs:
+  comment:
+    description: 'Content of the comment'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: "Define valid microservice groups"
+      shell: bash
+      run: echo "TEST_GROUPS=dataprep embeddings ingestion llms reranks retrievers" >> $GITHUB_ENV
+
+    - name: "Match groups in comments"
+      shell: bash
+      run: |
+        TEST_GROUPS_MATCHES=()
+        for GROUP in ${TEST_GROUPS}; do
+          if [[ "${{ inputs.comment }}" =~ "${GROUP}" ]]; then
+            TEST_GROUPS_MATCHES=("${TEST_GROUPS_MATCHES[@]}" ${GROUP})
+          fi
+        done
+        echo "SPECIFIC_TESTS=$(IFS=, ; echo "${TEST_GROUPS_MATCHES[*]}")" >> $GITHUB_ENV

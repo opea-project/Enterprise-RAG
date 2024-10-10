@@ -1,4 +1,4 @@
-name: "Validation :: Embeddings"
+name: "Microservices validation"
 
 on:
   issue_comment:
@@ -6,9 +6,9 @@ on:
 
 
 jobs:
-    validate-embeddings:
-      if: ${{ (github.event.issue.pull_request) && (github.event.comment.body == '/RunTests') }}
-      name: "Validation :: Embeddings tests"
+    validate-microservices:
+      if: ${{ (github.event.issue.pull_request) && contains(github.event.comment.body, '/RunTests') }}
+      name: "Validation :: Microservices"
       runs-on: [ innersource.prod.amr.dind ]
       container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
       environment: default
@@ -23,6 +23,7 @@ jobs:
       env:
         REMOTE_GAUDI_HOST: dcgaudicluster1
         REMOTE_WORKSPACE: "/tmp/${{ github.event.issue.number }}/${{ github.run_number }}/${{ github.run_attempt }}"
+        SPECIFIC_TESTS: ""
       steps:
         - name: Install deps
           run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests
@@ -32,6 +33,11 @@ jobs:
           with:
             ref: "refs/pull/${{ github.event.issue.number }}/head"
             sparse-checkout: '.github/actions/'
+
+        - name: "Parse comment arguments"
+          uses: ./.github/actions/parse-microservices-list
+          with:
+            comment: ${{ github.event.comment.body }}
 
         - name: Install SSH key
           uses: ./.github/actions/install-ssh-key
@@ -68,7 +74,8 @@ jobs:
         - name: rsync over SSH
           run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
 
-        - name: "Run tests"
+        - name: "Run all tests"
+          if: ${{ env.SPECIFIC_TESTS == '' }}
           uses: ./.github/actions/execute_remote_script
           env:
             HF_TOKEN: ${{ env.HF_TOKEN }}
@@ -77,6 +84,17 @@ jobs:
             run: |
               cd ${{ env.REMOTE_WORKSPACE }}/src
               HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
+
+        - name: "Run selected tests"
+          if: ${{ env.SPECIFIC_TESTS != '' }}
+          uses: ./.github/actions/execute_remote_script
+          env:
+            HF_TOKEN: ${{ env.HF_TOKEN }}
+          with:
+            host: ${{ env.REMOTE_GAUDI_HOST }}
+            run: |
+              cd ${{ env.REMOTE_WORKSPACE }}/src
+              HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
 
         - name: Download allure-results
           if: always()

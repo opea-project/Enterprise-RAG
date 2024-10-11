@@ -33,6 +33,10 @@ nodes:
     containerPath: /opea-models
   - hostPath: /mnt/opea-models
     containerPath: /mnt/opea-models
+  - hostPath: /var/log/journal
+    containerPath: /var/log/journal
+  - hostPath: /kind-containerd-images
+    containerPath: /var/lib/containerd/
   kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration
@@ -61,7 +65,7 @@ EOF
 #
 # We want a consistent name that works from both ends, so we tell containerd to
 # alias localhost:${reg_port} to the registry container when pulling images
-REGISTRY_DIR="/etc/containerd/certs.d/${reg_name}:${reg_port}"
+REGISTRY_DIR="/etc/containerd/certs.d/localhost:${reg_port}"
 for node in $(kind get nodes); do
   docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
   cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"

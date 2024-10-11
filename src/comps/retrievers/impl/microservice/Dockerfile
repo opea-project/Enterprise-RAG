@@ -27,6 +27,7 @@ COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/retrievers/utils ./comps/retrievers/utils
+COPY --chown=user:user ./comps/retrievers/impl/microservice/.env ./comps/retrievers/impl/microservice/.env
 COPY --chown=user:user ./comps/retrievers/opea_retriever_microservice.py ./comps/retrievers/opea_retriever_microservice.py
 
 WORKDIR /home/user/comps/retrievers

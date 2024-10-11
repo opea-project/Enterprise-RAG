@@ -1,10 +1,11 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from typing import List, Optional
-
+from comps.cores.mega.logger import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEAVectorStore():
     """
@@ -51,9 +52,9 @@ class OPEAVectorStore():
         }
 
         if self._vector_store_key not in self._SUPPORTED_VECTOR_STORES:
-            logging.error(f"Unsupported vector store: {self._vector_store_key}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}")
+            logger.error(f"Unsupported vector store: {self._vector_store_key}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}")
         else:
-            logging.info(f"Loading {self._vector_store_key}")
+            logger.info(f"Loading {self._vector_store_key}")
             self._SUPPORTED_VECTOR_STORES[self._vector_store_key]()
 
     def add_texts(self, input: List[EmbedDoc]) -> List[str]:
@@ -95,7 +96,7 @@ class OPEAVectorStore():
             from comps.vectorstores.utils.wrappers import wrapper_redis
             self.vector_store = wrapper_redis.RedisVectorStore()
         except ModuleNotFoundError:
-            logging.exception("exception when loading RedisVectorStore")
+            logger.exception("exception when loading RedisVectorStore")
 
     def _import_qdrant(self):
         """
@@ -105,7 +106,7 @@ class OPEAVectorStore():
             from comps.vectorstores.utils.wrappers import wrapper_qdrant
             self.vector_store = wrapper_qdrant.QdrantVectorStore()
         except ModuleNotFoundError:
-            logging.exception("exception when loading QdrantVectorStore")
+            logger.exception("exception when loading QdrantVectorStore")
 
     def _import_milvus(self):
         """
@@ -115,4 +116,4 @@ class OPEAVectorStore():
             from comps.vectorstores.utils.wrappers import wrapper_milvus
             self.vector_store = wrapper_milvus.MilvusVectorStore()
         except ModuleNotFoundError:
-            logging.exception("exception when loading MilvusVectorStore")
+            logger.exception("exception when loading MilvusVectorStore")

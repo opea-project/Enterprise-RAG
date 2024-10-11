@@ -27,6 +27,7 @@ WORKDIR /home/user/
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/dataprep/utils ./comps/dataprep/utils
+COPY --chown=user:user ./comps/dataprep/impl/microservice/.env ./comps/dataprep/impl/microservice/.env
 COPY --chown=user:user ./comps/dataprep/opea_dataprep_microservice.py ./comps/dataprep/opea_dataprep_microservice.py
 
 WORKDIR /home/user/comps/dataprep

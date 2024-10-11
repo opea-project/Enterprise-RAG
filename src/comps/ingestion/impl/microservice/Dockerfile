@@ -27,6 +27,7 @@ COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/ingestion/utils ./comps/ingestion/utils
+COPY --chown=user:user ./comps/ingestion/impl/microservice/.env ./comps/ingestion/impl/microservice/.env
 COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
 
 WORKDIR /home/user/comps/ingestion

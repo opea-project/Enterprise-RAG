@@ -1,10 +1,12 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from typing import Iterable, List
 from abc import ABC
+from comps.cores.mega.logger import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc, TextDoc
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class VectorStoreWrapper(ABC):
     """
@@ -54,7 +56,7 @@ class VectorStoreWrapper(ABC):
             if self.client is not None:
                 self.client._create_index_if_not_exist(dim=len(input.embedding))
         except Exception as e:
-            logging.exception("Error occured while checking vector store index")
+            logger.exception("Error occured while checking vector store index")
             raise e
 
     def add_texts(self, input: List[EmbedDoc]) -> List[str]:
@@ -78,7 +80,7 @@ class VectorStoreWrapper(ABC):
             )
             return ids
         except Exception as e:
-            logging.exception("Error occured while adding texts to vector store")
+            logger.exception("Error occured while adding texts to vector store")
             raise e
 
     def _parse_search_results(self, input: EmbedDoc, results: Iterable[any]) -> SearchedDoc:
@@ -113,7 +115,7 @@ class VectorStoreWrapper(ABC):
             )
             return self._parse_search_results(input=input, results=search_res)
         except Exception as e:
-            logging.exception("Error occured while searching by vector")
+            logger.exception("Error occured while searching by vector")
             raise e
 
     def similarity_search_with_relevance_scores(self, input: EmbedDoc) -> SearchedDoc:
@@ -134,7 +136,7 @@ class VectorStoreWrapper(ABC):
             )
             return self._parse_search_results(input=input, results=search_res)
         except Exception as e:
-            logging.exception("Error occured while searching with relevance scores")
+            logger.exception("Error occured while searching with relevance scores")
             raise e
 
     def max_marginal_relevance_search(self, input: EmbedDoc) -> SearchedDoc:
@@ -156,5 +158,5 @@ class VectorStoreWrapper(ABC):
             )
             return self._parse_search_results(input=input, results=search_res)
         except Exception as e:
-            logging.exception("Error occured while searching with max marginal relevance")
+            logger.exception("Error occured while searching with max marginal relevance")
             raise e

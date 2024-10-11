@@ -32,6 +32,8 @@ Supported files that dataprep can extract data from:
 If you consider adding additional file support, implement it based on `AbstractLoader` class
 and include that class into the `FileParser`'s `default_mappings` map.
 
+Dataprep uses both `libmagic` and file extension to determine the file type. Both have to match to be processed.
+
 ## Configuration options
 
 Configuration is currently done via environment variables.
@@ -67,7 +69,7 @@ pip install -r impl/microservice/requirements.txt
 Then start the microservice:
 
 ```bash
-python opea_llm_microservice.py
+python opea_dataprep_microservice.py
 ```
 
 ### Running the microservice via Docker (Option 2)
@@ -88,7 +90,7 @@ docker build -t opea/dataprep:latest -f comps/dataprep/impl/microservice/Dockerf
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command.
 
 ```bash
-docker run -d --name="dataprep" -p 9399:9399 opea/dataprep:latest
+docker run -d --name="dataprep" --env-file comps/dataprep/impl/microservice/.env -p 9399:9399 opea/dataprep:latest
 ```
 
 ### Example input
@@ -170,6 +172,7 @@ The tree view of the main directories and files:
   │   └── microservice
   │       ├── Dockerfile
   │       └── requirements.txt
+  |       └── .env
   ├── opea_dataprep_microservice.py
   ├── README.md
   ├── test
@@ -180,6 +183,22 @@ The tree view of the main directories and files:
   │   └── test_data.pdf
   └── utils
       ├── crawler.py
+      ├── file_loaders
+      │   ├── abstract_loader.py
+      │   ├── load_csv.py
+      │   ├── load_doc.py
+      │   ├── load_html.py
+      │   ├── load_image.py
+      │   ├── load_json.py
+      │   ├── load_md.py
+      │   ├── load_pdf.py
+      │   ├── load_ppt.py
+      │   ├── load_txt.py
+      │   ├── load_xls.py
+      │   ├── load_xml.py
+      │   └── load_yaml.py
+      ├── file_parser.py
       ├── opea_dataprep.py
+      ├── splitter.py
       └── utils.py
 ```

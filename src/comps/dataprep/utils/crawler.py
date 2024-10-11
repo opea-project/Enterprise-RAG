@@ -3,12 +3,12 @@
 
 import multiprocessing
 import re
-from urllib.parse import urlparse, urlunparse
-
-from bs4 import BeautifulSoup
 import requests
-import logging
+from urllib.parse import urlparse, urlunparse
+from bs4 import BeautifulSoup
+from comps.cores.mega.logger import get_opea_logger
 
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class Crawler:
     def __init__(self, pool=None):
@@ -67,15 +67,15 @@ class Crawler:
         while max_times:
             if not url.startswith("http") or not url.startswith("https"):
                 url = "http://" + url
-            logging.info("start fetch %s...", url)
+            logger.info("start fetch %s...", url)
             try:
                 response = requests.get(url, headers=headers, verify=True)
                 if response.status_code != 200:
-                    logging.info("fail to fetch %s, response status code: %s", url, response.status_code)
+                    logger.info("fail to fetch %s, response status code: %s", url, response.status_code)
                 else:
                     return response
             except Exception as e:
-                logging.exception("fail to fetch %s, caused by %s", url, e)
+                logger.exception("fail to fetch %s, caused by %s", url, e)
                 raise Exception(e)
             max_times -= 1
         return None
@@ -103,7 +103,7 @@ class Crawler:
             url_pool.update(sublinks)
             depth = 0
             while len(url_pool) > 0 and depth < max_depth:
-                logging.info("current depth %s...", depth)
+                logger.info("current depth %s...", depth)
                 mp = multiprocessing.Pool(processes=workers)
                 results = []
                 for sub_url in url_pool:
@@ -122,7 +122,7 @@ class Crawler:
         return soup
 
     def download(self, url, file_name):
-        logging.info("download %s into %s...", url, file_name)
+        logger.info("download %s into %s...", url, file_name)
         try:
             r = requests.get(url, stream=True, headers=self.headers, verify=True)
             f = open(file_name, "wb")
@@ -130,7 +130,7 @@ class Crawler:
                 if chunk:
                     f.write(chunk)
         except Exception as e:
-            logging.exception("fail to download %s, caused by %s", url, e)
+            logger.exception("fail to download %s, caused by %s", url, e)
 
     def get_base_url(self, url):
         result = urlparse(url)

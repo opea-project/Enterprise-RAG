@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from comps.cores.proto.docarray import TextDoc
+from comps.cores.mega.logger import get_opea_logger
 from comps.dataprep.utils.splitter import Splitter
-from typing import List
 from comps.dataprep.utils.utils import parse_files, parse_links
-import logging
+from typing import List
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class OPEADataprep:
@@ -34,6 +36,9 @@ class OPEADataprep:
 
     async def dataprep(self, files: any, link_list: list) -> List[TextDoc]:
 
+        if not files and not link_list:
+            raise ValueError("No links and/or files passed for data preparation.")
+
         text_docs: List[TextDoc] = []
 
         splitter = Splitter(
@@ -51,7 +56,7 @@ class OPEADataprep:
                 )
                 text_docs.extend(textdocs)
             except Exception as e:
-                logging.exception(e)
+                logger.exception(e)
                 raise ValueError(f"Failed to parse file. Exception: {e}")
 
         # Save links
@@ -63,8 +68,8 @@ class OPEADataprep:
                 )
                 text_docs.extend(textdocs)
             except Exception as e:
-                logging.exception(e)
+                logger.exception(e)
                 raise ValueError(f"Failed to parse link. Exception: {e}")
 
-        logging.info("Done preprocessing. Created ", len(text_docs), "chunks.")
+        logger.info(f"Done preprocessing. Created {len(text_docs)} chunks.")
         return text_docs

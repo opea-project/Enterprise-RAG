@@ -8,11 +8,13 @@ import unicodedata
 from pathlib import Path
 from typing import List
 import uuid
+from comps.cores.mega.logger import get_opea_logger
 from comps.dataprep.utils.splitter import Splitter
 from fastapi import UploadFile
 from comps.cores.proto.docarray import TextDoc
 from comps.dataprep.utils.crawler import Crawler
-import logging
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class TimeoutError(Exception):
@@ -32,7 +34,7 @@ async def save_file_to_local_disk(file: UploadFile) -> str:
             fout.write(content)
             fout.close
         except Exception as e:
-            logging.exception(f"Write file failed. Exception: {e}")
+            logger.exception(f"Write file failed when presisting files. Exception: {e}")
             raise
 
     return save_path
@@ -55,7 +57,7 @@ async def save_link_to_local_disk(link_list: List[str]) -> List[str]:
                 fout.close
                 save_paths.append(save_path)
             except Exception as e:
-                logging.exception(f"Write file failed. Exception: {e}")
+                logger.exception(f"Write file failed while presisting links. Exception: {e}")
                 raise
     return save_paths
 
@@ -68,7 +70,7 @@ async def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextD
         try:
             path = await save_file_to_local_disk(file)
             saved_path = str(path.resolve())
-            logging.info(f"saved file {file.filename} to {saved_path}")
+            logger.info(f"saved file {file.filename} to {saved_path}")
 
             metadata = {
                 'path': saved_path,
@@ -80,7 +82,7 @@ async def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextD
                 parsed_texts.append(TextDoc(text=chunk, metadata=metadata))
 
         except Exception as e:
-            logging.exception(e)
+            logger.exception(e)
             raise e
 
     return parsed_texts
@@ -94,7 +96,7 @@ async def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
             paths = await save_link_to_local_disk([link])
             for path in paths:
                 saved_path = str(path.resolve())
-                logging.info(f"saved link {link} to {saved_path}")
+                logger.info(f"saved link {link} to {saved_path}")
 
                 metadata = {
                     'path': saved_path,
@@ -107,7 +109,7 @@ async def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
                     parsed_texts.append(TextDoc(text=chunk, metadata=metadata))
 
         except Exception as e:
-            logging.exception(e)
+            logger.exception(e)
             raise e
 
     return parsed_texts
@@ -162,6 +164,6 @@ def parse_html(input):
             chunk = [content.strip(), link]
             chunks.append(chunk)
         else:
-            logging.info("The given link/str {} cannot be parsed.".format(link))
+            logger.info("The given link/str {} cannot be parsed.".format(link))
 
     return chunks

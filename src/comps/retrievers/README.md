@@ -67,7 +67,7 @@ docker build -t opea/retriever:latest -f comps/retrievers/impl/microservice/Dock
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command, such as the vector database configuration and database endpoint.
 
 ```bash
-docker run -d --name="retriever" -e VECTOR_STORE=redis -e REDIS_URL=redis://172.17.0.1:6379 -p 6620:6620 opea/retriever:latest
+docker run -d --name="retriever" --env-file comps/retrievers/impl/microservice/.env -p 6620:6620 opea/retriever:latest
 ```
 
 ### Example input
@@ -142,6 +142,7 @@ The tree view of the main directories and files:
 │   └── microservice
 │       ├── Dockerfile
 │       └── requirements.txt
+|       └── .env
 ├── opea_retriever_microservice.py
 ├── README.md
 └── utils

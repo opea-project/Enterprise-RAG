@@ -40,6 +40,10 @@ spec:
       targetPort: 8090
       protocol: TCP
       name: torchserve
+    - port: 8092
+      targetPort: 8092
+      protocol: TCP
+      name: metrics
   selector:
     app.kubernetes.io/name: torchserve
     app.kubernetes.io/instance: torchserve
@@ -84,6 +88,11 @@ spec:
             {}
           image: "localhost:5000/test/pl-qna-rag-embedding-torchserve:latest"
           imagePullPolicy: Always
+          env:
+            - name: TS_ENABLE_METRICS_API
+              value: "true"
+            - name: TS_METRICS_MODE
+              value: prometheus
           resources:
           limits:
             cpu: 16
@@ -96,6 +105,9 @@ spec:
           ports:
             - name: http
               containerPort: 8090
+              protocol: TCP
+            - name: metrics
+              containerPort: 8092
               protocol: TCP
           livenessProbe:
             failureThreshold: 24

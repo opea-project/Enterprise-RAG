@@ -509,7 +509,7 @@ done
 HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces"
 TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
 TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
-HELM_INSTALL_UI_DEFAULT_ARGS="--set image.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.tag=$TAG"
+HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
 
 HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
 HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"

@@ -10,14 +10,20 @@ proxy:
   noProxy: ""
 
 image:
-  repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
-  pullPolicy: Always
+  - ui:
+      repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
+      pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+      tag: "latest"
+  - fingerprint:
+      repository: "localhost:5000/system-fingerprint"
+      tag: "latest"
 
 imagePullSecrets:
   - name: regcred
 nameOverride: "ui-app"
+fpNameOverride: "fingerprint-usvc"
+mongoNameOverride: "mongodb"
 fullnameOverride: "ui-chart"
 
 serviceAccount:
@@ -45,6 +51,11 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 4173
+
+mongodb:
+  name: SYSTEM_FINGERPRINT
+  svc: mongodb
+  port: 27017
 
 ingress:
   enabled: false

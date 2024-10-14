@@ -11,7 +11,7 @@ TAG=latest
 
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 
@@ -271,6 +271,16 @@ for component in "${components_to_build[@]}"; do
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
+
+	fingerprint-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
+            image_name=system-fingerprint
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+ 
 
         otelcol-contrib-journalctl)
             path="${repo_path}/telemetry/helm/charts/logs/"

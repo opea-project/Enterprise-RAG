@@ -137,3 +137,7 @@ docker run -dp 127.0.0.1:4173:4173 rag-ui
 ```
 
 Now you should be able to access Enterprise RAG UI from your browser via `127.0.0.1:4173`
+
+### Image configuration
+
+Frontend files are served by nginx web server which uses `default.conf` for configuration. Traffic is proxied to different pipelines which are independently configured. Some settings may lead to request errors that exceed configuration settings, such as `client_max_body_size` which by default allows files up to `64MB` to be uploaded into the dataprep pipeline. `proxy_*_timeout` may close the request prematurely if the timeout is exceeded, for example when big documents are ingested into the pipeline and processing takes time. Changing `default.conf` requires rebuilding and redeploying of the UI docker image for changes to apply.

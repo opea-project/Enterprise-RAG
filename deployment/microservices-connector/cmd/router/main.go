@@ -77,9 +77,9 @@ const (
 )
 
 var (
-	OtelServiceName = "router-service" // will be overwriteen by OTEL_SERVICE_NAME
-
-	log logr.Logger
+	OtelServiceName  = "router-service" // will be overwriteen by OTEL_SERVICE_NAME
+	debugRequestLogs = false
+	log              logr.Logger
 
 	jsonGraph       = flag.String("graph-json", "", "serialized json graph def")
 	mcGraph         *mcv1alpha3.GMConnector
@@ -273,6 +273,12 @@ func init() {
 	initMeter()
 	initLogs()
 	initTraces()
+
+	// any value of ENABLE_DEBUG_REQUEST_LOGS will enable debug logs
+	_, debugEnvFound := os.LookupEnv("ENABLE_DEBUG_REQUEST_LOGS")
+	if debugEnvFound {
+		debugRequestLogs = true
+	}
 }
 
 func (ReadCloser) Close() error {
@@ -362,8 +368,9 @@ func callService(
 	log.Info("Entering callService", "url", serviceUrl)
 
 	// log the http header from the original request
-	log.Info("Print the http request headers", "HTTP_Header", headers)
-
+	if debugRequestLogs {
+		log.Info("Print the http request headers", "HTTP_Header", headers)
+	}
 	if step.InternalService.Config != nil {
 		err := os.Setenv("no_proxy", step.InternalService.Config["no_proxy"])
 		if err != nil {
@@ -542,19 +549,25 @@ func handleSwitchPipeline(
 				log.Error(err, "Error while reading the response body")
 				return nil, 500, err
 			}
-			log.Info("Print Previous Response Bytes", "Previous Response Bytes",
-				responseBytes, "Previous Status Code", statusCode)
+			if debugRequestLogs {
+				log.Info("Print Previous Response Bytes", "Previous Response Bytes",
+					responseBytes, "Previous Status Code", statusCode)
+			}
 			err = responseBody.Close()
 			if err != nil {
 				log.Error(err, "Error while trying to close the responseBody in handleSwitchPipeline")
 			}
 		}
 
-		log.Info("Print Original Request Bytes", "Request Bytes", request)
+		if debugRequestLogs {
+			log.Info("Print Original Request Bytes", "Request Bytes", request)
+		}
 		if route.Data == "$response" && index > 0 {
 			request = mergeRequests(responseBytes, initReqData)
 		}
-		log.Info("Print New Request Bytes", "Request Bytes", request)
+		if debugRequestLogs {
+			log.Info("Print New Request Bytes", "Request Bytes", request)
+		}
 		responseBody, statusCode, err = handleSwitchNode(ctx, &route, graph, initInput, request, headers)
 		if err != nil {
 			return nil, statusCode, err
@@ -677,15 +690,19 @@ func handleSequencePipeline(
 		}
 		log.Info("Starting execution of step", "type", stepType, "stepName", step.StepName)
 		request := input
-		log.Info("Print Original Request Bytes", "Request Bytes", request)
+		if debugRequestLogs {
+			log.Info("Print Original Request Bytes", "Request Bytes", request)
+		}
 		if responseBody != nil {
 			responseBytes, err = io.ReadAll(responseBody)
 			if err != nil {
 				log.Error(err, "Error while reading the response body")
 				return nil, 500, err
 			}
-			log.Info("Print Previous Response Bytes", "Previous Response Bytes",
-				responseBytes, "Previous Status Code", statusCode)
+			if debugRequestLogs {
+				log.Info("Print Previous Response Bytes", "Previous Response Bytes",
+					responseBytes, "Previous Status Code", statusCode)
+			}
 			err := responseBody.Close()
 			if err != nil {
 				log.Error(err, "Error while trying to close the responseBody in handleSequencePipeline")
@@ -695,7 +712,9 @@ func handleSequencePipeline(
 		if step.Data == "$response" && i > 0 {
 			request = mergeRequests(responseBytes, initReqData)
 		}
-		log.Info("Print New Request Bytes", "Request Bytes", request)
+		if debugRequestLogs {
+			log.Info("Print New Request Bytes", "Request Bytes", request)
+		}
 		if step.Condition != "" {
 			if !gjson.ValidBytes(responseBytes) {
 				return nil, 500, fmt.Errorf("invalid response")
@@ -1052,9 +1071,9 @@ func main() {
 		// specify the HTTP routers
 		Handler: mcRouter,
 		// set the maximum duration for reading the entire request, including the body
-		ReadTimeout: time.Minute,
+		ReadTimeout: GraphHandlerTimeoutSeconds * time.Second,
 		// set the maximum duration before timing out writes of the response
-		WriteTimeout: time.Minute,
+		WriteTimeout: GraphHandlerTimeoutSeconds * time.Second,
 		// set the maximum amount of time to wait for the next request when keep-alive are enabled
 		IdleTimeout: 3 * time.Minute,
 	}

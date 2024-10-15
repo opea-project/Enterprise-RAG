@@ -36,8 +36,8 @@ class TGIConnector:
                             top_k=input.top_k,
                             top_p=input.top_p,
                         )
-        
-        except RequestException as e:            
+
+        except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
             error_message = f"Failed to invoke the Generic TGI Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
             logger.error(error_message)

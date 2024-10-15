@@ -36,11 +36,11 @@ class OPEALlm:
 
     def _get_connector(self):
         if self._connector_name.upper() == "LANGCHAIN":
-            from comps.llms.utils.connectors.wrappers import wrapper_langchain
-            return wrapper_langchain.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
+            from comps.llms.utils.connectors import langchain_connector
+            return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
         elif self._connector_name.upper() == "GENERIC" or not self._connector_name.strip():
-            from comps.llms.utils.connectors import generic
-            return generic.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
+            from comps.llms.utils.connectors import generic_connector
+            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
         else:
             raise ValueError(f"Invalid connector name: {self._connector_name}. Expected to be either 'langchain', 'generic', or unset.")
 

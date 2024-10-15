@@ -53,8 +53,8 @@ opea_llm = OPEALlm(
 )
 @register_statistics(names=[USVC_NAME])
 @traceable(run_type="llm")
-# Define a function to handle processing of input for the microservice. 
-# Its input and output data types must comply with the registered ones above. 
+# Define a function to handle processing of input for the microservice.
+# Its input and output data types must comply with the registered ones above.
 def process(input: LLMParamsDoc) -> Response:
     """
     Processes the given LLMParamsDoc input using the OPEA LLM microservice.
@@ -71,7 +71,7 @@ def process(input: LLMParamsDoc) -> Response:
         res = opea_llm.run(input)
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
-         raise HTTPException(status_code=500, 
+         raise HTTPException(status_code=500,
                              detail=f"An error occurred while processing: {str(e)}"
     )
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)

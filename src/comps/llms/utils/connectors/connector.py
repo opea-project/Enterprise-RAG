@@ -10,7 +10,6 @@ from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-# todo: in _validate both regular mode and streaming mode should be checked
 class LLMConnector(ABC):
     def __init__(self, model_name: str, model_server: str, endpoint: str):
         """
@@ -35,9 +34,10 @@ class LLMConnector(ABC):
 
     def _validate(self) -> None:
         try:
-            test_input = LLMParamsDoc(query="test")
+            tested_params = {"query": "test", "max_new_tokens": 17}
+            test_input = LLMParamsDoc(**tested_params, streaming=False)
             self.generate(test_input)
-            logger.debug("Validation completed. LLM initialized successfully.")
+            logger.debug("Connection validated. LLM initialized successfully.")
         except Exception as e:
             logger.exception(f"Error initializing the LLM: {e}")
             raise RuntimeError(f"Error initializing the LLM: {e}")

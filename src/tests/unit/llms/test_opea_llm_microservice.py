@@ -67,7 +67,7 @@ def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, moc
 
    assert called_path.endswith(expected_suffix), \
       f"Expected load_dotenv to be called with a path ending in '{expected_suffix}', but got '{called_path}'"
-   
+
    # Check if required elements are declared
    assert hasattr(test_module, 'USVC_NAME'), "USVC_NAME is not declared"
    assert hasattr(test_module, 'logger'), "logger is not declared"
@@ -76,7 +76,7 @@ def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, moc
    assert hasattr(test_module, 'process'), "process is not declared"
 
 
-def test_initialization_succeeds_with_defaults(mock_get_connector, mock_cores_mega_microservice):   
+def test_initialization_succeeds_with_defaults(mock_get_connector, mock_cores_mega_microservice):
    # The configuration in the dotenv file shall satisfy all parameters specified as required
    try:
       import comps.llms.opea_llm_microservice as test_module
@@ -89,7 +89,7 @@ def test_initialization_succeeds_with_defaults(mock_get_connector, mock_cores_me
 
    # Assert that _model_server is a non-empty string
    assert isinstance(test_module.opea_llm._model_server, str) and test_module.opea_llm._model_server, "The _model_server is expected to be a non-empty string"
-   
+
    # Assert that _model_server_endpoint is a non-empty string
    assert isinstance(test_module.opea_llm._model_server_endpoint, str) and test_module.opea_llm._model_server_endpoint, "The _model_server_endpoint is expected to be a non-empty string"
 
@@ -145,7 +145,7 @@ def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice, m
    mock_input = MagicMock(spec=LLMParamsDoc)
    mock_response = MagicMock(spec=Response)
    mock_run.return_value = mock_response
-       
+
    try:
       import comps.llms.opea_llm_microservice as test_module
       importlib.reload(test_module)
@@ -165,7 +165,7 @@ def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice, m
 def test_microservice_process_failure(mock_run, mock_cores_mega_microservice, mock_get_connector):
    mock_input = MagicMock(spec=LLMParamsDoc)
    mock_run.side_effect = Exception("Test Exception")
-       
+
    try:
       import comps.llms.opea_llm_microservice as test_module
       importlib.reload(test_module)

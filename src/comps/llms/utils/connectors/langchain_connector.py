@@ -63,7 +63,7 @@ class VLLMConnector:
         self._model_name = model_name
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        try: 
+        try:
             llm = VLLMOpenAI(
                 openai_api_key="EMPTY",
                 openai_api_base=self._endpoint,
@@ -126,7 +126,6 @@ class LangchainLLMConnector(LLMConnector):
     def _initialize(self, model_name: str, model_server: str, endpoint: str):
         super().__init__(model_name, model_server, endpoint)
         self._connector = self._get_connector()
-        # TODO: fix validate false positive
         self._validate()
 
     def _get_connector(self):

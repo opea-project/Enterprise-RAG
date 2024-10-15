@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from comps.llms.utils.connectors.generic import GenericLLMConnector
-from comps.llms.utils.connectors.wrappers.wrapper_langchain import LangchainLLMConnector
+from comps.llms.utils.connectors.generic_connector import GenericLLMConnector
+from comps.llms.utils.connectors.langchain_connector import LangchainLLMConnector
 from comps.llms.utils.opea_llm import OPEALlm
 
 
@@ -35,7 +35,7 @@ def test_initialization_succeeds_with_valid_params(reset_singleton, mock_get_con
     # Assert that the instance is created successfully
     assert isinstance(OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain"), OPEALlm), "Instance was not created successfully."
     assert isinstance(OPEALlm(model_name="model2", model_server="tgi", model_server_endpoint="http://server:1234", connector_name="langchain"), OPEALlm), "Instance was not created successfully."
-    
+
     instance1 = OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain")
     assert isinstance(instance1, OPEALlm), "Instance was not created successfully."
     assert instance1._model_name == "model1","Is inconsistent with the provided parameters"
@@ -80,24 +80,24 @@ def test_initialization_raises_exception_when_request_unsupported_connector(rese
 
 
 @pytest.mark.parametrize("sut_model_server_name", ["vllm", "tgi"])
-@patch('comps.llms.utils.connectors.wrappers.wrapper_langchain.LangchainLLMConnector')
+@patch('comps.llms.utils.connectors.langchain_connector.LangchainLLMConnector')
 def test_get_connector_succeeds_for_langchain(MockLangchainLLMConnector, sut_model_server_name, reset_singleton, mock_connector_validate):
     sut_connector = "langchain"
     try:
         sut_instance = OPEALlm(model_name="model1", model_server=sut_model_server_name, model_server_endpoint="http://server:1234", connector_name=sut_connector)
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
-    
+
     MockLangchainLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint)
- 
+
 
 @pytest.mark.parametrize("sut_model_server_name", ["vllm", "tgi"])
-@patch('comps.llms.utils.connectors.generic.GenericLLMConnector')
+@patch('comps.llms.utils.connectors.generic_connector.GenericLLMConnector')
 def test_get_connector_succeeds_for_generic(MockGenericLLMConnector, sut_model_server_name, reset_singleton, mock_connector_validate):
     sut_connector="generic"
     try:
         sut_instance = OPEALlm(model_name="model1", model_server=sut_model_server_name, model_server_endpoint="http://server:1234", connector_name=sut_connector)
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
-    
+
     MockGenericLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint)

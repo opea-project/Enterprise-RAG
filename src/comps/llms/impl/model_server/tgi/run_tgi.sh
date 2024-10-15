@@ -60,7 +60,11 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
         exit 1
     fi
 
-    docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-tgi-model-server
+    if [ "${IF_FP8_QUANTIZATION}" = "true" ]; then
+        docker compose -f docker/docker-compose-hpu-fp8.yaml up --build llm-tgi-fp8-model-server
+    else
+        docker compose -f docker/docker-compose-hpu.yaml up --build llm-tgi-model-server
+    fi
 
 elif [ "${LLM_DEVICE}" = "cpu" ]; then
     # Build the image and run the server

@@ -1,0 +1,65 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  llm-tgi-fp8-model-server:
+    image: ghcr.io/huggingface/tgi-gaudi:2.0.5
+    container_name: llm-tgi-fp8-model-server
+    ports:
+      - "${LLM_TGI_PORT}:80"
+    volumes:
+      - ./data:/data
+      - ../fp8_quantization/quantization_config:/usr/src/quantization_config
+      - ${FP8_QUANTIZE_MODEL_PATH}/hqt_output:/usr/src/hqt_output
+    environment:
+      QUANT_CONFIG: ./quantization_config/maxabs_quant.json
+      TEXT_GENERATION_SERVER_IGNORE_EOS_TOKEN: true
+      USE_FLASH_ATTENTION: true
+      FLASH_ATTENTION_RECOMPUTE: true
+      HABANA_VISIBLE_DEVICES: ${HABANA_VISIBLE_DEVICES}
+      ENABLE_HPU_GRAPH: true
+      LIMIT_HPU_GRAPH: true
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      OMPI_MCA_btl_vader_single_copy_mechanism: ${OMPI_MCA_btl_vader_single_copy_mechanism}
+      PT_HPU_ENABLE_LAZY_COLLECTIVES: ${PT_HPU_ENABLE_LAZY_COLLECTIVES}
+      SHARDED: ${SHARDED}
+      NUM_SHARD: ${NUM_SHARD}
+      PREFILL_BATCH_BUCKET_SIZE: ${PREFILL_BATCH_BUCKET_SIZE}
+      BATCH_BUCKET_SIZE: ${BATCH_BUCKET_SIZE}
+      PAD_SEQUENCE_TO_MULTIPLE_OF: ${PAD_SEQUENCE_TO_MULTIPLE_OF}
+      MAX_TOTAL_TOKENS: ${MAX_TOTAL_TOKENS}
+    runtime: habana
+    cap_add:
+      - SYS_NICE
+    ipc: host
+    command: ["--model-id", "${LLM_TGI_MODEL_NAME}",
+              "--max-input-tokens", "${MAX_INPUT_TOKENS}",
+              "--max-total-tokens", "${MAX_TOTAL_TOKENS}",
+              "--max-batch-prefill-tokens", "${MAX_BATCH_PREFILL_TOKENS}",
+              "--max-batch-total-tokens", "${MAX_BATCH_TOTAL_TOKENS}",
+              "--max-waiting-tokens", "${MAX_WAITING_TOKENS}",
+              "--waiting-served-ratio", "${WAITING_SERVED_RATIO}",
+              "--max-concurrent-requests", "${MAX_CONCURRENT_REQUESTS}"]
+
+  llm_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/llms/impl/microservice/Dockerfile
+    container_name: llm-tgi-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      LLM_CONNECTOR: ${LLM_CONNECTOR}
+      LLM_MODEL_NAME: ${LLM_TGI_MODEL_NAME}
+      LLM_MODEL_SERVER: "tgi"
+      LLM_MODEL_SERVER_ENDPOINT: http://localhost:${LLM_TGI_PORT}
+      NO_PROXY: ${NO_PROXY}
+    restart: unless-stopped
+    depends_on:
+      - llm-tgi-fp8-model-server

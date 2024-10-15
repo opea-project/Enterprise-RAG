@@ -27,6 +27,7 @@ build/
 # Test output files
 .coverage
 .pytest_cache/
+.benchmarks/
 
 # Ignore the .vscode directory
 .vscode/

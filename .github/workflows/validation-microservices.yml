@@ -15,8 +15,10 @@ jobs:
       concurrency:
         group: validation
       permissions:
-        id-token: write
         contents: read
+        id-token: write
+        issues: write
+        pull-requests: write
       defaults:
         run:
           shell: bash

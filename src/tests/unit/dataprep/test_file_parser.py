@@ -49,3 +49,9 @@ def test_types(mock_fileparser, mock_mimetype):
     file_name = 'test_dataprep.xyz'
     fp = FileParser(file_name)
     assert fp.supported_file('application/test') == [{'file_type': 'xyz', 'loader_file_name': 'load_xyz', 'loader_class': 'LoadXYZ', 'mime_type': 'application/test'}]
+
+def test_symlink_file(mock_fileparser, mock_mimetype):
+    file_name = 'test_dataprep.xyz'
+    with mock.patch('os.path.islink', return_value=True):
+        with pytest.raises(ValueError, match=f"The file {file_name} is a symbolic link, which is not allowed."):
+            FileParser(file_name)

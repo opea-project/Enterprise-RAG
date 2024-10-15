@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import magic
+import os
 
 class FileParser:
     def __init__(self, file_path):
@@ -10,6 +11,8 @@ class FileParser:
         self.file_type = file_path.split('.')[-1]
         self.mime_type = self.get_mime_type()
 
+        if os.path.islink(self.file_path):
+            raise ValueError(f"The file {self.file_path} is a symbolic link, which is not allowed.")
         if self.file_type not in self.supported_types():
             raise ValueError(f"Unsupported file type: {self.file_type}. Supported files types: {', '.join(self.supported_types())}")
         if self.mime_type not in self.supported_mime_types():

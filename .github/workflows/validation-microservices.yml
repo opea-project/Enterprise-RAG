@@ -35,11 +35,13 @@ jobs:
             sparse-checkout: '.github/actions/'
 
         - name: Update comment with workflow link
+          continue-on-error: true
           uses: ./.github/actions/update-comment
           with:
             comment-id: ${{ github.event.comment.id }}
             content: |
               Job run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            github-token: ${{ github.token }}
 
         - name: "Parse comment arguments"
           uses: ./.github/actions/parse-microservices-list

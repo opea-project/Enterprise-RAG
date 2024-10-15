@@ -25,6 +25,13 @@ jobs:
         REMOTE_WORKSPACE: "/tmp/${{ github.event.issue.number }}/${{ github.run_number }}/${{ github.run_attempt }}"
         SPECIFIC_TESTS: ""
       steps:
+        - name: Update comment with workflow link
+          uses: ./.github/actions/update-comment
+          with:
+            comment-id: ${{ github.event.comment.id }}
+            content: |
+              Job run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
         - name: Install deps
           run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests
 

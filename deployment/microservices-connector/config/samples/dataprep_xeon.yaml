@@ -20,7 +20,7 @@ spec:
       steps:
       - name: DataPrep
         internalService:
-          serviceName: dataprep-usvc
+          serviceName: dataprep-svc
           config:
             endpoint: /v1/dataprep
       - name: Embedding
@@ -42,7 +42,7 @@ spec:
       - name: Ingestion
         data: $response
         internalService:
-          serviceName: ingestion-usvc
+          serviceName: ingestion-svc
           config:
             VECTOR_STORE: redis
             REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"

@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import magic
 import os
+from comps.cores.mega.logger import get_opea_logger
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class FileParser:
     def __init__(self, file_path):
@@ -32,7 +35,19 @@ class FileParser:
             __import__(f"comps.dataprep.utils.file_loaders.{file_loader['loader_file_name']}", fromlist=['comps']),
             file_loader['loader_class']
         )
-        return loader(self.file_path).extract_text()
+
+        logger.info(f"Started processing file {self.file_path} with loader {file_loader['loader_class']}")
+
+        data = None
+        try:
+            data = loader(self.file_path).extract_text()
+        except Exception as e:
+            logger.exception(f"Error while processing file {self.file_path} with loader {file_loader['loader_class']}. {e}")
+            raise
+
+        logger.info(f"Finished processing file {self.file_path} with loader {file_loader['loader_class']}")
+
+        return data
 
     def default_mappings(self):
         return [

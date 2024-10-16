@@ -6,8 +6,8 @@ import ExternalLink from "@/components/shared/ExternalLink/ExternalLink";
 const APISIX_DASHBOARD_URL = import.meta.env.VITE_APISIX_DASHBOARD_URL;
 const KEYCLOAK_ADMIN_PANEL_URL = import.meta.env.VITE_KEYCLOAK_ADMIN_PANEL_URL;
 
-const ConfigureServicesTab = () => (
-  <ul className="list-none">
+const AuthenticationTab = () => (
+  <ul className="list-none p-4">
     <li>
       <ExternalLink text="APISIX Dashboard" href={APISIX_DASHBOARD_URL} />
     </li>
@@ -20,4 +20,4 @@ const ConfigureServicesTab = () => (
   </ul>
 );
 
-export default ConfigureServicesTab;
+export default AuthenticationTab;

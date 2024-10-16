@@ -21,7 +21,7 @@ export default ({ mode }: { mode: string }) => {
       },
     },
     server: {
-      port: 8888,
+      port: 7777,
       strictPort: true,
       open: true,
       proxy: {

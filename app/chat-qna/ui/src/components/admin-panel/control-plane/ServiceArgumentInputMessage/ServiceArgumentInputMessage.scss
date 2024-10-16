@@ -1,0 +1,18 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-argument-input-message {
+  @apply absolute top-[-2.375rem] w-full px-2 py-1 drop-shadow;
+
+  & p {
+    @apply text-xs;
+  }
+
+  &.service-argument-input-message__on-focus {
+    @apply bg-light-primary text-light-text-inverse dark:bg-dark-primary dark:text-dark-text-inverse;
+  }
+
+  &.service-argument-input-message__on-invalid {
+    @apply bg-light-input-invalid text-light-text-inverse dark:bg-dark-input-invalid dark:text-dark-text-primary;
+  }
+}

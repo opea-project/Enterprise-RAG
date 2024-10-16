@@ -11,7 +11,7 @@ import LinksIngestionPanel from "@/components/admin-panel/data-ingestion/LinksIn
 import NotificationToast, {
   Notification,
 } from "@/components/shared/NotificationToast/NotificationToast";
-import { LinkForIngestion } from "@/models/dataIngestion";
+import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import DataIngestionService from "@/services/dataIngestionService";
 
 const DataIngestionTab = () => {

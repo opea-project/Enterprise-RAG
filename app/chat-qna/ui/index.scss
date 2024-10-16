@@ -125,7 +125,15 @@ body {
 }
 
 button {
-  @apply cursor-pointer bg-light-button-contained-primary-background px-5 py-1.5 text-base text-light-button-contained-text hover:bg-light-button-contained-primary-background-hover disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-link-primary dark:text-dark-text-inverse dark:hover:bg-dark-link-hover dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
+  @apply cursor-pointer select-none bg-light-button-contained-primary-background px-5 py-1.5 text-base text-light-button-contained-text hover:bg-light-button-contained-primary-background-hover disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-link-primary dark:text-dark-text-inverse dark:hover:bg-dark-link-hover dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
+
+  &.button--small {
+    @apply px-3 py-1 text-xs;
+  }
+}
+
+button.button__success {
+  @apply bg-light-status-success-primary hover:bg-light-status-success-soft disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-status-success-soft dark:hover:bg-dark-status-success-primary dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
 }
 
 button.outlined-button--primary {
@@ -159,6 +167,10 @@ textarea {
 
 input.input--invalid {
   @apply border-light-input-invalid focus-visible:outline-light-input-invalid dark:border-dark-input-invalid dark:focus-visible:outline-dark-input-invalid;
+}
+
+input[type="checkbox"] {
+  @apply cursor-pointer accent-light-primary disabled:cursor-default dark:accent-dark-primary;
 }
 
 a {

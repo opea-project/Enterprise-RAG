@@ -19,6 +19,7 @@ import endpoints from "@/api/endpoints.json";
 import {
   addMessage,
   selectIsMessageStreamed,
+  selectPromptRequestParams,
   setIsMessageStreamed,
   updateMessage,
 } from "@/store/conversationFeed.slice";
@@ -31,6 +32,7 @@ const PromptInput = () => {
   const [textAreaRows, setTextAreaRows] = useState(1);
 
   const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
+  const promptRequestParams = useAppSelector(selectPromptRequestParams);
 
   useEffect(() => {
     promptInputRef.current!.focus();
@@ -90,11 +92,7 @@ const PromptInput = () => {
 
     const requestBody = {
       text: prompt,
-      parameters: {
-        max_new_tokens: 1024,
-        do_sample: true,
-        streaming: true,
-      },
+      parameters: promptRequestParams,
     };
 
     const url = window.location.origin + endpoints.chat;

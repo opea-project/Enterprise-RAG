@@ -2,13 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import endpoints from "@/api/endpoints.json";
-import { LinkForIngestion } from "@/models/dataIngestion";
+import { DataIngestionRequest } from "@/api/models/data-ingestion/dataIngestion";
+import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import { documentToBase64 } from "@/utils";
-
-interface DataIngestionRequest {
-  files?: { filename: string; data64: unknown }[];
-  links?: string[];
-}
 
 class DataIngestionService {
   async postDataToIngest(documents: File[], links: LinkForIngestion[]) {

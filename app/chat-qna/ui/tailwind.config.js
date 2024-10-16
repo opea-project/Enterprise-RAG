@@ -131,10 +131,27 @@ module.exports = {
           text: "#ffffff",
           background: "#242528",
         },
-        // light
         light: {
           primary: "#0054AE",
           focus: "#0054AE",
+          status: {
+            success: {
+              primary: "#008a00",
+              soft: "#add2ad",
+            },
+            warning: {
+              primary: "#ffd100",
+              soft: "#ffeb92",
+            },
+            error: {
+              primary: "#ce0000",
+              soft: "#f88f8f",
+            },
+            unknown: {
+              soft: "#b2b3b9",
+              primary: "#6a6d75",
+            },
+          },
           background: {
             1: "#FFFFFF",
             2: "#F9F9F9",
@@ -251,6 +268,24 @@ module.exports = {
         dark: {
           primary: "#00c7fd",
           focus: "#00c7fd",
+          status: {
+            success: {
+              primary: "#add2ad",
+              soft: "#5ca05c",
+            },
+            warning: {
+              primary: "#ffeb92",
+              soft: "#ffe057",
+            },
+            error: {
+              primary: "#f88f8f",
+              soft: "#d55050",
+            },
+            unknown: {
+              primary: "#6b6e76",
+              soft: "#2b2c30",
+            },
+          },
           background: {
             1: "#242528",
             2: "#393939",

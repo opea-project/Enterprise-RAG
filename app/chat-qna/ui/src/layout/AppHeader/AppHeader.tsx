@@ -47,8 +47,8 @@ const AppHeader = () => {
       </div>
       <div className="app-header__actions">
         <p className="app-header__username">{username}</p>
-        {isAdmin ? (
-          isChatPage ? (
+        {isAdmin &&
+          (isChatPage ? (
             <Tooltip text="Admin Panel">
               <button
                 className="icon-button"
@@ -63,8 +63,7 @@ const AppHeader = () => {
                 <BsChatLeftTextFill />
               </button>
             </Tooltip>
-          )
-        ) : null}
+          ))}
         <Tooltip text={dark ? "Light Mode" : "Dark Mode"}>
           <button className="icon-button" onClick={handleToggleModeBtnClick}>
             {dark ? <BsSunFill /> : <BsMoonFill />}

@@ -6,7 +6,7 @@
 }
 
 .tooltip {
-  @apply absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap bg-tooltip-background px-3 py-2 text-xs text-tooltip-text drop-shadow-md;
+  @apply absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap bg-tooltip-background px-3 py-2 text-xs font-normal text-tooltip-text drop-shadow-md;
 
   &.bottom {
     @apply -bottom-10;

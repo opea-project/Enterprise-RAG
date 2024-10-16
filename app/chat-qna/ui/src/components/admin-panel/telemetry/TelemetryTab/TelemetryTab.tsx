@@ -6,7 +6,9 @@ import ExternalLink from "@/components/shared/ExternalLink/ExternalLink";
 const GRAFANA_DASHBOARD_URL = import.meta.env.VITE_GRAFANA_DASHBOARD_URL;
 
 const TelemetryTab = () => (
-  <ExternalLink text="Grafana Dashboard" href={GRAFANA_DASHBOARD_URL} />
+  <div className="p-4">
+    <ExternalLink text="Grafana Dashboard" href={GRAFANA_DASHBOARD_URL} />
+  </div>
 );
 
 export default TelemetryTab;

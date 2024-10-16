@@ -6,11 +6,17 @@ import "./AdminPanelPage.scss";
 import classNames from "classnames";
 import { useCallback, useState } from "react";
 
-import ConfigureServicesTab from "@/components/admin-panel/configure-services/ConfigureServicesTab/ConfigureServicesTab";
+import AuthenticationTab from "@/components/admin-panel/authentication/AuthenticationTab/AuthenticationTab";
+import ControlPlaneTab from "@/components/admin-panel/control-plane/ControlPlaneTab/ControlPlaneTab";
 import DataIngestionTab from "@/components/admin-panel/data-ingestion/DataIngestionTab/DataIngestionTab";
 import TelemetryTab from "@/components/admin-panel/telemetry/TelemetryTab/TelemetryTab";
 
-const adminPanelTabs = ["Data Ingestion", "Telemetry", "Configure Services"];
+const adminPanelTabs = [
+  "Control Plane",
+  "Data Ingestion",
+  "Telemetry",
+  "Authentication",
+];
 
 const AdminPanelPage = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -47,9 +53,10 @@ const AdminPanelPage = () => {
           "data-ingestion-tab-content": isTabSelected("Data Ingestion"),
         })}
       >
+        {isTabSelected("Control Plane") && <ControlPlaneTab />}
         {isTabSelected("Data Ingestion") && <DataIngestionTab />}
         {isTabSelected("Telemetry") && <TelemetryTab />}
-        {isTabSelected("Configure Services") && <ConfigureServicesTab />}
+        {isTabSelected("Authentication") && <AuthenticationTab />}
       </div>
     </div>
   );

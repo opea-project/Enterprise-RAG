@@ -5,7 +5,7 @@ import "./DataIngestionUploadPanel.scss";
 
 import { BsCloudUploadFill } from "react-icons/bs";
 
-import { LinkForIngestion } from "@/models/dataIngestion";
+import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 
 interface DataIngestionUploadPanelProps {
   documents: File[];

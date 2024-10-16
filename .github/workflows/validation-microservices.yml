@@ -107,16 +107,25 @@ jobs:
               cd ${{ env.REMOTE_WORKSPACE }}/src
               HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
 
+        - name: Fetch Zephyr script
+          uses: actions/checkout@v4
+          with:
+            repository: intel-sandbox/rag-solution-infra
+            ref: main
+            sparse-checkout: 'tools/'
+            path: zephyr-dir
+            token: ${{ secrets.RAG_SOLUTION_INFRA_PAT }}
+
         - name: Download allure-results
           if: always()
-          run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results repo/src/tests/microservices
+          run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results zephyr-dir
 
         - name: Upload results to Zephyr
           if: always()
           run: |
             echo "Attempting to upload results to Zephyr"
-            cd repo/src/tests/microservices
-            python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }}
+            cd zephyr-dir
+            python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }} -r allure-results
             echo "Uploading results to Zephyr finished"
 
         - name: Clean up container

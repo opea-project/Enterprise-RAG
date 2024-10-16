@@ -118,13 +118,13 @@ jobs:
 
         - name: Download allure-results
           if: always()
-          run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results zephyr-dir
+          run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results zephyr-dir/tools
 
         - name: Upload results to Zephyr
           if: always()
           run: |
             echo "Attempting to upload results to Zephyr"
-            cd zephyr-dir
+            cd zephyr-dir/tools
             python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }} -r allure-results
             echo "Uploading results to Zephyr finished"
 

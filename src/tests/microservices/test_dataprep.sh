@@ -179,7 +179,7 @@ function upload_file_curl() {
         {
             "files": [{
                 "filename": "${file_to_upload}",
-                "data64": "$(base64 -w 0 ./tests/microservices/files/${file_to_upload})"
+                "data64": "$(base64 -w 0 ./tests/files/dataprep_upload/${file_to_upload})"
             }]
         }
 JSON_DATA

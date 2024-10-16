@@ -31,9 +31,11 @@ def test_api_health_checks():
         with pods[0].portforward(remote_port=service["port"]) as local_port:
             headers = {"Content-Type": "application/json"}
             try:
+                print(f"Attempting to make a request to {service['namespace']}/{service['selector']}...")
                 response = requests.get(
                     f"http://127.0.0.1:{local_port}/v1/health_check",
-                    headers=headers
+                    headers=headers,
+                    timeout=10
                 )
                 assert response.status_code == 200, \
                     f"Got unexpected status code for {service['selector']} health check API call"

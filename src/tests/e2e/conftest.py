@@ -23,3 +23,13 @@ def suppress_logging():
 @pytest.fixture
 def chatqa_api_helper():
     return ApiRequestHelper("chatqa", "router-service")
+
+
+@pytest.fixture
+def dataprep_api_helper():
+    return ApiRequestHelper("dataprep", "router-service")
+
+
+@pytest.fixture
+def generic_api_helper():
+    return ApiRequestHelper()

@@ -13,17 +13,18 @@ from api_request_helper import InvalidChatqaResponseBody
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T32")
 def test_chatqa_timeout(chatqa_api_helper):
     """
-    Bot is usually very talkative when asked about AVX512.
     The aim is to check if the response is no longer than 60 seconds what may
     lead to closing the connection on the server side.
     """
-    question = "What is AVX512?"
+    question = ("Give me a python script that does a lot of stuff using different libraries. Then do the same for the "
+                "following languages: C, C++, Ruby, C#, Java, JavaScript, Go")
     start_time = time.time()
     try:
-        chatqa_api_helper.call_chatqa(question)
+        response = chatqa_api_helper.call_chatqa(question)
     except requests.exceptions.ChunkedEncodingError:
         duration = time.time() - start_time
         pytest.fail(f"Request has been closed on the server side after {duration} seconds")
+    print(f"Response: {chatqa_api_helper.format_response(response.text)}")
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T31")
@@ -37,7 +38,7 @@ def test_chatqa_response_body(chatqa_api_helper):
     try:
         print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
     except InvalidChatqaResponseBody as e:
-        pytest.fail(e)
+        pytest.fail(str(e))
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T30")
@@ -74,4 +75,4 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
     try:
         print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
     except InvalidChatqaResponseBody as e:
-        pytest.fail(e)
+        pytest.fail(str(e))

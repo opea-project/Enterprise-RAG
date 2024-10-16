@@ -1,0 +1,103 @@
+name: "SDL Scan"
+
+inputs:
+  PR-number:
+    description: 'Pull request number'
+    required: true
+  Repository-name:
+    description: 'Repository name'
+    required: true
+  Build-config:
+    description: 'BuildConfig file name'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Unify workspace path
+      run: |
+        echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+      shell: bash
+    - name: Install packages (sudo, zip, jq)
+      run: apt update && apt -y install sudo zip jq
+      shell: bash
+    - name: Clean Up Working Directory
+      run: sudo rm -rf ${{ env.GITHUB_WORKSPACE }}/*
+      shell: bash
+    - uses: intel-innersource/frameworks.actions.certs@latest
+    - name: Collect credentials from Conjur
+      uses: intel-innersource/frameworks.actions.conjur-fetch@v1
+      with:
+        host_id: host/github-apps-oidc/43211-raglabel
+        secrets: >
+          FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/username|CONJUR_SDL_USERNAME;
+          FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/password|CONJUR_SDL_PASSWORD
+    - name: Fetch code to be scanned
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.Repository-name }}
+        ref: refs/pull/${{ inputs.PR-number }}/head
+        path: repo
+    - name: SDLE Evidence upload flag
+      id: submit
+      run: |
+        if [ ${{ github.event_name }} == 'release' ]; then
+          echo "submit=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "submit=false" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
+    - name: Archive repo
+      run: zip -r rag-enterprise-repo.zip repo/* -x ".git/*" ".github/*"
+      shell: bash
+    - name: SDLe Scans
+      id: compliance
+      uses: intel-innersource/frameworks.actions.idf-central-scan@v1
+      with:
+        config: .github/${{ inputs.Build-config }}.json
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        # compilation_scan: ''
+        binary: "rag-enterprise-repo.zip"
+        output_directory: ${{ env.GITHUB_WORKSPACE }}/scans_results
+        sdle: ${{ steps.submit.outputs.submit || false }}
+        logfile: IDF_Scans_Results_${{ github.run_id }}.log
+      env:
+        IDFC_USER: ${{ env.CONJUR_SDL_USERNAME }}@intel.com
+        IDFC_PASSWORD: ${{ env.CONJUR_SDL_PASSWORD }}
+        IDFC_STORAGE_USER: ${{ env.CONJUR_SDL_USERNAME }}
+        IDFC_STORAGE_PASS: ${{ env.CONJUR_SDL_PASSWORD }}
+
+    - name: Check results
+      id: results
+      env:
+        SCAN_SUMMARY: ${{ env.GITHUB_WORKSPACE }}/scans_results/results/scan_sumary.json
+      run: |
+        if ! [ -f ${SCAN_SUMMARY} ]; then
+          echo "Scan summary not found. Try again. If this persists verify BuildConfig.json is correct."
+          exit 1
+        fi
+
+        exit_code=0
+        scan_failures=$(jq ' .scans | to_entries | map(select(.value.failures | tonumber > 0) | .key)' ${SCAN_SUMMARY})
+        scan_errors=$(jq ' .scans | to_entries | map(select(.value.errors | tonumber > 0) | .key)' ${SCAN_SUMMARY})
+
+        if [ "$scan_failures" != "[]" ]; then
+          echo "Detected security issues in:"
+          echo "##################################################"
+          echo "$scan_failures"
+          echo "##################################################"
+          echo "Download IDF_Scans_Results_${{ github.run_id }} for more details."
+          exit_code=1
+        fi
+        if [ "$scan_errors" != "[]" ]; then echo "Scans $scan_errors failed. Try again"; exit_code=1; fi
+
+        exit $exit_code
+      shell: bash
+    - uses: actions/upload-artifact@v4
+      id: upload-results
+      if: ${{ !cancelled() }}
+      with:
+        name: IDF_Scans_Results_${{ github.run_id }}
+        path: ${{ env.GITHUB_WORKSPACE }}/scans_results
+        if-no-files-found: error
+        retention-days: 60

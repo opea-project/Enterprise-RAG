@@ -1,0 +1,25 @@
+{
+    "IngredientName": "EnterpriseRAG",
+    "Description": "EnterpriseRAG",
+    "SchemaVersion": "1.0",
+    "BuildInfo": {
+        "Name": "EnterpriseRag",
+        "FullName": "EnterpriseRagSourceCode",
+        "SDL": [
+            {
+                "ID": "22078",
+                "URL": "https://sdl-e.app.intel.com/project?id=b418a47f-4b8f-483a-9a87-311efe48845",
+                "Submitter": "sys_owrbuild"
+            }
+        ]
+    },
+    "StaticSecurityScan": {
+        "ServerURL": "https://sast.intel.com",
+        "ProjectID": "361162"
+    },
+    "TrivyConfig": {
+        "target": "."
+    },
+    "BanditScan": {},
+    "AVScan": {}
+}

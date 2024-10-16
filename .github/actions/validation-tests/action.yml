@@ -1,0 +1,146 @@
+name: "Validation tests"
+
+inputs:
+  PR-number:
+    description: 'Pull request number'
+    required: true
+  Repository-name:
+    description: 'Repository name'
+    required: true
+  SSH_KEY:
+    description: 'SSH key'
+    required: true
+  SSH_CONFIG:
+    description: 'SSH connection config file'
+    required: true
+  SSH_GAUDI1_KNOWN_HOSTS:
+    description: 'Known host file with gaudi added'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install deps
+      run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests
+      shell: bash
+
+    - name: Update comment with workflow link
+      if: ${{ github.event_name == 'issue_comment' }}
+      continue-on-error: true
+      uses: ./.github/actions/update-comment
+      with:
+        comment-id: ${{ github.event.comment.id }}
+        content: |
+          Job run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        github-token: ${{ github.token }}
+
+    - name: "Parse comment arguments"
+      if: ${{ github.event_name == 'issue_comment' }}
+      uses: ./.github/actions/parse-microservices-list
+      with:
+        comment: ${{ github.event.comment.body }}
+
+    - name: Install SSH key
+      uses: ./.github/actions/install-ssh-key
+      with:
+        key: ${{ inputs.SSH_KEY }}
+        name: enterpriseRAG1
+        config: ${{ inputs.SSH_CONFIG }}
+        known_hosts: ${{ inputs.SSH_GAUDI1_KNOWN_HOSTS }}
+
+    - name: Fetch code to be tested
+      uses: actions/checkout@v4
+      with:
+        ref: "refs/pull/${{ inputs.PR-number }}/head"
+        path: repo
+        repository: ${{ inputs.Repository-name }}
+
+    - uses: intel-innersource/frameworks.actions.certs@latest
+      if: always()
+
+    - name: Collect credentials from Conjur
+      if: always()
+      uses: intel-innersource/frameworks.actions.conjur-fetch@v1
+      with:
+        host_id: host/github-apps-oidc/43211-raglabel
+        secrets: >
+          FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-jira_token/password|JIRA_TOKEN;
+          FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-hugging_face_token/password|HF_TOKEN
+
+    - name: "Create workspace directory"
+      uses: ./.github/actions/execute_remote_script
+      with:
+        host: ${{ env.REMOTE_GAUDI_HOST }}
+        run: mkdir -p ${{ env.REMOTE_WORKSPACE }}
+        shell: bash
+
+    - name: rsync over SSH
+      run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
+      shell: bash
+
+    - name: "Run all tests"
+      if: ${{ env.SPECIFIC_TESTS == '' }}
+      uses: ./.github/actions/execute_remote_script
+      env:
+        HF_TOKEN: ${{ env.HF_TOKEN }}
+      with:
+        host: ${{ env.REMOTE_GAUDI_HOST }}
+        run: |
+          cd ${{ env.REMOTE_WORKSPACE }}/src
+          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
+        shell: bash
+
+    - name: "Run selected tests"
+      if: ${{ env.SPECIFIC_TESTS != '' }}
+      uses: ./.github/actions/execute_remote_script
+      env:
+        HF_TOKEN: ${{ env.HF_TOKEN }}
+      with:
+        host: ${{ env.REMOTE_GAUDI_HOST }}
+        run: |
+          cd ${{ env.REMOTE_WORKSPACE }}/src
+          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
+        shell: bash
+
+    - name: Fetch Zephyr script
+      uses: actions/checkout@v4
+      with:
+        repository: intel-sandbox/rag-solution-infra
+        ref: main
+        sparse-checkout: 'tools/'
+        path: zephyr-dir
+        token: ${{ env.RAG_SOLUTION_INFRA_PAT }}
+
+    - name: Download allure-results
+      if: always()
+      run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results zephyr-dir/tools
+      shell: bash
+
+    - name: Upload results to Zephyr
+      if: always()
+      run: |
+        echo "Attempting to upload results to Zephyr"
+        cd zephyr-dir/tools
+        python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }} -r allure-results
+        echo "Uploading results to Zephyr finished"
+      shell: bash
+
+    - name: Clean up container
+      if: always()
+      uses: ./.github/actions/execute_remote_script
+      with:
+        host: ${{ env.REMOTE_GAUDI_HOST }}
+        run: |
+          cid=$(docker ps -aq --filter "name=test-comps-embeddings*")
+          if [[ ! -z "$cid" ]]; then echo "Cleaning up test-comps-embeddings containers..." && docker stop $cid && docker rm $cid && sleep 1s; fi
+        shell: bash
+
+    - name: Clean up workspace
+      if: always()
+      uses: ./.github/actions/execute_remote_script
+      with:
+        host: ${{ env.REMOTE_GAUDI_HOST }}
+        run: |
+          rm -rf ${{ env.REMOTE_WORKSPACE }}
+          echo "Workspace has been removed"
+        shell: bash

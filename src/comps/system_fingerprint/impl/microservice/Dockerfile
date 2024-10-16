@@ -16,7 +16,7 @@ RUN useradd -m -s /bin/bash user
 USER user
 
 ENV PATH="$PATH:/home/user/.local/bin"
-ENV PYTHONPATH="$PYTHONPATH:/home/user"
+ENV PYTHONPATH="/home/user"
 
 COPY ./comps/system_fingerprint/impl/microservice/requirements.txt /tmp/requirements.txt
 

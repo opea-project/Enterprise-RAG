@@ -19,7 +19,7 @@ export HF_TOKEN=${your_hf_api_token}
 
 ```bash
 
-chmod run_torchserve.sh
+chmod +x run_torchserve.sh
 ./run_torchserve.sh
 ```
 

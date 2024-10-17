@@ -1,9 +1,8 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import json
-import yaml
+import os
 from typing import List, Union
 
 import intel_extension_for_pytorch as ipex
@@ -11,10 +10,11 @@ import torch  # type: ignore
 import torch.nn.functional as F  # type: ignore
 import transformers  # type: ignore
 from llmspec.mixins import JSONSerializableMixin
-from msgspec import Struct
 from mosec import Runtime, Server, Worker, get_logger
+from msgspec import Struct
 
 logger = get_logger()
+
 
 class EmbRequest(Struct, kw_only=True):
     input: str
@@ -26,43 +26,73 @@ class EmbResponse(Struct, JSONSerializableMixin, kw_only=True):
 
 class Embedding(Worker):
     def __init__(self):
-        with open('model-config.yaml', 'r') as file:
-            model_config = yaml.safe_load(file)
-        self.model_name = model_config["model_name"]
-        self.amp_dtype = model_config["amp_dtype"]
+        self.model_name = str(os.getenv('MOSEC_MODEL_NAME'))
+        if not self.model_name:
+            raise ValueError("The 'MOSEC_MODEL_NAME' cannot be empty.")
 
-        logger.debug(f"Loading model: {self.model_name}")
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name)
-        self.model = transformers.AutoModel.from_pretrained(self.model_name)
-        self.device = "cpu"
+        self.device_type = str(os.getenv('MOSEC_DEVICE_TYPE', "cpu")).lower()
+        self.amp_dtype = str(os.getenv('MOSEC_AMP_DTYPE'))
 
         if self.amp_dtype == "BF16":
             self.amp_enabled = True
             self.amp_dtype = torch.bfloat16
-        else:
+        elif self.amp_dtype == "FP32":
             self.amp_enabled = False
             self.amp_dtype = torch.float32
 
-        self.model = self.model.to(memory_format=torch.channels_last).to(self.device)
-        self.model.eval()
+        else:
+            error_message = f"Invalid AMP_DTYPE value '{self.amp_dtype}'. Expected 'BF16' or 'FP32'."
+            logger.error(error_message)
+            raise ValueError(error_message)
+        
 
-        self.model = ipex.llm.optimize(
-            self.model,
-            dtype=self.amp_dtype,
-            inplace=True,
-            deployment_mode=True,
-        )
+        logger.info(f"MOSEC_MODEL_NAME is set to {self.model_name}.")
+        logger.info(f"MOSEC_DEVICE_TYPE is set to {self.device_type}.")
+        logger.info(f"MOSEC_AMP_DTYPE is set to {self.amp_dtype}.")
+
+        logger.debug(f"Loading model: {self.model_name}")
+        try:
+            # Attempt to load the tokenizer and model from the given model name
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name)
+            self.model = transformers.AutoModel.from_pretrained(self.model_name)
+        except Exception as e:
+            logger.error(f"Error loading model '{self.model_name}': {str(e)}")
+            raise
+        
+        try:
+            self.model = self.model.to(memory_format=torch.channels_last).to(self.device_type)
+            self.model.eval()
+        except Exception as e:
+            logger.error(f"Error setting model to device '{self.device_type}': {str(e)}")
+            raise
+
+        try:
+            self.model = ipex.llm.optimize(
+                self.model,
+                dtype=self.amp_dtype,
+                inplace=True,
+                deployment_mode=True,
+            )
+        except Exception as e:
+            logger.error(f"Error optimizing model with IPEX: {str(e)}")
+            raise
+
 
         logger.info("Running warm-up runs")
-        with torch.inference_mode(), torch.no_grad(), torch.autocast(
-            device_type="cpu",
-            enabled=self.amp_enabled,
-            dtype=self.amp_dtype,
-            ):
-            for _ in range(5):
-                self.get_embedding("test")
+        try:
+            with torch.inference_mode(), torch.no_grad(), torch.autocast(
+                device_type=self.device_type,
+                enabled=self.amp_enabled,
+                dtype=self.amp_dtype,
+                ):
+                for _ in range(5):
+                    self.get_embedding("test")
+        except Exception as e:
+            logger.error(f"Error during warm-up runs: {str(e)}")
+            raise
 
-        logger.info("Model loaded successfully")
+
+        logger.info(f"Model '{self.model_name}' loaded successfully on device '{self.device_type}' with AMP dtype '{self.amp_dtype}'")
 
     # TODO: utilize sentence-transformers for embeddings
     def get_embedding(self, sentences: Union[str, List[Union[str, List[int]]]]):
@@ -77,7 +107,7 @@ class Embedding(Worker):
 
         # Tokenize sentences
         encoded_input = self.tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")
-        inputs = encoded_input.to(self.device)
+        inputs = encoded_input.to(self.device_type)
         # Compute token embeddings
         model_output = self.model(**inputs)
         # Perform pooling
@@ -105,14 +135,14 @@ class Embedding(Worker):
             inputs_lens.append(len(d.input) if isinstance(d.input, list) else 1)
 
         with torch.inference_mode(), torch.no_grad(), torch.autocast(
-            device_type="cpu",
+            device_type=self.device_type,
             enabled=self.amp_enabled,
             dtype=self.amp_dtype,
             ):
             embeddings = self.get_embedding(inputs)
 
         embeddings = embeddings.detach()
-        if self.device != "cpu":
+        if self.device_type != "cpu":
             embeddings = embeddings.cpu()
         embeddings = embeddings.numpy()
         embeddings = [emb.tolist() for emb in embeddings]
@@ -130,14 +160,20 @@ class Embedding(Worker):
 
 
 if __name__ == "__main__":
-    MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", 32))
-    MAX_WAIT_TIME = int(os.environ.get("MAX_WAIT_TIME", 100))
-    server = Server()
-    emb = Runtime(Embedding, max_batch_size=MAX_BATCH_SIZE, max_wait_time=MAX_WAIT_TIME)
-    server.register_runtime(
-        {
-            "/v1/embeddings": [emb],
-            "/embeddings": [emb],
-        }
-    )
-    server.run()
+    MAX_BATCH_SIZE = int(os.environ.get("MOSEC_MAX_BATCH_SIZE", 32))
+    MAX_WAIT_TIME = int(os.environ.get("MOSEC_MAX_WAIT_TIME", 100))
+    logger.info(f"Runtime configuration: MOSEC_MAX_BATCH_SIZE set to {MAX_BATCH_SIZE}, MOSEC_MAX_WAIT_TIME set to {MAX_WAIT_TIME}.")
+    logger.info("Initializing server...")
+
+    try:
+        server = Server()
+        emb = Runtime(Embedding, max_batch_size=MAX_BATCH_SIZE, max_wait_time=MAX_WAIT_TIME)
+        server.register_runtime(
+            {
+                "/embed": [emb],
+            }
+        )
+        server.run()
+    except Exception as e:
+        logger.error(f"Error running server: {str(e)}")
+        raise

@@ -44,12 +44,15 @@ class OPEAEmbedding:
         Initializes the OPEAEmbedding instance.
 
         Args:
-            model_name (str): The name of the model.
-            model_server (str): The model server URL.
+            model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5'). 
+                      Internally, only the short name (the last part after the final '/') will be used. For instance, 
+                      'bge-large-en-v1.5' will be extracted from 'BAAI/bge-large-en-v1.5'.
+                      
+            model_server (str): The URL of the model server.
             endpoint (str): The endpoint for the model server.
-            connector (str): The name of the connector framework.
+            connector (str): The name of the connector framework to be used.
         """
-        self._model_name = model_name.lower()
+        self._model_name = model_name.split('/')[-1].lower()    # Extract the last part of the model name
         self._model_server = model_server.lower()
         self._endpoint = endpoint
         self._connector = connector.lower()

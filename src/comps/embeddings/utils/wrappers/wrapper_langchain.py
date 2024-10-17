@@ -19,12 +19,14 @@ def texts_to_single_line(texts: List[str]) -> List[str]:
 
 class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        texts = texts_to_single_line(texts)
+        input_data = texts_to_single_line(texts)
         try:
             responses = self.client.post(
-                json={"inputs": texts}
+                json={"inputs": input_data}
             )
+
             return json.loads(responses.decode())["embedding"]
+
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise
@@ -81,7 +83,10 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
             logger.exception(error_message)
             raise
 
-        input_name = self.get_input_name(url)
+        try:
+            input_name = self.get_input_name(url)
+        except Exception:
+            raise
 
         texts = texts_to_single_line(texts)
         input_data = [{
@@ -171,6 +176,8 @@ class LangchainEmbedding(EmbeddingWrapper):
             if self._model_server == "torchserve":
                 self._endpoint = self._endpoint.rstrip('/')
                 kwargs["model"] = self._endpoint + f"/predictions/{self._model_name.split('/')[-1]}"
+            elif self._model_server == "mosec":
+                kwargs["model"] = self._endpoint.rstrip('/') + "/embed"
             else:
                 kwargs["model"] = self._endpoint
 

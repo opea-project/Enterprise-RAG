@@ -13,6 +13,7 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
+ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/mosec/docker"
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 
@@ -26,13 +27,15 @@ function test_fail() {
     exit 1
 }
 
+
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
 
-    docker build --no-cache -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/mosec/Dockerfile comps/embeddings/impl/model-server/mosec/
+    docker build --no-cache -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/mosec/docker/Dockerfile comps/embeddings/impl/model-server/mosec/
     docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
+
 
 function start_service() {
     model="BAAI/bge-large-zh"
@@ -42,6 +45,13 @@ function start_service() {
     docker run -d --name ${ENDPOINT_CONTAINER_NAME} \
         --runtime runc \
         --cap-add SYS_NICE \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e EMBEDDING_CONNECTOR=langchain \
+        -e MOSEC_AMP_DTYPE=BF16 \
+        -e MOSEC_MAX_BATCH_SIZE=32 \
+        -e MOSEC_MAX_WAIT_TIME=100 \
+        -e MOSEC_MODEL_NAME=$model \
         -p $internal_communication_port:8000 \
         ${ENDPOINT_IMAGE_NAME}
     sleep 1m
@@ -53,7 +63,7 @@ function start_service() {
         -e https_proxy=$https_proxy \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="mosec" \
-        -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}/v1/embeddings" \
+        -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
     sleep 1m
@@ -133,6 +143,7 @@ function main() {
     test_clean
 
     build_docker_images
+    
     start_service
     check_containers
     validate_microservice

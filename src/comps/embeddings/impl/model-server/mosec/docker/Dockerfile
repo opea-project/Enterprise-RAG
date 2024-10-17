@@ -32,7 +32,6 @@ RUN pip3 install transformers
 RUN pip3 install llmspec mosec
 
 COPY server-ipex.py server-ipex.py
-COPY model-config.yaml model-config.yaml
 
 # INTEL specific ENVs
 RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so

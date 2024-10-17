@@ -2,14 +2,42 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-folder_path="upload_dir/"
-if [ ! -d "$folder_path" ]; then
-    mkdir -p "$folder_path"
-    echo "Folder created: $folder_path"
-else
-    echo "Folder already exists: $folder_path"
+ENV_FILE=docker/.env
+echo "Reading configuration from $ENV_FILE..."
+
+# Check if docker compose is available (prerequisite)
+if ! command -v docker compose &> /dev/null; then
+  echo "Error: 'docker compose' is not installed or not available in the PATH."
+  exit 1
 fi
 
-docker build . -t qna-rag-mosec-embedding --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy
+# Read configuration - priority is given to environment variables already set in the OS, then variables from the .env file.
+if [ -f "$ENV_FILE" ]; then
+    while IFS='=' read -r key value; do
+        # Ignore comments and empty lines
+        if [[ -z "$key" || "$key" == \#* ]]; then
+            continue
+        fi
 
-docker run --rm -itd --name embedding-mosec -p 8000:8000 --cap-add SYS_NICE qna-rag-mosec-embedding
+        key=$(echo "$key" | xargs)
+        value=$(echo "$value" | xargs)
+
+        # Ignore comments after the value
+        value=$(echo "$value" | cut -d'#' -f1 | xargs)
+
+        # Remove surrounding quotes from the value (if any)
+        value=$(echo "$value" | sed 's/^["'\'']//;s/["'\'']$//')
+
+        # Check if the variable is already exported
+        if ! printenv | grep -q "^$key="; then
+            export "$key=$value"
+        else
+            echo "$key is already set; skipping"
+        fi
+    done < "$ENV_FILE"
+else
+    echo "Error: $ENV_FILE not available. Please create the file with the required environment variables."
+    exit 1
+fi
+
+docker compose -f docker/docker-compose.yaml up --build -d embedding-mosec-model-server

@@ -49,7 +49,7 @@ function usage() {
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start auth and ui services (requires deployment)."
-    echo -e "\t-cd|--clear-deployment: Clear telemetry services."
+    echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."

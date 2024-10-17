@@ -47,11 +47,16 @@ git --no-pager diff microservices-connector/helm/values.yaml
 
 ### a) Build images (~1h once, ~50GB)
 time no_proxy=localhost ./update_images.sh --tag $TAG --build
+# Alternatively use parallel version (faster) for optimization (but it is hard to see errors)
+echo 'gmcManager dataprep-usvc embedding-usvc reranking-usvc torchserve retriever-usvc ingestion-usvc llm-usvc in-guard-usvc out-guard-usvc ui-usvc otelcol-contrib-journalctl fingerprint-usvc' | env no_proxy=localhost xargs -n 1 -P 0 ./update_images.sh --tag $TAG --build
 # check build images
 docker image ls | grep $TAG
 
 ### b) Push images (~2h once, ~20GB)
 time no_proxy=localhost ./update_images.sh --tag $TAG --push
+# Alternatively use parallel version (faster) for optimization (but it is hard to see errors)
+echo 'gmcManager dataprep-usvc embedding-usvc reranking-usvc torchserve retriever-usvc ingestion-usvc llm-usvc in-guard-usvc out-guard-usvc ui-usvc otelcol-contrib-journalctl fingerprint-usvc' | xargs -n 1 -P 0 ./update_images.sh --tag $TAG --push
+
 # check pushed images
 reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 

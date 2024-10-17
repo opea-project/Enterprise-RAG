@@ -108,6 +108,7 @@ jobs:
               HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
 
         - name: Fetch Zephyr script
+          if: always()
           uses: actions/checkout@v4
           with:
             repository: intel-sandbox/rag-solution-infra

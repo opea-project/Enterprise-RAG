@@ -12,7 +12,7 @@ from comps.dataprep.utils.file_loaders.load_yaml import LoadYaml
 import os
 
 def abs_file_path(file_name):
-    file_path = '../../microservices/files'
+    file_path = '../../files/dataprep_upload/'
     return os.path.join(os.path.dirname(__file__), file_path, file_name)
 
 def test_csv_loader():

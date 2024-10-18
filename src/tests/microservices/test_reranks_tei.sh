@@ -67,7 +67,7 @@ function validate_microservice() {
 function test_clean() {
     docker compose \
         -f ${WORKPATH}/comps/reranks/impl/model_server/tei/docker/docker-compose.yaml \
-        down --rmi all
+        down
 }
 
 function main() {

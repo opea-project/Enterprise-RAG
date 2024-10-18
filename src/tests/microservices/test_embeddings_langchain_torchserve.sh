@@ -14,13 +14,13 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
 ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/torchserve/docker"
-ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
+ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-torchserve"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 ENDPOINT_BUILD_VENV_NAME="test-embeddings-langchain-torchserve-venv"
 ENDPOINT_BUILD_VENV_SRC="${WORKPATH}/tests/${ENDPOINT_BUILD_VENV_NAME}"
 
 MICROSERVICE_API_PORT=5005
-MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
 function test_fail() {
@@ -48,8 +48,8 @@ function make_build_env() {
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
-    docker build --no-cache -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/torchserve/docker/Dockerfile comps/embeddings/impl/model-server/torchserve/
-    docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/torchserve/docker/Dockerfile comps/embeddings/impl/model-server/torchserve/
+    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function delete_build_env() {
@@ -146,8 +146,6 @@ function remove_images() {
       --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
-
-    docker buildx prune -f
 }
 
 function test_clean() {

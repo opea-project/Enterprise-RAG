@@ -13,11 +13,11 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
-ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
+ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-tei"
 ENDPOINT_IMAGE_NAME="ghcr.io/huggingface/text-embeddings-inference:cpu-1.2"
 
 MICROSERVICE_API_PORT=5005
-MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
 function test_fail() {
@@ -28,7 +28,7 @@ function test_fail() {
 
 function build_docker_images() {
     cd $WORKPATH
-    docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -119,8 +119,6 @@ function remove_images() {
         --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
-
-    docker buildx prune -f
 }
 
 function test_clean() {

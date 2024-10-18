@@ -28,7 +28,7 @@ function build_docker_images() {
     cd $WORKPATH
 
     docker pull ${REDIS_IMAGE_NAME}
-    docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/ingestion/impl/microservice/Dockerfile .
+    docker build -t ${MICROSERVICE_IMAGE_NAME} --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f comps/ingestion/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -119,8 +119,6 @@ function remove_images() {
       --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
-
-    docker buildx prune -f
 }
 
 function test_clean() {

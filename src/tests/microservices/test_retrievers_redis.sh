@@ -143,8 +143,6 @@ function remove_images() {
       --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
-
-    docker buildx prune -f
 }
 
 function test_clean() {

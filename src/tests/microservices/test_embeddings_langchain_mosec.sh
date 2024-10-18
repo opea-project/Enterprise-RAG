@@ -13,12 +13,11 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
-ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/mosec/docker"
-ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
+ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-mosec"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 
 MICROSERVICE_API_PORT=5002
-MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
 function test_fail() {
@@ -27,15 +26,13 @@ function test_fail() {
     exit 1
 }
 
-
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
 
-    docker build --no-cache -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/mosec/docker/Dockerfile comps/embeddings/impl/model-server/mosec/
-    docker build --no-cache -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/mosec/docker/Dockerfile comps/embeddings/impl/model-server/mosec/
+    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
-
 
 function start_service() {
     model="BAAI/bge-large-zh"
@@ -129,8 +126,6 @@ function remove_images() {
       --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
-
-    docker buildx prune -f
 }
 
 function test_clean() {
@@ -143,7 +138,6 @@ function main() {
     test_clean
 
     build_docker_images
-    
     start_service
     check_containers
     validate_microservice

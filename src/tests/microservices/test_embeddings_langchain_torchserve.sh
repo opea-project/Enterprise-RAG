@@ -16,7 +16,7 @@ CONTAINER_NAME_BASE="test-comps-embeddings"
 ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/torchserve/docker"
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-torchserve"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
-ENDPOINT_BUILD_VENV_NAME="test-embeddings-langchain-torchserve-venv"
+ENDPOINT_BUILD_VENV_NAME="test-embe=ddings-langchain-torchserve-venv"
 ENDPOINT_BUILD_VENV_SRC="${WORKPATH}/tests/${ENDPOINT_BUILD_VENV_NAME}"
 
 MICROSERVICE_API_PORT=5005
@@ -29,38 +29,17 @@ function test_fail() {
     exit 1
 }
 
-function make_build_env() {
-    cd $WORKPATH/tests
-
-    # Dedicated Python env required to build Torchserve model server.
-    python3 -m venv ${ENDPOINT_BUILD_VENV_SRC}
-    source ${ENDPOINT_BUILD_VENV_NAME}/bin/activate
-    pip install torch-model-archiver
-
-    cd $WORKPATH/${ENDPOINT_CONTAINER_DIR}
-    mkdir -p upload_dir
-
-    torch-model-archiver --force --model-name all-MiniLM-L6-v2 --export-path ./upload_dir/ --version 1.0 --handler ../model/embedding_handler.py --config-file ../model/model-config.yaml --archive-format tgz
-
-    deactivate
-}
 
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
     docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/torchserve/docker/Dockerfile comps/embeddings/impl/model-server/torchserve/
-    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
-function delete_build_env() {
-    if [ -d "${ENDPOINT_BUILD_VENV_SRC}" ]; then
-        rm -rf "${ENDPOINT_BUILD_VENV_NAME}"
-    fi
-}
 
 function start_service() {
     model="BAAI/bge-large-en-v1.5"
-    model_shortened="bge-large-en-v1.5"
     revision="refs/pr/5"
     internal_communication_port=8090
     unset http_proxy
@@ -70,20 +49,30 @@ function start_service() {
         -p ${internal_communication_port}:${internal_communication_port} \
         -p 8091:8091 \
         -p 8092:8092 \
-        -e MODEL_NAME=$model \
+        -e TORCHSERVE_MODEL_NAME=$model \
+        -e TORCHSERVE_AMP_DTYPE=BF16 \
+        -e TORCHSERVE_BATCH_SIZE=32 \
+        -e TORCHSERVE_DEVICE_TYPE=cpu \
+        -e TORCHSERVE_MAX_BATCH_DELAY=100 \
+        -e TORCHSERVE_MAX_WORKERS=4 \
+        -e TORCHSERVE_MIN_WORKERS=1  \
+        -e TORCHSERVE_RESPONSE_TIMEOUT=1200 \
         ${ENDPOINT_IMAGE_NAME}
+    sleep 1m
 
     docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
         --runtime runc \
         -p ${MICROSERVICE_API_PORT}:6000 \
         -e http_proxy=$http_proxy \
         -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="torchserve" \
+        -e EMBEDDING_CONNECTOR=langchain \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
-    sleep 1m
+    sleep 15s
 }
 
 function check_containers() {
@@ -151,14 +140,12 @@ function remove_images() {
 function test_clean() {
     purge_containers
     remove_images
-    delete_build_env
 }
 
 function main() {
 
     test_clean
 
-    make_build_env
     build_docker_images
 
     start_service

@@ -11,7 +11,7 @@ This README provides instructions on how to run a model server using [TEI](https
 chmod +x run_tei.sh
 ./run_tei.sh
 ```
-The script initiates a Docker container with the text embeddings inference service running on port `TEI_PORT_PORT` (default: **8090**). Configuration settings are specified in the environment configuration file [docker/.env]. You can adjust these settings either by modifying the dotenv file or by exporting environment variables.
+The script initiates a Docker container with the text embeddings inference service running on port `TEI_PORT` (default: **8090**). Configuration settings are specified in the environment configuration file [docker/.env]. You can adjust these settings either by modifying the dotenv file or by exporting environment variables.
 
 #### 1.2. Verify the TEI Service
 
@@ -28,19 +28,7 @@ To launch TEI Service along with the OPEA Embedding Microservice, follow these s
 
 #### 2.1. Modify the environment configuration file to align it to your case
 
-Modify the `./docker/.env.hpu` file:
-```env
-TEI_PORT=8090
-TEI_MODEL_NAME=BAAI/bge-large-en-v1.5
-PARSED_MODEL_NAME=$(echo ${TEI_MODEL_NAME} | cut -d'/' -f2)
-
-EMBEDDING_CONNECTOR=langchain
-
-## Proxy Settings – Uncomment if Needed
-#NO_PROXY=<your-no-proxy>
-#HTTP_PROXY=<your-http-proxy>
-#HTTPS_PROXY=<your-https-proxy>
-```
+Modify the [./docker/.env](./docker/.env) file to suit your use case.
 
 #### 2.2. Start the Services using Docker Compose
 

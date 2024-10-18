@@ -28,7 +28,7 @@ function test_fail() {
 
 function build_docker_images() {
     cd $WORKPATH
-    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -53,6 +53,7 @@ function start_service() {
         -e https_proxy="" \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="tei" \
+        -e EMBEDDING_CONNECTOR=langchain \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}

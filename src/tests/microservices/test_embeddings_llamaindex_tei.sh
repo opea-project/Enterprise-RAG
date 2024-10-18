@@ -30,7 +30,7 @@ function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
 
-    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile --target llama_index .
+    docker build --target llama_index -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -42,7 +42,7 @@ function start_service() {
         --runtime runc \
         -p $internal_communication_port:80 \
         -v ./data:/data \
-        --pull always "${ENDPOINT_IMAGE_NAME}" \
+        "${ENDPOINT_IMAGE_NAME}" \
         --model-id $model \
         --revision $revision
     sleep 10s
@@ -52,10 +52,11 @@ function start_service() {
         -p ${MICROSERVICE_API_PORT}:6000 \
         -e http_proxy=$http_proxy \
         -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="tei" \
-        -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         -e EMBEDDING_CONNECTOR=llama_index \
+        -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
     sleep 1m

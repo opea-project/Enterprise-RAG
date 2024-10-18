@@ -31,7 +31,7 @@ function build_docker_images() {
     echo $(pwd)
 
     docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/mosec/docker/Dockerfile comps/embeddings/impl/model-server/mosec/
-    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -44,10 +44,11 @@ function start_service() {
         --cap-add SYS_NICE \
         -e http_proxy=$http_proxy \
         -e https_proxy=$https_proxy \
-        -e EMBEDDING_CONNECTOR=langchain \
+        -e HF_TOKEN=${HF_TOKEN} \
         -e MOSEC_AMP_DTYPE=BF16 \
         -e MOSEC_MAX_BATCH_SIZE=32 \
         -e MOSEC_MAX_WAIT_TIME=100 \
+        -e MOSEC_DEVICE_TYPE=cpu \
         -e MOSEC_MODEL_NAME=$model \
         -p $internal_communication_port:8000 \
         ${ENDPOINT_IMAGE_NAME}
@@ -60,6 +61,7 @@ function start_service() {
         -e https_proxy=$https_proxy \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="mosec" \
+        -e EMBEDDING_CONNECTOR=langchain \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}

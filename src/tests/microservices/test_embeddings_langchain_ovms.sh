@@ -13,13 +13,11 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
-ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/ovms"
-ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-ovms"
-ENDPOINT_IMAGE_NAME="openvino/model_server:2024.3"
+ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/ovms/docker"
+ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
+ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 ENDPOINT_BUILD_VENV_NAME="test-embeddings-langchain-ovms-venv"
 ENDPOINT_BUILD_VENV_SRC="${WORKPATH}/tests/${ENDPOINT_BUILD_VENV_NAME}"
-ENDPOINT_MODEL_NAME="BAAI/bge-large-en-v1.5"
-ENDPOINT_MODEL_NAME_SHORT="bge-large-en-v1.5"
 
 MICROSERVICE_API_PORT=5005
 MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
@@ -31,86 +29,50 @@ function test_fail() {
     exit 1
 }
 
-function make_build_env() {
-    cd $WORKPATH/tests
-
-    # Dedicated Python env required to prepare OVMS model server.
-    python3 -m venv ${ENDPOINT_BUILD_VENV_SRC}
-    source ${ENDPOINT_BUILD_VENV_NAME}/bin/activate
-    pip install -r https://raw.githubusercontent.com/openvinotoolkit/model_server/releases/2024/3/demos/continuous_batching/requirements.txt
-    deactivate
-
-    cd $WORKPATH/${ENDPOINT_CONTAINER_DIR}
-    mkdir -p models
-}
-
-function load_model() {
-    # This functions is specific to OVMS which needs model to pre-load
-    model_full_name=$1
-    model_short_name=$(echo "${model_full_name}" | cut -d "/" -f 2)
-    embeddings_model_name="${model_short_name}_embeddings"
-    tokenizer_model_name="${model_short_name}_tokenizer"
-
-    cd $WORKPATH/tests
-    source ${ENDPOINT_BUILD_VENV_NAME}/bin/activate
-
-    cd $WORKPATH/${ENDPOINT_CONTAINER_DIR}
-    optimum-cli export openvino --model "${model_full_name}" --task feature-extraction "models/${embeddings_model_name}"
-    convert_tokenizer -o "models/${tokenizer_model_name}" --skip-special-tokens "${model_full_name}"
-    python combine_models.py "models/${embeddings_model_name}" "models/${tokenizer_model_name}"
-
-    deactivate
-}
-
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
 
-    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
-}
+    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/ovms/docker/Dockerfile comps/embeddings/impl/model-server/ovms/
+    docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    }
+
 
 function delete_build_env() {
-    if [ -d "${ENDPOINT_BUILD_VENV_SRC}" ]; then
-      rm -rf "${ENDPOINT_BUILD_VENV_SRC}"
-    fi
-
-    if [ -d "$WORKPATH/${ENDPOINT_CONTAINER_DIR}/models" ]; then
-      rm -rf "$WORKPATH/${ENDPOINT_CONTAINER_DIR}/models"
+     if [ -d "$WORKPATH/${ENDPOINT_CONTAINER_DIR}/data" ]; then
+      rm -rf "$WORKPATH/${ENDPOINT_CONTAINER_DIR}/data"
     fi
 }
 
 function start_service() {
-    # In this test, this functions is not the only one which operates on model name
-    model_full_name=$1
-    model_short_name=$(echo "${model_full_name}" | cut -d "/" -f 2)
-    internal_communication_port=9001
+    model="BAAI/bge-large-en-v1.5"
+    internal_communication_port=9000
     unset http_proxy
 
     cd $WORKPATH/${ENDPOINT_CONTAINER_DIR}
+
     docker run -d --name ${ENDPOINT_CONTAINER_NAME} \
         --runtime runc \
         -p ${internal_communication_port}:${internal_communication_port} \
-        -p 9000:9000 \
-        -v "${WORKPATH}/${ENDPOINT_CONTAINER_DIR}/models/${model_short_name}_combined/:/model/1" \
-        ${ENDPOINT_IMAGE_NAME} \
-        --model_name ${model_short_name} \
-        --model_path /model \
-        --cpu_extension /ovms/lib/libopenvino_tokenizers.so \
-        --port 9000 \
-        --rest_port ${internal_communication_port} \
-        --log_level DEBUG
+        -e OVMS_MODEL_NAME=$model \
+        -e HF_TOKEN=${HF_TOKEN} \
+        -v ./data:/data \
+        ${ENDPOINT_IMAGE_NAME}
+    sleep 1m
 
     docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
         --runtime runc \
         -p ${MICROSERVICE_API_PORT}:6000 \
         -e http_proxy=$http_proxy \
         -e https_proxy=$https_proxy \
-        -e EMBEDDING_MODEL_NAME="${model_full_name}" \
+        -e no_proxy=$no_proxy \
+        -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="ovms" \
+        -e EMBEDDING_CONNECTOR=langchain \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
-    sleep 1m
+    sleep 15s
 }
 
 function check_containers() {
@@ -186,10 +148,8 @@ function test_clean() {
 
 function main() {
     test_clean
-    make_build_env
-    load_model "${ENDPOINT_MODEL_NAME}"
     build_docker_images
-    start_service "${ENDPOINT_MODEL_NAME_SHORT}"
+    start_service
     check_containers
     validate_microservice
     test_clean

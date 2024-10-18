@@ -126,9 +126,8 @@ spec:
             {}
       volumes:
         - name: model-volume
-          hostPath:
-            path: /mnt/opea-models
-            type: Directory
+          persistentVolumeClaim:
+            claimName: model-volume
         - name: shm
           emptyDir:
             medium: Memory

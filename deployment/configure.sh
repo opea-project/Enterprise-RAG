@@ -75,7 +75,7 @@ if [[ -n "$RAG_HTTP_PROXY" || "$RAG_HTTPS_PROXY" || "$RAG_NO_PROXY" ]]; then
     export RAG_HTTP_PROXY
     export RAG_HTTPS_PROXY
     export RAG_NO_PROXY
-    envsubst < tpl/config.json > tmp.config.json
+    envsubst < tpl/config.json.tpl > tmp.config.json
     if [ -e ~/.docker/config.json ]; then
         echo "Warning! Docker config.json exists; continues using the existing file"
     else
@@ -156,17 +156,6 @@ if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] && [ -n "$REGI
     aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
     aws configure set default.region "$REGION"
     aws configure set default.output json
-fi
-
-# Prepare remote
-if [ -z "$REMOTE" ]; then
-   if ! bash "$PREPARE_REMOTE_SCRIPT_PATH"; then
-       exit 1
-   fi
-else
-   if ! ssh "$REMOTE" "bash -s" < "${PREPARE_REMOTE_SCRIPT_PATH}"; then
-       exit 1
-   fi
 fi
 
 echo "All installations and configurations are complete."

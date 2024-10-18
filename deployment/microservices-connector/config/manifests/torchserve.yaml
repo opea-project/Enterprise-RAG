@@ -131,9 +131,8 @@ spec:
             periodSeconds: 60
       volumes:
         - name: model-volume
-          hostPath:
-            path: /mnt/opea-models
-            type: Directory
+          persistentVolumeClaim:
+            claimName: model-volume-embedding
         - name: shm
           emptyDir:
             medium: Memory

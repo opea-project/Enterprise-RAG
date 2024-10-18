@@ -6,4 +6,4 @@
       "noProxy": "$RAG_NO_PROXY"
     }
   }
- }
+}

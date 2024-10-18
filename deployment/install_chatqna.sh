@@ -2,6 +2,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# paths
 repo_path=$(realpath "$(pwd)/../")
 manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
@@ -11,16 +12,12 @@ telemetry_traces_path="$repo_path/telemetry/helm/charts/traces"
 ui_path="$repo_path/app/chat-qna/helm-ui"
 auth_path="$repo_path/auth/"
 
-available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
-
+# ports
 KEYCLOAK_FPORT=1234
 GRAFANA_FPORT=3000
 UI_FPORT=4173
 
-PIPELINE=""
-REGISTRY="localhost:5000"
-TAG="latest"
-
+# namespaces
 DEPLOYMENT_NS=chatqa
 DATAPREP_NS=dataprep
 TELEMETRY_NS=monitoring
@@ -29,14 +26,22 @@ UI_NS=rag-ui
 AUTH_NS=auth
 GMC_NS=system
 
-# keycloak specific vars
+# keycloak vars
 KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
 
+# aws vars
 ECR_REGISTRY_URL=""
 ECR_PASSWORD=""
 GRAFANA_PASSWORD=""
+
+# others
+PIPELINE=""
+REGISTRY="localhost:5000"
+TAG="latest"
+
+available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
 function usage() {
     echo -e "Usage: $0 [OPTIONS]"
@@ -189,7 +194,6 @@ kill_process() {
         fi
     fi
 }
-
 
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
 function start_deployment() {
@@ -450,6 +454,9 @@ while [[ "$#" -gt 0 ]]; do
             fi
             PIPELINE=$1
             deploy_flag=true
+            if [[ $PIPELINE =~ "gaudi" ]]; then
+                CHATQNA_VOLUME_SIZE=350Gi
+            fi
             ;;
         --grafana_password)
             shift

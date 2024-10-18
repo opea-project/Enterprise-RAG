@@ -7,6 +7,7 @@
 - Verify if your setup is using valid software stack for Gaudi accelerators [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Running LLM on CPU is possible but will reduce performance significantly.
 - Prepared Gaudi node [prepare Gaudi node on K8s setup](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/blob/rls-v0.5.x/deployment/microservices-connector/PREPARE_GAUDI.md)
 - Make sure you have access granted to download and use chosen huggingface model. For example such access is mandatory in case of using  [mixtral-8x22B](https://huggingface.co/mistralai/Mixtral-8x22B-Instruct-v0.1).
+- To ensure that telemetry works as expected `fs.inotify.max_user_instances` increased accordingly per node (Verified with 8192).
 
 ------------
 

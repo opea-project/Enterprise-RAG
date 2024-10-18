@@ -124,8 +124,7 @@ spec:
               habana.ai/gaudi: 8
       volumes:
         - name: model-volume
-          hostPath:
-            path: /mnt/opea-models
-            type: Directory
+          persistentVolumeClaim:
+            claimName: model-volume-llm
         - name: tmp
           emptyDir: {}

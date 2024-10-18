@@ -158,3 +158,17 @@ affinity: {}
 
 service:
   type: ClusterIP
+
+pvc:
+  - name: model-volume-embedding
+    accessMode: ReadWriteOnce
+    namespace: chatqa
+    storage: 20Gi
+  - name: model-volume-embedding
+    accessMode: ReadWriteOnce
+    namespace: dataprep
+    storage: 20Gi
+  - name: model-volume-llm
+    accessMode: ReadWriteOnce
+    namespace: chatqa
+    storage: 100Gi

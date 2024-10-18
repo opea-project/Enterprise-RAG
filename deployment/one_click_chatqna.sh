@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0  -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]"
+  echo "Usage: $0  -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] "
     exit 1
 }
 
@@ -24,9 +24,10 @@ ENV_FILE_NAME=.env
 
 # Parse command-line arguments
 # !TODO this should be changed to use non-positional parameters
-while getopts "g:a:s:r:p:u:n:d:t:y:" opt; do
+while getopts "g:z:a:s:r:p:u:n:d:t:y:" opt; do
     case $opt in
         g) HUG_TOKEN="$OPTARG";;
+        z) GRAFANA_PASSWORD="$OPTARG" ;;
         a) AWS_ACCESS_KEY_ID="$OPTARG";;
         s) AWS_SECRET_ACCESS_KEY="$OPTARG";;
         r) REGION="$OPTARG";;
@@ -42,6 +43,11 @@ done
 
 # Check if mandatory parameters are provided
 if [ -z "$HUG_TOKEN" ]; then
+    usage
+fi
+
+# Check if mandatory parameters are provided
+if [ -z "$GRAFANA_PASSWORD" ]; then
     usage
 fi
 
@@ -70,4 +76,4 @@ if ! command_exists kubectl; then
 fi
 
 # Install chatqna & run test
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test
+bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test --grafana_password "$GRAFANA_PASSWORD"

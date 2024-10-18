@@ -36,11 +36,13 @@ CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configurati
 
 ECR_REGISTRY_URL=""
 ECR_PASSWORD=""
+GRAFANA_PASSWORD=""
 
 function usage() {
     echo -e "Usage: $0 [OPTIONS]"
     echo -e "Options:"
     echo -e "\t--aws: Use aws registry."
+    echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
     echo -e "\tPipelines available: $available_pipelines"
@@ -55,7 +57,7 @@ function usage() {
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui"
+    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease"
 }
 
 # get aws credentials configured via aws-cli
@@ -449,6 +451,15 @@ while [[ "$#" -gt 0 ]]; do
             PIPELINE=$1
             deploy_flag=true
             ;;
+        --grafana_password)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --grafana_password. Please provide inital password for Grafana."
+                usage
+                exit 1
+            fi
+            GRAFANA_PASSWORD=$1
+            ;;
         --tag)
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
@@ -504,9 +515,18 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+
+# check required parameters
+if [[ "$telemetry_flag" == "true" ]]; then
+  if [[ -z "$GRAFANA_PASSWORD" ]]; then
+      print_log "Error: Grafana initial password is required for --telemetry!. Please provide inital password for Grafana --grafana_password."
+      exit 1
+  fi
+fi
+
 # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
 # shellcheck disable=SC2154
-HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces"
+HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
 TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
 TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
 HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"

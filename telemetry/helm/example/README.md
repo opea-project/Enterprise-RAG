@@ -61,7 +61,8 @@ echo 'gmcManager dataprep-usvc embedding-usvc reranking-usvc torchserve retrieve
 reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
-time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --ui --telemetry  --upgrade
+# Please modify grafana_password for your own
+time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --ui --telemetry  --upgrade --grafana_password devonly
 # check ChatQnA response
 kubectl proxy
 pgrep -laf 'kubectl proxy'

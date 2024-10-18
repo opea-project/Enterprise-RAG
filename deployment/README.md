@@ -16,7 +16,7 @@ You can proceed through configuration, deployment and test connection using `one
 
 #### Usage
 ```
-./one_click_chatqna.sh -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d PIPELINE -t [TAG]
+./one_click_chatqna.sh -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d PIPELINE -t [TAG]
 ```
 Proxy variables are optional.
 
@@ -78,21 +78,25 @@ You can check available options by executing install_chatqna.sh --help
 Usage: ./install_chatqna.sh [OPTIONS]
 Options:
         --aws: Use aws registry.
+        --grafana_password (REQUIRED with --telemetry): Initial password for grafana.
+        --kind: Changes dns value for telemetry(kind is kube-dns based).
         --deploy <PIPELINE_NAME>: Start the deployment process (default).
         Pipelines available: gaudi_torch_guard,gaudi_torch,gaudi,switch_gaudi,switch_xeon,xeon_llm_guard,xeon_torch_llm_guard,xeon_torch,xeon
         --tag: Use specific tag for deployment.
         --test: Run a connection test.
         --telemetry: Start telemetry services.
         --ui: Start auth and ui services (requires deployment).
-        -cd|--clear-deployment: Clear telemetry services.
+        -cd|--clear-deployment: Clear deployment services.
         -ct|--clear-telemetry: Clear telemetry services.
         -cu|--clear-ui: Clear auth and ui services.
         -ca|--clear-all: Clear the all services.
+        --upgrade: Helm will install or upgrade charts.
         -h|--help: Display this help message.
 Example: ./install_chatqna.sh --deploy gaudi_torch_guard
-Example: ./install_chatqna.sh --aws --deploy gaudi_torch --telemetry --ui
+Example: ./install_chatqna.sh --aws --deploy gaudi_torch --telemetry --ui --grafana_password pleasechangeit
 Example: ./install_chatqna.sh --deploy gaudi_torch_guard
-Example: ./install_chatqna.sh --aws --deploy gaudi_torch --telemetry --ui
+Example: ./install_chatqna.sh --aws --deploy gaudi_torch --telemetry --ui --grafana_password pleasechangeit
+
 ```
 Example command:
 ```

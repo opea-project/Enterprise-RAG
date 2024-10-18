@@ -529,6 +529,12 @@ if [[ "$telemetry_flag" == "true" ]]; then
       print_log "Error: Grafana initial password is required for --telemetry!. Please provide inital password for Grafana --grafana_password."
       exit 1
   fi
+
+  # system validation (for journald/ctl systemd OpenTelemetry collector)
+  if  [[ `sudo sysctl -n fs.inotify.max_user_instances` < 8000 ]]; then
+      print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
+      exit 1
+  fi
 fi
 
 # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY

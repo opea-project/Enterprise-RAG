@@ -46,7 +46,6 @@ class TGIConnector:
             try:
                 response = connector.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query,
-                                    input_guardrail_params=input.input_guardrail_params,
                                     output_guardrail_params=input.output_guardrail_params)
             except RequestException as e:
                 error_code = e.response.status_code if e.response else 'No response'
@@ -97,7 +96,6 @@ class VLLMConnector:
             try:
                 response = llm.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query,
-                                    input_guardrail_params=input.input_guardrail_params,
                                     output_guardrail_params=input.output_guardrail_params)
             except Exception as e:
                 logger.error(f"Error invoking VLLM: {e}")

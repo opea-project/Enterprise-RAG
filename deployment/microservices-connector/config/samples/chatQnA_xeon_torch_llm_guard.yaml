@@ -78,3 +78,9 @@ spec:
           config:
             endpoint: /generate
           isDownstreamService: true
+      - name: LLMGuardOutput
+        data: $response
+        internalService:
+          serviceName: output-scan-svc
+          config:
+            endpoint: /v1/llmguardoutput

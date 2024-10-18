@@ -251,6 +251,7 @@ class LLMGuardOutputGuardrailParams(Document):
     sentiment: SentimentModel = None
     toxicity: ToxicityModel = None
     url_reachability: URLReachabilityModel = None
+    output_guard_streaming: bool = True
 
 
 class RerankerParams(Document):

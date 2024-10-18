@@ -381,7 +381,67 @@ class InputScannersConfig:
 
 #### METHODS FOR CREATING SCANNERS
 
-    ## TODO: implement anonymize
+    def _create_anonymize_scanner(self, scanner_config):
+        vault = Vault()
+        anonymize_params = {'vault': vault, 'use_onnx': scanner_config.get('use_onnx', True)}
+        hidden_names = scanner_config.get('hidden_names', None)
+        allowed_names = scanner_config.get('allowed_names', None)
+        entity_types = scanner_config.get('entity_types', None)
+        preamble = scanner_config.get('preamble', None)
+        regex_patters = scanner_config.get('regex_patterns', None)
+        use_faker = scanner_config.get('use_faker', None)
+        recognizer_conf = scanner_config.get('recognizer_conf', None)
+        threshold = scanner_config.get('threshold', None)
+        language = scanner_config.get('language', None)
+
+        if hidden_names is not None:
+            if isinstance(hidden_names, str):
+                artifacts = set([',', '', '.'])
+                anonymize_params['hidden_names'] = list(set(hidden_names.split(',')) - artifacts)
+            elif isinstance(hidden_names, list):
+                anonymize_params['hidden_names'] = hidden_names
+            else:
+                logger.error("Provided type is not valid for Anonymize scanner")
+                raise ValueError("Provided type is not valid for Anonymize scanner")
+        if allowed_names is not None:
+            if isinstance(allowed_names, str):
+                artifacts = set([',', '', '.'])
+                anonymize_params['allowed_names'] = list(set(allowed_names.split(',')) - artifacts)
+            elif isinstance(hidden_names, list):
+                anonymize_params['allowed_names'] = allowed_names
+            else:
+                logger.error("Provided type is not valid for Anonymize scanner")
+                raise ValueError("Provided type is not valid for Anonymize scanner")
+        if entity_types is not None:
+            if isinstance(entity_types, str):
+                artifacts = set([',', '', '.'])
+                anonymize_params['entity_types'] = list(set(entity_types.split(',')) - artifacts)
+            elif isinstance(hidden_names, list):
+                anonymize_params['entity_types'] = entity_types
+            else:
+                logger.error("Provided type is not valid for Anonymize scanner")
+                raise ValueError("Provided type is not valid for Anonymize scanner")
+        if preamble is not None:
+            anonymize_params['preamble'] = preamble
+        if regex_patters is not None:
+            if isinstance(regex_patters, str):
+                artifacts = set([',', '', '.'])
+                anonymize_params['regex_patterns'] = list(set(regex_patters.split(',')) - artifacts)
+            elif isinstance(hidden_names, list):
+                anonymize_params['regex_patterns'] = regex_patters
+            else:
+                logger.error("Provided type is not valid for Anonymize scanner")
+                raise ValueError("Provided type is not valid for Anonymize scanner")
+        if use_faker is not None:
+            anonymize_params['use_faker'] = use_faker
+        if recognizer_conf is not None:
+            anonymize_params['recognizer_conf'] = recognizer_conf
+        if threshold is not None:
+            anonymize_params['threshold'] = threshold
+        if language is not None:
+            anonymize_params['language'] = language
+        logger.info(f"Creating Anonymize scanner with params: {anonymize_params}")
+        return Anonymize(**anonymize_params)
 
     def _create_ban_code_scanner(self, scanner_config):
         enabled_models = {'MODEL_SM': BANCODE_MODEL_SM, 'MODEL_TINY': BANCODE_MODEL_TINY}
@@ -418,7 +478,7 @@ class InputScannersConfig:
                 ban_competitors_params['competitors'] = competitors
             else:
                 logger.error("Provided type is not valid for BanCompetitors scanner")
-                raise Exception("Provided type is not valid for BanCompetitors scanner")
+                raise ValueError("Provided type is not valid for BanCompetitors scanner")
         else:
             logger.error("Competitors list is required for BanCompetitors scanner")
             raise Exception("Competitors list is required for BanCompetitors scanner")
@@ -453,7 +513,7 @@ class InputScannersConfig:
                 ban_substrings_params['substrings'] = substrings
             else:
                 logger.error("Provided type is not valid for BanSubstrings scanner")
-                raise Exception("Provided type is not valid for BanSubstrings scanner")
+                raise ValueError("Provided type is not valid for BanSubstrings scanner")
         else:
             logger.error("Substrings list is required for BanSubstrings scanner")
             raise Exception("Substrings list is required for BanSubstrings scanner")
@@ -490,7 +550,7 @@ class InputScannersConfig:
                 ban_topics_params['topics'] = topics
             else:
                 logger.error("Provided type is not valid for BanTopics scanner")
-                raise Exception("Provided type is not valid for BanTopics scanner")
+                raise ValueError("Provided type is not valid for BanTopics scanner")
         else:
             logger.error("Topics list is required for BanTopics scanner")
             raise Exception("Topics list is required for BanTopics scanner")
@@ -522,7 +582,7 @@ class InputScannersConfig:
                 code_params['languages'] = languages
             else:
                 logger.error("Provided type is not valid for Code scanner")
-                raise Exception("Provided type is not valid for Code scanner")
+                raise ValueError("Provided type is not valid for Code scanner")
         else:
             logger.error("Languages list is required for Code scanner")
             raise Exception("Languages list is required for Code scanner")
@@ -583,7 +643,7 @@ class InputScannersConfig:
                 language_params['valid_languages'] = valid_languages
             else:
                 logger.error("Provided type is not valid for Language scanner")
-                raise Exception("Provided type is not valid for Language scanner")
+                raise ValueError("Provided type is not valid for Language scanner")
         else:
             logger.error("Valid languages list is required for Langudage scanner")
             raise Exception("Valid languages list is required for Language scanner")
@@ -643,7 +703,7 @@ class InputScannersConfig:
                 regex_params['valid_languages'] = patterns
             else:
                 logger.error("Provided type is not valid for Regex scanner")
-                raise Exception("Provided type is not valid for Regex scanner")
+                raise ValueError("Provided type is not valid for Regex scanner")
         else:
             logger.error("Patterns list is required for Regex scanner")
             raise Exception("Patterns list is required for Regex scanner")
@@ -725,9 +785,10 @@ class InputScannersConfig:
 
     def _create_input_scanner(self, scanner_name, scanner_config):
         if scanner_name not in ENABLED_SCANNERS:
+            logger.error(f"Scanner {scanner_name} is not supported. Enabled scanners are: {ENABLED_SCANNERS}")
             raise Exception(f"Scanner {scanner_name} is not supported")
         if scanner_name == 'anonymize':
-            return None # TBD: placeholder for anonymize scanner
+            return self._create_anonymize_scanner(scanner_config)
         elif scanner_name == 'ban_code':
             return self._create_ban_code_scanner(scanner_config)
         elif scanner_name == 'ban_competitors':

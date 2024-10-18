@@ -60,31 +60,37 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
         Exception: If there is an error creating the GeneratedDoc or decoding the streaming 
         response.
     """
-    content_type = llm_output.headers.get('content-type')
-    if content_type == 'application/json':
+    try:
         data = await llm_output.json()
-        try:
-            doc = GeneratedDoc(**data)
-        except Exception as e:
-            logger.error(f"Problem with creating GenerateDoc: {e}")
-            raise HTTPException(status_code=500, detail=f"{e}") from e
-        sanitized_output = output_guardrail.scan_llm_output(doc)
-        return GeneratedDoc(text=sanitized_output, prompt=doc.prompt)
+        doc = GeneratedDoc(**data)
+        if doc.output_guardrail_params is not None:
+            output_guard_streaming = doc.output_guardrail_params.output_guard_streaming
+        else:
+            output_guard_streaming = True
+    except Exception as e:
+        logger.error(f"Problem with creating GenerateDoc: {e}")
+        raise HTTPException(status_code=500, detail=f"{e}") from e
+
+    scanned_output = output_guardrail.scan_llm_output(doc)
+
+    if output_guard_streaming is False:
+        return GeneratedDoc(text=scanned_output, prompt=doc.prompt)
     else:
-        data = await llm_output.body() # TODO: check if body waits for whole text
-        try:
-            doc = data.decode("utf-8")
-        except Exception as e:
-            logger.error(f"Problem with decoding the streaming {e}")
-            raise HTTPException(status_code=500, detail=f"{e}") from e
-
-        def stream_generator(chunk):
-            yield chunk
-
-        sanitized_output = llm_output.scan_llm_output(doc) # TODO: check if prompt can be taken
-        # TODO: add parametr on how many chunks to be scanned at one (LLM Guard streaming)
-        return StreamingResponse(stream_generator(doc), media_type="text/event-stream")
-
+        generator = scanned_output.split()
+        def stream_generator():
+            chat_response = ""
+            try:
+                for text in generator:
+                    chat_response += text
+                    chunk_repr = repr(' ' + text) # Guard is streaming, when LLM is not. Space needed for UI to show properly the output
+                    logger.debug("[guard - chat_stream] chunk:{chunk_repr}")
+                    yield f"data: {chunk_repr}\n\n"
+                logger.debug("[guard - chat_stream] stream response: {chat_response}")
+                yield "data: [DONE]\n\n"
+            except Exception as e:
+                logger.error(f"Error streaming from Guard: {e}")
+                yield "data: [ERROR]\n\n"
+        return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     log_level = usvc_config.get("OPEA_LOGGER_LEVEL", "INFO")

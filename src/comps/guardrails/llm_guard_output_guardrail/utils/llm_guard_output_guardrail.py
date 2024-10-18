@@ -5,7 +5,7 @@ from llm_guard import scan_output
 from fastapi import HTTPException
 
 from comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_scanners import OutputScannersConfig
-from comps import get_opea_logger
+from comps import get_opea_logger, GeneratedDoc
 
 logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 
@@ -49,8 +49,7 @@ class OPEALLMGuardOutputGuardrail:
             raise
 
 
-    def scan_llm_output(self, output_doc: object) -> str:
-        # TODO: Only God knows for now what type will be here
+    def scan_llm_output(self, output_doc: GeneratedDoc) -> str:
         """
         Scans the output from an LLM output document.
 
@@ -65,19 +64,27 @@ class OPEALLMGuardOutputGuardrail:
             Exception: If an unexpected error occurs during scanning.
         """
         try:
-            # if self._scanners_config.changed(output_doc.output_guardrail_params.dict()):  # TODO: to be enabled in v1.0
-            #     self._scanners = self._scanners_config.create_enabled_output_scanners()
-            sanitized_output, results_valid, results_score = scan_output(
-                self._scanners, output_doc.prompt, output_doc.text
-                ) # TODO: to be verified for streaming response
-            if False in results_valid.values():
-                msg = f"LLM Output {output_doc.text} is not valid, scores: {results_score}"
-                logger.error(f"{msg}")
-                raise HTTPException(status_code=400, detail=f"{msg}")
-            return sanitized_output
+            if output_doc.output_guardrail_params is not None:
+                self._scanners_config.vault = output_doc.output_guardrail_params.anonymize_vault
+                if self._scanners_config.changed(output_doc.output_guardrail_params.dict()):
+                    self._scanners = self._scanners_config.create_enabled_output_scanners()
+            else:
+                logger.warning("Output guardrail params not found in input document.")
+            if self._scanners:
+                sanitized_output, results_valid, results_score = scan_output(
+                    self._scanners, output_doc.prompt, output_doc.text
+                    )
+                if False in results_valid.values():
+                    msg = f"LLM Output {output_doc.text} is not valid, scores: {results_score}"
+                    logger.error(msg)
+                    raise HTTPException(status_code=400, detail=msg)
+                return sanitized_output
+            else:
+                logger.warning("No output scanners enabled. Skipping scanning.")
+                return output_doc.text
         except Exception as e:
             logger.exception(
                 f"An unexpected error occured during scanning LLM output with \
                     LLM Guard output scanners: {e}"
             )
-            raise HTTPException(status_code=500, detail=f"{e}") from e
+            raise

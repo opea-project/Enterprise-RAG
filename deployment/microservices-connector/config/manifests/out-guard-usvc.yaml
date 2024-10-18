@@ -17,6 +17,7 @@ data:
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
+  HF_HOME: /tmp/in-guard/huggingface
 ---
 # Source: out-guard-usvc/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation

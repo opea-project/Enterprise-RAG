@@ -50,6 +50,19 @@ class OPEALLMGuardInputGuardrail:
             )
             raise
 
+    def _get_anonymize_vault(self):
+        anon = [item for item in self._scanners if type(item).__name__ == "Anonymize"]
+        if len(anon) > 0:
+            return anon[0]._vault.get()
+        return None
+
+    def _recreate_anonymize_scanner_if_exists(self):
+        anon = [item for item in self._scanners if type(item).__name__ == "Anonymize"]
+        logger.info(f"Anonymize scanner found: {len(anon)}")
+        if len(anon) > 0:
+            self._scanners.remove(anon[0])
+            self._scanners.append(self._scanners_config.create_anonymize_scanner())
+
     def scan_llm_input(self, input_doc: LLMParamsDoc) -> LLMParamsDoc:
         """
         Scan the prompt from an LLMParamsDoc object.
@@ -66,19 +79,35 @@ class OPEALLMGuardInputGuardrail:
             Exception: If an unexpected error occurs during scanning.
         """
         try:
-            if self._scanners_config.changed(input_doc.input_guardrail_params.dict()):
-                self._scanners = self._scanners_config.create_enabled_input_scanners()
-            prompt = input_doc.query
-            sanitized_prompt, results_valid, results_score = scan_prompt(self._scanners, prompt)
-            if False in results_valid.values():
-                msg = f"Prompt {prompt} is not valid, scores: {results_score}"
-                logger.error(f"{msg}")
-                raise HTTPException(status_code=500, detail=f"{msg}")
-            input_doc.query = sanitized_prompt
-            return input_doc
+            fresh_scanners = False
+            if input_doc.input_guardrail_params is not None:
+                if self._scanners_config.changed(input_doc.input_guardrail_params.dict()):
+                    self._scanners = self._scanners_config.create_enabled_input_scanners()
+                    fresh_scanners = True
+            else:
+                logger.warning("Input guardrail params not found in input document.")
+            if self._scanners:
+                if not fresh_scanners:
+                    logger.info("Recreating anonymize scanner if exists.")
+                    self._recreate_anonymize_scanner_if_exists()
+                prompt = input_doc.query
+                sanitized_prompt, results_valid, results_score = scan_prompt(self._scanners, prompt)
+                if False in results_valid.values():
+                    msg = f"Prompt {prompt} is not valid, scores: {results_score}"
+                    logger.error(f"{msg}")
+                    raise HTTPException(status_code=400, detail=f"{msg}")
+                input_doc.query = sanitized_prompt
+                if input_doc.output_guardrail_params is not None:
+                    input_doc.output_guardrail_params.anonymize_vault = self._get_anonymize_vault()
+                else:
+                    logger.warning("No output guardrails params, could not append the vault for Anonymize scanner.")
+                return input_doc
+            else:
+                logger.info("No input scanners enabled. Skipping scanning.")
+                return input_doc
         except Exception as e:
             logger.exception(
                 f"An unexpected error occured during scanning prompt with \
                     LLM Guard Output Guardrail: {e}"
             )
-            raise HTTPException(status_code=500, detail=f"{e}") from e
+            raise

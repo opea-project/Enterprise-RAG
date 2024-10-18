@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -109,9 +109,10 @@ class BanCodeModel(BaseDoc):
 class BanCompetitorsModel(BaseDoc):
     enabled: bool = False
     use_onnx: bool = True
-    competitors: Optional[List[str]] = ["Competitor1", "Competitor2", "Competitor3"]
+    competitors: List[str] = ["Competitor1", "Competitor2", "Competitor3"]
     model: Optional[str] = None
     threshold: Optional[float] = None
+    redact: Optional[bool] = None
 
 class BanSubstringsModel(BaseDoc):
     enabled: bool = False
@@ -235,7 +236,7 @@ class NoRefusalLightModel(BaseDoc):
 
 class ReadingTimeModel(BaseDoc):
     enabled: bool = False
-    max_time: int = 0.5
+    max_time: float = 0.5
     truncate: Optional[bool] = None
 
 class FactualConsistencyModel(BaseDoc):
@@ -288,7 +289,7 @@ class LLMGuardOutputGuardrailParams(BaseDoc):
     bias: BiasModel = BiasModel()
     code: CodeModel = CodeModel()
     deanonymize: DeanonymizeModel = DeanonymizeModel()
-    json: JSONModel = JSONModel()
+    json_scanner: JSONModel = JSONModel()
     language: LanguageModel = LanguageModel()
     language_same: LanguageSameModel = LanguageSameModel()
     malicious_urls: MaliciousURLsModel = MaliciousURLsModel()
@@ -303,6 +304,8 @@ class LLMGuardOutputGuardrailParams(BaseDoc):
     sentiment: SentimentModel = SentimentModel()
     toxicity: ToxicityModel = ToxicityModel()
     url_reachability: URLReachabilityModel = URLReachabilityModel()
+    output_guard_streaming: bool = True
+    anonymize_vault: Optional[List[Tuple]] = None # the only parameter not available in fingerprint. Used to tramsmit vault
 
 class LLMParamsDoc(BaseDoc):
     model: Optional[str] = None  # for openai and ollama
@@ -320,7 +323,6 @@ class LLMParamsDoc(BaseDoc):
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
-    input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class LLMParams(BaseDoc):

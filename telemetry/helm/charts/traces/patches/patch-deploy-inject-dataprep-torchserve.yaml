@@ -1,0 +1,17 @@
+spec:
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "true"
+        instrumentation.opentelemetry.io/inject-java: "true"
+    spec:
+      containers:
+      - name: torchserve
+        env:
+        - name: PYTHONPATH
+          value: "/home/model-server"
+        - name: OTEL_SERVICE_NAME
+          value: "dataprep/torchserver"
+        # Torchserver is java based, so this below won't work and there is no such option for Javar
+        # - name: OTEL_PYTHON_EXCLUDED_URLS
+        #   value: "/,/metrics,/v1/health_check"

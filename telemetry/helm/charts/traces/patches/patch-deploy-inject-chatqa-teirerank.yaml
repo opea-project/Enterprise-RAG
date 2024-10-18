@@ -1,0 +1,26 @@
+spec:
+  template:
+    # metadata:
+    #   annotations:
+    #     instrumentation.opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+      - name: teirerank
+        env:
+        # - name: PYTHONPATH
+        #   value: ":/foo/bar:/home/user/comps/llms/text-generation/tgi:/home/user"
+
+        # https://huggingface.co/docs/text-generation-inference/en/reference/launcher#otlpendpoint
+        # from docs:
+        #       --otlp-endpoint <OTLP_ENDPOINT>
+        # The grpc endpoint for opentelemetry. Telemetry is sent to this endpoint as OTLP over gRPC. e.g. `http://localhost:4317`
+        # NOTE: even grpc here requires http://scheme !!!!
+        - name: OTLP_ENDPOINT
+          value: "http://otelcol-traces-collector.monitoring-traces:4317"
+          # value: "" # DEFAULT
+
+        # https://github.com/huggingface/text-generation-inference/blob/main/router/src/logging.rs#L11
+        # - name: LOG_LEVEL
+        #   value: DEBUG
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/teirerank"

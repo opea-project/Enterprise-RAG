@@ -5,7 +5,9 @@ spec:
         instrumentation.opentelemetry.io/inject-python: "true"
     spec:
       containers:
-      - name: retriever-usvc
+      - name: embedding-usvc
         env:
         - name: LOGGING_PROPAGATE
           value: "true"
+        - name: OTEL_SERVICE_NAME
+          value: "dataprep/embedding-usvc"

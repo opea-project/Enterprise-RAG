@@ -5,7 +5,9 @@ spec:
         instrumentation.opentelemetry.io/inject-python: "true"
     spec:
       containers:
-      - name: reranking-usvc
+      - name: ingestion-usvc
         env:
         - name: LOGGING_PROPAGATE
           value: "true"
+        - name: OTEL_SERVICE_NAME
+          value: "dataprep/ingestion-usvc"

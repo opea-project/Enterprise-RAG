@@ -9,3 +9,5 @@ spec:
         env:
         - name: LOGGING_PROPAGATE
           value: "true"
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/embedding-usvc"

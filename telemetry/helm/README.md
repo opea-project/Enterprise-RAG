@@ -3,9 +3,7 @@
 ### Assumptions/current state/limitations:
 
 - ChatQnA application is deployed to "chatqa" namespace (check instructions below).
-- All telemetry components will be deployed to `monitoring` namespace.
-- `kubectl proxy` is running in background (for testing).
-- localhost:5000 docker registry is deployed  e.g. with `docker run -d -p 5000:5000 --name local-registry registry:2` or use kind creation script: `example/kind-with-registry-opea-models-mount.sh`
+- All telemetry base components (metrics) will be deployed to `monitoring` namespace.
 
 Default Metrics pipeline:
 
@@ -153,7 +151,7 @@ wget https://vault.habana.ai/artifactory/gaudi-metric-exporter/yaml/1.17.0/metri
 ```
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm repo update
-helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring
+helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace
 ```
 or uninstall
 

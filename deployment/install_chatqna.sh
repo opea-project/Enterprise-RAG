@@ -292,6 +292,7 @@ function start_telemetry() {
 
     # IIIb) Deploy OpenTelemetry collector and instrumenation for ChatQnA (requires chatqa namespace)
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
+    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
     helm_upgrade=true
     helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "--set otelcol-traces.enabled=true --set otelcol-traces.instrumentation.namespace=$DEPLOYMENT_NS $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
     # WAIT/CHECK IIIb) telemetry/traces

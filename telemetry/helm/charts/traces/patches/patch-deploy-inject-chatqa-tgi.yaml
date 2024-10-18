@@ -19,3 +19,5 @@ spec:
 
         # - name: LOG_LEVEL
         #   value: DEBUG
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/tgi"

@@ -106,10 +106,8 @@ docker run -ti --rm --entrypoint journalctl -v /var/log/journal:/var/log/journal
 
 ##### 1b) Number of iwatch open descriptors
 
-
-Check numbers of inotify user instances:
+Check numbers of inotify user instances (on target Host):
 ```
-ssh dcgaudicluster2
 sudo sysctl -w fs.inotify.max_user_instances=8192
 ```
 
@@ -117,27 +115,6 @@ To make this change **permanent** modify `/etc/sysctl.conf` or `/syc/sysctl.d/` 
 
 References:
 - https://github.com/kubeflow/manifests/issues/2087
-
-
-#### 2) Loki volumes
-
-TODO: This is temporary solution until "production" ready provisioner/CSI-driver is added to Kubernetes cluster.
-
-```
-### ssh target dcgaudicluster2 node
-sudo mkdir -p /mnt/k8stelemetryvolumes
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-1
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-2
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-3
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-4
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-5
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-6
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-7
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-8
-sudo mkdir -p /mnt/k8stelemetryvolumes/vol-9
-sudo chmod -R a+rwx /mnt/k8stelemetryvolumes
-kubectl apply -f loki-volumes.yaml -n monitoring
-```
 
 ### Troubleshooting
 
@@ -205,7 +182,6 @@ spec:
         - --config=/conf/relay.yaml
         - --set=service::telemetry::logs::level=debug
 ```
-
 
 #### Debugging OpenSearch
 

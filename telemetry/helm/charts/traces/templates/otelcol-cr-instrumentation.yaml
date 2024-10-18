@@ -1,10 +1,11 @@
 {{- if index .Values "otelcol-traces" "enabled" }}
+{{- range $namespace := index .Values "otelcol-traces" "instrumentation" "namespaces" }}
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
   name: rag-python-instrumentation
 # https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/api.md#instrumentationspecexporter
-  namespace: {{ index .Values "otelcol-traces" "instrumentation" "namespace" }}
+  namespace: {{ $namespace }}
 spec:
   env:
   #############################################################
@@ -143,7 +144,7 @@ spec:
     # Implementtion:  opentelemetry-python-contrib/util/opentelemetry-util-http/src/opentelemetry/util/http/__init__.py:138
     # replace , with | and treat as regex
     - name: OTEL_PYTHON_EXCLUDED_URLS
-      value: "metrics,/v1/health_check"
+      value: "/metrics,/v1/health_check"
 
     ### TO TEST
     # all envs:
@@ -160,4 +161,6 @@ spec:
     # Other options headers:
     # - OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST="Accept-Encoding,User-Agent,Referer"
     # - OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE="Last-Modified,Content-Type"
+---
+{{- end }}
 {{- end}}

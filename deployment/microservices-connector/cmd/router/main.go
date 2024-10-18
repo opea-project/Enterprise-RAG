@@ -46,7 +46,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -78,6 +77,7 @@ const (
 
 var (
 	OtelServiceName  = "router-service" // will be overwriteen by OTEL_SERVICE_NAME
+	OtelExcludedUrls = []string{}
 	debugRequestLogs = false
 	log              logr.Logger
 
@@ -223,12 +223,31 @@ func initTraces() {
 
 	println("otel/traces: enabled OTEL_EXPORTER_OTLP_ENDPOINT (or default localhost will be used):", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
 
+	excludedUrlsStr, urlsFound := os.LookupEnv("OTEL_GO_EXCLUDED_URLS")
+	if urlsFound {
+		OtelExcludedUrls = strings.Split(excludedUrlsStr, ",")
+	}
+	fmt.Println("otel/traces: OTEL_GO_EXCLUDED_URLS =", OtelExcludedUrls)
+
 	ctx := context.Background()
 	exporterOtlp, err := otlptracehttp.New(ctx)
 	if err != nil {
 		log.Error(err, "failed to init trace exporters")
 		os.Exit(1)
 	}
+
+	samplerRatio := 1.0
+	ratioStr, ratioFound := os.LookupEnv("OTEL_TRACES_SAMPLER_FRACTION")
+	if ratioFound {
+		if samplerRatio, err = strconv.ParseFloat(ratioStr, 64); err == nil {
+			if err != nil {
+				log.Error(err, "failed to conver sampler ratio to float64")
+				os.Exit(1)
+			}
+		}
+
+	}
+	fmt.Println("otel/traces: OTEL_TRACES_SAMPLER_FRACTION =", samplerRatio)
 
 	// Use sdktrace.AlwaysSample sampler to sample all traces.
 	// In a production application, use sdktrace.ProbabilitySampler with a desired probability.
@@ -244,7 +263,7 @@ func initTraces() {
 			os.Exit(1)
 		}
 		tp = sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithSampler(sdktrace.TraceIDRatioBased(samplerRatio)),
 			sdktrace.WithBatcher(exporterOtlp),
 			sdktrace.WithSyncer(exporterStdout),
 			sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName(OtelServiceName))),
@@ -252,7 +271,7 @@ func initTraces() {
 	} else {
 		println("otel/traces: console exporter disabled (missing OTEL_TRACES_CONSOLE_EXPORTER=true)")
 		tp = sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithSampler(sdktrace.TraceIDRatioBased(samplerRatio)),
 			sdktrace.WithBatcher(exporterOtlp),
 			sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName(OtelServiceName))),
 		)
@@ -400,6 +419,20 @@ func callService(
 	callClient := http.Client{
 		Transport: otelhttp.NewTransport(
 			transport,
+			otelhttp.WithServerName(serviceUrl),
+			otelhttp.WithSpanNameFormatter(
+				func(operation string, r *http.Request) string {
+					return "HTTP " + r.Method + " " + r.URL.String()
+				}),
+			otelhttp.WithFilter(func(r *http.Request) bool {
+				for _, excludedUrl := range OtelExcludedUrls {
+					if r.RequestURI == excludedUrl {
+						return false
+					}
+				}
+				return true
+			}),
+			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
 			// ////  GEnerate EXTRA spans for dns/sent/reciver
 			// otelhttp.WithClientTrace(
 			// 	func(ctx context.Context) *httptrace.ClientTrace {
@@ -782,15 +815,14 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		defer close(done)
 
 		mainTracer := otel.GetTracerProvider().Tracer("graphtracer")
-		ctx, span := mainTracer.Start(ctx, "read request")
+		_, span := mainTracer.Start(ctx, "read initial request")
 
-		// Example event
-		uk := attribute.Key("foo")
-		bag := baggage.FromContext(ctx)
-		span.AddEvent("handling this...", trace.WithAttributes(uk.String(bag.Member("bar").Value())))
-
-		// Example log entry
-		otlpr.WithContext(log, ctx).Info("Example entry log with some data", "foz", "baz")
+		// ### Example event
+		// uk := attribute.Key("foo")
+		// bag := baggage.FromContext(ctx)
+		// span.AddEvent("handling this...", trace.WithAttributes(uk.String(bag.Member("bar").Value())))
+		// ### Example log entry
+		// otlpr.WithContext(log, ctx).Info("Example entry log with some data", "foz", "baz")
 
 		allTokensStartTime := time.Now()
 		inputBytes, err := io.ReadAll(req.Body)
@@ -799,13 +831,18 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "failed to read request body", http.StatusBadRequest)
 			return
 		}
+		span.SetAttributes(attribute.Int("initial request body size", len(inputBytes)))
 		span.End()
 
-		ctx, span = mainTracer.Start(ctx, "router step")
-		responseBody, statusCode, err := routeStep(ctx, defaultNodeName, *mcGraph, inputBytes, inputBytes, req.Header)
-		span.End()
+		allStepsCtx, span := mainTracer.Start(ctx, "router all steps") // this context will be used for callClient instrumenation (POSTs)
+		responseBody, statusCode, err := routeStep(allStepsCtx, defaultNodeName, *mcGraph, inputBytes, inputBytes, req.Header)
+		pipeLatencyMilliseconds := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
+		pipelineLatencyMeasure.Record(ctx, pipeLatencyMilliseconds)
 
-		pipelineLatencyMeasure.Record(ctx, float64(time.Since(allTokensStartTime))/float64(time.Millisecond))
+		span.SetAttributes(attribute.Int("last_step.statusCode", statusCode))
+		span.SetAttributes(attribute.Float64("llm.pipeline.latency.ms", pipeLatencyMilliseconds))
+
+		span.End()
 
 		if err != nil {
 			log.Error(err, "failed to process request")
@@ -825,6 +862,9 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		firstTokenCollected := false
+		firstTokenLatencyMilliseconds := 0.0
+		nextTokenLatencyTotal := 0.0
+		nextTokenLatencyCount := 0.0
 		buffer := make([]byte, BufferSize)
 		ctx, spanFor := mainTracer.Start(ctx, "tokens")
 		for {
@@ -843,8 +883,11 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			if !firstTokenCollected {
 				firstTokenCollected = true
 				firstTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+				firstTokenLatencyMilliseconds = elapsedTimeMilisecond
 			} else {
 				nextTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+				nextTokenLatencyTotal += elapsedTimeMilisecond
+				nextTokenLatencyCount += 1.0
 			}
 
 			if err != nil && err != io.EOF {
@@ -877,10 +920,16 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 		}
-		spanFor.End()
 
+		// Statisitcs for metrics and traces attributes
 		allTokensElapsedTimeMilisecond := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
 		allTokenLatencyMeasure.Record(ctx, allTokensElapsedTimeMilisecond)
+		spanFor.SetAttributes(attribute.Float64("llm.first.token.latency.ms", firstTokenLatencyMilliseconds))
+		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.total.ms", nextTokenLatencyTotal))
+		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.count", nextTokenLatencyCount))
+		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.avg.ms", nextTokenLatencyTotal/nextTokenLatencyCount))
+		spanFor.SetAttributes(attribute.Float64("llm.all.token.latency.ms", allTokensElapsedTimeMilisecond))
+		spanFor.End()
 
 	}()
 
@@ -1035,6 +1084,14 @@ func initializeRoutes() *http.ServeMux {
 		handler := otelhttp.NewHandler(
 			otelhttp.WithRouteTag(pattern, http.HandlerFunc(handlerFunc)),
 			operation,
+			otelhttp.WithFilter(func(r *http.Request) bool {
+				for _, excludedUrl := range OtelExcludedUrls {
+					if r.RequestURI == excludedUrl {
+						return false
+					}
+				}
+				return true
+			}),
 		)
 		mux.Handle(pattern, handler)
 

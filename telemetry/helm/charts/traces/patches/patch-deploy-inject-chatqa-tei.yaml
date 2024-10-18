@@ -22,3 +22,5 @@ spec:
         # https://github.com/huggingface/text-generation-inference/blob/main/router/src/logging.rs#L11
         # - name: LOG_LEVEL
         #   value: DEBUG
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/tei"

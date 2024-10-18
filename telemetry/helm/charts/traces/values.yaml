@@ -153,4 +153,6 @@ otel-operator:
 otelcol-traces:
   enabled: false
   instrumentation:
-    namespace: chatqa
+    namespaces:
+    - chatqa
+    - dataprep

@@ -36,7 +36,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -125,8 +126,8 @@
             "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "rate(process_cpu_seconds_total{container=\"$container_name\"}[1m])",
+          "editorMode": "code",
+          "expr": "rate(process_cpu_seconds_total{container=\"$container_name\", namespace=\"$namespace\"}[1m])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -143,7 +144,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -231,8 +233,8 @@
             "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "process_resident_memory_bytes{container=\"$container_name\"}",
+          "editorMode": "code",
+          "expr": "process_resident_memory_bytes{container=\"$container_name\", namespace=\"$namespace\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -249,7 +251,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -340,7 +343,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(handler) (rate(http_requests_total{container=\"$container_name\", handler!~\"/metrics|/v1/health_check|none\"}[1m]))",
+          "expr": "sum by(handler) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[1m]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -357,7 +360,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -478,8 +482,8 @@
             "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "sum by(status) (rate(http_requests_total{container=\"$container_name\"}[1m]))",
+          "editorMode": "code",
+          "expr": "sum by(status) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\"}[1m]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -496,7 +500,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -601,8 +606,8 @@
             "type": "prometheus"
           },
           "disableTextWrap": false,
-          "editorMode": "builder",
-          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=\"$container_name\"}[30s]))",
+          "editorMode": "code",
+          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=\"$container_name\", namespace=\"$namespace\"}[30s]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -619,7 +624,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "description": "",
       "fieldConfig": {
@@ -713,7 +719,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "histogram_quantile(0.$Percentage, rate(http_request_duration_seconds_bucket{container=\"$container_name\", handler!~\"/metrics|/v1/health_check|none\"}[1m])) ",
+          "expr": "histogram_quantile(0.$Percentage, rate(http_request_duration_seconds_bucket{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[1m])) ",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -730,7 +736,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -820,7 +827,7 @@
             "type": "prometheus"
           },
           "editorMode": "code",
-          "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=\"$container_name\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
+          "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -931,6 +938,57 @@
     "list": [
       {
         "current": {
+          "selected": true,
+          "text": "chatqa",
+          "value": "chatqa"
+        },
+        "definition": "label_values(http_requests_total{namespace=~\"chatqa|dataprep\"},namespace)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_requests_total{namespace=~\"chatqa|dataprep\"},namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "embedding-usvc",
+          "value": "embedding-usvc"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(http_requests_total{namespace=~\"$namespace\"},container)",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "container_name",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(http_requests_total{namespace=~\"$namespace\"},container)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
           "selected": false,
           "text": "99",
           "value": "99"
@@ -965,33 +1023,6 @@
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "embedding-usvc",
-          "value": "embedding-usvc"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(http_requests_total,container)",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
-        "name": "container_name",
-        "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(http_requests_total,container)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
       }
     ]
   },
@@ -1018,6 +1049,6 @@
   "timezone": "browser",
   "title": "EnterpriseRAG / Services / Details",
   "uid": "aduqd7fgbf1fkc",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

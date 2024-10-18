@@ -2,19 +2,18 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
-  name: router-service
+  name: ingestion-usvc
   labels:
     release: {{.Release.Name}}
 spec:
   namespaceSelector:
     matchNames:
     - dataprep
-    - chatqa
   selector:
     matchLabels:
-      app: router-service
-  podMetricsEndpoints:
-  - targetPort: 8080
+      app.kubernetes.io/instance: ingestion-usvc
+  endpoints:
+  - port: "ingestion-usvc"
 {{- end }}

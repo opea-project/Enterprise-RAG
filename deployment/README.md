@@ -40,6 +40,15 @@ Proxy variables are optional.
 > [!NOTE]
 > The images are stored on AWS to simplify deployment process. The images can be build directly from the source using `update_images.sh` script and pushed to user defined registry. In such case please modify paths to images in [values.yaml](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/blob/rls-v0.5.x/deployment/microservices-connector/helm/values.yaml)
 
+
+As the result of `configure.sh`, a `.env` file is created. To enable Go-related configurations, source the `.env` file:
+
+```sh
+source .env
+```
+
+This step is crucial to avoid errors such as "make: go: No such file or directory" in subsequent steps.
+
 ### Build
 To build and push images from source, use the `update_images.sh` script. This script performs the following:
 1. Build specified images from source.

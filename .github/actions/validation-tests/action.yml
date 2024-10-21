@@ -24,7 +24,7 @@ runs:
   using: "composite"
   steps:
     - name: Install deps
-      run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests
+      run: apt update && apt install -y rsync netcat-openbsd openssh-client python3 python3-requests curl jq
       shell: bash
 
     - name: Update comment with workflow link

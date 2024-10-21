@@ -146,13 +146,3 @@ otel-operator:
     # A full list of valid identifiers can be found here: https://github.com/open-telemetry/opentelemetry-operator/blob/main/pkg/featuregate/featuregate.go
     #featureGates: "+operator.autoinstrumentation.go"
     #featureGates: "+operator.golang.flags,"
-
-#########################################################
-# OpenTelemetry operator
-#########################################################
-otelcol-traces:
-  enabled: false
-  instrumentation:
-    namespaces:
-    - chatqa
-    - dataprep

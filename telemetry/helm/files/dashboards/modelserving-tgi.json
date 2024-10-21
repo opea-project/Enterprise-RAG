@@ -67,7 +67,6 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 2,
   "id": 551,
-  "links": [],
   "liveNow": false,
   "panels": [
     {
@@ -3898,6 +3897,22 @@
     "from": "now-30m",
     "to": "now-1m"
   },
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "timepicker": {
     "nowDelay": "30s"
   },

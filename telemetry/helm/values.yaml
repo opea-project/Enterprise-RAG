@@ -85,7 +85,7 @@ logs:
   enabled: false
 
 ### ============================================================================
-# TRACES subchart (traces backends and collectors and instrumenation)
+# TRACES subchart (traces backends)
 # check: charts/traces/README.md for more details
 ### ============================================================================
 traces:
@@ -94,4 +94,14 @@ traces:
   # Until this is fixed, single node deployment with single helm chart are impossible!
   # https://github.com/helm/helm/pull/12879
   #enabled: true # DO NOT ENABLE FOR SINGLE NODE deployments (because of minio naming conflict)
+  enabled: false
+
+#########################################################
+### ============================================================================
+# TRACES instrumenation subchart (traces collectors and instrumenation)
+# check: charts/traces-instr/README.md for more details
+### ============================================================================
+traces-instr:
+  # Please install manually because of CRD/Webhook depedency
+  # and possible race conditions
   enabled: false

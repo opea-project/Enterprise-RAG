@@ -25,8 +25,23 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 20246,
   "graphTooltip": 0,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "id": 11,
-  "links": [],
   "liveNow": false,
   "panels": [
     {

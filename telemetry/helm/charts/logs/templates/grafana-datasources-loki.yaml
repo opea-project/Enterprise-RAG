@@ -17,7 +17,7 @@ data:
       uid: loki
       type: loki
       typeName: Loki
-      url: "http://telemetry-logs-loki-gateway.monitoring"
+      url: "http://loki-read.monitoring:3100"
       access: proxy
       editable: true
       # TODO example to be validated
@@ -35,6 +35,7 @@ data:
       #       field: "traceID"
       jsonData:
         httpHeaderName1: X-Scope-OrgID
+        manageAlerts: false
         # TODO example to be validated
         # derivedFields:
         #   - name: "traceID"

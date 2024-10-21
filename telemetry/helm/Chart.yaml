@@ -3,16 +3,19 @@
 apiVersion: v2
 name: telemetry
 type: application
-version: 0.2.0
+version: 1.0.0
 
 dependencies:
   # built-in sub charts
   - name: logs
-    version: "0.2.0"
+    version: "1.0.0"
     condition: logs.enabled
   - name: traces
-    version: "0.3.0"
+    version: "1.0.0"
     condition: traces.enabled
+  - name: traces-instr
+    version: "1.0.0"
+    condition: traces-instr.enabled
   # external/3rd party subcharts
   - name: kube-prometheus-stack
     condition: kube-prometheus-stack.enabled

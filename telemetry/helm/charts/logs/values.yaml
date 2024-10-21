@@ -178,7 +178,9 @@ loki:
     #dnsService: "kube-dns"   # for kind based setup - WARNING: this cannot be null/nil/""/''/ / because will generate broken resolver value ".kube-system.svc.cluster.local." see https://github.com/helm/helm/pull/12879 or Jira IEASG-166 for more details
     dnsService: "coredns"     # for kubespray based setup
 
+
   loki:
+
     commonConfig:
       # Version for single node deployment (required for single node setups).
       # **Warning** this disables HA for write path.
@@ -296,10 +298,18 @@ loki:
     dashboards:
       enabled: true
       namespace: monitoring
+    rules:
+      enabled: true
+      labels:
+        release: telemetry
     serviceMonitor:
       enabled: true
       labels:
         release: telemetry
+
+  gateway:
+    # -- Specifies whether the gateway should be enabled
+    enabled: false
 
 ### =================================================
 ### [OPTIONAL] OpenSearch subchart

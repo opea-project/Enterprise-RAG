@@ -23,9 +23,24 @@
   },
   "description": "Spanmetrics way of demo application view.",
   "editable": true,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "links": [],
   "liveNow": false,
   "panels": [
     {

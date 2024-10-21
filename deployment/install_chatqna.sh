@@ -9,6 +9,7 @@ gmc_path="$repo_path/deployment/microservices-connector/helm"
 telemetry_path="$repo_path/telemetry/helm"
 telemetry_logs_path="$repo_path/telemetry/helm/charts/logs"
 telemetry_traces_path="$repo_path/telemetry/helm/charts/traces"
+telemetry_traces_instr_path="$repo_path/telemetry/helm/charts/traces-instr"
 ui_path="$repo_path/app/chat-qna/helm-ui"
 auth_path="$repo_path/auth/"
 
@@ -281,21 +282,19 @@ function start_telemetry() {
     nohup kubectl --namespace "$TELEMETRY_NS" port-forward svc/telemetry-grafana "$GRAFANA_FPORT":80 >> nohup_grafana.out 2>&1 &
     nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
 
-    # III) telemetry/traces
+    # III) telemetry/traces (two charts)
     helm dependency build "$telemetry_traces_path"  > /dev/null
-    # IIIa) Two step installation: because of dependency between opentelemetry-operator CRDs and CR create when otelcol-traces are enabled and webhook installation race condition.
-    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "--set otelcol-traces.enabled=false $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
-    sleep 5 # wait for pods, and to be ready for webhook race condition handling
-    # WAIT/CHECK IIIa) telemetry/traces
+    # IIIa) 'Traces' (backends) installation: because of dependency between opentelemetry-operator CRDs and CR create when otelcol-traces are enabled and webhook installation race condition.
+    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "$HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
+    # IIIa) Check telemetry/traces
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
 
-    # IIIb) Deploy OpenTelemetry collector and instrumenation for ChatQnA (requires chatqa namespace)
+    # IIIb) 'Traces-instr' deploy OpenTelemetry collector and instrumenation for ChatQnA (requires chatqa namespace)
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
     kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-    helm_upgrade=true
-    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "--set otelcol-traces.enabled=true --set otelcol-traces.instrumentation.namespace=$DEPLOYMENT_NS $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
-    # WAIT/CHECK IIIb) telemetry/traces
+    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces-instr "$telemetry_traces_instr_path" "--set instrumentation.namespaces={$DEPLOYMENT_NS,$DATAPREP_NS}"
+    # IIIb) telemetry/traces-instr check
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
     
@@ -306,6 +305,7 @@ function clear_telemetry() {
 
     # remove CR manually to allow (helm uninstall doesn't remove it!)
     kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS"
+    helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr
     helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces
     helm status -n "$TELEMETRY_NS" telemetry-logs > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry-logs
     helm status -n "$TELEMETRY_NS" telemetry > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry
@@ -532,7 +532,7 @@ if [[ "$telemetry_flag" == "true" ]]; then
   fi
 
   # system validation (for journald/ctl systemd OpenTelemetry collector)
-  if  [[ `sudo sysctl -n fs.inotify.max_user_instances` < 8000 ]]; then
+  if  [[ `sudo sysctl -n fs.inotify.max_user_instances` -lt 8000 ]]; then
       print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
       exit 1
   fi

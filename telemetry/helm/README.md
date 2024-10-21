@@ -59,17 +59,23 @@ helm install telemetry-logs -n monitoring charts/logs
 
 "logs" chart deploys:
 - loki as logs backend and Grafana datasource,
-- opentelemetry collector in daemonset mode as logs collector only,
+- OpenTelemetry collector in DaemonSet mode as logs collector only,
 - Optionally: OpenSearch, Promtail
 
 Check [logs README.md](charts/logs/README.md#optional-components) for details.
 
 #### III) Install **traces pipeline** telemetry.
 
-Note two step installation is required because CRD/CD depedency and webhooks race condiation of "OpenTelemetry operator" and created CRs (collector/instrumenation):
+Note two step (two charts) installation is required because CRD/CD dependency and WebHooks race condition of "OpenTelemetry operator" and created CRs (collector/instrumentation):
+
+Install traces **backends**:
 ```
-helm install telemetry-traces --create-namespace . -n monitoring-traces --set otelcol-traces.enabled=false
-helm upgrade telemetry-traces --create-namespace . -n monitoring-traces --set otelcol-traces.enabled=true
+helm install telemetry-traces --create-namespace charts/traces -n monitoring-traces 
+```
+
+Install traces **collector** and **instrumentation**:
+```
+helm install telemetry-traces-instr charts/trace-instr -n monitoring-traces 
 ```
 
 Check [tracing README.md](charts/traces/README.md) for details.

@@ -70,7 +70,13 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
 # Please modify grafana_password for your own
-time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --ui --telemetry  --upgrade --grafana_password devonly
+time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly
+
+# Install or reinstall(upgrade) individual components
+time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade
+time ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly
+time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade
+
 # check ChatQnA response
 kubectl proxy
 pgrep -laf 'kubectl proxy'
@@ -88,8 +94,7 @@ kubectl port-forward --namespace auth svc/keycloak 1234:80
 # UI: http://127.0.0.1:4173 
 # Grafana: http://127.0.0.1:3000
 
-
-### install metrics-server
+### Optionally install metrics-server (for resource usage metrics)
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace
 ```

@@ -1,4 +1,3 @@
-{{- if index .Values "otelcol-traces" "enabled" }}
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -99,12 +98,12 @@ spec:
 
       ### TRACES
       otlp/jaeger:
-        endpoint: '{{.Release.Name}}-jaeger-collector.{{.Release.Namespace}}:4317' # grpc ??
+        endpoint: 'telemetry-traces-jaeger-collector.{{.Release.Namespace}}:4317' # grpc ??
         tls:
           insecure: true
       otlp/tempo:
         # endpoint: 'tempo-gateway.tempo:80' # grpc ?? gateway is on 80
-        endpoint: '{{.Release.Name}}-tempo-distributor.{{.Release.Namespace}}:4317' # grpc ?? 
+        endpoint: 'telemetry-traces-tempo-distributor.{{.Release.Namespace}}:4317' # grpc ?? 
         tls:
           insecure: true
 
@@ -183,4 +182,24 @@ spec:
 
       metrics:
         level: detailed
-{{- end}}
+---
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: otelcol-traces
+  namespace: monitoring # this and namespace below is required because Prometheus only watches in monitoring tagged with release
+  labels:
+    release: telemetry  # see above
+spec:
+  namespaceSelector:
+    matchNames:
+    - monitoring-traces
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: opentelemetry-collector
+      app.kubernetes.io/instance: monitoring-traces.otelcol-traces
+      app.kubernetes.io/name: otelcol-traces-collector-monitoring
+  endpoints:
+  - port: "monitoring"

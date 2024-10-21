@@ -17,8 +17,23 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "graphTooltip": 0,
-  "links": [],
   "liveNow": false,
   "panels": [
     {

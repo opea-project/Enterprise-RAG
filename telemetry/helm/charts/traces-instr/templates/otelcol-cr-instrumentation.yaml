@@ -1,5 +1,4 @@
-{{- if index .Values "otelcol-traces" "enabled" }}
-{{- range $namespace := index .Values "otelcol-traces" "instrumentation" "namespaces" }}
+{{- range $namespace := .Values.instrumentation.namespaces }}
 apiVersion: opentelemetry.io/v1alpha1
 kind: Instrumentation
 metadata:
@@ -163,4 +162,3 @@ spec:
     # - OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE="Last-Modified,Content-Type"
 ---
 {{- end }}
-{{- end}}

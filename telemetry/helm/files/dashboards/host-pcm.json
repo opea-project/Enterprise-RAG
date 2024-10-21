@@ -17,7 +17,6 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 1,
-  "links": [],
   "panels": [
     {
       "datasource": "prometheus",
@@ -5557,6 +5556,22 @@
     "from": "now-30m",
     "to": "now-1m"
   },
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "timezone": "browser",
   "tags": ["entrag", "host"],
   "title": "EnterpriseRAG / Host / Intel(r) Performance Counter Monitor (CPU/Memory)",

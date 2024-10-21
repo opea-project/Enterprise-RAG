@@ -18,7 +18,6 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 1,
-  "links": [],
   "panels": [
     {
       "collapsed": false,
@@ -3849,7 +3848,7 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": [],
+  "tags": ["entrag", "host"],
   "templating": {
     "list": [
       {
@@ -3976,6 +3975,22 @@
     "from": "now-30m",
     "to": "now"
   },
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "entrag"
+      ],
+      "targetBlank": false,
+      "title": "Enterprise RAG dashboards",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
   "timepicker": {},
   "timezone": "browser",
   "title": "EnterpriseRAG / Host / Habana Exporter (Gaudi)",

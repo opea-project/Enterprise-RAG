@@ -1,15 +1,18 @@
 dependencies:
 - name: logs
   repository: ""
-  version: 0.2.0
+  version: 1.0.0
 - name: traces
   repository: ""
-  version: 0.3.0
+  version: 1.0.0
+- name: traces-instr
+  repository: ""
+  version: 1.0.0
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
   version: 61.7.2
 - name: prometheus-redis-exporter
   repository: https://prometheus-community.github.io/helm-charts
   version: 6.5.0
-digest: sha256:64f7be8bb3ae0a00453fbeaa6a1fa4b8cded52f9f252ebea9fa34198ce5e91ff
-generated: "2024-09-30T15:23:13.011481757+02:00"
+digest: sha256:12490cb8a907063affdf1b6b4cd5cb5f7eafc58405514410c321c0ec8ff0cea1
+generated: "2024-10-21T14:17:10.856448416+02:00"

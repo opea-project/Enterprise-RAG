@@ -2,20 +2,21 @@
 
 #### Intro
 
-Telemetry stack for Enterprise RAG is split into three related parts (main chart and two subcharts):
+Telemetry stack for Enterprise RAG is split into three related parts (main chart and three subcharts):
 
 - [**metrics**](helm/README.md) - (base) provides metrics signals based on Prometheus and set of exporters and basic infrastructure for visualization (Grafana) and alerting (AlertManager + Rules)
 - [**logs**](helm/charts/logs/README.md) - provides mechanism to collect logs (custom OpenTelemetry collector running as DaemonSet) from all pods and HOST system OS systemd units and backends to store and query (Loki and optionally OpenSearch)
-- [**traces**](helm/charts/traces/README.md) - exposes central service where traces can be pushed (OpenTelemetry collector running as Deployment deployed by OpenTelemetry operator) and backends to store and query (Tempo and optionally Jeager)
+- [**traces**](helm/charts/traces/README.md) - deploys backends to store and query traces (Tempo and optionally Jeager) and OpenTelemetry operator to automate collectors deployment,
+- [**traces-instr**](helm/charts/traces-instr/README.md) - exposes central service where traces can be pushed (OpenTelemetry collector running as Deployment deployed by OpenTelemetry operator) and prepare auto zero-code instrumentations
 
-This three charts needs to be installed separately but **metrics** and **logs** will share the same namespace.
+This four charts needs to be installed in order because implicit dependencies (Loki and Tempo uses Grafana as visualization and Prometheus for self monitoring, Traces collector uses OpenTelemetry operator for deployment)
 
-Please follow instructions in [helm/README.md](helm/README.md) to install **metrics** part and [subcharts READMEs ](helm/charts/) for **logs** and **traces**.
+Please follow instructions in [helm/README.md](helm/README.md) to install all four charts.
 
 #### Namespaces
 
 - **metrics** and **logs** charts are deployed to **monitoring** namespace
-- **traces** chart is deployed to **monitoring-traces** namespace
+- **traces** and **traces-instr** are deployed to **monitoring-traces** namespace
 
 #### Architecture (overview)
 

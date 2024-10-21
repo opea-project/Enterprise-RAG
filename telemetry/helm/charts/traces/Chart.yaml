@@ -3,7 +3,7 @@
 apiVersion: v2
 name: traces
 type: application
-version: 0.3.0
+version: 1.0.0
 
 dependencies:
 

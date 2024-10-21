@@ -835,7 +835,7 @@ class InputScannersConfig:
                 enabled_scanners_objects.append(scanner_object)
             except Exception as e:
                 logger.exception(
-                    f"An unexpected error occured during creating output scanner {scanner_name}: {e}"
+                    f"An unexpected error occured during creating input scanner {scanner_name}: {e}"
                 )
                 continue
         return [s for s in enabled_scanners_objects if s is not None]

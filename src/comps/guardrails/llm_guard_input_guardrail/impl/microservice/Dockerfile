@@ -1,9 +1,8 @@
-# based on: https://github.com/protectai/llm-guard/blob/main/llm_guard_api/Dockerfile
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# Dockerfile for the RAG LLM Guard input scanners microservice
-# This Dockerfile is used to build the container image for the RAG LMM Guard input scanners microservice.
+# Dockerfile for the RAG LLM Guard Input Guardrail microservice
+# This Dockerfile is used to build the container image for the RAG LLM Guard Output Guardrail microservice.
 
 FROM python:3.11-slim
 

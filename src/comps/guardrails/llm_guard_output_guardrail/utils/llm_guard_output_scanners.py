@@ -288,8 +288,8 @@ class OutputScannersConfig:
         """
         return {
             "json_scanner": {
-                k.replace("JSON_SCANNER", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("JSON_SCANNER")
+                k.replace("JSON_SCANNER_", "").lower(): self._validate_value(v)
+                for k, v in config_dict.items() if k.startswith("JSON_SCANNER_")
             }
         }
 
@@ -1037,7 +1037,14 @@ class OutputScannersConfig:
         timeout = scanner_config.get('timeout', None)
 
         if success_status_codes is not None:
-            url_reachability_params['success_status_codes'] = success_status_codes
+            if isinstance(success_status_codes, str):
+                artifacts = set([',', '', '.'])
+                url_reachability_params['success_status_codes'] = list(set(success_status_codes.split(',')) - artifacts)
+            elif isinstance(success_status_codes, list):
+                url_reachability_params['success_status_codes'] = success_status_codes
+            else:
+                logger.error("Provided type is not valid for Language scanner")
+                raise ValueError("Provided type is not valid for Language scanner")
         if timeout is not None:
             url_reachability_params['timeout'] = timeout
 

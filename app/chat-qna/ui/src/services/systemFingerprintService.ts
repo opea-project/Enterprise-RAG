@@ -6,6 +6,7 @@ import {
   AppendArgumentsRequestBody,
   ChangeArgumentsRequestBody,
 } from "@/api/models/systemFingerprint";
+import { parseServiceDetailsResponseData } from "@/utils";
 
 class SystemFingerprintService {
   async appendArguments() {
@@ -51,6 +52,23 @@ class SystemFingerprintService {
         return await response.json();
       } else {
         throw new Error("Failed to change arguments");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async getChatQnAServiceDetails() {
+    const url = endpoints.systemFingerprint.chatqnaStatus;
+
+    try {
+      const response = await fetch(url);
+
+      if (response.ok) {
+        const servicesData = await response.json();
+        return parseServiceDetailsResponseData(servicesData);
+      } else {
+        throw new Error("Failed to fetch ChatQnA services status");
       }
     } catch (e) {
       console.error(e);

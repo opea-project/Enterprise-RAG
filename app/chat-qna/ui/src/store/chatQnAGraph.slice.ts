@@ -13,10 +13,15 @@ import {
 import { Connection, NodeChange } from "@xyflow/system";
 
 import {
+  FetchedServiceDetails,
   GuardrailParams,
   ServicesParameters,
 } from "@/api/models/systemFingerprint";
-import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
+import {
+  ServiceData,
+  ServiceDetails,
+  ServiceStatus,
+} from "@/models/admin-panel/control-plane/serviceData";
 import { RootState } from "@/store/index";
 import { graphNodes } from "@/utils/chatQnAGraph";
 
@@ -69,12 +74,30 @@ export const chatQnAGraphSlice = createSlice({
     setChatQnAGraphEdges: (state, action: PayloadAction<Edge[]>) => {
       state.edges = [...action.payload];
     },
-    setChatQnAGraphInitialNodes: (
+    setChatQnAGraphNodes: (
       state,
-      action: PayloadAction<ServicesParameters>,
+      action: PayloadAction<{
+        parameters: ServicesParameters;
+        fetchedDetails: FetchedServiceDetails;
+      }>,
     ) => {
-      const fetchedArgs = Object.entries(action.payload);
+      const { parameters, fetchedDetails } = action.payload;
+      const fetchedArgs = Object.entries(parameters);
+      const fetchedDetailedServices = Object.keys(fetchedDetails);
       state.nodes = graphNodes.map((node) => {
+        const nodeId = node.data.id;
+        let nodeDetails: ServiceDetails = {};
+        let nodeStatus = ServiceStatus.NotAvailable;
+        if (fetchedDetailedServices.includes(nodeId)) {
+          const { details, status } = fetchedDetails[nodeId];
+          if (details) {
+            nodeDetails = details;
+          }
+          if (status) {
+            nodeStatus = status as ServiceStatus;
+          }
+        }
+
         if (node.data.args) {
           let serviceArgs = [...node.data.args];
           for (const [fetchedArgName, fetchedArgValue] of fetchedArgs) {
@@ -85,14 +108,22 @@ export const chatQnAGraphSlice = createSlice({
                 : { ...arg },
             );
           }
-          return { ...node, data: { ...node.data, args: serviceArgs } };
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              details: nodeDetails,
+              status: nodeStatus,
+              args: serviceArgs,
+            },
+          };
         } else if (node.data.guardArgs) {
           const updatedGuardArgs = { ...node.data.guardArgs };
           let fetchedGuardArgs: GuardrailParams = {};
           if (node.data.id === "input_guard") {
-            fetchedGuardArgs = action.payload.input_guardrail_params;
+            fetchedGuardArgs = parameters.input_guardrail_params;
           } else if (node.data.id === "output_guard") {
-            fetchedGuardArgs = action.payload.output_guardrail_params;
+            fetchedGuardArgs = parameters.output_guardrail_params;
           }
 
           for (const scannerName in updatedGuardArgs) {
@@ -115,10 +146,22 @@ export const chatQnAGraphSlice = createSlice({
 
           return {
             ...node,
-            data: { ...node.data, guardArgs: updatedGuardArgs },
+            data: {
+              ...node.data,
+              details: nodeDetails,
+              status: nodeStatus,
+              guardArgs: updatedGuardArgs,
+            },
           };
         } else {
-          return node;
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              details: nodeDetails,
+              status: nodeStatus,
+            },
+          };
         }
       });
     },
@@ -155,7 +198,7 @@ export const {
   onChatQnAGraphEdgesChange,
   onChatQnAGraphConnect,
   setChatQnAGraphEdges,
-  setChatQnAGraphInitialNodes,
+  setChatQnAGraphNodes,
   setChatQnAGraphLoading,
   setChatQnAGraphSelectedServiceNode,
 } = chatQnAGraphSlice.actions;

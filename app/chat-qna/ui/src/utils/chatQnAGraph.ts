@@ -7,10 +7,7 @@ import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrai
 import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
 import { llmArguments } from "@/models/admin-panel/control-plane/llm";
 import { rerankerArguments } from "@/models/admin-panel/control-plane/reranker";
-import {
-  ServiceData,
-  ServiceStatus,
-} from "@/models/admin-panel/control-plane/serviceData";
+import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -19,9 +16,8 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "embedding_model_server",
       displayName: "Embedding Model Server",
-      sourcePosition: Position.Top,
+      targetPosition: Position.Top,
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -32,16 +28,10 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "embedding",
       displayName: "Embedding",
-      targetPosition: Position.Bottom,
       sourcePosition: Position.Right,
+      additionalSourcePosition: Position.Bottom,
+      additionalSourceId: "embedding-embedding_model_server-source",
       selected: false,
-      status: ServiceStatus.Unknown,
-      details: {
-        "Model Name": "MODEL_NAME",
-        "Model Server Name": "MODEL_SERVER_NAME",
-        "Vector Size": "VECTOR_SIZE",
-        "Connector Used": "CONNECTOR_USED",
-      },
     },
     type: "serviceNode",
     focusable: true,
@@ -52,15 +42,11 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "retriever",
       displayName: "Retriever",
-      details: {
-        "Used Vector DB": "USED_VECTOR_DB",
-      },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalTargetPosition: Position.Top,
       additionalTargetId: "retriever-vectordb-target",
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -73,7 +59,6 @@ const graphNodes: Node<ServiceData>[] = [
       displayName: "VectorDB",
       sourcePosition: Position.Bottom,
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -84,19 +69,12 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "reranker",
       displayName: "Reranker",
-      details: {
-        "Model Name": "MODEL_NAME_PLACEHOLDER",
-        "Model Server Name": "MODEL_SERVER_NAME",
-        "Vector Size": "VECTOR_SIZE",
-        "Connector Used": "CONNECTOR_USER",
-      },
       args: rerankerArguments,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      additionalTargetPosition: Position.Bottom,
-      additionalTargetId: "reranker-model-server-target",
+      additionalSourcePosition: Position.Bottom,
+      additionalSourceId: "reranker-reranker_model_server-source",
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -107,9 +85,8 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "reranker_model_server",
       displayName: "Reranker Model Server",
-      sourcePosition: Position.Top,
+      targetPosition: Position.Top,
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -123,7 +100,6 @@ const graphNodes: Node<ServiceData>[] = [
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       selected: false,
-      status: ServiceStatus.Unknown,
       guardArgs: inputGuardArguments,
     },
     type: "serviceNode",
@@ -135,18 +111,12 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "llm",
       displayName: "LLM",
-      details: {
-        "Model Name": "MODEL_NAME",
-        "Model Server Name": "MODEL_SERVER_NAME",
-        "Connector Used": "CONNECTOR_USED",
-      },
       args: llmArguments,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
-      additionalTargetPosition: Position.Bottom,
-      additionalTargetId: "llm-model-server-target",
+      additionalSourcePosition: Position.Bottom,
+      additionalSourceId: "llm-llm_model_server-source",
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -157,9 +127,8 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "llm_model_server",
       displayName: "LLM Model Server",
-      sourcePosition: Position.Top,
+      targetPosition: Position.Top,
       selected: false,
-      status: ServiceStatus.Unknown,
     },
     type: "serviceNode",
     focusable: true,
@@ -172,7 +141,6 @@ const graphNodes: Node<ServiceData>[] = [
       displayName: "LLM Output Guard",
       targetPosition: Position.Left,
       selected: false,
-      status: ServiceStatus.Unknown,
       guardArgs: outputGuardArguments,
     },
     type: "serviceNode",
@@ -182,9 +150,10 @@ const graphNodes: Node<ServiceData>[] = [
 
 const graphEdges: Edge[] = [
   {
-    id: "embedding_model_server-embedding",
-    source: "embedding_model_server",
-    target: "embedding",
+    id: "embedding-embedding_model_server",
+    target: "embedding_model_server",
+    source: "embedding",
+    sourceHandle: "embedding-embedding_model_server-source",
     selectable: false,
   },
   {
@@ -207,10 +176,10 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "reranker_model_server-reranker",
-    source: "reranker_model_server",
-    target: "reranker",
-    targetHandle: "reranker-model-server-target",
+    id: "reranker-reranker_model_server",
+    source: "reranker",
+    target: "reranker_model_server",
+    sourceHandle: "reranker-reranker_model_server-source",
     selectable: false,
   },
   {
@@ -226,10 +195,10 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm_model_server-llm",
-    source: "llm_model_server",
-    target: "llm",
-    targetHandle: "llm-model-server-target",
+    id: "llm-llm_model_server",
+    source: "llm",
+    target: "llm_model_server",
+    sourceHandle: "llm-llm_model_server-source",
     selectable: false,
   },
   {

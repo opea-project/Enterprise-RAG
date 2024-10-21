@@ -16,3 +16,15 @@
 .chatqna-graph-wrapper {
   @apply relative h-[calc(100vh-6rem-1px)] w-full;
 }
+
+.chatqna-graph-legend {
+  @apply absolute flex flex-col gap-2 p-4;
+
+  & .chatqna-graph-legend-item {
+    @apply flex items-center gap-2;
+
+    & > p {
+      @apply text-xs;
+    }
+  }
+}

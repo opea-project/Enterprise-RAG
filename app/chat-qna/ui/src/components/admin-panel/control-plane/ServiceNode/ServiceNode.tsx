@@ -21,6 +21,8 @@ const ServiceNode = ({
     sourcePosition,
     additionalTargetPosition,
     additionalTargetId,
+    additionalSourcePosition,
+    additionalSourceId,
     selected,
     status,
   },
@@ -55,6 +57,14 @@ const ServiceNode = ({
           id={additionalTargetId}
           type="target"
           position={additionalTargetPosition}
+          className="service-node-handle"
+        />
+      )}
+      {additionalSourcePosition && additionalSourceId && (
+        <Handle
+          id={additionalSourceId}
+          type="source"
+          position={additionalSourcePosition}
           className="service-node-handle"
         />
       )}

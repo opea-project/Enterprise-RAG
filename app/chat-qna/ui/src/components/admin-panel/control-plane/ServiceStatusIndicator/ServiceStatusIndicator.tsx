@@ -9,17 +9,17 @@ import Tooltip from "@/components/shared/Tooltip/Tooltip";
 import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 
 interface ServiceStatusIndicatorProps {
-  status: ServiceStatus;
+  status?: ServiceStatus;
   forNode?: boolean;
 }
 
 const ServiceStatusIndicator = ({
-  status,
+  status = ServiceStatus.NotAvailable,
   forNode,
 }: ServiceStatusIndicatorProps) => {
   const serviceStatusIndicatorClassNames = classNames({
     "service-status-indicator": true,
-    [status.toLowerCase()]: true,
+    [status.split(" ").join("-").toLowerCase()]: true,
     "service-status-indicator--node": forNode,
   });
 

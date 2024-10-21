@@ -14,10 +14,9 @@ export interface ServiceDetails {
 }
 
 export enum ServiceStatus {
-  Running = "Running",
-  Warning = "Warning",
-  Failed = "Failed",
-  Unknown = "Unknown Status",
+  Ready = "Ready",
+  NotReady = "Not ready",
+  NotAvailable = "Status Not Available",
 }
 
 export interface ServiceData extends Record<string, unknown> {
@@ -30,6 +29,8 @@ export interface ServiceData extends Record<string, unknown> {
   sourcePosition?: Position;
   additionalTargetPosition?: Position;
   additionalTargetId?: string;
+  additionalSourcePosition?: Position;
+  additionalSourceId?: string;
   selected?: boolean;
-  status: ServiceStatus;
+  status?: ServiceStatus;
 }

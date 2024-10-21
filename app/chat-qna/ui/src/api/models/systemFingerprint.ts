@@ -1,4 +1,5 @@
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 
 export interface AppendArgumentsRequestBody {
   text: string;
@@ -30,3 +31,10 @@ interface ServiceArgumentsToChange {
 }
 
 export type ChangeArgumentsRequestBody = ServiceArgumentsToChange[];
+
+export interface FetchedServiceDetails {
+  [serviceName: string]: {
+    status?: ServiceStatus;
+    details?: { [key: string]: string };
+  };
+}

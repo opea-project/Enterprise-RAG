@@ -57,11 +57,11 @@ function usage() {
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start auth and ui services (requires deployment)."
+    echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
-    echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-h|--help: Display this help message."
     echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease"
 }
@@ -495,6 +495,9 @@ while [[ "$#" -gt 0 ]]; do
         --ui)
             ui_flag=true
             ;;
+        --upgrade)
+            helm_upgrade=true
+            ;;
         -cd|--clear-deployment)
             clear_deployment_flag=true
             ;;
@@ -506,9 +509,6 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ca|--clear-all)
             clear_all_flag=true
-            ;;
-        --upgrade)
-            helm_upgrade=true
             ;;
         -h|--help)
             usage

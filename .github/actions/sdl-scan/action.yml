@@ -20,10 +20,6 @@ runs:
       run: apt update && apt -y install sudo zip jq
       shell: bash
 
-    - name: Clean Up Working Directory
-      run: sudo rm -rf ${{ env.GITHUB_WORKSPACE }}/*
-      shell: bash
-
     - uses: intel-innersource/frameworks.actions.certs@latest
 
     - name: Collect credentials from Conjur
@@ -163,5 +159,5 @@ runs:
       if: always()
       uses: intel-innersource/frameworks.actions.bandit@v1.3
       with:
-        bandit-options: '-c repo/.github/BanditConfig.yaml -f html'
+        bandit-options: '-c .github/BanditConfig.yaml -f html'
         report-file: 'CT161_bandit-results.html'

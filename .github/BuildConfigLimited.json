@@ -13,13 +13,8 @@
             }
         ]
     },
-    "StaticSecurityScan": {
-        "ServerURL": "https://sast.intel.com",
-        "ProjectID": "361162"
-    },
     "TrivyConfig": {
         "target": "."
     },
-    "BanditScan": {},
     "AVScan": {}
 }

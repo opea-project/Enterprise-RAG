@@ -16,6 +16,9 @@ inputs:
   SSH_GAUDI1_KNOWN_HOSTS:
     description: 'Known host file with gaudi added'
     required: true
+  RAG_SOLUTION_INFRA_PAT:
+    description: 'Token to RAG Solution Infra repo'
+    required: true
 
 runs:
   using: "composite"
@@ -72,7 +75,6 @@ runs:
       with:
         host: ${{ env.REMOTE_GAUDI_HOST }}
         run: mkdir -p ${{ env.REMOTE_WORKSPACE }}
-        shell: bash
 
     - name: rsync over SSH
       run: rsync -r repo/* ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/
@@ -88,7 +90,6 @@ runs:
         run: |
           cd ${{ env.REMOTE_WORKSPACE }}/src
           HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
-        shell: bash
 
     - name: "Run selected tests"
       if: ${{ env.SPECIFIC_TESTS != '' }}
@@ -100,16 +101,16 @@ runs:
         run: |
           cd ${{ env.REMOTE_WORKSPACE }}/src
           HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
-        shell: bash
 
     - name: Fetch Zephyr script
+      if: always()
       uses: actions/checkout@v4
       with:
         repository: intel-sandbox/rag-solution-infra
         ref: main
         sparse-checkout: 'tools/'
         path: zephyr-dir
-        token: ${{ env.RAG_SOLUTION_INFRA_PAT }}
+        token: ${{ inputs.RAG_SOLUTION_INFRA_PAT }}
 
     - name: Download allure-results
       if: always()
@@ -133,7 +134,6 @@ runs:
         run: |
           cid=$(docker ps -aq --filter "name=test-comps-embeddings*")
           if [[ ! -z "$cid" ]]; then echo "Cleaning up test-comps-embeddings containers..." && docker stop $cid && docker rm $cid && sleep 1s; fi
-        shell: bash
 
     - name: Clean up workspace
       if: always()
@@ -143,4 +143,3 @@ runs:
         run: |
           rm -rf ${{ env.REMOTE_WORKSPACE }}
           echo "Workspace has been removed"
-        shell: bash

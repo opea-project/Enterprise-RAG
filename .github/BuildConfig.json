@@ -30,6 +30,5 @@
     "TrivyConfig": {
         "target": "."
     },
-    "BanditScan": {},
     "AVScan": {}
 }

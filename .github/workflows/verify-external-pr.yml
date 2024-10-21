@@ -11,29 +11,29 @@ on:
         required: true
         type: choice
         options:
-        - intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution
         - intel/Enterprise-RAG
+        - intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution
       SDL:
         description: 'Perform SDL related scans'
         required: true
         type: choice
         options:
-        - 'yes'
         - 'no'
+        - 'yes'
       Validation-tests:
         description: 'Perform Validation tests'
         required: true
         type: choice
         options:
-        - 'yes'
         - 'no'
+        - 'yes'
       Create-PR:
         description: 'Copy PR code to interal Repo'
         required: true
         type: choice
         options:
-        - 'yes'
         - 'no'
+        - 'yes'
 
 jobs:
   SDLScans:
@@ -48,8 +48,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    env:
-        BUILD_CONFIG: ${{ github.event.inputs.Repository-name == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution' && 'BuildConfig' || 'BuildConfigLimited' }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -58,7 +56,6 @@ jobs:
       with:
         Repository-name: ${{ github.event.inputs.Repository-name }}
         PR-number: ${{ github.event.inputs.PR-number }}
-        Build-config: ${{ env.BUILD_CONFIG }}
 
   validate-microservices:
     if: ${{ (github.event.inputs.Validation-tests == 'yes') && (github.event.inputs.Create-PR == 'no') }}
@@ -80,7 +77,6 @@ jobs:
       REMOTE_GAUDI_HOST: dcgaudicluster1
       REMOTE_WORKSPACE: "/tmp/${{ github.event.inputs.PR-number }}/${{ github.run_number }}/${{ github.run_attempt }}"
       SPECIFIC_TESTS: ""
-      RAG_SOLUTION_INFRA_PAT: ${{ secrets.RAG_SOLUTION_INFRA_PAT }}
     steps:
     - name: Checkout actions
       uses: actions/checkout@v4
@@ -92,6 +88,7 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         SSH_CONFIG: ${{ secrets.SSH_CONFIG }}
         SSH_GAUDI1_KNOWN_HOSTS: ${{ secrets.SSH_GAUDI1_KNOWN_HOSTS }}
+        RAG_SOLUTION_INFRA_PAT: ${{ secrets.RAG_SOLUTION_INFRA_PAT }}
 
   copy-pr:
     if: ${{ github.event.inputs.Create-PR == 'yes' }}

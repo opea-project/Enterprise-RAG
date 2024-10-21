@@ -26,16 +26,6 @@ def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     assert response.status_code == 200, "Invalid HTTP status code returned"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T42")
-def test_dataprep_link_invalid_request_body(dataprep_api_helper):
-    """
-    Pass invalid request when uploading a link. Expect status code 400
-    """
-    body = {"unknown_field": ""}
-    response = dataprep_api_helper.call_dataprep_upload_link_custom_body(body)
-    assert response.status_code == 400, "Invalid HTTP status code returned"
-
-
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T41")
 def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     """

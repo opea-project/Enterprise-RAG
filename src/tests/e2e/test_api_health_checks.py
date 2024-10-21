@@ -5,7 +5,6 @@
 
 
 import allure
-import kr8s
 import requests
 
 
@@ -21,27 +20,17 @@ SERVICES = [
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T26")
-def test_api_health_checks():
+def test_api_health_checks(generic_api_helper):
     failed_microservices = []
     for service in SERVICES:
-        pods = kr8s.get("pods",
-                        namespace=service["namespace"],
-                        label_selector={"app": service["selector"]})
-
-        with pods[0].portforward(remote_port=service["port"]) as local_port:
-            headers = {"Content-Type": "application/json"}
-            try:
-                print(f"Attempting to make a request to {service['namespace']}/{service['selector']}...")
-                response = requests.get(
-                    f"http://127.0.0.1:{local_port}/v1/health_check",
-                    headers=headers,
-                    timeout=10
-                )
-                assert response.status_code == 200, \
-                    f"Got unexpected status code for {service['selector']} health check API call"
-                response.json()
-            except (AssertionError, requests.exceptions.RequestException) as e:
-                print(e)
-                failed_microservices.append(service)
+        try:
+            response = generic_api_helper.call_health_check_api(
+                service['namespace'], service['selector'], service['port'])
+            assert response.status_code == 200, \
+                f"Got unexpected status code for {service['selector']} health check API call"
+            response.json()
+        except (AssertionError, requests.exceptions.RequestException) as e:
+            print(e)
+            failed_microservices.append(service)
 
     assert failed_microservices == [], "/v1/health_check API call didn't succeed for some microservices"

@@ -5,8 +5,43 @@
 
 import base64
 import kr8s
+import random
 import requests
+import socket
 import time
+
+
+class CustomPortForward(object):
+
+    def __init__(self, remote_port, namespace, label_selector):
+        local_port = self._find_unused_port()
+        pod = self._get_pod(namespace, label_selector)
+        self.pf = kr8s.portforward.PortForward(pod, remote_port=remote_port, local_port=local_port)
+
+    def __enter__(self):
+        self.pf.start()
+        time.sleep(1)
+        return self.pf
+
+    def __exit__(self, type, value, traceback):
+        self.pf.stop()
+
+    def _find_unused_port(self, start=10000, end=60000):
+        """
+        Return a random unused port between start and end
+        """
+        while True:
+            port = random.randint(start, end)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                result = sock.connect_ex(("127.0.0.1", port))
+                if result != 0:  # Port is not in use
+                    return port
+
+    def _get_pod(self, namespace, label_selector):
+        pods = kr8s.get("pods",
+                        namespace=namespace,
+                        label_selector={"app": label_selector})
+        return pods[0]
 
 
 class InvalidChatqaResponseBody(Exception):
@@ -29,22 +64,20 @@ class ApiRequestHelper:
         """
         Make /v1/chatqa API call with the provided question.
         """
-        json_data = {"text": question}
-        pods = kr8s.get("pods",
-                        namespace=self.namespace,
-                        label_selector={"app": self.label_selector})
-
-        with pods[0].portforward(remote_port=self.api_port) as local_port:
+        json_data = {
+            "text": question
+        }
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             print(f"Asking the following question: {question}")
             start_time = time.time()
             response = requests.post(
-                f"http://127.0.0.1:{local_port}/v1/chatqa",
+                f"http://127.0.0.1:{pf.local_port}/v1/chatqa",
                 headers=self.default_headers,
                 json=json_data
             )
-            duration = time.time() - start_time
+            duration = round(time.time() - start_time, 2)
             print(f"ChatQA API call duration: {duration}")
-        return response
+            return response
 
     def format_response(self, response_body):
         """
@@ -81,44 +114,27 @@ class ApiRequestHelper:
                 }
             ]
         }
-        return self._call_dataprep_upload_file(json_data)
+        return self._call_dataprep_upload(json_data)
 
     def call_dataprep_upload_custom_body(self, custom_body):
         """
         Make /v1/dataprep API call with a specified custom request body
         """
-        return self._call_dataprep_upload_file(custom_body)
-
-    def _call_dataprep_upload_file(self, request_body):
-        pod = self._get_pod()
-        with pod.portforward(remote_port=self.api_port) as local_port:
-            response = requests.post(
-                f"http://127.0.0.1:{local_port}/v1/dataprep",
-                headers=self.default_headers,
-                json=request_body
-            )
-        return response
+        return self._call_dataprep_upload(custom_body)
 
     def call_dataprep_upload_links(self, links):
         """
         API call to upload a link to a website
         """
         body = {"links": links}
-        return self._call_dataprep_upload_link(body)
+        return self._call_dataprep_upload(body)
 
-    def call_dataprep_upload_link_custom_body(self, custom_body):
-        """
-        API call to upload a link to a website. Use custom request body
-        """
-        return self._call_dataprep_upload_link(custom_body)
-
-    def _call_dataprep_upload_link(self, body):
-        pod = self._get_pod()
-        with pod.portforward(remote_port=self.api_port) as local_port:
+    def _call_dataprep_upload(self, request_body):
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             response = requests.post(
-                f"http://127.0.0.1:{local_port}/v1/dataprep",
+                f"http://127.0.0.1:{pf.local_port}/v1/dataprep",
                 headers=self.default_headers,
-                json=body
+                json=request_body
             )
         return response
 
@@ -129,20 +145,11 @@ class ApiRequestHelper:
         namespace and selector are used in order to find the specified pod
         which handles health_check call.
         """
-        pod = self._get_pod(namespace, selector)
-        with pod.portforward(remote_port=port) as local_port:
+        with CustomPortForward(port, namespace, selector) as pf:
             print(f"Attempting to make a request to {namespace}/{selector}...")
             response = requests.get(
-                f"http://127.0.0.1:{local_port}/v1/health_check",
+                f"http://127.0.0.1:{pf.local_port}/v1/health_check",
                 headers=self.default_headers,
                 timeout=10
             )
             return response
-
-    def _get_pod(self, namespace=None, label_selector=None):
-        ns = namespace if namespace else self.namespace
-        selector = label_selector if label_selector else self.label_selector
-        pods = kr8s.get("pods",
-                        namespace=ns,
-                        label_selector={"app": selector})
-        return pods[0]

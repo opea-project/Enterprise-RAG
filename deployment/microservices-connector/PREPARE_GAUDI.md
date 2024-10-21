@@ -1,54 +1,65 @@
-# Gaudi configure preparation
+# Gaudi Configuration Preparation
 
-To fully utilize Enterprise RAG the LLM should be run on top of Gaudi accelerators hardware.
-Gaudi instances requieres to be prepared before they can be used.
+To fully utilize Enterprise RAG, the LLM should be run on Gaudi accelerator hardware.
+Gaudi instances need to be prepared before they can be used.
 
-After K8s is setup on Cluster follow bellow procedure of preparing Gaudi nodes
+After setting up Kubernetes on the cluster, follow the procedure below to prepare the Gaudi nodes.
 
-## Install Gaudi firmware
+## Install Gaudi Firmware
 
-Make sure Firmware is installed on Gaudi nodes. Follow [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) 
+Make sure Firmware is installed on Gaudi nodes. Follow the [Gaudi Firmware Installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) guide for detailed instructions. Below are simplified steps:
 
-Run habanalabs-installer.sh to install the firmware
-Next `sudo apt install -y habanalabs-container-runtime``
-Follow Habanalabs instructions and setup `/etc/containerd/config.toml` to point to habana-container-runtime
-```
-sudo tee /etc/containerd/config.toml <<EOF
-disabled_plugins = []
-version = 2
+1. Install the Intel Gaudi SW stack:
+    ```bash
+    habanalabs-installer.sh
+    ```
 
-[plugins]
-  [plugins."io.containerd.grpc.v1.cri"]
-    [plugins."io.containerd.grpc.v1.cri".containerd]
-      default_runtime_name = "habana"
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana]
-          runtime_type = "io.containerd.runc.v2"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana.options]
-            BinaryName = "/usr/bin/habana-container-runtime"
-  [plugins."io.containerd.runtime.v1.linux"]
-    runtime = "habana-container-runtime"
-EOF
-```
-and `sudo systemctl restart containerd`
+2. Install Habana Container Runtime:
+    ```bash
+    sudo apt install -y habanalabs-container-runtime
+    ```
 
-Next configure `/etc/habana-container-runtime/config.toml` according [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare)
-Uncomment lines:
-```
+3. Setup `/etc/containerd/config.toml` to point to habana-container-runtime:
+    ```bash
+    sudo tee /etc/containerd/config.toml <<EOF
+    disabled_plugins = []
+    version = 2
+
+    [plugins]
+      [plugins."io.containerd.grpc.v1.cri"]
+        [plugins."io.containerd.grpc.v1.cri".containerd]
+          default_runtime_name = "habana"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana]
+              runtime_type = "io.containerd.runc.v2"
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana.options]
+                BinaryName = "/usr/bin/habana-container-runtime"
+      [plugins."io.containerd.runtime.v1.linux"]
+        runtime = "habana-container-runtime"
+    EOF
+    ```
+
+    Then, restart the containerd service:
+    ```
+    sudo systemctl restart containerd
+    ```
+
+4. Next, uncomment the following lines in `/etc/habana-container-runtime/config.toml`:
+    ```
     #visible_devices_all_as_default = false
 
     #mount_accelerators = false
-```
+    ```
+    For more details, refer to the [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) guide.
 
-Next install K8s plugin following instruction [install K8s lugin for Gaudi] (https://docs.habana.ai/en/latest/Orchestration/Gaudi_Kubernetes/Device_Plugin_for_Kubernetes.html)
-Once the plugin is installed verify it is working by checking if k8s can see gaudi resources on node. 8 Gaudi devices should be vissible.
-```
-  capacity:
-    cpu: "192"
-    ephemeral-storage: 1817309532Ki
-    habana.ai/gaudi: "8"
-    hugepages-1Gi: "0"
-    hugepages-2Mi: 442Mi
-    memory: 1056298408Ki
-    pods: "110"
-```
+5. Finally, install the K8s plugin by following the instructions in [How to install K8s Plugin for Gaudi](https://docs.habana.ai/en/latest/Orchestration/Gaudi_Kubernetes/Device_Plugin_for_Kubernetes.html). Once the plugin is installed, verify its functionality by checking if Kubernetes can detect Gaudi resources on the node. You should see Gaudi devices listed:
+    ```
+    capacity:
+      cpu: "192"
+      ephemeral-storage: 1817309532Ki
+      habana.ai/gaudi: "8" # <-- Number of Gaudi devices to be used.
+      hugepages-1Gi: "0"
+      hugepages-2Mi: 442Mi
+      memory: 1056298408Ki
+      pods: "110"
+    ```

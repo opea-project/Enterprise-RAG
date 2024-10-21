@@ -9,7 +9,11 @@ ENV TEMP=/home/model-server/tmp
 ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
- && apt-get install -y openjdk-17-jdk           \
+ && apt-get install -y                          \
+    openjdk-17-jdk                              \
+    numactl                                     \
+    libjemalloc-dev                             \
+    google-perftools                            \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean
@@ -45,5 +49,10 @@ RUN pip cache purge && rm -rf /tmp/tmp* && rm -iRf /root/.cache
 
 # INTEL specific ENVs
 ENV KMP_SETTINGS=1
+ENV KMP_AFFINITY=granularity=fine,compact,1,0
+ENV KMP_BLOCKTIME=1
+# jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
+RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
 
 ENTRYPOINT ["/home/model-server/entrypoint.sh"]

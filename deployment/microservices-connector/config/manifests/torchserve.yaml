@@ -95,7 +95,10 @@ spec:
               value: prometheus
           resources:
           limits:
-            cpu: 16
+            cpu: "16"
+            memory: 32Gi
+          requests:
+            cpu: "16"
             memory: 32Gi
           volumeMounts:
             - mountPath: /opt/ml/model

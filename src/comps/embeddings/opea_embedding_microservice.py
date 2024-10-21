@@ -1,12 +1,14 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import ast
 import os
 import time
-from typing import Union
+import requests
 
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from typing import Union
 
 from comps import (
     MegaServiceEndpoint,
@@ -53,8 +55,8 @@ opea_embedding = OPEAEmbedding(
     output_datatype=Union[EmbedDoc, EmbedDocList],
 )
 @register_statistics(names=[USVC_NAME])
-# Define a function to handle processing of input for the microservice. 
-# Its input and output data types must comply with the registered ones above. 
+# Define a function to handle processing of input for the microservice.
+# Its input and output data types must comply with the registered ones above.
 def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
     """
     Process the input document using the OPEAEmbedding.
@@ -63,6 +65,7 @@ def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]
         input (Union[TextDoc, TextDocList]): The input document to be processed.
     """
     start = time.time()
+    logger.debug(f"Received input: {input}")
 
     try:
         # Pass the input to the 'run' method of the microservice instance
@@ -73,9 +76,14 @@ def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]
         raise HTTPException(status_code=400,
                             detail=f"An internal error occurred while processing: {str(e)}"
         )
+    except requests.exceptions.HTTPError as e:
+        if hasattr(e.response, "status_code") and e.response.status_code == 413:
+            raise HTTPException(status_code=413, detail=f"Input text is too long. Provide a valid input text. Error: {ast.literal_eval(e.response.text)['error']}")
+        else:
+            raise HTTPException(status_code=e.response.status_code, detail=ast.literal_eval(e.response.text)['error'])
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
-         raise HTTPException(status_code=500, 
+         raise HTTPException(status_code=500,
                              detail=f"An error occurred while processing: {str(e)}"
     )
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)

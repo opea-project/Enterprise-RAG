@@ -78,7 +78,7 @@ pip install -r impl/microservice/requirements/langchain.txt
 pip install -r impl/microservice/requirements/llama_index.txt
 ```
 
-#### 1.2. Start Microservice 
+#### 1.2. Start Microservice
 
 ```bash
 python opea_embedding_microservice.py
@@ -154,7 +154,7 @@ docker run -d --name="embedding-microservice" \
 #### 3.1. Check Status
 
 ```bash
-curl http://localhost:6000/v1/health_check\
+curl http://localhost:6000/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```

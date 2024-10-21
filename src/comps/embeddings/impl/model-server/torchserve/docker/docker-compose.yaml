@@ -27,6 +27,9 @@ services:
       TORCHSERVE_RESPONSE_TIMEOUT: ${TORCHSERVE_RESPONSE_TIMEOUT}
     runtime: runc
     ipc: host
+    cpuset: "0-15"
+    cap_add:
+      - SYS_NICE
 
   embedding_usvc:
     build:

@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import List, Optional
 
-from docarray import BaseDoc
 from langchain_core.embeddings import Embeddings
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from typing import List, Optional
 
 from comps import get_opea_logger
 from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
@@ -196,9 +195,15 @@ class LangchainEmbedding(EmbeddingWrapper):
         Returns:
             List[List[float]]: The embedded documents.
         """
-        return self._embedder.embed_documents(texts)
+        try:
+            output = self._embedder.embed_documents(texts)
+        except Exception as e:
+            logger.exception(f"Error embedding documents: {e}")
+            raise
 
-    def embed_query(self, input_text: str) -> BaseDoc:
+        return output
+
+    def embed_query(self, input_text: str) -> List[float]:
         """
         Embeds a query.
 
@@ -206,9 +211,15 @@ class LangchainEmbedding(EmbeddingWrapper):
             input_text (str): The query text.
 
         Returns:
-            BaseDoc: The embedded query.
+            List[float]: The embedded query.
         """
-        return self._embedder.embed_query(input_text)
+        try:
+            output = self._embedder.embed_query(input_text)
+        except Exception as e:
+            logger.exception(f"Error embedding query: {e}")
+            raise
+
+        return output
 
     def change_configuration(self, **kwargs) -> None:
         """

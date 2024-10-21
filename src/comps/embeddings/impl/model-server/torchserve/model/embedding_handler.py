@@ -14,16 +14,16 @@ Attributes:
 Methods:
     __init__():
         Initializes the EmbeddingHandler instance.
-    
+
     initialize(ctx: Context):
         Initializes the model and sets up the environment based on context.
-        
+
     preprocess(requests):
         Preprocesses the incoming requests to extract input texts.
-        
+
     inference(input_batch):
         Performs inference on the preprocessed input batch to generate embeddings.
-        
+
     postprocess(inference_output):
         Postprocesses the inference output to return the final result.
 """
@@ -43,7 +43,7 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-# The handler is responsible for defining how a model processes incoming requests during inference 
+# The handler is responsible for defining how a model processes incoming requests during inference
 
 class EmbeddingHandler(BaseHandler, ABC):
     def __init__(self):

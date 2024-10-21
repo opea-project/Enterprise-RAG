@@ -3,11 +3,12 @@
 
 # TODO: Implement a Generic Connector
 
+import concurrent
 import os
-from typing import Union
-
 import yaml
+
 from fastapi import HTTPException
+from typing import Union
 
 from comps import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
@@ -87,27 +88,31 @@ class OPEAEmbedding:
 
         docs = []
         if isinstance(input, TextDoc):
-            docs_to_parse = [input]
+            if input.text.strip() == "":
+                raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
+
+            embed_vector = self.embed_query(input.text)
+            res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
+            return res # return EmbedDoc
         else:
             docs_to_parse = input.docs
 
-        for doc in docs_to_parse:
-            if doc.text.strip() == "":
-                continue
+            docs_to_parse = [s for s in docs_to_parse if s.text.strip()]
+            if len(docs_to_parse) == 0:
+                raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
 
-            embed_vector = self.embed_query(doc.text)
-            res = EmbedDoc(text=doc.text, embedding=embed_vector, metadata=doc.metadata)
-            docs.append(res)
+            # Multithreaded executor is needed to enabled batching in the model server
+            def multithreaded_embed_query(doc):
+                res_vector = self.embed_query(doc.text)
+                return EmbedDoc(text=doc.text, embedding=res_vector, metadata=doc.metadata)
 
-        if len(docs) == 0:
-            raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
+            # Hardcoded to 4 workers per request
+            # TODO: Make the number of workers configurable
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                f = [executor.submit(multithreaded_embed_query, doc) for doc in docs_to_parse]
+                docs = [future.result() for future in concurrent.futures.as_completed(f)]
 
-            
-        if isinstance(input, TextDoc):
-            return docs[0] # return EmbedDoc
-        else:
             return EmbedDocList(docs=docs) # return EmbedDocList
-        
 
     def _import_langchain(self) -> None:
         try:

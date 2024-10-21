@@ -158,19 +158,8 @@ if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] && [ -n "$REGI
     aws configure set default.output json
 fi
 
-# Prepare remote
-if [ -z "$REMOTE" ]; then
-   if ! bash "$PREPARE_REMOTE_SCRIPT_PATH"; then
-       exit 1
-   fi
-else
-   if ! ssh "$REMOTE" "bash -s" < "${PREPARE_REMOTE_SCRIPT_PATH}"; then
-       exit 1
-   fi
-fi
-
 # OpenTelemetry contrib journals/systemd collector requires plenty of inotify instances or it fails
 # without error occurs: "Insufficient watch descriptors available. Reverting to -n." (in journalctl receiver)
-[[ `sudo sysctl -n fs.inotify.max_user_instances` < 8000 ]] && sudo sysctl -w fs.inotify.max_user_instances=8192
+[[ $(sudo sysctl -n fs.inotify.max_user_instances) -lt 8000 ]] && sudo sysctl -w fs.inotify.max_user_instances=8192
 
 echo "All installations and configurations are complete."

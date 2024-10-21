@@ -5,6 +5,7 @@ import "./ServiceArgumentCheckbox.scss";
 
 import { ChangeEvent, useCallback, useState } from "react";
 
+import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
 import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -13,7 +14,7 @@ interface ServiceArgumentCheckboxProps {
   name: string;
   onArgumentValueChange: (
     argumentName: string,
-    argumentValue: string | number | boolean | null,
+    argumentValue: ServiceArgumentInputValue,
   ) => void;
 }
 

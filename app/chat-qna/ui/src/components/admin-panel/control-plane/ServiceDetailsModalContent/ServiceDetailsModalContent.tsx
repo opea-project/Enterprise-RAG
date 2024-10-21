@@ -5,36 +5,40 @@ import "./ServiceDetailsModalContent.scss";
 
 import { useCallback, useEffect, useState } from "react";
 
-import { ServicesParameters } from "@/api/models/system-fingerprint/appendArguments";
+import { ChangeArgumentsRequestData } from "@/api/models/systemFingerprint";
 import ServiceArgumentsGrid from "@/components/admin-panel/control-plane/ServiceArgumentsGrid/ServiceArgumentsGrid";
 import ServiceDetailsGrid from "@/components/admin-panel/control-plane/ServiceDetailsGrid/ServiceDetailsGrid";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
-import ServiceArgument from "@/models/admin-panel/control-plane/serviceArgument";
+import ServiceArgument, {
+  ServiceArgumentInputValue,
+} from "@/models/admin-panel/control-plane/serviceArgument";
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
-import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
   chatQnAGraphEditModeEnabledSelector,
-  setChatQnAGraphEdges,
   setChatQnAGraphEditMode,
-  setChatQnAGraphInitialNodes,
-  setChatQnAGraphLoading,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { graphEdges } from "@/utils/chatQnAGraph";
+
+interface ServiceArgumentsGridData {
+  [argumentName: string]: ServiceArgument;
+}
 
 export interface ServiceArgumentsGridValues {
   name: string;
-  data: {
-    [argumentName: string]: ServiceArgument;
-  };
+  data: ServiceArgumentsGridData;
 }
 
 interface ServiceDetailsModalContentProps {
   serviceData: ServiceData;
+  updateServiceArguments: (
+    name: string,
+    data: ChangeArgumentsRequestData,
+  ) => void;
 }
 
 const ServiceDetailsModalContent = ({
   serviceData,
+  updateServiceArguments,
 }: ServiceDetailsModalContentProps) => {
   const dispatch = useAppDispatch();
 
@@ -48,7 +52,8 @@ const ServiceDetailsModalContent = ({
 
   useEffect(() => {
     const serviceArguments = serviceData.args ?? [];
-    const gridData: { [key: string]: ServiceArgument } = {};
+
+    const gridData: ServiceArgumentsGridData = {};
     for (const argument of serviceArguments) {
       const { displayName } = argument;
       gridData[displayName] = argument;
@@ -64,7 +69,7 @@ const ServiceDetailsModalContent = ({
 
   const handleArgumentValueChange = (
     argumentName: string,
-    argumentValue: string | number | boolean | null,
+    argumentValue: ServiceArgumentInputValue,
   ) => {
     setServiceArgumentsGrid((prevArguments) => ({
       ...prevArguments,
@@ -102,28 +107,9 @@ const ServiceDetailsModalContent = ({
     const argumentsDataEntries = Object.entries(serviceArgumentsGrid.data).map(
       ([name, { value }]) => [name, value],
     );
-    const data = Object.fromEntries(argumentsDataEntries);
-    const changeArgumentsRequestBody = [
-      {
-        name: serviceArgumentsGrid.name,
-        data,
-      },
-    ];
-
-    dispatch(setChatQnAGraphLoading(true));
-    SystemFingerprintService.changeArguments(changeArgumentsRequestBody).then(
-      () => {
-        SystemFingerprintService.appendArguments().then(
-          (parameters: ServicesParameters) => {
-            dispatch(setChatQnAGraphInitialNodes(parameters));
-            dispatch(setChatQnAGraphEdges(graphEdges));
-            dispatch(setChatQnAGraphLoading(false));
-          },
-        );
-      },
-    );
-
-    dispatch(setChatQnAGraphEditMode(false));
+    const serviceName = serviceArgumentsGrid.name;
+    const serviceData = Object.fromEntries(argumentsDataEntries);
+    updateServiceArguments(serviceName, serviceData);
   };
 
   const handleCancelChangesBtnClick = () => {
@@ -165,6 +151,40 @@ const ServiceDetailsModalContent = ({
   const confirmChangesBtnDisabled =
     invalidArguments.length > 0 || checkChanges();
 
+  let bottomPanel = null;
+  if (serviceData?.args && serviceData.args.length !== 0) {
+    if (editModeEnabled) {
+      bottomPanel = (
+        <div className="service-details-bottom-panel">
+          <button
+            className="button--small button__success w-full"
+            disabled={confirmChangesBtnDisabled}
+            onClick={handleConfirmChangesBtnClick}
+          >
+            Confirm Changes
+          </button>
+          <button
+            className="button--small outlined-button--primary w-full"
+            onClick={handleCancelChangesBtnClick}
+          >
+            Cancel
+          </button>
+        </div>
+      );
+    } else {
+      bottomPanel = (
+        <div className="service-details-bottom-panel">
+          <button
+            className="button--small w-full"
+            onClick={handleEditArgumentsBtnClick}
+          >
+            Edit Service Arguments
+          </button>
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="service-details-content-panel">
       <div className="p-4">
@@ -188,34 +208,7 @@ const ServiceDetailsModalContent = ({
           )}
         </div>
       </div>
-      {serviceData?.args && serviceData.args.length !== 0 && (
-        <div className="service-details-bottom-panel">
-          {editModeEnabled ? (
-            <>
-              <button
-                className="button--small button__success w-full"
-                disabled={confirmChangesBtnDisabled}
-                onClick={handleConfirmChangesBtnClick}
-              >
-                Confirm Changes
-              </button>
-              <button
-                className="button--small outlined-button--primary w-full"
-                onClick={handleCancelChangesBtnClick}
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <button
-              className="button--small w-full"
-              onClick={handleEditArgumentsBtnClick}
-            >
-              Edit Service Arguments
-            </button>
-          )}
-        </div>
-      )}
+      {bottomPanel}
     </div>
   );
 };

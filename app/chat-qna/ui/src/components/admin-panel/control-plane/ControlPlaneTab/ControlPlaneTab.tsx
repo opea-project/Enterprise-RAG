@@ -7,7 +7,7 @@ import "./ControlPlaneTab.scss";
 import { useEffect } from "react";
 import { BsHurricane } from "react-icons/bs";
 
-import { ServicesParameters } from "@/api/models/system-fingerprint/appendArguments";
+import { ServicesParameters } from "@/api/models/systemFingerprint";
 import ChatQnAGraph from "@/components/admin-panel/control-plane/ChatQnAGraph/ChatQnAGraph";
 import ServiceDetailsModal from "@/components/admin-panel/control-plane/ServiceDetailsModal/ServiceDetailsModal";
 import SystemFingerprintService from "@/services/systemFingerprintService";

@@ -12,16 +12,13 @@ import {
 } from "@xyflow/react";
 import { Connection, NodeChange } from "@xyflow/system";
 
-import { ServicesParameters } from "@/api/models/system-fingerprint/appendArguments";
+import {
+  GuardrailParams,
+  ServicesParameters,
+} from "@/api/models/systemFingerprint";
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 import { RootState } from "@/store/index";
 import { graphNodes } from "@/utils/chatQnAGraph";
-
-export interface ServiceNodeChange {
-  nodeId: string;
-  argName: string;
-  argValue: string | number | boolean;
-}
 
 interface ChatQnAGraphState {
   editModeEnabled: boolean;
@@ -30,7 +27,6 @@ interface ChatQnAGraphState {
   loading: boolean;
   interactivityEnabled: boolean;
   selectedServiceNode: Node<ServiceData> | null;
-  nodesChangeList: ServiceNodeChange[];
 }
 
 const initialState: ChatQnAGraphState = {
@@ -40,7 +36,6 @@ const initialState: ChatQnAGraphState = {
   loading: false,
   interactivityEnabled: false,
   selectedServiceNode: null,
-  nodesChangeList: [],
 };
 
 export const chatQnAGraphSlice = createSlice({
@@ -84,12 +79,44 @@ export const chatQnAGraphSlice = createSlice({
           let serviceArgs = [...node.data.args];
           for (const [fetchedArgName, fetchedArgValue] of fetchedArgs) {
             serviceArgs = serviceArgs.map((arg) =>
-              arg.displayName === fetchedArgName
+              arg.displayName === fetchedArgName &&
+              !(fetchedArgValue instanceof GuardrailParams)
                 ? { ...arg, value: fetchedArgValue }
                 : { ...arg },
             );
           }
           return { ...node, data: { ...node.data, args: serviceArgs } };
+        } else if (node.data.guardArgs) {
+          const updatedGuardArgs = { ...node.data.guardArgs };
+          let fetchedGuardArgs: GuardrailParams = {};
+          if (node.data.id === "input_guard") {
+            fetchedGuardArgs = action.payload.input_guardrail_params;
+          } else if (node.data.id === "output_guard") {
+            fetchedGuardArgs = action.payload.output_guardrail_params;
+          }
+
+          for (const scannerName in updatedGuardArgs) {
+            updatedGuardArgs[scannerName] = updatedGuardArgs[scannerName].map(
+              (scannerArg) => {
+                const scannerArgName = scannerArg.displayName;
+                let fetchedScannerArgValue =
+                  fetchedGuardArgs[scannerName][scannerArgName];
+                if (Array.isArray(fetchedScannerArgValue)) {
+                  fetchedScannerArgValue = fetchedScannerArgValue.join(",");
+                }
+
+                return {
+                  ...scannerArg,
+                  value: fetchedScannerArgValue,
+                };
+              },
+            );
+          }
+
+          return {
+            ...node,
+            data: { ...node.data, guardArgs: updatedGuardArgs },
+          };
         } else {
           return node;
         }

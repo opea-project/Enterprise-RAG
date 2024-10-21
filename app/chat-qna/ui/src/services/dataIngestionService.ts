@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import endpoints from "@/api/endpoints.json";
-import { DataIngestionRequest } from "@/api/models/data-ingestion/dataIngestion";
+import { DataIngestionRequest } from "@/api/models/dataIngestion";
 import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import { documentToBase64 } from "@/utils";
 

@@ -5,15 +5,20 @@ import "./ChatPage.scss";
 
 import { useEffect } from "react";
 
-import { ServicesParameters } from "@/api/models/system-fingerprint/appendArguments";
+import { ServicesParameters } from "@/api/models/systemFingerprint";
 import ConversationFeed from "@/components/chat/ConversationFeed/ConversationFeed";
 import PromptInput from "@/components/chat/PromptInput/PromptInput";
 import SystemFingerprintService from "@/services/systemFingerprintService";
-import { setPromptRequestParams } from "@/store/conversationFeed.slice";
-import { useAppDispatch } from "@/store/hooks";
+import {
+  selectIsMessageStreamed,
+  setPromptRequestParams,
+} from "@/store/conversationFeed.slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ChatPage = () => {
   const dispatch = useAppDispatch();
+
+  const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
 
   useEffect(() => {
     const fetchPromptRequestParams = () => {
@@ -26,12 +31,14 @@ const ChatPage = () => {
 
     fetchPromptRequestParams();
     const intervalId = setInterval(() => {
-      fetchPromptRequestParams();
+      if (!isMessageStreamed) {
+        fetchPromptRequestParams();
+      }
     }, 10000);
     return () => {
       clearInterval(intervalId);
     };
-  }, []);
+  }, [isMessageStreamed]);
 
   return (
     <div className="chat-page">

@@ -7,6 +7,7 @@ import classNames from "classnames";
 import { ChangeEvent, useState } from "react";
 
 import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
+import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
 
 interface ServiceArgumentNumberInputProps {
   name: string;
@@ -15,7 +16,7 @@ interface ServiceArgumentNumberInputProps {
   nullable?: boolean;
   onArgumentValueChange: (
     argumentName: string,
-    argumentValue: string | number | boolean | null,
+    argumentValue: ServiceArgumentInputValue,
   ) => void;
   onArgumentValidityChange: (
     argumentName: string,
@@ -27,7 +28,7 @@ const ServiceArgumentNumberInput = ({
   name,
   initialValue,
   range,
-  nullable,
+  nullable = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
@@ -35,7 +36,7 @@ const ServiceArgumentNumberInput = ({
   const [isFocused, setIsFocused] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
 
-  const validateInput = (value: string, nullable: boolean = false) => {
+  const validateInput = (value: string) => {
     if (nullable && value.trim() === "") {
       return false;
     } else {
@@ -53,7 +54,7 @@ const ServiceArgumentNumberInput = ({
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
-    const isNewValueInvalid = validateInput(event.target.value, nullable);
+    const isNewValueInvalid = validateInput(event.target.value);
     setIsInvalid(isNewValueInvalid);
     onArgumentValidityChange(name, isNewValueInvalid);
     if (!isNewValueInvalid) {

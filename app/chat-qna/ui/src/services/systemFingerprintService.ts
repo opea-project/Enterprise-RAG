@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import endpoints from "@/api/endpoints.json";
-import { AppendArgumentsRequest } from "@/api/models/system-fingerprint/appendArguments";
-import { ChangeArgumentsRequestBody } from "@/api/models/system-fingerprint/changeArguments";
+import {
+  AppendArgumentsRequestBody,
+  ChangeArgumentsRequestBody,
+} from "@/api/models/systemFingerprint";
 
 class SystemFingerprintService {
   async appendArguments() {
     const url =
       window.location.origin + endpoints.systemFingerprint.appendArguments;
-    const body: AppendArgumentsRequest = { text: "" };
+    const body: AppendArgumentsRequestBody = { text: "" };
 
     try {
       const response = await fetch(url, {
@@ -20,12 +22,9 @@ class SystemFingerprintService {
         },
         body: JSON.stringify(body),
       });
-      const responseData = await response.json();
 
       if (response.ok) {
-        const { parameters } = responseData;
-        delete parameters?.input_guardrail_params;
-        delete parameters?.output_guardrail_params;
+        const { parameters } = await response.json();
         return parameters;
       } else {
         throw new Error("Failed to fetch arguments");
@@ -47,10 +46,9 @@ class SystemFingerprintService {
         },
         body: JSON.stringify(requestBody),
       });
-      const responseData = await response.json();
 
       if (response.ok) {
-        return responseData;
+        return await response.json();
       } else {
         throw new Error("Failed to change arguments");
       }

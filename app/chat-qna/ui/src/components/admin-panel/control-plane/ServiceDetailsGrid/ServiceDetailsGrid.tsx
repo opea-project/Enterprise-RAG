@@ -5,8 +5,10 @@ import "./ServiceDetailsGrid.scss";
 
 import { Fragment } from "react";
 
+import { ServiceDetails } from "@/models/admin-panel/control-plane/serviceData";
+
 interface ServiceDetailsGridProps {
-  details: { [key: string]: string | boolean | number };
+  details: ServiceDetails;
 }
 
 const ServiceDetailsGrid = ({ details }: ServiceDetailsGridProps) => (

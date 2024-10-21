@@ -6,7 +6,7 @@ import "./ServiceStatusIndicator.scss";
 import classNames from "classnames";
 
 import Tooltip from "@/components/shared/Tooltip/Tooltip";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceStatus";
+import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 
 interface ServiceStatusIndicatorProps {
   status: ServiceStatus;

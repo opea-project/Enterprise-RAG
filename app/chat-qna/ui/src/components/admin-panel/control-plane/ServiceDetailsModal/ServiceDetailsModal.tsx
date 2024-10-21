@@ -3,26 +3,77 @@
 
 import "./ServiceDetailsModal.scss";
 
+import {
+  ChangeArgumentsRequestData,
+  GuardrailParams,
+  ServicesParameters,
+} from "@/api/models/systemFingerprint";
+import GuardServiceDetailsModalContent from "@/components/admin-panel/control-plane/GuardServiceDetailsModalContent/GuardServiceDetailsModalContent";
 import ServiceDetailsModalContent from "@/components/admin-panel/control-plane/ServiceDetailsModalContent/ServiceDetailsModalContent";
-import { chatQnAGraphSelectedServiceNodeSelector } from "@/store/chatQnAGraph.slice";
-import { useAppSelector } from "@/store/hooks";
+import SystemFingerprintService from "@/services/systemFingerprintService";
+import {
+  chatQnAGraphSelectedServiceNodeSelector,
+  setChatQnAGraphEdges,
+  setChatQnAGraphEditMode,
+  setChatQnAGraphInitialNodes,
+  setChatQnAGraphLoading,
+} from "@/store/chatQnAGraph.slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { graphEdges } from "@/utils/chatQnAGraph";
 
 const ServiceDetailsModal = () => {
   const selectedServiceNode = useAppSelector(
     chatQnAGraphSelectedServiceNodeSelector,
   );
+  const dispatch = useAppDispatch();
 
-  return (
-    <div className="service-details-card">
-      {selectedServiceNode ? (
-        <ServiceDetailsModalContent serviceData={selectedServiceNode.data} />
+  const updateServiceArguments = (
+    name: string,
+    data: GuardrailParams | ChangeArgumentsRequestData,
+  ) => {
+    const changeArgumentsRequestBody = [{ name, data }];
+
+    dispatch(setChatQnAGraphLoading(true));
+    SystemFingerprintService.changeArguments(changeArgumentsRequestBody).then(
+      () => {
+        SystemFingerprintService.appendArguments().then(
+          (parameters: ServicesParameters) => {
+            dispatch(setChatQnAGraphInitialNodes(parameters));
+            dispatch(setChatQnAGraphEdges(graphEdges));
+            dispatch(setChatQnAGraphLoading(false));
+          },
+        );
+      },
+    );
+
+    dispatch(setChatQnAGraphEditMode(false));
+  };
+
+  const getContent = () => {
+    if (selectedServiceNode) {
+      const { id, data } = selectedServiceNode;
+      const isInputGuard = ["input_guard", "output_guard"].includes(id);
+      return isInputGuard ? (
+        <GuardServiceDetailsModalContent
+          serviceData={data}
+          updateServiceArguments={updateServiceArguments}
+        />
       ) : (
+        <ServiceDetailsModalContent
+          serviceData={data}
+          updateServiceArguments={updateServiceArguments}
+        />
+      );
+    } else {
+      return (
         <div className="service-details-select-node-message">
           <p>Select service from the graph to see its details</p>
         </div>
-      )}
-    </div>
-  );
+      );
+    }
+  };
+
+  return <div className="service-details-card">{getContent()}</div>;
 };
 
 export default ServiceDetailsModal;

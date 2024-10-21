@@ -6,7 +6,10 @@ import "./ServiceArgumentValue.scss";
 import ServiceArgumentCheckbox from "@/components/admin-panel/control-plane/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/components/admin-panel/control-plane/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentTextInput from "@/components/admin-panel/control-plane/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import ServiceArgument from "@/models/admin-panel/control-plane/serviceArgument";
+import ThreeStateSwitch from "@/components/shared/ThreeStateSwitch/ThreeStateSwitch";
+import ServiceArgument, {
+  ServiceArgumentInputValue,
+} from "@/models/admin-panel/control-plane/serviceArgument";
 import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -14,7 +17,7 @@ interface ServiceArgumentValueProps {
   argumentData: ServiceArgument;
   onArgumentValueChange: (
     argumentName: string,
-    argumentValue: string | number | boolean | null,
+    argumentValue: ServiceArgumentInputValue,
   ) => void;
   onArgumentValidityChange: (
     argumentName: string,
@@ -27,28 +30,62 @@ const ServiceArgumentValue = ({
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentValueProps) => {
-  const { displayName, value, range, type, nullable } = argumentData;
+  const { displayName, value, range, type, nullable, commaSeparated } =
+    argumentData;
 
   const editModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
 
-  let argumentValue = <></>;
+  let argumentValue = <p className="service-argument-value">{value}</p>;
 
-  if (typeof value === "string") {
+  if (type === "text") {
     if (editModeEnabled) {
-      argumentValue = (
-        <ServiceArgumentTextInput
-          name={displayName}
-          initialValue={value}
-          onArgumentValueChange={onArgumentValueChange}
-          onArgumentValidityChange={onArgumentValidityChange}
-        />
-      );
+      if (typeof value === "string" || (value === null && nullable)) {
+        argumentValue = (
+          <ServiceArgumentTextInput
+            name={displayName}
+            initialValue={value}
+            emptyValueAllowed={nullable}
+            commaSeparated={commaSeparated}
+            onArgumentValueChange={onArgumentValueChange}
+            onArgumentValidityChange={onArgumentValidityChange}
+          />
+        );
+      }
     } else {
-      argumentValue = <p className="service-argument-value">{value}</p>;
+      const valueText = value === null ? "not set" : value.toString();
+      argumentValue = <p className="service-argument-value">{valueText}</p>;
     }
   }
-  if (typeof value === "number" && range) {
+
+  if (type === "boolean") {
     if (editModeEnabled) {
+      if (typeof value === "boolean" && !nullable) {
+        argumentValue = (
+          <ServiceArgumentCheckbox
+            name={displayName}
+            initialValue={value}
+            onArgumentValueChange={onArgumentValueChange}
+          />
+        );
+      } else if ((typeof value === "boolean" && nullable) || value === null) {
+        const handleChange = (newValue: boolean | null) => {
+          onArgumentValueChange(displayName, newValue);
+        };
+
+        argumentValue = (
+          <ThreeStateSwitch initialValue={value} onChange={handleChange} />
+        );
+      }
+    } else {
+      const valueText = value === null ? "not set" : value.toString();
+      argumentValue = <p className="service-argument-value">{valueText}</p>;
+    }
+  }
+
+  if (type === "number") {
+    const isValidNotNullable = typeof value === "number" && range;
+    const isNullable = value === null && nullable && range;
+    if (editModeEnabled && (isValidNotNullable || isNullable)) {
       argumentValue = (
         <ServiceArgumentNumberInput
           name={displayName}
@@ -60,43 +97,8 @@ const ServiceArgumentValue = ({
         />
       );
     } else {
-      argumentValue = <p className="service-argument-value">{value}</p>;
-    }
-  }
-  if (typeof value === "boolean") {
-    argumentValue = (
-      <ServiceArgumentCheckbox
-        name={displayName}
-        initialValue={value}
-        onArgumentValueChange={onArgumentValueChange}
-      />
-    );
-  }
-  if (value === null) {
-    if (editModeEnabled) {
-      if (type === "text") {
-        argumentValue = (
-          <ServiceArgumentTextInput
-            name={displayName}
-            initialValue={""}
-            onArgumentValueChange={onArgumentValueChange}
-            onArgumentValidityChange={onArgumentValidityChange}
-          />
-        );
-      } else if (type === "number" && range) {
-        argumentValue = (
-          <ServiceArgumentNumberInput
-            name={displayName}
-            initialValue={value}
-            nullable={nullable}
-            range={range}
-            onArgumentValueChange={onArgumentValueChange}
-            onArgumentValidityChange={onArgumentValidityChange}
-          />
-        );
-      }
-    } else {
-      argumentValue = <p className="service-argument-value">not used</p>;
+      const valueText = value === null ? "not set" : value;
+      argumentValue = <p className="service-argument-value">{valueText}</p>;
     }
   }
 

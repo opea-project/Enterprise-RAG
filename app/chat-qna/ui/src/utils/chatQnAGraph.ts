@@ -3,10 +3,14 @@
 
 import { Edge, Node, Position } from "@xyflow/react";
 
+import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
+import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
 import { llmArguments } from "@/models/admin-panel/control-plane/llm";
 import { rerankerArguments } from "@/models/admin-panel/control-plane/reranker";
-import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceStatus";
+import {
+  ServiceData,
+  ServiceStatus,
+} from "@/models/admin-panel/control-plane/serviceData";
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -111,15 +115,16 @@ const graphNodes: Node<ServiceData>[] = [
     focusable: true,
   },
   {
-    id: "llm_input_guard",
+    id: "input_guard",
     position: { x: 640, y: 144 },
     data: {
-      id: "llm_input_guard",
+      id: "input_guard",
       displayName: "LLM Input Guard",
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       selected: false,
       status: ServiceStatus.Unknown,
+      guardArgs: inputGuardArguments,
     },
     type: "serviceNode",
     focusable: true,
@@ -160,14 +165,15 @@ const graphNodes: Node<ServiceData>[] = [
     focusable: true,
   },
   {
-    id: "llm_output_guard",
+    id: "output_guard",
     position: { x: 1040, y: 144 },
     data: {
-      id: "llm_output_guard",
+      id: "output_guard",
       displayName: "LLM Output Guard",
       targetPosition: Position.Left,
       selected: false,
       status: ServiceStatus.Unknown,
+      guardArgs: outputGuardArguments,
     },
     type: "serviceNode",
     focusable: true,
@@ -208,14 +214,14 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "reranker-llm_input_guard",
+    id: "reranker-input_guard",
     source: "reranker",
-    target: "llm_input_guard",
+    target: "input_guard",
     selectable: false,
   },
   {
-    id: "llm_input_guard-llm",
-    source: "llm_input_guard",
+    id: "input_guard-llm",
+    source: "input_guard",
     target: "llm",
     selectable: false,
   },
@@ -227,9 +233,9 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm-llm_output_guard",
+    id: "llm-output_guard",
     source: "llm",
-    target: "llm_output_guard",
+    target: "output_guard",
     selectable: false,
   },
 ];

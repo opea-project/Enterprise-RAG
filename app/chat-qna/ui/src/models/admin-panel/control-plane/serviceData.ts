@@ -4,13 +4,28 @@
 import { Position } from "@xyflow/react";
 
 import ServiceArgument from "@/models/admin-panel/control-plane/serviceArgument";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceStatus";
+
+export interface GuardrailArguments {
+  [scannerName: string]: ServiceArgument[];
+}
+
+export interface ServiceDetails {
+  [key: string]: string | boolean | number;
+}
+
+export enum ServiceStatus {
+  Running = "Running",
+  Warning = "Warning",
+  Failed = "Failed",
+  Unknown = "Unknown Status",
+}
 
 export interface ServiceData extends Record<string, unknown> {
   id: string;
   displayName: string;
   args?: ServiceArgument[];
-  details?: { [key: string]: string | boolean | number };
+  guardArgs?: GuardrailArguments;
+  details?: ServiceDetails;
   targetPosition?: Position;
   sourcePosition?: Position;
   additionalTargetPosition?: Position;

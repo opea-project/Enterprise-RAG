@@ -1,0 +1,32 @@
+import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+
+export interface AppendArgumentsRequestBody {
+  text: string;
+}
+
+export interface ScannerArguments {
+  [argName: string]: null | number | string | boolean | string[];
+}
+
+export class GuardrailParams {
+  [scannerName: string]: ScannerArguments;
+}
+
+export interface ServicesParameters {
+  input_guardrail_params: GuardrailParams;
+  output_guardrail_params: GuardrailParams;
+  [key: string]: null | number | string | boolean | GuardrailParams;
+}
+
+export type ChangeArgumentsRequestData =
+  | {
+      [argumentName: string]: ServiceArgumentInputValue;
+    }
+  | GuardrailParams;
+
+interface ServiceArgumentsToChange {
+  name: string;
+  data: ChangeArgumentsRequestData;
+}
+
+export type ChangeArgumentsRequestBody = ServiceArgumentsToChange[];

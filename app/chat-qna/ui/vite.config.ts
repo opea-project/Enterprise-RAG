@@ -35,6 +35,14 @@ export default ({ mode }: { mode: string }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace("/api/v1/dataprep", ""),
         },
+        "/v1/system_fingerprint/append_arguments": {
+          target: process.env.VITE_SYSTEM_FINGERPRINT_URL,
+          changeOrigin: true,
+        },
+        "/v1/system_fingerprint/change_arguments": {
+          target: process.env.VITE_SYSTEM_FINGERPRINT_URL,
+          changeOrigin: true,
+        },
       },
     },
   });

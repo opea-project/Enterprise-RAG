@@ -7,12 +7,13 @@ import { Fragment } from "react";
 
 import ServiceArgumentValue from "@/components/admin-panel/control-plane/ServiceArgumentValue/ServiceArgumentValue";
 import { ServiceArgumentsGridValues } from "@/components/admin-panel/control-plane/ServiceDetailsModalContent/ServiceDetailsModalContent";
+import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
 
 interface ServiceArgumentsGridProps {
   argumentsGridValues: ServiceArgumentsGridValues;
   onArgumentValueChange: (
     argumentName: string,
-    argumentValue: string | number | boolean | null,
+    argumentValue: ServiceArgumentInputValue,
   ) => void;
   onArgumentValidityChange: (
     argumentName: string,

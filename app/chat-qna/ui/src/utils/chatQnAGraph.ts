@@ -183,6 +183,12 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
+    id: "reranker-llm",
+    source: "reranker",
+    target: "llm",
+    selectable: false,
+  },
+  {
     id: "reranker-input_guard",
     source: "reranker",
     target: "input_guard",

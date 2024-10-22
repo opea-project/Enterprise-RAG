@@ -21,6 +21,31 @@ const parseServiceDetailsResponseData = (
     status: { annotations },
   } = response;
 
+  const deploymentAnnotationsMap: { [key: string]: string } = {
+    "Deployment:apps/v1:embedding-svc-deployment:chatqa": "embedding",
+    "Deployment:apps/v1:input-scan-svc-deployment:chatqa": "input_guard",
+    "Deployment:apps/v1:llm-svc-deployment:chatqa": "llm",
+    "Deployment:apps/v1:output-scan-svc-deployment:chatqa": "output_guard",
+    "Deployment:apps/v1:redis-vector-db-deployment:chatqa": "vectordb",
+    "Deployment:apps/v1:reranking-svc-deployment:chatqa": "reranker",
+    "Deployment:apps/v1:retriever-svc-deployment:chatqa": "retriever",
+    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa":
+      "reranker_model_server",
+    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa":
+      "embedding_model_server",
+  };
+
+  const nodesStepsMap: { [key: string]: string } = {
+    embedding: "embedding",
+    torchserveembedding: "embedding_model_server",
+    retriever: "retriever",
+    vectordb: "vectordb",
+    reranking: "reranker",
+    teireranking: "reranker_model_server",
+    llm: "llm",
+    tgi: "tgi",
+  };
+
   let usedVectorDb = "";
   const statusEntries = Object.entries(annotations)
     .filter(
@@ -28,16 +53,14 @@ const parseServiceDetailsResponseData = (
         key.startsWith("Deployment:apps/v1:") && !key.includes("router"),
     )
     .map(([key, value]) => {
-      let name = key.split(":")[2].split("-")[0];
-      if (name === "redis") {
-        usedVectorDb = `${name.slice(0, 1)[0].toUpperCase()}${name.slice(1)}`;
-        name = "vectordb";
-      } else if (name === "tei") {
-        name = "reranker_model_server";
-      } else if (name === "torchserve") {
-        name = "embedding_model_server";
-      } else if (name === "reranking") {
-        name = "reranker";
+      let name = "";
+      if (deploymentAnnotationsMap[key]) {
+        name = deploymentAnnotationsMap[key];
+        const dbRegex = new RegExp(/(?<=:)[^:-]+(?=-)/);
+        const dbNameMatch = key.match(dbRegex);
+        if (key.includes("vector-db") && dbNameMatch) {
+          usedVectorDb = dbNameMatch[0];
+        }
       }
 
       const status = value.split(";")[0];
@@ -47,16 +70,8 @@ const parseServiceDetailsResponseData = (
   const statuses = Object.fromEntries(statusEntries);
 
   const metadataEntries = steps.map((step) => {
-    let name = step.name.toLowerCase();
-    if (name === "teireranking") {
-      name = "reranking_model_server";
-    } else if (name === "torchserveembedding") {
-      name = "embedding_model_server";
-    } else if (name === "reranking") {
-      name = "reranker";
-    } else if (name === "reranking_model_server") {
-      name = "reranker_model_server";
-    }
+    const stepName = step.name.toLowerCase();
+    const name = nodesStepsMap[stepName];
 
     const config = step.internalService.config ?? {};
     const configEntries = Object.entries(config).filter(
@@ -76,7 +91,9 @@ const parseServiceDetailsResponseData = (
   const serviceDetails: FetchedServiceDetails = {
     embedding: {},
     embedding_model_server: {},
+    input_guard: {},
     llm: {},
+    output_guard: {},
     reranker: {},
     reranker_model_server: {},
     retriever: {},

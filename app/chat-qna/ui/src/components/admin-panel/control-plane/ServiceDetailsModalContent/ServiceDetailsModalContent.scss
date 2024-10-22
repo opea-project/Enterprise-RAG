@@ -14,6 +14,18 @@
 
   & .service-details-content {
     @apply h-full;
+
+    & .service-alert {
+      @apply mb-2 grid grid-cols-[1rem_1fr] gap-3 p-3;
+
+      &.service-alert--warning {
+        @apply bg-light-status-warning-soft text-light-text-inverse dark:bg-dark-status-warning-soft dark:text-dark-text-inverse;
+      }
+
+      & p {
+        @apply text-xs;
+      }
+    }
   }
 
   & .service-details-bottom-panel {

@@ -19,7 +19,6 @@ import {
   setChatQnAGraphNodes,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { graphEdges } from "@/utils/chatQnAGraph";
 
 const ServiceDetailsModal = () => {
   const selectedServiceNode = useAppSelector(
@@ -36,11 +35,20 @@ const ServiceDetailsModal = () => {
     dispatch(setChatQnAGraphLoading(true));
     SystemFingerprintService.changeArguments(changeArgumentsRequestBody).then(
       () => {
-        SystemFingerprintService.appendArguments().then(
-          (parameters: ServicesParameters) => {
-            dispatch(setChatQnAGraphNodes({ parameters, fetchedDetails: {} }));
-            dispatch(setChatQnAGraphEdges(graphEdges));
-            dispatch(setChatQnAGraphLoading(false));
+        SystemFingerprintService.getChatQnAServiceDetails().then(
+          (fetchedDetails) => {
+            SystemFingerprintService.appendArguments().then(
+              (parameters: ServicesParameters) => {
+                dispatch(
+                  setChatQnAGraphNodes({
+                    parameters,
+                    fetchedDetails: fetchedDetails ?? {},
+                  }),
+                );
+                dispatch(setChatQnAGraphEdges());
+                dispatch(setChatQnAGraphLoading(false));
+              },
+            );
           },
         );
       },

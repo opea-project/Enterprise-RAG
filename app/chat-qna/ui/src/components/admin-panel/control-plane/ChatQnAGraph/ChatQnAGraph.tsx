@@ -36,10 +36,6 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   },
 };
 
-const fitViewOptions: FitViewOptions = {
-  padding: 0.1,
-};
-
 const nodeTypes: NodeTypes = { serviceNode: ServiceNode };
 
 const ChatQnAGraph = () => {
@@ -55,6 +51,10 @@ const ChatQnAGraph = () => {
     dispatch(
       onChatQnAGraphNodesChange(changes as NodeChange<Node<ServiceData>>[]),
     );
+  };
+
+  const fitViewOptions: FitViewOptions = {
+    padding: nodes.length > 7 ? 0.2 : 0.8,
   };
 
   return (
@@ -82,7 +82,7 @@ const ChatQnAGraph = () => {
       zoomOnPinch={false}
       zoomOnDoubleClick={false}
     >
-      <Controls showInteractive={false} />
+      <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
     </ReactFlow>
   );
 };

@@ -21,7 +21,6 @@ import {
   setChatQnAGraphSelectedServiceNode,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { graphEdges } from "@/utils/chatQnAGraph";
 
 const ServiceStatusLegend = () => (
   <div className="chatqna-graph-legend">
@@ -61,7 +60,7 @@ const ControlPlaneTab = () => {
                 fetchedDetails: fetchedDetails ?? {},
               }),
             );
-            dispatch(setChatQnAGraphEdges(graphEdges));
+            dispatch(setChatQnAGraphEdges());
             dispatch(setChatQnAGraphLoading(false));
           },
         );

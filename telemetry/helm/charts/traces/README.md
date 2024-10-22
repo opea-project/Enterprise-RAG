@@ -29,6 +29,21 @@ Information:
 
 ##### 1) Jaeger tracing backend
 
+| **WARNING**   | 
+| ------------- |
+|  Jaeger is opt-in **exprimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
+
+To deploy Jaeger backend (from `telemetry/helm` directory):
 ```
-helm upgrade --install telemetry-traces -n monitoring-tracing --set jaeger.enabled=true .
+helm upgrade telemetry-traces -n monitoring-traces --set jaeger.enabled=true charts/traces
+```
+
+To enable Jaeger as OpenTelemetry traces target:
+```
+helm upgrade telemetry-traces-instr -n monitoring-traces --set jaeger.enabled=true charts/traces-instr
+```
+
+Enable port-forward to access jeager UI at http://127.0.0.1:16686:
+```
+kubectl port-forward -n monitoring-traces svc/telemetry-traces-jaeger-query 16686:query
 ```

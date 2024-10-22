@@ -56,11 +56,20 @@ Please follow instruciton from "base telemetry" [README Installation instruciton
 
 Installed as upgrade to **"telemetry-logs"** release `[loki, otelcol/journalctl, opensearch]`:
 
+| **WARNING**   | 
+| ------------- |
+|  OpenSearch backend is opt-in **exprimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
+
 ```
 helm upgrade --install telemetry-logs -n monitoring -f values-journalctl.yaml -f values-opensearch.yaml .
 ```
 
 ##### b) Promtail logs collector
+
+| **WARNING**   | 
+| ------------- |
+|  Promtail is opt-in **exprimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
+
 
 If you don't want to use custom image and one wants to have to access to systemd/journalctl logs, then you need log collector that can collect journald systemd unit logs.
 Promtail replaces otelcol and collects pods logs as well as systemd units logs.
@@ -68,10 +77,10 @@ Promtail replaces otelcol and collects pods logs as well as systemd units logs.
 Both Promtail and otelcol can be deployed together (both generate different set of indexes/labels) in Loki.
 Logs from Promtail are directly transferred in Loki (otelcol is not used!).
 
-Deployed as separate helm chart as **"telemetry-logs-promtail"** release `[promtail]`:
+Consider deploying as a separate Helm chart release named “telemetry-logs-promtail”:
 
 ```
-helm upgrade --install telemetry-logs-promtail -n monitoring -f values-promtail.yaml .
+helm install telemetry-logs-promtail -n monitoring -f values-promtail.yaml .
 ```
 
 ### Prerequisites (images/volumes)
@@ -89,7 +98,7 @@ docker push localhost:5000/otelcol-contrib-journalctl:latest
 
 Test docker journalctl compatibility with Host OS version:
 ```
-ssh dcgaudicluster2
+ssh TARGET_NODE
 # Check Host OS version
 sudo journalctl --version 
 # Check Container version

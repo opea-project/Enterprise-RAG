@@ -15,6 +15,10 @@
       }
     ]
   },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 49,
   "links": [
     {
       "asDropdown": true,
@@ -31,10 +35,6 @@
       "url": ""
     }
   ],
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": 45,
   "panels": [
     {
       "collapsed": false,
@@ -107,32 +107,7 @@
           },
           "unit": "ms"
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "torchserve-embedding-svc-deployment-59b9dcf958-jr7fh:Model/bge-base-en-v1.5"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
@@ -1090,8 +1065,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1187,8 +1161,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1282,8 +1255,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1377,8 +1349,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1472,8 +1443,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1567,8 +1537,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1662,8 +1631,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1757,8 +1725,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1852,8 +1819,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1901,7 +1867,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5s",
+  "refresh": "",
   "schemaVersion": 39,
   "tags": [
     "entrag",
@@ -1940,13 +1906,12 @@
     ]
   },
   "time": {
-    "from": "now-3h",
-    "to": "now"
+    "from": "now-30m",
+    "to": "now-1m"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "EnterpriseRAG / ModelServing / TorchServe",
-  "uid": "ce0c60kwe8iyoc",
   "version": 1,
   "weekStart": ""
 }

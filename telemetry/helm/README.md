@@ -42,7 +42,7 @@ The **metrics** telemetry requires "a) metric pipeline" to be deployed first.
 
 **WARNING**: Before deploying, make sure that prerequisites/requirements described [logs/README.md](charts/logs/README.md#prerequisites-imagesvolumes) are met (persistent volumes and images).
 
-##### II a) Install loki and otelcol (with journalctl support) 
+##### II a) Install loki and OpenTelemetry collector for logs (with journalctl support) 
 
 This is **recommended** method but requires custom image.
 
@@ -52,7 +52,7 @@ helm install telemetry-logs -n monitoring -f charts/logs/values-journalctl.yaml 
 
 **Note** This step is explicit, because of helm [bug](https://github.com/helm/helm/pull/12879), causing that "logs" subchart cannot be deployed together with "telemetry" chart on single node setup (as subchart it cannot nullify required log-writer pod anti affinity and two replicas at least).
 
-##### II b) [Alternatively to IIa] Install loki and otelcol (default image without journalctl support):
+##### II b) [Alternatively to IIa] Install loki and OpenTelemetry collector for logs (default image, without journalctl support):
 ```
 helm install telemetry-logs -n monitoring charts/logs
 ```
@@ -66,7 +66,7 @@ Check [logs README.md](charts/logs/README.md#optional-components) for details.
 
 #### III) Install **traces pipeline** telemetry.
 
-Note two step (two charts) installation is required because CRD/CD dependency and WebHooks race condition of "OpenTelemetry operator" and created CRs (collector/instrumentation):
+Note two step (two charts) installation is required because CRD/CR dependency and WebHooks race condition of "OpenTelemetry operator" and created custom resources (collector/instrumentation):
 
 Install traces **backends**:
 ```
@@ -144,7 +144,7 @@ curl -sL https://raw.githubusercontent.com/oliver006/redis_exporter/master/contr
 head files/dashboards/redis-dashboard.json
 ```
 
-#### Update HABANA prometheus exporter
+#### Update HABANA Prometheus exporter
 ```
 cd templates/habana-exporter
 wget https://vault.habana.ai/artifactory/gaudi-metric-exporter/yaml/1.17.0/metric-exporter-daemonset.yaml -O metric-exporter-daemonset.yaml
@@ -167,6 +167,10 @@ helm uninstall metrics-server --namespace monitoring
 
 #### b) pcm-sensor-server - XEON telemetry
 
+| **WARNING**   | 
+| ------------- |
+|  PCM-sensor-server is opt-in **experimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
+
 It is work in progress by ppalucki, so it requires deployemt from source:
 
 https://github.com/intel/pcm/pull/727 (images are published but not helm charts).
@@ -180,11 +184,11 @@ git checkout ppalucki/helm
 cd deployment/pcm
 
 # check README for further details
-cat example/pcm/deployment/pcm/README.md
+cat README.md
 
 # WARN: we are using privilged mode (TODO: consider less unsecure version later access through perf-subsystem)
 requires: msr module
-ssh dcgaudicluster2 
+ssh TARGET_NODE
 sudo modprobe msr
 
 helm install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=telemetry
@@ -194,7 +198,6 @@ helm upgrade --install -n monitoring pcm . -f values-direct-privileged.yaml --se
 b) Check PCM metrics
 ```
 kubectl get -n monitoring daemonset pcm
-kubectl get -n monitoring pods 
 podname=`kubectl -n monitoring get pod -l app.kubernetes.io/component=pcm-sensor-server -ojsonpath='{.items[0].metadata.name}'`
 echo $podname
 curl -Ls http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics

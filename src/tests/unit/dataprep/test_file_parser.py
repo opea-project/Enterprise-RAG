@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from unittest import mock
 from comps.dataprep.utils.file_parser import FileParser
 import pytest

@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from unittest import mock
 from comps.vectorstores.utils.wrappers.wrapper_qdrant import QdrantVectorStore

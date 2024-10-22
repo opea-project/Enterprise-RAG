@@ -13,7 +13,7 @@ class OPEAVectorStore():
     Args:
         vector_store (str, optional): The type of vector store to use. Defaults to None.
     Attributes:
-        _vector_store_key (str): The key representing the vector store.
+        _vector_store_name (str): The name representing the vector store.
         _SUPPORTED_VECTOR_STORES (dict): A dictionary mapping supported vector stores to their corresponding import methods.
         vector_store: The instance of the vector store.
     Methods:
@@ -37,13 +37,13 @@ class OPEAVectorStore():
             cls._instance._initialize(vector_store)
         return cls._instance
 
-    def _initialize(self, vector_store_key: str):
+    def _initialize(self, vector_store_name: str):
         """
         Initializes the OPEAVectorStore instance.
         Args:
-            vector_store_key (str): The key representing the vector store.
+            vector_store_name (str): The name representing the vector store.
         """
-        self._vector_store_key = vector_store_key
+        self._vector_store_name = vector_store_name
 
         self._SUPPORTED_VECTOR_STORES = {
             "redis": self._import_redis,
@@ -51,11 +51,11 @@ class OPEAVectorStore():
             "milvus": self._import_milvus
         }
 
-        if self._vector_store_key not in self._SUPPORTED_VECTOR_STORES:
-            logger.error(f"Unsupported vector store: {self._vector_store_key}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}")
+        if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
+            logger.error(f"Unsupported vector store: {self._vector_store_name}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}")
         else:
-            logger.info(f"Loading {self._vector_store_key}")
-            self._SUPPORTED_VECTOR_STORES[self._vector_store_key]()
+            logger.info(f"Loading {self._vector_store_name}")
+            self._SUPPORTED_VECTOR_STORES[self._vector_store_name]()
 
     def add_texts(self, input: List[EmbedDoc]) -> List[str]:
         """

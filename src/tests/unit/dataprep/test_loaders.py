@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from comps.dataprep.utils.file_loaders.load_csv import LoadCsv
 from comps.dataprep.utils.file_loaders.load_doc import LoadDoc
 from comps.dataprep.utils.file_loaders.load_html import LoadHtml

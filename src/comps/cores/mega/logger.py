@@ -20,9 +20,9 @@ class OPEALogger(logging.Logger):
         }
 
         # Add custom levels to logger
-        for key, level in log_config.items():
-            logging.addLevelName(level, key)
-            self.__dict__[key.lower()] = functools.partial(self.log_message, level)
+        for k, level in log_config.items():
+            logging.addLevelName(level, k)
+            self.__dict__[k.lower()] = functools.partial(self.log_message, level)
 
     def log_message(self, log_level: str, msg: str, args=None):
         """Log a message at a given level.

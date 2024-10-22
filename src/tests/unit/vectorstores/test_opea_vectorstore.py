@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import pytest
 from unittest import mock
@@ -12,9 +15,9 @@ def reset_singleton():
     OPEAVectorStore._instance = None
 
 @pytest.fixture
-def vectorstore_instance(vector_store_key="redis"):
+def vectorstore_instance(vector_store_name="redis"):
     OPEAVectorStore._instance = None
-    return OPEAVectorStore(vector_store_key=vector_store_key)
+    return OPEAVectorStore(vector_store_name=vector_store_name)
 
 @pytest.fixture
 def mock_redis_vectorstore():
@@ -24,7 +27,7 @@ def mock_redis_vectorstore():
         mock_instance.search = SearchedDoc(
             initial_query='Hello?',
             retrieved_docs=DocList(docs=[
-                TextDoc(text='Hello, how are you?'), 
+                TextDoc(text='Hello, how are you?'),
                 TextDoc(text='Hello, I am fine.')
             ])
         )
@@ -40,12 +43,12 @@ def test_initialize_method(mock_redis_vectorstore):
     stores = OPEAVectorStore("redis")._SUPPORTED_VECTOR_STORES.keys()
     for store in stores:
         vectorstore = OPEAVectorStore(store)
-        assert vectorstore._vector_store_key is not None
+        assert vectorstore._vector_store_name is not None
         assert isinstance(vectorstore.vector_store, mock_redis_vectorstore.return_value.__class__)
 
 # def test_initialize_method_with_unsupported_store(vectorstore_instance, caplog):
 #     with caplog.at_level(logging.ERROR):
-#             vectorstore_instance._initialize(vector_store_key="unsupported")
+#             vectorstore_instance._initialize(vector_store_name="unsupported")
 #             assert "Unsupported vector store" in caplog.text
 
 @patch('comps.vectorstores.utils.opea_vectorstore.OPEAVectorStore.add_texts')

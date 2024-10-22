@@ -414,7 +414,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         Unpacks the arguments from the given list of tuples and assigns them to the corresponding attributes of the `current_arguments` object.
 
         Args:
-            params (List[Tuple[str, dict]]): A list of tuples containing the parameter name as the first element and the parameter value as the second element.
+            params (List[Tuple[str, dict]]): A list of tuples containing the parameter name as the first element and the parameter v as the second element.
 
         Returns:
             Argument: An `Argument` object with the unpacked arguments.
@@ -429,117 +429,117 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     **param[1]
                 )
             elif param[0] == "input_guard" and param[1] is not None:
-                for key, value in param[1].items():
-                    if key == "anonymize":
+                for k, v in param[1].items():
+                    if k == "anonymize":
                         self.current_arguments.parameters.input_guard.anonymize = AnonymizeModel(
-                            **value)
-                    elif key == "ban_code":
+                            **v)
+                    elif k == "ban_code":
                         self.current_arguments.parameters.input_guard.ban_code = BanCodeModel(
-                            **value)
-                    elif key == "ban_competitors":
+                            **v)
+                    elif k == "ban_competitors":
                         self.current_arguments.parameters.input_guard.ban_competitors = BanCompetitorsModel(
-                            **value)
-                    elif key == "ban_substrings":
+                            **v)
+                    elif k == "ban_substrings":
                         self.current_arguments.parameters.input_guard.ban_substrings = BanSubstringsModel(
-                            **value)
-                    elif key == "ban_topics":
+                            **v)
+                    elif k == "ban_topics":
                         self.current_arguments.parameters.input_guard.ban_topics = BanTopicsModel(
-                            **value)
-                    elif key == "code":
+                            **v)
+                    elif k == "code":
                         self.current_arguments.parameters.input_guard.code = CodeModel(
-                            **value)
-                    elif key == "gibberish":
+                            **v)
+                    elif k == "gibberish":
                         self.current_arguments.parameters.input_guard.gibberish = GibberishModel(
-                            **value)
-                    elif key == "invisible_text":
+                            **v)
+                    elif k == "invisible_text":
                         self.current_arguments.parameters.input_guard.invisible_text = InvisibleText(
-                            **value)
-                    elif key == "language":
+                            **v)
+                    elif k == "language":
                         self.current_arguments.parameters.input_guard.language = LanguageModel(
-                            **value)
-                    elif key == "prompt_injection":
+                            **v)
+                    elif k == "prompt_injection":
                         self.current_arguments.parameters.input_guard.prompt_injection = PromptInjectionModel(
-                            **value)
-                    elif key == "regex":
+                            **v)
+                    elif k == "regex":
                         self.current_arguments.parameters.input_guard.regex = RegexModel(
-                            **value)
-                    elif key == "secrets":
+                            **v)
+                    elif k == "secrets":
                         self.current_arguments.parameters.input_guard.secrets = SecretsModel(
-                            **value)
-                    elif key == "sentiment":
+                            **v)
+                    elif k == "sentiment":
                         self.current_arguments.parameters.input_guard.sentiment = SentimentModel(
-                            **value)
-                    elif key == "token_limit":
+                            **v)
+                    elif k == "token_limit":
                         self.current_arguments.parameters.input_guard.token_limit = TokenLimitModel(
-                            **value)
-                    elif key == "toxicity":
+                            **v)
+                    elif k == "toxicity":
                         self.current_arguments.parameters.input_guard.toxicity = ToxicityModel(
-                            **value)
+                            **v)
             elif param[0] == "output_guard" and param[1] is not None:
-                for key, value in param[1].items():
-                    if key == "ban_competitors":
+                for k, v in param[1].items():
+                    if k == "ban_competitors":
                         self.current_arguments.parameters.output_guard.ban_competitors = BanCompetitorsModel(
-                            **value)
-                    elif key == "ban_substrings":
+                            **v)
+                    elif k == "ban_substrings":
                         self.current_arguments.parameters.output_guard.ban_substrings = BanSubstringsModel(
-                            **value)
-                    elif key == "ban_topics":
+                            **v)
+                    elif k == "ban_topics":
                         self.current_arguments.parameters.output_guard.ban_substrings = BanTopicsModel(
-                            **value)
-                    elif key == "bias":
+                            **v)
+                    elif k == "bias":
                         self.current_arguments.parameters.output_guard.bias = BiasModel(
-                            **value)
-                    elif key == "code":
+                            **v)
+                    elif k == "code":
                         self.current_arguments.parameters.output_guard.code = CodeModel(
-                            **value)
-                    elif key == "deanonymize":
+                            **v)
+                    elif k == "deanonymize":
                         self.current_arguments.parameters.output_guard.deanonymize = DeanonymizeModel(
-                            **value)
-                    elif key == "json_scanner":
+                            **v)
+                    elif k == "json_scanner":
                         self.current_arguments.parameters.output_guard.json_scanner = JSONModel(
-                            **value)
-                    elif key == "language":
+                            **v)
+                    elif k == "language":
                         self.current_arguments.parameters.output_guard.language = LanguageModel(
-                            **value)
-                    elif key == "language_same":
+                            **v)
+                    elif k == "language_same":
                         self.current_arguments.parameters.output_guard.language_same = LanguageSameModel(
-                            **value)
-                    elif key == "malicious_urls":
+                            **v)
+                    elif k == "malicious_urls":
                         self.current_arguments.parameters.output_guard.malicious_urls = MaliciousURLsModel(
-                            **value)
-                    elif key == "no_refusal":
+                            **v)
+                    elif k == "no_refusal":
                         self.current_arguments.parameters.output_guard.no_refusal = NoRefusalModel(
-                            **value)
-                    elif key == "no_refusal_light":
+                            **v)
+                    elif k == "no_refusal_light":
                         self.current_arguments.parameters.output_guard.no_refusal_light = NoRefusalLightModel(
-                            **value)
-                    elif key == "reading_time":
+                            **v)
+                    elif k == "reading_time":
                         self.current_arguments.parameters.output_guard.reading_time = ReadingTimeModel(
-                            **value)
-                    elif key == "factual_consistency":
+                            **v)
+                    elif k == "factual_consistency":
                         self.current_arguments.parameters.output_guard.factual_consistency = FactualConsistencyModel(
-                            **value)
-                    elif key == "gibberish":
+                            **v)
+                    elif k == "gibberish":
                         self.current_arguments.parameters.output_guard.gibberish = GibberishModel(
-                            **value)
-                    elif key == "regex":
+                            **v)
+                    elif k == "regex":
                         self.current_arguments.parameters.output_guard.regex = RegexModel(
-                            **value)
-                    elif key == "relevance":
+                            **v)
+                    elif k == "relevance":
                         self.current_arguments.parameters.output_guard.relevance = RelevanceModel(
-                            **value)
-                    elif key == "sensitive":
+                            **v)
+                    elif k == "sensitive":
                         self.current_arguments.parameters.output_guard.sensitive = SensitiveModel(
-                            **value)
-                    elif key == "sentiment":
+                            **v)
+                    elif k == "sentiment":
                         self.current_arguments.parameters.output_guard.sentiment = SentimentModel(
-                            **value)
-                    elif key == "toxicity":
+                            **v)
+                    elif k == "toxicity":
                         self.current_arguments.parameters.output_guard.toxicity = ToxicityModel(
-                            **value)
-                    elif key == "url_reachability":
+                            **v)
+                    elif k == "url_reachability":
                         self.current_arguments.parameters.output_guard.url_reachability = URLReachabilityModel(
-                            **value)
+                            **v)
 
         return Argument(
             timestamp=datetime.now(),

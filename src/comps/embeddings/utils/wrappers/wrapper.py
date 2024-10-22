@@ -55,17 +55,17 @@ class EmbeddingWrapper(ABC):
         Args:
             api_config (dict): The API configuration.
         """
-        for key, value in api_config.items():
-            if isinstance(key, str) and isinstance(value, list) and len(value) > 0:
-                sanitized_key = self._sanitize_input(key)
-                sanitized_value = self._sanitize_input(value[0])
+        for k, v in api_config.items():
+            if isinstance(k, str) and isinstance(v, list) and len(v) > 0:
+                sanitized_k = self._sanitize_input(k)
+                sanitized_v = self._sanitize_input(v[0])
                 try:
-                    os.environ[sanitized_key] = sanitized_value
+                    os.environ[sanitized_k] = sanitized_v
                 except Exception as e:
-                    logger.exception(f"Error setting environment variable {sanitized_key}: {e}")
+                    logger.exception(f"Error setting environment variable {sanitized_k}: {e}")
                     raise
             else:
-                logger.warning(f"Invalid configuration for {key}: {value}")
+                logger.warning(f"Invalid configuration for {k}: {v}")
 
     @abstractmethod
     def embed_documents(self, texts: List[str]) -> List[List[float]]:

@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from unittest import mock
 from comps.vectorstores.utils.wrappers.wrapper_redis import RedisVectorStore
@@ -35,10 +38,10 @@ def test_url_formatting_with_redis_url(monkeypatch, mock_vectorstore):
     # Mock the environment variable
     monkeypatch.setenv('REDIS_URL', 'redis://localhost:6379')
     vs = RedisVectorStore()
-    
+
     assert vs.format_url_from_env() == 'redis://localhost:6379'
     assert vs.client is not None
-    
+
     # Reset the singleton instance
     RedisVectorStore._instance = None
 
@@ -47,18 +50,18 @@ def test_url_formatting_with_redis_specific_envs_for_url(monkeypatch, mock_vecto
     host = 'localhost'
     port = '1234'
     ssl = 'true'
-    username = 'test'
-    password = 'test'
+    test_username = 'test'
+    test_p = 'test'
 
     monkeypatch.setenv('REDIS_HOST', host)
     monkeypatch.setenv('REDIS_PORT', port)
     monkeypatch.setenv('REDIS_SSL', ssl)
-    monkeypatch.setenv('REDIS_USERNAME', username)
-    monkeypatch.setenv('REDIS_PASSWORD', password)
+    monkeypatch.setenv('REDIS_USERNAME', test_username)
+    monkeypatch.setenv('REDIS_PASSWORD', test_p)
     vs = RedisVectorStore()
-    
-    assert vs.format_url_from_env() == 'rediss://test:test@localhost:1234/'
+
+    assert vs.format_url_from_env() == f'rediss://{test_username}:{test_p}@{host}:{port}/'
     assert vs.client is not None
-    
+
     # Reset the singleton instance
     RedisVectorStore._instance = None

@@ -7,8 +7,6 @@
  - **Prepared Gaudi Node**: Please refer to the [Prepare Gaudi Node on K8s Setup](./microservices-connector/PREPARE_GAUDI.md) guide.
  - **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. For example, such access is mandatory when using the [Mixtral-8x22B](https://huggingface.co/mistralai/Mixtral-8x22B-Instruct-v0.1).
 
-In addition, to ensure that telemetry works as expected `fs.inotify.max_user_instances` increased accordingly per node (verified with 8192).
-
 ------------
 
 ### Quickstart with oneclick script

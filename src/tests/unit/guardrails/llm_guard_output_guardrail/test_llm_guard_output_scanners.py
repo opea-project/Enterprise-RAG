@@ -52,6 +52,74 @@ def test_get_ban_substrings_config_from_env(output_scanners_config_instance):
     config = output_scanners_config_instance._get_ban_substrings_config_from_env({"BAN_SUBSTRINGS_ENABLED": "true"})
     assert config == {"ban_substrings": {"enabled": True}}
 
+def test_get_ban_topics_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_ban_topics_config_from_env({"BAN_TOPICS_ENABLED": "false"})
+    assert config == {"ban_topics": {"enabled": False}}
+
+def test_get_bias_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_bias_config_from_env({"BIAS_ENABLED": "false"})
+    assert config == {"bias": {"enabled": False}}
+
+def test_get_code_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_code_config_from_env({"CODE_ENABLED": "false"})
+    assert config == {"code": {"enabled": False}}
+
+def test_get_deanonymize_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_deanonymize_config_from_env({"DEANONYMIZE_ENABLED": "false"})
+    assert config == {"deanonymize": {"enabled": False}}
+
+def test_get_language_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_language_config_from_env({"LANGUAGE_ENABLED": "false"})
+    assert config == {"language": {"enabled": False}}
+
+def test_get_language_same_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_language_same_config_from_env({"LANGUAGE_SAME_ENABLED": "false"})
+    assert config == {"language_same": {"enabled": False}}
+
+def test_get_malicious_urls_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_malicious_urls_config_from_env({"MALICIOUS_URLS_ENABLED": "false"})
+    assert config == {"malicious_urls": {"enabled": False}}
+
+def test_get_no_refusal_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_no_refusal_config_from_env({"NO_REFUSAL_ENABLED": "false"})
+    assert config == {"no_refusal": {"enabled": False}}
+
+def test_get_no_refusal_light_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_no_refusal_light_config_from_env({"NO_REFUSAL_LIGHT_ENABLED": "false"})
+    assert config == {"no_refusal_light": {"enabled": False}}
+
+def test_get_reading_time_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_reading_time_config_from_env({"READING_TIME_ENABLED": "false"})
+    assert config == {"reading_time": {"enabled": False}}
+
+def test_get_factual_consistency_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_factual_consistency_config_from_env({"FACTUAL_CONSISTENCY_ENABLED": "false"})
+    assert config == {"factual_consistency": {"enabled": False}}
+
+def test_get_gibberish_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_gibberish_config_from_env({"GIBBERISH_ENABLED": "false"})
+    assert config == {"gibberish": {"enabled": False}}
+
+def test_get_relevance_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_relevance_config_from_env({"RELEVANCE_ENABLED": "false"})
+    assert config == {"relevance": {"enabled": False}}
+
+def test_get_sensitive_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_sensitive_config_from_env({"SENSITIVE_ENABLED": "false"})
+    assert config == {"sensitive": {"enabled": False}}
+
+def test_get_sentiment_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_sentiment_config_from_env({"SENTIMENT_ENABLED": "false"})
+    assert config == {"sentiment": {"enabled": False}}
+
+def test_get_toxicity_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_toxicity_config_from_env({"TOXICITY_ENABLED": "false"})
+    assert config == {"toxicity": {"enabled": False}}
+
+def test_get_url_reachability_config_from_env(output_scanners_config_instance):
+    config = output_scanners_config_instance._get_url_reachability_config_from_env({"URL_REACHABILITY_ENABLED": "false"})
+    assert config == {"url_reachability": {"enabled": False}}
+
 def test_changed(output_scanners_config_instance):
     current_config = {"id": "blah", "regex": {"id": "blah", "enabled": True}}
     new_current_config = {"id": "blah", "regex": {"id": "blah", "enabled": True}}

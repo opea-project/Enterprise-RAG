@@ -406,7 +406,7 @@ class OutputScannersConfig:
             dict: The FactualConsitency scanner configuration.
         """
         return {
-            "factual_consitency": {
+            "factual_consistency": {
                 k.replace("FACTUAL_CONSISTENCY_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("FACTUAL_CONSISTENCY_")
             }

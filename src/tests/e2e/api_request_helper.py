@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
+import concurrent
 import kr8s
 import random
 import requests
@@ -52,6 +53,28 @@ class InvalidChatqaResponseBody(Exception):
     pass
 
 
+class ApiResponse:
+    """
+    Wrapper class for the response from 'requests' library
+    """
+
+    def __init__(self, response, response_time, exception=None):
+        self._response = response
+        self._response_time = response_time
+        self._exception = exception
+
+    def __getattr__(self, name):
+        return getattr(self._response, name)
+
+    @property
+    def response_time(self):
+        return self._response_time
+
+    @property
+    def exception(self):
+        return self._exception
+
+
 class ApiRequestHelper:
 
     def __init__(self, namespace=None, label_selector=None):
@@ -65,19 +88,49 @@ class ApiRequestHelper:
         Make /v1/chatqa API call with the provided question.
         """
         json_data = {
-            "text": question
+            "text": question,
+            "parameters": {
+                    "streaming": False
+                }
         }
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            print(f"Asking the following question: {question}")
-            start_time = time.time()
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/chatqa",
-                headers=self.default_headers,
-                json=json_data
-            )
-            duration = round(time.time() - start_time, 2)
-            print(f"ChatQA API call duration: {duration}")
-            return response
+            return self._call_chatqa(json_data, pf)
+
+    def call_chatqa_in_parallel(self, questions):
+        """Ask questions in parallel"""
+
+        request_bodies = []
+        for question in questions:
+            json_data = {"text": question}
+            request_bodies.append(json_data)
+
+        results = []
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(questions)) as executor:
+                futures_to_questions = {}
+                for request_body in request_bodies:
+                    future = executor.submit(self._call_chatqa, request_body, pf)
+                    futures_to_questions[future] = question
+
+                for future in concurrent.futures.as_completed(futures_to_questions):
+                    try:
+                        results.append(future.result())
+                    except Exception as e:
+                        results.append(ApiResponse(None, None,
+                                                   f"Request failed with exception: {e}"))
+        return results
+
+    def _call_chatqa(self, request_body, port_forward):
+        print(f"Asking the following question: {request_body.get('text')}")
+        start_time = time.time()
+        response = requests.post(
+            f"http://127.0.0.1:{port_forward.local_port}/v1/chatqa",
+            headers=self.default_headers,
+            json=request_body
+        )
+        duration = round(time.time() - start_time, 2)
+        print(f"ChatQA API call duration: {duration}")
+        return ApiResponse(response, duration)
 
     def format_response(self, response_body):
         """

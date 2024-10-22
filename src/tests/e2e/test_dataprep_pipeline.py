@@ -82,7 +82,7 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
             start_time = time.time()
             while counter < 60:
                 try:
-                    response = generic_api_helper.call_health_check_api("dataprep", "dataprep-usvc", 9399)
+                    response = generic_api_helper.call_health_check_api("dataprep", "dataprep-svc", 9399)
                 except requests.exceptions.ReadTimeout:
                     pytest.fail("Dataprep API is not responsive while the file is being uploaded")
 

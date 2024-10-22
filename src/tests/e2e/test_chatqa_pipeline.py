@@ -6,6 +6,7 @@
 import allure
 import pytest
 import requests
+import statistics
 import time
 from api_request_helper import InvalidChatqaResponseBody
 
@@ -76,3 +77,41 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
         print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
+
+
+@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T42")
+def test_chatqa_concurrent_requests(chatqa_api_helper):
+    """
+    Ask 100 concurrent questions. Measure min, max, avg response time.
+    Check if all requests were processed successfully.
+    """
+    concurrent_requests = 100
+    question = "How big is the universe?"
+    execution_times = []
+    questions = []
+    failed_requests_counter = 0
+
+    for _ in range(0, concurrent_requests):
+        questions.append(question)
+
+    results = chatqa_api_helper.call_chatqa_in_parallel(questions)
+    for result in results:
+        if result.exception is not None:
+            print(result.exception)
+            failed_requests_counter = + 1
+        elif result.status_code != 200:
+            print(f"Request failed with status code {result.status_code}. Response body: {result.text}")
+            failed_requests_counter += 1
+        else:
+            execution_times.append(result.response_time)
+
+    mean_time = statistics.mean(execution_times)
+    max_time = max(execution_times)
+    min_time = min(execution_times)
+
+    print(f'Total requests: {len(questions)}')
+    print(f'Failed requests: {failed_requests_counter}')
+    print(f'Mean Execution Time: {mean_time:.4f} seconds')
+    print(f'Longest Execution Time: {max_time:.4f} seconds')
+    print(f'Shortest Execution Time: {min_time:.4f} seconds')
+    assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"

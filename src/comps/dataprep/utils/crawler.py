@@ -78,7 +78,9 @@ class Crawler:
                 logger.exception("fail to fetch %s, caused by %s", url, e)
                 raise Exception(e)
             max_times -= 1
-        return None
+        # TODO: decide whether the dataprep should continue if one url fails
+        logger.error(f"fail to fetch {url}, max times reached, response status code: {response.status_code}")
+        raise Exception(f"fail to fetch {url}, max times reached, response status code: {response.status_code}")
 
     def process_work(self, sub_url, work):
         response = self.fetch(sub_url)

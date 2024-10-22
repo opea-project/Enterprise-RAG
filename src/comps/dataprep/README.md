@@ -118,7 +118,7 @@ JSON_DATA
 
 ```bash
 curl http://localhost:9399/v1/dataprep \
-  -X POST -H 'Content-Type: application/json'
+  -X POST -H 'Content-Type: application/json' \
   -d '{ "links": ["https://intel.com"] }'
 ```
 

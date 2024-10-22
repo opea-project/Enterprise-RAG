@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import List
 import uuid
 from comps.cores.mega.logger import get_opea_logger
+from comps.cores.utils.utils import sanitize_env
 from comps.dataprep.utils.splitter import Splitter
 from fastapi import UploadFile
 from comps.cores.proto.docarray import TextDoc
@@ -22,7 +23,7 @@ class TimeoutError(Exception):
 
 
 async def save_file_to_local_disk(file: UploadFile) -> str:
-    upload_folder = os.getenv('UPLOAD_PATH', '/tmp/opea_upload')
+    upload_folder = sanitize_env(os.getenv('UPLOAD_PATH', '/tmp/opea_upload'))
 
     if not os.path.exists(upload_folder):
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
@@ -41,7 +42,7 @@ async def save_file_to_local_disk(file: UploadFile) -> str:
 
 
 async def save_link_to_local_disk(link_list: List[str]) -> List[str]:
-    upload_folder = os.getenv('UPLOAD_PATH', '/tmp/opea_upload')
+    upload_folder = sanitize_env(os.getenv('UPLOAD_PATH', '/tmp/opea_upload'))
     if not os.path.exists(upload_folder):
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
 

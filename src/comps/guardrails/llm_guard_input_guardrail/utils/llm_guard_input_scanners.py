@@ -74,7 +74,7 @@ ENABLED_SCANNERS = [
     'regex',
     'secrets',
     'sentiment',
-    'tokenlimit',
+    'token_limit',
     'toxicity'
 ]
 

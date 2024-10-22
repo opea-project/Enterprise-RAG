@@ -3,26 +3,35 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-
 import allure
+import kr8s
 import requests
-
-
-SERVICES = [
-    {"selector": "retriever-svc", "namespace": "chatqa", "port": 6620},
-    {"selector": "reranking-svc", "namespace": "chatqa", "port": 8000},
-    {"selector": "embedding-svc", "namespace": "chatqa", "port": 6000},
-    {"selector": "embedding-svc", "namespace": "dataprep", "port": 6000},
-    {"selector": "dataprep-usvc", "namespace": "dataprep", "port": 9399},
-    {"selector": "ingestion-usvc", "namespace": "dataprep", "port": 6120},
-    {"selector": "llm-svc", "namespace": "chatqa", "port": 9000}
-]
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T26")
 def test_api_health_checks(generic_api_helper):
+    """
+    Find the services that expose /v1/health_check API.
+    For each service check if the health check API returns HTTP status code 200
+    """
+    svcs = []
+    pods = kr8s.get("pods", namespace=kr8s.ALL)
+    for pod in pods:
+        container = pod.spec.containers[0]
+        if container.get('livenessProbe'):
+            lp = container.get('livenessProbe')
+            path = lp.get("httpGet", {}).get("path")
+            port_name = lp.get("httpGet", {}).get("port")
+            if path == "v1/health_check":
+                selector = pod.metadata.labels.app
+                ns = pod.metadata.namespace
+                for port in container.ports:
+                    if port.name == port_name:
+                        container_port = port.containerPort
+                        svcs.append({"selector": selector, "namespace": ns, "port": container_port})
+
     failed_microservices = []
-    for service in SERVICES:
+    for service in svcs:
         try:
             response = generic_api_helper.call_health_check_api(
                 service['namespace'], service['selector'], service['port'])

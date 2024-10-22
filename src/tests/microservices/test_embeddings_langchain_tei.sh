@@ -14,7 +14,7 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-tei"
-ENDPOINT_IMAGE_NAME="ghcr.io/huggingface/text-embeddings-inference:cpu-1.2"
+ENDPOINT_IMAGE_NAME="ghcr.io/huggingface/text-embeddings-inference:cpu-1.5"
 
 MICROSERVICE_API_PORT=5005
 MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
@@ -34,15 +34,13 @@ function build_docker_images() {
 function start_service() {
     model="BAAI/bge-large-en-v1.5"
     internal_communication_port=5001
-    revision="refs/pr/5"
 
     docker run -d --name="${ENDPOINT_CONTAINER_NAME}" \
       --runtime runc \
       -p $internal_communication_port:80 \
       -v ./data:/data \
       --pull always "${ENDPOINT_IMAGE_NAME}" \
-      --model-id $model \
-      --revision $revision
+      --model-id $model
 
     sleep 20
 

@@ -316,7 +316,7 @@ class LLMParamsDoc(BaseDoc):
     typical_p: float = 0.95
     temperature: float = 0.01
     repetition_penalty: float = 1.03
-    streaming: bool = True
+    streaming: bool = False
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
@@ -332,7 +332,7 @@ class LLMParams(BaseDoc):
     typical_p: float = 0.95
     temperature: float = 0.01
     repetition_penalty: float = 1.03
-    streaming: bool = True
+    streaming: bool = False
 
 
 class RAGASParams(BaseDoc):

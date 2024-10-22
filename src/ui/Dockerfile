@@ -2,7 +2,7 @@ FROM node:20-alpine AS build
 
 RUN apk add --no-cache bash
 WORKDIR /rag-ui
-COPY . /rag-ui
+COPY ./ui /rag-ui
 RUN bash set_envs.sh
 RUN npm install && npm run build
 

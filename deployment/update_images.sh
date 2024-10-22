@@ -264,8 +264,8 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         ui-usvc)
-            path="${repo_path}/app/chat-qna/ui"
-            dockerfile="Dockerfile"
+            path="${repo_path}/src"
+            dockerfile="ui/Dockerfile"
             image_name=opea/chatqna-conversation-ui
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
@@ -283,8 +283,8 @@ for component in "${components_to_build[@]}"; do
  
 
         otelcol-contrib-journalctl)
-            path="${repo_path}/telemetry/helm/charts/logs/"
-            dockerfile="Dockerfile-otelcol-contrib-journalctl"
+            path="${repo_path}"
+            dockerfile="telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
             image_name=otelcol-contrib-journalctl
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi

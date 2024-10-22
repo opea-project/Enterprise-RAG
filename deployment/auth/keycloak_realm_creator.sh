@@ -5,7 +5,7 @@
 
 # set -x
 repo_path=$(realpath "$(pwd)/../")
-auth_path="$repo_path/auth"
+auth_path="$repo_path/deployment/auth"
 keyclock_config_path="$auth_path/keycloak-config"
 AUTH_NS=${1:-default}
 

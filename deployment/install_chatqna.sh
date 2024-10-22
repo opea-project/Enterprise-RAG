@@ -6,15 +6,15 @@
 repo_path=$(realpath "$(pwd)/../")
 manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
-telemetry_path="$repo_path/telemetry/helm"
-telemetry_logs_path="$repo_path/telemetry/helm/charts/logs"
-telemetry_traces_path="$repo_path/telemetry/helm/charts/traces"
-telemetry_traces_instr_path="$repo_path/telemetry/helm/charts/traces-instr"
-ui_path="$repo_path/app/chat-qna/helm-ui"
-auth_path="$repo_path/auth"
-api_gateway_path="$repo_path/auth/apisix-helm"
-api_gateway_crd_path="$repo_path/auth/apis-crd-helm"
-ingress_path="$repo_path/ingress"
+telemetry_path="$repo_path/deployment/telemetry/helm"
+telemetry_logs_path="$repo_path/deployment/telemetry/helm/charts/logs"
+telemetry_traces_path="$repo_path/deployment/telemetry/helm/charts/traces"
+telemetry_traces_instr_path="$repo_path/deployment/telemetry/helm/charts/traces-instr"
+ui_path="$repo_path/deployment/ui/chat-qna/helm-ui"
+auth_path="$repo_path/deployment/auth/"
+api_gateway_path="$repo_path/deployment/auth/apisix-helm"
+api_gateway_crd_path="$repo_path/deployment/auth/apis-crd-helm"
+ingress_path="$repo_path/deployment/ingress"
 
 # ports
 KEYCLOAK_FPORT=1234

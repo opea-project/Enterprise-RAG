@@ -2,7 +2,7 @@
 oidc:
   realm: EnterpriseRAG
   client_id: EnterpriseRAG-oidc-backend
-  client_secret: "G6YrVyRYryX3VU8s2lsompUgCd3vcO8l"
+  client_secret: ""
   discovery: http://keycloak.auth.svc.cluster.local/realms/EnterpriseRAG/.well-known/openid-configuration
   introspection_endpoint: http://keycloak.auth.svc.cluster.local/realms/EnterpriseRAG/protocol/openid-connect/token/introspect
 

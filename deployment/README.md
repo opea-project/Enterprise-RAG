@@ -15,7 +15,7 @@ You can proceed through configuration, deployment, and test connection using `on
 
 #### Usage
 ```
-./one_click_chatqna.sh -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d PIPELINE -t [TAG]
+./one_click_chatqna.sh -g HUG_TOKEN -z GRAFANA_PASSWORD [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d PIPELINE -t [TAG] -i [IP]
 ```
 Proxy variables are optional.
 
@@ -32,11 +32,21 @@ The `configure.sh` script automates the setup process by installing the necessar
 
 #### Usage:
 ```
-./configure.sh -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
+./configure.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
 ```
 Proxy variables are optional.
 > [!NOTE]
-> The images are stored on AWS to simplify the deployment process. The images can be built directly from the source using the `update_images.sh` script and pushed to user defined registry. In such case please modify paths to images in [values.yaml](./microservices-connector/helm/values.yaml)
+> The images can be built directly from the source using the `update_images.sh` script and pushed to user defined registry. In such case please modify paths to images in [values.yaml](./microservices-connector/helm/values.yaml)
+
+> [!NOTE]
+> There is an option to use AWS for storing already build images. We can use `configure.sh` script and pass AWS credentials so new build images would be pushed to ECR on AWS.
+
+``` 
+/configure.sh -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
+```
+In such case please modify paths to images in [values.yaml](./microservices-connector/helm/values.yaml)
+
+
 
 
 As the result of `configure.sh`, a `.env` file is created. To enable Go-related configurations, source the `.env` file:
@@ -99,17 +109,18 @@ Options:
         --telemetry: Start telemetry services.
         --registry <REGISTRY>: Use specific registry for deployment.
         --ui: Start auth and ui services (requires deployment).
+        --ip: IP adress to to expose via Ingress externally.
         --upgrade: Helm will install or upgrade charts.
         -cd|--clear-deployment: Clear deployment services.
         -ct|--clear-telemetry: Clear telemetry services.
-        -cu|--clear-ui: Clear auth and ui services.
+        -cu|--clear-ui: Clear auth and ui services
         -ca|--clear-all: Clear the all services.
         -h|--help: Display this help message.
-Example: ./install_chatqna.sh --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease
+Example: ./install_chatqna.sh --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease --ip <IP address of the node>
 ```
 Example command:
 ```
-./install_chatqna.sh --deploy chatQnA_gaudi_torch_guard --auth --telemetry --ui
+./install_chatqna.sh --deploy chatQnA_gaudi_torch_guard --auth --telemetry --ui --ip 10.211.187.74 --grafana_password mypassword
 ```
 
 In the above case, the run should end with having all pods defined in [chatQnA_gaudi_torch_guard.yaml](./microservices-connector/config/samples/chatQnA_gaudi_torch.yaml) being in a running state.
@@ -119,13 +130,17 @@ To verify the functionality of the Chat Q&A pipeline, run the `test_connecton.sh
 
 ### Access UI from your local machine
 
-To access UI please forward the below ports when connecting to the server:
+To access the cluster please update your `/etc/hosts` on your machine and match domain name with IP adress that is exposed externally from the cluster.
+
+Example file content:
 
 ```
-    LocalForward 1234 localhost:1234
-    LocalForward 4173 localhost:4173
-    LocalForward 3000 localhost:3000
+<Ingress external IP>     erag.com
+<Ingress external IP>     grafana.erag.com
+<Ingress external IP>     auth.erag.com
 ``` 
+On Windows machine file is located in `C:\Windows\System32\drivers\etc\hosts`.
 
-Next, you can access Enterprise RAG UI by typing in the web browser: `http://localhost:4173/` on your local machine.
-
+Next, you can access Enterprise RAG UI by typing in the web browser: `https://erag.com` on your local machine. 
+Keyclock can be accessed via `https://auth.erag.com`
+Grafana can be access via `https://grafana.erag.com`

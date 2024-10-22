@@ -1,0 +1,33 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: dataprep-authenticated-endpoints
+  namespace: {{ .Values.dataprep.namespace }}
+spec:
+  http:
+  - name: dataprep-ingest
+    match:
+      hosts:
+      - {{ .Values.dataprep.hostname }}
+      paths:
+      - {{ .Values.dataprep.ingest_api.path }}
+    backends:
+    - serviceName: {{ .Values.dataprep.ingest_api.backend_service }}
+      servicePort: {{ .Values.dataprep.ingest_api.service_port }}
+    plugins:
+    - name: openid-connect
+      enable: true
+      config:
+        client_id: {{ .Values.oidc.client_id }}
+        client_secret: {{ .Values.oidc.client_secret }}
+        discovery: {{ .Values.oidc.discovery }}
+        introspection_endpoint: {{ .Values.oidc.introspection_endpoint }}
+        introspection_endpoint_auth_method: client_secret_basic
+        scope: openid profile email
+        bearer_only: true
+        realm: {{ .Values.oidc.realm }}
+    - name: proxy-rewrite
+      enable: true
+      config:
+        uri: {{ .Values.dataprep.ingest_api.service_path }}
+

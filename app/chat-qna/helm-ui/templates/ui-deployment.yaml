@@ -20,6 +20,12 @@ spec:
       labels:
         {{- include "helm-ui.selectorLabels" . | nindent 8 }}
     spec:
+      hostAliases:
+        - ip: "{{.Values.aliasIP}}"
+          hostnames:
+            - "auth.erag.com"
+            - "grafana.erag.com"
+            - "erag.com"
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0  -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] "
+  echo "Usage: $0  -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] -i [IP] "
     exit 1
 }
 
@@ -37,6 +37,7 @@ while getopts "g:z:a:s:r:p:u:n:d:t:y:" opt; do
         d) PIPELINE="$OPTARG" ;;
         t) TAG="$OPTARG" ;;
         y) REGISTRY="$OPTARG" ;;
+	i) IP="$IP" ;;
         *) usage ;;
     esac
 done
@@ -76,4 +77,4 @@ if ! command_exists kubectl; then
 fi
 
 # Install chatqna & run test
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test --grafana_password "$GRAFANA_PASSWORD"
+bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test --grafana_password "$GRAFANA_PASSWORD" --ip "$IP"

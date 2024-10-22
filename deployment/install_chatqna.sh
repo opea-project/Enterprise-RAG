@@ -11,23 +11,32 @@ telemetry_logs_path="$repo_path/telemetry/helm/charts/logs"
 telemetry_traces_path="$repo_path/telemetry/helm/charts/traces"
 telemetry_traces_instr_path="$repo_path/telemetry/helm/charts/traces-instr"
 ui_path="$repo_path/app/chat-qna/helm-ui"
-auth_path="$repo_path/auth/"
+auth_path="$repo_path/auth"
+api_gateway_path="$repo_path/auth/apisix-helm"
+api_gateway_crd_path="$repo_path/auth/apis-crd-helm"
+ingress_path="$repo_path/ingress"
 
 # ports
 KEYCLOAK_FPORT=1234
-GRAFANA_FPORT=3000
-UI_FPORT=4173
 
 # namespaces
 DEPLOYMENT_NS=chatqa
+GATEWAY_NS=auth-apisix
 DATAPREP_NS=dataprep
 TELEMETRY_NS=monitoring
 TELEMETRY_TRACES_NS=monitoring-traces
 UI_NS=rag-ui
 AUTH_NS=auth
+INGRESS_NS=ingress-nginx
 GMC_NS=system
 
-# keycloak vars
+AUTH_HELM="oci://registry-1.docker.io/bitnamicharts/keycloak"
+INGRESS_HELM="ingress-nginx/ingress-nginx"
+
+# keycloak specific vars
+keycloak_user=admin
+keycloak_pass=admin
+client_secret=""
 KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
@@ -49,6 +58,7 @@ function usage() {
     echo -e "Options:"
     echo -e "\t--aws: Use aws registry."
     echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
+    echo -e "\t--auth: Start auth services."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
     echo -e "\tPipelines available: $available_pipelines"
@@ -56,9 +66,11 @@ function usage() {
     echo -e "\t--test: Run a connection test."
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
-    echo -e "\t--ui: Start auth and ui services (requires deployment)."
+    echo -e "\t--ui: Start ui services (requires deployment & auth)."
+    echo -e "\t--ip: external IP adress to be exposed via ingress"
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
+    echo -e "\t-ch|--clear-auth: Clear auth services."
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
@@ -181,6 +193,24 @@ wait_for_condition() {
     print_log "Exiting" ; exit 1
 }
 
+function start_and_keep_port_forwarding() {
+    local SVC_NAME=$1
+    local NAMESPACE=$2
+    local HOST_PORT=$3
+    local REMOTE_PORT=$4
+
+    local PID=""
+
+    echo "Starting and monitoring port-forwarding for $SVC_NAME in namespace $NAMESPACE"
+
+    while true
+    do
+        nohup kubectl port-forward --namespace "$NAMESPACE" svc/"$SVC_NAME" "$HOST_PORT":"$REMOTE_PORT" >> nohup_"$SVC_NAME".out 2>&1 &
+        PID=$!
+        wait $PID
+    done
+}
+
 kill_process() {
     local pattern pid full_command
     pattern=$1
@@ -260,7 +290,7 @@ function start_telemetry() {
 
     # traces (optional dependecies)
     if ! helm repo list | grep -q 'jaegertracing' ; then helm repo add jaegertracing  https://jaegertracing.github.io/helm-charts; fi # for jaeger
-    
+
     # other metrics-server/pcm...
     if ! helm repo list | grep -q 'metrics-server' ; then helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ ; fi
 
@@ -278,11 +308,7 @@ function start_telemetry() {
     print_log "waiting until pods in $TELEMETRY_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_NS"
 
-    print_log "forwarding grafana at $GRAFANA_FPORT port"
-    nohup kubectl --namespace "$TELEMETRY_NS" port-forward svc/telemetry-grafana "$GRAFANA_FPORT":80 >> nohup_grafana.out 2>&1 &
-    nohup kubectl proxy >> nohup_kubectl_proxy.out 2>&1 &
-
-    # III) telemetry/traces (two charts)
+    # III) telemetry/traces
     helm dependency build "$telemetry_traces_path"  > /dev/null
     # IIIa) 'Traces' (backends) installation: because of dependency between opentelemetry-operator CRDs and CR create when otelcol-traces are enabled and webhook installation race condition.
     helm_install "$TELEMETRY_TRACES_NS" telemetry-traces "$telemetry_traces_path" "$HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
@@ -297,7 +323,7 @@ function start_telemetry() {
     # IIIb) telemetry/traces-instr check
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
-    
+
 }
 
 function clear_telemetry() {
@@ -312,58 +338,24 @@ function clear_telemetry() {
 
     kubectl get ns $TELEMETRY_TRACES_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_TRACES_NS
     kubectl get ns $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_NS
-
-    kill_process "kubectl --namespace $TELEMETRY_NS port-forward"
-    kill_process "kubectl proxy"
 }
 
-# !TODO verify comments
 function start_authentication() {
     local introspection_url
-    # NOTE: these values are for test deployment only
-    # in real developementб it's not recommended to use admin/admin
-    # it's also necessary to create a separate realm and user for setting up apisix
-    local keycloak_user=admin
-    local keycloak_pass=admin
 
     print_log "Start authentication"
 
-    helm_auth_msg="installation"
-    helm_auth_cmd="install"
-    if [[ "$helm_upgrade" ]]; then
-      helm_auth_cmd="upgrade --install"
-      helm_auth_msg="upgrade or installation"
-    fi
-
-    # Running the server in development mode. DO NOT use this configuration in production. only one helm chart not installed locally not using func().
-    # !TODO is not suppresed:
-    # Pulled: registry-1.docker.io/bitnamicharts/keycloak:22.1.0
-    # Digest: sha256:ecff1cbc22175744a789abb3a5d53f0abbe2461aebdf0200be991c7ed9adf3cf
-    if helm $helm_auth_cmd keycloak oci://registry-1.docker.io/bitnamicharts/keycloak\
-        --version 22.1.0\
-        --create-namespace\
-        --namespace $AUTH_NS\
-	    --set volumePermissions.enabled=true\
-        --set auth.adminUser=$keycloak_user\
-        --set auth.adminPassword=$keycloak_pass 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "Helm $helm_auth_msg in $AUTH_NS of keycloak finished succesfully"
-    else
-        print_log "Helm $helm_auth_msg in $AUTH_NS of keycloak failed. Exiting"
-        exit 1
-    fi
-
+    helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS"
 
     print_log "waiting until pods in $AUTH_NS are ready"
     wait_for_condition check_pods "$AUTH_NS"
 
-    print_log "forwarding keycloak at $KEYCLOAK_FPORT" port
-    nohup kubectl port-forward --namespace "$AUTH_NS" svc/keycloak $KEYCLOAK_FPORT:80 >> nohup_keycloak.out 2>&1 &
+    start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
+    PID=$!
 
     print_log "verify if $CONFIGURE_URL works"
     wait_for_condition curl --output /dev/null --silent --head --fail "$CONFIGURE_URL"
 
-    # !TODO verify this code
-    # output: Adding user viktor to realm myrealm
     introspection_url=$(curl -s $CONFIGURE_URL | grep -oP '"introspection_endpoint"\s*:\s*"\K[^"]+' | head -n1)
 
     if [[ ! "$introspection_url" =~ ^https?:// ]]; then
@@ -372,6 +364,9 @@ function start_authentication() {
     fi
 
     bash "$auth_path"/keycloak_realm_creator.sh $AUTH_NS
+
+    kill -2 $PID
+    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
 }
 
 function clear_authentication() {
@@ -391,10 +386,82 @@ function clear_authentication() {
 
 
     kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
-
-    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
 }
 
+function start_ingress() {
+    print_header "Start ingress"
+
+    # Create certs
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=ent-rag.com" > /dev/null 2>&1
+    kubectl create secret tls tls-secret --key tls.key --cert tls.crt
+
+    # Install ingress
+    if ! helm repo list | grep -q 'ingress-nginx' ; then helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx ; fi
+    helm repo update > /dev/null
+    helm_install "$INGRESS_NS" ingress-nginx "$INGRESS_HELM" "$HELM_INSTALL_INGRESS_DEFAULT_ARGS"
+
+    print_log "waiting until pods in $INGRESS_NS are ready"
+    wait_for_condition check_pods "$INGRESS_NS"
+
+    # Patch external IP
+    kubectl patch svc ingress-nginx-controller -n ingress-nginx -p "{\"spec\": {\"type\": \"LoadBalancer\", \"externalIPs\":[\"$IP\"]}}"
+
+    # Apply routes
+    kubectl apply -f "$ingress_path"/configs/ingress-grafana.yaml
+    kubectl apply -f "$ingress_path"/configs/ingress-ui.yaml
+    kubectl apply -f "$ingress_path"/configs/ingress-keycloak.yaml
+}
+
+function clear_ingress() {
+    print_header "Clear ingress"
+
+    kubectl get secret tls-secret > /dev/null 2>&1 && kubectl delete secret tls-secret
+
+    helm status -n "$INGRESS_NS" ingress-nginx > /dev/null 2>&1 && helm delete -n "$INGRESS_NS" ingress-nginx
+
+    kubectl get ingress.networking.k8s.io -n $TELEMETRY_NS grafana > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-grafana.yaml
+    kubectl get ingress.networking.k8s.io -n $UI_NS ui > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-ui.yaml
+    kubectl get ingress.networking.k8s.io -n $AUTH_NS keycloak > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-keycloak.yaml
+}
+
+function start_gateway() {
+    print_header "Start gateway"
+
+    start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
+    PID=$!
+
+    sleep 2 # needs a while to work fine
+    client_secret=$(bash "$auth_path"/get_secret.sh)
+
+    kill -2 $PID
+    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
+
+    sed -i -E "s#(.*client_secret:) \"(.*)\"#\1 \"$client_secret\"#g" $api_gateway_crd_path/values.yaml
+
+    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $DATAPREP_NS
+    kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
+    kubectl get ns $UI_NS > /dev/null 2>&1 || kubectl create ns $UI_NS
+
+    helm dependency update "$api_gateway_path" > /dev/null
+    helm_install "$GATEWAY_NS" auth-apisix "$api_gateway_path" "$HELM_INSTALL_GATEWAY_DEFAULT_ARGS"
+
+    print_log "waiting until pods in $GATEWAY_NS are ready"
+    wait_for_condition check_pods "$GATEWAY_NS"
+
+    helm dependency update "$api_gateway_crd_path" > /dev/null
+    helm_install "$GATEWAY_NS" auth-apisix-crds "$api_gateway_crd_path" "$HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS"
+
+    print_log "waiting until pods in $GATEWAY_NS are ready"
+    wait_for_condition check_pods "$GATEWAY_NS"
+}
+
+
+function clear_gateway() {
+    print_header "Clear gateway"
+
+    helm status -n "$GATEWAY_NS" auth-apisix-crds > /dev/null 2>&1 &&  helm uninstall auth-apisix-crds -n "$GATEWAY_NS"
+    helm status -n "$GATEWAY_NS" auth-apisix > /dev/null 2>&1 &&  helm uninstall auth-apisix -n "$GATEWAY_NS"
+}
 
 function start_ui() {
     print_header "Start ui"
@@ -407,9 +474,6 @@ function start_ui() {
 
     print_log "waiting until pods $UI_NS are ready."
     wait_for_condition check_pods "$UI_NS"
-
-    print_log "forwarding ui at $UI_FPORT port"
-    nohup kubectl port-forward --namespace $UI_NS svc/ui-chart $UI_FPORT:$UI_FPORT >> nohup_ui.out 2>&1 &
 }
 
 
@@ -421,8 +485,6 @@ function clear_ui() {
     fi
 
     kubectl get ns $UI_NS > /dev/null 2>&1 && kubectl delete ns $UI_NS
-
-    kill_process "kubectl port-forward --namespace $UI_NS svc/ui-chart"
 }
 
 
@@ -431,10 +493,13 @@ deploy_flag=false
 test_flag=false
 telemetry_flag=false
 ui_flag=false
+auth_flag=false
 clear_deployment_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
 clear_all_flag=false
+clear_auth_flag=false
+
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -455,9 +520,6 @@ while [[ "$#" -gt 0 ]]; do
             fi
             PIPELINE=$1
             deploy_flag=true
-            if [[ $PIPELINE =~ "gaudi" ]]; then
-                CHATQNA_VOLUME_SIZE=350Gi
-            fi
             ;;
         --grafana_password)
             shift
@@ -492,11 +554,26 @@ while [[ "$#" -gt 0 ]]; do
             fi
             REGISTRY=$1
             ;;
+        --ip)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --ip. Please provide a valid ip."
+                usage
+                exit 1
+            fi
+            IP=$1
+            ;;
         --ui)
             ui_flag=true
             ;;
         --upgrade)
             helm_upgrade=true
+            ;;
+        --auth)
+            auth_flag=true
+            ;;
+        -ch|--clear-auth)
+            clear_auth_flag=true
             ;;
         -cd|--clear-deployment)
             clear_deployment_flag=true
@@ -532,7 +609,7 @@ if [[ "$telemetry_flag" == "true" ]]; then
   fi
 
   # system validation (for journald/ctl systemd OpenTelemetry collector)
-  if  [[ `sudo sysctl -n fs.inotify.max_user_instances` -lt 8000 ]]; then
+  if  [[ $(sysctl -n fs.inotify.max_user_instances) -lt 8000 ]]; then
       print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
       exit 1
   fi
@@ -543,7 +620,15 @@ fi
 HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
 TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
 TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
-HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
+HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG --set aliasIP=$IP"
+
+# !TODO needs to be verified if we need values.yaml to be deployed
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--set controller.hostPort.enabled=true  --set controller.ingressClass=nginx -f $ingress_path/values.yaml"
+HELM_INSTALL_GATEWAY_DEFAULT_ARGS=""
+HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS=""
+# !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
+HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user \
+  --set auth.adminPassword=$keycloak_pass --set tls.enabled=true --set tls.autoGenerated=true --set ingress.tls=true --set ingress.selfSigned=true --set ingress.enabled=true --set ingress.hostname=auth.erag.com --set ingress.servicePort=https --set ingress.ingressClassName=nginx"
 
 HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
 HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
@@ -558,6 +643,11 @@ if [[ "$REGISTRY" =~ "aws" ]]; then
     get_aws_credentials
 fi
 
+if $auth_flag; then
+    start_authentication
+    start_gateway
+fi
+
 if $deploy_flag; then
     start_deployment "$PIPELINE"
 fi
@@ -566,8 +656,11 @@ if $telemetry_flag; then
     start_telemetry
 fi
 
+if $auth_flag; then
+    start_ingress
+fi
+
 if $ui_flag; then
-    start_authentication
     start_ui
 fi
 
@@ -576,12 +669,17 @@ if $test_flag; then
     bash test_connection.sh
 fi
 
+if $clear_auth_flag; then
+    clear_ingress
+    clear_gateway
+    clear_authentication
+fi
+
 if $clear_deployment_flag; then
     clear_deployment
 fi
 
 if $clear_ui_flag; then
-    clear_authentication
     clear_ui
 fi
 
@@ -594,4 +692,6 @@ if $clear_all_flag; then
     clear_authentication
     clear_ui
     clear_telemetry
+    clear_ingress
+    clear_gateway
 fi

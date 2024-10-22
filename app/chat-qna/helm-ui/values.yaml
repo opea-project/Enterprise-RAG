@@ -52,6 +52,8 @@ service:
   type: ClusterIP
   port: 4173
 
+aliasIP: localhost
+
 mongodb:
   name: SYSTEM_FINGERPRINT
   svc: mongodb

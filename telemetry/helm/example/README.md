@@ -70,12 +70,13 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
 # Please modify grafana_password for your own
-time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly
+time ./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly --ip 127.0.0.1
 
 # Install or reinstall(upgrade) individual components
+time ./install_chatqna.sh --tag $TAG --kind --auth --upgrade
 time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade
 time ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly
-time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade
+time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1
 
 # check ChatQnA response
 kubectl proxy
@@ -93,6 +94,12 @@ kubectl port-forward --namespace rag-ui svc/ui-chart 4173:4173
 kubectl port-forward --namespace auth svc/keycloak 1234:80
 # UI: http://127.0.0.1:4173 
 # Grafana: http://127.0.0.1:3000
+
+### e) Access UI/KeyCloak and Grafana
+kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
+# UI: https://erag.com/
+# Grafana: https://grafana.erag.com/
+# KeyCloak: https://auth.erag.com/
 
 ### Optionally install metrics-server (for resource usage metrics)
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/

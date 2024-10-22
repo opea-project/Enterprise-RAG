@@ -83,16 +83,18 @@ class ApiRequestHelper:
         self.api_port = 8080
         self.default_headers = {"Content-Type": "application/json"}
 
-    def call_chatqa(self, question):
+    def call_chatqa(self, question, **custom_params):
         """
         Make /v1/chatqa API call with the provided question.
         """
         json_data = {
             "text": question,
             "parameters": {
-                    "streaming": False
-                }
+                "streaming": False
+            }
         }
+        json_data["parameters"].update(custom_params)
+
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             return self._call_chatqa(json_data, pf)
 
@@ -101,7 +103,7 @@ class ApiRequestHelper:
 
         request_bodies = []
         for question in questions:
-            json_data = {"text": question}
+            json_data = {"text": question, "parameters": {"streaming": False}}
             request_bodies.append(json_data)
 
         results = []

@@ -79,6 +79,20 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
         pytest.fail(str(e))
 
 
+@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T49")
+def test_chatqa_enable_streaming(chatqa_api_helper):
+    """
+    Set 'streaming' parameter to True and check the response
+    """
+    question = "Don't answer me."
+    response = chatqa_api_helper.call_chatqa(question, streaming=True)
+    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
+    try:
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+    except InvalidChatqaResponseBody as e:
+        pytest.fail(str(e))
+
+
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T42")
 def test_chatqa_concurrent_requests(chatqa_api_helper):
     """

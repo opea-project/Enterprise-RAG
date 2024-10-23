@@ -36,7 +36,7 @@ runs:
       with:
         comment-id: ${{ github.event.comment.id }}
         content: |
-          Job run: [${{ jobs.validate-microservices.name }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          Job run: [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         github-token: ${{ github.token }}
 
     - name: "Parse comment arguments"

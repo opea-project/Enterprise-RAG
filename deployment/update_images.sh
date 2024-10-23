@@ -272,7 +272,7 @@ for component in "${components_to_build[@]}"; do
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
 
-	fingerprint-usvc)
+        fingerprint-usvc)
             path="${repo_path}/src"
             dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
             image_name=system-fingerprint
@@ -284,7 +284,7 @@ for component in "${components_to_build[@]}"; do
 
         otelcol-contrib-journalctl)
             path="${repo_path}"
-            dockerfile="telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
+            dockerfile="deployment/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
             image_name=otelcol-contrib-journalctl
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi

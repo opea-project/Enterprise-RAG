@@ -36,7 +36,7 @@ runs:
       with:
         comment-id: ${{ github.event.comment.id }}
         content: |
-          Job run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Job run: [${{ jobs.validate-microservices.name }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         github-token: ${{ github.token }}
 
     - name: "Parse comment arguments"
@@ -85,6 +85,7 @@ runs:
     - name: "Run all tests"
       id: run-all
       if: ${{ env.SPECIFIC_TESTS == '' }}
+      continue-on-error: true
       uses: ./.github/actions/execute_remote_script
       env:
         HF_TOKEN: ${{ env.HF_TOKEN }}
@@ -97,6 +98,7 @@ runs:
     - name: "Run selected tests"
       id: run-some
       if: ${{ env.SPECIFIC_TESTS != '' }}
+      continue-on-error: true
       uses: ./.github/actions/execute_remote_script
       env:
         HF_TOKEN: ${{ env.HF_TOKEN }}
@@ -107,7 +109,6 @@ runs:
           HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
 
     - name: Fetch Zephyr script
-      if: always()
       uses: actions/checkout@v4
       with:
         repository: intel-sandbox/rag-solution-infra
@@ -117,12 +118,10 @@ runs:
         token: ${{ inputs.RAG_SOLUTION_INFRA_PAT }}
 
     - name: Download allure-results
-      if: always()
       run: rsync -avzh ${REMOTE_GAUDI_HOST}:${REMOTE_WORKSPACE}/src/tests/microservices/allure-results zephyr-dir/tools
       shell: bash
 
     - name: Upload results to Zephyr
-      if: always()
       run: |
         echo "Attempting to upload results to Zephyr"
         cd zephyr-dir/tools

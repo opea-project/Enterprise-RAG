@@ -6,8 +6,8 @@
 import base64
 import concurrent
 import kr8s
-import random
 import requests
+import secrets
 import socket
 import time
 
@@ -32,7 +32,7 @@ class CustomPortForward(object):
         Return a random unused port between start and end
         """
         while True:
-            port = random.randint(start, end)
+            port = secrets.randbelow(end - start) + start
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 result = sock.connect_ex(("127.0.0.1", port))
                 if result != 0:  # Port is not in use

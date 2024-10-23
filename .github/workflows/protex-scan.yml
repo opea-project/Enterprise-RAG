@@ -7,20 +7,35 @@ on:
         description: 'Pull request number'
         required: true
 
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PR-number: ${{ github.event.inputs.PR_number || github.event.number }}
+
 jobs:
   Protex-scan:
     runs-on: [innersource.prod.amr.dind]
-    container: amr-registry.caas.intel.com/cscripts-ci/protex:latest
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
     name: Protex Scan
     environment: default
     permissions:
-      id-token: write # This is required for requesting the JWT
-      contents: read  # This is required for actions/checkout
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: refs/pull/${{ github.event.inputs.PR_number }}/head
-      - name: Protex scan
-        uses: ./.github/actions/protex-scan
-        with:
-          PR-number: ${{ github.event.inputs.PR_number }}
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Adjust BuildConfig
+      run: |
+        cp .github/BuildConfigProtex.json .github/BuildConfig.json
+      shell: bash
+
+    - name: SDL scan
+      uses: ./.github/actions/sdl-scan
+      with:
+        Repository-name: ${{ github.repository }}
+        PR-number: ${{ env.PR-number }}

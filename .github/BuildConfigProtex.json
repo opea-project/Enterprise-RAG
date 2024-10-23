@@ -13,16 +13,10 @@
             }
         ]
     },
-    "StaticSecurityScan": {
-        "ServerURL": "https://sast.intel.com",
-        "ProjectID": "361162"
-    },
-    "BinaryScan": {
-        "ServerURL": "https://bdba001.icloud.intel.com",
-        "ServerGroup": "57"
-    },
-    "TrivyConfig": {
-        "target": "."
-    },
-    "AVScan": {}
+    "Protex": [
+        {
+            "Server": "amrprotex007.devtools.intel.com/",
+            "ProjectID": "c_enterpriseaisolution_25528"
+        }
+    ]
 }

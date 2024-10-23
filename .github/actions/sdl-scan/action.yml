@@ -156,7 +156,7 @@ runs:
       shell: bash
 
     - name: Bandit Scan
-      if: always()
+      if: always() && github.workflow != 'Protex Scan'
       uses: intel-innersource/frameworks.actions.bandit@v1.3
       with:
         bandit-options: '-c .github/BanditConfig.yaml -f html'

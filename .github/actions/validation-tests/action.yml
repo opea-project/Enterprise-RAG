@@ -1,4 +1,5 @@
 name: "Validation tests"
+description: "Run microservices validation tests."
 
 inputs:
   PR-number:
@@ -19,6 +20,7 @@ inputs:
   RAG_SOLUTION_INFRA_PAT:
     description: 'Token to RAG Solution Infra repo'
     required: true
+
 
 runs:
   using: "composite"
@@ -81,6 +83,7 @@ runs:
       shell: bash
 
     - name: "Run all tests"
+      id: run-all
       if: ${{ env.SPECIFIC_TESTS == '' }}
       uses: ./.github/actions/execute_remote_script
       env:
@@ -92,6 +95,7 @@ runs:
           HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
 
     - name: "Run selected tests"
+      id: run-some
       if: ${{ env.SPECIFIC_TESTS != '' }}
       uses: ./.github/actions/execute_remote_script
       env:
@@ -125,6 +129,24 @@ runs:
         python3 upload_test_results_to_zephyr.py -t ${{ env.JIRA_TOKEN }} -r allure-results
         echo "Uploading results to Zephyr finished"
       shell: bash
+
+    - name: Generate test results feedback
+      id: run-conclusion
+      run: |
+        if [[ ${{ steps.run-all.conclusion }} == "failure" ]] || [[ ${{ steps.run-some.conclusion }} == "failure" ]]; then
+          echo "conclusion_message=:x: Tests failed" >> $GITHUB_OUTPUT;
+        elif [[ ${{ steps.run-all.conclusion }} == "success" ]] || [[ ${{ steps.run-some.conclusion }} == "success" ]]; then
+          echo "conclusion_message=:white_check_mark: Tests passed" >> $GITHUB_OUTPUT;
+        fi
+      shell: bash
+
+    - name: Update comment with tests feedback
+      if: ${{ github.event_name == 'issue_comment' }}
+      uses: ./.github/actions/update-comment
+      with:
+        comment-id: ${{ github.event.comment.id }}
+        content: ${{ steps.run-conclusion.outputs.conclusion_message }}
+        github-token: ${{ github.token }}
 
     - name: Clean up container
       if: always()

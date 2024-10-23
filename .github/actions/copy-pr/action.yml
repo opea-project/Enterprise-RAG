@@ -10,14 +10,22 @@ runs:
   steps:
   - name: Checkout Code
     uses: actions/checkout@v4
+    with:
+      path: repo
   - name: Fetch code from public repo
     run: |
+      mkdir github-copy
+      cd repo
+      cp -r .github/. ../github-copy
       git config --local user.email "actions@github.com"
       git config --local user.name "Github Actions"
-      git checkout -b external_pr_${{ inputs.PR-number }}
+      git checkout --orphan external_pr_${{ inputs.PR-number }}
       git reset --hard
       git pull https://github.com/intel/Enterprise-RAG.git pull/${{ inputs.PR-number }}/head --allow-unrelated-histories
-      #git commit -a -m "Copy PR ${{ inputs.PR-number}} from public RAG repo"
+      rm -rf .github/*
+      cp -r ../github-copy/. .github
+      git add .github/.
+      git commit -a -m "Copy public PR ${{ inputs.PR-number}} with internal CI/CD merged"
       git push --set-upstream origin external_pr_${{ inputs.PR-number }}
     shell: bash
   - name: Install sudo

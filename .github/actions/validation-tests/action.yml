@@ -132,9 +132,9 @@ runs:
     - name: Generate test results feedback
       id: run-conclusion
       run: |
-        if [[ ${{ steps.run-all.conclusion }} == "failure" ]] || [[ ${{ steps.run-some.conclusion }} == "failure" ]]; then
+        if [[ ${{ steps.run-all.outcome }} == "failure" ]] || [[ ${{ steps.run-some.outcome }} == "failure" ]]; then
           echo "conclusion_message=:x: Tests failed" >> $GITHUB_OUTPUT;
-        elif [[ ${{ steps.run-all.conclusion }} == "success" ]] || [[ ${{ steps.run-some.conclusion }} == "success" ]]; then
+        elif [[ ${{ steps.run-all.outcome }} == "success" ]] || [[ ${{ steps.run-some.outcome }} == "success" ]]; then
           echo "conclusion_message=:white_check_mark: Tests passed" >> $GITHUB_OUTPUT;
         fi
       shell: bash
@@ -164,3 +164,10 @@ runs:
         run: |
           rm -rf ${{ env.REMOTE_WORKSPACE }}
           echo "Workspace has been removed"
+
+    - name: Fail whole pipeline if run tests failed
+      run: |
+        if [[ ${{ steps.run-all.outcome }} == "failure" ]] || [[ ${{ steps.run-some.outcome }} == "failure" ]]; then
+          exit 1;
+        fi
+      shell: bash

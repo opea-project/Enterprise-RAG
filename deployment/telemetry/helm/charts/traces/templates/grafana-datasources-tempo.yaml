@@ -41,8 +41,11 @@ data:
           datasourceUid: loki
           filterBySpanID: false
           filterByTraceID: false
-          query: '{$${__tags}} | trace_id=`$${__span.traceId}`'
-          # query: '{${__tags}} | trace_id=`${__span.traceId}` | span_id=`${__span.spanId}`'
+          # query: '{$${__tags}} | trace_id=`$${__span.traceId}`'
+          query: '{$${__tags}} | trace_id=`$${__span.traceId}` | span_id=`$${__span.spanId}`'
+          spanEndTimeShift: 1m
+          spanStartTimeShift: -1m
+
         tracesToMetrics:
           datasourceUid: prometheus
           queries: []

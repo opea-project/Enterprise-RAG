@@ -117,6 +117,7 @@ spec:
       value: "true"
     - name: OTEL_PYTHON_LOG_LEVEL
       value: "debug"
+    # https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/logging/logging.html#envvar-OTEL_PYTHON_LOG_FORMAT0
     # this one breaks logging completly
     # - name: OTEL_PYTHON_LOG_FORMAT
     #   value: "%(msg)s [span_id=%(span_id)s]"

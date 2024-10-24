@@ -22,7 +22,7 @@ cd deployment
 
 ```sh
 # Create Local registry and kind-control-plane containers (~3GB, ~2 minutes):
-time bash ../telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
+time bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
 kind export kubeconfig
 docker ps
 kubectl get pods -A
@@ -81,21 +81,20 @@ time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1
 # check ChatQnA response
 kubectl proxy
 pgrep -laf 'kubectl proxy'
-curl -sL -N http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/ -H "Content-Type: application/json" -d '{"text":"what is the day today?","parameters":{"max_tokens":8, "max_new_tokens":8, "do_sample": true}}'
+curl -sL -N http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/ -H "Content-Type: application/json" -d '{"text":"what is the day today?","parameters":{"max_new_tokens":5, "streaming": true}}'
 
 # check DataPrep pipeline
 SIZE=100 ; curl -v -N -s -H 'Content-Type: application/json' -o /dev/null http://127.0.0.1:8001/api/v1/namespaces/dataprep/services/router-service:8080/proxy/ -X POST -d '{"files":[{"filename":"file.txt", "data64":"'`head -c $SIZE </dev/random | base64 -w 0 | base64 -w 0`'"}],"links":[]}'
 
-### d) Access UI
+### d) Access Grafana/Prometheus
 pgrep -laf 'port-forward'
 # or port forwards processes manually
 kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
-kubectl port-forward --namespace rag-ui svc/ui-chart 4173:4173
-kubectl port-forward --namespace auth svc/keycloak 1234:80
-# UI: http://127.0.0.1:4173 
 # Grafana: http://127.0.0.1:3000
+# Prometheus: http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/graph
 
 ### e) Access UI/KeyCloak and Grafana
+# Add "127.0.0.1 auth.erag.com grafana.erag.com erag.com" line to /etc/hosts (Linux) or c:\windows\System32\drivers\etc\hosts (Windows)
 kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
 # UI: https://erag.com/
 # Grafana: https://grafana.erag.com/
@@ -109,12 +108,13 @@ helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metric
 #### 3) Clean up
 ```
 kind delete cluster
+docker rm -f kind-registry
 
 # Warning: first time initialize will take a lot time when following steps are executed:
-docker rm -f kind-registry
 rm -rf /kind-containerd-images      # removes all pulled images by containerd inside kind (~70GB)
 rm -rf /mnt/opea-models             # removes all models used by model servers (~30GB)
-rm -rf /kind-registry               # removes all images stored in registry (~15GB)
+rm -rf /kind-registry               # removes all images stored in registry (~20GB)
+# Warning: Below commands can remove not Enterprise RAG related data
 docker system df
 docker image prune -a -f            # removed build images local registry (~90GB)
 docker system prune -a -f           # removes all containers images inside docker cache (~20GB)

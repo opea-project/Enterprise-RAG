@@ -98,6 +98,10 @@ jobs:
         shell: bash
     container: cache-registry.caas.intel.com/cache/library/python:3.11
     name: Copy pull request
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

@@ -13,6 +13,8 @@ jobs:
     name: BDBA Scan
     container:
       image: cache-registry.caas.intel.com/cache/library/python:3.11
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:

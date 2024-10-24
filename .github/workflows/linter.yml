@@ -14,12 +14,13 @@ jobs:
     if: |
       (github.event_name == 'pull_request_review' && github.event.review.state != 'commented') ||
       (github.event_name == 'pull_request') || (github.event_name == 'push')
-
+    permissions:
+      contents: read
+      statuses: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
       - name: Print YAML Lint Config
         run: cat .github/linters/.yaml-lint.yml

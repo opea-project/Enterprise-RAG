@@ -29,7 +29,7 @@ tox -e microservices
 
 Apart from the terminal output, microservices tests results will be stored in `src/tests/microservices/allure-results` directory as well.
 
-### Usefull information
+### Useful information
 * In order to change tests environment configuration edit `tox.ini` file.
 * You may pass additional parameters to pytest after `--`. Examples:
 ```

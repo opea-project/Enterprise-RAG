@@ -70,6 +70,21 @@ spec:
     spec:
       securityContext:
         {}
+      initContainers:
+        - name: wait-for-redis
+          image: redis:alpine
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$REDIS_URL" ]; then
+                  echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
+                else
+                  until redis-cli -u $REDIS_URL ping | grep -q PONG; do
+                    echo "waiting for redis server $REDIS_URL to be ready...";
+                    sleep 2;
+                  done;
+                fi;
       containers:
         - name: ingestion-usvc
           envFrom:

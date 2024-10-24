@@ -23,13 +23,13 @@ spec:
           serviceName: embedding-svc
           config:
             endpoint: /v1/embeddings
-            EMBEDDING_MODEL_SERVER_ENDPOINT: tei-embedding-gaudi-svc #tmphardcode
+            EMBEDDING_MODEL_SERVER_ENDPOINT: tei-embedding-svc #tmphardcode
             EMBEDDING_MODEL_NAME: "BAAI/bge-base-en-v1.5"
             EMBEDDING_MODEL_SERVER: "tei"
             EMBEDDING_CONNECTOR: "langchain"
-      - name: TeiEmbeddingGaudi
+      - name: TeiEmbedding
         internalService:
-          serviceName: tei-embedding-gaudi-svc
+          serviceName: tei-embedding-svc
           isDownstreamService: true
       - name: Retriever
         data: $response
@@ -37,7 +37,7 @@ spec:
           serviceName: retriever-svc
           config:
             endpoint: /v1/retrieval
-            REDIS_URL: redis-vector-db
+            REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
             EMBED_MODEL: "BAAI/bge-base-en-v1.5"
       - name: VectorDB
         internalService:

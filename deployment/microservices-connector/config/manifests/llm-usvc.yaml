@@ -74,6 +74,21 @@ spec:
     spec:
       securityContext:
         {}
+      initContainers:
+        - name: wait-for-model-server
+          image: alpine/curl
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$LLM_MODEL_SERVER_ENDPOINT" ]; then
+                  echo "Environment variable LLM_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $LLM_MODEL_SERVER_ENDPOINT; do
+                    echo "waiting for embedding model server $LLM_MODEL_SERVER_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
       containers:
         - name: llm-usvc
           envFrom:

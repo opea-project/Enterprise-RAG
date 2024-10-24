@@ -127,7 +127,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume
+            claimName: model-volume-embedding
         - name: shm
           emptyDir:
             medium: Memory

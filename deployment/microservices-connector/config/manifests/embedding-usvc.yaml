@@ -81,10 +81,14 @@ spec:
             - sh
             - -c
             - |
-                until curl -s $EMBEDDING_MODEL_SERVER_ENDPOINT; do
-                  echo "waiting for embedding model server $EMBEDDING_MODEL_SERVER_ENDPOINT to be ready...";
-                  sleep 2;
-                done;
+                if [ -z "$EMBEDDING_MODEL_SERVER_ENDPOINT" ]; then
+                  echo "Environment variable EMBEDDING_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $EMBEDDING_MODEL_SERVER_ENDPOINT; do
+                    echo "waiting for embedding model server $EMBEDDING_MODEL_SERVER_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
       containers:
         - name: embedding-usvc
           envFrom:

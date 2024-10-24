@@ -179,7 +179,7 @@ wait_for_condition() {
         current_time=$(date +%s)
         if [[ "$current_time" -ge "$end_time" ]]; then
             print_log "Timeout reached: Condition $* not met after $((timeout / 60)) minutes."
-            return 1
+            print_log "Exiting" ; exit 1
         fi
 
         if "$@"; then
@@ -253,11 +253,11 @@ function start_deployment() {
     wait_for_condition check_pods "$GMC_NS"
 
     kubectl apply -f "$manifests_path/chatQnA_$pipeline".yaml
-    print_log "waiting for pods in $DEPLOYMENT_NS are ready"
-    wait_for_condition check_pods "$DEPLOYMENT_NS"
-
     kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
-    print_log "waiting for pods in $DATAPREP_NS are ready"
+
+    print_log "waiting until pods in $DEPLOYMENT_NS and $DATAPREP_NS are ready"
+
+    wait_for_condition check_pods "$DEPLOYMENT_NS"
     wait_for_condition check_pods "$DATAPREP_NS"
 }
 

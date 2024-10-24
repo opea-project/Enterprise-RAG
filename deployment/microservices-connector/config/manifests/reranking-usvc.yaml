@@ -72,6 +72,21 @@ spec:
     spec:
       securityContext:
         {}
+      initContainers:
+        - name: wait-for-svc
+          image: alpine/curl
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$RERANKING_SERVICE_ENDPOINT" ]; then
+                  echo "Environment variable RERANKING_SERVICE_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $RERANKING_SERVICE_ENDPOINT; do
+                    echo "waiting for reranking server $RERANKING_SERVICE_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
       containers:
         - name: reranking-usvc
           envFrom:

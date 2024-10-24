@@ -108,19 +108,12 @@ otelcol-logs:
         - key: "k8s.namespace.name"
           action: insert
           value: "JOURNALCTL"
-        - key: "k8s.node.name"
-          action: insert
-          value: "UNKNOWN"
       # Try to infer k8s.node.name using k8snode detector from "resource detection" processor.
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
       resourcedetection:
-        detectors:
-        #- system # CANNOT DETECT host name properly
-        - k8snode
+        detectors: [k8snode, system]
         system:
           hostname_sources: ["os"]
-        # k8snode:
-        #   node_from_env_var: K8s_NODE_NAME # default
 
     service:
       pipelines:

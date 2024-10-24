@@ -875,6 +875,15 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 		span.End()
 
+		if statusCode == 466 { // Guardrails code!
+			log.Error(err, "Guardrails activated!")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(statusCode)
+			respBytes, _ := io.ReadAll(responseBody)
+			w.Write(prepareErrorResponse(err, string(respBytes)))
+			return
+		}
+
 		if err != nil {
 			//log.Error(err, "failed to process request")
 			otlpr.WithContext(log, ctx).Error(err, "failed to process request")

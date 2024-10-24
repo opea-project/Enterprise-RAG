@@ -20,6 +20,7 @@ export const banCompetitorsScanner = [
   USE_ONNX,
   COMPETITORS,
   MODEL,
+  REDACT,
   THRESHOLD,
 ];
 

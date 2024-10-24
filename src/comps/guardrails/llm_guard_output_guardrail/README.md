@@ -35,6 +35,8 @@ Scanners currently configurable from UI, from Admin Panel:
  - [Bias](https://llm-guard.com/output_scanners/bias/)
  - [Relevance](https://llm-guard.com/output_scanners/relevance/)
 
+ Important: when LLM Guard Output Guardrail is enabled in Enterprise pipeline, LLM streaming option is not available, since LLM Guard Output Guardrail becomes reponsible for streaming. LLM Guard Output Guardrail waits for whole reponse from LLM to scan it.
+
 ### Configuration via environmental variables
 The OPEA LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
 

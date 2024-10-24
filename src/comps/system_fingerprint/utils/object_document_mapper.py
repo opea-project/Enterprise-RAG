@@ -34,6 +34,7 @@ class BanCompetitorsModel(Document):
     competitors: List[str] = ["Competitor1", "Competitor2", "Competitor3"]
     model: Optional[str] = None
     threshold: Optional[float] = None
+    redact: Optional[bool] = None
 
 
 class BanSubstringsModel(Document):

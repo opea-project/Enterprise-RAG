@@ -76,6 +76,26 @@ const PromptInput = () => {
     }
   };
 
+  const extractDetail = (errorString: string): string | null => {
+    try {
+      // Extract the JSON part from the error string
+      const jsonMatch = errorString.match(/Guard: ({.*})/);
+      if (!jsonMatch || jsonMatch.length < 2) {
+        throw new Error("Invalid error string format");
+      }
+
+      // Parse the extracted JSON
+      const errorJson = JSON.parse(jsonMatch[1]);
+
+      // Extract the detail field
+      const detailJson = JSON.parse(errorJson.error);
+      return detailJson.detail || null;
+    } catch (error) {
+      console.error("Failed to extract detail:", error);
+      return null;
+    }
+  };
+
   const handlePromptInputSubmit = async () => {
     const newUserMessage = { text: prompt, isUserMessage: true, id: uuidv4() };
     dispatch(addMessage(newUserMessage));
@@ -116,7 +136,11 @@ const PromptInput = () => {
             response.status !== 429
           ) {
             const error = await response.json();
-            throw new Error(error);
+            var msg = JSON.stringify(error);
+              if (response.status === 466) { // Guardrails
+                msg = "Guard: " + msg;
+              }
+            throw new Error(msg);
           } else {
             console.error("Error during opening connection: ", response);
           }
@@ -148,7 +172,17 @@ const PromptInput = () => {
         },
       });
     } catch (error) {
-      console.error("Error: ", error);
+      if (error instanceof Error) {
+        var extract = extractDetail(error.message)
+        if (extract) {
+          dispatch(
+            updateMessage({ messageId: chatBotMessageId, chunk: extract }),
+          );
+        }
+        console.error("Error: ", error.message);
+      } else {
+        console.error("Unknown error: ", error);
+      }
     } finally {
       dispatch(setIsMessageStreamed(false));
     }

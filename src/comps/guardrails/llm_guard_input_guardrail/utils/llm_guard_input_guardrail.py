@@ -95,7 +95,8 @@ class OPEALLMGuardInputGuardrail:
                 if False in results_valid.values():
                     msg = f"Prompt {prompt} is not valid, scores: {results_score}"
                     logger.error(f"{msg}")
-                    raise HTTPException(status_code=400, detail=f"{msg}")
+                    usr_msg = "I'm sorry, I cannot assist you with your prompt."
+                    raise HTTPException(status_code=466, detail=f"{usr_msg}")
                 input_doc.query = sanitized_prompt
                 if input_doc.output_guardrail_params is not None:
                     input_doc.output_guardrail_params.anonymize_vault = self._get_anonymize_vault()

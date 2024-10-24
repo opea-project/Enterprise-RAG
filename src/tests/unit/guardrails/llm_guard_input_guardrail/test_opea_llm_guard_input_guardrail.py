@@ -75,8 +75,8 @@ def test_scan_llm_input_invalid(mock_input_scanners_config, mock_scan_prompt, mo
     with pytest.raises(HTTPException) as excinfo:
         guardrail.scan_llm_input(mock_input_doc)
 
-    assert excinfo.value.status_code == 400
-    assert "is not valid" in excinfo.value.detail
+    assert excinfo.value.status_code == 466
+    assert "cannot assist" in excinfo.value.detail
 
 @patch('comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_guardrail.scan_prompt')
 @patch('comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_guardrail.InputScannersConfig')

@@ -77,7 +77,11 @@ class OPEALLMGuardOutputGuardrail:
                 if False in results_valid.values():
                     msg = f"LLM Output {output_doc.text} is not valid, scores: {results_score}"
                     logger.error(msg)
-                    raise HTTPException(status_code=400, detail=msg)
+                    usr_msg = "I'm sorry, but the model output is not valid according to the policies."
+                    redact = [c.get('redact', False) for _, c in self._scanners_config._output_scanners_config.items()] # to see if sanitized output available
+                    if any(redact):
+                        usr_msg = f"We sanitized the answer due to the guardrails policies: {sanitized_output}"
+                    raise HTTPException(status_code=466, detail=usr_msg)
                 return sanitized_output
             else:
                 logger.warning("No output scanners enabled. Skipping scanning.")

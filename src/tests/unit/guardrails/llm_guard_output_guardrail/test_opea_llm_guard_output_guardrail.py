@@ -69,7 +69,7 @@ def test_scan_llm_output_invalid(mock_scan_output, mock_output_scanners_config, 
     with pytest.raises(HTTPException) as excinfo:
         guardrail.scan_llm_output(mock_output_doc)
 
-    assert excinfo.value.status_code == 400
+    assert excinfo.value.status_code == 466
     assert "is not valid" in excinfo.value.detail
 
 @patch('comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_guardrail.OutputScannersConfig')

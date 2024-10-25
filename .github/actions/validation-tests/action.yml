@@ -1,4 +1,5 @@
 name: "Validation tests"
+
 description: "Run microservices validation tests."
 
 inputs:
@@ -20,7 +21,6 @@ inputs:
   RAG_SOLUTION_INFRA_PAT:
     description: 'Token to RAG Solution Infra repo'
     required: true
-
 
 runs:
   using: "composite"

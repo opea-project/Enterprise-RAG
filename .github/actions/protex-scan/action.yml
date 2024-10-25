@@ -9,6 +9,7 @@ runs:
   using: "composite"
   steps:
     - uses: intel-innersource/frameworks.actions.certs@latest
+
     - name: Collect credentials from Conjur
       uses: intel-innersource/frameworks.actions.conjur-fetch@v1
       with:
@@ -16,11 +17,13 @@ runs:
         secrets: >
           FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/username|CONJUR_SDL_USERNAME;
           FMSPAMVLT101/LOBUSER_prapp/AAM-DV-43211-ENTERPRISEAIRA/Operating System-UnmanagedAccounts-AllOSs-sys_cicd/password|CONJUR_SDL_PASSWORD
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         path: repo
         ref: refs/pull/${{ inputs.PR-number }}/head
+
     - uses: intel-innersource/frameworks.actions.scan-protex@v2
       with:
         protex_server_url: "https://amrprotex007.devtools.intel.com/"
@@ -28,6 +31,7 @@ runs:
         protex_username: ${{ env.CONJUR_SDL_USERNAME }}
         protex_password: ${{ env.CONJUR_SDL_PASSWORD }}
         protex_code_location: "repo/"
+
     - name: Archive Protex results
       uses: actions/upload-artifact@v4
       with:

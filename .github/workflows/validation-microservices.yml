@@ -4,7 +4,6 @@ on:
   issue_comment:
     types: [created]
 
-
 jobs:
     validate-microservices:
       if: ${{ (github.event.issue.pull_request) && contains(github.event.comment.body, '/RunTests') }}
@@ -29,6 +28,7 @@ jobs:
       steps:
       - name: Checkout actions
         uses: actions/checkout@v4
+
       - name: Validation tests
         uses: ./.github/actions/validation-tests
         with:

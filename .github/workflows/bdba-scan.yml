@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: refs/pull/${{ github.event.inputs.PR_number }}/head
+
       - name: BDBA scan
         uses: ./.github/actions/bdba-scan
         with:

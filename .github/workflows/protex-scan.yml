@@ -29,6 +29,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: Adjust BuildConfig
       run: |
         cp .github/BuildConfigProtex.json .github/BuildConfig.json

@@ -1,5 +1,7 @@
 name: 'Update comment'
+
 description: 'This action is intended to update comment with given content, e.g. workflow run link'
+
 inputs:
   comment-id:
     description: 'Id of the comment'

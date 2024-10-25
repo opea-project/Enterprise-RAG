@@ -16,13 +16,17 @@ runs:
       with:
         path: repo
         ref: refs/pull/${{ inputs.PR-number }}/head
+
     - name: Install zip
       run: apt update && apt -y install zip
       shell: bash
+
     - name: Archive repo
       run: zip -r repo1.zip repo/* -x ".git/*" ".github/*"
       shell: bash
+
     - uses: intel-innersource/frameworks.actions.certs@latest
+
     - name: Run BDBA
       id: bdba
       env:

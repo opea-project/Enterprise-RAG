@@ -14,7 +14,7 @@ on:
         - intel/Enterprise-RAG
         - intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution
       SDL:
-        description: 'Perform SDL related scans'
+        description: 'Perform SDL scans'
         required: true
         type: choice
         options:
@@ -28,7 +28,7 @@ on:
         - 'no'
         - 'yes'
       Create-PR:
-        description: 'Copy PR code to interal Repo'
+        description: 'Copy PR code to internal Repo'
         required: true
         type: choice
         options:
@@ -51,6 +51,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: SDL scan
       uses: ./.github/actions/sdl-scan
       with:
@@ -80,6 +81,7 @@ jobs:
     steps:
     - name: Checkout actions
       uses: actions/checkout@v4
+
     - name: Validation tests
       uses: ./.github/actions/validation-tests
       with:
@@ -105,6 +107,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
       - name: Copy PR
         uses: ./.github/actions/copy-pr
         with:

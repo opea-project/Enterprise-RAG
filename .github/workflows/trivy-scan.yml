@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
             ref: refs/pull/${{ github.event.inputs.PR_number }}/head
+
       - name: Trivy scan
         uses: ./.github/actions/trivy-scan
         with:

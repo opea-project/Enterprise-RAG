@@ -78,7 +78,6 @@ runs:
         zip -r rag-enterprise-repo.zip repo/* -x ".git/*" ".github/*"
       shell: bash
 
-
     - name: SDLe Scans
       id: compliance
       uses: intel-innersource/frameworks.actions.idf-central-scan@v1

@@ -12,6 +12,7 @@ runs:
       uses: actions/checkout@v4
       with:
         ref: refs/pull/${{ inputs.PR-number }}/head
+
     - name: Run Trivy vulnerability scanner
       uses: intel-innersource/frameworks.actions.trivy@main
       with:
@@ -23,6 +24,7 @@ runs:
         TRIVY_VULN_TYPE: 'os,library'
         TRIVY_SEVERITY: 'CRITICAL,HIGH'
         TRIVY_CUSTOM_PARAMS: "--debug --list-all-pkgs"
+
     - name: Upload artifacts - csv
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@v4

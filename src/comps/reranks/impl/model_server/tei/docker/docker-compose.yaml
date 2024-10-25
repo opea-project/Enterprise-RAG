@@ -5,7 +5,8 @@ version: "3.8"
 
 services:
   reranking-tei-model-server:
-    # todo: check why tag cpu-1.5 does not work with reranking
+    # for 1.5 release there's error: https://github.com/huggingface/text-embeddings-inference/issues/417
+    # so we need to wait for next release, or utilize cpu-latest tag
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
     container_name: reranking-tei-model-server
     ports:
@@ -17,6 +18,7 @@ services:
       HTTP_PROXY: ${HTTP_PROXY}
       HTTPS_PROXY: ${HTTPS_PROXY}
       HF_TOKEN: ${HF_TOKEN}
+      MAX_BATCH_TOKENS: ${MAX_BATCH_TOKENS}
     command: ["--model-id", "${RERANKER_TEI_MODEL_NAME}"]
     runtime: runc
     ipc: host

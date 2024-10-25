@@ -5,15 +5,12 @@
 
 import allure
 import concurrent.futures
+import constants
 import os
 import pytest
 import requests
 import time
 from tempfile import NamedTemporaryFile
-
-CHUNK_SIZE = 512
-CHUNK_OVERLAPPING = 64
-TEST_FILES_DIR = "files/dataprep_upload"
 
 
 @allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T43")
@@ -135,8 +132,8 @@ def test_dataprep_all_supported_file_types(dataprep_api_helper):
     Check if all the supported file types are uploaded successfully
     """
     failed_files = []
-    for filename in os.listdir(TEST_FILES_DIR):
-        file_path = os.path.join(TEST_FILES_DIR, filename)
+    for filename in os.listdir(constants.TEST_FILES_DIR):
+        file_path = os.path.join(constants.TEST_FILES_DIR, filename)
         resp = dataprep_api_helper.call_dataprep_upload_file(file_path)
         if resp.status_code != 200:
             failed_files.append(filename)
@@ -171,14 +168,14 @@ def test_dataprep_chunk_overlapping(dataprep_api_helper):
     # File has 1593 characters and CHUNK_SIZE=512
     assert len(docs) == 4, "Unexpected number of chunks"
     for doc in docs:
-        assert len(doc.get("text")) <= CHUNK_SIZE
+        assert len(doc.get("text")) <= constants.CHUNK_SIZE
 
     # Check chunk overlapping
     for doc_number, doc in enumerate(docs):
         if doc_number == 0:
             continue
-        beginning = doc.get("text")[0:CHUNK_OVERLAPPING]
-        previous_doc_ending = docs[doc_number - 1].get("text")[-CHUNK_OVERLAPPING:]
+        beginning = doc.get("text")[0:constants.CHUNK_OVERLAPPING]
+        previous_doc_ending = docs[doc_number - 1].get("text")[-constants.CHUNK_OVERLAPPING:]
         assert beginning == previous_doc_ending
 
 

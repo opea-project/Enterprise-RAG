@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import constants
+import os
 import pytest
 import requests
 import statistics
@@ -129,3 +131,21 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
     print(f'Longest Execution Time: {max_time:.4f} seconds')
     print(f'Shortest Execution Time: {min_time:.4f} seconds')
     assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"
+
+
+@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T50")
+def test_chatqa_upload_and_check_response_content(dataprep_api_helper, chatqa_api_helper):
+    """
+    Upload some unique story to dataprep pipeline. Check if chatbot returns
+    valid answer for this specific story.
+    """
+    file_path = os.path.join(constants.TEST_FILES_DIR, "story.txt")
+    resp = dataprep_api_helper.call_dataprep_upload_file(file_path)
+    assert resp.status_code == 200, "Unexpected status code returned"
+
+    question = "How many cars commonly called MALUCH are registered in Gdansk?"
+    response = chatqa_api_helper.call_chatqa(question)
+    assert response.status_code == 200, "Unexpected status code returned"
+    print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+    assert "851" in chatqa_api_helper.format_response(response.text), \
+        "Chatbot should return answer that is strictly related to the previously uploaded file"

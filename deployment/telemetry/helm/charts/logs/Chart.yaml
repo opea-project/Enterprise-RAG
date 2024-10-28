@@ -11,13 +11,13 @@ dependencies:
 - name: loki
   condition: loki.enabled
   repository: https://grafana.github.io/helm-charts
-  version: "6.11.*"
+  version: "6.18.*"
   tags:
   - logs
   - backend
 
 - name: opentelemetry-collector
-  version: "0.104.*"
+  version: "*"
   alias: otelcol-logs
   condition: otelcol-logs.enabled
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts

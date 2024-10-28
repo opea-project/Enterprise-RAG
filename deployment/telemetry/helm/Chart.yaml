@@ -20,8 +20,8 @@ dependencies:
   - name: kube-prometheus-stack
     condition: kube-prometheus-stack.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: "61.7.*"
+    version: "*"
   - name: prometheus-redis-exporter
     condition: prometheus-redis-exporter.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: "6.5.0"
+    version: "*"

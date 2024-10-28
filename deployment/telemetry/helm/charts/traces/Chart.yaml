@@ -15,7 +15,7 @@ dependencies:
   alias: tempo
   condition: tempo.enabled
   repository: https://grafana.github.io/helm-charts
-  version: "1.18.*"
+  version: "*"
   tags:
   - traces
   - backend
@@ -25,7 +25,7 @@ dependencies:
 #########################################################
 # optional
 - name: jaeger
-  version: "3.3.*"
+  version: "*"
   condition: jaeger.enabled
   repository: https://jaegertracing.github.io/helm-charts
   tags:
@@ -36,7 +36,7 @@ dependencies:
 # OpenTelemetry operator
 #########################################################
 - name: opentelemetry-operator
-  version: "0.69.*"
+  version: "*"
   alias: otel-operator
   condition: otel-operator.enabled
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts

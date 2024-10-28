@@ -17,6 +17,8 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 9,
   "links": [
     {
       "asDropdown": true,
@@ -33,7 +35,6 @@
       "url": ""
     }
   ],
-  "graphTooltip": 0,
   "liveNow": false,
   "panels": [
     {
@@ -51,6 +52,7 @@
     },
     {
       "datasource": {
+        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -66,6 +68,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -142,7 +145,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(process_cpu_seconds_total{container=\"$container_name\", namespace=\"$namespace\"}[1m])",
+          "expr": "rate(process_cpu_seconds_total{container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -174,6 +177,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -266,6 +270,7 @@
     },
     {
       "datasource": {
+        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -281,6 +286,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -332,14 +338,9 @@
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max",
-            "min"
-          ],
+          "calcs": [],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -358,7 +359,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(handler) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[1m]))",
+          "expr": "sum by(handler) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -375,6 +376,7 @@
     },
     {
       "datasource": {
+        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -390,6 +392,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "bars",
             "fillOpacity": 100,
             "gradientMode": "none",
@@ -498,7 +501,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(status) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\"}[1m]))",
+          "expr": "sum by(status) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -510,11 +513,12 @@
           "useBackend": false
         }
       ],
-      "title": "Request per second",
+      "title": "Request per second (per status)",
       "type": "timeseries"
     },
     {
       "datasource": {
+        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -530,6 +534,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -622,7 +627,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=\"$container_name\", namespace=\"$namespace\"}[30s]))",
+          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -655,6 +660,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 25,
             "gradientMode": "none",
@@ -766,6 +772,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -953,9 +960,13 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "chatqa",
           "value": "chatqa"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
         },
         "definition": "label_values(http_requests_total{namespace=~\"chatqa|dataprep\"},namespace)",
         "hide": 0,
@@ -1064,6 +1075,6 @@
   "timezone": "browser",
   "title": "EnterpriseRAG / Services / Details",
   "uid": "aduqd7fgbf1fkc",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

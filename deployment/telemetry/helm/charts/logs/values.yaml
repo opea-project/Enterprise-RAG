@@ -180,6 +180,9 @@ loki:
 
 
   loki:
+    # Required for "Logs explorer" Grafana plugin
+    pattern_ingester:
+      enabled: true
 
     commonConfig:
       # Version for single node deployment (required for single node setups).
@@ -307,9 +310,33 @@ loki:
       labels:
         release: telemetry
 
+
+    # use the same tenat so loki canary can actually use our pipeline for full tests
+    selfMonitoring:
+      tenant:
+        name: entrag
+
   gateway:
     # -- Specifies whether the gateway should be enabled
-    enabled: false
+    enabled: true
+    service:
+      labels:
+        "prometheus.io/service-monitor": "false"  # This labels tells LokiService monitor to drop this target, to not fire alert
+
+  lokiCanary:
+    # can be tested with:
+    # helm test -n monitoring telemetry-logs
+    # Requires gateway - only enable if gateway is enabled
+    enabled: true
+    # 1) we want to test full logs pipeline through OpenTelemetry collector (not just loki)
+    push: false
+  test:
+    # 2) we want to make sure those metrics from canary are available in Prometheus
+    # -- Address of the prometheus server to query for the test. This overrides any value set for canaryServiceAddress.
+    # This is kept for backward compatibility and may be removed in future releases. Previous value was 'http://prometheus:9090'
+    prometheusAddress: "http://telemetry-kube-prometheus-prometheus.monitoring:9090"
+
+  clusterLabelOverride: entrag
 
 ### =================================================
 ### [OPTIONAL] OpenSearch subchart

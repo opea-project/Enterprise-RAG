@@ -11,6 +11,7 @@ kube-prometheus-stack:
   grafana:
     plugins:
       - grafana-opensearch-datasource
+      - grafana-lokiexplore-app
     env:
       https_proxy: ""
       http_proxy: ""

@@ -261,7 +261,7 @@ loki:
       # See "default" writer config for comparsion, in contrast to what comment says:
       # https://github.com/grafana/loki/blob/5bffc10d857a3ffaab2700cacc703bbf0f813379/production/helm/loki/values.yaml#L1426
       # More information: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention
-      enableStatefulSetAutoDeletePVC: false # defaults to true
+      # enableStatefulSetAutoDeletePVC: false # defaults to true
     replicas: 1
   read:
     replicas: 1

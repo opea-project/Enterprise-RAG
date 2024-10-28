@@ -252,7 +252,7 @@ loki:
 
   # keep those values in-sync with commonConfig.replication_factor
   backend:
-    persistence:
+    #persistence:
       # With assumption that there is no "dynamic provisioning" (in Kubespray) with manually created volumes,
       # we don't want to remove PVC after telemetry-logs uninstallation, because we want reuse existing volume with the same date and on Kubespray setup (even when no required by loki-backend)
       # see this comment:

@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 from fastapi.responses import StreamingResponse
+from requests.exceptions import ConnectionError, ReadTimeout
 
 from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 
@@ -38,9 +39,18 @@ class LLMConnector(ABC):
             test_input = LLMParamsDoc(**tested_params, streaming=False)
             self.generate(test_input)
             logger.debug("Connection validated. LLM initialized successfully.")
+        except ReadTimeout as e:
+            error_message = f"Error initializing the LLM: {e}"
+            logger.exception(error_message)
+            raise ReadTimeout(error_message)
+        except ConnectionError as e:
+            error_message = f"Error initializing the LLM: {e}"
+            logger.exception(error_message)
+            raise ConnectionError(error_message)
         except Exception as e:
-            logger.exception(f"Error initializing the LLM: {e}")
-            raise RuntimeError(f"Error initializing the LLM: {e}")
+            error_message = f"Error initializing the LLM: {e}"
+            logger.exception(error_message)
+            raise Exception(error_message)
 
     @abstractmethod
     def change_configuration(self, **kwargs) -> None:

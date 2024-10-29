@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from fastapi.responses import Response
 from langsmith import traceable
+from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
     LLMParamsDoc,
@@ -69,11 +70,24 @@ def process(input: LLMParamsDoc) -> Response:
     try:
         # Pass the input to the 'run' method of the microservice instance
         res = opea_llm.run(input)
+    except ReadTimeout as e:
+        error_message = f"An error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=408, detail=error_message)
+    except ConnectionError as e:
+        error_message = f"An error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=404, detail=error_message)
+    except RequestException as e:
+        error_code = e.response.status_code if e.response else 500
+        error_message = f"An error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=error_code, detail=error_message)
     except Exception as e:
-         logger.exception(f"An error occurred while processing: {str(e)}")
-         raise HTTPException(status_code=500,
-                             detail=f"An error occurred while processing: {str(e)}"
-    )
+        error_message = f"An error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=500, detail=error_message)
+
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
     return res
 

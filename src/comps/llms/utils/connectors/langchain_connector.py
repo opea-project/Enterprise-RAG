@@ -6,7 +6,7 @@ from typing import Union
 from fastapi.responses import StreamingResponse
 from langchain_community.llms import VLLMOpenAI
 from langchain_huggingface import HuggingFaceEndpoint
-from requests.exceptions import RequestException
+from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 from comps.llms.utils.connectors.connector import LLMConnector
@@ -39,6 +39,15 @@ class TGIConnector:
                     yield "data: [DONE]\n\n"
 
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
+            except ReadTimeout as e:
+                error_message = f"Failed to invoke the Langchain TGI Connector. Connection established with '{e.request.url}' but " \
+                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                logger.error(error_message)
+                raise ReadTimeout(error_message)
+            except ConnectionError as e:
+                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                logger.error(error_message)
+                raise ConnectionError(error_message)
             except Exception as e:
                 logger.error(f"Error streaming from TGI: {e}")
                 raise Exception(f"Error streaming from TGI: {e}")
@@ -47,6 +56,15 @@ class TGIConnector:
                 response = connector.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query,
                                     output_guardrail_params=input.output_guardrail_params)
+            except ReadTimeout as e:
+                error_message = f"Failed to invoke the Langchain TGI Connector. Connection established with '{e.request.url}' but " \
+                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                logger.error(error_message)
+                raise ReadTimeout(error_message)
+            except ConnectionError as e:
+                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                logger.error(error_message)
+                raise ConnectionError(error_message)
             except RequestException as e:
                 error_code = e.response.status_code if e.response else 'No response'
                 error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}', status_code: {error_code}. Check if the endpoint is available and running."
@@ -89,6 +107,15 @@ class VLLMConnector:
                     yield "data: [DONE]\n\n"
 
                 return StreamingResponse(stream_generator(), media_type="text/event-stream")
+            except ReadTimeout as e:
+                error_message = f"Failed to invoke the Langchain VLLM Connector. Connection established with '{e.request.url}' but " \
+                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                logger.error(error_message)
+                raise ReadTimeout(error_message)
+            except ConnectionError as e:
+                error_message = f"Failed to invoke the Langchain VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                logger.error(error_message)
+                raise ConnectionError(error_message)
             except Exception as e:
                 logger.error(f"Error streaming from VLLM: {e}")
                 raise Exception(f"Error streaming from VLLM: {e}")
@@ -97,6 +124,15 @@ class VLLMConnector:
                 response = llm.invoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query,
                                     output_guardrail_params=input.output_guardrail_params)
+            except ReadTimeout as e:
+                error_message = f"Failed to invoke the Langchain VLLM Connector. Connection established with '{e.request.url}' but " \
+                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                logger.error(error_message)
+                raise ReadTimeout(error_message)
+            except ConnectionError as e:
+                error_message = f"Failed to invoke the Langchain VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                logger.error(error_message)
+                raise ConnectionError(error_message)
             except Exception as e:
                 logger.error(f"Error invoking VLLM: {e}")
                 raise Exception(f"Error invoking VLLM: {e}")

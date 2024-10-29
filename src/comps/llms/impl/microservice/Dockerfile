@@ -7,8 +7,6 @@
 FROM python:3.11-slim
 ENV LANG=C.UTF-8
 
-ARG ARCH="cpu"
-
 RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
     libgl1-mesa-glx \
     libjemalloc-dev && \
@@ -25,7 +23,6 @@ ENV PYTHONPATH="/home/user"
 COPY comps/llms/impl/microservice/requirements.txt /tmp/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    if [ ${ARCH} = "cpu" ]; then pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; fi && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /home/user

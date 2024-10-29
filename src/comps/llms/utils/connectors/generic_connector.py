@@ -7,7 +7,7 @@ from typing import Union
 import openai
 from fastapi.responses import StreamingResponse
 from huggingface_hub import InferenceClient
-from requests.exceptions import RequestException
+from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
     GeneratedDoc,
@@ -22,7 +22,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 class TGIConnector:
     def __init__(self, model_name: str, endpoint: str):
         self._endpoint = endpoint
-        self._client = InferenceClient(model=endpoint, timeout=600)
+        self._client = InferenceClient(model=endpoint, timeout=120)
 
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
@@ -37,6 +37,15 @@ class TGIConnector:
                             top_p=input.top_p,
                         )
 
+        except ReadTimeout as e:
+            error_message = f"Failed to invoke the Generic TGI Connector. Connection established with '{e.request.url}' but " \
+                "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+            logger.error(error_message)
+            raise ReadTimeout(error_message)
+        except ConnectionError as e:
+            error_message = f"Failed to invoke the Generic TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+            logger.error(error_message)
+            raise ConnectionError(error_message)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
             error_message = f"Failed to invoke the Generic TGI Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
@@ -75,7 +84,7 @@ class VLLMConnector:
         self._client = openai.OpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
-            timeout=600,
+            timeout=120,
         )
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
@@ -88,6 +97,15 @@ class VLLMConnector:
                 top_p=input.top_p,
                 stream=input.streaming,
             )
+        except ReadTimeout as e:
+            error_message = f"Failed to invoke the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
+                "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+            logger.error(error_message)
+            raise ReadTimeout(error_message)
+        except ConnectionError as e:
+            error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+            logger.error(error_message)
+            raise ConnectionError(error_message)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
             error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."

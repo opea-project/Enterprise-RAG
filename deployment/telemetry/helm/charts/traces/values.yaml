@@ -77,6 +77,15 @@ tempo:
           # https://grafana.com/docs/tempo/latest/metrics-generator/#native-histograms
           # https://grafana.com/docs/mimir/latest/visualize/native-histograms/#visualize-native-histograms
           # send_native_histograms: true
+      processor:
+        service_graphs:
+          #histogram_buckets: [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8] # default
+          histogram_buckets: [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 8.0, 10.0, 12.8, 15.0, 20.0, 25.0, 35.0, 45.0, 60.0, 90.0, 120.0]
+          dimensions: ['namespace']
+        span_metrics:
+          #histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, 8.192, 16.384] # default
+          histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 3.0, 4.096, 5.0, 6.0, 7.0, 8.192, 10.0, 12.0, 16.384, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0]
+          dimensions: ['namespace']
 
 #########################################################
 # Jaeger
@@ -124,9 +133,12 @@ otel-operator:
       # repository: otel/opentelemetry-collector-k8s
       # we need contrib for kubernetes processor/prometheus exporter
       # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
-      repository: "otel/opentelemetry-collector-contrib:0.109.0"
+      repository: "otel/opentelemetry-collector-contrib"
+      tag: "0.110.0"
       # over writen by spec.image from CR
       # image: "otel/opentelemetry-collector-contrib:0.109.0"
+    extraArgs:
+    - '--enable-multi-instrumentation'
 
   # /root/ppalucki/rag/opentelemetry-helm-charts/charts/opentelemetry-operator/values.yaml
   # manager:

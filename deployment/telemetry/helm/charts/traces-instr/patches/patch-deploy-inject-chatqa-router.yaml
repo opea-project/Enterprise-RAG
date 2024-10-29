@@ -9,3 +9,6 @@ spec:
         # please use with caution, causes all input/output date to be stored in logs (user query/pipeline response)
         - name: ENABLE_DEBUG_REQUEST_LOGS
           value: "true"
+        # please use with caution, causes all input/output date to be stored in traces (uploaded files body)
+        - name: ENABLE_DEBUG_REQUEST_TRACES
+          value: "true"

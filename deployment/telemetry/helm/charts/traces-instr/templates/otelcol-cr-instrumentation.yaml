@@ -64,6 +64,14 @@ spec:
     # THIS DOESNT WORK !!!
     # - name: OTEL_TRACES_EXPORTER
     #   value: console
+
+  ###############################
+  # JAVA
+  ###############################
+  java:
+    env:
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: http://otelcol-traces-collector.monitoring-traces:4317  # 18 is for python, 17 (grpc is for java)
   ###############################
   # PYTHON
   ###############################

@@ -2,8 +2,12 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-python: "true"
         instrumentation.opentelemetry.io/inject-java: "true"
+        ### https://github.com/open-telemetry/opentelemetry-operator/blob/main/README.md#multi-container-pods-with-single-instrumentation
+        # Multiple for single container doesnt nor work !?!
+        # instrumentation.opentelemetry.io/inject-python: "true"
+        # instrumentation.opentelemetry.io/java-container-names: "torchserve"
+        # instrumentation.opentelemetry.io/python-container-names: "torchserve"
     spec:
       containers:
       - name: torchserve

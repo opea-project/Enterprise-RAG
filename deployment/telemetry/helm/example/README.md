@@ -75,6 +75,7 @@ time ./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --te
 # Install or reinstall(upgrade) individual components
 time ./install_chatqna.sh --tag $TAG --kind --auth --upgrade
 time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade
+time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade
 time ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly
 time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1
 

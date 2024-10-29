@@ -46,6 +46,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -76,10 +77,12 @@ const (
 )
 
 var (
-	OtelServiceName  = "router-service" // will be overwriteen by OTEL_SERVICE_NAME
-	OtelExcludedUrls = []string{}
-	debugRequestLogs = false
-	log              logr.Logger
+	OtelServiceName    = "router-service"    // will be overwriteen by OTEL_SERVICE_NAME
+	OtelNamespace      = "unknown-namespace" // will be overwriteen by OTEL_NAMESPACE
+	OtelExcludedUrls   = []string{}
+	debugRequestLogs   = false
+	debugRequestTraces = false
+	log                logr.Logger
 
 	jsonGraph       = flag.String("graph-json", "", "serialized json graph def")
 	mcGraph         *mcv1alpha3.GMConnector
@@ -299,6 +302,11 @@ func init() {
 		OtelServiceName = serviceNameFromEnv
 	}
 	println("otel: servicename:", OtelServiceName)
+	namespaceFromEnv, found := os.LookupEnv("OTEL_NAMESPACE")
+	if found {
+		OtelNamespace = namespaceFromEnv
+	}
+	println("otel: namespace:", OtelNamespace)
 	initMeter()
 	initLogs()
 	initTraces()
@@ -309,6 +317,13 @@ func init() {
 		debugRequestLogs = true
 	}
 	fmt.Println("debugRequestLogs:", debugRequestLogs)
+
+	// ENABLE_DEBUG_REQUEST_TRACES will enable debug traces (if "true")
+	debugTracesEnvStr, debugTracesEnvFound := os.LookupEnv("ENABLE_DEBUG_REQUEST_TRACES")
+	if debugTracesEnvFound && debugTracesEnvStr == "true" {
+		debugRequestTraces = true
+	}
+	fmt.Println("debugRequestTraces:", debugRequestTraces)
 }
 
 func (ReadCloser) Close() error {
@@ -326,7 +341,6 @@ func (e *GMCGraphRoutingError) Error() string {
 
 func timeTrack(ctx context.Context, start time.Time, nodeOrStep string, name string) {
 	elapsed := time.Since(start)
-	// log.Info("elapsed time", nodeOrStep, name, "time", elapsed)
 	otlpr.WithContext(log, ctx).Info("elapsed time", nodeOrStep, name, "time", elapsed)
 }
 
@@ -396,18 +410,15 @@ func callService(
 	defer func() { <-semaphore }()
 
 	defer timeTrack(ctx, time.Now(), "step", serviceUrl)
-	// log.Info("Entering callService", "url", serviceUrl)
 	otlpr.WithContext(log, ctx).Info("Entering callService", "url", serviceUrl)
 
 	// log the http header from the original request
 	if debugRequestLogs {
-		// log.Info("Print the http request headers", "HTTP_Header", headers)
 		otlpr.WithContext(log, ctx).Info("Print the http request headers", "HTTP_Header", headers)
 	}
 	if step.InternalService.Config != nil {
 		err := os.Setenv("no_proxy", step.InternalService.Config["no_proxy"])
 		if err != nil {
-			// log.Error(err, "Error setting environment variable", "no_proxy", step.InternalService.Config["no_proxy"])
 			otlpr.WithContext(log, ctx).Error(err, "Error setting environment variable", "no_proxy", step.InternalService.Config["no_proxy"])
 			return nil, 400, err
 		}
@@ -416,7 +427,6 @@ func callService(
 	//req, err := http.NewRequest("POST", serviceUrl, bytes.NewBuffer(input))
 	req, err := http.NewRequestWithContext(ctx, "POST", serviceUrl, bytes.NewBuffer(input))
 	if err != nil {
-		// log.Error(err, "An error occurred while preparing request object with serviceUrl.", "serviceUrl", serviceUrl)
 		otlpr.WithContext(log, ctx).Error(err, "An error occurred while preparing request object with serviceUrl.", "serviceUrl", serviceUrl)
 		return nil, 500, err
 	}
@@ -460,7 +470,6 @@ func callService(
 	}
 	resp, err := callClient.Do(req)
 	if err != nil {
-		// log.Error(err, "An error has occurred while calling service", "service", serviceUrl)
 		otlpr.WithContext(log, ctx).Error(err, "An error has occurred while calling service", "service", serviceUrl)
 		return nil, 500, err
 	}
@@ -499,7 +508,6 @@ func mergeRequests(ctx context.Context, respReq []byte, initReqData map[string]i
 
 	if _, exists := initReqData[Parameters]; exists {
 		if err := json.Unmarshal(respReq, &respReqData); err != nil {
-			// log.Error(err, "Error unmarshaling respReqData:")
 			otlpr.WithContext(log, ctx).Error(err, "Error unmarshaling respReqData:")
 			return nil
 		}
@@ -513,7 +521,6 @@ func mergeRequests(ctx context.Context, respReq []byte, initReqData map[string]i
 		}
 		mergedBytes, err := json.Marshal(respReqData)
 		if err != nil {
-			// log.Error(err, "Error marshaling merged data:")
 			otlpr.WithContext(log, ctx).Error(err, "Error marshaling merged data:")
 			return nil
 		}
@@ -537,14 +544,12 @@ func handleSwitchNode(
 	if route.NodeName != "" {
 		stepType = ServiceNode
 	}
-	// log.Info("Starting execution of step", "Node Name", route.NodeName, "type", stepType, "stepName", route.StepName)
 	otlpr.WithContext(log, ctx).Info("Starting execution of step", "Node Name", route.NodeName, "type", stepType, "stepName", route.StepName)
 	if responseBody, statusCode, err = executeStep(ctx, route, graph, initInput, request, headers); err != nil {
 		return nil, 500, err
 	}
 
 	if route.Dependency == mcv1alpha3.Hard && !isSuccessFul(statusCode) {
-		// log.Info("This step is a hard dependency and it is unsuccessful", "stepName", route.StepName, "statusCode", statusCode)
 		otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful", "stepName", route.StepName, "statusCode", statusCode)
 	}
 	return responseBody, statusCode, nil
@@ -566,14 +571,12 @@ func handleSwitchPipeline(
 
 	initReqData := make(map[string]interface{})
 	if err = json.Unmarshal(initInput, &initReqData); err != nil {
-		// log.Error(err, "Error unmarshaling initReqData:")
 		otlpr.WithContext(log, ctx).Error(err, "Error unmarshaling initReqData:")
 		return nil, 500, err
 	}
 
 	for index, route := range currentNode.Steps {
 		if route.InternalService.IsDownstreamService {
-			// log.Info("InternalService DownstreamService is true, skip the execution of step", "type", currentNode.RouterType, "stepName", route.StepName)
 			otlpr.WithContext(log, ctx).Info("InternalService DownstreamService is true, skip the execution of step", "type", currentNode.RouterType, "stepName", route.StepName)
 			continue
 		}
@@ -585,36 +588,30 @@ func handleSwitchPipeline(
 			}
 		}
 
-		// log.Info("Current Step Information", "Node Name", nodeName, "Step Index", index)
 		otlpr.WithContext(log, ctx).Info("Current Step Information", "Node Name", nodeName, "Step Index", index)
 		request := input
 		if responseBody != nil {
 			responseBytes, err = io.ReadAll(responseBody)
 			if err != nil {
-				// log.Error(err, "Error while reading the response body")
 				otlpr.WithContext(log, ctx).Error(err, "Error while reading the response body")
 				return nil, 500, err
 			}
 			if debugRequestLogs {
-				// log.Info("Print Previous Response Bytes", "Previous Response Bytes", responseBytes, "Previous Status Code", statusCode)
 				otlpr.WithContext(log, ctx).Info("Print Previous Response Bytes", "Previous Response Bytes", string(responseBytes[:]), "Previous Status Code", statusCode)
 			}
 			err = responseBody.Close()
 			if err != nil {
-				// log.Error(err, "Error while trying to close the responseBody in handleSwitchPipeline")
 				otlpr.WithContext(log, ctx).Error(err, "Error while trying to close the responseBody in handleSwitchPipeline")
 			}
 		}
 
 		if debugRequestLogs {
-			// log.Info("Print Original Request Bytes", "Request Bytes", request)
 			otlpr.WithContext(log, ctx).Info("Print Original Request Bytes", "Request Bytes", string(request[:]))
 		}
 		if route.Data == "$response" && index > 0 {
 			request = mergeRequests(ctx, responseBytes, initReqData)
 		}
 		if debugRequestLogs {
-			// log.Info("Print New Request Bytes", "Request Bytes", request)
 			otlpr.WithContext(log, ctx).Info("Print New Request Bytes", "Request Bytes", string(request[:]))
 		}
 		responseBody, statusCode, err = handleSwitchNode(ctx, &route, graph, initInput, request, headers)
@@ -642,7 +639,6 @@ func handleEnsemblePipeline(
 		if step.NodeName != "" {
 			stepType = ServiceNode
 		}
-		// log.Info("Starting execution of step", "type", stepType, "stepName", step.StepName)
 		otlpr.WithContext(log, ctx).Info("Starting execution of step", "type", stepType, "stepName", step.StepName)
 		resultChan := make(chan EnsembleStepOutput)
 		ensembleRes[i] = resultChan
@@ -651,7 +647,6 @@ func handleEnsemblePipeline(
 			if err == nil {
 				output, rerr := io.ReadAll(responseBody)
 				if rerr != nil {
-					// log.Error(rerr, "Error while reading the response body")
 					otlpr.WithContext(log, ctx).Error(rerr, "Error while reading the response body")
 				}
 				var res map[string]interface{}
@@ -665,7 +660,6 @@ func handleEnsemblePipeline(
 			}
 			rerr := responseBody.Close()
 			if rerr != nil {
-				// log.Error(rerr, "Error while trying to close the responseBody in handleEnsemblePipeline")
 				otlpr.WithContext(log, ctx).Error(rerr, "Error while trying to close the responseBody in handleEnsemblePipeline")
 			}
 			errChan <- err
@@ -682,7 +676,6 @@ func handleEnsemblePipeline(
 		select {
 		case ensembleStepOutput = <-resultChan:
 			if !isSuccessFul(ensembleStepOutput.StepStatusCode) && currentNode.Steps[i].Dependency == mcv1alpha3.Hard {
-				// log.Info("This step is a hard dependency and it is unsuccessful", "stepName", currentNode.Steps[i].StepName, "statusCode", ensembleStepOutput.StepStatusCode)
 				otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful", "stepName", currentNode.Steps[i].StepName, "statusCode", ensembleStepOutput.StepStatusCode)
 				stepResponse, _ := json.Marshal(ensembleStepOutput.StepResponse)
 				stepIOReader := NewReadCloser(stepResponse)
@@ -716,48 +709,52 @@ func handleSequencePipeline(
 
 	initReqData := make(map[string]interface{})
 	if err = json.Unmarshal(initInput, &initReqData); err != nil {
-		// log.Error(err, "Error unmarshaling initReqData:")
 		otlpr.WithContext(log, ctx).Error(err, "Error unmarshaling initReqData:")
 		return nil, 500, err
 	}
 	for i := range currentNode.Steps {
 
 		stepStartTime := time.Now()
-		stepTracer := otel.GetTracerProvider().Tracer("steptracer")
+		stepTracer := otel.GetTracerProvider().Tracer(OtelNamespace + "/steptracer")
 
 		step := &currentNode.Steps[i]
 		stepType := ServiceURL
 		if step.NodeName != "" {
 			stepType = ServiceNode
 		}
-		ctx, stepSpan := stepTracer.Start(ctx, "step "+step.StepName)
-		stepSpan.SetAttributes(attribute.String("stepType", stepType), attribute.String("stepName", step.StepName))
 		if step.InternalService.IsDownstreamService {
-			// log.Info("InternalService DownstreamService is true, skip the execution of step", "type", stepType, "stepName", step.StepName)
 			otlpr.WithContext(log, ctx).Info("InternalService DownstreamService is true, skip the execution of step", "type", stepType, "stepName", step.StepName)
 			continue
 		}
-		// log.Info("Starting execution of step", "type", stepType, "stepName", step.StepName)
+		ctx, stepSpan := stepTracer.Start(ctx, "step "+step.StepName)
+		stepSpan.SetAttributes(attribute.String("stepType", stepType), attribute.String("stepName", step.StepName))
 		otlpr.WithContext(log, ctx).Info("Starting execution of step", "type", stepType, "stepName", step.StepName)
 		request := input
 		if debugRequestLogs {
-			// log.Info("Print Original Request Bytes", "Request Bytes", request)
 			otlpr.WithContext(log, ctx).Info("Print Original Request Bytes", "Request Bytes", string(request[:]))
 		}
+
 		if responseBody != nil {
 			responseBytes, err = io.ReadAll(responseBody)
 			if err != nil {
-				// log.Error(err, "Error while reading the response body")
 				otlpr.WithContext(log, ctx).Error(err, "Error while reading the response body")
+				stepSpan.RecordError(err)
+				stepSpan.SetStatus(codes.Error, err.Error())
+				if debugRequestTraces {
+					stepSpan.SetAttributes(attribute.String("failed response", string(responseBytes[:])))
+				}
+				stepSpan.End()
 				return nil, 500, err
 			}
 			if debugRequestLogs {
-				// log.Info("Print Previous Response Bytes", "Previous Response Bytes", responseBytes, "Previous Status Code", statusCode)
 				otlpr.WithContext(log, ctx).Info("Print Previous Response Bytes", "Previous Response Bytes", string(responseBytes[:]), "Previous Status Code", statusCode)
 			}
+			if debugRequestTraces {
+				stepSpan.SetAttributes(attribute.String("previous response", string(responseBytes[:])))
+			}
+			stepSpan.SetAttributes(attribute.Int("previous response size bytes", len(responseBytes)))
 			err := responseBody.Close()
 			if err != nil {
-				// log.Error(err, "Error while trying to close the responseBody in handleSequencePipeline")
 				otlpr.WithContext(log, ctx).Error(err, "Error while trying to close the responseBody in handleSequencePipeline")
 			}
 		}
@@ -766,12 +763,19 @@ func handleSequencePipeline(
 			request = mergeRequests(ctx, responseBytes, initReqData)
 		}
 		if debugRequestLogs {
-			// log.Info("Print New Request Bytes", "Request Bytes", request)
 			otlpr.WithContext(log, ctx).Info("Print New Request Bytes", "Request Bytes", string(request[:]))
 		}
+		if debugRequestTraces {
+			stepSpan.SetAttributes(attribute.String("new request", string(request[:])))
+		}
+		stepSpan.SetAttributes(attribute.Int("request.size.bytes", len(request)))
 		if step.Condition != "" {
 			if !gjson.ValidBytes(responseBytes) {
-				return nil, 500, fmt.Errorf("invalid response")
+				invalidBytesError := fmt.Errorf("invalid response")
+				stepSpan.RecordError(err)
+				stepSpan.SetStatus(codes.Error, invalidBytesError.Error())
+				stepSpan.End()
+				return nil, 500, invalidBytesError
 			}
 			// if the condition does not match for the step in the sequence we stop and return the response
 			if !gjson.GetBytes(responseBytes, step.Condition).Exists() {
@@ -779,6 +783,9 @@ func handleSequencePipeline(
 			}
 		}
 		if responseBody, statusCode, err = executeStep(ctx, step, graph, initInput, request, headers); err != nil {
+			stepSpan.RecordError(err)
+			stepSpan.SetStatus(codes.Error, err.Error())
+			stepSpan.End()
 			return nil, 500, err
 		}
 
@@ -793,9 +800,12 @@ func handleSequencePipeline(
 		*/
 		if step.Dependency == mcv1alpha3.Hard {
 			if !isSuccessFul(statusCode) {
-				// log.Info("This step is a hard dependency and it is unsuccessful", "stepName", step.StepName, "statusCode", statusCode)
-				otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful", "stepName", step.StepName, "statusCode", statusCode)
 				// Stop the execution of sequence right away if step is a hard dependency and is unsuccessful
+				otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful. Stop pipeline execution.", "stepName", step.StepName, "statusCode", statusCode)
+				// err is nil here, so we cannot record any details about this unsuccesful response without parsing the responseBody.
+				err := fmt.Errorf("This step (stepName=%s) is a hard dependency and it is unsuccessful with statusCode=%d. Stop pipeline execution.", step.StepName, statusCode)
+				stepSpan.RecordError(err)
+				stepSpan.SetStatus(codes.Error, err.Error())
 				stepSpan.End()
 				return responseBody, statusCode, nil
 			}
@@ -814,7 +824,6 @@ func routeStep(
 ) (io.ReadCloser, int, error) {
 	defer timeTrack(ctx, time.Now(), "node", nodeName)
 	currentNode := graph.Spec.Nodes[nodeName]
-	// log.Info("Current Node", "Node Name", nodeName)
 	otlpr.WithContext(log, ctx).Info("Current Node", "Node Name", nodeName)
 
 	if currentNode.RouterType == mcv1alpha3.Switch {
@@ -828,7 +837,6 @@ func routeStep(
 	if currentNode.RouterType == mcv1alpha3.Sequence {
 		return handleSequencePipeline(ctx, nodeName, graph, initInput, input, headers)
 	}
-	// log.Error(nil, "invalid route type", "type", currentNode.RouterType)
 	otlpr.WithContext(log, ctx).Error(nil, "invalid route type", "type", currentNode.RouterType)
 	return nil, 500, fmt.Errorf("invalid route type: %v", currentNode.RouterType)
 }
@@ -841,64 +849,91 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 	go func() {
 		defer close(done)
 
-		mainTracer := otel.GetTracerProvider().Tracer("graphtracer")
-		_, span := mainTracer.Start(ctx, "read initial request")
+		mainTracer := otel.GetTracerProvider().Tracer(OtelNamespace + "graphtracer")
+		_, spanReadInitialRequest := mainTracer.Start(ctx, "read initial request")
+
+		// Return x-trace-id to the user, for debbugging purposes
+		w.Header().Set("x-trace-id", spanReadInitialRequest.SpanContext().TraceID().String())
 
 		// ### Example event
 		// uk := attribute.Key("foo")
 		// bag := baggage.FromContext(ctx)
-		// span.AddEvent("handling this...", trace.WithAttributes(uk.String(bag.Member("bar").Value())))
-		// ### Example log entry
-		// otlpr.WithContext(log, ctx).Info("Example entry log with some data", "foz", "baz")
+		// spanReadInitialRequest.AddEvent("handling this...", trace.WithAttributes(uk.String(bag.Member("bar").Value())))
 
+		// ---------------------- ReadRequestBody
 		allTokensStartTime := time.Now()
 		inputBytes, err := io.ReadAll(req.Body)
 		if err != nil {
 			otlpr.WithContext(log, ctx).Error(err, "failed to read request body")
+			spanReadInitialRequest.RecordError(err)
+			spanReadInitialRequest.SetStatus(codes.Error, err.Error())
+			spanReadInitialRequest.End()
 			http.Error(w, "failed to read request body", http.StatusBadRequest)
 			return
 		}
 		if debugRequestLogs {
-			// log.Info("Print the http request headers", "HTTP_Header", headers)
 			otlpr.WithContext(log, ctx).Info("Data from input request", "inputBytes", string(inputBytes[:]))
 		}
-		span.SetAttributes(attribute.Int("initial request body size", len(inputBytes)))
-		span.End()
+		if debugRequestTraces {
+			spanReadInitialRequest.SetAttributes(attribute.String("initial request", string(inputBytes[:])))
+		}
+		spanReadInitialRequest.SetAttributes(attribute.Int("initial request body size", len(inputBytes)))
+		spanReadInitialRequest.End()
 
-		allStepsCtx, span := mainTracer.Start(ctx, "router all steps") // this context will be used for callClient instrumenation (POSTs)
+		// ---------------------- RouterAllSteps
+		allStepsCtx, spanRouterAllSteps := mainTracer.Start(ctx, "router all steps") // this context will be used for callClient instrumenation (POSTs)
 		responseBody, statusCode, err := routeStep(allStepsCtx, defaultNodeName, *mcGraph, inputBytes, inputBytes, req.Header)
 		pipeLatencyMilliseconds := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
 		pipelineLatencyMeasure.Record(ctx, pipeLatencyMilliseconds)
 
-		span.SetAttributes(attribute.Int("last_step.statusCode", statusCode))
-		span.SetAttributes(attribute.Float64("llm.pipeline.latency.ms", pipeLatencyMilliseconds))
-
-		span.End()
+		spanRouterAllSteps.SetAttributes(attribute.Int("last_step.statusCode", statusCode))
+		spanRouterAllSteps.SetAttributes(attribute.Float64("llm.pipeline.latency.ms", pipeLatencyMilliseconds))
 
 		if statusCode == 466 { // Guardrails code!
-			log.Error(err, "Guardrails activated!")
+			// Info: statusCode != 200 is unrealted to err being nil or not and for Guardrails err is nil
+			otlpr.WithContext(log, ctx).Info("Guardrails activated!")
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(statusCode)
-			respBytes, _ := io.ReadAll(responseBody)
+			respBytes, err := io.ReadAll(responseBody)
+			if debugRequestLogs {
+				otlpr.WithContext(log, ctx).Info("Print the http response body", "body", string(respBytes[:]))
+			}
+			if debugRequestTraces {
+				spanRouterAllSteps.SetAttributes(attribute.String("response body", string(respBytes[:])))
+			}
+			if err != nil {
+				otlpr.WithContext(log, ctx).Error(err, "failed to read all request body from guardrails")
+				spanRouterAllSteps.RecordError(err)
+				spanRouterAllSteps.SetStatus(codes.Error, err.Error())
+				spanRouterAllSteps.End()
+				http.Error(w, "failed to read request body", http.StatusBadRequest)
+				return
+			}
+
 			w.Write(prepareErrorResponse(err, string(respBytes)))
+			spanRouterAllSteps.End()
 			return
 		}
 
 		if err != nil {
-			//log.Error(err, "failed to process request")
 			otlpr.WithContext(log, ctx).Error(err, "failed to process request")
+			spanRouterAllSteps.RecordError(err)
+			spanRouterAllSteps.SetStatus(codes.Error, err.Error())
+			spanRouterAllSteps.End()
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(statusCode)
 			if _, err := w.Write(prepareErrorResponse(err, "Failed to process request")); err != nil {
-				// log.Error(err, "failed to write mcGraphHandler response")
 				otlpr.WithContext(log, ctx).Error(err, "failed to write mcGraphHandler response")
 			}
 			return
 		}
+
+		// Close span if there was not err and not guardarils were activated
+		spanRouterAllSteps.End() // end "router all steps" span
+
 		defer func() {
 			err := responseBody.Close()
 			if err != nil {
-				// log.Error(err, "Error while trying to close the responseBody in mcGraphHandler")
 				otlpr.WithContext(log, ctx).Error(err, "Error while trying to close the responseBody in mcGraphHandler")
 			}
 		}()
@@ -909,7 +944,8 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		nextTokenLatencyTotal := 0.0
 		nextTokenLatencyCount := 0.0
 		buffer := make([]byte, BufferSize)
-		ctx, spanFor := mainTracer.Start(ctx, "tokens")
+		// ---------------------- Tokens
+		ctx, spanTokens := mainTracer.Start(ctx, "tokens")
 		for {
 
 			// DETAILED spans (disabled because number of tokens generated!)
@@ -934,8 +970,10 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			}
 
 			if err != nil && err != io.EOF {
-				// log.Error(err, "failed to read from response body")
 				otlpr.WithContext(log, ctx).Error(err, "failed to read from response body")
+				spanTokens.RecordError(err)
+				spanTokens.SetStatus(codes.Error, err.Error())
+				spanTokens.End()
 				http.Error(w, "failed to read from response body", http.StatusInternalServerError)
 				return
 			}
@@ -944,25 +982,23 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			}
 
 			// Write the chunk to the ResponseWriter
-
-			// DETAILED spans (disabled because number of tokens generated!)
-			// _, span = mainTracer.Start(ctx, "reponse write partial")
-
-			// measure time of reading another portion of response
 			if _, err := w.Write(buffer[:n]); err != nil {
-				// log.Error(err, "failed to write to ResponseWriter")
 				otlpr.WithContext(log, ctx).Error(err, "failed to write to ResponseWriter")
+				spanTokens.RecordError(err)
+				spanTokens.SetStatus(codes.Error, err.Error())
+				spanTokens.End()
 				return
 			}
-
-			// span.End() // "response write partial"
 
 			// Flush the data to the client immediately
 			if flusher, ok := w.(http.Flusher); ok {
 				flusher.Flush()
 			} else {
-				// log.Error(errors.New("unable to flush data"), "ResponseWriter does not support flushing")
-				otlpr.WithContext(log, ctx).Error(errors.New("unable to flush data"), "ResponseWriter does not support flushing")
+				err := errors.New("unable to flush data")
+				otlpr.WithContext(log, ctx).Error(err, "ResponseWriter does not support flushing")
+				spanTokens.RecordError(err)
+				spanTokens.SetStatus(codes.Error, err.Error())
+				spanTokens.End()
 				return
 			}
 		}
@@ -970,22 +1006,24 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		// Statisitcs for metrics and traces attributes
 		allTokensElapsedTimeMilisecond := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
 		allTokenLatencyMeasure.Record(ctx, allTokensElapsedTimeMilisecond)
-		spanFor.SetAttributes(attribute.Float64("llm.first.token.latency.ms", firstTokenLatencyMilliseconds))
-		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.total.ms", nextTokenLatencyTotal))
-		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.count", nextTokenLatencyCount))
-		spanFor.SetAttributes(attribute.Float64("llm.next.token.latency.avg.ms", nextTokenLatencyTotal/nextTokenLatencyCount))
-		spanFor.SetAttributes(attribute.Float64("llm.all.token.latency.ms", allTokensElapsedTimeMilisecond))
-		spanFor.End()
+		spanTokens.SetAttributes(attribute.Float64("llm.first.token.latency.ms", firstTokenLatencyMilliseconds))
+		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.total.ms", nextTokenLatencyTotal))
+		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.count", nextTokenLatencyCount))
+		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.avg.ms", nextTokenLatencyTotal/nextTokenLatencyCount))
+		spanTokens.SetAttributes(attribute.Float64("llm.all.token.latency.ms", allTokensElapsedTimeMilisecond))
+		if debugRequestTraces {
+			spanTokens.SetAttributes(attribute.String("response buffer", string(buffer[:])))
+		}
+		spanTokens.SetStatus(codes.Ok, "response send")
+		spanTokens.End()
 
 	}()
 
 	select {
 	case <-ctx.Done():
-		// log.Error(errors.New("request timed out"), "failed to process request")
 		otlpr.WithContext(log, ctx).Error(errors.New("request timed out"), "failed to process request")
 		http.Error(w, "request timed out", http.StatusGatewayTimeout)
 	case <-done:
-		// log.Info("mcGraphHandler is done")
 		otlpr.WithContext(log, ctx).Info("mcGraphHandler is done")
 	}
 }
@@ -1001,10 +1039,8 @@ func mcDataHandler(w http.ResponseWriter, r *http.Request) {
 			if serviceName != "" && serviceName != step.InternalService.ServiceName {
 				continue
 			}
-			// log.Info("Starting execution of step", "stepName", step.StepName)
 			otlpr.WithContext(log, ctx).Info("Starting execution of step", "stepName", step.StepName)
 			serviceURL := getServiceURLByStepTarget(step, mcGraph.Namespace)
-			// log.Info("ServiceURL is", "serviceURL", serviceURL)
 			otlpr.WithContext(log, ctx).Info("ServiceURL is", "serviceURL", serviceURL)
 			// Parse the multipart form in the request
 			// err := r.ParseMultipartForm(64 << 20) // 64 MB is the default used by ParseMultipartForm
@@ -1040,7 +1076,6 @@ func mcDataHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					defer func() {
 						if err := file.Close(); err != nil {
-							// log.Error(err, "error closing file")
 							otlpr.WithContext(log, ctx).Error(err, "error closing file")
 						}
 					}()
@@ -1085,7 +1120,6 @@ func mcDataHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			defer func() {
 				if err := resp.Body.Close(); err != nil {
-					// log.Error(err, "error closing response body stream")
 					otlpr.WithContext(log, ctx).Error(err, "error closing response body stream")
 				}
 			}()
@@ -1099,7 +1133,6 @@ func mcDataHandler(w http.ResponseWriter, r *http.Request) {
 			// Copy the response body from the backend service to the original client
 			_, err = io.Copy(w, resp.Body)
 			if err != nil {
-				// log.Error(err, "failed to copy response body")
 				otlpr.WithContext(log, ctx).Error(err, "failed to copy response body")
 			}
 			isDataHandled = true
@@ -1110,7 +1143,6 @@ func mcDataHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(404)
 		if _, err := w.Write([]byte("\n Message: None dataprep endpoint is available! \n")); err != nil {
-			// log.Info("Message: ", "failed to write mcDataHandler response")
 			otlpr.WithContext(log, ctx).Info("Message: ", "failed to write mcDataHandler response")
 		}
 	}
@@ -1154,11 +1186,11 @@ func initializeRoutes() *http.ServeMux {
 		// mux.Handle(pattern, http.HandlerFunc(handlerFunc))
 	}
 
-	handleFunc("/", mcGraphHandler, "mcGraphHandler")
-	handleFunc("/dataprep", mcDataHandler, "mcDataHandler")
+	handleFunc("/", mcGraphHandler, OtelNamespace+"/mcGraphHandler")
+	handleFunc("/dataprep", mcDataHandler, OtelNamespace+"/mcDataHandler")
 
 	promHandler := promhttp.Handler()
-	handleFunc("/metrics", promHandler.ServeHTTP, "metrics")
+	handleFunc("/metrics", promHandler.ServeHTTP, OtelNamespace+"metrics")
 	log.Info("Metrics exposed on /metrics.", "version", OtelVersion)
 
 	return mux

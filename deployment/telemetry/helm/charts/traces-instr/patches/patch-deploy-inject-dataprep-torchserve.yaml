@@ -2,8 +2,10 @@ spec:
   template:
     metadata:
       annotations:
-        instrumentation.opentelemetry.io/inject-python: "true"
         instrumentation.opentelemetry.io/inject-java: "true"
+        # instrumentation.opentelemetry.io/inject-python: "true"
+        # instrumentation.opentelemetry.io/java-container-names: "torchserve"
+        # instrumentation.opentelemetry.io/python-container-names: "torchserve"
     spec:
       containers:
       - name: torchserve

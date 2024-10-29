@@ -48,13 +48,10 @@ WORKDIR /home/user/comps/embeddings
 # langchain
 FROM base AS langchain
 
-ARG ARCH="cpu"
-
 WORKDIR /home/user
 COPY ./comps/embeddings/impl/microservice/requirements/langchain.txt /tmp/langchain-requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    if [ ${ARCH} = "cpu" ]; then pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu; fi && \
     pip install --no-cache-dir -r /tmp/langchain-requirements.txt
 
 WORKDIR /home/user/comps/embeddings

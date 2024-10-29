@@ -19,18 +19,17 @@ RUN apt-get -y update                           \
  && apt-get clean
 
 RUN pip install --no-cache-dir -U   \
-    sentence_transformers==3.1.1    \
-    transformers==4.45              \
-    diffusers==0.30.3               \
+    sentence_transformers==3.2.1    \
+    transformers==4.46              \
     accelerate==0.34.2
 
 RUN python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 
 # Install TorchServe pypi dependencies directly from their requirements.txt file
-RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.11.0/requirements/common.txt \
+RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.12.0/requirements/common.txt \
  && pip install --no-cache-dir -U   \
-    torchserve==0.11.0              \
-    torch-model-archiver==0.11.0
+    torchserve==0.12.0              \
+    torch-model-archiver==0.12.0
 
 # create user and folders
 RUN useradd -m model-server                                 \

@@ -12,18 +12,39 @@ import {
   useRef,
   useState,
 } from "react";
+import * as Yup from "yup";
+import { ValidationError } from "yup";
+
+import {
+  fileNameImproperCharacters,
+  unsupportedFileExtension,
+} from "@/utils/validators";
 
 const acceptedFileTypes =
   ".pdf,.html,.txt,.doc,.docx,.ppt,.pptx,.md,.xml,.json,.jsonl,.yaml,.xls,.xlsx,.csv";
 const acceptedFileTypesArray = acceptedFileTypes.split(",");
 
-const validateDocuments = (documents: File[] | FileList) => {
-  const hasSupportedExtension = Array.from(documents).every((doc) =>
-    acceptedFileTypesArray.some((type) => doc.name.endsWith(type)),
-  );
-  return documents.length > 0 && hasSupportedExtension
-    ? ""
-    : "Some of the files you are trying to upload are in an unsupported format. Please try again";
+const validationSchema = Yup.array().of(
+  Yup.mixed()
+    .test(
+      "unsupported-file-extension",
+      "Some of the files you are trying to upload are in an unsupported format. Please try again",
+      unsupportedFileExtension(acceptedFileTypesArray),
+    )
+    .test(
+      "improper-characters",
+      "Some of the files you are trying to upload have improper characters. Please try again",
+      fileNameImproperCharacters(),
+    ),
+);
+
+const validateDocuments = async (documents: File[] | FileList) => {
+  try {
+    await validationSchema.validate(Array.from(documents));
+    return "";
+  } catch (error) {
+    return (error as ValidationError).message;
+  }
 };
 
 interface DocumentsFileInputProps {
@@ -38,11 +59,11 @@ const DocumentsFileInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleFileInputDrop = (event: DragEvent) => {
+  const handleFileInputDrop = async (event: DragEvent) => {
     event.preventDefault();
     if (!disabled) {
       const newFiles = [...event.dataTransfer.files];
-      const validationMessage = validateDocuments(newFiles);
+      const validationMessage = await validateDocuments(newFiles);
       setErrorMessage(validationMessage);
       if (validationMessage === "") {
         setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
@@ -58,11 +79,13 @@ const DocumentsFileInput = ({
     fileInputRef.current!.click();
   };
 
-  const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const newFiles = event.target.files;
 
     if (newFiles) {
-      const validationMessage = validateDocuments(newFiles);
+      const validationMessage = await validateDocuments(newFiles);
       setErrorMessage(validationMessage);
       if (validationMessage === "") {
         setDocuments((prevFiles) => [...prevFiles, ...newFiles]);

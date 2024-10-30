@@ -1,3 +1,6 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
 import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
 

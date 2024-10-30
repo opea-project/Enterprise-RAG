@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 beanie==1.26.0
 motor==3.4.0
 aiohttp==3.10.2

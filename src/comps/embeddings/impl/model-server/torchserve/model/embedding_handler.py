@@ -1,4 +1,5 @@
 # Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 """
 EmbeddingHandler is a custom handler for processing embedding models using TorchServe.
 
@@ -27,7 +28,6 @@ Methods:
     postprocess(inference_output):
         Postprocesses the inference output to return the final result.
 """
-# SPDX-License-Identifier: Apache-2.0
 
 import logging
 import os

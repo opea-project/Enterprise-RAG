@@ -1,2 +1,5 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 pytest==7.4.4 # MIT
 allure-pytest==2.13.5 # Apache 2.0

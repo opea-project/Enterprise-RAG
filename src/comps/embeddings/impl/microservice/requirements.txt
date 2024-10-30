@@ -1,3 +1,6 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 docarray[full]==0.40.0
 fastapi==0.111.0
 huggingface_hub==0.23.4

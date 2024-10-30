@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import inspect
+import time
 
 from typing import Optional
 
@@ -50,6 +51,7 @@ class HTTPService(BaseService):
         cors: Optional[bool] = True,
         startup_methods: Optional[list] = None,
         close_methods: Optional[list] = None,
+        validate_methods: Optional[list] = None,
         **kwargs,
     ):
         """Initialize the HTTPService
@@ -68,6 +70,10 @@ class HTTPService(BaseService):
         if self.startup_methods is not None and isinstance(self.startup_methods, list) or \
            self.close_methods is not None and isinstance(self.close_methods, list):
             self.lifespan_func = generate_lifespan(self.startup_methods, self.close_methods)
+
+        self.last_time_third_party_validated = 0
+        self.TIMEFRAME_FOR_CHECKS = 10*60 # 10 minutes
+        self.validate_methods = validate_methods
 
         self._app = self._create_app()
         Instrumentator().instrument(self._app, latency_lowr_buckets=(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 7.5, 10, 30, 60)).expose(self._app)
@@ -102,8 +108,19 @@ class HTTPService(BaseService):
             summary="Get the status of GenAI microservice",
             tags=["Debug"],
         )
+
         async def _health_check():
             """Get the health status of this GenAI microservice."""
+            if self.last_time_third_party_validated == 0 or time.time() - self.last_time_third_party_validated > self.TIMEFRAME_FOR_CHECKS:
+                self.last_time_third_party_validated = time.time()
+                if self.validate_methods is not None and isinstance(self.validate_methods, list):
+                    for method in self.validate_methods:
+                        if inspect.iscoroutinefunction(method):
+                            await method()
+                        else:
+                            method()
+
+            self.logger.debug(f"Health check successful. Last time since third party validation: {round(time.time() - self.last_time_third_party_validated, 2)} sec ago.")
             return {"Service Title": self.title, "Service Description": self.description}
 
         @app.get(

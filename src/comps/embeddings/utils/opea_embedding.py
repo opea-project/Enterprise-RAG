@@ -119,6 +119,7 @@ class OPEAEmbedding:
             from comps.embeddings.utils.wrappers import wrapper_langchain
             self.embed_query = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
             self.embed_documents = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
+            self.validate_method = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
         except ModuleNotFoundError:
             logger.exception("langchain module not found. Ensure it is installed if you need its functionality.")
             raise
@@ -131,6 +132,7 @@ class OPEAEmbedding:
             from comps.embeddings.utils.wrappers import wrapper_llamaindex
             self.embed_query = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
             self.embed_documents = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
+            self.validate_method = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
         except ModuleNotFoundError:
             logger.exception("llama_index module not found. Ensure it is installed if you need its functionality.")
             raise

@@ -53,6 +53,7 @@ opea_embedding = OPEAEmbedding(
     port=int(os.getenv('EMBEDDING_USVC_PORT', default=6000)),
     input_datatype=Union[TextDoc, TextDocList],
     output_datatype=Union[EmbedDoc, EmbedDocList],
+    validate_methods=[opea_embedding.validate_method]
 )
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.

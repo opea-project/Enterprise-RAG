@@ -33,6 +33,7 @@ class MicroService:
         use_remote_service: Optional[bool] = False,
         startup_methods: Optional[list] = None,
         close_methods: Optional[list] = None,
+        validate_methods: Optional[list] = None,
     ):
         """Init the microservice."""
         self.name = f"{name}/{self.__class__.__name__}" if name else self.__class__.__name__
@@ -47,6 +48,7 @@ class MicroService:
         self.use_remote_service = use_remote_service
         self.startup_methods = startup_methods
         self.close_methods = close_methods
+        self.validate_methods = validate_methods
         self.uvicorn_kwargs = {}
 
         if ssl_keyfile:
@@ -92,7 +94,8 @@ class MicroService:
             "description": "OPEA Microservice Infrastructure",
         }
 
-        return HTTPService(uvicorn_kwargs=self.uvicorn_kwargs, startup_methods=self.startup_methods, close_methods=self.close_methods, runtime_args=runtime_args)
+        return HTTPService(uvicorn_kwargs=self.uvicorn_kwargs, startup_methods=self.startup_methods,
+                           close_methods=self.close_methods, validate_methods=self.validate_methods, runtime_args=runtime_args)
 
     async def _async_setup(self):
         """The async method setup the runtime.
@@ -160,6 +163,7 @@ def register_microservice(
     provider_endpoint: Optional[str] = None,
     startup_methods: Optional[list] = None,
     close_methods: Optional[list] = None,
+    validate_methods: Optional[list] = None,
 ):
     def decorator(func):
         if opea_microservices.get(name):
@@ -186,6 +190,7 @@ def register_microservice(
                 provider_endpoint=provider_endpoint,
                 startup_methods=startup_methods,
                 close_methods=close_methods,
+                validate_methods=validate_methods,
             )
             opea_microservices[name] = micro_service
 

@@ -102,7 +102,7 @@ class EmbeddingWrapper(ABC):
         """
         try:
             self.embed_query("test")
-            logger.info("Embedder initialized successfully.")
+            logger.info("Embedder model server validated successfully.")
         except RuntimeError as e:
             logger.exception(f"Error initializing the embedder: {e}")
             raise

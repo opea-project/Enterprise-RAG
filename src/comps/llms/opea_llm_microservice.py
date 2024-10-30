@@ -50,7 +50,8 @@ opea_llm = OPEALlm(
     host='0.0.0.0',
     port=int(os.getenv('LLM_USVC_PORT', default=9000)),
     input_datatype=LLMParamsDoc,
-    output_datatype=Response, # can be either "comps.GeneratedDoc" for non-streaming mode, or "fastapi.responses.StreamingResponse" for streaming mode 
+    output_datatype=Response, # can be either "comps.GeneratedDoc" for non-streaming mode, or "fastapi.responses.StreamingResponse" for streaming mode
+    validate_methods=[opea_llm._connector._validate]
 )
 @register_statistics(names=[USVC_NAME])
 @traceable(run_type="llm")

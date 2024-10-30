@@ -28,6 +28,12 @@ def mock_get_connector():
       yield MockClass
 
 @pytest.fixture
+def mock_validate_config():
+   with patch('comps.llms.utils.opea_llm.OPEALlm._validate_config', autospec=True) as MockClass:
+      MockClass.return_value = MagicMock()
+      yield MockClass
+
+@pytest.fixture
 def mock_cores_mega_microservice():
    with patch('comps.cores.mega.micro_service', autospec=True) as MockClass:
       MockClass.return_value = MagicMock()
@@ -51,9 +57,8 @@ def mock_OPEALlm():
       MockClass.return_value = None
       yield MockClass
 
-
 @patch('dotenv.load_dotenv')
-def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, mock_OPEALlm, mock_cores_mega_microservice):
+def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, mock_get_connector, mock_validate_config, mock_cores_mega_microservice):
    try:
       import comps.llms.opea_llm_microservice as test_module
       importlib.reload(test_module)

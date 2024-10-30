@@ -93,7 +93,7 @@ To build and start the services using Docker Compose:
 ```bash
 cd docker
 
-docker compose up --build -d
+docker compose --env-file=.env up --build -d
 ```
 
 #### 2.3. Verify the Services

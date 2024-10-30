@@ -123,6 +123,10 @@ Telemetry including following components:
     - opentelemetry-collector
     - (optional) OpenSearch
     - (optional) promtail
+  - traces (subchart):
+    - opentelemetry-operator
+    - tempo 
+    - (optional) Jaeger
   - prometheus-redis-exporter
   - kube-prometheus-stack:
     - Prometheus operator
@@ -135,20 +139,8 @@ Telemetry including following components:
       - grafana
       - kube-state-metrics
       - prometheus-node-exporter
-	
-
-Note: Redis dashboard is based on:
-```
-cd helm
-curl -sL https://raw.githubusercontent.com/oliver006/redis_exporter/master/contrib/grafana_prometheus_redis_dashboard.json -o files/dashboards/redis-dashboard.json
-head files/dashboards/redis-dashboard.json
-```
-
-#### Update HABANA Prometheus exporter
-```
-cd templates/habana-exporter
-wget https://vault.habana.ai/artifactory/gaudi-metric-exporter/yaml/1.17.0/metric-exporter-daemonset.yaml -O metric-exporter-daemonset.yaml
-```
+- (optional) metric-server	
+- (optional) pcm-sensor-server
 
 ### Extra additions
 

@@ -92,6 +92,7 @@ otelcol-logs:
             # extra metadata
             - set(resource.attributes["journald.transport"], body["_TRANSPORT"])
             - set(resource.attributes["journald.unit"], body["_SYSTEMD_UNIT"])
+            - set(resource.attributes["service.name"], body["_SYSTEMD_UNIT"])
             - set(resource.attributes["journald.cmd"], body["_CMD"])
             - set(resource.attributes["journald.exe"], body["_EXE"])
             - set(resource.attributes["journald.cmdline"], body["_CMDLINE"])
@@ -108,6 +109,9 @@ otelcol-logs:
         - key: "k8s.namespace.name"
           action: insert
           value: "JOURNALCTL"
+        - key: "service.name"
+          action: insert
+          from_attribute: "resource.attributes.service.name"
       # Try to infer k8s.node.name using k8snode detector from "resource detection" processor.
       # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
       resourcedetection:

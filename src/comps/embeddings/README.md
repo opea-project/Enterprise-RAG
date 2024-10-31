@@ -1,5 +1,3 @@
-TODO: modify README for embedding microservice's docker information
-
 # Embeddings Microservice
 
 The Embedding Microservice is designed to efficiently convert textual strings into vectorized embeddings, facilitating seamless integration into various machine learning and data processing workflows. This service utilizes advanced algorithms to generate high-quality embeddings that capture the semantic essence of the input text, making it ideal for applications in natural language processing, information retrieval, and similar fields.

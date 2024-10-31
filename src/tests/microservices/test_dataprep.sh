@@ -23,6 +23,7 @@ function start_service() {
         --ipc=host \
         -e http_proxy=$http_proxy \
         -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         ${MICROSERVICE_IMAGE_NAME}
     sleep 10s
 }

@@ -34,10 +34,16 @@ function build_docker_images() {
 function start_service() {
 
     docker run -d --name ${REDIS_CONTAINER_NAME} \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -p ${REDIS_PORT}:${REDIS_PORT} \
         ${REDIS_IMAGE_NAME}
 
     docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -e VECTOR_STORE=redis \
         --ipc=host \
         -e REDIS_URL="redis://${IP_ADDRESS}:${REDIS_PORT}" \

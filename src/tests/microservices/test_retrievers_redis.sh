@@ -47,6 +47,9 @@ function start_service() {
 
     # Ingestion
     docker run -d --name ${INGESTION_CONTAINER_NAME} \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -e VECTOR_STORE=redis \
         --ipc=host \
         -e REDIS_URL="redis://${IP_ADDRESS}:${REDIS_PORT}" \
@@ -55,6 +58,9 @@ function start_service() {
 
     # Retriever
     docker run -d --name=${RETRIEVER_CONTAINER_NAME} \
+        -e http_proxy=$http_proxy \
+        -e https_proxy=$https_proxy \
+        -e no_proxy=$no_proxy \
         -p ${RETRIEVER_API_PORT}:${RETRIEVER_API_PORT} \
         -e REDIS_URL="redis://${IP_ADDRESS}:${REDIS_PORT}" \
         ${RETRIEVER_IMAGE_NAME}

@@ -28,7 +28,7 @@ def test_api_health_checks(generic_api_helper):
                 for port in container.ports:
                     if port.name == port_name:
                         container_port = port.containerPort
-                        svcs.append({"selector": selector, "namespace": ns, "port": container_port})
+                        svcs.append({"selector": {"app": selector}, "namespace": ns, "port": container_port})
 
     failed_microservices = []
     for service in svcs:

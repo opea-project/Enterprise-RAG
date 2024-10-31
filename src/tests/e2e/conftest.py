@@ -22,12 +22,17 @@ def suppress_logging():
 
 @pytest.fixture
 def chatqa_api_helper():
-    return ApiRequestHelper("chatqa", "router-service")
+    return ApiRequestHelper("chatqa", {"app": "router-service"})
 
 
 @pytest.fixture
 def dataprep_api_helper():
-    return ApiRequestHelper("dataprep", "router-service")
+    return ApiRequestHelper("dataprep", {"app": "router-service"})
+
+
+@pytest.fixture
+def fingerprint_api_helper():
+    return ApiRequestHelper("rag-ui", {"app.kubernetes.io/name": "fingerprint-usvc"}, 6012)
 
 
 @pytest.fixture

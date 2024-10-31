@@ -3,8 +3,12 @@
 
 import { RouterProvider } from "react-router-dom";
 
+import useTokenRefresh from "@/auth/useTokenRefresh";
 import router from "@/router";
 
-const App = () => <RouterProvider router={router} />;
+const App = () => {
+  useTokenRefresh();
+  return <RouterProvider router={router} />;
+};
 
 export default App;

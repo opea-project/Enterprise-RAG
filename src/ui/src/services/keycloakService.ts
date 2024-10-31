@@ -17,7 +17,7 @@ const initOptions: KeycloakInitOptions = {
 const loginOptions = { redirectUri: location.origin + "/chat" };
 const logoutOptions = { redirectUri: location.origin + "/login" };
 
-const minTokenValidity = 5; // seconds, 5 - default value
+const minTokenValidity = 60; // seconds, 5 - default value
 
 const adminResourceRole = import.meta.env.VITE_ADMIN_RESOURCE_ROLE;
 
@@ -41,11 +41,36 @@ const isLoggedIn = () => !!keycloakClient.token;
 
 const getToken = () => keycloakClient.token;
 const getTokenParsed = () => keycloakClient.tokenParsed;
-const refreshToken = (onRefreshCallback: () => void) =>
+const getTokenExpirationTime = () => keycloakClient.tokenParsed?.exp ?? 0;
+const getTimeSkew = () => keycloakClient.timeSkew ?? 0;
+const getTokenValidityTime = () => {
+  const tokenExpirationTime = getTokenExpirationTime();
+  const currentTime = new Date().getTime() / 1000;
+  const timeSkew = getTimeSkew();
+  return Math.round(tokenExpirationTime + timeSkew - currentTime);
+};
+
+const refreshToken = () => {
   keycloakClient
     .updateToken(minTokenValidity)
-    .then(onRefreshCallback)
-    .catch(login);
+    .then((refreshed) => {
+      if (refreshed) {
+        const token = keycloakService.getToken();
+        if (typeof token === "string") {
+          sessionStorage.setItem("token", token);
+        }
+        console.info("Token refreshed");
+      } else {
+        console.info(
+          `Token not refreshed, valid for ${getTokenValidityTime()} seconds`,
+        );
+      }
+    })
+    .catch(() => {
+      console.error("Failed to refresh token. Logging out...");
+      logout();
+    });
+};
 
 const getUsername = () => keycloakClient.tokenParsed?.name;
 const hasRole = (role: string) => keycloakClient.hasRealmRole(role);

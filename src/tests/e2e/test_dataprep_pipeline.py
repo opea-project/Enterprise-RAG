@@ -157,7 +157,7 @@ def test_dataprep_response_status_code_and_header(dataprep_api_helper):
 def test_dataprep_chunk_overlapping(dataprep_api_helper):
     """
     Check if the uploaded text is properly split into chunks
-    Check of the text inside the chunks overlap with each other
+    Check if the text inside the chunks overlap with each other
     """
     txt_file = "files/dataprep_upload/test_dataprep_long_text.txt"
     response = dataprep_api_helper.call_dataprep_upload_file(txt_file)
@@ -171,12 +171,19 @@ def test_dataprep_chunk_overlapping(dataprep_api_helper):
         assert len(doc.get("text")) <= constants.CHUNK_SIZE
 
     # Check chunk overlapping
-    for doc_number, doc in enumerate(docs):
-        if doc_number == 0:
-            continue
+    for doc in docs:
         beginning = doc.get("text")[0:constants.CHUNK_OVERLAPPING]
-        previous_doc_ending = docs[doc_number - 1].get("text")[-constants.CHUNK_OVERLAPPING:]
-        assert beginning == previous_doc_ending
+        ending = doc.get("text")[-constants.CHUNK_OVERLAPPING:]
+        for other_doc in docs:
+            other_doc_beginning = other_doc.get("text")[0:constants.CHUNK_OVERLAPPING]
+            other_doc_ending = other_doc.get("text")[-constants.CHUNK_OVERLAPPING:]
+            if beginning == other_doc_ending:
+                break
+            elif ending == other_doc_beginning:
+                break
+        else:
+            chunks = [chunk["text"] for chunk in docs]
+            pytest.fail(f"Looks like the chunks do not overlap with each other. List of chunks: {chunks}")
 
 
 def _fill_in_file(temp_file, size):

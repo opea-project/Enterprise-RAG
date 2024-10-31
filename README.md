@@ -22,8 +22,9 @@ Intel AI for Enterprise RAG makes turning your enterprise data into actionable i
 # System Requirements
 
 Intel(R) AI for Enterprise RAG supports following platforms: 
-- 4th Gen Intel Xeon processors and Intel(R) Gaudi(R) 2 AI accelerator
-- 5th Gen Intel Xeon processors and Intel(R) Gaudi(R) 3 AI accelerator
+- 4th Gen Intel Xeon processors
+- 5th Gen Intel Xeon processors
+- Intel(R) Gaudi(R) 2 AI accelerator
   
 ## Requirements for Building from Source
 

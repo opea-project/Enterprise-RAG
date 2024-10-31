@@ -22,9 +22,9 @@ curl http://localhost:8090/embed \
     -H 'Content-Type: application/json'
 ```
 
-### 🚀 2. Deploy TEI Service with OPEA Embedding Microservice using Docker Compose (Option 2)
+### 🚀 2. Deploy TEI Service with Embedding Microservice using Docker Compose (Option 2)
 
-To launch TEI Service along with the OPEA Embedding Microservice, follow these steps:
+To launch TEI Service along with the Embedding Microservice, follow these steps:
 
 #### 2.1. Modify the environment configuration file to align it to your case
 

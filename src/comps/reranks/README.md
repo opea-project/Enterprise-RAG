@@ -1,4 +1,4 @@
-# OPEA Reranking Microservice
+# Reranking Microservice
 
 The Reranking Microservice, fueled by reranking models, stands as a straightforward yet immensely potent tool for semantic search. When provided with a query and a collection of documents, reranking swiftly indexes the documents based on their semantic relevance to the query, arranging them from most to least pertinent. This microservice significantly enhances overall accuracy. In a text retrieval system, either a dense embedding model or a sparse lexical search index is often employed to retrieve relevant text documents based on the input. However, a reranking model can further refine this process by rearranging potential candidates into a final, optimized order.
 
@@ -14,7 +14,7 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 ## Configuration Options
 
-The configuration for the OPEA Reranking Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
+The configuration for the Reranking Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
 | Environment Variable        | Description                                                                |
 |-----------------------------|----------------------------------------------------------------------------|
@@ -25,11 +25,11 @@ The configuration for the OPEA Reranking Microservice is specified in the [impl/
 ## Getting started
 
 ### Prerequisite: Start Reranking Model Server
-The OPEA Reranking Microservice interacts with a rerank model endpoint,  twhich must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_ENDPOINT` env.
+The Reranking Microservice interacts with a rerank model endpoint,  twhich must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service.
 
-### 🚀1. Start OPEA Reranking Microservice with Python (Option 1)
+### 🚀1. Start Reranking Microservice with Python (Option 1)
 
 To start the Reranking microservice, you need to install python packages first.
 
@@ -45,7 +45,7 @@ pip install -r impl/microservice/requirements.txt
 python opea_reranking_microservice.py
 ```
 
-### 🚀2. Start OPEA Retranking Microservice with Docker (Option 2)
+### 🚀2. Start Retranking Microservice with Docker (Option 2)
 
 #### 2.1. Build the Docker Image:
 Navigate to the `src` directory and use the docker build command to create the image:
@@ -73,7 +73,7 @@ docker run -d --name="reranking-microservice" \
   opea/reranking:latest
 ```
 
-### 3. Verify the OPEA Reraniking Microservice
+### 3. Verify the Reraniking Microservice
 
 #### 3.1. Check Status
 
@@ -123,7 +123,7 @@ The project is organized into several directories:
 
 - `impl/`: This directory contains the implementation of the supported reranking service. It includes the `model_server` directory, which contains instructions for setting up and running different model servers, for example TEI.
 
-- `utils/`: This directory contains utility scripts and modules that are used by the OPEA Reranking Microservice.
+- `utils/`: This directory contains utility scripts and modules that are used by the Reranking Microservice.
 
 The tree view of the main directories and files:
 
@@ -154,4 +154,4 @@ The tree view of the main directories and files:
 ```
 
 #### Tests
-- `src/tests/unit/rerankers/`: Contains unit tests for the OPEA Reranking Microservice components
+- `src/tests/unit/rerankers/`: Contains unit tests for the Reranking Microservice components

@@ -38,8 +38,8 @@ Expected output:
 {"generated_text":"\n\nDeep learning is part of a broader family of machine learning methods referred to as"}
 ```
 
-### 🚀 2. Deploy TGI Service with OPEA LLM Microservice using Docker Compose (Option 2)
-To launch TGI Service along with the OPEA LLM Microservice, follow these steps:
+### 🚀 2. Deploy TGI Service with LLM Microservice using Docker Compose (Option 2)
+To launch TGI Service along with the LLM Microservice, follow these steps:
 
 #### 2.1. Modify the environment configuration file to align it to your case
 

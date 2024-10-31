@@ -1,4 +1,4 @@
-# OPEA VectorStore
+# VectorStore
 This code implements an interface for connecting to multiple vector store databases. Unified vector store interface allows multiple services to use one storage communication class. This code is not meant to be used as a standalone service, rather as a part for services that require database communication such as ingestion service or retriever service.
 
 ## Support Matrix

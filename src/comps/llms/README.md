@@ -1,4 +1,4 @@
-# OPEA LLM Microservice
+# LLM Microservice
 
 This microservice, designed for Language Model Inference (LLM), processes input consisting of a query string and associated reranked documents. It constructs a prompt based on the query and documents, which is then used to perform inference with a large language model. The service delivers the inference results as output.
 
@@ -19,7 +19,7 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 ## Configuration Options
 
-The configuration for the OPEA LLM Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
+The configuration for the LLM Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
 | Environment Variable            | Description                                                                                                           |
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
@@ -34,11 +34,11 @@ The configuration for the OPEA LLM Microservice is specified in the [impl/micros
 
 ### Prerequisite: Start LLM Model Server
 
-The OPEA LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible at the the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
+The LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible at the the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
 
-### 🚀1. Start OPEA LLM Microservice with Python (Option 1)
+### 🚀1. Start LLM Microservice with Python (Option 1)
 
 To start the LLM microservice, you need to install python packages first.
 
@@ -55,7 +55,7 @@ python opea_llm_microservice.py
 ```
 
 
-### 🚀2. Start OPEA LLM Microservice with Docker (Option 2)
+### 🚀2. Start LLM Microservice with Docker (Option 2)
 
 #### 2.1. Build the Docker Image:
 Navigate to the `src` directory and use the docker build command to create the image:
@@ -86,7 +86,7 @@ docker run -d --name="llm-microservice" \
   opea/llm:latest
 ```
 
-### 3. Verify the OPEA LLM Microservice
+### 3. Verify the LLM Microservice
 
 #### 3.1. Check Status
 
@@ -169,7 +169,7 @@ To find validated models running on Gaudi, refer to the following resources:
 
 The project is organized into several directories:
 - `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TGI or vLLM.
-- `utils/`: This directory contains utility scripts and modules that are used by the OPEA LLM Microservice.
+- `utils/`: This directory contains utility scripts and modules that are used by the LLM Microservice.
 
 The tree view of the main directories and files:
 
@@ -205,7 +205,7 @@ The tree view of the main directories and files:
 ```
 
 #### Tests
-- `src/tests/unit/llms/`: Contains unit tests for the OPEA LLM Microservice components
+- `src/tests/unit/llms/`: Contains unit tests for the LLM Microservice components
 
 
 

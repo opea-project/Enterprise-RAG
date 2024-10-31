@@ -57,9 +57,9 @@ If the endpoint is correctly running, it should print out an output similar to t
 }
 ```
 
-### 🚀 2. Deploy OVMS with OPEA Embedding Microservice using Docker Compose (Option 2)
+### 🚀 2. Deploy OVMS with Embedding Microservice using Docker Compose (Option 2)
 
-To launch OVMS along with the OPEA Embedding Microservice, follow these steps:
+To launch OVMS along with the Embedding Microservice, follow these steps:
 
 #### 2.1. Modify the environment configuration file to align it to your case
 

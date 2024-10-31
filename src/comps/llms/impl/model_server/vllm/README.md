@@ -80,9 +80,9 @@ Expected output:
   }
 }
 ```
-### 🚀 2. Deploy vLLM Service with OPEA LLM Microservice using Docker Compose (Option 2)
+### 🚀 2. Deploy vLLM Service with LLM Microservice using Docker Compose (Option 2)
 
-To launch vLLM Service along with the OPEA LLM Microservice, follow these steps:
+To launch vLLM Service along with the LLM Microservice, follow these steps:
 
 #### 2.1. Modify the environment configuration file to align it to your case
 

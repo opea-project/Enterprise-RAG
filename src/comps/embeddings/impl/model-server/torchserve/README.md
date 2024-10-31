@@ -77,9 +77,9 @@ Expected output:
 ]
 ```
 
-### 🚀 2. Deploy TorchServe Service with OPEA Embedding Microservice using Docker Compose (Option 2)
+### 🚀 2. Deploy TorchServe Service with Embedding Microservice using Docker Compose (Option 2)
 
-To launch TorchServe Service along with the OPEA Embedding Microservice, follow these steps:
+To launch TorchServe Service along with the Embedding Microservice, follow these steps:
 
 
 #### 2.1. Modify the environment configuration file to align it to your case

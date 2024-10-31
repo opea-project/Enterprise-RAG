@@ -1,5 +1,5 @@
-# OPEA LLM Guard Input Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Input Scanners as part of the OPEA pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Input scanners scan the incoming prompt and context before they are passed to LLM and inform the user whether they are valid. OPEA LLM Guard Input Guardrail Microservice enables all scanners provided by LLM Guard:
+# LLM Guard Input Guardrail Microservice
+This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Input Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Input scanners scan the incoming prompt and context before they are passed to LLM and inform the user whether they are valid. LLM Guard Input Guardrail Microservice enables all scanners provided by LLM Guard:
  - [Anonymize](https://llm-guard.com/input_scanners/anonymize/)
  - [BanCode](https://llm-guard.com/input_scanners/ban_code/)
  - [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
@@ -30,7 +30,7 @@ Scanners currently configurable from UI, from Admin Panel:
  - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
 
 ### Configuration via environmental variables
-The OPEA LLM Guard Input Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
+The LLM Guard Input Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
 
 ### Anonymize scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Anonymize scanner](https://llm-guard.com/input_scanners/anonymize/)
@@ -195,9 +195,9 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 2. **Set up the environment variables**:
     - Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
 
-### 🚀1. Start OPEA LLM Guard Input Guardrail Microservice with Python (Option 1)
+### 🚀1. Start LLM Guard Input Guardrail Microservice with Python (Option 1)
 
-To start the OPEA LLM Guard Intput Guardrail microservice, you need to install python packages first.
+To start the LLM Guard Intput Guardrail microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
 
@@ -211,7 +211,7 @@ pip install -r impl/microservice/requirements.txt
 python opea_llm_guard_input_guardrail_microservice.py
 ```
 
-### 🚀2. Start OPEA LLM Guard Input Guardrail Microservice with Docker (Option 2)
+### 🚀2. Start LLM Guard Input Guardrail Microservice with Docker (Option 2)
 
 #### 2.1. Build the Docker image:
 ```sh

@@ -1,5 +1,5 @@
-# OPEA LLM Guard Output Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Output Scanners as part of the OPEA pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. OPEA LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
+# LLM Guard Output Guardrail Microservice
+This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Output Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
  - [BanCode](https://llm-guard.com/output_scanners/ban_code/)
  - [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
  - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
@@ -38,7 +38,7 @@ Scanners currently configurable from UI, from Admin Panel:
  Important: when LLM Guard Output Guardrail is enabled in Enterprise pipeline, LLM streaming option is not available, since LLM Guard Output Guardrail becomes reponsible for streaming. LLM Guard Output Guardrail waits for whole reponse from LLM to scan it.
 
 ### Configuration via environmental variables
-The OPEA LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
+The LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
 
 ### BanCode scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for BanCode scanner](https://llm-guard.com/output_scanners/ban_code/)
@@ -283,9 +283,9 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 2. **Set up the environment variables**:
     - Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
 
-### 🚀1. Start OPEA LLM Guard Output Guardrail Microservice with Python (Option 1)
+### 🚀1. Start LLM Guard Output Guardrail Microservice with Python (Option 1)
 
-To start the OPEA LLM Guard Output Guardrail microservice, you need to install python packages first.
+To start the LLM Guard Output Guardrail microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
 
@@ -299,17 +299,17 @@ pip install -r impl/microservice/requirements.txt
 python opea_llm_guard_output_guardrail_microservice.py
 ```
 
-### 🚀2. Start OPEA LLM Guard Output Guardrail Microservice with Docker (Option 2)
+### 🚀2. Start LLM Guard Output Guardrail Microservice with Docker (Option 2)
 
 #### 2.1.Build the Docker image:
     ```sh
     cd ../../.. # src/ directory
-    docker build -t opea/in-guardopea/in-guard:latest -f comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile .
+    docker build -t opea/out-guard:latest -f comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile .
     ```
 
 #### 2.2. Run the Docker container, for example:
     ```sh
-    docker run --e BAN_SUBSTRINGS_EMABLED="true" -p 8060:8060 opea/out-guard
+    docker run --e BAN_SUBSTRINGS_EMABLED="true" -p 8060:8060 opea/out-guard:latest
     ```
 
 ### 3. Verify the LLM Guard Input Guardrail Microservice

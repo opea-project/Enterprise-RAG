@@ -24,7 +24,7 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 ## Configuration Options
 
-The configuration for the OPEA Embedding Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
+The configuration for the Embedding Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
 | Environment Variable            | Description                                                                                                           |
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
@@ -39,7 +39,7 @@ The configuration for the OPEA Embedding Microservice is specified in the [impl/
 
 ### Prerequisite: Start Embdedding Model Server
 
-The OPEA Embedding Microservice interacts with an Embedding model endpoint, which must be operational and accessible at the the URL specified by the `EMBEDDING_MODEL_SERVER_ENDPOINT` env.
+The Embedding Microservice interacts with an Embedding model endpoint, which must be operational and accessible at the the URL specified by the `EMBEDDING_MODEL_SERVER_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
 
@@ -54,7 +54,7 @@ Currently, we provide these ways to implement a model server for an embedding:
 Refer to `README.md` of a particular library to get more information on starting a model server.
 
 
-## 🚀1. Start OPEA Embedding Microservice with Python (Option 1)
+## 🚀1. Start Embedding Microservice with Python (Option 1)
 
 To start the Embedding microservice, you need to install requirements first.
 
@@ -82,7 +82,7 @@ pip install -r impl/microservice/requirements/llama_index.txt
 python opea_embedding_microservice.py
 ```
 
-### 🚀2. Start OPEA Embedding Microservice with Docker (Option 2)
+### 🚀2. Start Embedding Microservice with Docker (Option 2)
 
 #### 2.1. Build the Docker Image:
 Navigate to the `src` directory and use the docker build command to create the image:
@@ -147,7 +147,7 @@ docker run -d --name="embedding-microservice" \
 ```
 
 
-### 3. Verify the OPEA Embedding Microservice
+### 3. Verify the Embedding Microservice
 
 #### 3.1. Check Status
 
@@ -237,7 +237,7 @@ For multiple documents:
 
 The project is organized into several directories:
 - `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TEI or OVMS.
-- `utils/`: This directory contains utility scripts and modules that are used by the OPEA Embedding Microservice.
+- `utils/`: This directory contains utility scripts and modules that are used by the Embedding Microservice.
 
 The tree view of the main directories and files:
 
@@ -278,5 +278,5 @@ The tree view of the main directories and files:
 ```
 
 #### Tests
-- `src/tests/unit/embeddings/`: Contains unit tests for the OPEA Embedding Microservice components
+- `src/tests/unit/embeddings/`: Contains unit tests for the Embedding Microservice components
 

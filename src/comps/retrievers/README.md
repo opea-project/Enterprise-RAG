@@ -1,4 +1,4 @@
-# OPEA Retriever Microservice
+# Retriever Microservice
 
 Retirever searches and retrieves relevant information, documents or data from a database based on a given embedding query. It uses vector search provided by the selected database and performs a query. The query algorithm and configuration should be included in the request to this microservice.
 
@@ -132,7 +132,7 @@ The project is organized into several directories:
 
 - `impl/`: This directory contains the implementation of the retriever service.
 
-- `utils/`: This directory contains scripts that are used by the OPEA Retriever Microservice.
+- `utils/`: This directory contains scripts that are used by the Retriever Microservice.
 
 The tree view of the main directories and files:
 

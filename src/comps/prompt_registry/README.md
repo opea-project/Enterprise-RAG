@@ -191,7 +191,7 @@ If the prompt is deleted successfully, the response will not return any output, 
 The project is organized into several directories:
 
 - `impl/`: This directory contains configuration files for the prompt registry service.
-- `utils/`: This directory contains scripts that are used by the OPEA Prompt Registry Microservice.
+- `utils/`: This directory contains scripts that are used by the Prompt Registry Microservice.
 
 The tree view of the main directories and files:
 

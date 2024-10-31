@@ -1,4 +1,4 @@
-# OPEA Ingestion Microservice
+# Ingestion Microservice
 
 This service allows multiple services to ingest data into a vector database.
 
@@ -100,7 +100,7 @@ The project is organized into several directories:
 
 - `impl/`: This directory contains the implementation of the ingestion service.
 
-- `utils/`: This directory contains scripts that are used by the OPEA Ingestion Microservice.
+- `utils/`: This directory contains scripts that are used by the Ingestion Microservice.
 
 The tree view of the main directories and files:
 

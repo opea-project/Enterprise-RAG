@@ -1,4 +1,4 @@
-# OPEA Dataprep Microservice
+# Dataprep Microservice
 
 This microservice is designed to extract text from data sent for processing. That data can be sent in form of files and/or links for scraping and further extraction. Result of this microservice can then be passed to embedding microservice and ultimately persisted in the system.
 
@@ -162,7 +162,7 @@ The project is organized into several directories:
 
 - `impl/`: This directory contains the implementation of the supported dataprep service.
 
-- `utils/`: This directory contains utility scripts and modules that are used by the OPEA Dataprep Microservice. It included the web crawler and script for extracting text from various files.
+- `utils/`: This directory contains utility scripts and modules that are used by the Dataprep Microservice. It included the web crawler and script for extracting text from various files.
 
 The tree view of the main directories and files:
 

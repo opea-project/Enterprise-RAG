@@ -43,9 +43,14 @@ const ChatQnAGraph = () => {
   const nodes = useAppSelector(chatQnAGraphNodesSelector);
   const edges = useAppSelector(chatQnAGraphEdgesSelector);
 
-  const handleSelectionChange = useCallback(({ nodes }: { nodes: Node[] }) => {
-    dispatch(setChatQnAGraphSelectedServiceNode(nodes as Node<ServiceData>[]));
-  }, []);
+  const handleSelectionChange = useCallback(
+    ({ nodes }: { nodes: Node[] }) => {
+      dispatch(
+        setChatQnAGraphSelectedServiceNode(nodes as Node<ServiceData>[]),
+      );
+    },
+    [dispatch],
+  );
 
   const handleNodesChange = (changes: NodeChange<Node>[]) => {
     dispatch(

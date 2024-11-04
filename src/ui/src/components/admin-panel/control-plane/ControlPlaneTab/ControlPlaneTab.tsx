@@ -45,7 +45,7 @@ const ControlPlaneTab = () => {
 
   useEffect(() => {
     dispatch(setChatQnAGraphSelectedServiceNode([]));
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(setChatQnAGraphLoading(true));

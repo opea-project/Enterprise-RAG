@@ -17,6 +17,8 @@ import {
   GuardrailParams,
   ServicesParameters,
 } from "@/api/models/systemFingerprint";
+import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
+import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
 import {
   ServiceData,
   ServiceDetails,
@@ -32,6 +34,7 @@ interface ChatQnAGraphState {
   loading: boolean;
   interactivityEnabled: boolean;
   selectedServiceNode: Node<ServiceData> | null;
+  promptRequestParams: ServicesParameters;
 }
 
 const initialState: ChatQnAGraphState = {
@@ -41,6 +44,7 @@ const initialState: ChatQnAGraphState = {
   loading: false,
   interactivityEnabled: false,
   selectedServiceNode: null,
+  promptRequestParams: {},
 };
 
 export const chatQnAGraphSlice = createSlice({
@@ -73,10 +77,9 @@ export const chatQnAGraphSlice = createSlice({
     },
     setChatQnAGraphEdges: (state) => {
       const nodesIds = state.nodes.map(({ id }) => id);
-      const graphHasGuardrails =
-        nodesIds.includes("input_guard") && nodesIds.includes("output_guard");
+      const graphHasInputGuard = nodesIds.includes("input_guard");
 
-      state.edges = graphHasGuardrails
+      state.edges = graphHasInputGuard
         ? graphEdges.filter((edge) => edge.id !== "reranker-llm")
         : graphEdges;
     },
@@ -111,7 +114,8 @@ export const chatQnAGraphSlice = createSlice({
             for (const [fetchedArgName, fetchedArgValue] of fetchedArgs) {
               serviceArgs = serviceArgs.map((arg) =>
                 arg.displayName === fetchedArgName &&
-                !(fetchedArgValue instanceof GuardrailParams)
+                !(fetchedArgValue instanceof GuardrailParams) &&
+                fetchedArgValue !== undefined
                   ? { ...arg, value: fetchedArgValue }
                   : { ...arg },
               );
@@ -127,16 +131,18 @@ export const chatQnAGraphSlice = createSlice({
             };
           } else if (node.data.guardArgs) {
             const updatedGuardArgs = { ...node.data.guardArgs };
-            let fetchedGuardArgs: GuardrailParams = {};
+            let fetchedGuardArgs: GuardrailParams | undefined = {};
             if (node.data.id === "input_guard") {
               fetchedGuardArgs = parameters.input_guardrail_params;
             } else if (node.data.id === "output_guard") {
               fetchedGuardArgs = parameters.output_guardrail_params;
             }
 
-            for (const scannerName in updatedGuardArgs) {
-              updatedGuardArgs[scannerName] = updatedGuardArgs[scannerName].map(
-                (scannerArg) => {
+            if (fetchedGuardArgs !== undefined) {
+              for (const scannerName in updatedGuardArgs) {
+                updatedGuardArgs[scannerName] = updatedGuardArgs[
+                  scannerName
+                ].map((scannerArg) => {
                   const scannerArgName = scannerArg.displayName;
                   let fetchedScannerArgValue =
                     fetchedGuardArgs[scannerName][scannerArgName];
@@ -148,8 +154,8 @@ export const chatQnAGraphSlice = createSlice({
                     ...scannerArg,
                     value: fetchedScannerArgValue,
                   };
-                },
-              );
+                });
+              }
             }
 
             return {
@@ -211,6 +217,61 @@ export const chatQnAGraphSlice = createSlice({
         },
       }));
     },
+    setPromptRequestParams: (state, action) => {
+      const serviceParams = Object.fromEntries(
+        Object.entries(action.payload).filter(
+          ([, value]) =>
+            value === null ||
+            typeof value === "string" ||
+            typeof value === "number" ||
+            typeof value === "boolean",
+        ),
+      ) as ServicesParameters;
+
+      const graphNodesIds = state.nodes.map(({ id }) => id);
+      let guardParams;
+      if (
+        graphNodesIds.includes("input_guard") &&
+        graphNodesIds.includes("output_guard")
+      ) {
+        guardParams = Object.fromEntries(
+          Object.entries(action.payload).filter(([key]) =>
+            ["input_guardrail_params", "output_guardrail_params"].includes(key),
+          ),
+        );
+
+        const supportedInputScanners = Object.keys(inputGuardArguments);
+        const supportedOutputScanners = Object.keys(outputGuardArguments);
+        const inputGuardParams = Object.fromEntries(
+          Object.entries(guardParams.input_guardrail_params || {}).filter(
+            ([scannerName]) => supportedInputScanners.includes(scannerName),
+          ),
+        );
+        const outputGuardParams = Object.fromEntries(
+          Object.entries(guardParams.output_guardrail_params || {}).filter(
+            ([scannerName]) => supportedOutputScanners.includes(scannerName),
+          ),
+        );
+        guardParams = Object.fromEntries(
+          Object.entries({
+            input_guardrail_params: inputGuardParams,
+            output_guardrail_params: outputGuardParams,
+          }).filter(
+            ([, value]) =>
+              typeof value === "object" && Object.keys(value).length > 0,
+          ),
+        );
+
+        state.promptRequestParams = {
+          ...serviceParams,
+          ...guardParams,
+        };
+      } else {
+        state.promptRequestParams = {
+          ...serviceParams,
+        };
+      }
+    },
   },
 });
 
@@ -223,6 +284,7 @@ export const {
   setChatQnAGraphNodes,
   setChatQnAGraphLoading,
   setChatQnAGraphSelectedServiceNode,
+  setPromptRequestParams,
 } = chatQnAGraphSlice.actions;
 export const chatQnAGraphEditModeEnabledSelector = (state: RootState) =>
   state.chatQnAGraph.editModeEnabled;
@@ -234,5 +296,7 @@ export const chatQnAGraphLoadingSelector = (state: RootState) =>
   state.chatQnAGraph.loading;
 export const chatQnAGraphSelectedServiceNodeSelector = (state: RootState) =>
   state.chatQnAGraph.selectedServiceNode;
+export const selectPromptRequestParams = (state: RootState) =>
+  state.chatQnAGraph.promptRequestParams;
 
 export default chatQnAGraphSlice.reducer;

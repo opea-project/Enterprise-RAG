@@ -17,9 +17,9 @@ export class GuardrailParams {
 }
 
 export interface ServicesParameters {
-  input_guardrail_params: GuardrailParams;
-  output_guardrail_params: GuardrailParams;
-  [key: string]: null | number | string | boolean | GuardrailParams;
+  input_guardrail_params?: GuardrailParams;
+  output_guardrail_params?: GuardrailParams;
+  [key: string]: null | number | string | boolean | GuardrailParams | undefined;
 }
 
 export type ChangeArgumentsRequestData =

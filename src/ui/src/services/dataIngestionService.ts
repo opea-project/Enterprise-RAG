@@ -8,7 +8,7 @@ import { documentToBase64 } from "@/utils";
 
 class DataIngestionService {
   async postDataToIngest(documents: File[], links: LinkForIngestion[]) {
-    const url = window.location.origin + endpoints.dataprep;
+    const url = endpoints.dataprep;
     const body: DataIngestionRequest = {};
 
     body.files = [];

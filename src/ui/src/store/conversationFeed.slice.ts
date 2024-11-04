@@ -14,13 +14,11 @@ interface ChatFeedMessage {
 export interface ConversationFeedState {
   messages: ChatFeedMessage[];
   isMessageStreamed: boolean;
-  promptRequestParams: object;
 }
 
 const initialState: ConversationFeedState = {
   messages: [],
   isMessageStreamed: false,
-  promptRequestParams: {},
 };
 
 interface MessageUpdate {
@@ -50,22 +48,13 @@ export const conversationFeedSlice = createSlice({
     setIsMessageStreamed: (state, action: PayloadAction<boolean>) => {
       state.isMessageStreamed = action.payload;
     },
-    setPromptRequestParams: (state, action) => {
-      state.promptRequestParams = action.payload;
-    },
   },
 });
 
-export const {
-  addMessage,
-  updateMessage,
-  setIsMessageStreamed,
-  setPromptRequestParams,
-} = conversationFeedSlice.actions;
+export const { addMessage, updateMessage, setIsMessageStreamed } =
+  conversationFeedSlice.actions;
 export const selectMessages = (state: RootState) =>
   state.conversationFeed.messages;
 export const selectIsMessageStreamed = (state: RootState) =>
   state.conversationFeed.isMessageStreamed;
-export const selectPromptRequestParams = (state: RootState) =>
-  state.conversationFeed.promptRequestParams;
 export default conversationFeedSlice.reducer;

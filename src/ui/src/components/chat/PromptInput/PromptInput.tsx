@@ -16,10 +16,10 @@ import { BsHurricane, BsSendFill } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 
 import endpoints from "@/api/endpoints.json";
+import { selectPromptRequestParams } from "@/store/chatQnAGraph.slice";
 import {
   addMessage,
   selectIsMessageStreamed,
-  selectPromptRequestParams,
   setIsMessageStreamed,
   updateMessage,
 } from "@/store/conversationFeed.slice";
@@ -115,7 +115,7 @@ const PromptInput = () => {
       parameters: promptRequestParams,
     };
 
-    const url = window.location.origin + endpoints.chat;
+    const url = endpoints.chat;
     const ctrl = new AbortController();
 
     try {

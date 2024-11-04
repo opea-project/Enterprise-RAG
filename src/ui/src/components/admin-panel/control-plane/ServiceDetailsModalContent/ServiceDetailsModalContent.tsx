@@ -89,7 +89,7 @@ const ServiceDetailsModalContent = ({
     };
     setServiceArgumentsGrid(initialServiceArgumentsGrid);
     setInitialServiceArgumentsGrid(initialServiceArgumentsGrid);
-  }, [serviceData.args, serviceData.id]);
+  }, [isLLMService, outputGuardExist, serviceData.args, serviceData.id]);
 
   const handleArgumentValueChange = (
     argumentName: string,

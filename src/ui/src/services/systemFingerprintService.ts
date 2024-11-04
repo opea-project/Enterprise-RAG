@@ -10,8 +10,7 @@ import { parseServiceDetailsResponseData } from "@/utils";
 
 class SystemFingerprintService {
   async appendArguments() {
-    const url =
-      window.location.origin + endpoints.systemFingerprint.appendArguments;
+    const url = endpoints.systemFingerprint.appendArguments;
     const body: AppendArgumentsRequestBody = { text: "" };
 
     try {
@@ -35,8 +34,7 @@ class SystemFingerprintService {
     }
   }
   async changeArguments(requestBody: ChangeArgumentsRequestBody) {
-    const url =
-      window.location.origin + endpoints.systemFingerprint.changeArguments;
+    const url = endpoints.systemFingerprint.changeArguments;
 
     try {
       const response = await fetch(url, {

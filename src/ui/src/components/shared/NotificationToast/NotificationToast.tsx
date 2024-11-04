@@ -31,7 +31,7 @@ const NotificationToast = ({
         hideNotification();
       }, 5000);
     }
-  }, [open]);
+  }, [hideNotification, open]);
 
   return open
     ? createPortal(

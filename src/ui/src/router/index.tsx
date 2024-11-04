@@ -1,13 +1,14 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 
 import PageLayout from "@/layout/PageLayout/PageLayout";
-import AdminPanelPage from "@/pages/AdminPanelPage/AdminPanelPage";
-import Chat from "@/pages/ChatPage/ChatPage";
-import ErrorPage from "@/pages/ErrorPage/ErrorPage";
-import LoginPage from "@/pages/LoginPage/LoginPage";
+import AdminPanelPage from "@/pages/AdminPanelPage";
+import ChatPage from "@/pages/ChatPage";
+import ErrorPage from "@/pages/ErrorPage";
+import LoginPage from "@/pages/LoginPage";
 import ProtectedRoute from "@/router/ProtectedRoute";
 
 const router = createBrowserRouter([
@@ -18,13 +19,19 @@ const router = createBrowserRouter([
         <PageLayout />
       </ProtectedRoute>
     ),
-    errorElement: <ErrorPage />,
+    errorElement: (
+      <Suspense>
+        <ErrorPage />
+      </Suspense>
+    ),
     children: [
       {
         path: "/chat",
         element: (
           <ProtectedRoute>
-            <Chat />
+            <Suspense>
+              <ChatPage />
+            </Suspense>
           </ProtectedRoute>
         ),
       },
@@ -32,7 +39,9 @@ const router = createBrowserRouter([
         path: "/admin-panel",
         element: (
           <ProtectedRoute>
-            <AdminPanelPage />
+            <Suspense>
+              <AdminPanelPage />
+            </Suspense>
           </ProtectedRoute>
         ),
       },
@@ -40,7 +49,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/login",
-    element: <LoginPage />,
+    element: (
+      <Suspense>
+        <LoginPage />
+      </Suspense>
+    ),
   },
 ]);
 

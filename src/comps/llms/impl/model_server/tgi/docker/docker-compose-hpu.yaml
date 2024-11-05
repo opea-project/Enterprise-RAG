@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   llm-tgi-model-server:
-    image: ghcr.io/huggingface/tgi-gaudi:2.0.5
+    image: ghcr.io/huggingface/tgi-gaudi:2.0.6
     container_name: llm-tgi-model-server
     ports:
       - "${LLM_TGI_PORT}:80"

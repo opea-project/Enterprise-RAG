@@ -84,7 +84,7 @@ spec:
                 optional: true
           securityContext:
             {}
-          image: "ghcr.io/huggingface/tgi-gaudi:2.0.4"
+          image: "ghcr.io/huggingface/tgi-gaudi:2.0.6"
           args:
             - --model-id
             - "$(LLM_TGI_MODEL_NAME)"

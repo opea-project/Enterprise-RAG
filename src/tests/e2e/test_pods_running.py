@@ -8,7 +8,7 @@ import allure
 import kr8s
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T27")
+@allure.testcase("IEASG-T27")
 def test_pods_are_running():
     pods_not_running = []
     for pod in kr8s.get("pods", namespace=kr8s.ALL):

@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_ingestion_redis.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T10")
+@allure.testcase("IEASG-T10")
 @pytest.mark.ingestion
 def test_ingestion_redis(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

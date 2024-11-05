@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_llms_text-generation_tgi-cpu.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T11")
+@allure.testcase("IEASG-T11")
 @pytest.mark.llms
 @pytest.mark.cpu
 def test_llms_text_generation_tgi_cpu(assert_bash_test_succeeds):

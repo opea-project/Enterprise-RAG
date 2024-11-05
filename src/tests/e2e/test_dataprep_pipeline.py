@@ -13,7 +13,7 @@ import time
 from tempfile import NamedTemporaryFile
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T43")
+@allure.testcase("IEASG-T43")
 def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     """
     Check if uploading many websites works correctly
@@ -23,7 +23,7 @@ def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     assert response.status_code == 200, "Invalid HTTP status code returned"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T41")
+@allure.testcase("IEASG-T41")
 def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     """
     Expect status code 400 when uploading a link to a nonexistent website
@@ -33,7 +33,7 @@ def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     assert response.status_code == 400, "Invalid HTTP status code returned"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T40")
+@allure.testcase("IEASG-T40")
 def test_dataprep_link_check_status_code_and_headers(dataprep_api_helper):
     """
     Check status code and headers in a simple, positive test case
@@ -46,7 +46,7 @@ def test_dataprep_link_check_status_code_and_headers(dataprep_api_helper):
     assert content_type_header == "application/json", "Unexpected Content-Type header in response"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T39")
+@allure.testcase("IEASG-T39")
 def test_dataprep_huge_file_upload(dataprep_api_helper):
     """
     Create a temporary file of size 63MB (maximum allowed file size is 64MB)
@@ -62,7 +62,7 @@ def test_dataprep_huge_file_upload(dataprep_api_helper):
             "Unexpected status code returned when invalid request is made to dataprep pipeline"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T38")
+@allure.testcase("IEASG-T38")
 def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, generic_api_helper):
     """
     Upload a large file to dataprep. Check if it responds to other API calls in the meantime
@@ -98,7 +98,7 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
         assert result.status_code == 200, "Unexpected status code returned"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T37")
+@allure.testcase("IEASG-T37")
 def test_dataprep_pass_invalid_request_body(dataprep_api_helper):
     """
     Pass invalid request when uploading a file. Expect status code 400
@@ -109,7 +109,7 @@ def test_dataprep_pass_invalid_request_body(dataprep_api_helper):
         "Unexpected status code returned when invalid request was made to dataprep pipeline"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T36")
+@allure.testcase("IEASG-T36")
 def test_dataprep_pass_empty_fields_in_request_body(dataprep_api_helper):
     """
     Pass empty fields for the required parameters values. Expect status code 400
@@ -126,7 +126,7 @@ def test_dataprep_pass_empty_fields_in_request_body(dataprep_api_helper):
         "Invalid status code returned when empty parameters are passed to dataprep pipeline"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T35")
+@allure.testcase("IEASG-T35")
 def test_dataprep_all_supported_file_types(dataprep_api_helper):
     """
     Check if all the supported file types are uploaded successfully
@@ -140,7 +140,7 @@ def test_dataprep_all_supported_file_types(dataprep_api_helper):
     assert failed_files == [], f"Some of the files were not uploaded successfully: {failed_files}"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T34")
+@allure.testcase("IEASG-T34")
 def test_dataprep_response_status_code_and_header(dataprep_api_helper):
     """
     Check status code and headers in a simple, positive test case
@@ -153,7 +153,7 @@ def test_dataprep_response_status_code_and_header(dataprep_api_helper):
     assert content_type_header == "application/json", "Unexpected Content-Type header in response"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T33")
+@allure.testcase("IEASG-T33")
 def test_dataprep_chunk_overlapping(dataprep_api_helper):
     """
     Check if the uploaded text is properly split into chunks

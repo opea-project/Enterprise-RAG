@@ -8,7 +8,7 @@ import kr8s
 import requests
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T26")
+@allure.testcase("IEASG-T26")
 def test_api_health_checks(generic_api_helper):
     """
     Find the services that expose /v1/health_check API.

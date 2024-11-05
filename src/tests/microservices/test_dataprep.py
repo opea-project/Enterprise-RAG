@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_dataprep.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T12")
+@allure.testcase("IEASG-T12")
 @pytest.mark.dataprep
 def test_dataprep(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

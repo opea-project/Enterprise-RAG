@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_embeddings_llamaindex_tei.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T8")
+@allure.testcase("IEASG-T8")
 @pytest.mark.embeddings
 def test_embeddings_llamaindex_tei(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

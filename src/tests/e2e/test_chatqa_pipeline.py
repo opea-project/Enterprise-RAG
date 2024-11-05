@@ -13,7 +13,7 @@ import time
 from api_request_helper import InvalidChatqaResponseBody
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T32")
+@allure.testcase("IEASG-T32")
 def test_chatqa_timeout(chatqa_api_helper):
     """
     The aim is to check if the response is no longer than 60 seconds what may
@@ -30,7 +30,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     print(f"Response: {chatqa_api_helper.format_response(response.text)}")
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T31")
+@allure.testcase("IEASG-T31")
 def test_chatqa_response_body(chatqa_api_helper):
     """
     Check if response is in a form of a Server-sent event.
@@ -44,7 +44,7 @@ def test_chatqa_response_body(chatqa_api_helper):
         pytest.fail(str(e))
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T30")
+@allure.testcase("IEASG-T30")
 def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     """
     Check status code and headers in a simple, positive scenario
@@ -56,7 +56,7 @@ def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     assert content_type_header == "text/event-stream", "Unexpected Content-Type header in response"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T29")
+@allure.testcase("IEASG-T29")
 def test_chatqa_pass_empty_question(chatqa_api_helper):
     """
     Check if 'Bad request' is returned in case user makes an invalid request
@@ -66,7 +66,7 @@ def test_chatqa_pass_empty_question(chatqa_api_helper):
     assert response.status_code == 400, "Got unexpected status code"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T28")
+@allure.testcase("IEASG-T28")
 def test_chatqa_ask_in_polish(chatqa_api_helper):
     """
     This is to reproduce a defect:
@@ -81,7 +81,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
         pytest.fail(str(e))
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T49")
+@allure.testcase("IEASG-T49")
 def test_chatqa_enable_streaming(chatqa_api_helper):
     """
     Set 'streaming' parameter to True and check the response
@@ -95,7 +95,7 @@ def test_chatqa_enable_streaming(chatqa_api_helper):
         pytest.fail(str(e))
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T42")
+@allure.testcase("IEASG-T42")
 def test_chatqa_concurrent_requests(chatqa_api_helper):
     """
     Ask 100 concurrent questions. Measure min, max, avg response time.
@@ -133,7 +133,7 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
     assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T50")
+@allure.testcase("IEASG-T50")
 def test_chatqa_upload_and_check_response_content(dataprep_api_helper, chatqa_api_helper):
     """
     Upload some unique story to dataprep pipeline. Check if chatbot returns

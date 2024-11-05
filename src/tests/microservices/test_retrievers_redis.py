@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_retrievers_redis.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T13")
+@allure.testcase("IEASG-T13")
 @pytest.mark.retrievers
 def test_retrievers_redis(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

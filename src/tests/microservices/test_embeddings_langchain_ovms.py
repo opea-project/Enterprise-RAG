@@ -8,7 +8,7 @@ import pytest
 ORIGINAL_TEST = "test_embeddings_langchain_ovms.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T9")
+@allure.testcase("IEASG-T9")
 @pytest.mark.embeddings
 def test_embeddings_langchain_ovms(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

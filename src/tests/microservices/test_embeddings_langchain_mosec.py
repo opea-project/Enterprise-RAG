@@ -9,7 +9,7 @@ import pytest
 ORIGINAL_TEST = "test_embeddings_langchain_mosec.sh"
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T3")
+@allure.testcase("IEASG-T3")
 @pytest.mark.embeddings
 def test_embeddings_langchain_mosec(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

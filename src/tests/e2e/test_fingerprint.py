@@ -8,7 +8,7 @@ import json
 import pytest
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T51")
+@allure.testcase("IEASG-T51")
 def test_fingerprint_append_arguments(fingerprint_api_helper):
     """
     Do the simple call to /v1/append_arguments. Check:
@@ -29,7 +29,7 @@ def test_fingerprint_append_arguments(fingerprint_api_helper):
     assert response_json.get("text") == text
 
 
-@allure.link("https://jira.devtools.intel.com/secure/Tests.jspa#/testCase/IEASG-T52")
+@allure.testcase("IEASG-T52")
 def test_fingerprint_parameters_modification(fingerprint_api_helper):
     """
     Fingerprint append_arguments API call returns some defined structure of data:

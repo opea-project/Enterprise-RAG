@@ -117,8 +117,7 @@ class ApiRequestHelper:
                 "streaming": False
             }
         }
-        json_data["parameters"].update(custom_params)
-
+        json_data.update(custom_params)
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             return self._call_chatqa(json_data, pf)
 

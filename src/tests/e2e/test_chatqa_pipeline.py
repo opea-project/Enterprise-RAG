@@ -5,6 +5,7 @@
 
 import allure
 import constants
+from copy import deepcopy
 import os
 import pytest
 import requests
@@ -87,12 +88,55 @@ def test_chatqa_enable_streaming(chatqa_api_helper):
     Set 'streaming' parameter to True and check the response
     """
     question = "Don't answer me."
-    response = chatqa_api_helper.call_chatqa(question, streaming=True)
+    parameters = {"parameters": {"streaming": True}}
+    response = chatqa_api_helper.call_chatqa(question, **parameters)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
         print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
+
+
+@allure.testcase("IEASG-T57")
+def test_chatqa_with_fingerprint_args(chatqa_api_helper, fingerprint_api_helper):
+    """Make /v1/chatqa call with all the parameters from fingerprint service"""
+    question = "What are the key advantages of x86 architecture?"
+    fingerprint_resp = fingerprint_api_helper.append_arguments(question)
+    arguments = fingerprint_resp.json()
+    response = chatqa_api_helper.call_chatqa(question, **arguments)
+    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
+    try:
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+    except InvalidChatqaResponseBody as e:
+        pytest.fail(str(e))
+
+
+@allure.testcase("IEASG-T58")
+def test_chatqa_with_modified_fingerprint_args(chatqa_api_helper, fingerprint_api_helper):
+    """
+    Retrieve current arguments from fingerprint microservice.
+    Change a couple of them (including max_new_token set to 10) and make a call to /v1/chatqa.
+    Verify if the response content is no more than 10 words.
+    Retrieve current arguments once again. Check if arguments are not modified.
+    """
+    question = "How close to the sun have we ever been?"
+    fingerprint_resp = fingerprint_api_helper.append_arguments(question)
+    arguments = fingerprint_resp.json()
+    old_arguments = deepcopy(arguments)
+    arguments["parameters"]["max_new_tokens"] = 10
+    arguments["parameters"]["top_k"] = 12
+    arguments["parameters"]["fetch_k"] = 200
+    response = chatqa_api_helper.call_chatqa(question, **arguments)
+    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
+    try:
+        response_text = chatqa_api_helper.format_response(response.text)
+        print(f"ChatQA response: {response_text}")
+    except InvalidChatqaResponseBody as e:
+        pytest.fail(str(e))
+    assert len(response_text.split()) <= 10, \
+        "/v1/chatqa API call made with max_new_tokens set to 10. Expecting the answer to be less than 10 words"
+    refreshed_resp = fingerprint_api_helper.append_arguments(question)
+    assert refreshed_resp.json() == old_arguments
 
 
 @allure.testcase("IEASG-T42")

@@ -42,3 +42,29 @@ def test_fingerprint_parameters_modification(fingerprint_api_helper):
     response = fingerprint_api_helper.append_arguments_custom_body(invalid_body)
     max_new_tokens = response.json().get("parameters").get("max_new_tokens")
     assert max_new_tokens != 666, "'append argument' API call should not modify parameters"
+
+
+@allure.testcase("IEASG-T53")
+def test_fingerprint_change_arguments(fingerprint_api_helper):
+    """
+    Retrieve current value for max_new_tokens and increase its value by 1.
+    Verify if the operation succeeded.
+    """
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    current_max_new_tokens = current_arguments.json()["parameters"]["max_new_tokens"]
+
+    body = [
+        {
+            "name": "llm",
+            "data": {
+                "max_new_tokens": current_max_new_tokens + 1,
+                "top_k": 10
+            }
+        }
+    ]
+
+    response = fingerprint_api_helper.change_arguments(body)
+    assert response.status_code == 200, "Unexpected status code"
+    new_arguments = fingerprint_api_helper.append_arguments("")
+    new_value_max_new_tokens = new_arguments.json()["parameters"]["max_new_tokens"]
+    assert new_value_max_new_tokens == current_max_new_tokens + 1

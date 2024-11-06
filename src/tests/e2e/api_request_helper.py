@@ -83,9 +83,24 @@ class ApiRequestHelper:
         self.api_port = api_port
         self.default_headers = {"Content-Type": "application/json"}
 
+    def change_arguments(self, json_data):
+        """
+        /v1/system_fingerprint/change_arguments API call
+        """
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            start_time = time.time()
+            response = requests.post(
+                f"http://127.0.0.1:{pf.local_port}/v1/system_fingerprint/change_arguments",
+                headers=self.default_headers,
+                json=json_data
+            )
+            duration = round(time.time() - start_time, 2)
+            print(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
+            return ApiResponse(response, duration)
+
     def append_arguments(self, text):
         """
-        /v1/append_arguments API call to Fingerprint microservice
+        /v1/system_fingerprint/append_arguments API call
         """
         return self._append_arguments({"text": text})
 

@@ -2,5 +2,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 --extra-index-url https://download.pytorch.org/whl/cpu
-langsmith==0.1.85
+langsmith==0.1.125
 llama-index-embeddings-text-embeddings-inference==0.1.4

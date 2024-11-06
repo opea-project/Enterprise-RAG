@@ -84,7 +84,7 @@ spec:
                 optional: true
           securityContext:
             {}
-          image: "ghcr.io/huggingface/text-generation-inference:2.1.0"
+          image: "ghcr.io/huggingface/text-generation-inference:2.4.0"
           args:
             - --model-id
             - "$(LLM_TGI_MODEL_NAME)"

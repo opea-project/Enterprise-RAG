@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   llm-tgi-model-server:
-    image: ghcr.io/huggingface/text-generation-inference:2.1.0
+    image: ghcr.io/huggingface/text-generation-inference:2.4.0
     container_name: llm-tgi-model-server
     ports:
       - "${LLM_TGI_PORT}:80"

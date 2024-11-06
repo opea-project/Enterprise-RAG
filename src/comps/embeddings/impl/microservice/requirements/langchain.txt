@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 --extra-index-url https://download.pytorch.org/whl/cpu
-langchain==0.2.7
-langchain-core==0.2.25
-langchain-huggingface==0.0.3
-langsmith==0.1.85
+langchain==0.3.6
+langchain-huggingface==0.1.2
+langsmith==0.1.125

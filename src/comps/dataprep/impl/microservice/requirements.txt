@@ -14,11 +14,10 @@ beautifulsoup4==4.12.3
 docx2txt==0.8
 easyocr==1.7.1
 huggingface_hub==0.24.5
-langchain==0.2.13
-langchain-community==0.2.12
-langchain-core==0.2.30
-langchain-text-splitters==0.2.2
-langsmith==0.1.99
+langchain==0.3.6
+langchain-community==0.3.0
+langchain-text-splitters==0.3.0
+langsmith==0.1.125
 markdown==3.0.0
 pandas==2.2.2
 Pillow==10.4.0

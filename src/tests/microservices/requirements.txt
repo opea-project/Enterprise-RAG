@@ -3,3 +3,5 @@
 
 pytest==7.4.4 # MIT
 allure-pytest==2.13.5 # Apache 2.0
+python-on-whales==0.73.0  # MIT
+requests==2.25.1 # Apache 2.0

@@ -9,7 +9,7 @@ import { BsPlus } from "react-icons/bs";
 import * as Yup from "yup";
 import { ValidationError } from "yup";
 
-import { improperCharacters } from "@/utils/validators";
+import { noImproperCharacters } from "@/utils/validators";
 
 const inputMessage =
   "Please enter valid URL that starts with protocol (http:// or https://)";
@@ -19,9 +19,9 @@ const validationSchema = Yup.object().shape({
     .url(inputMessage)
     .required(inputMessage)
     .test(
-      "improper-characters",
+      "no-improper-characters",
       "Your URL contains improper characters. Please try again",
-      improperCharacters(),
+      noImproperCharacters(),
     ),
 });
 

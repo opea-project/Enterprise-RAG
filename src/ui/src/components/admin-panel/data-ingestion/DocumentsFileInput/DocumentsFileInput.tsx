@@ -16,27 +16,35 @@ import * as Yup from "yup";
 import { ValidationError } from "yup";
 
 import {
-  fileNameImproperCharacters,
-  unsupportedFileExtension,
+  CLIENT_MAX_BODY_SIZE,
+  fileHasSupportedType,
+  noImproperCharactersInFileName,
+  totalFileSizeWithinLimit,
 } from "@/utils/validators";
 
 const acceptedFileTypes =
   ".pdf,.html,.txt,.doc,.docx,.ppt,.pptx,.md,.xml,.json,.jsonl,.yaml,.xls,.xlsx,.csv";
 const acceptedFileTypesArray = acceptedFileTypes.split(",");
 
-const validationSchema = Yup.array().of(
-  Yup.mixed()
-    .test(
-      "unsupported-file-extension",
-      "Some of the files you are trying to upload are in an unsupported format. Please try again",
-      unsupportedFileExtension(acceptedFileTypesArray),
-    )
-    .test(
-      "improper-characters",
-      "Some of the files you are trying to upload have improper characters. Please try again",
-      fileNameImproperCharacters(),
-    ),
-);
+const validationSchema = Yup.array()
+  .of(
+    Yup.mixed()
+      .test(
+        "file-has-supported-type",
+        "Some of the files you are trying to upload are in an unsupported format. Please try again",
+        fileHasSupportedType(acceptedFileTypesArray),
+      )
+      .test(
+        "no-improper-characters-in-file-name",
+        "Some of the files you are trying to upload have improper characters. Please try again",
+        noImproperCharactersInFileName(),
+      ),
+  )
+  .test(
+    "total-file-size-within-limit",
+    `The total size of the files you are trying to upload exceeds the limit - ${CLIENT_MAX_BODY_SIZE}MB. Please upload them separately or in smaller batches`,
+    totalFileSizeWithinLimit(),
+  );
 
 const validateDocuments = async (documents: File[] | FileList) => {
   try {
@@ -48,11 +56,13 @@ const validateDocuments = async (documents: File[] | FileList) => {
 };
 
 interface DocumentsFileInputProps {
+  documents: File[];
   setDocuments: Dispatch<SetStateAction<File[]>>;
   disabled: boolean;
 }
 
 const DocumentsFileInput = ({
+  documents,
   setDocuments,
   disabled,
 }: DocumentsFileInputProps) => {
@@ -63,7 +73,10 @@ const DocumentsFileInput = ({
     event.preventDefault();
     if (!disabled) {
       const newFiles = [...event.dataTransfer.files];
-      const validationMessage = await validateDocuments(newFiles);
+      const validationMessage = await validateDocuments([
+        ...documents,
+        ...newFiles,
+      ]);
       setErrorMessage(validationMessage);
       if (validationMessage === "") {
         setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
@@ -85,7 +98,10 @@ const DocumentsFileInput = ({
     const newFiles = event.target.files;
 
     if (newFiles) {
-      const validationMessage = await validateDocuments(newFiles);
+      const validationMessage = await validateDocuments([
+        ...documents,
+        ...newFiles,
+      ]);
       setErrorMessage(validationMessage);
       if (validationMessage === "") {
         setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
@@ -96,7 +112,11 @@ const DocumentsFileInput = ({
   return (
     <>
       {errorMessage !== "" && (
-        <p className="documents-file-input-error-alert">{errorMessage}</p>
+        <div className="documents-file-input-error-alert">
+          {errorMessage.split(". ").map((sentence, index) => (
+            <p key={index}>{sentence}.</p>
+          ))}
+        </div>
       )}
       <div
         onDrop={handleFileInputDrop}
@@ -122,6 +142,7 @@ const DocumentsFileInput = ({
         >
           Browse Files
         </button>
+        <p className="pt-2">File size limit: {CLIENT_MAX_BODY_SIZE}MB</p>
         <input
           ref={fileInputRef}
           type="file"

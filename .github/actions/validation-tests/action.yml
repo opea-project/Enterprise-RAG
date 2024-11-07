@@ -132,10 +132,11 @@ runs:
     - name: Generate test results feedback
       id: run-conclusion
       run: |
+        ZEPHYR_URL=$(cat .zephyr-url)
         if [[ ${{ steps.run-all.outcome }} == "failure" ]] || [[ ${{ steps.run-some.outcome }} == "failure" ]]; then
-          echo "conclusion_message=:x: Tests failed" >> $GITHUB_OUTPUT;
+          echo "conclusion_message=:x: [Tests failed](${ZEPHYR_URL})" >> $GITHUB_OUTPUT;
         elif [[ ${{ steps.run-all.outcome }} == "success" ]] || [[ ${{ steps.run-some.outcome }} == "success" ]]; then
-          echo "conclusion_message=:white_check_mark: Tests passed" >> $GITHUB_OUTPUT;
+          echo "conclusion_message=:white_check_mark: [Tests passed](${ZEPHYR_URL})" >> $GITHUB_OUTPUT;
         fi
       shell: bash
 

@@ -132,6 +132,7 @@ runs:
     - name: Generate test results feedback
       id: run-conclusion
       run: |
+        cd zephyr-dir/tools
         ZEPHYR_URL=$(cat .zephyr-url)
         if [[ ${{ steps.run-all.outcome }} == "failure" ]] || [[ ${{ steps.run-some.outcome }} == "failure" ]]; then
           echo "conclusion_message=:x: [Tests failed](${ZEPHYR_URL})" >> $GITHUB_OUTPUT;

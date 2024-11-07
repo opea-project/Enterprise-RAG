@@ -6,7 +6,9 @@ on:
 
 jobs:
     validate-microservices:
-      if: ${{ (github.event.issue.pull_request) && contains(github.event.comment.body, '/RunTests') }}
+      if: |
+        (github.event.issue.pull_request) && contains(github.event.comment.body, '/RunTests') &&
+        (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
       name: "Validation :: Microservices"
       runs-on: [ innersource.prod.amr.dind ]
       container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04

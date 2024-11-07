@@ -9,6 +9,7 @@ on:
 
 jobs:
   Trivy-scan:
+    if: ${{ github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution' }}
     runs-on: [innersource.prod.amr.dind]
     name: Trivy Scan
     container:

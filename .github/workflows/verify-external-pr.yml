@@ -37,7 +37,9 @@ on:
 
 jobs:
   SDLScans:
-    if: ${{ (github.event.inputs.SDL == 'yes') && (github.event.inputs.Create-PR == 'no') }}
+    if: |
+      (github.event.inputs.SDL == 'yes') && (github.event.inputs.Create-PR == 'no') &&
+      (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
     runs-on: [innersource.prod.amr.dind]
     defaults:
       run:
@@ -59,7 +61,9 @@ jobs:
         PR-number: ${{ github.event.inputs.PR-number }}
 
   validate-microservices:
-    if: ${{ (github.event.inputs.Validation-tests == 'yes') && (github.event.inputs.Create-PR == 'no') }}
+    if: |
+      (github.event.inputs.Validation-tests == 'yes') && (github.event.inputs.Create-PR == 'no') &&
+      (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
     name: "Validation :: Microservices tests"
     runs-on: [ innersource.prod.amr.dind ]
     container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
@@ -85,7 +89,7 @@ jobs:
     - name: Validation tests
       uses: ./.github/actions/validation-tests
       with:
-        Repository-name: ${{ github.repository }}
+        Repository-name: ${{ github.event.inputs.Repository-name }}
         PR-number: ${{ github.event.inputs.PR-number }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         SSH_CONFIG: ${{ secrets.SSH_CONFIG }}
@@ -93,7 +97,9 @@ jobs:
         RAG_SOLUTION_INFRA_PAT: ${{ secrets.RAG_SOLUTION_INFRA_PAT }}
 
   copy-pr:
-    if: ${{ github.event.inputs.Create-PR == 'yes' }}
+    if: |
+      (github.event.inputs.Create-PR == 'yes') &&
+      (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
     runs-on: [innersource.prod.amr.dind]
     defaults:
       run:

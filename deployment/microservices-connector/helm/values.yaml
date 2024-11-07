@@ -20,8 +20,8 @@ tokens:
 common_tag: &tag "latest"
 common_repository: &repo "localhost:5000"
 
-llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
-llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x22B-Instruct-v0.1"
+llm_model: &cpu_model "mistralai/Mistral-7B-Instruct-v0.1"
+llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 images:
   gmcManager:

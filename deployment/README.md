@@ -26,7 +26,6 @@ The `configure.sh` script automates the setup process by installing the necessar
 - `docker`
 - `golang` (version 1.22.1)
 - `helm`
-- `awscli`
 - `zip`
 - `jq`
 
@@ -38,11 +37,8 @@ Proxy variables are optional.
 > [!NOTE]
 > The images can be built directly from the source using the `update_images.sh` script and pushed to user defined registry. In such case please modify paths to images in [values.yaml](./microservices-connector/helm/values.yaml)
 
-> [!NOTE]
-> There is an option to use AWS for storing already build images. We can use `configure.sh` script and pass AWS credentials so new build images would be pushed to ECR on AWS.
-
 ``` 
-/configure.sh -g HUG_TOKEN -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
+/configure.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
 ```
 In such case please modify paths to images in [values.yaml](./microservices-connector/helm/values.yaml)
 
@@ -99,7 +95,6 @@ Run `./install_chatqna.sh --help` to get detailed information.
 ```
 Usage: ./install_chatqna.sh [OPTIONS]
 Options:
-        --aws: Use aws registry.
         --grafana_password (REQUIRED with --telemetry): Initial password for grafana.
         --kind: Changes dns value for telemetry(kind is kube-dns based).
         --deploy <PIPELINE_NAME>: Start the deployment process.
@@ -134,11 +129,9 @@ To access the cluster please update your `/etc/hosts` on your machine and match 
 
 Example file content:
 
-```
-<Ingress external IP>     erag.com
-<Ingress external IP>     grafana.erag.com
-<Ingress external IP>     auth.erag.com
 ``` 
+<Ingress external IP>     erag.com grafana.erag.com auth.erag.com
+```
 On Windows machine file is located in `C:\Windows\System32\drivers\etc\hosts`.
 
 Next, you can access Enterprise RAG UI by typing in the web browser: `https://erag.com` on your local machine. 

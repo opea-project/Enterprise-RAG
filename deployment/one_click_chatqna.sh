@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0  -g HUG_TOKEN -z GRAFANA_PASSWORD -a [AWS_ACCESS_KEY_ID] -s [AWS_SECRET_ACCESS_KEY] -r [REGION] [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] -i [IP] "
+  echo "Usage: $0  -g HUG_TOKEN -z GRAFANA_PASSWORD [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] -i [IP] "
     exit 1
 }
 
@@ -24,36 +24,28 @@ ENV_FILE_NAME=.env
 
 # Parse command-line arguments
 # !TODO this should be changed to use non-positional parameters
-while getopts "g:z:a:s:r:p:u:n:d:t:y:" opt; do
+while getopts "g:z:p:u:n:d:t:y:i:" opt; do
     case $opt in
         g) HUG_TOKEN="$OPTARG";;
         z) GRAFANA_PASSWORD="$OPTARG" ;;
-        a) AWS_ACCESS_KEY_ID="$OPTARG";;
-        s) AWS_SECRET_ACCESS_KEY="$OPTARG";;
-        r) REGION="$OPTARG";;
         p) RAG_HTTP_PROXY="$OPTARG";;
         u) RAG_HTTPS_PROXY="$OPTARG";;
         n) RAG_NO_PROXY="$OPTARG" ;;
         d) PIPELINE="$OPTARG" ;;
         t) TAG="$OPTARG" ;;
         y) REGISTRY="$OPTARG" ;;
-	i) IP="$IP" ;;
+        i) IP="$OPTARG" ;;
         *) usage ;;
     esac
 done
 
 # Check if mandatory parameters are provided
-if [ -z "$HUG_TOKEN" ]; then
-    usage
-fi
-
-# Check if mandatory parameters are provided
-if [ -z "$GRAFANA_PASSWORD" ]; then
+if [ -z "$HUG_TOKEN" ] || [ -z "$GRAFANA_PASSWORD" ]; then
     usage
 fi
 
 # Setup the environment
-bash configure.sh -a "$AWS_ACCESS_KEY_ID" -s "$AWS_SECRET_ACCESS_KEY" -r "$REGION" -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY"
+bash configure.sh -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY"
 
 # Build images & push to local registry
 source $ENV_FILE_NAME
@@ -62,14 +54,6 @@ bash update_images.sh --setup-registry --build --push --registry "$REGISTRY" --t
 # Set helm values
 bash set_values.sh -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY" -g "$HUG_TOKEN"
 
-# Open tunel for remote host
-# !TODO kill tunneling
-if [ -n "$REMOTE" ]; then
-   echo "Forwarding docker registry on port 5000"
-   nohup ssh -R 5000:5000 "$REMOTE" >> 5000-registry-tunnel.out 2>&1 &
-fi
-
-
 # Verify kubectl
 if ! command_exists kubectl; then
     echo "Make sure that kubectl is installed"
@@ -77,4 +61,4 @@ if ! command_exists kubectl; then
 fi
 
 # Install chatqna & run test
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --ui --registry "$REGISTRY" --tag "$TAG" --test --grafana_password "$GRAFANA_PASSWORD" --ip "$IP"
+bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test --grafana_password "$GRAFANA_PASSWORD" --ip "$IP"

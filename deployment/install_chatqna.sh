@@ -14,7 +14,7 @@ ui_path="$repo_path/deployment/ui/chat-qna/helm-ui"
 auth_path="$repo_path/deployment/auth/"
 api_gateway_path="$repo_path/deployment/auth/apisix-helm"
 api_gateway_crd_path="$repo_path/deployment/auth/apis-crd-helm"
-ingress_path="$repo_path/deployment/ingress"
+configs_path="$repo_path/deployment/configs"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -41,9 +41,6 @@ KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
 
-# aws vars
-ECR_REGISTRY_URL=""
-ECR_PASSWORD=""
 GRAFANA_PASSWORD=""
 
 # others
@@ -56,7 +53,6 @@ available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQ
 function usage() {
     echo -e "Usage: $0 [OPTIONS]"
     echo -e "Options:"
-    echo -e "\t--aws: Use aws registry."
     echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
     echo -e "\t--auth: Start auth services."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
@@ -76,24 +72,6 @@ function usage() {
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
     echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease"
-}
-
-# get aws credentials configured via aws-cli
-get_aws_credentials() {
-    local region aws_account_id
-
-    region=$(aws configure get region)
-    aws_account_id=$(aws sts get-caller-identity --query "Account" --output text)
-
-    if [ -z "$region" ] || [ -z "$aws_account_id" ]; then
-        print_log "Error: AWS region or account ID could not be determined."
-        print_log "Please login to aws to be able to pull or push images."
-        exit 1
-    fi
-
-    ECR_REGISTRY_URL="${aws_account_id}.dkr.ecr.${region}.amazonaws.com"
-    ECR_PASSWORD=$(aws ecr get-login-password --region "$region")
-    print_log "Logged into AWS"
 }
 
 print_header() {
@@ -126,25 +104,6 @@ helm_install() {
         print_log "helm $msg in $namespace of $name failed. Exiting"
         exit 1
     fi
-}
-
-# create secret in given namespace based on aws credentials
-create_or_replace_secret() {
-    local namespace
-    namespace=$1
-
-    # resetting the k8s secret with the ecr login info
-    if kubectl get secret regcred -n "$namespace" > /dev/null 2>&1; then
-        kubectl delete secret regcred -n "$namespace"
-    fi
-    # create docker.config based secrets for registry
-    kubectl create secret docker-registry regcred \
-      --docker-server="$ECR_REGISTRY_URL" \
-      --docker-username=AWS \
-      --docker-password="$ECR_PASSWORD" \
-      -n "$namespace"
-
-    if $?; then print_log "secret regcred at $namespace created"; fi
 }
 
 # check if all pods in a namespace or specific pod by name are ready
@@ -201,7 +160,7 @@ function start_and_keep_port_forwarding() {
 
     local PID=""
 
-    echo "Starting and monitoring port-forwarding for $SVC_NAME in namespace $NAMESPACE"
+    print_log "Starting and monitoring port-forwarding for $SVC_NAME in namespace $NAMESPACE"
 
     while true
     do
@@ -226,6 +185,33 @@ kill_process() {
     fi
 }
 
+function create_certs() {
+    print_header "Generate self-signed certificates"
+
+    if [[ ! -e tls.key || ! -e tls.crt ]]; then
+        openssl req -x509 -new -nodes -days 365 -keyout tls.key -out tls.crt -config "$configs_path"/openssl.cnf > /dev/null 2>&1
+        print_log "Generated certificates"
+    else
+        print_log "Proceeding with existing certificates"
+    fi
+
+    # flags initialized before while loop
+    if $ui_flag; then
+        kubectl get namespace $UI_NS > /dev/null 2>&1 || kubectl create namespace $UI_NS
+        kubectl get secret tls-secret -n $UI_NS > /dev/null 2>&1|| kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $UI_NS
+    fi
+
+    if $telemetry_flag; then
+        kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
+        kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $TELEMETRY_NS
+    fi
+
+    if $auth_flag; then
+        kubectl get namespace $AUTH_NS > /dev/null 2>&1 || kubectl create namespace $AUTH_NS
+        kubectl get secret tls-secret -n $AUTH_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $AUTH_NS
+    fi
+}
+
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
@@ -239,13 +225,6 @@ function start_deployment() {
     kubectl get namespace $GMC_NS > /dev/null 2>&1 || kubectl create namespace $GMC_NS
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
     kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-
-    # create aws secrets if needed
-    if [[ "$REGISTRY" =~ "aws" ]]; then
-        create_or_replace_secret "$DEPLOYMENT_NS" > /dev/null 2>&1
-        create_or_replace_secret "$DATAPREP_NS" > /dev/null 2>&1
-        create_or_replace_secret "$GMC_NS" > /dev/null 2>&1
-    fi
 
     helm_install $GMC_NS gmc "$gmc_path "
 
@@ -278,9 +257,6 @@ function start_telemetry() {
 
     kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
     kubectl get namespace $TELEMETRY_TRACES_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_TRACES_NS
-
-    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$TELEMETRY_NS"> /dev/null 2>&1; fi
-    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$TELEMETRY_TRACES_NS"> /dev/null 2>&1; fi
 
     # add repo if needed
     if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi # for prometheus/k8s/prometheus operator
@@ -329,6 +305,8 @@ function start_telemetry() {
 function clear_telemetry() {
     print_header "Clear telemetry"
 
+    kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
+
     # remove CR manually to allow (helm uninstall doesn't remove it!)
     kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS"
     helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr
@@ -345,7 +323,7 @@ function start_authentication() {
 
     print_log "Start authentication"
 
-    helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS"
+    helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
     print_log "waiting until pods in $AUTH_NS are ready"
     wait_for_condition check_pods "$AUTH_NS"
@@ -372,6 +350,8 @@ function start_authentication() {
 function clear_authentication() {
     print_header "Clear authentication"
 
+    kubectl get secret tls-secret -n $AUTH_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $AUTH_NS
+
     helm status -n "$AUTH_NS" keycloak > /dev/null 2>&1 && helm -n "$AUTH_NS" uninstall keycloak
 
     # if pvc exists add finalizers & remove it
@@ -383,17 +363,10 @@ function clear_authentication() {
 
         kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1 && kubectl delete pvc -n "$AUTH_NS" data-keycloak-postgresql-0
     fi
-
-
-    kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
 }
 
 function start_ingress() {
     print_header "Start ingress"
-
-    # Create certs
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=ent-rag.com" > /dev/null 2>&1
-    kubectl create secret tls tls-secret --key tls.key --cert tls.crt
 
     # Install ingress
     if ! helm repo list | grep -q 'ingress-nginx' ; then helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx ; fi
@@ -402,26 +375,13 @@ function start_ingress() {
 
     print_log "waiting until pods in $INGRESS_NS are ready"
     wait_for_condition check_pods "$INGRESS_NS"
-
-    # Patch external IP
-    kubectl patch svc ingress-nginx-controller -n ingress-nginx -p "{\"spec\": {\"type\": \"LoadBalancer\", \"externalIPs\":[\"$IP\"]}}"
-
-    # Apply routes
-    kubectl apply -f "$ingress_path"/configs/ingress-grafana.yaml
-    kubectl apply -f "$ingress_path"/configs/ingress-ui.yaml
-    kubectl apply -f "$ingress_path"/configs/ingress-keycloak.yaml
 }
 
 function clear_ingress() {
     print_header "Clear ingress"
 
-    kubectl get secret tls-secret > /dev/null 2>&1 && kubectl delete secret tls-secret
-
+    rm -f tls.crt tls.key
     helm status -n "$INGRESS_NS" ingress-nginx > /dev/null 2>&1 && helm delete -n "$INGRESS_NS" ingress-nginx
-
-    kubectl get ingress.networking.k8s.io -n $TELEMETRY_NS grafana > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-grafana.yaml
-    kubectl get ingress.networking.k8s.io -n $UI_NS ui > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-ui.yaml
-    kubectl get ingress.networking.k8s.io -n $AUTH_NS keycloak > /dev/null 2>&1 && kubectl delete -f "$ingress_path"/configs/ingress-keycloak.yaml
 }
 
 function start_gateway() {
@@ -468,9 +428,10 @@ function start_ui() {
 
     kubectl get namespace $UI_NS > /dev/null 2>&1 || kubectl create namespace $UI_NS
 
-    if [[ "$REGISTRY" =~ "aws" ]] ; then create_or_replace_secret "$UI_NS" > /dev/null 2>&1; fi
-
     helm_install "$UI_NS" chatqa-app "$ui_path" "$HELM_INSTALL_UI_DEFAULT_ARGS"
+
+    # !TODO this should be moved to UI helm templates
+    kubectl apply -f "$configs_path/ingress-ui.yaml"
 
     print_log "waiting until pods $UI_NS are ready."
     wait_for_condition check_pods "$UI_NS"
@@ -480,11 +441,10 @@ function start_ui() {
 function clear_ui() {
     print_header "Clear UI"
 
-    if helm status -n $UI_NS chatqa-app > /dev/null 2>&1; then
-        helm uninstall -n $UI_NS chatqa-app
-    fi
-
-    kubectl get ns $UI_NS > /dev/null 2>&1 && kubectl delete ns $UI_NS
+    # !TODO mv ingress object UI to helm
+    kubectl get ingress.networking.k8s.io -n $UI_NS ui > /dev/null 2>&1 && kubectl delete -f "$configs_path"/ingress-ui.yaml
+    kubectl get secret tls-secret -n $UI_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $UI_NS
+    helm status -n $UI_NS chatqa-app > /dev/null 2>&1 && helm uninstall -n $UI_NS chatqa-app
 }
 
 
@@ -504,9 +464,6 @@ clear_auth_flag=false
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --aws)
-            REGISTRY=205130860845.dkr.ecr.us-west-2.amazonaws.com
-            ;;
         --kind)
             LOKI_DNS_FLAG="--set loki.global.dnsService=kube-dns"
             TEMPO_DNS_FLAG="--set tempo.global.dnsService=kube-dns"
@@ -623,12 +580,12 @@ TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
 HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG --set aliasIP=$IP"
 
 # !TODO needs to be verified if we need values.yaml to be deployed
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="--set controller.hostPort.enabled=true  --set controller.ingressClass=nginx -f $ingress_path/values.yaml"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--set controller.hostPort.enabled=true --set controller.ingressClass=nginx -f $configs_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS=""
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS=""
 # !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
 HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user \
-  --set auth.adminPassword=$keycloak_pass --set tls.enabled=true --set tls.autoGenerated=true --set ingress.tls=true --set ingress.selfSigned=true --set ingress.enabled=true --set ingress.hostname=auth.erag.com --set ingress.servicePort=https --set ingress.ingressClassName=nginx"
+  --set auth.adminPassword=$keycloak_pass -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
 
 HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
 HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
@@ -638,12 +595,8 @@ HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
 #HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
 
 # Execute given arguments
-if [[ "$REGISTRY" =~ "aws" ]]; then
-    print_log "Log into aws"
-    get_aws_credentials
-fi
-
 if $auth_flag; then
+    create_certs
     start_authentication
     start_gateway
 fi

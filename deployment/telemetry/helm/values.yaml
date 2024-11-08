@@ -24,6 +24,17 @@ kube-prometheus-stack:
         exemplarTraceIdDestinations:
           datasourceUid: tempo
           traceIdLabelName: traceID
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      pathType: Prefix
+      hosts:
+        - grafana.erag.com
+      path: /
+      tls:
+        - hosts:
+            - grafana.erag.com
+          secretName: tls-secret
   prometheus:
     prometheusSpec:
       enableRemoteWriteReceiver: true

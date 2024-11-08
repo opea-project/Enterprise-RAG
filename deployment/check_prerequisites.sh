@@ -121,10 +121,6 @@ if ! command_exists jq; then
     print_err "jq is not installed."
 fi
 
-if ! command_exists aws; then
-    print_err "awscli is not installed."
-fi
-
 if ! command_exists make; then
     print_err "make is not installed."
 fi

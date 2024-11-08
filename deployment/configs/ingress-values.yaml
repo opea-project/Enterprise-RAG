@@ -1,0 +1,6 @@
+controller:
+  config:
+    proxy-read-timeout: "3600"
+    proxy-send-timeout: "3600"
+    proxy-connect-timeout: "3600"
+    proxy-body-size: "64m"

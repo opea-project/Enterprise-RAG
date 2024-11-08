@@ -1,15 +1,12 @@
-# Telemetry
-/telemetry/helm/charts/*.tgz
-/telemetry/helm/charts/logs/charts/*.tgz
-/telemetry/helm/charts/traces/charts/*.tgz
-/telemetry/helm/example/pcm/
-
 # Deployment
 deployment/**/bin/
 deployment/*.out
 **/charts/*.tgz
-nohup*.out
-/deployment/microservices-connector/cover.out
+deployment/*.key
+deployment/*.crt
+
+# Telemetry
+/deployment/telemetry/helm/example/pcm/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

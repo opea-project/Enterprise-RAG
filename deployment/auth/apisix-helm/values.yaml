@@ -17,4 +17,9 @@ apisix:
       enabled: false
   dashboard:
     enabled: false
-
+  apisix:
+    nginx:
+      configurationSnippet:
+        httpStart: |
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;

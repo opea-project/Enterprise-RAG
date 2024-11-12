@@ -171,7 +171,6 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/deployment/microservices-connector"
             if $do_build_flag; then
                 cd "$path"
-                make build
                 make docker.build VERSION="$TAG"
             fi
 

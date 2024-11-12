@@ -5,7 +5,6 @@
 
 HELM_VERSION=v3.16.1
 DOCKER_VERSION=25.0.1
-GO_VERSION=1.22.1
 K8S_VERSION=1.29
 HABANA_PLUGIN_POD_NAME=habanalabs-device-plugin-daemonset
 HABANA_PLUGIN_NAMESPACE=habana-system
@@ -102,18 +101,6 @@ if command_exists docker; then
     fi
 else
     print_err "Docker is not installed."
-fi
-
-# Check Go installation
-if command_exists go; then
-    current_go_version=$(go version | awk '{print $3}')
-    if [[ "$current_go_version" =~ "$GO_VERSION" ]]; then
-            echo "Go version is $GO_VERSION."
-        else
-            print_err "Go version is not $GO_VERSION. Current version: $current_go_version."
-    fi
-else
-    print_err "Go is not installed."
 fi
 
 # Check apt packages

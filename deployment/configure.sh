@@ -10,10 +10,6 @@ echo "USE WITH CAUTION THIS SCRIPT USES SUDO PRIVILAGES TO INSTALL NEEDED PACKAG
 USING IT MAY OVERWRITE EXISTING CONFIGURATION. Press ctrl+c to cancel. Sleeping for 30s." && sleep 30
 
 
-GOROOT=/usr/local/go
-GOPATH=$HOME/go
-ENV_FILE_NAME=.env
-
 usage() {
     echo "Usage: $0 -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]"
     exit 1
@@ -74,40 +70,6 @@ if [[ -n "$RAG_HTTP_PROXY" || "$RAG_HTTPS_PROXY" || "$RAG_NO_PROXY" ]]; then
         mv tmp.config.json ~/.docker/config.json
         sudo systemctl restart docker
         echo "Created Docker config.json, restarting docker.service"
-    fi
-fi
-
-# Install Go if not already installed
-if [ -f $ENV_FILE_NAME ]; then
-    # shellcheck disable=SC1090
-    source $ENV_FILE_NAME
-fi
-
-if command_exists go; then
-    echo "Go is already installed."
-else
-    wget https://go.dev/dl/go1.22.1.linux-amd64.tar.gz
-    sudo tar -C /usr/local -xzf go1.22.1.linux-amd64.tar.gz
-    rm go1.22.1.linux-amd64.tar.gz
-
-    if [ -f $ENV_FILE_NAME ]; then
-        echo "Warning! $ENV_FILE_NAME exists; continues using the existing file"
-    else
-        cat <<EOL > $ENV_FILE_NAME
-export GOROOT=$GOROOT
-export GOPATH=$GOPATH
-export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
-EOL
-    fi
-
-    # shellcheck disable=SC1090
-    source $ENV_FILE_NAME
-
-    if command_exists go; then
-        echo "Go installation successful."
-    else
-        echo "Go installation failed."
-        exit 1
     fi
 fi
 

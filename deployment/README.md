@@ -24,7 +24,6 @@ The `configure.sh` script automates the setup process by installing the necessar
 
 - `make`
 - `docker`
-- `golang` (version 1.22.1)
 - `helm`
 - `zip`
 - `jq`
@@ -45,13 +44,6 @@ In such case please modify paths to images in [values.yaml](./microservices-conn
 
 
 
-As the result of `configure.sh`, a `.env` file is created. To enable Go-related configurations, source the `.env` file:
-
-```sh
-source .env
-```
-
-This step is crucial to avoid errors such as "make: go: No such file or directory" in subsequent steps.
 
 ### Build
 To build and push images from the source, use the `update_images.sh` script. This script performs the following:

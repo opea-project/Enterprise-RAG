@@ -11,23 +11,11 @@ dependencies:
 # Tempo - traces backend
 #########################################################
 # enabled by default
-- name: tempo-distributed
+- name: tempo
   alias: tempo
   condition: tempo.enabled
   repository: https://grafana.github.io/helm-charts
   version: "*"
-  tags:
-  - traces
-  - backend
-
-#########################################################
-# Jaeger
-#########################################################
-# optional
-- name: jaeger
-  version: "*"
-  condition: jaeger.enabled
-  repository: https://jaegertracing.github.io/helm-charts
   tags:
   - traces
   - backend

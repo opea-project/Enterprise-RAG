@@ -261,14 +261,7 @@ function start_telemetry() {
     # add repo if needed
     if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi # for prometheus/k8s/prometheus operator
     if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi # for grafana/loki/tempo
-    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi # opensearch
     if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi # opentelemetry collector/opentelemetry operator
-
-    # traces (optional dependecies)
-    if ! helm repo list | grep -q 'jaegertracing' ; then helm repo add jaegertracing  https://jaegertracing.github.io/helm-charts; fi # for jaeger
-
-    # other metrics-server/pcm...
-    if ! helm repo list | grep -q 'metrics-server' ; then helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ ; fi
 
     helm repo update  > /dev/null
 

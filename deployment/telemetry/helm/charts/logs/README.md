@@ -4,8 +4,7 @@
 
 Logs chart allows to deploy "logs" pipeline in following configurations:
 
-1) Default Logs pipeline (not custom image needed, but not logs from systemd units):
-
+1) Default Logs pipeline (not custom image needed, but without logs from systemd units):
 
 ```
 pods            -> otelcol-logs-daemonset/default      -> loki
@@ -18,70 +17,11 @@ pods
 journald        -> otelcol-logs-daemonset/journalctl   -> loki
 ```
 
-3) Logs Pipeline with additional OpenSearch logs backend:
-
-```
-pods
-journald        -> otelcol-logs-daemonset              -> loki
-                                                          opensearch
-```
-
-4) Logs pipeline without otelcol but collects both pods logs and systemd units logs:
-
-```
-pods
-journald        -> promtail                             -> loki
-```
-
-5) All above combined
-
-```
-pods
-journald        -> promtail                             -> loki
-
-pods
-journald        -> otelcol-logs-daemonset/journalctl    -> loki
-                                                           opensearch
-```
-
 ### Getting started
 
 #### Install metrics and logs telemetry
 
 Please follow instruciton from "base telemetry" [README Installation instruciton section](../../README.md).
-
-#### Optional components.
-
-##### a) OpenSearch logs backend
-
-Installed as upgrade to **"telemetry-logs"** release `[loki, otelcol/journalctl, opensearch]`:
-
-| **WARNING**   | 
-| ------------- |
-|  OpenSearch backend is opt-in **exprimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
-
-```
-helm upgrade --install telemetry-logs -n monitoring -f values-journalctl.yaml -f values-opensearch.yaml .
-```
-
-##### b) Promtail logs collector
-
-| **WARNING**   | 
-| ------------- |
-|  Promtail is opt-in **exprimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
-
-
-If you don't want to use custom image and one wants to have to access to systemd/journalctl logs, then you need log collector that can collect journald systemd unit logs.
-Promtail replaces otelcol and collects pods logs as well as systemd units logs.
-
-Both Promtail and otelcol can be deployed together (both generate different set of indexes/labels) in Loki.
-Logs from Promtail are directly transferred in Loki (otelcol is not used!).
-
-Consider deploying as a separate Helm chart release named “telemetry-logs-promtail”:
-
-```
-helm install telemetry-logs-promtail -n monitoring -f values-promtail.yaml .
-```
 
 ### Prerequisites (images/volumes)
 
@@ -190,18 +130,4 @@ spec:
       - args:
         - --config=/conf/relay.yaml
         - --set=service::telemetry::logs::level=debug
-```
-
-#### Debugging OpenSearch
-
-```
-# Check statefulset 
-kubectl get statefulset -n=monitoring -l app.kubernetes.io/component=opensearch-cluster-master
-
-# Check opensearch responds.
-curl -ik 127.0.0.1:8001/api/v1/namespaces/monitoring/services/opensearch-cluster-master:http/proxy/
-# Query opensearch indices.
-curl -ik '127.0.0.1:8001/api/v1/namespaces/monitoring/services/opensearch-cluster-master:http/proxy/_cat/indices?v'
-# Query "ss4o_logs" logs.
-curl -vik '127.0.0.1:8001/api/v1/namespaces/monitoring/services/opensearch-cluster-master:http/proxy/ss4o_logs-default-namespace/_search?pretty' -XGET -H 'Content-type: application/json' -d '{ "query": { "match_all": { } } }'
 ```

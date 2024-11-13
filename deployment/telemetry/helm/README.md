@@ -60,7 +60,6 @@ helm install telemetry-logs -n monitoring charts/logs
 "logs" chart deploys:
 - loki as logs backend and Grafana datasource,
 - OpenTelemetry collector in DaemonSet mode as logs collector only,
-- Optionally: OpenSearch, Promtail
 
 Check [logs README.md](charts/logs/README.md#optional-components) for details.
 
@@ -121,12 +120,9 @@ Telemetry including following components:
   - logs (subchart):
     - loki
     - opentelemetry-collector
-    - (optional) OpenSearch
-    - (optional) promtail
   - traces (subchart):
     - opentelemetry-operator
     - tempo 
-    - (optional) Jaeger
   - prometheus-redis-exporter
   - kube-prometheus-stack:
     - Prometheus operator

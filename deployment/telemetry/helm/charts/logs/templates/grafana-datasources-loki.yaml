@@ -17,7 +17,9 @@ data:
       uid: loki
       type: loki
       typeName: Loki
-      url: "http://loki-read.monitoring:3100"
+      #url: "http://loki-read.monitoring:3100"             # single scalable mode
+      #url: "http://telemetry-logs-loki.monitoring:3100     # monotlihic mode (direct/no gateway)
+      url: "http://telemetry-logs-loki-gateway.monitoring" # monolithic mode (with gateway)
       access: proxy
       editable: true
       # TODO example to be validated

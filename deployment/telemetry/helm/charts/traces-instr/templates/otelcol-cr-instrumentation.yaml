@@ -44,7 +44,6 @@ spec:
 
   propagators:
     # OTEL_PROPAGATORS
-    # Enum=tracecontext;baggage;b3;b3multi;jaeger;xray;ottrace;none
     - tracecontext
     - baggage
 

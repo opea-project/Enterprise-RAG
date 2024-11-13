@@ -10,7 +10,6 @@ kube-prometheus-stack:
   # https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-demo/values.yaml#L799
   grafana:
     plugins:
-      - grafana-opensearch-datasource
       - grafana-lokiexplore-app
     env:
       https_proxy: ""

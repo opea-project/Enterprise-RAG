@@ -41,11 +41,12 @@ spec:
         # identification
         - name: OTEL_SERVICE_NAME
           value: "{{.Namespace}}/{{.DplymntName}}"
-        # identification (namespace is used to distinguish different span names for different router-instances)
+        # identification (namespace is used to distinguish different span names for different router-instances) used by router not OTEL
         - name: OTEL_NAMESPACE
           value: "{{.Namespace}}"
-        - name: OTEL_RESOURCE_ATTRIBUTES
-          value: "namespace={{.Namespace}}"
+        ### TODO: Enabling this breaks traces->logs correlation when query in Grafana
+        # - name: OTEL_RESOURCE_ATTRIBUTES
+        #   value: "namespace={{.Namespace}}"
         # ratio: 0 never and 1 always with 0.5 half of queries will be traced
         - name: OTEL_TRACES_SAMPLER_FRACTION
           value: "1.0"

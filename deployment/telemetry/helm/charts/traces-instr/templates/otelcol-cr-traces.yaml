@@ -97,13 +97,8 @@ spec:
         verbosity: basic
 
       ### TRACES
-      otlp/jaeger:
-        endpoint: 'telemetry-traces-jaeger-collector.{{.Release.Namespace}}:4317' # grpc ??
-        tls:
-          insecure: true
       otlp/tempo:
-        # endpoint: 'tempo-gateway.tempo:80' # grpc ?? gateway is on 80
-        endpoint: 'telemetry-traces-tempo-distributor.{{.Release.Namespace}}:4317' # grpc ?? 
+        endpoint: 'telemetry-traces-tempo.{{.Release.Namespace}}:4317' # grpc ?? 
         tls:
           insecure: true
 
@@ -170,9 +165,6 @@ spec:
           # - nop
           # - debug/traces
           - otlp/tempo
-{{- if .Values.jaeger.enabled }}
-          - otlp/jaeger
-{{- end}}
 
     # https://opentelemetry.io/docs/collector/internal-telemetry/#activate-internal-telemetry-in-the-collector
     telemetry:

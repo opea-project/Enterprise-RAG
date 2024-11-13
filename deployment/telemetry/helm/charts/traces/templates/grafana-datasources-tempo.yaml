@@ -9,7 +9,7 @@ metadata:
     grafana_datasource: "1"
 data:
   # https://grafana.com/docs/grafana/latest/administration/provisioning/#custom-http-headers-for-data-sources
-  datasource-opensearch.yaml: |-
+  datasource-tempo.yaml: |-
     apiVersion: 1
     datasources:
     - name: tempo
@@ -17,7 +17,7 @@ data:
       typeName: Tempo
       typeLogoUrl: public/app/plugins/datasource/tempo/img/tempo_logo.svg
       access: proxy
-      url: http://{{.Release.Name}}-tempo-gateway.{{.Release.Namespace}}
+      url: http://{{.Release.Name}}-tempo.{{.Release.Namespace}}:3100
       user: ''
       database: ''
       editable: true

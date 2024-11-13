@@ -6,7 +6,3 @@ instrumentation:
   namespaces:
   - chatqa
   - dataprep
-
-# Enable jaeger as target for traces
-jaeger:
-  enabled: false

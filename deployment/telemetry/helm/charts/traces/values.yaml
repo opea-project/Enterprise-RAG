@@ -6,106 +6,80 @@ tempo:
   enabled: true
   # -------------
 
-  global:
-    clusterDomain: 'cluster.local'
-    # DNS service need to match deployed kubernetes
-    # kubectl get svc --namespace=kube-system -l k8s-app=kube-dns  -o jsonpath='{.items..metadata.name}'
-    # or redefine with extra helm argument: "--set tempo.global.dnsService=kube-dns" when install telemetry-logs
-    #dnsService: "kube-dns"   # for kind based setup
-    dnsService: "coredns"     # for kubespray based setup
-
-  gateway:
+  # Enable scrapping metrics from prometheus
+  serviceMonitor:
+    additionalLabels:
+      release: "telemetry"
     enabled: true
-  minio:
+
+  # Enable persistance
+  persistence:
     enabled: true
-  storage:
-    trace:
-      backend: s3
-      s3:
-        access_key: 'grafana-tempo'
-        secret_key: 'supersecret'
-        endpoint: 'telemetry-traces-minio:9000' # ORIGINAL for minio.enabled = true
-        bucket: 'tempo-traces'
-        insecure: true
-  traces:
-    otlp:
-      http:
-        enabled: true
-      grpc:
-        enabled: true
-  distributor:
-    affinity: null
-    config:
-      log_received_spans:
-        enabled: true
+    size: 50Gi
 
-  # overrides:
-  # global_overrides:
-  #   metrics_generator_processors:
-  #     - "service-graphs"
-  #     - "span-metrics"
+  # Tempo configuration
+  tempo:
+    reportingEnabled: false # disable anonymous reporting to Grafana Labs
+    receivers:
+      jaeger: null # ignore error because of helm null error for subcharts
+    # retention of traces (1 week)
+    retention: 168h
 
-  # Global overrides
-  global_overrides:
-    defaults:
-      metrics_generator:
-        processors:
-          - service-graphs
-          - span-metrics
+    # -- Service graph
+    metricsGenerator:
+      enabled: true
+      remoteWriteUrl: "http://telemetry-kube-prometheus-prometheus.monitoring:9090/api/v1/write"
 
-
-  # grafana-helm-charts/charts/tempo-distributed/values.yaml
-  metricsGenerator:
-    affinity: null
-    enabled: true
-    # processors:
-    #   - "service-graphs"
-    #   - "span-metric"
-    config:
-      # processors:
-      #   - "service-graphs"
-      #   - "span-metric"
+  # -- Dynamically Tempo configuration file (uses values from above)
+  # ### with extra comment 'EXTRA' to enable extra features available in distributed mode
+  config: |
+      memberlist:
+        cluster_label: "{{ .Release.Name }}.{{ .Release.Namespace }}"
+      multitenancy_enabled: {{ .Values.tempo.multitenancyEnabled }}
+      usage_report:
+        reporting_enabled: {{ .Values.tempo.reportingEnabled }}
+      compactor:
+        compaction:
+          block_retention: {{ .Values.tempo.retention }}
+      distributor:
+        receivers:
+          {{- toYaml .Values.tempo.receivers | nindent 8 }}
+      ingester:
+        {{- toYaml .Values.tempo.ingester | nindent 6 }}
+      server:
+        {{- toYaml .Values.tempo.server | nindent 6 }}
       storage:
-        remote_write_add_org_id_header: false
-        remote_write:
-        - url: http://telemetry-kube-prometheus-prometheus.monitoring:9090/api/v1/write
-          name: prometheus
-          # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/processor/spanmetricsprocessor/v0.95.0/connector/spanmetricsconnector/README.md
-          send_exemplars: true
-
-          # TODO:
-          # https://grafana.com/docs/tempo/latest/metrics-generator/#native-histograms
-          # https://grafana.com/docs/mimir/latest/visualize/native-histograms/#visualize-native-histograms
-          # send_native_histograms: true
-      processor:
-        service_graphs:
-          #histogram_buckets: [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8] # default
-          histogram_buckets: [0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 8.0, 10.0, 12.8, 15.0, 20.0, 25.0, 35.0, 45.0, 60.0, 90.0, 120.0]
-          dimensions: ['namespace']
-        span_metrics:
-          #histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 4.096, 8.192, 16.384] # default
-          histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 3.0, 4.096, 5.0, 6.0, 7.0, 8.192, 10.0, 12.0, 16.384, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0]
-          dimensions: ['namespace']
-
-#########################################################
-# Jaeger
-#########################################################
-jaeger:
-  # -------------
-  enabled: false
-  # -------------
-  # jaegertracing-helm-charts/charts/jaeger/values.yaml:503
-  collector:
-    service:
-      otlp:
-        grpc:
-          name: otlp-grpc
-          port: 4317
-          # nodePort:
-        http:
-          name: otlp-http
-          port: 4318
-          # nodePort:
+        {{- toYaml .Values.tempo.storage | nindent 6 }}
+      querier:
+        {{- toYaml .Values.tempo.querier | nindent 6 }}
+      query_frontend:
+        {{- toYaml .Values.tempo.queryFrontend | nindent 6 }}
+      overrides:
+        {{- toYaml .Values.tempo.global_overrides | nindent 6 }}
+        {{- if .Values.tempo.metricsGenerator.enabled }}
+            metrics_generator_processors:
+            - 'service-graphs'
+            - 'span-metrics'
+      metrics_generator:
+            storage:
+              path: "/tmp/tempo"
+              remote_write:
+                - url: {{ .Values.tempo.metricsGenerator.remoteWriteUrl }}
+                  send_exemplars: true  # EXTRA
+            # EXTRA
+            processor:
+              service_graphs:
+                #dimensions: []
+                dimensions: ['namespace'] # TODO/warning: breaks link from traces->logs
+                histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 3.0, 4.096, 5.0, 6.0, 7.0, 8.192, 10.0, 12.0, 16.384, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0]
+                max_items: 10000
+                wait: 10s
+                workers: 10
+              span_metrics:
+                #dimensions: []
+                dimensions: ['namespace'] # TODO/warning: breaks link from traces->logs
+                histogram_buckets: [0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256, 0.512, 1.024, 2.048, 3.0, 4.096, 5.0, 6.0, 7.0, 8.192, 10.0, 12.0, 16.384, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0]
+        {{- end }}
 
 #########################################################
 # OpenTelemetry operator

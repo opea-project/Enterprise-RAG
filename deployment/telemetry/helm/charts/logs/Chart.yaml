@@ -11,34 +11,10 @@ dependencies:
 - name: loki
   condition: loki.enabled
   repository: https://grafana.github.io/helm-charts
-  version: "6.18.*"
-  tags:
-  - logs
-  - backend
+  version: "*"
 
 - name: opentelemetry-collector
   version: "*"
   alias: otelcol-logs
   condition: otelcol-logs.enabled
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
-  tags:
-  - logs
-  - collector
-
-# optional
-- name: opensearch
-  version: "2.23.*"
-  condition: opensearch.enabled
-  repository:  https://opensearch-project.github.io/helm-charts/
-  tags:
-  - logs
-  - backend
-
-- name: promtail
-  version: "6.16.5"
-  condition: promtail.enabled
-  repository: https://grafana.github.io/helm-charts
-  tags:
-  - logs
-  - collector
-

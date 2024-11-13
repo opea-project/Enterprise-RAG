@@ -62,3 +62,9 @@
 * Component and version: Yup - 1.4.0
     * License: MIT License
     * Homepage: https://github.com/jquense/yup
+* Component and version: Mixtral-8x7B-Instruct - v0.1
+    * License: Apache 2.0
+    * Homepage: https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1
+* Component and version: Mixtral-8x22B-Instruct - v0.1
+    * License: Apache 2.0
+    * Homepage: https://huggingface.co/mistralai/Mixtral-8x22B-Instruct-v0.1

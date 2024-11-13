@@ -2,18 +2,18 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-set -e
-set -o pipefail
-
 DEFAULT_REGISTRY=localhost:5000
 REGISTRY_NAME=${DEFAULT_REGISTRY}
 TAG=latest
+_max_parallel_jobs=4
 
 components_to_build=()
 
 default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
+logs_dir="$repo_path/deployment/logs"
+mkdir -p $logs_dir
 
 use_proxy=""
 
@@ -25,6 +25,7 @@ usage() {
     echo -e "Usage: $0 [OPTIONS] [COMPONENTS...]"
     echo -e "Options:"
     echo -e "\t--build: Build specified components."
+    echo -e "\t-j|--jobs <N>: max number of parallel builds (default is $_max_parallel_jobs)."
     echo -e "\t--push: Push specified components to the registry."
     echo -e "\t--setup-registry: Setup local registry at port 5000."
     echo -e "\t--registry: Specify the registry (default is $DEFAULT_REGISTRY)."
@@ -70,9 +71,13 @@ tag_and_push() {
     fi
 
     docker tag "${full_image_name}" "${registry_url}/${full_image_name}"
-    docker push "${registry_url}/${full_image_name}"
+    docker push "${registry_url}/${full_image_name}"  &> ${logs_dir}/push_$(basename ${image_name}).log
 
-    helm_values_info+="    repository: \"${registry_url}/${image_name}\"\n    tag: \"${image_tag}\"\n"
+    if [ $? -eq 0 ]; then
+        echo "$full_image_name pushed succesfully"
+    else
+        echo "Push failed. Please check the logs at ${logs_dir}/push_$(basename ${image_name}).log for more details."
+    fi
 }
 
 docker_login_aws() {
@@ -113,7 +118,13 @@ build_component() {
 
     cd "${component_path}"
 
-    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args}
+    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} --progress=plain &> ${logs_dir}/build_$(basename ${image_name}).log
+
+    if [ $? -eq 0 ]; then
+        echo "$full_image_name built successfully"
+    else
+        echo "Build failed. Please check the logs at ${logs_dir}/build_$(basename ${image_name}).log for more details."
+    fi
 }
 
 do_build_flag=false
@@ -139,6 +150,14 @@ while [ $# -gt 0 ]; do
             shift
             TAG=${1}
             ;;
+        -j|--jobs)
+            shift
+            if { [ -n "$1" ] && [ "$1" -eq "$1" ] ; } &> /dev/null; then
+                _max_parallel_jobs=${1}
+            else
+                echo "Warning! The input '${1}' is not a valid number. Setting number of max parallel jobs to the default value of ${_max_parallel_jobs}."
+            fi
+            ;;
         --help)
             usage
             exit 0
@@ -152,6 +171,7 @@ done
 
 echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build_flag"
+echo "max parallel jobs = $_max_parallel_jobs"
 echo "do_push = $do_push_flag"
 echo "TAG = $TAG"
 echo "components_to_build = ${components_to_build[*]}"
@@ -164,14 +184,18 @@ if [ ${#components_to_build[@]} -eq 0 ]; then
     components_to_build=("${default_components[@]}")
 fi
 
+count_current_jobs=0
+
 for component in "${components_to_build[@]}"; do
     echo "processing the ${component}..."
+    (
     case $component in
         gmcManager)
             path="${repo_path}/deployment/microservices-connector"
             if $do_build_flag; then
                 cd "$path"
-                make docker.build VERSION="$TAG"
+                make docker.build VERSION="$TAG" &> ${logs_dir}/docker_${component}.log
+                echo "$component built succesfully"
             fi
 
             if $do_push_flag; then
@@ -291,4 +315,14 @@ for component in "${components_to_build[@]}"; do
             ;;
 
     esac
+    ) &
+
+    count_current_jobs=$((count_current_jobs + 1))
+    if [ "$count_current_jobs" -ge "$_max_parallel_jobs" ]; then
+        wait -n
+        current_jobs=$((current_jobs - 1))
+    fi
+
 done
+
+wait

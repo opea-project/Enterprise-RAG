@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -169,6 +169,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if_gaudi_flag=
+__pcidev=$(grep PCI_ID /sys/bus/pci/devices/*/uevent | grep -i 1da3: || echo "")
+if echo $__pcidev | grep -qE '1000|1001|1010|1011|1020|1030|1060'; then
+    if_gaudi_flag=true
+else
+    if_gaudi_flag=false
+fi
+
+echo "if_gaudi_flag = $if_gaudi_flag"
 echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build_flag"
 echo "max parallel jobs = $_max_parallel_jobs"
@@ -304,7 +313,6 @@ for component in "${components_to_build[@]}"; do
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
  
-
         otelcol-contrib-journalctl)
             path="${repo_path}"
             dockerfile="deployment/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
@@ -314,6 +322,18 @@ for component in "${components_to_build[@]}"; do
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
 
+        vllm-gaudi)
+            path="${repo_path}/src/comps/llms/impl/model_server/vllm"
+            dockerfile="docker/Dockerfile.hpu"
+            image_name=opea/vllm-gaudi
+
+            if $if_gaudi_flag;then
+                if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+                if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            else
+                echo "Skipping $component as it is not supported on this platform"
+            fi
+            ;;
     esac
     ) &
 

@@ -1,0 +1,118 @@
+---
+# Source: vllm-gaudi/templates/configmap.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-gaudi-config
+  labels:
+    helm.sh/chart: vllm-gaudi-0.8.0
+    app.kubernetes.io/name: vllm-gaudi
+    app.kubernetes.io/instance: vllm-gaudi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  LLM_DEVICE: "hpu"
+  PORT: "2080"
+  HF_TOKEN: "insert-your-huggingface-token-here"
+  http_proxy: ""
+  https_proxy: ""
+  no_proxy: ""
+---
+# Source: vllm/templates/service.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  labels:
+    helm.sh/chart: vllm-gaudi-0.8.0
+    app.kubernetes.io/name: vllm-gaudi
+    app.kubernetes.io/instance: vllm-gaudi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 2080
+      protocol: TCP
+      name: vllm-gaudi
+  selector:
+    app.kubernetes.io/name: vllm-gaudi
+    app.kubernetes.io/instance: vllm-gaudi
+---
+# Source: vllm-gaudi/templates/deployment.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gaudi
+  labels:
+    helm.sh/chart: vllm-gaudi-0.8.0
+    app.kubernetes.io/name: vllm-gaudi
+    app.kubernetes.io/instance: vllm-gaudi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm-gaudi
+      app.kubernetes.io/instance: vllm-gaudi
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm-gaudi
+        app.kubernetes.io/instance: vllm-gaudi
+    spec:
+      securityContext:
+        {}
+      containers:
+        - name: vllm-gaudi
+          envFrom:
+            - configMapRef:
+                name: vllm-gaudi-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          securityContext:
+            {}
+          image: "localhost:5000/opea/vllm-gaudi:latest"
+          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT)"]
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+          ports:
+            - name: http
+              containerPort: 2080
+              protocol: TCP
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          startupProbe:
+            failureThreshold: 120
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          resources:
+            limits:
+              habana.ai/gaudi: 8
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-llm
+        - name: tmp
+          emptyDir: {}

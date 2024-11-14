@@ -73,6 +73,8 @@ const (
 	LLMGuardInput StepNameType = "LLMGuardInput"
 	// LLMGuardOutput
 	LLMGuardOutput StepNameType = "LLMGuardOutput"
+	// VLLMGaudi
+	VLLMGaudi StepNameType = "VLLMGaudi"
 )
 
 type Executor struct {

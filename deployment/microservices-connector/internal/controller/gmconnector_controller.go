@@ -76,6 +76,7 @@ const (
 	LLMGuardInput            = "LLMGuardInput"
 	LLMGuardOutput           = "LLMGuardOutput"
 	Ingestion                = "Ingestion"
+	VLLMGaudi                = "VLLMGaudi"
 )
 
 var yamlDict = map[string]string{
@@ -103,6 +104,7 @@ var yamlDict = map[string]string{
 	LLMGuardInput:       yaml_dir + "in-guard-usvc.yaml",
 	LLMGuardOutput:      yaml_dir + "out-guard-usvc.yaml",
 	Ingestion:           yaml_dir + "ingestion-usvc.yaml",
+	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 }
 
 var (
@@ -262,6 +264,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 	return keyname == "TEI_EMBEDDING_ENDPOINT" ||
 		keyname == "RERANKING_SERVICE_ENDPOINT" ||
 		keyname == "TGI_LLM_ENDPOINT" ||
+		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||

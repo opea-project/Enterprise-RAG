@@ -14,8 +14,6 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  LLM_MODEL_SERVER_ENDPOINT: "http://llm-usvc-tgi"
-  LLM_MODEL_SERVER: "tgi"
   HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""
   https_proxy: ""
@@ -107,7 +105,7 @@ spec:
             runAsUser: 1000
             seccompProfile:
               type: RuntimeDefault
-          image: "opea/llm-tgi:latest"
+          image: "opea/llm:latest"
           imagePullPolicy: IfNotPresent
           ports:
             - name: llm-usvc

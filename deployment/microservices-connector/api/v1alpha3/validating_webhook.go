@@ -54,6 +54,7 @@ var (
 		"TorchserveEmbeddingGaudi",
 		"LLMGuardInput",
 		"LLMGuardOutput",
+		"VLLMGaudi",
 	}
 )
 

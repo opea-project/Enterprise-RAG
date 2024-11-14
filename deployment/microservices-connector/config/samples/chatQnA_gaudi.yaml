@@ -62,11 +62,13 @@ spec:
           serviceName: llm-svc
           config:
             endpoint: /v1/chat/completions
-            TGI_LLM_ENDPOINT: tgi-gaudi-svc
-            LLM_MODEL_SERVER_ENDPOINT: tgi-gaudi-svc
-      - name: TgiGaudi
+            LLM_MODEL_SERVER: vllm
+            LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
+      - name: VLLMGaudi
+        dependency: Hard
         internalService:
-          serviceName: tgi-gaudi-svc
+          serviceName: vllm-gaudi-svc
           config:
-            endpoint: /generate
+            endpoint: /v1/completions
           isDownstreamService: true
+

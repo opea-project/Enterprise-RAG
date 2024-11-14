@@ -21,7 +21,7 @@ common_tag: &tag "latest"
 common_repository: &repo "localhost:5000"
 
 llm_model: &cpu_model "Intel/neural-chat-7b-v3-1"
-llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
+llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x22B-Instruct-v0.1"
 
 images:
   gmcManager:
@@ -64,7 +64,7 @@ images:
     tag: *tag
     envfile: "src/comps/llms/impl/microservice/.env"
     envs:
-      LLM_MODEL_NAME: *cpu_model
+      LLM_MODEL_NAME: *hpu_model
   in-guard-usvc:
     image: "opea/in-guard"
     repository: *repo
@@ -85,6 +85,11 @@ images:
     envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.hpu"
     envs:
       LLM_TGI_MODEL_NAME: *hpu_model
+  vllm_gaudi:
+    image: "opea/vllm-gaudi"
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *hpu_model
 
 
 imagePullSecrets:

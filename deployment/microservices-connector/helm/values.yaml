@@ -87,6 +87,8 @@ images:
       LLM_TGI_MODEL_NAME: *hpu_model
   vllm_gaudi:
     image: "opea/vllm-gaudi"
+    repository: *repo
+    tag: *tag
     envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
     envs:
       LLM_VLLM_MODEL_NAME: *hpu_model

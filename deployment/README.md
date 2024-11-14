@@ -3,7 +3,7 @@
 - **Kubernetes Cluster**: Access to a Kubernetes v1.29 cluster
  - **CSI Driver**: The K8s cluster must have the CSI driver installed, using the [local-path-provisioner](https://github.com/rancher/local-path-provisioner) with `local_path_provisioner_claim_root` set to `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the guide: [How to Install Kubernetes via Kubespray](../docs/install_kubernetes.md).
  - **Operating System**: Ubuntu 22.04
- - **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
+ - **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance. If not, be sure to update [driver](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html) and check if [firmware's version](https://docs.habana.ai/en/latest/Installation_Guide/Firmware_Upgrade.html) is aligned with driver's version.
  - **Prepared Gaudi Node**: Please refer to the [Prepare Gaudi Node on K8s Setup](./microservices-connector/PREPARE_GAUDI.md) guide.
  - **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. For example, such access is mandatory when using the [Mixtral-8x22B](https://huggingface.co/mistralai/Mixtral-8x22B-Instruct-v0.1).
 

@@ -4,7 +4,7 @@
 import re
 
 
-def get_prompt(context_str: str, question: str) -> str:
+def get_prompt(question: str, context_str: str = "empty context") -> str:
     # Check if the context is primarily Chinese
     if (
         context_str
@@ -36,10 +36,10 @@ if __name__ == "__main__":
     print("1. Show example in Chinese:")
     context = "这里是一些示例搜索结果。"
     question = "你能帮我解答这个问题吗？"
-    prompt = get_prompt(context, question)
+    prompt = get_prompt(question, context)
     print(prompt)
     print("2. Show example in English:")
     context = "Here are some example search results."
     question = "Can you help me answer this question?"
-    prompt = get_prompt(context, question)
+    prompt = get_prompt(question, context)
     print(prompt)

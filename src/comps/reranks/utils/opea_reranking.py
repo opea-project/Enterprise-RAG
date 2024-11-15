@@ -106,7 +106,9 @@ class OPEAReranker:
             )
         else:
             logger.warning("No retrieved documents found. Using the initial query.")
-            query = input.initial_query.strip() # Just pass the initial query to the LLM
+            query = self._generate_query(
+                input.initial_query
+            )
 
         return LLMParamsDoc(query=query)
 
@@ -151,8 +153,8 @@ class OPEAReranker:
     def _generate_query(
         self,
         initial_query: str,
-        retrieved_docs: DocList[TextDoc],
-        best_response_list: RerankScoreResponse,
+        retrieved_docs: DocList[TextDoc] = None,
+        best_response_list: RerankScoreResponse = None,
         prompt_generator=prompt,
     ) -> str:
         """
@@ -168,15 +170,19 @@ class OPEAReranker:
             str: The final prompt for the query.
         """
         context_str = ""
-        if not best_response_list:
+        if not best_response_list and retrieved_docs:
             for doc in retrieved_docs:
                 context_str += " " + doc.text
-        else:
+            final_prompt = prompt_generator.get_prompt(initial_query, context_str)
+        elif best_response_list and retrieved_docs:
             ## Using only best responses
             for best_response in best_response_list:
                 context_str += " " + retrieved_docs[best_response["index"]].text
+            final_prompt = prompt_generator.get_prompt(initial_query, context_str)
+        else:
+            logger.debug("No retrieved documents. Context will be empty.")
+            final_prompt = prompt_generator.get_prompt(initial_query)
 
-        final_prompt = prompt_generator.get_prompt(context_str, initial_query)
         return final_prompt
 
 

@@ -128,30 +128,6 @@ def test_call_reranker_raises_exception_when_server_is_unavailable(mock_post, te
     )
 
 
-def test_run_fallbacks_to_initial_query_if_no_retrieved_docs(test_class):
-    input_data = SearchedDoc(
-        initial_query="This is my sample query?", retrieved_docs=[], top_n=1
-    )
-
-    result = test_class.run(input_data)
-    assert result.query == input_data.initial_query, "Query does not match the initial query as expected when no retrieved documents are provided"
-
-
-def test_run_fallbacks_to_initial_query_for_invalid_retrieved_docs(test_class):
-    input_data = SearchedDoc(
-        initial_query="This is my sample query?",
-        retrieved_docs=[
-            TextDoc(text=""),  # empty text
-            TextDoc(text="  "),  # tab
-            TextDoc(text="  "),  # two spaces
-        ],
-        top_n=1,
-    )
-
-    result = test_class.run(input_data)
-    assert result.query == input_data.initial_query, "Query does not match the initial query as expected when the provided retrieved_docs are empty or invalid"
-
-
 def test_run_raises_exception_on_empty_initial_query(test_class):
     input_data = SearchedDoc(
         initial_query="",

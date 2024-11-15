@@ -17,7 +17,7 @@ class TestOPEARerankerValidateConfig(unittest.TestCase):
 ### 问题：什么是深度学习？
 ### 回答：
 """.strip()
-        result = prompt.get_prompt(context, question)
+        result = prompt.get_prompt(question, context)
         self.assertEqual(result, expected_output)
 
     def test_get_prompt_english(self):
@@ -32,7 +32,7 @@ If you don't know the answer to a question, please don't share false information
 ### Question: What is deep learning? \n
 ### Answer:
 """.strip()
-        result = prompt.get_prompt(context, question)
+        result = prompt.get_prompt(question, context)
         self.assertEqual(result, expected_output)
         # assert result == expected_output
 

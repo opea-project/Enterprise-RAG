@@ -65,7 +65,7 @@ govern your use of the third party programs as set forth in the
 
 [Security Policy](SECURITY.md) outlines our guidelines and procedures
 for ensuring the highest level of Security and trust for our users
-who consume oneDNN.
+who consume Intel(R) AI for Enterprise RAG.
 
 # Trademark Information
 

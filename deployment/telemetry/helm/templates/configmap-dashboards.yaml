@@ -1,0 +1,23 @@
+{{- if index .Values "dashboards" "enabled" }}
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+{{- $files := .Files.Glob "files/dashboards/*.json" }}
+{{- if $files }}
+apiVersion: v1
+kind: ConfigMapList
+items:
+{{- range $path, $fileContents := $files }}
+{{- $dashboardName := regexReplaceAll "(^.*/)(.*)\\.json$" $path "${2}" }}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: {{ printf "rag-dashboard-%s" $dashboardName | trunc 63 | trimSuffix "-" }}
+    namespace: monitoring
+    labels:
+      app: rag-dashboards-grafana
+      grafana_dashboard: "1"
+  data:
+    {{ $dashboardName }}.json: {{ $.Files.Get $path | toJson }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,34 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  mongo:
+    image: mongo:8.0.0
+    container_name: mongodb
+    ports:
+      - ${SYSTEM_FINGERPRINT_MONGODB_PORT}:27017
+    environment:
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
+    command: mongod --quiet --logpath /dev/null
+
+  system_fingerprint_usvc:
+    build:
+      context: ../../../../../
+      dockerfile: ./comps/system_fingerprint/impl/microservice/Dockerfile
+    container_name: system-fingerprint-microservice
+    env_file: ../../microservice/.env
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
+      SYSTEM_FINGERPRINT_MONGODB_HOST: ${SYSTEM_FINGERPRINT_MONGODB_HOST}
+      SYSTEM_FINGERPRINT_MONGODB_PORT: ${SYSTEM_FINGERPRINT_MONGODB_PORT}
+      MONGODB_NAME: ${MONGODB_NAME}
+    restart: unless-stopped
+    depends_on:
+      - mongo

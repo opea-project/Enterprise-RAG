@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.link-list-item {
+  @apply mb-1 grid grid-cols-[1fr_2.5rem] items-center gap-2 pl-4 hover:bg-light-background-2 dark:hover:bg-dark-background-2;
+}
+
+.link-list-item__url {
+  @apply overflow-hidden text-ellipsis whitespace-nowrap;
+}

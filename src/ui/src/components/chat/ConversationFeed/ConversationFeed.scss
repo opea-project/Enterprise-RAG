@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.conversation-feed {
+  @apply mb-4 max-h-full self-end overflow-y-auto;
+
+  & .welcome-message {
+    @apply text-4xl text-light-primary dark:text-dark-primary;
+  }
+}

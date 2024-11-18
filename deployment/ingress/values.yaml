@@ -1,0 +1,12 @@
+controller:
+  config:
+    use-forwarded-headers: "true"
+    proxy-set-headers: "/etc/nginx/proxy-headers"
+    ssl-redirect: "true"
+    force-ssl-redirect: "true"
+    proxy-read-timeout: "300"
+    proxy-send-timeout: "300"
+    proxy-connect-timeout: "300"
+    proxy-buffer-size: "128k"
+    proxy-buffers: "4 256k"
+    proxy-busy-buffers-size: "256k"

@@ -1,0 +1,36 @@
+# Deployment
+deployment/**/bin/
+deployment/*.out
+**/charts/*.tgz
+deployment/*.key
+deployment/*.crt
+
+# Telemetry
+/deployment/telemetry/helm/example/pcm/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Compiled Python files
+*.pyc
+
+# Test output files
+.coverage
+.pytest_cache/
+.benchmarks/
+
+# Ignore the .vscode directory
+.vscode/
+
+# Super-Linter output directory
+super-linter-output/
+
+# Tox filex
+.tox

@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-message {
+  @apply relative grid w-full grid-cols-[5rem_1fr] items-start py-4;
+
+  &.chat-user-message {
+    @apply bg-light-background-3 dark:bg-dark-background-2;
+  }
+}

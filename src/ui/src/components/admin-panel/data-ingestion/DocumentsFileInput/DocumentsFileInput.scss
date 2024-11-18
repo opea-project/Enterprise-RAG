@@ -1,0 +1,14 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.documents-file-input-error-alert {
+  @apply mb-4 bg-light-notification-error-background p-4 py-3 text-light-notification-text dark:bg-dark-notification-error-background dark:text-dark-notification-text;
+}
+
+.documents-file-input-box {
+  @apply flex w-full select-none flex-col items-center justify-center gap-2 border-2 border-dashed border-light-border-strong bg-light-background-2 p-6 text-center dark:border-dark-border-strong dark:bg-dark-background-2;
+
+  &.documents-file-input-box__disabled {
+    @apply text-light-text-disabled dark:text-dark-text-disabled;
+  }
+}

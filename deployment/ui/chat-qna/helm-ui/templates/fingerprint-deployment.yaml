@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm-fp.name" . }}
+  labels:
+    {{- include "helm-fp.selectorLabels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "helm-fp.selectorLabels" . | nindent 8 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm-fp.selectorLabels" . | nindent 12 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ include "helm-ui.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ .Values.image.fingerprint.repository }}:{{ .Values.image.fingerprint.tag }}
+          imagePullPolicy: {{ .Values.image.fingerprint.pullPolicy }}
+          env:
+            - name: SYSTEM_FINGERPRINT_MONGODB_HOST
+              value: "{{ .Values.mongodb.svc }}"
+            - name: SYSTEM_FINGERPRINT_MONGODB_PORT
+              value: "{{ .Values.mongodb.port }}"
+            - name: MONGODB_NAME
+              value: "{{ .Values.mongodb.name }}"
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 6012
+              protocol: TCP
+                #   livenessProbe:
+                #       httpGet:
+                #       path: /
+                #port: http
+                #   readinessProbe:
+                # httpGet:
+                #path: /
+                # port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

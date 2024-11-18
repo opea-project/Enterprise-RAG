@@ -1,0 +1,164 @@
+{{- range $namespace := .Values.instrumentation.namespaces }}
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: rag-python-instrumentation
+# https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/api.md#instrumentationspecexporter
+  namespace: {{ $namespace }}
+spec:
+  env:
+  #############################################################
+  ### NOT SUPPORTED THINGS in our enviornment (kept as warning)
+  #############################################################
+  # PLEESE KEEP IN MIND comatbility matrix:
+  # https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables
+  # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/configuration/sdk-environment-variables.md#general-sdk-configuration
+  # GO/SDK: not supported: https://github.com/open-telemetry/opentelemetry-go/issues/3559
+  # Python/SDK: supported: https://github.com/open-telemetry/opentelemetry-python/issues/3184
+  # - name: OTEL_SDK_DISABLED
+  #   value: "true"
+  # Go/SDK - not supported
+  # Go/Instrumenation for slog - sets global slog.levelLevel (opentelemetry-go-instrumentation/instrumentation.go)
+  # Python:
+  # OPEA microservices specific: WARN: log level is hardcoded GenAIComps/comps/cores/mega/logger.py:44
+  # NOT supported for Python : https://github.com/open-telemetry/opentelemetry-python/issues/1059
+  # https://opentelemetry-python.readthedocs.io/en/stable/sdk/environment_variables.html#opentelemetry.sdk.environment_variables.OTEL_LOG_LEVEL #only defined but not used)
+  # - name: OTEL_LOG_LEVEL
+  #   value: debug
+  #   value: info # DEFAULT
+
+  ### ----------------------- end of env
+
+  #### THIS ENV is NOT REQUIRED - overlapes with below exporter/endpoint
+  ## Required if endpoint is set to 4317.
+  ## Python autoinstrumentation uses http/proto by default
+  ## so data must be sent to 4318 instead of 4317.
+  #- name: OTEL_EXPORTER_OTLP_ENDPOINT
+  #  value: http://otel-collector:4318
+  exporter:
+    endpoint: http://otelcol-traces-collector.monitoring-traces:4318  # 18 to http must match simplest reciver otlphttp
+
+  ### some extra attributes for traces/logs
+  resource:
+    resourceAttributes:
+
+  propagators:
+    # OTEL_PROPAGATORS
+    # Enum=tracecontext;baggage;b3;b3multi;jaeger;xray;ottrace;none
+    - tracecontext
+    - baggage
+
+  ### Disable/enable all/some traces here
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1"
+
+  #############################
+  # OTEL_TRACES_EXPORTER
+  #############################
+  # Defaults to 'otlp'.
+  # Can be set to 'none" to disable automatic tracer initialization.
+  # Can be set to 'console` to display JSON results locally.
+  ### DEBUG: Switch to local console for all languages
+  # env:
+    # THIS DOESNT WORK !!!
+    # - name: OTEL_TRACES_EXPORTER
+    #   value: console
+  ###############################
+  # PYTHON
+  ###############################
+  ### DEBUG: Switch to local console for python only
+  # https://opentelemetry-python.readthedocs.io/en/stable/sdk/environment_variables.html
+  python:
+    env:
+    # ---------------
+    # OPEA microservices specific FIX missing PYTHONPATH
+    # ---------------
+    # overlaps with with:
+    # patch-deploy-inject-us-embedding.yaml
+    # patch-deploy-inject-us-llm.yaml
+    # patch-deploy-inject-us-reranking.yaml
+    # patch-deploy-inject-us-retriever.yaml
+    - name: PYTHONPATH
+      value: "/home/user"
+
+
+    ##################################################################
+    ### ---------------------- METRICS -------------------------------
+    ##################################################################
+    ### Prometheus exporter (exposes similar data to builtin fastapi instrumentator on 7000 metrics)
+    # TBD do we want that or we use fastapiinstrumenator on, can we replace fastapi instrumenatator??!?!)
+    - name: OTEL_METRICS_EXPORTER
+      # value: prometheus # local port
+      # value: none
+      value: otlp # default push to endpoint
+      # For prometheus
+      # - name: OTEL_EXPORTER_PROMETHEUS_HOST
+      #   value: "0.0.0.0" # (defaulting to "localhost")
+      # - name: OTEL_EXPORTER_PROMETHEUS_PORT
+      #   value: "8889" # (defaulting to 9464)
+
+
+    ##################################################################
+    ### ---------------------- LOGS -------------------------------
+    ##################################################################
+    # Python/SDK: https://opentelemetry.io/docs/zero-code/python/configuration/#logging
+    # https://github.com/open-telemetry/opentelemetry-python-contrib/issues/2458
+    # opentelemetry-python/opentelemetry-sdk/src/opentelemetry/sdk/_configuration/__init__.py:405
+    - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+      value: 'true'
+    - name: OTEL_LOGS_EXPORTER
+      value: otlp
+      # value: console
+      # value: none
+
+    # configure contrib-auto-insrtumentation recordFactor
+    - name: OTEL_PYTHON_LOG_CORRELATION
+      value: "true"
+    - name: OTEL_PYTHON_LOG_LEVEL
+      value: "debug"
+    # this one breaks logging completly
+    # - name: OTEL_PYTHON_LOG_FORMAT
+    #   value: "%(msg)s [span_id=%(span_id)s]"
+
+    ##################################################################
+    ### ---------------------- TRACES -------------------------------
+    ##################################################################
+    # THIS WORKS for operator # we want both !!! console and otelcol but it likes logs are enough to enable this
+    - name: OTEL_TRACES_EXPORTER
+      # value: console
+      # value: none
+      value: otlp # Default
+
+    # e.g OTEL_PYTHON_DISABLED_INSTRUMENTATIONS = "requests,django"
+    # https://opentelemetry-python.readthedocs.io/en/stable/index.html#integrations
+    # https://opentelemetry.io/docs/zero-code/python/configuration/#disabling-specific-instrumentations
+    # - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+    #   value:
+
+    # https://opentelemetry.io/docs/zero-code/python/configuration/#excluded-urls
+    # Note: Doesnt seem to work for fastapi tracing !!! TODO: check
+    # opentelemetry-python-contrib/instrumentation/opentelemetry-instrumentation-fastapi/src/opentelemetry/instrumentation/fastapi/__init__.py
+    # should also for requests/urllib/urllib3
+    # Implementtion:  opentelemetry-python-contrib/util/opentelemetry-util-http/src/opentelemetry/util/http/__init__.py:138
+    # replace , with | and treat as regex
+    - name: OTEL_PYTHON_EXCLUDED_URLS
+      value: "/metrics,/v1/health_check"
+
+    ### TO TEST
+    # all envs:
+    # https://opentelemetry-python.readthedocs.io/en/stable/api/environment_variables.html
+    # https://opentelemetry.io/docs/zero-code/python/configuration/#python-specific-configuration
+    # ############# Tracing:
+    # export OTEL_PYTHON_EXCLUDED_URLS="client/.*/info,healthcheck"
+    # export OTEL_PYTHON_URLLIB3_EXCLUDED_URLS="client/.*/info"
+    # export OTEL_PYTHON_REQUESTS_EXCLUDED_URLS="healthcheck"
+    # export OTEL_PYTHON_DJANGO_TRACED_REQUEST_ATTRS='path_info,content_type'
+    # export OTEL_PYTHON_FALCON_TRACED_REQUEST_ATTRS='query_string,uri_template'
+    # export OTEL_PYTHON_TORNADO_TRACED_REQUEST_ATTRS='uri,query'
+
+    # Other options headers:
+    # - OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST="Accept-Encoding,User-Agent,Referer"
+    # - OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE="Last-Modified,Content-Type"
+---
+{{- end }}

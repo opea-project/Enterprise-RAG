@@ -1,0 +1,134 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+### =================================================
+### opentelemetry-collector for logs subchart
+### =================================================
+otelcol-logs:
+
+  ### Debugging with sleep
+  ## unfortunatelly no access to config file :(
+  ## based on this: https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/templates/_pod.tpl#L18
+  # configMap:
+  #   create: false
+  #   existingName: null
+  # command:
+  #   name: bin/bash
+  #   extraArgs:
+  #   - "-c"
+  #   - "'sleep inf'"
+
+  image:
+    # my own image with journalctl included based ona Dockerfile-otelcol-contrib-journalctl
+    # keep that in sync with deployment/microservices-connector/helm/values.yaml
+    repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/otelcol-contrib-journalctl"
+    #repository: "localhost:5000/otelcol-contrib-journalctl" # for development purposes
+    tag: "latest"
+    pullPolicy: Always
+  imagePullSecrets:
+  - name: regcred
+
+  # Volumes and VolumeMounts required for journalctl receiver
+  extraVolumes:
+    - name: machine-id
+      hostPath:
+        path: /etc/machine-id
+    - name: journalvar
+      hostPath:
+        path: /var/log/journal
+    - name: journalrun
+      hostPath:
+        path: /run/log/journal
+  extraVolumeMounts:
+    - name: machine-id
+      mountPath: /etc/machine-id
+      readOnly: true
+    - name: journalvar
+      mountPath: /var/log/journal
+      readOnly: true
+    - name: journalrun
+      mountPath: /run/log/journal
+      readOnly: true
+
+  alternateConfig:
+    receivers:
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/operator/input/journald/config_all.go#L30
+      journald/varlog:
+        directory: /var/log/journal
+        all: true
+        # dmesg: true
+        # units:
+        #   - ssh
+        #   - kubelet
+        #   - docker
+        #   - containerd
+        #   - kernel
+      journald/runlog:
+        directory: /run/log/journal
+        all: true
+        # dmesg: true
+        # units:
+        #   - ssh
+        #   - kubelet
+        #   - docker
+        #   - containerd
+        #   - kernel
+
+    processors:
+      transform:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+            - IsMap(body)
+            statements:
+            # https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html
+            ## for debugging
+            #- set(attributes["body"], body)
+            #- set(attributes["message"], body["MESSAGE"])
+            # store severity
+            - set(severity_number, body["PRIORITY"])
+            - set(resource.attributes["journald.severity"], body["PRIORITY"])
+            # extra metadata
+            - set(resource.attributes["journald.transport"], body["_TRANSPORT"])
+            - set(resource.attributes["journald.unit"], body["_SYSTEMD_UNIT"])
+            - set(resource.attributes["journald.cmd"], body["_CMD"])
+            - set(resource.attributes["journald.exe"], body["_EXE"])
+            - set(resource.attributes["journald.cmdline"], body["_CMDLINE"])
+            # hostname
+            - set(resource.attributes["journald.hostname"], body["_HOSTNAME"])
+            # replace body with message only
+            - set(body, body["MESSAGE"])
+
+      # Mark "k8s.namespace.name" as JOURNALCTL to be able to
+      # seprate from filelog receiver from /var/log/pods.
+      # Add k8s.node.name if missing to all pods/journalctl entries.
+      resource:
+        attributes:
+        - key: "k8s.namespace.name"
+          action: insert
+          value: "JOURNALCTL"
+        - key: "k8s.node.name"
+          action: insert
+          value: "UNKNOWN"
+      # Try to infer k8s.node.name using k8snode detector from "resource detection" processor.
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md
+      resourcedetection:
+        detectors:
+        #- system # CANNOT DETECT host name properly
+        - k8snode
+        system:
+          hostname_sources: ["os"]
+        # k8snode:
+        #   node_from_env_var: K8s_NODE_NAME # default
+
+    service:
+      pipelines:
+        logs:
+          processors:
+          - transform
+          - resourcedetection
+          - resource
+          receivers:
+          - journald/varlog
+          #- journald/runlog # only enable if there are files insider, otherwise it fails, becuase journalctl exits

@@ -1,0 +1,25 @@
+# APISIX Namespace
+namespace: auth-apisix
+
+# APISIX Helm chart configs
+apisix:
+  version: 2.8.1
+  enabled: true
+  ingress-controller:
+    enabled: true
+    config:
+      apisix:
+        serviceName: auth-apisix-admin
+        serviceNamespace: auth-apisix
+  etcd:
+    replicaCount: 1
+    persistence:
+      enabled: false
+  dashboard:
+    enabled: false
+  apisix:
+    nginx:
+      configurationSnippet:
+        httpStart: |
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;

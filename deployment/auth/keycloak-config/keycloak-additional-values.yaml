@@ -1,0 +1,17 @@
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  pathType: Prefix
+  hostname: auth.erag.com
+  hostnameStrict: true
+  path: /
+  tls: true
+  extraTls:
+    - hosts:
+        - auth.erag.com
+      secretName: tls-secret
+
+tls:
+  enabled: true
+  existingSecret: tls-secret
+  usePem: true

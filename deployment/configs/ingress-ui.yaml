@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ui
+  namespace: rag-ui
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: erag.com
+      http:
+        paths:
+          - pathType: Prefix
+            backend:
+              service:
+                name: ui-chart
+                port:
+                  number: 4173
+            path: /
+  # This section is only required if TLS is to be enabled for the Ingress
+  tls:
+    - hosts:
+      - erag.com
+      secretName: tls-secret

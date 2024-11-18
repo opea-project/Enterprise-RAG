@@ -1,0 +1,41 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+version: "3.8"
+
+services:
+  llm-tgi-model-server:
+    image: ghcr.io/huggingface/text-generation-inference:2.1.0
+    container_name: llm-tgi-model-server
+    ports:
+      - "${LLM_TGI_PORT}:80"
+    volumes:
+      - ./data:/data
+    environment:
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HF_TOKEN: ${HF_TOKEN}
+    command: ["--model-id", "${LLM_TGI_MODEL_NAME}", "--max-input-tokens", "${MAX_INPUT_TOKENS}", "--max-total-tokens", "${MAX_TOTAL_TOKENS}"]
+    runtime: runc
+    ipc: host
+
+  llm_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/llms/impl/microservice/Dockerfile
+    container_name: llm-tgi-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      LLM_CONNECTOR: ${LLM_CONNECTOR}
+      LLM_MODEL_NAME: ${LLM_TGI_MODEL_NAME}
+      LLM_MODEL_SERVER: "tgi"
+      LLM_MODEL_SERVER_ENDPOINT: http://localhost:${LLM_TGI_PORT}
+      NO_PROXY: ${NO_PROXY}
+    restart: unless-stopped
+    depends_on:
+      - llm-tgi-model-server

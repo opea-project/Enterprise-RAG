@@ -1,0 +1,18 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+# This OS Version and its journalctl must be ABI compatible with host OS
+FROM ubuntu:24.04
+# Install systemd just to get journalctl
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -yq systemd && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install otelcol binary and its config from "otel/opentelemetry-collector-contrib".
+# Update using tags from: https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags
+COPY --from=otel/opentelemetry-collector-contrib:0.108.0 /otelcol-contrib /otelcol-contrib
+COPY --from=otel/opentelemetry-collector-contrib:0.108.0 /etc/otelcol-contrib/config.yaml /etc/otelcol-contrib/config.yaml
+# 0.109.0 - issues: missing traces from transformer in zpages/tracez
+# COPY --from=otel/opentelemetry-collector-contrib:0.109.0 /otelcol-contrib /otelcol-contrib
+# COPY --from=otel/opentelemetry-collector-contrib:0.109.0 /etc/otelcol-contrib/config.yaml /etc/otelcol-contrib/config.yaml
+# based on docker history otel/opentelemetry-collector-contrib --no-trunc
+#
+ENTRYPOINT ["/otelcol-contrib"]
+# not needed, used as Kubernetes pod is given implicitly
+#CMD ["--config", "/etc/otelcol-contrib/config.yaml"]

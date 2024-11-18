@@ -1,0 +1,22 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-status-indicator {
+  @apply h-3 w-3 rounded-full;
+
+  &.service-status-indicator--node {
+    @apply h-12 w-12;
+  }
+
+  &.ready {
+    @apply bg-light-status-success-primary dark:bg-dark-status-success-soft;
+  }
+
+  &.not-ready {
+    @apply bg-light-status-error-primary dark:bg-dark-status-error-soft;
+  }
+
+  &.status-not-available {
+    @apply bg-light-status-unknown-primary dark:bg-dark-status-unknown-primary;
+  }
+}

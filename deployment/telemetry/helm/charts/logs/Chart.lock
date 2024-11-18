@@ -1,0 +1,15 @@
+dependencies:
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.11.0
+- name: opentelemetry-collector
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  version: 0.104.0
+- name: opensearch
+  repository: https://opensearch-project.github.io/helm-charts/
+  version: 2.23.2
+- name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.16.5
+digest: sha256:8dd4ecd5ff797df2d7fd9807a62d8adef745418a46ce09cd110c969376d08314
+generated: "2024-09-11T14:15:52.65465589+02:00"

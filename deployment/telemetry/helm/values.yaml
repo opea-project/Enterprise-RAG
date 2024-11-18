@@ -1,0 +1,118 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+### ============================================================================
+# BASE components: grafana/prometheus+operator + all Kubernetes basic extension
+### ============================================================================
+kube-prometheus-stack:
+  enabled: true
+  # example can be found here:
+  # https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-demo/values.yaml#L799
+  grafana:
+    plugins:
+      - grafana-opensearch-datasource
+    env:
+      https_proxy: ""
+      http_proxy: ""
+      no_proxy: ""
+#    resources:
+#      limits:
+#      memory: 150Mi
+    sidecar:
+      datasources:
+        exemplarTraceIdDestinations:
+          datasourceUid: tempo
+          traceIdLabelName: traceID
+    ingress:
+      enabled: true
+      ingressClassName: "nginx"
+      pathType: Prefix
+      hosts:
+        - grafana.erag.com
+      path: /
+      tls:
+        - hosts:
+            - grafana.erag.com
+          secretName: tls-secret
+  prometheus:
+    prometheusSpec:
+      enableRemoteWriteReceiver: true
+      enableFeatures:
+      - exemplar-storage
+      # - native-histograms
+
+  # Fix problem not scraping metrics from kube-prometheus-stack-kube-etcd
+  # https://github.com/prometheus-community/helm-charts/issues/204#issuecomment-1003558431
+  kubeEtcd:
+    service:
+      port: 2381
+      targetPort: 2381
+
+### ============================================================================
+# Prometehus Service/Pod monitors to collect metrics from EntRAG microservices
+### ============================================================================
+app-monitors:
+  enabled: true
+
+### ============================================================================
+# Grafana dashboard for Enterprise RAG application and infrastructure
+### ============================================================================
+dashboards:
+  enabled: true
+
+### ============================================================================
+# HABANA Gaudi exporter and Prometheus monitor
+### ============================================================================
+habana-exporter:
+  enabled: true
+  image:
+    # for other possible tags check: https://vault.habana.ai/ui/native/gaudi-metric-exporter/metric-exporter/
+    #tag: 1.16.2-2
+    tag: 1.17.0-495
+
+### ============================================================================
+# Redis exporter and Prometehus monitor
+### ============================================================================
+prometheus-redis-exporter:
+  enabled: true
+  redisAddress: redis://redis-vector-db.chatqa.svc.cluster.local:6379
+  serviceMonitor:
+    enabled: true
+    targets:
+      - url: redis://redis-vector-db.chatqa.svc.cluster.local:6379
+        name: redis-vector-db
+
+### ============================================================================
+# LOGS subchart (logs backends and collectors)
+# check: charts/logs/README.md for more details
+### ============================================================================
+logs:
+  # we cannot enable single helm chart installation because of helm chart bug
+  # that doesn't allow to remove (affinity for loki writer for single node deployments)
+  # PLEASE as temporary solution deploy telemetry-logs as another subchart
+  # Until this is fixed, single node deployment with single helm chart are impossible!
+  # https://github.com/helm/helm/pull/12879
+  #enabled: true # DO NOT ENABLE FOR SINGLE NODE deployments (because of logs.loki.writer.affinity option cannot be disabled!)
+  enabled: false
+
+### ============================================================================
+# TRACES subchart (traces backends)
+# check: charts/traces/README.md for more details
+### ============================================================================
+traces:
+  # we cannot enable single helm chart installation because of helm chart bug
+  # PLEASE as temporary solution deploy telemetry-traces as another subchart in own namespce
+  # Until this is fixed, single node deployment with single helm chart are impossible!
+  # https://github.com/helm/helm/pull/12879
+  #enabled: true # DO NOT ENABLE FOR SINGLE NODE deployments (because of minio naming conflict)
+  enabled: false
+
+#########################################################
+### ============================================================================
+# TRACES instrumenation subchart (traces collectors and instrumenation)
+# check: charts/traces-instr/README.md for more details
+### ============================================================================
+traces-instr:
+  # Please install manually because of CRD/Webhook depedency
+  # and possible race conditions
+  enabled: false

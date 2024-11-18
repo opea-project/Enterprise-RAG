@@ -1,0 +1,46 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v2
+name: traces
+type: application
+version: 1.0.0
+
+dependencies:
+
+#########################################################
+# Tempo - traces backend
+#########################################################
+# enabled by default
+- name: tempo-distributed
+  alias: tempo
+  condition: tempo.enabled
+  repository: https://grafana.github.io/helm-charts
+  version: "1.18.*"
+  tags:
+  - traces
+  - backend
+
+#########################################################
+# Jaeger
+#########################################################
+# optional
+- name: jaeger
+  version: "3.3.*"
+  condition: jaeger.enabled
+  repository: https://jaegertracing.github.io/helm-charts
+  tags:
+  - traces
+  - backend
+
+#########################################################
+# OpenTelemetry operator
+#########################################################
+- name: opentelemetry-operator
+  version: "0.69.*"
+  alias: otel-operator
+  condition: otel-operator.enabled
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  tags:
+  - traces
+  - collector
+

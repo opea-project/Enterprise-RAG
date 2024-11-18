@@ -1,0 +1,14 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-details-card {
+  @apply border-l border-l-light-border-subtle bg-light-background-1 dark:border-l-dark-border-subtle dark:bg-dark-background-1;
+
+  & .service-details-select-node-message {
+    @apply flex h-full items-center justify-center;
+
+    & p {
+      @apply w-[12rem] text-center text-sm text-light-text-primary dark:text-dark-text-primary;
+    }
+  }
+}

@@ -1,0 +1,22 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-node-handle {
+  visibility: hidden;
+}
+
+.service-node {
+  @apply grid h-24 w-36 grid-rows-[3rem_1fr] justify-items-center gap-2;
+
+  & p {
+    @apply text-center;
+  }
+
+  &.service-node-selected {
+    @apply font-medium text-light-primary dark:text-dark-primary;
+
+    & .service-status-indicator--node {
+      @apply outline outline-2;
+    }
+  }
+}

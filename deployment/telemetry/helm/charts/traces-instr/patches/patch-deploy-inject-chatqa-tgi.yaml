@@ -1,0 +1,23 @@
+spec:
+  template:
+    # metadata:
+    #   annotations:
+    #     instrumentation.opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+      - name: tgi
+        env:
+        # - name: PYTHONPATH
+        #   value: ":/foo/bar:/home/user/comps/llms/text-generation/tgi:/home/user"
+
+        # https://huggingface.co/docs/text-generation-inference/en/reference/launcher#otlpendpoint
+        # https://github.com/huggingface/text-generation-inference/blob/0aa66d693a85faed268be50ab8e662cf5516be30/router/src/logging.rs#L12
+        # Do not add scheme like "http://" inconsistent with TGI
+        - name: OTLP_ENDPOINT
+          value: "otelcol-traces-collector.monitoring-traces:4317" # grpc
+          #value: "" # DEFAULT
+
+        # - name: LOG_LEVEL
+        #   value: DEBUG
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/tgi"

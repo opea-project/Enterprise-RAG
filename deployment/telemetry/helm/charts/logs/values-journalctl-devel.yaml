@@ -1,0 +1,28 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+otelcol-logs:
+  image:
+    repository: "localhost:5000/otelcol-contrib-journalctl" # for development purposes
+    tag: latest
+
+  alternateConfig:
+    exporters:
+      debug:
+        #use_internal_logger: true
+        verbosity: basic
+        #verbosity: normal
+        # WARNING: very verbose every message is shown with metadata
+        # verbosity: detailed
+
+    service:
+      telemetry:
+        logs:
+          # the same can be achieved by adding pod.container.args: --set=service::telemetry::logs::level=debug
+          level: info
+          #level: debug
+
+      pipelines:
+        logs:
+          exporters:
+          - otlphttp/loki
+          - debug

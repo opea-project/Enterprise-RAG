@@ -1,0 +1,12 @@
+dependencies:
+- name: tempo-distributed
+  repository: https://grafana.github.io/helm-charts
+  version: 1.18.5
+- name: jaeger
+  repository: https://jaegertracing.github.io/helm-charts
+  version: 3.3.1
+- name: opentelemetry-operator
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+  version: 0.69.0
+digest: sha256:e17f3d1e6c9b93a8c6270b5623f95c1737fd5024835162e69778ee053a7cbadc
+generated: "2024-10-21T14:17:37.625732441+02:00"

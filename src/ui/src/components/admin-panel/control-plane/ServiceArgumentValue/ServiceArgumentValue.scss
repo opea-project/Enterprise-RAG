@@ -1,0 +1,6 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-argument-value {
+  @apply w-full overflow-hidden text-ellipsis whitespace-nowrap border border-transparent px-2 py-1 text-xs text-light-primary dark:text-dark-primary;
+}

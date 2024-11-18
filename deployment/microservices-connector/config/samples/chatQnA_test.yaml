@@ -1,0 +1,37 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# FOR DEBUG PURPOSES ONLY
+
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: gaudi
+  name: chatqa
+  namespace: chatqa
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Llm
+        data: $response
+        internalService:
+          serviceName: llm-svc
+          config:
+            endpoint: /v1/chat/completions
+            LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
+            LLM_MODEL_SERVER: vllm
+      - name: VLLMGaudi
+        internalService:
+          serviceName: vllm-gaudi-svc
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
+

@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-message-avatar {
+  @apply sticky top-3 flex flex-col items-center justify-start;
+}
+
+.chat-message-avatar__name {
+  @apply mt-0.5 text-xs;
+}

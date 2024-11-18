@@ -1,0 +1,6 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.prompt-input-wrapper {
+  @apply flex items-end gap-1.5 bg-light-background-2 p-2 dark:bg-dark-background-2;
+}

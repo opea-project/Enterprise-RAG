@@ -1,0 +1,20 @@
+{{- if index .Values "app-monitors" "enabled" }}
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: torchserve-embedding-svc
+  labels:
+    release: {{ $.Release.Name }}
+spec:
+  namespaceSelector:
+    matchNames:
+    - dataprep
+    - chatqa
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: torchserve
+  endpoints:
+  - port: "metrics"
+{{- end }}

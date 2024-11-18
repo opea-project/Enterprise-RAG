@@ -5,8 +5,6 @@ FROM python:3.11-slim
 
 ENV LANG=C.UTF-8
 
-ARG ARCH="cpu"
-
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano libreoffice libgl1-mesa-glx tesseract-ocr libmagic1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -20,7 +18,6 @@ ENV PYTHONPATH="/home/user"
 COPY ./comps/dataprep/impl/microservice/requirements.txt /tmp/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    if [ ${ARCH} = "cpu" ]; then pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu; fi && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /home/user/

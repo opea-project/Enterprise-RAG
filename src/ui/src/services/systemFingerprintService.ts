@@ -6,10 +6,13 @@ import {
   AppendArgumentsRequestBody,
   ChangeArgumentsRequestBody,
 } from "@/api/models/systemFingerprint";
+import keycloakService from "@/services/keycloakService";
 import { parseServiceDetailsResponseData } from "@/utils";
 
 class SystemFingerprintService {
   async appendArguments() {
+    await keycloakService.refreshToken();
+
     const url = endpoints.systemFingerprint.appendArguments;
     const body: AppendArgumentsRequestBody = { text: "" };
 
@@ -17,7 +20,7 @@ class SystemFingerprintService {
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          Authorization: `Bearer ${keycloakService.getToken()}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -34,13 +37,15 @@ class SystemFingerprintService {
     }
   }
   async changeArguments(requestBody: ChangeArgumentsRequestBody) {
+    await keycloakService.refreshToken();
+
     const url = endpoints.systemFingerprint.changeArguments;
 
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          Authorization: `Bearer ${keycloakService.getToken()}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
@@ -57,6 +62,8 @@ class SystemFingerprintService {
   }
 
   async getChatQnAServiceDetails() {
+    await keycloakService.refreshToken();
+
     const url = endpoints.systemFingerprint.chatqnaStatus;
 
     try {

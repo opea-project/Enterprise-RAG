@@ -21,28 +21,25 @@ const minTokenValidity = 60; // seconds, 5 - default value
 
 const adminResourceRole = import.meta.env.VITE_ADMIN_RESOURCE_ROLE;
 
-const keycloakClient = new Keycloak(config);
+const keycloak = new Keycloak(config);
 
-const initKeycloak = (onAuthenticatedCallback: () => void) => {
-  keycloakClient
+const initKeycloak = (
+  onAuthenticatedCallback: (isAuthenticated: boolean) => void,
+) => {
+  keycloak
     .init(initOptions)
-    .then((isAuthenticated) => {
-      if (!isAuthenticated) {
-        console.log("User not authenticated!");
-      }
-      onAuthenticatedCallback();
-    })
+    .then(onAuthenticatedCallback)
     .catch((error) => console.error(error));
 };
 
-const login = () => keycloakClient.login(loginOptions);
-const logout = () => keycloakClient.logout(logoutOptions);
-const isLoggedIn = () => !!keycloakClient.token;
+const login = () => keycloak.login(loginOptions);
+const logout = () => keycloak.logout(logoutOptions);
+const isLoggedIn = () => !!keycloak.token;
 
-const getToken = () => keycloakClient.token;
-const getTokenParsed = () => keycloakClient.tokenParsed;
-const getTokenExpirationTime = () => keycloakClient.tokenParsed?.exp ?? 0;
-const getTimeSkew = () => keycloakClient.timeSkew ?? 0;
+const getToken = () => keycloak.token;
+const getTokenParsed = () => keycloak.tokenParsed;
+const getTokenExpirationTime = () => keycloak.tokenParsed?.exp ?? 0;
+const getTimeSkew = () => keycloak.timeSkew ?? 0;
 const getTokenValidityTime = () => {
   const tokenExpirationTime = getTokenExpirationTime();
   const currentTime = new Date().getTime() / 1000;
@@ -50,32 +47,16 @@ const getTokenValidityTime = () => {
   return Math.round(tokenExpirationTime + timeSkew - currentTime);
 };
 
-const refreshToken = () => {
-  keycloakClient
-    .updateToken(minTokenValidity)
-    .then((refreshed) => {
-      if (refreshed) {
-        const token = keycloakService.getToken();
-        if (typeof token === "string") {
-          sessionStorage.setItem("token", token);
-        }
-        console.info("Token refreshed");
-      } else {
-        console.info(
-          `Token not refreshed, valid for ${getTokenValidityTime()} seconds`,
-        );
-      }
-    })
-    .catch(() => {
-      console.error("Failed to refresh token. Logging out...");
-      logout();
-    });
+const refreshToken = async () => {
+  await keycloak.updateToken(minTokenValidity).catch(() => {
+    console.error("Failed to refresh token. Logging out...");
+    logout();
+  });
 };
 
-const getUsername = () => keycloakClient.tokenParsed?.name;
-const hasRole = (role: string) => keycloakClient.hasRealmRole(role);
-const hasResourceAccessRole = (role: string) =>
-  keycloakClient.hasResourceRole(role);
+const getUsername = () => keycloak.tokenParsed?.name;
+const hasRole = (role: string) => keycloak.hasRealmRole(role);
+const hasResourceAccessRole = (role: string) => keycloak.hasResourceRole(role);
 const isAdmin = () => keycloakService.hasResourceAccessRole(adminResourceRole);
 
 const keycloakService = {
@@ -85,11 +66,13 @@ const keycloakService = {
   isLoggedIn,
   getToken,
   getTokenParsed,
+  getTokenValidityTime,
   refreshToken,
   getUsername,
   hasRole,
   hasResourceAccessRole,
   isAdmin,
+  minTokenValidity,
 };
 
 export default keycloakService;

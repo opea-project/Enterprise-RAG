@@ -5,15 +5,15 @@ import { useEffect } from "react";
 
 import keycloakService from "@/services/keycloakService";
 
+const REFRESH_TOKEN_INTERVAL = 1000 * keycloakService.minTokenValidity;
+
 const useTokenRefresh = () => {
   useEffect(() => {
-    const refreshToken = () => {
+    const refreshTokenInterval = setInterval(() => {
       keycloakService.refreshToken();
-    };
+    }, REFRESH_TOKEN_INTERVAL);
 
-    const intervalId = setInterval(refreshToken, 1000 * 55);
-
-    return () => clearInterval(intervalId);
+    return () => clearInterval(refreshTokenInterval);
   }, []);
 };
 

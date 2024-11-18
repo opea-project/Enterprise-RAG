@@ -4,10 +4,13 @@
 import endpoints from "@/api/endpoints.json";
 import { DataIngestionRequest } from "@/api/models/dataIngestion";
 import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import keycloakService from "@/services/keycloakService";
 import { documentToBase64 } from "@/utils";
 
 class DataIngestionService {
   async postDataToIngest(documents: File[], links: LinkForIngestion[]) {
+    await keycloakService.refreshToken();
+
     const url = endpoints.dataprep;
     const body: DataIngestionRequest = {};
 
@@ -30,7 +33,7 @@ class DataIngestionService {
       method: "POST",
       body: JSON.stringify(body),
       headers: {
-        Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+        Authorization: `Bearer ${keycloakService.getToken()}`,
       },
     });
   }

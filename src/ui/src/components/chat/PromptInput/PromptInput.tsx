@@ -16,6 +16,7 @@ import { BsHurricane, BsSendFill } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 
 import endpoints from "@/api/endpoints.json";
+import keycloakService from "@/services/keycloakService";
 import { selectPromptRequestParams } from "@/store/chatQnAGraph.slice";
 import {
   addMessage,
@@ -53,7 +54,11 @@ const PromptInput = () => {
     const verticalPadding = 16;
     const lineHeight = 24;
     const textareaScrollHeight = input.scrollHeight - verticalPadding;
-    const newRows = Math.max(Math.ceil(textareaScrollHeight / lineHeight), 1);
+    const calculatedRows = Math.max(
+      Math.ceil(textareaScrollHeight / lineHeight),
+      1,
+    );
+    const newRows = calculatedRows > 10 ? 10 : calculatedRows;
     setTextAreaRows(newRows);
 
     input.style.height = "";
@@ -97,6 +102,8 @@ const PromptInput = () => {
   };
 
   const handlePromptInputSubmit = async () => {
+    await keycloakService.refreshToken();
+
     const newUserMessage = { text: prompt, isUserMessage: true, id: uuidv4() };
     dispatch(addMessage(newUserMessage));
 
@@ -122,7 +129,7 @@ const PromptInput = () => {
       await fetchEventSource(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
+          Authorization: `Bearer ${keycloakService.getToken()}`,
         },
         body: JSON.stringify(requestBody),
         signal: ctrl.signal,
@@ -136,10 +143,11 @@ const PromptInput = () => {
             response.status !== 429
           ) {
             const error = await response.json();
-            var msg = JSON.stringify(error);
-              if (response.status === 466) { // Guardrails
-                msg = "Guard: " + msg;
-              }
+            let msg = JSON.stringify(error);
+            if (response.status === 466) {
+              // Guardrails
+              msg = "Guard: " + msg;
+            }
             throw new Error(msg);
           } else {
             console.error("Error during opening connection: ", response);
@@ -173,7 +181,7 @@ const PromptInput = () => {
       });
     } catch (error) {
       if (error instanceof Error) {
-        var extract = extractDetail(error.message)
+        const extract = extractDetail(error.message);
         if (extract) {
           dispatch(
             updateMessage({ messageId: chatBotMessageId, chunk: extract }),

@@ -35,13 +35,13 @@ INGRESS_HELM="ingress-nginx/ingress-nginx"
 
 # keycloak specific vars
 keycloak_user=admin
-keycloak_pass=admin
 client_secret=""
 KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
 
 GRAFANA_PASSWORD=""
+KEYCLOAK_PASS=""
 
 # others
 PIPELINE=""
@@ -54,6 +54,7 @@ function usage() {
     echo -e "Usage: $0 [OPTIONS]"
     echo -e "Options:"
     echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
+    echo -e "\t--keycloak_admin_password: Initial password for keycloak admin."
     echo -e "\t--auth: Start auth services."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
@@ -71,7 +72,7 @@ function usage() {
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease"
+    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease --keycloak_admin_password=changeitplease"
 }
 
 print_header() {
@@ -334,7 +335,7 @@ function start_authentication() {
         exit 1
     fi
 
-    bash "$auth_path"/keycloak_realm_creator.sh $AUTH_NS
+    bash "$auth_path"/keycloak_realm_creator.sh $AUTH_NS $KEYCLOAK_PASS
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -384,7 +385,7 @@ function start_gateway() {
     PID=$!
 
     sleep 2 # needs a while to work fine
-    client_secret=$(bash "$auth_path"/get_secret.sh)
+    client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS)
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -492,6 +493,15 @@ while [[ "$#" -gt 0 ]]; do
             fi
             GRAFANA_PASSWORD=$1
             ;;
+        --keycloak_admin_password)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --keycloak_admin_password. Please provide inital password for Keycloak admin."
+                usage
+                exit 1
+            fi
+            KEYCLOAK_PASS=$1
+            ;;
         --tag)
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
@@ -590,7 +600,7 @@ HELM_INSTALL_GATEWAY_DEFAULT_ARGS=""
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS=""
 # !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
 HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user \
-  --set auth.adminPassword=$keycloak_pass -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
+  --set auth.adminPassword=$KEYCLOAK_PASS -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
 
 HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
 HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
@@ -653,4 +663,5 @@ if $clear_all_flag; then
     clear_ingress
     clear_gateway
     clear_all_ns
+    rm default_credentials.txt
 fi

@@ -6,7 +6,7 @@ HELM_VALUES_PATH=microservices-connector/helm/values.yaml
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUG_TOKEN] -r [REPOSITORY] -t [TAG]"
+    echo "Usage: $0 -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN ] -r [REPOSITORY] -t [TAG]"
 }
 
 if [ $# -eq 0 ]; then

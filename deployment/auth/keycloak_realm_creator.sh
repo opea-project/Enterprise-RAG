@@ -5,9 +5,18 @@
 
 # set -x
 repo_path=$(realpath "$(pwd)/../")
+deployment_path="$repo_path/deployment"
 auth_path="$repo_path/deployment/auth"
 keyclock_config_path="$auth_path/keycloak-config"
 AUTH_NS=${1:-default}
+ADMIN_PASSWORD=${2:-admin}
+
+generate_random_password() {
+  local CHAR_SET="a-zA-Z0-9"
+  local LENGTH=12
+  random_string=$(tr -dc "$CHAR_SET" < /dev/urandom | head -c $LENGTH)
+  echo "$random_string"
+}
 
 export_realm() {
     local realm_name=$1
@@ -64,7 +73,7 @@ add_user() {
         "credentials": [{
             "type": "password",
             "value": "'$password'",
-            "temporary": false
+            "temporary": true
         }]
     }'
 
@@ -88,76 +97,8 @@ add_user() {
             -H "Content-Type: application/json" \
             -d "[{\"id\": \"$ROLE_ID\", \"name\": \"$role_name\"}]" | jq
     fi
+    echo "username: $username --- password: $password" >> $deployment_path/default_credentials.txt
 }
-
-
-create_realm() {
-    local realm_name=$1
-
-    echo "Creating a new Keycloak realm: $realm_name"
-
-    NEW_REALM_JSON='{
-        "realm": "'$realm_name'",
-        "enabled": true,
-        "displayName": "My Custom Realm",
-        "sslRequired": "none",
-        "registrationAllowed": false
-    }'
-
-    curl -s -X POST "${KEYCLOAK_URL}/admin/realms" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$NEW_REALM_JSON" | jq
-
-    local client_name=myclient-oidc
-
-    echo "Creating a new client: $client_name in realm $realm_name"
-
-    NEW_CLIENT_JSON='{
-        "clientId": "'$client_name'",
-        "surrogateAuthRequired": false,
-        "enabled": true,
-        "clientAuthenticatorType": "client-secret",
-        "redirectUris": [ "*" ],
-        "webOrigins": [ "*" ],
-        "publicClient": true,
-        "protocol": "openid-connect",
-        "frontchannelLogout": false
-    }'
-
-    curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${realm_name}/clients" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$NEW_CLIENT_JSON" | jq
-
-    CLIENT_ID=$(curl -s -X GET "${KEYCLOAK_URL}/admin/realms/${realm_name}/clients?clientId=$client_name" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" | jq -r '.[0].id')
-
-    echo "CLIENT_ID=$CLIENT_ID"
-
-    local role_name=rag-admin
-
-    echo "Creating a new role: $role_name in client $client_name"
-
-    NEW_ROLE_JSON='{
-        "name": "'$role_name'",
-        "description": "",
-        "composite": false,
-        "clientRole": true,
-        "containerId": "'$CLIENT_ID'"
-    }'
-
-    # Create the role in the client
-    curl -s -X POST "${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/$CLIENT_ID/roles" \
-    -H "Authorization: Bearer $ACCESS_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$NEW_ROLE_JSON" | jq
-
-    add_user "$realm_name" "viktor" "viktor@viktor.viktor" "Viktor" "👨🏻" "password"
-    add_user "$realm_name" "ragadmin" "rag@rag.rag" "Admin" "User" "adminpassword" "$role_name"
-}
-
 
 delete_realm() {
     local realm_name=$1
@@ -257,7 +198,6 @@ CWD="$(pwd)"
 KEYCLOAK_URL=localhost:1234
 KEYCLOAK_REALM=EnterpriseRAG
 KEYCLOAK_CLIENT_ID=admin
-ADMIN_PASSWORD=admin
 
 # Obtain an Access Token using admin credentials
 ACCESS_TOKEN=$(curl -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
@@ -266,9 +206,12 @@ ACCESS_TOKEN=$(curl -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-conne
  -d "password=${ADMIN_PASSWORD}" \
  -d 'grant_type=password' \
  -d 'client_id=admin-cli' | jq -r '.access_token')
+
 cd $keyclock_config_path
 upload_config
+
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc" "ERAG-admin"
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc" "ERAG-user"
-add_user $KEYCLOAK_REALM "testadmin" "testadmin@example.com" "Test" "Admin" "password" "ERAG-admin" "EnterpriseRAG-oidc"
-add_user $KEYCLOAK_REALM "testuser" "testuser@example.com" "Test" "User" "password" "ERAG-user" "EnterpriseRAG-oidc" 
+true > $deployment_path/default_credentials.txt
+add_user $KEYCLOAK_REALM "erag-admin" "testadmin@example.com" "Test" "Admin" "$(generate_random_password)" "ERAG-admin" "EnterpriseRAG-oidc"
+add_user $KEYCLOAK_REALM "erag-user" "testuser@example.com" "Test" "User" "$(generate_random_password)" "ERAG-user" "EnterpriseRAG-oidc"

@@ -3,7 +3,7 @@
 KEYCLOAK_URL=localhost:1234
 KEYCLOAK_REALM=EnterpriseRAG
 KEYCLOAK_CLIENT_ID=admin
-ADMIN_PASSWORD=admin
+ADMIN_PASSWORD=${1:-admin}
 
 get_client_id(){
     local client_name=$1

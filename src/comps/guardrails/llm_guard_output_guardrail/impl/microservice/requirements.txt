@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 llm-guard==0.3.14
 pydantic==2.7.4
 pyyaml==6.0.1

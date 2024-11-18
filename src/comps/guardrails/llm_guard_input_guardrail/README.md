@@ -221,7 +221,7 @@ docker build -t opea/in-guard:latest -f comps/guardrails/llm_guard_input_guardra
 
 #### 2.2. Run the Docker container, for example:
 ```sh
-docker run --e BAN_SUBSTRINGS_EMABLED="true" -p 8050:8050 opea/in-guard:latest
+docker run -d -e BAN_SUBSTRINGS_EMABLED="true" -p 8050:8050 opea/in-guard:latest
 ```
 
 ### 3. Verify the LLM Guard Input Guardrail Microservice

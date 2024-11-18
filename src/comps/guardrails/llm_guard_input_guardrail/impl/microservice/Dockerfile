@@ -6,8 +6,6 @@
 
 FROM python:3.11-slim
 
-ARG ARCH="cpu"
-
 # Install system packages needed for building
 RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
     build-essential \

@@ -38,7 +38,7 @@ data:
     {{- $content = regexReplaceAll "(.*http_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpProxy) }}
     {{- $content = regexReplaceAll "(.*https_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.httpsProxy) }}
     {{- $content = regexReplaceAll "(.*no_proxy:\\s*).*" $content (printf "$1\"%s\"" $.Values.proxy.noProxy) }}
-    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*).*" $content (printf "$1\"%s\"" $hugToken) }}
+    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*.*\\n?)" $content "" }}
     {{- if $.Values.imagePullSecrets }}
       {{- $imagePullSecrets := toYaml $.Values.imagePullSecrets | nindent 10 }}
       {{- $content = regexReplaceAllLiteral "containers:" $content (printf "imagePullSecrets:%s\n      containers:" $imagePullSecrets) }}

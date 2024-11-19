@@ -16,7 +16,6 @@ metadata:
 data:
   LLM_DEVICE: "cpu"
   PORT: "2080"
-  HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
@@ -82,6 +81,12 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
           securityContext:
             {}
           image: "ghcr.io/huggingface/text-generation-inference:2.4.0"

@@ -14,7 +14,6 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  HF_TOKEN: "insert-your-huggingface-token-here"
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
@@ -95,6 +94,12 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

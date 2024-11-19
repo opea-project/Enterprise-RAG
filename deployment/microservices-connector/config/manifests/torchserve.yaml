@@ -17,7 +17,6 @@ data:
   http_proxy: ""
   https_proxy: ""
   no_proxy: ""
-  HF_TOKEN: ""
 ---
 # Source: torchserve/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -84,6 +83,12 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
           securityContext:
             {}
           image: "localhost:5000/test/pl-qna-rag-embedding-torchserve:latest"

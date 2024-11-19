@@ -6,8 +6,10 @@
 
 import allure
 import kr8s
+import pytest
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T27")
 def test_pods_are_running():
     pods_not_running = []

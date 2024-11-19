@@ -8,6 +8,7 @@ import json
 import pytest
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T51")
 def test_fingerprint_append_arguments(fingerprint_api_helper):
     """
@@ -29,6 +30,7 @@ def test_fingerprint_append_arguments(fingerprint_api_helper):
     assert response_json.get("text") == text
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T52")
 def test_fingerprint_parameters_modification(fingerprint_api_helper):
     """
@@ -44,6 +46,7 @@ def test_fingerprint_parameters_modification(fingerprint_api_helper):
     assert max_new_tokens != 666, "'append argument' API call should not modify parameters"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T53")
 def test_fingerprint_change_arguments(fingerprint_api_helper):
     """

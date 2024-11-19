@@ -5,9 +5,11 @@
 
 import allure
 import kr8s
+import pytest
 import requests
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T26")
 def test_api_health_checks(generic_api_helper):
     """

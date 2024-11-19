@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import pytest
+
 import constants
 import os
 
@@ -14,6 +16,7 @@ UNRELATED_RESPONSE_MSG = "Chatbot should return answer that is strictly related 
 # In each test case, a file is uploaded and a question related to the file content is asked.
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T50")
 def test_txt(dataprep_api_helper, chatqa_api_helper):
     """*.txt file learning capabilities"""
@@ -22,6 +25,7 @@ def test_txt(dataprep_api_helper, chatqa_api_helper):
     assert "851" in response, UNRELATED_RESPONSE_MSG
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T56")
 def test_docx_text_only(dataprep_api_helper, chatqa_api_helper):
     """*.docx file learning capabilities (pure text inside the file)"""
@@ -29,7 +33,7 @@ def test_docx_text_only(dataprep_api_helper, chatqa_api_helper):
     response = upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, "story.docx", question)
     assert "Asfehehehe" in response, UNRELATED_RESPONSE_MSG
 
-
+@pytest.mark.smoke
 @allure.testcase("IEASG-T54")
 def test_pdf_text_only(dataprep_api_helper, chatqa_api_helper):
     """*.pdf file learning capabilities (pure text inside the file)"""
@@ -37,7 +41,7 @@ def test_pdf_text_only(dataprep_api_helper, chatqa_api_helper):
     response = upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, "story.pdf", question)
     assert "door" in response.lower(), UNRELATED_RESPONSE_MSG
 
-
+@pytest.mark.smoke
 @allure.testcase("IEASG-T55")
 def test_pptx_text_only(dataprep_api_helper, chatqa_api_helper):
     """*.pptx file learning capabilities (pure text inside the file)"""

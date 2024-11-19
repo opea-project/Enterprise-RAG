@@ -12,6 +12,7 @@ import time
 from api_request_helper import InvalidChatqaResponseBody
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T32")
 def test_chatqa_timeout(chatqa_api_helper):
     """
@@ -29,6 +30,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     print(f"Response: {chatqa_api_helper.format_response(response.text)}")
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T31")
 def test_chatqa_response_body(chatqa_api_helper):
     """
@@ -43,6 +45,7 @@ def test_chatqa_response_body(chatqa_api_helper):
         pytest.fail(str(e))
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T30")
 def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     """
@@ -55,6 +58,7 @@ def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     assert content_type_header == "text/event-stream", "Unexpected Content-Type header in response"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T29")
 def test_chatqa_pass_empty_question(chatqa_api_helper):
     """
@@ -65,6 +69,7 @@ def test_chatqa_pass_empty_question(chatqa_api_helper):
     assert response.status_code == 400, "Got unexpected status code"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T28")
 def test_chatqa_ask_in_polish(chatqa_api_helper):
     """
@@ -80,6 +85,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
         pytest.fail(str(e))
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T49")
 def test_chatqa_enable_streaming(chatqa_api_helper):
     """
@@ -95,6 +101,7 @@ def test_chatqa_enable_streaming(chatqa_api_helper):
         pytest.fail(str(e))
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T57")
 def test_chatqa_with_fingerprint_args(chatqa_api_helper, fingerprint_api_helper):
     """Make /v1/chatqa call with all the parameters from fingerprint service"""
@@ -108,7 +115,7 @@ def test_chatqa_with_fingerprint_args(chatqa_api_helper, fingerprint_api_helper)
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
-
+@pytest.mark.smoke
 @allure.testcase("IEASG-T58")
 def test_chatqa_with_modified_fingerprint_args(chatqa_api_helper, fingerprint_api_helper):
     """
@@ -137,6 +144,7 @@ def test_chatqa_with_modified_fingerprint_args(chatqa_api_helper, fingerprint_ap
     assert refreshed_resp.json() == old_arguments
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T42")
 def test_chatqa_concurrent_requests(chatqa_api_helper):
     """

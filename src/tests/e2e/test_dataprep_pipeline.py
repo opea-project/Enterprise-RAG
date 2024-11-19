@@ -13,6 +13,7 @@ import time
 from tempfile import NamedTemporaryFile
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T43")
 def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     """
@@ -23,6 +24,7 @@ def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     assert response.status_code == 200, "Invalid HTTP status code returned"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T41")
 def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     """
@@ -33,6 +35,7 @@ def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     assert response.status_code == 400, "Invalid HTTP status code returned"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T40")
 def test_dataprep_link_check_status_code_and_headers(dataprep_api_helper):
     """
@@ -98,6 +101,7 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
         assert result.status_code == 200, "Unexpected status code returned"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T37")
 def test_dataprep_pass_invalid_request_body(dataprep_api_helper):
     """
@@ -140,6 +144,7 @@ def test_dataprep_all_supported_file_types(dataprep_api_helper):
     assert failed_files == [], f"Some of the files were not uploaded successfully: {failed_files}"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T34")
 def test_dataprep_response_status_code_and_header(dataprep_api_helper):
     """

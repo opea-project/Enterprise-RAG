@@ -54,7 +54,7 @@ function usage() {
     echo -e "Usage: $0 [OPTIONS]"
     echo -e "Options:"
     echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
-    echo -e "\t--keycloak_admin_password: Initial password for keycloak admin."
+    echo -e "\t--keycloak_admin_password (REQUIRED with --auth): Initial password for keycloak admin."
     echo -e "\t--auth: Start auth services."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
@@ -72,7 +72,7 @@ function usage() {
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --deploy gaudi_torch --telemetry --ui --grafana_password=changeitplease --keycloak_admin_password=changeitplease"
+    echo -e "Example: $0 --auth --deploy gaudi_torch_in_out_guards --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease --ip <put host IP here>"
 }
 
 print_header() {
@@ -571,21 +571,27 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
-
-
-# check required parameters
+# Additional validation for required parameters
 if [[ "$telemetry_flag" == "true" ]]; then
-  if [[ -z "$GRAFANA_PASSWORD" ]]; then
-      print_log "Error: Grafana initial password is required for --telemetry!. Please provide inital password for Grafana --grafana_password."
-      exit 1
-  fi
+    if [[ -z "$GRAFANA_PASSWORD" ]]; then
+        usage
+        print_log "Error: Grafana initial password is required for --telemetry!. Please provide inital password for Grafana --grafana_password."
+        exit 1
+    fi
 
-  # system validation (for journald/ctl systemd OpenTelemetry collector)
-  if  [[ $(sysctl -n fs.inotify.max_user_instances) -lt 8000 ]]; then
-      print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
-      exit 1
-  fi
+    # system validation (for journald/ctl systemd OpenTelemetry collector)
+    if  [[ $(sysctl -n fs.inotify.max_user_instances) -lt 8000 ]]; then
+        print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
+        exit 1
+    fi
 fi
+
+if [[ "$auth_flag" == true && -z "$KEYCLOAK_PASS" ]]; then
+    usage
+    print_log "Error: --keycloak_admin_password must be provided when --auth is specified."
+    exit 1
+fi
+
 
 # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
 # shellcheck disable=SC2154

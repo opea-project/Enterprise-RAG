@@ -133,7 +133,7 @@ check_pods() {
 wait_for_condition() {
     sleep 5 # safety measures for helm to initialize pod deployments
     local current_time
-    local timeout=1800
+    local timeout=2700
     local end_time=$(( $(date +%s) + timeout ))
     while true; do
         current_time=$(date +%s)

@@ -66,7 +66,7 @@ JSON_PAYLOAD='
   "parameters": {
     "max_new_tokens": 5,
     "do_sample": true,
-    "streaming": true
+    "streaming": false
   }
 }
 '

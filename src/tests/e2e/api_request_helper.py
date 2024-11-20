@@ -6,6 +6,7 @@
 import base64
 import concurrent
 import kr8s
+from pathlib import Path
 import requests
 import secrets
 import socket
@@ -202,7 +203,7 @@ class ApiRequestHelper:
 
         json_data = {
             "files": [{
-                    "filename": "test_dataprep.txt",
+                    "filename": Path(filepath).name,
                     "data64": file_content_base64_str
                 }
             ]

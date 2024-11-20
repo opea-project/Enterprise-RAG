@@ -89,7 +89,7 @@ spec:
                   key: HF_TOKEN
           securityContext:
             {}
-          image: "ghcr.io/huggingface/text-generation-inference:2.4.0"
+          image: "ghcr.io/huggingface/text-generation-inference:2.4.0-intel-cpu"
           args:
             - --model-id
             - "$(LLM_TGI_MODEL_NAME)"

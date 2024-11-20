@@ -27,4 +27,4 @@ We want to modify our pipeline and change LLM MODEL_ID from `mistralai/Mixtral-8
             TGI_LLM_ENDPOINT: tgi-gaudi-svc
             LLM_MODEL_SERVER_ENDPOINT: tgi-gaudi-svc
 ```
-Next, re-deploy the pipeline using [quickstart](../deployment/README.md#quickstart-with-oneclick-script) passing the modified config file.
+Next, re-deploy the pipeline using [quickstart](../deployment/README.md#quick-start-with-one-click-script) passing the modified config file.

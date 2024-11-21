@@ -5,6 +5,7 @@ FROM vault.habana.ai/gaudi-docker/1.18.0/ubuntu22.04/habanalabs/pytorch-installe
 
 ENV LANG=en_US.UTF-8
 WORKDIR /root
+ENV VLLM_TARGET_DEVICE="hpu"
 RUN pip install --upgrade-strategy eager optimum[habana]
 RUN pip install -v git+https://github.com/HabanaAI/vllm-fork.git@v0.5.3.post1+Gaudi-1.18.0
 

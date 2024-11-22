@@ -8,14 +8,14 @@ import pytest
 from python_on_whales import Container, Image
 
 
-from structures import EmbeddingsTest
+from structures_base import EmbeddingsDockerSetup
 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class TestEmbeddingsLangchainMosec(EmbeddingsTest):
+class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
 
     CONTAINER_NAME_BASE = "test-comps-embeddings"
 
@@ -31,12 +31,13 @@ class TestEmbeddingsLangchainMosec(EmbeddingsTest):
 
     API_ENDPOINT = "/v1/embeddings"
 
-    def __init__(self):
-        super().__init__()
+    @property
+    def _MODEL_SERVER_READINESS_MSG(self) -> str:
+        return "http service is running"
 
     def _build_model_server(self) -> Image:
         return self._build_image(
-            tags=f"{self.ENDPOINT_IMAGE_NAME}",
+            self.ENDPOINT_IMAGE_NAME,
             file=f"{self._main_src_path}/comps/embeddings/impl/model-server/mosec/docker/Dockerfile",
             context_path=f"{self._main_src_path}/comps/embeddings/impl/model-server/mosec/",
             **self.COMMON_BUILD_OPTIONS,
@@ -44,7 +45,7 @@ class TestEmbeddingsLangchainMosec(EmbeddingsTest):
 
     def _build_microservice(self) -> Image:
         return self._build_image(
-            tags=f"{self.MICROSERVICE_IMAGE_NAME}",
+            self.MICROSERVICE_IMAGE_NAME,
             file=f"{self._main_src_path}/comps/embeddings/impl/microservice/Dockerfile",
             context_path=f"{self._main_src_path}",
             **self.COMMON_BUILD_OPTIONS,
@@ -52,9 +53,10 @@ class TestEmbeddingsLangchainMosec(EmbeddingsTest):
 
     def _run_model_server(self) -> Container:
         container = self._run_container(
-            image=self.ENDPOINT_IMAGE_NAME,
+            self.ENDPOINT_IMAGE_NAME,
             name=self.ENDPOINT_CONTAINER_NAME,
             cap_add=["SYS_NICE"],
+            runtime="runc",
             publish=[
                 (self.INTERNAL_COMMUNICATION_PORT, self.MODEL_SERVER_PORT),
             ],
@@ -76,9 +78,10 @@ class TestEmbeddingsLangchainMosec(EmbeddingsTest):
 
     def _run_microservice(self) -> Container:
         container = self._run_container(
-            image=self.MICROSERVICE_IMAGE_NAME,
+            self.MICROSERVICE_IMAGE_NAME,
             name=self.MICROSERVICE_CONTAINER_NAME,
             ipc="host",  # We should get rid of it as it weakens isolation
+            runtime="runc",
             publish=[
                 (self.MICROSERVICE_API_PORT, 6000),
             ],
@@ -97,7 +100,7 @@ class TestEmbeddingsLangchainMosec(EmbeddingsTest):
 
 @pytest.fixture(scope="module")
 def containers():
-    containers = TestEmbeddingsLangchainMosec()
+    containers = EmbeddingsLangchainMosecDockerSetup()
     containers.deploy()
 
     yield containers

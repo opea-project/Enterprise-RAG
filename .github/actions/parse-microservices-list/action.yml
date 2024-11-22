@@ -9,7 +9,7 @@ runs:
   steps:
     - name: "Define valid microservice groups"
       shell: bash
-      run: echo "TEST_GROUPS=dataprep embeddings ingestion llms reranks retrievers" >> $GITHUB_ENV
+      run: echo "TEST_GROUPS=dataprep embeddings ingestion reranks retrievers" >> $GITHUB_ENV
 
     - name: "Match groups in comments"
       shell: bash

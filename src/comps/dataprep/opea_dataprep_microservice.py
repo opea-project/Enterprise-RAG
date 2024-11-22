@@ -58,8 +58,17 @@ async def process(input: DataPrepInput) -> TextDocList:
     decoded_files = []
     if files:
         try:
-            for f in files:
+            for fidx, f in enumerate(files):
+                if not f.filename:
+                    logger.warning(f"File #{fidx} filename was empty. Skipping.")
+                    continue
+                if not f.data64:
+                    logger.warning(f"File {f.filename} base64 data was empty. Skipping.")
+                    continue
                 file_data = base64.b64decode(f.data64)
+                if not file_data:
+                    logger.warning(f"File {f.filename} base64 data was invalid. Skipping.")
+                    continue
                 binary_file = io.BytesIO(file_data)
                 decoded_file = UploadFile(filename=f.filename, file=binary_file)
                 decoded_files.append(decoded_file)

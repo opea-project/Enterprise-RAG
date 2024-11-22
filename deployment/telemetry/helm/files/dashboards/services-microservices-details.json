@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 9,
+  "id": 54,
   "links": [
     {
       "asDropdown": true,
@@ -52,7 +52,6 @@
     },
     {
       "datasource": {
-        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -68,7 +67,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -123,11 +121,13 @@
         "legend": {
           "calcs": [
             "lastNotNull",
-            "max"
+            "mean"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "maxHeight": 600,
@@ -145,13 +145,13 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(process_cpu_seconds_total{container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval])",
+          "expr": "rate(process_cpu_seconds_total{container=~\"$container_name\", namespace=\"$namespace\"}[1m])",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "cpu",
+          "legendFormat": "{{container}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -177,7 +177,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -231,11 +230,14 @@
       "options": {
         "legend": {
           "calcs": [
-            "lastNotNull"
+            "lastNotNull",
+            "mean"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Last *",
+          "sortDesc": true
         },
         "tooltip": {
           "maxHeight": 600,
@@ -253,13 +255,13 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "process_resident_memory_bytes{container=\"$container_name\", namespace=\"$namespace\"}",
+          "expr": "process_resident_memory_bytes{container=~\"$container_name\", namespace=~\"$namespace\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "mem",
+          "legendFormat": "{{container}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -270,7 +272,6 @@
     },
     {
       "datasource": {
-        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -286,7 +287,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -338,9 +338,14 @@
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "mean",
+            "lastNotNull",
+            "max",
+            "min"
+          ],
           "displayMode": "table",
-          "placement": "bottom",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -359,13 +364,13 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(handler) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))",
+          "expr": "sum by(container, method, handler) (rate(http_requests_total{container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ method }} {{ handler }}",
+          "legendFormat": "{{container}}:{{ method }}{{ handler }}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -376,7 +381,6 @@
     },
     {
       "datasource": {
-        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -392,9 +396,8 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "bars",
-            "fillOpacity": 100,
+            "drawStyle": "line",
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -412,7 +415,7 @@
             "spanNulls": false,
             "stacking": {
               "group": "A",
-              "mode": "normal"
+              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -479,10 +482,10 @@
         "legend": {
           "calcs": [
             "mean",
-            "max"
+            "lastNotNull"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -501,24 +504,23 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(status) (rate(http_requests_total{container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
+          "expr": "sum by(container, status) (rate(http_requests_total{container=~\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ status }}",
+          "legendFormat": "{{container}}:{{status}}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Request per second (per status)",
+      "title": "Request per second",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "default": true,
         "type": "prometheus",
         "uid": "prometheus"
       },
@@ -534,7 +536,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -605,12 +606,13 @@
         "legend": {
           "calcs": [
             "mean",
-            "lastNotNull",
-            "max"
+            "lastNotNull"
           ],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
           "maxHeight": 600,
@@ -627,13 +629,13 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
+          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=~\"$container_name\", namespace=\"$namespace\"}[$__rate_interval])) by (container)",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "errors",
+          "legendFormat": "{{container}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -660,7 +662,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 25,
             "gradientMode": "none",
@@ -740,13 +741,13 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "histogram_quantile(0.$Percentage, rate(http_request_duration_seconds_bucket{container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[1m])) ",
+          "expr": "histogram_quantile(0.$Percentage, rate(http_request_duration_seconds_bucket{container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval])) ",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ handler }}",
+          "legendFormat": "{{container}}:{{handler}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -772,7 +773,6 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
-            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -849,11 +849,11 @@
             "type": "prometheus"
           },
           "editorMode": "code",
-          "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
+          "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ handler }}",
+          "legendFormat": "{{container}}:{{ handler }}",
           "range": true,
           "refId": "A"
         }
@@ -877,10 +877,10 @@
             "uid": "loki"
           },
           "gridPos": {
-            "h": 10,
+            "h": 11,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 28
           },
           "id": 18,
           "options": {
@@ -900,7 +900,8 @@
                 "uid": "loki"
               },
               "editorMode": "builder",
-              "expr": "{k8s_container_name=\"$container_name\"} |= ``",
+              "expr": "{k8s_container_name=~\"$container_name\"} |= ``",
+              "legendFormat": "{{container}}",
               "queryType": "range",
               "refId": "A"
             }
@@ -914,10 +915,10 @@
             "uid": "loki"
           },
           "gridPos": {
-            "h": 4,
+            "h": 10,
             "w": 24,
             "x": 0,
-            "y": 12
+            "y": 39
           },
           "id": 19,
           "options": {
@@ -937,7 +938,8 @@
                 "uid": "loki"
               },
               "editorMode": "builder",
-              "expr": "{k8s_container_name=\"$container_name\"} | detected_level = `error`",
+              "expr": "{k8s_container_name=~\"$container_name\"} | detected_level = `error`",
+              "legendFormat": "{{container}}",
               "queryType": "range",
               "refId": "A"
             }
@@ -952,15 +954,12 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": [
-    "entrag",
-    "microservices"
-  ],
+  "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "chatqa",
           "value": "chatqa"
         },
@@ -988,9 +987,13 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "embedding-usvc",
-          "value": "embedding-usvc"
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": {
           "type": "prometheus",
@@ -998,8 +1001,8 @@
         },
         "definition": "label_values(http_requests_total{namespace=~\"$namespace\"},container)",
         "hide": 0,
-        "includeAll": false,
-        "multi": false,
+        "includeAll": true,
+        "multi": true,
         "name": "container_name",
         "options": [],
         "query": {
@@ -1015,9 +1018,9 @@
       },
       {
         "current": {
-          "selected": false,
-          "text": "99",
-          "value": "99"
+          "selected": true,
+          "text": "95",
+          "value": "95"
         },
         "hide": 0,
         "includeAll": false,
@@ -1025,12 +1028,12 @@
         "name": "Percentage",
         "options": [
           {
-            "selected": true,
+            "selected": false,
             "text": "99",
             "value": "99"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "95",
             "value": "95"
           },

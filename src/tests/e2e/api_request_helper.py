@@ -123,6 +123,10 @@ class ApiRequestHelper:
             print(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
             return ApiResponse(response, duration)
 
+    def call_chatqa_custom_json(self, json_body):
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            return self._call_chatqa(json_body, pf)
+
     def call_chatqa(self, question, **custom_params):
         """
         Make /v1/chatqa API call with the provided question.

@@ -11,5 +11,5 @@ ORIGINAL_TEST = "test_embeddings_langchain_tei.sh"
 
 @allure.testcase("IEASG-T6")
 @pytest.mark.embeddings
-def test_embeddings_langchain_tei(assert_bash_test_succeeds):
+def test_embeddings_langchain_tei_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

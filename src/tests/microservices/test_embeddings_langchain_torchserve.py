@@ -11,5 +11,5 @@ ORIGINAL_TEST = "test_embeddings_langchain_torchserve.sh"
 
 @allure.testcase("IEASG-T7")
 @pytest.mark.embeddings
-def test_embeddings_langchain_torchserve(assert_bash_test_succeeds):
+def test_embeddings_langchain_torchserve_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

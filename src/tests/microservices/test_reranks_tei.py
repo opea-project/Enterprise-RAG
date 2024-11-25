@@ -12,5 +12,5 @@ ORIGINAL_TEST = "test_reranks_tei.sh"
 
 @allure.testcase("IEASG-T5")
 @pytest.mark.reranks
-def test_reranks_tei(assert_bash_test_succeeds):
+def test_reranks_tei_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

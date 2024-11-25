@@ -11,5 +11,5 @@ ORIGINAL_TEST = "test_ingestion_redis.sh"
 
 @allure.testcase("IEASG-T10")
 @pytest.mark.ingestion
-def test_ingestion_redis(assert_bash_test_succeeds):
+def test_ingestion_redis_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

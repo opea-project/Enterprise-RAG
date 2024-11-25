@@ -110,7 +110,7 @@ def containers():
 
 @allure.testcase("IEASG-T3")
 @pytest.mark.embeddings
-def test_simple_scenario(containers):
+def test_simple_scenario_golden(containers):
     """Validates most expected positive scenario."""
     url = (
         f"http://{containers._HOST_IP}:{containers.MICROSERVICE_API_PORT}/v1/embeddings"
@@ -124,7 +124,7 @@ def test_simple_scenario(containers):
 
 @allure.testcase("IEASG-T59")
 @pytest.mark.embeddings
-def test_empty_body(containers):
+def test_empty_body_golden(containers):
     url = (
         f"http://{containers._HOST_IP}:{containers.MICROSERVICE_API_PORT}/v1/embeddings"
     )

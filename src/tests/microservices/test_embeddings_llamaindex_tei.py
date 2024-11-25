@@ -11,5 +11,5 @@ ORIGINAL_TEST = "test_embeddings_llamaindex_tei.sh"
 
 @allure.testcase("IEASG-T8")
 @pytest.mark.embeddings
-def test_embeddings_llamaindex_tei(assert_bash_test_succeeds):
+def test_embeddings_llamaindex_tei_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

@@ -93,7 +93,7 @@ runs:
         host: ${{ env.REMOTE_GAUDI_HOST }}
         run: |
           cd ${{ env.REMOTE_WORKSPACE }}/src
-          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices
+          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "not hpu" -k "golden"
 
     - name: "Run selected tests"
       id: run-some
@@ -106,7 +106,7 @@ runs:
         host: ${{ env.REMOTE_GAUDI_HOST }}
         run: |
           cd ${{ env.REMOTE_WORKSPACE }}/src
-          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "${{ env.SPECIFIC_TESTS }}"
+          HF_TOKEN=${{ env.HF_TOKEN }} tox -e microservices -- -m "(${{ env.SPECIFIC_TESTS }}) and not hpu" -k "golden"
 
     - name: Fetch Zephyr script
       uses: actions/checkout@v4

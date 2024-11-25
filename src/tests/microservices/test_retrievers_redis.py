@@ -11,5 +11,5 @@ ORIGINAL_TEST = "test_retrievers_redis.sh"
 
 @allure.testcase("IEASG-T13")
 @pytest.mark.retrievers
-def test_retrievers_redis(assert_bash_test_succeeds):
+def test_retrievers_redis_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

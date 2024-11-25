@@ -9,7 +9,7 @@ runs:
   steps:
     - name: "Define valid microservice groups"
       shell: bash
-      run: echo "TEST_GROUPS=dataprep embeddings ingestion reranks retrievers" >> $GITHUB_ENV
+      run: echo "TEST_GROUPS=dataprep embeddings ingestion llms reranks retrievers" >> $GITHUB_ENV
 
     - name: "Match groups in comments"
       shell: bash
@@ -20,4 +20,6 @@ runs:
             TEST_GROUPS_MATCHES=("${TEST_GROUPS_MATCHES[@]}" ${GROUP})
           fi
         done
-        echo "SPECIFIC_TESTS=$(IFS=, ; echo "${TEST_GROUPS_MATCHES[*]}")" >> $GITHUB_ENV
+        SEP=" or "
+        printf -v RAW_JOINED_ELEMENTS "%s$SEP" "${TEST_GROUPS_MATCHES[@]}"
+        echo "SPECIFIC_TESTS=${RAW_JOINED_ELEMENTS%$SEP}" >> $GITHUB_ENV

@@ -17,24 +17,28 @@ import {
   GuardrailParams,
   ServicesParameters,
 } from "@/api/models/systemFingerprint";
-import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
-import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
+import ServiceArgument from "@/models/admin-panel/control-plane/serviceArgument";
 import {
+  GuardrailArguments,
   ServiceData,
   ServiceDetails,
   ServiceStatus,
 } from "@/models/admin-panel/control-plane/serviceData";
 import { RootState } from "@/store/index";
-import { graphEdges, graphNodes } from "@/utils/chatQnAGraph";
+import {
+  graphEdges,
+  graphNodes,
+  LLM_NODE_POSITION_NO_GUARDS,
+} from "@/utils/chatQnAGraph";
 
 interface ChatQnAGraphState {
   editModeEnabled: boolean;
   nodes: Node<ServiceData>[];
   edges: Edge[];
   loading: boolean;
-  interactivityEnabled: boolean;
+  hasInputGuard: boolean;
+  hasOutputGuard: boolean;
   selectedServiceNode: Node<ServiceData> | null;
-  promptRequestParams: ServicesParameters;
 }
 
 const initialState: ChatQnAGraphState = {
@@ -42,9 +46,101 @@ const initialState: ChatQnAGraphState = {
   nodes: graphNodes,
   edges: [],
   loading: false,
-  interactivityEnabled: false,
+  hasInputGuard: false,
+  hasOutputGuard: false,
   selectedServiceNode: null,
-  promptRequestParams: {},
+};
+
+const updateServiceArgs = (
+  args: ServiceArgument[],
+  parameters: ServicesParameters,
+): ServiceArgument[] =>
+  args.map((arg) => {
+    const fetchedArgValue = parameters[arg.displayName];
+    return fetchedArgValue !== undefined &&
+      !(fetchedArgValue instanceof GuardrailParams)
+      ? { ...arg, value: fetchedArgValue }
+      : arg;
+  });
+
+const updateGuardArgs = (
+  guardArgs: GuardrailArguments,
+  fetchedGuardArgs: GuardrailParams,
+): GuardrailArguments => {
+  const updatedGuardArgs: GuardrailArguments = { ...guardArgs };
+  for (const scannerName in updatedGuardArgs) {
+    updatedGuardArgs[scannerName] = updatedGuardArgs[scannerName].map(
+      (scannerArg) => {
+        const fetchedScannerArgValue =
+          fetchedGuardArgs[scannerName][scannerArg.displayName];
+
+        return {
+          ...scannerArg,
+          value: Array.isArray(fetchedScannerArgValue)
+            ? fetchedScannerArgValue.join(",")
+            : fetchedScannerArgValue,
+        };
+      },
+    );
+  }
+  return updatedGuardArgs;
+};
+
+const updateNodeDetails = (
+  node: Node<ServiceData>,
+  fetchedDetails: FetchedServiceDetails,
+  parameters: ServicesParameters,
+): Node<ServiceData> => {
+  const nodeId = node.data.id;
+  let nodeDetails: ServiceDetails = {};
+  let nodeStatus: ServiceStatus | undefined;
+
+  if (fetchedDetails[nodeId]) {
+    const { details, status } = fetchedDetails[nodeId];
+    nodeDetails = details || {};
+    nodeStatus = status as ServiceStatus;
+  }
+
+  if (node.data.args) {
+    const serviceArgs = updateServiceArgs(node.data.args, parameters);
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        args: serviceArgs,
+      },
+    };
+  } else if (node.data.guardArgs) {
+    const fetchedGuardArgs =
+      nodeId === "input_guard"
+        ? parameters.input_guardrail_params
+        : parameters.output_guardrail_params;
+
+    const guardArgs = fetchedGuardArgs
+      ? updateGuardArgs({ ...node.data.guardArgs }, fetchedGuardArgs)
+      : { ...node.data.guardArgs };
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        guardArgs,
+      },
+    };
+  } else {
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+      },
+    };
+  }
 };
 
 export const chatQnAGraphSlice = createSlice({
@@ -76,10 +172,7 @@ export const chatQnAGraphSlice = createSlice({
       state.editModeEnabled = action.payload;
     },
     setChatQnAGraphEdges: (state) => {
-      const nodesIds = state.nodes.map(({ id }) => id);
-      const graphHasInputGuard = nodesIds.includes("input_guard");
-
-      state.edges = graphHasInputGuard
+      state.edges = state.hasInputGuard
         ? graphEdges.filter((edge) => edge.id !== "reranker-llm")
         : graphEdges;
     },
@@ -91,93 +184,8 @@ export const chatQnAGraphSlice = createSlice({
       }>,
     ) => {
       const { parameters, fetchedDetails } = action.payload;
-      const fetchedArgs = Object.entries(parameters);
-      const fetchedDetailedServices = Object.keys(fetchedDetails);
       const updatedNodes = graphNodes
-        .map((node) => {
-          const nodeId = node.data.id;
-
-          let nodeDetails: ServiceDetails = {};
-          let nodeStatus;
-          if (fetchedDetailedServices.includes(nodeId)) {
-            const { details, status } = fetchedDetails[nodeId];
-            if (details) {
-              nodeDetails = details;
-            }
-            if (status) {
-              nodeStatus = status as ServiceStatus;
-            }
-          }
-
-          if (node.data.args) {
-            let serviceArgs = [...node.data.args];
-            for (const [fetchedArgName, fetchedArgValue] of fetchedArgs) {
-              serviceArgs = serviceArgs.map((arg) =>
-                arg.displayName === fetchedArgName &&
-                !(fetchedArgValue instanceof GuardrailParams) &&
-                fetchedArgValue !== undefined
-                  ? { ...arg, value: fetchedArgValue }
-                  : { ...arg },
-              );
-            }
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                details: nodeDetails,
-                status: nodeStatus,
-                args: serviceArgs,
-              },
-            };
-          } else if (node.data.guardArgs) {
-            const updatedGuardArgs = { ...node.data.guardArgs };
-            let fetchedGuardArgs: GuardrailParams | undefined = {};
-            if (node.data.id === "input_guard") {
-              fetchedGuardArgs = parameters.input_guardrail_params;
-            } else if (node.data.id === "output_guard") {
-              fetchedGuardArgs = parameters.output_guardrail_params;
-            }
-
-            if (fetchedGuardArgs !== undefined) {
-              for (const scannerName in updatedGuardArgs) {
-                updatedGuardArgs[scannerName] = updatedGuardArgs[
-                  scannerName
-                ].map((scannerArg) => {
-                  const scannerArgName = scannerArg.displayName;
-                  let fetchedScannerArgValue =
-                    fetchedGuardArgs[scannerName][scannerArgName];
-                  if (Array.isArray(fetchedScannerArgValue)) {
-                    fetchedScannerArgValue = fetchedScannerArgValue.join(",");
-                  }
-
-                  return {
-                    ...scannerArg,
-                    value: fetchedScannerArgValue,
-                  };
-                });
-              }
-            }
-
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                details: nodeDetails,
-                status: nodeStatus,
-                guardArgs: updatedGuardArgs,
-              },
-            };
-          } else {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                details: nodeDetails,
-                status: nodeStatus,
-              },
-            };
-          }
-        })
+        .map((node) => updateNodeDetails(node, fetchedDetails, parameters))
         .filter((node) => node.data.status);
 
       const updatedNodesIds = updatedNodes.map(({ id }) => id);
@@ -188,7 +196,7 @@ export const chatQnAGraphSlice = createSlice({
         !updatedNodesIds.includes("output_guard") &&
         llmNodeIndex !== -1
       ) {
-        updatedNodes[llmNodeIndex].position = { x: 640, y: 144 };
+        updatedNodes[llmNodeIndex].position = LLM_NODE_POSITION_NO_GUARDS;
       }
 
       state.nodes = updatedNodes;
@@ -217,60 +225,11 @@ export const chatQnAGraphSlice = createSlice({
         },
       }));
     },
-    setPromptRequestParams: (state, action) => {
-      const serviceParams = Object.fromEntries(
-        Object.entries(action.payload).filter(
-          ([, value]) =>
-            value === null ||
-            typeof value === "string" ||
-            typeof value === "number" ||
-            typeof value === "boolean",
-        ),
-      ) as ServicesParameters;
-
-      const graphNodesIds = state.nodes.map(({ id }) => id);
-      let guardParams;
-      if (
-        graphNodesIds.includes("input_guard") &&
-        graphNodesIds.includes("output_guard")
-      ) {
-        guardParams = Object.fromEntries(
-          Object.entries(action.payload).filter(([key]) =>
-            ["input_guardrail_params", "output_guardrail_params"].includes(key),
-          ),
-        );
-
-        const supportedInputScanners = Object.keys(inputGuardArguments);
-        const supportedOutputScanners = Object.keys(outputGuardArguments);
-        const inputGuardParams = Object.fromEntries(
-          Object.entries(guardParams.input_guardrail_params || {}).filter(
-            ([scannerName]) => supportedInputScanners.includes(scannerName),
-          ),
-        );
-        const outputGuardParams = Object.fromEntries(
-          Object.entries(guardParams.output_guardrail_params || {}).filter(
-            ([scannerName]) => supportedOutputScanners.includes(scannerName),
-          ),
-        );
-        guardParams = Object.fromEntries(
-          Object.entries({
-            input_guardrail_params: inputGuardParams,
-            output_guardrail_params: outputGuardParams,
-          }).filter(
-            ([, value]) =>
-              typeof value === "object" && Object.keys(value).length > 0,
-          ),
-        );
-
-        state.promptRequestParams = {
-          ...serviceParams,
-          ...guardParams,
-        };
-      } else {
-        state.promptRequestParams = {
-          ...serviceParams,
-        };
-      }
+    setHasInputGuard: (state, action: PayloadAction<boolean>) => {
+      state.hasInputGuard = action.payload;
+    },
+    setHasOutputGuard: (state, action: PayloadAction<boolean>) => {
+      state.hasOutputGuard = action.payload;
     },
   },
 });
@@ -284,7 +243,8 @@ export const {
   setChatQnAGraphNodes,
   setChatQnAGraphLoading,
   setChatQnAGraphSelectedServiceNode,
-  setPromptRequestParams,
+  setHasInputGuard,
+  setHasOutputGuard,
 } = chatQnAGraphSlice.actions;
 export const chatQnAGraphEditModeEnabledSelector = (state: RootState) =>
   state.chatQnAGraph.editModeEnabled;
@@ -296,7 +256,9 @@ export const chatQnAGraphLoadingSelector = (state: RootState) =>
   state.chatQnAGraph.loading;
 export const chatQnAGraphSelectedServiceNodeSelector = (state: RootState) =>
   state.chatQnAGraph.selectedServiceNode;
-export const selectPromptRequestParams = (state: RootState) =>
-  state.chatQnAGraph.promptRequestParams;
+export const hasInputGuardSelector = (state: RootState) =>
+  state.chatQnAGraph.hasInputGuard;
+export const hasOutputGuardSelector = (state: RootState) =>
+  state.chatQnAGraph.hasOutputGuard;
 
 export default chatQnAGraphSlice.reducer;

@@ -7,7 +7,8 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 import classNames from "classnames";
 import {
   ChangeEvent,
-  KeyboardEventHandler,
+  KeyboardEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -17,7 +18,11 @@ import { v4 as uuidv4 } from "uuid";
 
 import endpoints from "@/api/endpoints.json";
 import keycloakService from "@/services/keycloakService";
-import { selectPromptRequestParams } from "@/store/chatQnAGraph.slice";
+import SystemFingerprintService from "@/services/systemFingerprintService";
+import {
+  hasInputGuardSelector,
+  hasOutputGuardSelector,
+} from "@/store/chatQnAGraph.slice";
 import {
   addMessage,
   selectIsMessageStreamed,
@@ -25,6 +30,11 @@ import {
   updateMessage,
 } from "@/store/conversationFeed.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { parsePromptRequestParameters } from "@/utils";
+
+const VERTICAL_PADDING = 16;
+const LINE_HEIGHT = 24;
+const MAX_ROWS = 10;
 
 const PromptInput = () => {
   const dispatch = useAppDispatch();
@@ -33,15 +43,20 @@ const PromptInput = () => {
   const [textAreaRows, setTextAreaRows] = useState(1);
 
   const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
-  const promptRequestParams = useAppSelector(selectPromptRequestParams);
+  const hasInputGuard = useAppSelector(hasInputGuardSelector);
+  const hasOutputGuard = useAppSelector(hasOutputGuardSelector);
 
-  useEffect(() => {
+  const focusPromptInput = useCallback(() => {
     promptInputRef.current!.focus();
   }, []);
 
   useEffect(() => {
+    focusPromptInput();
+  }, []);
+
+  useEffect(() => {
     if (!isMessageStreamed) {
-      promptInputRef.current!.focus();
+      focusPromptInput();
     }
   }, [isMessageStreamed]);
 
@@ -51,15 +66,11 @@ const PromptInput = () => {
 
     input.style.height = "auto";
 
-    const verticalPadding = 16;
-    const lineHeight = 24;
-    const textareaScrollHeight = input.scrollHeight - verticalPadding;
-    const calculatedRows = Math.max(
-      Math.ceil(textareaScrollHeight / lineHeight),
-      1,
-    );
-    const newRows = calculatedRows > 10 ? 10 : calculatedRows;
-    setTextAreaRows(newRows);
+    const textareaScrollHeight = input.scrollHeight - VERTICAL_PADDING;
+    const newRows = Math.max(Math.ceil(textareaScrollHeight / LINE_HEIGHT), 1);
+    if (newRows !== textAreaRows && newRows <= MAX_ROWS) {
+      setTextAreaRows(newRows);
+    }
 
     input.style.height = "";
   };
@@ -70,12 +81,14 @@ const PromptInput = () => {
     }
   }, [prompt]);
 
-  const handlePromptInputKeydown: KeyboardEventHandler = (event) => {
+  const handlePromptInputKeydown = (
+    event: KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (prompt.trim() !== "" && !isMessageStreamed) {
-        handlePromptInputSubmit().then(() => {
-          promptInputRef.current!.focus();
+        handlePromptInputSubmit().finally(() => {
+          focusPromptInput();
         });
       }
     }
@@ -104,28 +117,40 @@ const PromptInput = () => {
   const handlePromptInputSubmit = async () => {
     await keycloakService.refreshToken();
 
-    const newUserMessage = { text: prompt, isUserMessage: true, id: uuidv4() };
-    dispatch(addMessage(newUserMessage));
-
     dispatch(setIsMessageStreamed(true));
 
     const chatBotMessageId = uuidv4();
-    const newMessage = {
-      text: "",
-      isUserMessage: false,
-      id: chatBotMessageId,
-    };
-    dispatch(addMessage(newMessage));
-
-    const requestBody = {
-      text: prompt,
-      parameters: promptRequestParams,
-    };
-
-    const url = endpoints.chat;
-    const ctrl = new AbortController();
 
     try {
+      const parameters = await SystemFingerprintService.appendArguments();
+      const promptRequestParams = parsePromptRequestParameters(
+        parameters,
+        hasInputGuard,
+        hasOutputGuard,
+      );
+
+      const newUserMessage = {
+        text: prompt,
+        isUserMessage: true,
+        id: uuidv4(),
+      };
+      dispatch(addMessage(newUserMessage));
+
+      const newMessage = {
+        text: "",
+        isUserMessage: false,
+        id: chatBotMessageId,
+      };
+      dispatch(addMessage(newMessage));
+
+      const requestBody = {
+        text: prompt,
+        parameters: promptRequestParams,
+      };
+
+      const url = endpoints.chat;
+      const ctrl = new AbortController();
+
       await fetchEventSource(url, {
         method: "POST",
         headers: {
@@ -164,7 +189,6 @@ const PromptInput = () => {
             ) {
               const newChunk = matchedContent[1]
                 .replace(/<\/s>/, "")
-                .trimEnd()
                 .replace(/\\n/, "  \n");
               dispatch(
                 updateMessage({ messageId: chatBotMessageId, chunk: newChunk }),

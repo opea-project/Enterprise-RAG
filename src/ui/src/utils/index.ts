@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
-import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
+import {
+  FetchedServiceDetails,
+  ServicesParameters,
+} from "@/api/models/systemFingerprint";
+import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
+import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
 
 const documentToBase64 = (document: File) =>
   new Promise((resolve, reject) => {
@@ -110,4 +115,55 @@ const parseServiceDetailsResponseData = (
   return serviceDetails;
 };
 
-export { documentToBase64, parseServiceDetailsResponseData };
+const parsePromptRequestParameters = (
+  parameters: ServicesParameters,
+  hasInputGuard: boolean,
+  hasOutputGuard: boolean,
+) => {
+  const serviceParams = Object.fromEntries(
+    Object.entries(parameters).filter(
+      ([, value]) => typeof value !== "object" || value === null,
+    ),
+  ) as ServicesParameters;
+
+  let inputGuardParams = {};
+  let outputGuardParams = {};
+  if (hasInputGuard) {
+    const supportedInputScanners = Object.keys(inputGuardArguments);
+    inputGuardParams = Object.fromEntries(
+      Object.entries(parameters.input_guardrail_params || {}).filter(
+        ([scannerName]) => supportedInputScanners.includes(scannerName),
+      ),
+    );
+  }
+
+  if (hasOutputGuard) {
+    const supportedOutputScanners = Object.keys(outputGuardArguments);
+    outputGuardParams = Object.fromEntries(
+      Object.entries(parameters.output_guardrail_params || {}).filter(
+        ([scannerName]) => supportedOutputScanners.includes(scannerName),
+      ),
+    );
+  }
+
+  const guardParams = Object.fromEntries(
+    Object.entries({
+      input_guardrail_params: inputGuardParams,
+      output_guardrail_params: outputGuardParams,
+    }).filter(
+      ([, params]) =>
+        typeof params === "object" && Object.keys(params).length > 0,
+    ),
+  );
+
+  return {
+    ...serviceParams,
+    ...guardParams,
+  };
+};
+
+export {
+  documentToBase64,
+  parsePromptRequestParameters,
+  parseServiceDetailsResponseData,
+};

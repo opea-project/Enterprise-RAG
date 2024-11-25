@@ -9,6 +9,8 @@ import { llmArguments } from "@/models/admin-panel/control-plane/llm";
 import { rerankerArguments } from "@/models/admin-panel/control-plane/reranker";
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 
+export const LLM_NODE_POSITION_NO_GUARDS = { x: 640, y: 144 };
+
 const graphNodes: Node<ServiceData>[] = [
   {
     id: "embedding_model_server",

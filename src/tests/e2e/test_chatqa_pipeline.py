@@ -12,7 +12,6 @@ import time
 from api_request_helper import InvalidChatqaResponseBody
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T32")
 def test_chatqa_timeout(chatqa_api_helper):
     """
@@ -45,7 +44,6 @@ def test_chatqa_response_body(chatqa_api_helper):
         pytest.fail(str(e))
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T30")
 def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     """
@@ -58,7 +56,6 @@ def test_chatqa_response_status_code_and_header(chatqa_api_helper):
     assert content_type_header == "text/event-stream", "Unexpected Content-Type header in response"
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T29")
 def test_chatqa_pass_empty_question(chatqa_api_helper):
     """
@@ -85,7 +82,6 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
         pytest.fail(str(e))
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T49")
 def test_chatqa_enable_streaming(chatqa_api_helper):
     """

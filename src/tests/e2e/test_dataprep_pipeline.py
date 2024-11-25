@@ -24,7 +24,6 @@ def test_dataprep_link_pass_many_websites(dataprep_api_helper):
     assert response.status_code == 200, "Invalid HTTP status code returned"
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T41")
 def test_dataprep_link_nonexistent_website(dataprep_api_helper):
     """
@@ -101,7 +100,6 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
         assert result.status_code == 200, "Unexpected status code returned"
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T37")
 def test_dataprep_pass_invalid_request_body(dataprep_api_helper):
     """

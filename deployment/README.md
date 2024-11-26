@@ -102,7 +102,7 @@ The HF access token can be created [here](https://huggingface.co/settings/tokens
 Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 
 ```bash
-./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip 10.211.187.74 --grafana_password mypassword 
+./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip 10.211.187.74 --grafana_password mygrafanapassword --keycloak_admin_password mykeycloakpassword
 ```
 >**Note:**  The IP address `10.211.187.74` is being exposed to the outside world from within a private network segment, allowing external access to the ChatQnA deployment.
 

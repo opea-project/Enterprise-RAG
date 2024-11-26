@@ -918,7 +918,7 @@ class OutputScannersConfig:
 
     def _create_regex_scanner(self, scanner_config):
         enabled_match_types = ['search', 'fullmatch']
-        regex_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        regex_params = {}
 
         patterns = scanner_config.get('patterns', None)
         is_blocked = scanner_config.get('is_blocked', None)

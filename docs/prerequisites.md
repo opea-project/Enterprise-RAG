@@ -305,7 +305,7 @@ For more details, refer to the [Gaudi Firmware installation](https://docs.habana
 
 ## Install K8s Plugin
 
-Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Orchestration/Gaudi_Kubernetes/Device_Plugin_for_Kubernetes.html) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
+Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Installation_Methods/Kubernetes_Installation/index.html#intel-gaudi-device-plugin) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
 
 Verify that the plugin is installed successfully by running `kubectl get pods -A`:
 ```

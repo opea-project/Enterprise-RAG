@@ -1,4 +1,4 @@
-# Deploy Intel(R) AI for Enterprise RAG
+# Deploy Intel&reg; AI for Enterprise RAG
 
 ### Verify System Status
 
@@ -33,37 +33,56 @@ To prepare your environment for development and deployment, run the following co
 ```
 
 This command will configure various tools in your environment, including `Docker`, `Helm`, `make`, `zip`, and `jq`.
->**Note**: Before running the script, please be aware that it uses `sudo` privileges to install the mentioned packages and configure settings. **Please use with caution**, as this may overwrite existing configurations.
+> [!NOTE]
+> Before running the script, please be aware that it uses `sudo` privileges to install the mentioned packages and configure settings. Please use with caution, as this may overwrite existing configurations.
 
 The script completes successfully with the confirmation: `All installations and configurations are complete`.
 
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
-1.  Step-by-Step Installation
-2.  Quick start with a one click script
+1.  Quick start with a one click script
+2.  Step-by-Step Installation
+
+### Quick Start with One Click Script
+
+With the `one_click_chatqna.sh` script,  you can automate all the steps performed above such as configuration, building and pushing images and finally installing ChatQnA.
+
+####  Install ChatQnA via `one_click_chatqna.sh`
+Use the command below to install via the one click script:
+
+```bash
+./one_click_chatqna.sh -g HUG_TOKEN -z GRAFANA_PASSWORD -k KEYCLOAK_ADMIN_PASSWORD -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+```
+> [!NOTE]
+> Using the `one_click_chatqna.sh` is an alternatve option to the Step-by-Step Installation described in the next section.
+
+You can run `one_click_chatqna.sh --help` to get detailed information.
+
+Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
 
 ### Build Step-by-Step
 
 #### Build and Push Images
 Enterprise RAG is built on top of a collection of microservice components that form a service-based toolkit. This includes a variety of services such as llm (large language models), embedding, and reranking, among others.
 
-The `update_images.sh` script is responsible for building the images for these microservices from source 
+The `update_images.sh` script is responsible for building the images for these microservices from source
 and pushing them to a specified registry. The script consists of three main steps:
 
 ##### Step 1: Build
 
-The first step is to build the images for each microservice component using the source code. This involves 
+The first step is to build the images for each microservice component using the source code. This involves
 compiling the code, packaging it into Docker images, and performing any necessary setup tasks.
 
 ```bash
 ./update_images.sh --build
 ```
->**Note**: The `--build` argument builds all the images. 
->You can build individual images, for example `./update_images.sh --build  embedding-usvc reranking-usvc` which only builds the embedding and reranking images
+
+> [!NOTE]
+> You can build individual images, for example `./update_images.sh --build  embedding-usvc reranking-usvc` which only builds the embedding and reranking images.
 
 ##### Step 2: Setup Registry
 
-The second step is to configure the registry where the built images will be pushed. This may involve 
+The second step is to configure the registry where the built images will be pushed. This may involve
 setting up authentication, specifying the image tags, and defining other configuration parameters.
 
 ```bash
@@ -72,29 +91,29 @@ setting up authentication, specifying the image tags, and defining other configu
 
 ##### Step 3: Push
 
-The final step is to push the built images to the configured registry. This ensures that the images are 
+The final step is to push the built images to the configured registry. This ensures that the images are
 deployed to the desired environment and can be accessed by the application.
 
 ```bash
 ./update_images.sh --push
 ```
-
->**Note**: Multiple steps can also be executed in a single step using `./update_images.sh --build --setup-registry --push`, which simplifies the build process and reduces the number of commands needed.
+> [!NOTE]
+> Multiple steps can also be executed in a single step using `./update_images.sh --build --setup-registry --push`, which simplifies the build process and reduces the number of commands needed.
 
 Run `./update_images.sh --help` to get detailed information.
 
 ####  Install ChatQnA via `install_chatqna.sh`
 
-To install ChatQnA, use the `install_chatqna.sh` script, a streamlined deployment process for our 
-Enterprise RAG solution. This script automates the setup of ChatQnA services, including pipeline 
+To install ChatQnA, use the `install_chatqna.sh` script, a streamlined deployment process for our
+Enterprise RAG solution. This script automates the setup of ChatQnA services, including pipeline
 deployment, telemetry integration, and UI authentication.
 
-##### Configure 
-The `set_values.sh` script automates Helm value configuration for the `microservices-connector` chart, 
-simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking: 
+##### Configure
+The `set_values.sh` script automates Helm value configuration for the `microservices-connector` chart,
+simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking:
 
 ```bash
-./set_values.sh -g HUGGINGFACEHUB_API_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
+./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN ] -r [REPOSITORY] -t [TAG]
 ```
 
 The HF access token can be created [here](https://huggingface.co/settings/tokens).
@@ -102,34 +121,19 @@ The HF access token can be created [here](https://huggingface.co/settings/tokens
 Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 
 ```bash
-./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip 10.211.187.74 --grafana_password mygrafanapassword --keycloak_admin_password mykeycloakpassword
+./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip instance-ip-address --grafana_password mypassword --keycloak_admin_password adminpaassword
 ```
->**Note:**  The IP address `10.211.187.74` is being exposed to the outside world from within a private network segment, allowing external access to the ChatQnA deployment.
+
+> [!NOTE]
+> The IP adress passed via `instance-ip-address` is host IP that is being exposed to access UI. 
 
 You can run `./install_chatqna.sh --help` to get detailed information.
 
 Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
 
-### Quick Start with One Click Script
-
-With the `one_click_chatqna.sh` script,  you can automate all the steps performed above such as configuration, building and pushing images and finally installing ChatQnA. 
-
-####  Install ChatQnA via `one_click_chatqna.sh`
-Use the command below to install via the one click script:
-
-```bash
-./one_click_chatqna.sh -g HUGGINGFACEHUB_API_TOKEN -z GRAFANA_PASSWORD [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d PIPELINE -t [TAG] -i [IP]
-```
->**Note:** Using the `one_click_chatqna.sh` is an alternatve option to the Step-by-Step Installation described in the previous section.
-
-You can run `one_click_chatqna.sh --help` to get detailed information.
-
-Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
-
-
 ## Verify Services
 
-Run `kubectl get pods -A` to verify that the output looks as below: 
+Run `kubectl get pods -A` to verify that the output looks as below:
 ```
 NAMESPACE            NAME                                                       READY   STATUS    RESTARTS      AGE
 auth-apisix          auth-apisix-54ffcf8d66-x6bx5                               1/1     Running   0             36m
@@ -146,7 +150,7 @@ chatqa               reranking-svc-deployment-bb66bccbd-ww7lf                   
 chatqa               retriever-svc-deployment-b6455474f-wqbbd                   1/1     Running   0             34m
 chatqa               router-service-deployment-5b9fcd6d94-grjln                 1/1     Running   0             34m
 chatqa               tei-reranking-svc-deployment-db55fbbc7-v5hfj               1/1     Running   0             34m
-chatqa               tgi-gaudi-svc-deployment-7f8c68d8d4-nqnsm                  1/1     Running   0             34m
+chatqa               vllm-gaudi-svc-deployment-7f8c68d8d4-nqnsm                 1/1     Running   0             34m
 chatqa               torchserve-embedding-svc-deployment-5d66d585fd-bnkz6       1/1     Running   0             34m
 dataprep             dataprep-svc-deployment-6bcdcbcbff-7cbp5                   1/1     Running   0             34m
 dataprep             embedding-svc-deployment-f4f4d46cb-x6mbn                   1/1     Running   0             34m
@@ -239,7 +243,9 @@ For example, the updated file content should resemble the following:
 ```
 <Ingress external IP> erag.com grafana.erag.com auth.erag.com
 ```
->**Note:** This is the IPv4 address of local machine
+
+> [!NOTE]
+> This is the IPv4 address of local machine.
 
 On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
 
@@ -252,7 +258,20 @@ Keyclock can be accessed via:
 Grafana can be accessed via:
 `https://grafana.erag.com`
 
-### Data Ingestion, UI and Telemetry 
+### UI credentials for the first login
+
+Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passowrds for application admin and user. After one time password will be provided you will be requested to change the default password.
+
+> [!CAUTION]
+> Please remove file `default_credentials.txt` after the first succesfull login.
+
+### Credentials for Grafana and Keycloak
+
+Default credentials for Keycloak and Grafana:
+- **username:** admin
+- **password:** provided during installation
+
+### Data Ingestion, UI and Telemetry
 
 For adding data to the knowledge base and exploring the UI interface visit [this](../docs/UI_features.md) page.
 
@@ -266,5 +285,5 @@ It is also possible to configure the input and output guardrails for the LLM ser
 ## Clear Deployment
 Run this command to delete all namespaces, custom resource definitions, releases, and services associated with the ChatQNA pipeline:
 ```bash
-./install_chatqna.sh -ca  
+./install_chatqna.sh -ca
 ```

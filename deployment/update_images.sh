@@ -203,8 +203,13 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/deployment/microservices-connector"
             if $do_build_flag; then
                 cd "$path"
-                make docker.build VERSION="$TAG" &> ${logs_dir}/docker_${component}.log
-                echo "$component built succesfully"
+                make docker.build VERSION="$TAG" &> ${logs_dir}/build_${component}.log
+
+                if [ $? -eq 0 ]; then
+                    echo "$component built successfully"
+                else
+                    echo "Build failed. Please check the logs at ${logs_dir}/build_${component}.log for more details."
+                fi
             fi
 
             if $do_push_flag; then

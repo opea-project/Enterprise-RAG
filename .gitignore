@@ -4,6 +4,7 @@ deployment/*.out
 **/charts/*.tgz
 deployment/*.key
 deployment/*.crt
+deployment/logs
 
 # Telemetry
 /deployment/telemetry/helm/example/pcm/

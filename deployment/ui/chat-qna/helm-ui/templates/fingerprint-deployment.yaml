@@ -55,14 +55,14 @@ spec:
             - name: http
               containerPort: 6012
               protocol: TCP
-                #   livenessProbe:
-                #       httpGet:
-                #       path: /
-                #port: http
-                #   readinessProbe:
-                # httpGet:
-                #path: /
-                # port: http
+          livenessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

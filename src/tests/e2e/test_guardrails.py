@@ -219,3 +219,50 @@ def test_in_guard_language(guard_helper):
         if response.status_code != 466:
             languages_not_banned.append(language)
     assert languages_not_banned == [], f"Questions in the following languages: {languages_not_banned} were not banned."
+
+
+@allure.testcase("IEASG-T83")
+def test_in_guard_prompt_injection(guard_helper):
+    """
+    Check if prompt_injection guard can detect malicious input that can manipulate the AI into
+    providing incorrect or harmful outputs.
+    """
+    guard_params = {
+       "enabled": True,
+       "use_onnx": True
+    }
+    guard_helper.setup(GuardType.INPUT, "prompt_injection", guard_params)
+    guard_helper.assert_blocked(questions.DAN)
+    guard_helper.assert_blocked(questions.EVIL)
+    guard_helper.assert_blocked(questions.KEVIN)
+    guard_helper.assert_allowed(questions.DRUNK_GUY)
+    guard_helper.assert_allowed(questions.BILL_GATES)
+
+    guard_params["match_type"] = "sentence"
+    guard_helper.setup(GuardType.INPUT, "prompt_injection", guard_params)
+    guard_helper.assert_blocked(questions.DAN)
+    guard_helper.assert_blocked(questions.EVIL)
+    guard_helper.assert_blocked(questions.KEVIN)
+
+
+@allure.testcase("IEASG-T84")
+def test_in_guard_regex(guard_helper):
+    """Check is scanner detects the predefined regex expressions and blocks/allows questions accordingly"""
+    guard_params = {
+        "enabled": True,
+        "patterns": [
+            "Bearer [A-Za-z0-9-._~+/]+",
+            "^\d{3}-\d{2}-\d{4}$"
+        ],
+    }
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.BEARER)
+    guard_helper.assert_blocked(questions.SSN_NUMBER)
+
+    guard_params["is_blocked"] = False
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_allowed(questions.SSN_NUMBER)
+
+    guard_params["is_blocked"] = True
+    guard_params["match_type"] = "fullmatch"
+    guard_helper.assert_allowed(questions.SSN_NUMBER)

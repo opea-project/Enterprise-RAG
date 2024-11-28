@@ -1,0 +1,11 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.icon-button {
+  @apply p-2 text-xl;
+  @apply text-light-icon-button dark:text-dark-icon-button;
+
+  &:disabled {
+    @apply cursor-not-allowed;
+  }
+}

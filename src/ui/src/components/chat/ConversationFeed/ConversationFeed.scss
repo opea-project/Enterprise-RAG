@@ -1,10 +1,14 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.conversation-feed {
-  @apply mb-4 max-h-full self-end overflow-y-auto;
+.conversation-feed__wrapper {
+  @apply h-full overflow-y-auto;
+}
 
-  & .welcome-message {
-    @apply text-4xl text-light-primary dark:text-dark-primary;
+.conversation-feed {
+  @apply mx-auto flex w-[800px] flex-col pb-4;
+
+  @media (max-width: 800px) {
+    @apply mx-4 w-[calc(100%_-_2rem)];
   }
 }

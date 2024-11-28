@@ -2,17 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .app-header {
-  @apply flex h-[3.5rem] items-center justify-between p-2;
+  @apply flex h-[6rem] items-center justify-between px-16;
+  @apply bg-light-app-header-bg dark:bg-dark-app-header-bg;
+
+  & .app-header__app-name {
+    @apply text-left text-base font-black leading-5;
+    @apply text-light-app-header-app-name dark:text-dark-app-header-app-name;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+  }
 
   & .app-header__actions {
-    @apply flex items-center;
+    @apply flex items-center gap-4;
+
+    & .app-header__username {
+      @apply text-left text-xs font-normal leading-4;
+      @apply text-light-app-header-username dark:text-dark-app-header-username;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: none;
+    }
   }
-}
-
-.app-header__app-name {
-  @apply rounded-lg px-3 text-base leading-10;
-}
-
-.app-header__username {
-  @apply rounded-lg px-3 text-sm font-thin leading-10;
 }

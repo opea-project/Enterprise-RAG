@@ -5,17 +5,17 @@ import "./ConversationFeed.scss";
 
 import { useEffect, useRef, useState } from "react";
 
-import ChatMessage from "@/components/chat/ChatMessage/ChatMessage";
-import keycloakService from "@/services/keycloakService";
+import BotMessage from "@/components/chat/BotMessage/BotMessage";
+import UserMessage from "@/components/chat/UserMessage/UserMessage";
 import {
-  selectIsMessageStreamed,
+  selectIsStreaming,
   selectMessages,
 } from "@/store/conversationFeed.slice";
 import { useAppSelector } from "@/store/hooks";
 
 const ConversationFeed = () => {
   const feedMessages = useAppSelector(selectMessages);
-  const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
+  const isStreaming = useAppSelector(selectIsStreaming);
   const conversationFeedRef = useRef<HTMLDivElement>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
@@ -51,7 +51,7 @@ const ConversationFeed = () => {
   }, [isAutoScrollEnabled]);
 
   const handleScroll = () => {
-    if (isMessageStreamed) {
+    if (isStreaming) {
       if (conversationFeedRef.current) {
         const { clientHeight, scrollTop, scrollHeight } =
           conversationFeedRef.current;
@@ -66,20 +66,18 @@ const ConversationFeed = () => {
   return (
     <div
       ref={conversationFeedRef}
-      className="conversation-feed"
+      className="conversation-feed__wrapper"
       onScrollCapture={handleScroll}
     >
-      {feedMessages.length === 0 && (
-        <div className="px-4">
-          <h3 className="welcome-message">
-            Welcome, {keycloakService.getUsername()}!
-          </h3>
-          <p>Send your first prompt to start new conversation</p>
-        </div>
-      )}
-      {feedMessages.map(({ text, isUserMessage, id }) => (
-        <ChatMessage key={id} text={text} isUserMessage={isUserMessage} />
-      ))}
+      <div className="conversation-feed">
+        {feedMessages.map(({ text, isStreaming, isUserMessage, id }) =>
+          isUserMessage ? (
+            <UserMessage key={id} text={text} />
+          ) : (
+            <BotMessage key={id} text={text} isStreaming={isStreaming} />
+          ),
+        )}
+      </div>
     </div>
   );
 };

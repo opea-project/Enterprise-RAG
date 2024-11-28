@@ -25,14 +25,14 @@ import {
   setChatQnAGraphSelectedServiceNode,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import useColorScheme from "@/utils/hooks/useColorScheme";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
   type: ConnectionLineType.Step,
-  style: { strokeWidth: 2, stroke: "black" },
+  style: { strokeWidth: 2 },
   markerEnd: {
     type: MarkerType.ArrowClosed,
-    color: "black",
   },
 };
 
@@ -42,6 +42,8 @@ const ChatQnAGraph = () => {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(chatQnAGraphNodesSelector);
   const edges = useAppSelector(chatQnAGraphEdgesSelector);
+
+  const { colorScheme } = useColorScheme();
 
   const handleSelectionChange = useCallback(
     ({ nodes }: { nodes: Node[] }) => {
@@ -64,6 +66,7 @@ const ChatQnAGraph = () => {
 
   return (
     <ReactFlow
+      colorMode={colorScheme}
       nodes={nodes}
       nodeTypes={nodeTypes}
       nodesConnectable={false}

@@ -5,7 +5,7 @@
   @apply mb-1 grid grid-cols-[1fr_2.5rem] items-center gap-2 pl-4 hover:bg-light-background-2 dark:hover:bg-dark-background-2;
 
   & .document-list-item-text {
-    @apply grid grid-cols-[9fr_1fr] items-center gap-4;
+    @apply grid grid-cols-[10fr_2fr] items-center gap-4;
 
     & .document-list-item__file-name {
       @apply overflow-hidden text-ellipsis whitespace-nowrap;

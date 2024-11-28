@@ -3,8 +3,15 @@
 
 .login-page {
   @apply flex h-[100vh] w-full flex-col items-center justify-center gap-4;
-}
 
-.login-page-app-name {
-  @apply text-3xl;
+  & .login-page__app-name {
+    @apply text-3xl font-bold;
+    @apply text-light-login-app-name dark:text-dark-login-app-name;
+  }
+
+  & button.login-page__button {
+    @apply cursor-pointer select-none px-5 py-2 text-base;
+    @apply bg-light-login-button-bg dark:bg-dark-login-button-bg;
+    @apply text-light-login-button-text dark:text-dark-login-button-text;
+  }
 }

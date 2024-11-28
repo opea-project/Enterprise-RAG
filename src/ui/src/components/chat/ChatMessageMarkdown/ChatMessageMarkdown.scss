@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .chatbot-answer {
-  @apply pr-4;
-
   & ol {
     @apply list-decimal;
   }
@@ -23,6 +21,6 @@
   }
 
   & .custom-paragraph-markdown {
-    @apply pr-4 text-sm;
+    @apply text-sm;
   }
 }

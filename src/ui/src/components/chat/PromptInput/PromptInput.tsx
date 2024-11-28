@@ -4,19 +4,18 @@
 import "./PromptInput.scss";
 
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import classNames from "classnames";
 import {
   ChangeEvent,
-  KeyboardEvent,
+  KeyboardEventHandler,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { BsHurricane, BsSendFill } from "react-icons/bs";
 import { v4 as uuidv4 } from "uuid";
 
 import endpoints from "@/api/endpoints.json";
+import PromptInputButton from "@/components/chat/PromptInputButton/PromptInputButton";
 import keycloakService from "@/services/keycloakService";
 import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
@@ -25,9 +24,10 @@ import {
 } from "@/store/chatQnAGraph.slice";
 import {
   addMessage,
-  selectIsMessageStreamed,
-  setIsMessageStreamed,
-  updateMessage,
+  selectIsStreaming,
+  setIsStreaming,
+  updateMessageIsStreamed,
+  updateMessageText,
 } from "@/store/conversationFeed.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { parsePromptRequestParameters } from "@/utils";
@@ -38,27 +38,21 @@ const MAX_ROWS = 10;
 
 const PromptInput = () => {
   const dispatch = useAppDispatch();
-  const promptInputRef = useRef<HTMLTextAreaElement>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [prompt, setPrompt] = useState("");
   const [textAreaRows, setTextAreaRows] = useState(1);
 
-  const isMessageStreamed = useAppSelector(selectIsMessageStreamed);
+  const isStreaming = useAppSelector(selectIsStreaming);
   const hasInputGuard = useAppSelector(hasInputGuardSelector);
   const hasOutputGuard = useAppSelector(hasOutputGuardSelector);
 
   const focusPromptInput = useCallback(() => {
-    promptInputRef.current!.focus();
+    promptInputRef?.current!.focus();
   }, []);
 
   useEffect(() => {
     focusPromptInput();
   }, []);
-
-  useEffect(() => {
-    if (!isMessageStreamed) {
-      focusPromptInput();
-    }
-  }, [isMessageStreamed]);
 
   const handlePromptInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const input = event.target;
@@ -81,15 +75,31 @@ const PromptInput = () => {
     }
   }, [prompt]);
 
-  const handlePromptInputKeydown = (
-    event: KeyboardEvent<HTMLTextAreaElement>,
+  const handlePromptInputKeydown: KeyboardEventHandler<HTMLTextAreaElement> = (
+    event,
   ) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (prompt.trim() !== "" && !isMessageStreamed) {
+      if (prompt.trim() !== "" && !isStreaming) {
         handlePromptInputSubmit().finally(() => {
           focusPromptInput();
         });
+      }
+    } else {
+      const input = event.target;
+      if (input && input instanceof HTMLTextAreaElement) {
+        input.style.height = "auto";
+
+        const textareaScrollHeight = input.scrollHeight - VERTICAL_PADDING;
+        const newRows = Math.max(
+          Math.ceil(textareaScrollHeight / LINE_HEIGHT),
+          1,
+        );
+        if (newRows !== textAreaRows && newRows <= MAX_ROWS) {
+          setTextAreaRows(newRows);
+        }
+
+        input.style.height = "";
       }
     }
   };
@@ -117,9 +127,24 @@ const PromptInput = () => {
   const handlePromptInputSubmit = async () => {
     await keycloakService.refreshToken();
 
-    dispatch(setIsMessageStreamed(true));
+    dispatch(setIsStreaming(true));
 
     const chatBotMessageId = uuidv4();
+
+    const newUserMessage = {
+      text: prompt,
+      isUserMessage: true,
+      id: uuidv4(),
+    };
+    dispatch(addMessage(newUserMessage));
+
+    const newBotMessage = {
+      text: "",
+      isUserMessage: false,
+      id: chatBotMessageId,
+      isStreaming: true,
+    };
+    dispatch(addMessage(newBotMessage));
 
     try {
       const parameters = await SystemFingerprintService.appendArguments();
@@ -128,20 +153,6 @@ const PromptInput = () => {
         hasInputGuard,
         hasOutputGuard,
       );
-
-      const newUserMessage = {
-        text: prompt,
-        isUserMessage: true,
-        id: uuidv4(),
-      };
-      dispatch(addMessage(newUserMessage));
-
-      const newMessage = {
-        text: "",
-        isUserMessage: false,
-        id: chatBotMessageId,
-      };
-      dispatch(addMessage(newMessage));
 
       const requestBody = {
         text: prompt,
@@ -191,7 +202,10 @@ const PromptInput = () => {
                 .replace(/<\/s>/, "")
                 .replace(/\\n/, "  \n");
               dispatch(
-                updateMessage({ messageId: chatBotMessageId, chunk: newChunk }),
+                updateMessageText({
+                  messageId: chatBotMessageId,
+                  chunk: newChunk,
+                }),
               );
             }
           }
@@ -208,7 +222,7 @@ const PromptInput = () => {
         const extract = extractDetail(error.message);
         if (extract) {
           dispatch(
-            updateMessage({ messageId: chatBotMessageId, chunk: extract }),
+            updateMessageText({ messageId: chatBotMessageId, chunk: extract }),
           );
         }
         console.error("Error: ", error.message);
@@ -216,37 +230,59 @@ const PromptInput = () => {
         console.error("Unknown error: ", error);
       }
     } finally {
-      dispatch(setIsMessageStreamed(false));
+      dispatch(setIsStreaming(false));
+      dispatch(
+        updateMessageIsStreamed({
+          messageId: chatBotMessageId,
+          isStreaming: false,
+        }),
+      );
     }
   };
 
-  const textFieldDisabled = isMessageStreamed;
-  const actionsDisabled = prompt === "" || isMessageStreamed;
+  const textFieldDisabled = isStreaming;
+
+  const getPromptInputButton = () => {
+    if (isStreaming) {
+      return <PromptInputButton icon="mdi:stop" disabled onClick={() => {}} />;
+    } else {
+      const sendDisabled = prompt === "";
+      return (
+        <PromptInputButton
+          icon="tabler:arrow-up"
+          disabled={sendDisabled}
+          onClick={() => {
+            handlePromptInputSubmit().then(() => {
+              promptInputRef.current!.focus();
+            });
+          }}
+        />
+      );
+    }
+  };
 
   return (
-    <div className="prompt-input-wrapper">
-      <textarea
-        ref={promptInputRef}
-        id="prompt-input"
-        className="w-full"
-        value={prompt}
-        onChange={handlePromptInputChange}
-        onKeyDown={handlePromptInputKeydown}
-        disabled={textFieldDisabled}
-        rows={textAreaRows}
-        placeholder="Enter your prompt..."
-      />
-      <button
-        className={classNames({
-          "icon-button": true,
-          "animate-spin": isMessageStreamed,
-        })}
-        disabled={actionsDisabled}
-        onClick={handlePromptInputSubmit}
-      >
-        {isMessageStreamed ? <BsHurricane /> : <BsSendFill />}
-      </button>
-    </div>
+    <>
+      <div className="prompt-input-wrapper">
+        <textarea
+          ref={promptInputRef}
+          id="prompt-input"
+          className="prompt-input"
+          value={prompt}
+          disabled={textFieldDisabled}
+          rows={textAreaRows}
+          placeholder="Enter your prompt..."
+          onChange={handlePromptInputChange}
+          onKeyDown={handlePromptInputKeydown}
+        />
+        {getPromptInputButton()}
+      </div>
+      <p className="prompt-input__disclaimer">
+        Responses from this solution may require further verification. You are
+        solely responsible for verifying the accuracy of the information
+        provided and how you choose to use it.
+      </p>
+    </>
   );
 };
 

@@ -1,0 +1,11 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.bot-message {
+  @apply my-4 grid w-full grid-cols-[auto_1fr] items-start gap-6 self-start;
+
+  .bot-message__text {
+    @apply pt-1.5;
+    @apply text-light-chat-bot-message dark:text-dark-chat-bot-message;
+  }
+}

@@ -2,5 +2,42 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .prompt-input-wrapper {
-  @apply flex items-end gap-1.5 bg-light-background-2 p-2 dark:bg-dark-background-2;
+  @apply mx-auto grid min-h-[3.75rem] w-[800px] grid-cols-[1fr_auto] rounded-[1.875rem] py-2.5 pl-12 pr-2.5 shadow-[0_0_0.5rem_0];
+
+  @apply bg-light-prompt-input-bg dark:bg-dark-prompt-input-bg;
+  @apply shadow-light-prompt-input-box-shadow dark:shadow-dark-prompt-input-box-shadow;
+  @apply border-light-prompt-input-border dark:border-dark-prompt-input-border;
+  border-width: 0.03125rem;
+  border-style: solid;
+
+  @media (max-width: 800px) {
+    @apply mx-4 w-[calc(100%_-_2rem)];
+  }
+}
+
+.prompt-input {
+  @apply resize-none bg-transparent py-[0.5625rem] text-left text-base font-normal leading-5;
+  @apply text-light-prompt-input-text dark:text-dark-prompt-input-text;
+  @apply caret-light-prompt-input-caret dark:caret-dark-prompt-input-caret;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &::placeholder {
+    @apply text-light-prompt-input-placeholder dark:text-dark-prompt-input-placeholder;
+  }
+}
+
+.prompt-input__disclaimer {
+  @apply py-4 text-center text-xs font-normal leading-[0.875rem];
+  @apply text-light-prompt-input-disclaimer dark:text-dark-prompt-input-disclaimer;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+
+  @media (max-width: 800px) {
+    @apply mx-4 w-[calc(100%_-_2rem)];
+  }
 }

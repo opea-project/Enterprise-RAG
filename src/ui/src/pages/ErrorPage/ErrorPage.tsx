@@ -16,13 +16,13 @@ const ErrorPage = () => {
 
   const error = useRouteError();
 
-  let errorMessage = <p className="error">An error occurred!</p>;
+  let errorMessage = <p className="error-message">An error occurred!</p>;
   if (isRouteErrorResponse(error)) {
     if (error.status === 404) {
       errorMessage = <p>404 - Page Not Found</p>;
     } else {
       errorMessage = (
-        <p className="error">
+        <p className="error-message">
           An error occurred! <br />
           Error Code: {error.status} <br />
           Error Message: {error.statusText}

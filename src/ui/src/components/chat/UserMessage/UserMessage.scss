@@ -1,0 +1,8 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.user-message {
+  @apply my-4 min-h-[2.75rem] max-w-[calc(100%_-_3.5rem)] self-end rounded-[2rem] px-5 py-3;
+  @apply bg-light-chat-user-message-bg dark:bg-dark-chat-user-message-bg;
+  @apply text-light-chat-user-message-text dark:text-dark-chat-user-message-text;
+}

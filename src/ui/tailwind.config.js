@@ -128,6 +128,15 @@ module.exports = {
       },
     },
     extend: {
+      animation: {
+        "pulsing-dot": "pulsing-dot 600ms ease-out infinite",
+      },
+      keyframes: {
+        "pulsing-dot": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.5)" },
+        },
+      },
       colors: {
         // one tooltip style for both modes
         tooltip: {
@@ -135,8 +144,57 @@ module.exports = {
           background: "#242528",
         },
         light: {
+          login: {
+            "app-name": "#3d447f",
+            button: {
+              bg: "#3d447f",
+              text: "#d9d9d9",
+            },
+          },
+          "app-header": {
+            bg: "#f2f3ff",
+            "app-name": "#3d447f",
+            username: "#3d447f",
+          },
+          "prompt-input": {
+            bg: "#e3e5fd",
+            border: "transparent",
+            "box-shadow": "#4953d566",
+            text: "#2b2b2b",
+            placeholder: "#444444",
+            caret: "#444444",
+            button: {
+              text: "#d9d9d9",
+              bg: "#3d447f",
+              disabled: {
+                bg: "#3d447f99",
+              },
+            },
+            disclaimer: "#a1a1a1",
+          },
+          chat: {
+            icon: "#3d447f",
+            greeting: "#3d447f",
+            "bot-message": "#3d447f",
+            "user-message": {
+              bg: "#e3e5fd",
+              text: "#2b2b2b",
+            },
+            "pulsing-dot": "#3d447f",
+          },
+          "icon-button": "#3d447f",
+          "color-scheme-switch": {
+            border: "#3d447f",
+            bg: "#f2f3ff",
+            thumb: {
+              border: "#3d447f",
+              bg: "#f2f3ff",
+              icon: "#3d447f",
+            },
+            label: "#3d447f",
+          },
           primary: "#0054AE",
-          focus: "#0054AE",
+          focus: "#3d447f",
           status: {
             success: {
               primary: "#008a00",
@@ -156,6 +214,7 @@ module.exports = {
             },
           },
           background: {
+            main: "#F2F3FF",
             1: "#FFFFFF",
             2: "#F9F9F9",
             3: "#E9E9E9",
@@ -269,8 +328,57 @@ module.exports = {
           },
         },
         dark: {
+          login: {
+            "app-name": "#fef0d3",
+            button: {
+              bg: "#4953d5",
+              text: "#d9d9d9",
+            },
+          },
+          "app-header": {
+            bg: "#090b1c",
+            "app-name": "#fef0d3",
+            username: "#ffffff",
+          },
+          "prompt-input": {
+            bg: "#000000",
+            border: "#4953d5",
+            "box-shadow": "#4953d5cc",
+            text: "#ffffff",
+            placeholder: "#a1a1a1",
+            caret: "#ffffff",
+            button: {
+              text: "#d9d9d9",
+              bg: "#4953d5",
+              disabled: {
+                bg: "#252a6c",
+              },
+            },
+            disclaimer: "#a1a1a1",
+          },
+          chat: {
+            icon: "#ffffff",
+            greeting: "#f3b1f5",
+            "bot-message": "#ffffff",
+            "user-message": {
+              bg: "#ffffff1a",
+              text: "#ffffff",
+            },
+            "pulsing-dot": "#d9d9d9",
+          },
+          "icon-button": "#ffffff",
+          "color-scheme-switch": {
+            border: "#f2f3ff",
+            bg: "#090b1c",
+            thumb: {
+              border: "#090b1c",
+              bg: "#f2f3ff",
+              icon: "#090b1c",
+            },
+            label: "#f2f3ff",
+          },
           primary: "#00c7fd",
-          focus: "#00c7fd",
+          focus: "#fef0d3",
           status: {
             success: {
               primary: "#add2ad",
@@ -290,6 +398,7 @@ module.exports = {
             },
           },
           background: {
+            main: "#090B1C",
             1: "#242528",
             2: "#393939",
             3: "#525252",
@@ -402,7 +511,6 @@ module.exports = {
             disabled: "#8d8d8d",
           },
         },
-        break: {},
       },
     },
   },

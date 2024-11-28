@@ -3,27 +3,24 @@
 
 import "./LoginPage.scss";
 
-import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 
 import keycloakService from "@/services/keycloakService";
+import useColorScheme from "@/utils/hooks/useColorScheme";
 
 const LoginPage = () => {
   const isUserLoggedIn = keycloakService.isLoggedIn();
 
-  useEffect(() => {
-    const theme = localStorage.getItem("theme");
-    if (theme === "dark") {
-      document.body.classList.add("dark");
-    }
-  }, []);
+  useColorScheme();
 
   return isUserLoggedIn ? (
     <Navigate to="/chat" />
   ) : (
     <div className="login-page">
-      <p className="login-page-app-name">Enterprise RAG</p>
-      <button onClick={keycloakService.login}>Login</button>
+      <p className="login-page__app-name">Intel AI&reg; for Enterprise RAG</p>
+      <button className="login-page__button" onClick={keycloakService.login}>
+        Login
+      </button>
     </div>
   );
 };

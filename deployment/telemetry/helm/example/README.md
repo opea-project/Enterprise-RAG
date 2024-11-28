@@ -3,15 +3,15 @@
 #### Prerequisites
 
 - **kind**: https://kind.sigs.k8s.io/docs/user/quick-start/#installing-from-release-binaries
-- Go language: https://go.dev/doc/install
-- kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-- docker service running
-- optionally "reg" tool to check pushed images (https://github.com/genuinetools/reg)
-- assumes environment with proxy (but added variants for no proxy)
+- **make** (required to build GMC operator images)
+- **kubectl**: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+- **docker** service running
+- optionally **reg** tool to check pushed images (https://github.com/genuinetools/reg)
+- assumes environment with proxy (variants for no proxy included)
 - disk space ~150GB (for models, images x 3 copies each)
-- local registry (only if on :5000 port) must be replaced with one script below (otherwise containerd inside kind will not connect)
+- if you running own (on 5000 port) must be replaced with one script below (otherwise containerd inside kind will not connect because of port conflict)
 - check `cat /proc/sys/fs/inotify/max_user_instances` and set `sysctl -w fs.inotify.max_user_instances=8192` to handle journald collector
-- plenty of time and patience 2-3h for initial build/push and pulling (only once, because unmodified layers will be cached in /var/lib/docker (local registry) and /kind-containerd-images (containerd storage))
+- time and patience 1h only for initial build/push and pulling (only once, because unmodified layers will be cached in /var/lib/docker (local registry) and /kind-containerd-images (containerd storage))
 
 Run from *root folder* + deployment directory:
 ```
@@ -22,7 +22,7 @@ cd deployment
 
 ```sh
 # Create Local registry and kind-control-plane containers (~3GB, ~2 minutes):
-time bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
+bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
 kind export kubeconfig
 docker ps
 kubectl get pods -A
@@ -52,32 +52,27 @@ echo $TAG
 git --no-pager diff microservices-connector/helm/values.yaml
 
 ### a) Build images (~1h once, ~50GB)
-time no_proxy=localhost ./update_images.sh --tag $TAG --build
-# Alternatively use parallel version (faster) for optimization (but it is hard to see errors)
-./update_images.sh --help | grep gmcManager | env no_proxy=localhost xargs -n 1 -P 0 ./update_images.sh --tag $TAG --build
+no_proxy=localhost ./update_images.sh --tag $TAG --build -j 100
 
 # check build images
 docker image ls | grep $TAG
 
 ### b) Push images (~2h once, ~20GB)
-time no_proxy=localhost ./update_images.sh --tag $TAG --push
-
-# Alternatively use parallel version (faster) for optimization (but it is hard to see errors)
-./update_images.sh --help | grep gmcManager | xargs -n 1 -P 0 ./update_images.sh --tag $TAG --push
+no_proxy=localhost ./update_images.sh --tag $TAG --push -j 100
 
 # check pushed images
 reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
 # Please modify grafana_password for your own
-time ./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly --ip 127.0.0.1
+./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly --ip 127.0.0.1 --keycloak_admin_password admin
 
 # Install or reinstall(upgrade) individual components
-time ./install_chatqna.sh --tag $TAG --kind --auth --upgrade
-time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade
-time ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade
-time ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly
-time ./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1
+./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
+./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade                        # namespaces: system, chatqa, dataprep
+./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade              # namespaces: system, chatqa, dataprep
+./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-namespace
+./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1                        # namespaces: erag-ui
 
 # check ChatQnA response
 kubectl proxy
@@ -100,6 +95,10 @@ kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:
 # UI: https://erag.com/
 # Grafana: https://grafana.erag.com/
 # KeyCloak: https://auth.erag.com/
+
+# Passwords for Grafana/Keycloak is given above in command line for installation.
+# Passwords for users: 
+cat default_credentials.txt
 
 ### Optionally install metrics-server (for resource usage metrics)
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/

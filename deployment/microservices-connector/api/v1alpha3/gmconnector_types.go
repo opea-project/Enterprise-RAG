@@ -75,6 +75,10 @@ const (
 	LLMGuardOutput StepNameType = "LLMGuardOutput"
 	// VLLMGaudi
 	VLLMGaudi StepNameType = "VLLMGaudi"
+	// VLLM
+	VLLM StepNameType = "VLLM"
+	// VLLMOpenVino
+	VLLMOpenVino StepNameType = "VLLMOpenVino"
 )
 
 type Executor struct {

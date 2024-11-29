@@ -55,6 +55,8 @@ var (
 		"LLMGuardInput",
 		"LLMGuardOutput",
 		"VLLMGaudi",
+		"VLLM",
+		"VLLMOpenVino",
 	}
 )
 

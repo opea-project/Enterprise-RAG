@@ -71,11 +71,16 @@ elif [ "${LLM_DEVICE}" = "cpu" ]; then
     # Clone the vLLM repository (tag v0.5.5) and build a Docker image using the provided Dockerfile.cpu.
     # The docker:stable container is used to enable BuildKit and ensure a clean, reproducible build by isolating the process from previous artifacts.
     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:stable sh -c "
+    set -eo pipefail && \
+    export HTTP_PROXY=${HTTP_PROXY} && \
+    export HTTPS_PROXY=${HTTPS_PROXY} && \
+    export NO_PROXY=${NO_PROXY} && \
     apk add --no-cache git && \
     git clone https://github.com/vllm-project/vllm.git /workspace/vllm && \
     cd /workspace/vllm && \
-    git checkout tags/v0.5.5 && \
-    DOCKER_BUILDKIT=1 docker build -f Dockerfile.cpu -t vllm:cpu --shm-size=128g . --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTPS_PROXY
+    git -c advice.detachedHead=false checkout v0.6.4.post1 && \
+    sed -i 's|pip install intel-openmp|pip install intel-openmp==2025.0.1|g' Dockerfile.cpu && \
+    DOCKER_BUILDKIT=1 docker build -f Dockerfile.cpu -t vllm:cpu --shm-size=128g . --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTPS_PROXY --build-arg no_proxy=$NO_PROXY
     "
 
     echo "Run vllm service on CPU"

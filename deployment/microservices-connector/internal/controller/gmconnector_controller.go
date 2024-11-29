@@ -77,6 +77,8 @@ const (
 	LLMGuardOutput           = "LLMGuardOutput"
 	Ingestion                = "Ingestion"
 	VLLMGaudi                = "VLLMGaudi"
+	VLLM                     = "VLLM"
+	VLLMOpenVino             = "VLLMOpenVino"
 )
 
 var yamlDict = map[string]string{
@@ -105,6 +107,8 @@ var yamlDict = map[string]string{
 	LLMGuardOutput:      yaml_dir + "out-guard-usvc.yaml",
 	Ingestion:           yaml_dir + "ingestion-usvc.yaml",
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
+	VLLM:                yaml_dir + "vllm.yaml",
+	VLLMOpenVino:        yaml_dir + "vllm_openvino.yaml",
 }
 
 var (

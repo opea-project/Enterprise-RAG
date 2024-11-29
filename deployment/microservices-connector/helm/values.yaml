@@ -92,6 +92,20 @@ images:
     envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
     envs:
       LLM_VLLM_MODEL_NAME: *hpu_model
+  vllm:
+    image: "opea/vllm-cpu"
+    repository: *repo
+    tag: *tag
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
+  vllm_openvino:
+    image: "opea/vllm-openvino"
+    repository: *repo
+    tag: *tag
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
 
 
 imagePullSecrets:

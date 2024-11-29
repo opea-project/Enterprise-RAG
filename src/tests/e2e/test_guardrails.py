@@ -247,7 +247,7 @@ def test_in_guard_prompt_injection(guard_helper):
 
 @allure.testcase("IEASG-T84")
 def test_in_guard_regex(guard_helper):
-    """Check is scanner detects the predefined regex expressions and blocks/allows questions accordingly"""
+    """Check if scanner detects the predefined regex expressions and blocks/allows questions accordingly"""
     guard_params = {
         "enabled": True,
         "patterns": [
@@ -266,3 +266,64 @@ def test_in_guard_regex(guard_helper):
     guard_params["is_blocked"] = True
     guard_params["match_type"] = "fullmatch"
     guard_helper.assert_allowed(questions.SSN_NUMBER)
+
+
+@allure.testcase("IEASG-T85")
+def test_in_guard_secrets(guard_helper):
+    """Check if scanner detects secrets (like token, keys)"""
+    guard_params = {
+        "enabled": True
+    }
+    guard_helper.setup(GuardType.INPUT, "secrets", guard_params)
+    guard_helper.assert_blocked(questions.GH_TOKEN)
+    guard_helper.assert_blocked(questions.API_KEY)
+    guard_helper.assert_allowed(questions.LEGIT)
+
+    guard_params["redact_mode"] = "REDACT_PARTIAL"
+    guard_helper.setup(GuardType.INPUT, "secrets", guard_params)
+    guard_helper.assert_blocked(questions.GH_TOKEN)
+
+    guard_params["redact_mode"] = "REDACT_HASH"
+    guard_helper.setup(GuardType.INPUT, "secrets", guard_params)
+    guard_helper.assert_blocked(questions.GH_TOKEN)
+
+
+@allure.testcase("IEASG-T86")
+def test_in_guard_sentiment(guard_helper):
+    """Check if sentiment scanner can properly identify negative sentiment in the question asked by the user"""
+    guard_params = {
+        "enabled": True
+    }
+    guard_helper.setup(GuardType.INPUT, "sentiment", guard_params)
+    guard_helper.assert_blocked(questions.NEGATIVE)
+
+
+@allure.testcase("IEASG-T87")
+def test_in_guard_token_limit(guard_helper):
+    """Check if user's input do not exceed specified token limit"""
+    guard_params = {
+        "enabled": True,
+        "limit": 10
+    }
+    guard_helper.setup(GuardType.INPUT, "token_limit", guard_params)
+    guard_helper.assert_blocked(questions.OVER_LIMIT)
+    guard_helper.assert_allowed(questions.BELOW_LIMIT)
+
+
+@allure.testcase("IEASG-T88")
+def test_in_guard_toxicity(guard_helper):
+    """Check if question contains toxic, harmful, or offensive content"""
+    guard_params = {
+        "enabled": True,
+        "threshold": 0.35
+    }
+    guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
+    guard_helper.assert_blocked(questions.LOW_TOXICITY)
+    guard_helper.assert_blocked(questions.THREAT)
+    guard_helper.assert_blocked(questions.INSULTING)
+    guard_helper.assert_allowed(questions.NON_TOXIC)
+    guard_helper.assert_allowed(questions.INSULTING_MIXED)
+
+    guard_params["match_type"] = "sentence"
+    guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
+    guard_helper.assert_blocked(questions.INSULTING_MIXED)

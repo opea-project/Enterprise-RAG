@@ -20,8 +20,6 @@ PIPELINE=gaudi_torch_guard
 TAG=latest
 REGISTRY=localhost:5000
 
-ENV_FILE_NAME=.env
-
 # Parse command-line arguments
 # !TODO this should be changed to use non-positional parameters
 while getopts "g:z:p:u:n:d:t:y:i:k:" opt; do

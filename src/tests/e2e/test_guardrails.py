@@ -173,12 +173,12 @@ def test_in_guard_code(guard_helper):
 
     # Python and JavaScript related questions should be blocked
     for language_key in ["javascript", "python", "python_with_plain_text"]:
-        guard_helper.assert_blocked(code_snippets[language_key], "it is in language that is marked as blocked")
+        guard_helper.assert_blocked(code_snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
     for language_key in ["c++", "ruby"]:
         guard_helper.assert_allowed(
-            code_snippets[language_key], "it is in language that is not marked as blocked")
+            code_snippets[language_key], reason="it is in language that is not marked as blocked")
 
 
 @allure.testcase("IEASG-T78")
@@ -186,16 +186,16 @@ def test_in_guard_gibberish(guard_helper):
     """Check if questions that are not logical (gibberish) and making no sense are rejected"""
 
     guard_helper.setup(GuardType.INPUT, "gibberish", {"enabled": True, "match_type": "full"})
-    guard_helper.assert_blocked(questions.GIBBERISH_LONG, "it is gibberish")
-    guard_helper.assert_blocked(questions.GIBBERISH_SHORT, "it is gibberish")
-    guard_helper.assert_allowed(questions.NON_GIBBERISH, "it is not gibberish although it is pretty long")
+    guard_helper.assert_blocked(questions.GIBBERISH_LONG, reason="it is gibberish")
+    guard_helper.assert_blocked(questions.GIBBERISH_SHORT, reason="it is gibberish")
+    guard_helper.assert_allowed(questions.NON_GIBBERISH, reason="it is not gibberish although it is pretty long")
 
 
 @allure.testcase("IEASG-T81")
 def test_in_guard_invisible_text(guard_helper):
     """Check if question with invisible white character is blocked"""
     guard_helper.setup(GuardType.INPUT, "invisible_text", {"enabled": True})
-    guard_helper.assert_blocked(questions.INVISIBLE_TEXT, "it contains prohibited characters")
+    guard_helper.assert_blocked(questions.INVISIBLE_TEXT, reason="it contains prohibited characters")
     guard_helper.assert_allowed(questions.NO_INVISIBLE_TEXT)
 
 
@@ -211,7 +211,7 @@ def test_in_guard_language(guard_helper):
         "match_type": None
     }
     guard_helper.setup(GuardType.INPUT, "language", guard_params)
-    guard_helper.assert_allowed(questions.ENGLISH, "it is in English")
+    guard_helper.assert_allowed(questions.ENGLISH, reason="it is in English")
 
     languages_not_banned = []
     for language, question in questions.LANGUAGE_SPECIFIC.items():
@@ -327,3 +327,113 @@ def test_in_guard_toxicity(guard_helper):
     guard_params["match_type"] = "sentence"
     guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
     guard_helper.assert_blocked(questions.INSULTING_MIXED)
+
+
+@allure.testcase("IEASG-T89")
+def test_out_guard_ban_competitors(guard_helper):
+    """Check if question is blocked or redacted when certain competitor appears in the answer"""
+    guard_params = {
+        "enabled": True,
+        "competitors": ["AMD"]
+    }
+    guard_helper.setup(GuardType.OUTPUT, "ban_competitors", guard_params)
+    guard_helper.assert_blocked(questions.INTEL_COMPETITORS)
+    guard_helper.assert_allowed(questions.BIEDRONKA_COMPETITOR)
+
+    guard_params["redact"] = True
+    guard_helper.setup(GuardType.OUTPUT, "ban_competitors", guard_params)
+    guard_helper.assert_redacted(questions.INTEL_COMPETITORS)
+
+
+@allure.testcase("IEASG-T90")
+def test_out_guard_ban_substrings(guard_helper):
+    """Check if question is blocked or redacted when certain words appears in the answer"""
+    guard_params = {
+        "enabled": True,
+        "substrings": ["lewandowski", "mariusz"]
+    }
+    # Check contains_all
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_blocked(questions.LEWANDOWSKI)
+    guard_params["contains_all"] = True
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_allowed(questions.LEWANDOWSKI)
+
+    # Check redact
+    guard_params["contains_all"] = False
+    guard_params["redact"] = True
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_redacted(questions.LEWANDOWSKI)
+
+    # Check case_sensitive
+    guard_params["redact"] = False
+    guard_params["substrings"] = ["lewanDowski"]
+    guard_params["case_sensitive"] = True
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_allowed(questions.LEWANDOWSKI)
+
+    # Check match_type
+    guard_params["substrings"] = ["lewan"]
+    guard_params["case_sensitive"] = False
+    guard_params["match_type"] = "str"
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_blocked(questions.LEWANDOWSKI)
+    guard_params["match_type"] = "word"
+    guard_helper.setup(GuardType.OUTPUT, "ban_substrings", guard_params)
+    guard_helper.assert_allowed(questions.LEWANDOWSKI)
+
+
+@allure.testcase("IEASG-T91")
+def test_out_guard_bias(guard_helper):
+    """Check if output scanner detects biased statements in text"""
+    guard_params = {
+        "enabled": True
+    }
+    guard_helper.setup(GuardType.OUTPUT, "bias", guard_params)
+    guard_helper.assert_blocked(questions.RIGHT_WING)
+    guard_helper.assert_allowed(questions.TRAVEL_DESTINATION)
+
+    guard_params["match_type"] = "sentence"
+    guard_helper.setup(GuardType.OUTPUT, "bias", guard_params)
+    guard_helper.assert_blocked(questions.RIGHT_WING)
+
+
+@allure.testcase("IEASG-T92")
+def test_out_guard_ban_code(guard_helper):
+    """Check if the generated answer containing code is properly blocked when ban_code is enabled"""
+    guard_params = {
+        "enabled": True
+    }
+    guard_helper.setup(GuardType.OUTPUT, "ban_code", guard_params)
+    guard_helper.assert_blocked(questions.CPP)
+    guard_helper.assert_blocked(questions.PYTHON)
+
+
+@allure.testcase("IEASG-T93")
+def test_out_guard_code(guard_helper):
+    """
+    Define a list of blocked languages. Then check if the output generated by LLM contains some code samples
+    in these languages. If so, make sure the question is blocked. Check opposite case as well.
+    """
+    guard_params = {
+        "enabled": True,
+        "languages": ["C++", "Python"]
+    }
+    guard_helper.setup(GuardType.OUTPUT, "code", guard_params)
+    guard_helper.assert_blocked(questions.CPP)
+    guard_helper.assert_allowed(questions.SCALA)
+
+
+@allure.testcase("IEASG-T94")
+def test_out_guard_json_scanner(guard_helper):
+    """
+    Force the bot to return an invalid JSON object (containing syntax errors) in the output.
+    Check if json_scanner blocks the answer. Also, check if the JSON is repaired when repair parameter is set to True.
+    """
+    guard_params = {
+        "enabled": True
+    }
+    guard_helper.setup(GuardType.OUTPUT, "json_scanner", guard_params)
+    guard_helper.assert_blocked(questions.INVALID_JSON)
+    guard_helper.assert_allowed(questions.VALID_JSON)
+    # TODO: once json_scanner works properly, check also 'repair' parameter

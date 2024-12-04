@@ -177,19 +177,25 @@ class ApiRequestHelper:
         print(f"ChatQA API call duration: {duration}")
         return ApiResponse(response, duration)
 
-    def format_response(self, response_body):
+    def format_response(self, response):
         """
         Parse raw response_body from the chatqa response and return a human-readable text
         """
-        response_lines = response_body.splitlines()
+        if response.headers.get("Transfer-Encoding") != "chunked":
+            # Most likely it's JSON-like response
+            return response.text
+
+        response_lines = response.text.splitlines()
         response_text = ""
         for line in response_lines:
+            if isinstance(line, bytes):
+                line = line.decode('utf-8')
             if line == "":
                 continue
             elif not line.startswith("data:"):
                 raise InvalidChatqaResponseBody(
                     "Chatqa API response body does not follow "f"'Server-Sent Events' structure. "
-                    f"Response: {response_body}"
+                    f"Response: {response.text}"
                 )
             else:
                 response_text += line[7:-1]

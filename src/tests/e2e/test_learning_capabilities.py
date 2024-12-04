@@ -33,6 +33,7 @@ def test_docx_text_only(dataprep_api_helper, chatqa_api_helper):
     response = upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, "story.docx", question)
     assert "Asfehehehe" in response, UNRELATED_RESPONSE_MSG
 
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T54")
 def test_pdf_text_only(dataprep_api_helper, chatqa_api_helper):
@@ -40,6 +41,7 @@ def test_pdf_text_only(dataprep_api_helper, chatqa_api_helper):
     question = "In the story about Intel's headquarters in Gdansk, what was found by Krystianooo?"
     response = upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, "story.pdf", question)
     assert "door" in response.lower(), UNRELATED_RESPONSE_MSG
+
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T55")
@@ -57,6 +59,6 @@ def upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, file, questi
 
     response = chatqa_api_helper.call_chatqa(question)
     assert response.status_code == 200, "Unexpected status code returned"
-    response_text = chatqa_api_helper.format_response(response.text)
+    response_text = chatqa_api_helper.format_response(response)
     print(f"ChatQA response: {response_text}")
     return response_text

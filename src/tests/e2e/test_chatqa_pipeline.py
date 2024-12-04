@@ -26,7 +26,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     except requests.exceptions.ChunkedEncodingError:
         duration = time.time() - start_time
         pytest.fail(f"Request has been closed on the server side after {duration} seconds")
-    print(f"Response: {chatqa_api_helper.format_response(response.text)}")
+    print(f"Response: {chatqa_api_helper.format_response(response)}")
 
 
 @pytest.mark.smoke
@@ -39,7 +39,7 @@ def test_chatqa_response_body(chatqa_api_helper):
     question = "How much is 123 + 123?"
     response = chatqa_api_helper.call_chatqa(question)
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -77,7 +77,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
     question = "Jaki jest najwyższy wieżowiec na świecie?"
     response = chatqa_api_helper.call_chatqa(question)
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -92,7 +92,7 @@ def test_chatqa_enable_streaming(chatqa_api_helper):
     response = chatqa_api_helper.call_chatqa(question, **parameters)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -107,7 +107,7 @@ def test_chatqa_with_fingerprint_args(chatqa_api_helper, fingerprint_api_helper)
     response = chatqa_api_helper.call_chatqa(question, **arguments)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response.text)}")
+        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -130,7 +130,7 @@ def test_chatqa_with_modified_fingerprint_args(chatqa_api_helper, fingerprint_ap
     response = chatqa_api_helper.call_chatqa(question, **arguments)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
-        response_text = chatqa_api_helper.format_response(response.text)
+        response_text = chatqa_api_helper.format_response(response)
         print(f"ChatQA response: {response_text}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))

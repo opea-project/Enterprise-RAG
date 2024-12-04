@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 
 import pytest
 from llms.base_tests import BaseLLMsTest
@@ -7,18 +8,26 @@ from llms.structures_llms_tgi import LLMs_TGI_EnvKeys, LLMsTgiDockerSetup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+class TestConfigurationLabels(Enum):
+    GOLDEN = "golden"
+    MISTRAL_7B  = "Mistral-7B-Instruct-v0.1"
+
+# Test id in Jira depends on test itself and configuration
+ALLURE_IDS = {
+    (BaseLLMsTest.test_simple_scenario,     TestConfigurationLabels.GOLDEN): "IEASG-T11",
+    (BaseLLMsTest.test_simple_scenario,     TestConfigurationLabels.MISTRAL_7B): "IEASG-T80",
+}
+
 TEST_ITERATAIONS = [
     {
         "metadata": {
-            "test-id": "golden",
-            "allure-id": "IEASG-T11",
+            "configuration-id": TestConfigurationLabels.GOLDEN,
         },
         "config": {}
     },
     {
         "metadata": {
-            "test-id": "Mistral-7B-Instruct-v0.1",
-            "allure-id": "IEASG-T80",
+            "configuration-id": TestConfigurationLabels.MISTRAL_7B,
         },
         "config": {
             LLMs_TGI_EnvKeys.LLM_TGI_MODEL_NAME.value: "mistralai/Mistral-7B-Instruct-v0.1"
@@ -28,7 +37,7 @@ TEST_ITERATAIONS = [
 
 @pytest.fixture(
     params=TEST_ITERATAIONS,
-    ids=[i["metadata"]["test-id"] for i in TEST_ITERATAIONS],
+    ids=[i["metadata"]["configuration-id"].value for i in TEST_ITERATAIONS],
     scope="module",
     autouse=True
 )
@@ -43,12 +52,18 @@ def llms_containers_fixture(request):
         containers.deploy()
         containers_annotated = (
             containers,
-            request.param["metadata"]["allure-id"],
+            request.param["metadata"]["configuration-id"],
         )
         yield containers_annotated
     finally:
         containers.destroy()
 
+@pytest.fixture(
+    scope="module",
+    autouse=True
+)
+def allure_ids():
+    return ALLURE_IDS
 
 @pytest.mark.llms
 @pytest.mark.cpu

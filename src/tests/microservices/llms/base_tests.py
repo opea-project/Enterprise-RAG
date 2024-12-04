@@ -16,11 +16,14 @@ logger.setLevel(logging.DEBUG)
 
 class BaseLLMsTest:
     """This tests use fixture that are defined in cpu and hpu concretizations."""
-    def test_simple_scenario(self, llms_containers_fixture):
+    def test_simple_scenario(self, llms_containers_fixture, allure_ids):
         """Verify HTTP response 200."""
-        containers = llms_containers_fixture[0]
-        allure_id = llms_containers_fixture[1]
-        allure.dynamic.link(allure_id)
+        containers, configuration_id = llms_containers_fixture
+        try:
+            allure_id = allure_ids[(BaseLLMsTest.test_simple_scenario, configuration_id)]
+            allure.dynamic.link(allure_id)
+        except KeyError:
+            logger.error("This test has no Zephyr binding!")
 
         url = (
             f"http://{containers._HOST_IP}:{containers.MICROSERVICE_API_PORT}/v1/chat/completions"

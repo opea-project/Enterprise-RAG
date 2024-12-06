@@ -36,8 +36,6 @@ class LLMsVllmDockerSetup(LLMsDockerSetup):
 
     MODELSERVER_PORT = 80
 
-    API_ENDPOINT = "/v1/chat/completions"
-
     @property
     def _ENV_KEYS(self) -> Type[LLMs_VLLM_EnvKeys]:
         return LLMs_VLLM_EnvKeys
@@ -92,7 +90,6 @@ class LLMsVllmDockerSetup(LLMsDockerSetup):
                 **self.COMMON_PROXY_SETTINGS,
             },
             volumes=[("./data", "/data")],
-            remove=False,
             command=[
                 '/bin/bash',
                 '-c',

@@ -23,10 +23,10 @@ class BaseLLMsTest:
             allure_id = allure_ids[(BaseLLMsTest.test_simple_scenario, configuration_id)]
             allure.dynamic.link(allure_id)
         except KeyError:
-            logger.error("This test has no Zephyr binding!")
+            logger.warning("This test has no Zephyr binding!")
 
         url = (
-            f"http://{containers._HOST_IP}:{containers.MICROSERVICE_API_PORT}/v1/chat/completions"
+            f"http://{containers._HOST_IP}:{containers.MICROSERVICE_API_PORT}{containers.MICROSERVICE_API_ENDPOINT}"
         )
         request_body = {
             "query": "What is Deep Learning?",

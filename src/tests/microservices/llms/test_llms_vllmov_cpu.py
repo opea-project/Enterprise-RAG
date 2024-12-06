@@ -3,7 +3,7 @@ from enum import Enum
 
 import pytest
 from llms.base_tests import BaseLLMsTest
-from llms.structures_llms_tgi import LLMsTgiDockerSetup
+from llms.structures_llms_vllmov import LLMsVllmOVDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -11,7 +11,10 @@ logger.setLevel(logging.DEBUG)
 class TestConfigurationLabels(Enum):
     GOLDEN = "golden"
 
-ALLURE_IDS = {}
+# Test id in Jira depends on test itself and configuration
+ALLURE_IDS = {
+    (BaseLLMsTest.test_simple_scenario,     TestConfigurationLabels.GOLDEN): "IEASG-T97",
+}
 
 TEST_ITERATAIONS = [
     {
@@ -30,14 +33,10 @@ TEST_ITERATAIONS = [
 )
 def llms_containers_fixture(request):
     config_override = request.param["config"]
-    logger.debug("Creating LLMs TGI HPU fixture with following config:")
+    logger.debug("Creating LLMs VLLM+OpenVino CPU fixture with following config:")
     logger.debug(config_override)
 
-    containers = LLMsTgiDockerSetup(
-        "ghcr.io/huggingface/tgi-gaudi:2.0.5",
-        "comps/llms/impl/model_server/tgi/docker/.env.hpu",
-        config_override
-    )
+    containers = LLMsVllmOVDockerSetup("comps/llms/impl/model_server/vllm/docker/.env.cpu", config_override)
 
     try:
         containers.deploy()
@@ -57,7 +56,7 @@ def allure_ids():
     return ALLURE_IDS
 
 @pytest.mark.llms
-@pytest.mark.hpu
+@pytest.mark.cpu
 @pytest.mark.tgi
-class Test_LLMs_TGI_HPU(BaseLLMsTest):
+class Test_LLMs_VllmOV_CPU(BaseLLMsTest):
     pass

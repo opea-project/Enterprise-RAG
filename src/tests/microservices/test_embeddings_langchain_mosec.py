@@ -70,7 +70,6 @@ class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
                 "MOSEC_MAX_WAIT_TIME": 100,
                 **self.COMMON_PROXY_SETTINGS,
             },
-            remove=False,
             wait_after=60,
             **self.COMMON_RUN_OPTIONS,
         )

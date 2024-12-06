@@ -46,7 +46,11 @@ def llms_containers_fixture(request):
     logger.debug("Creating LLMs TGI CPU fixture with following config:")
     logger.debug(config_override)
 
-    containers = LLMsTgiDockerSetup("comps/llms/impl/model_server/tgi/docker/.env.cpu", config_override)
+    containers = LLMsTgiDockerSetup(
+        "ghcr.io/huggingface/text-generation-inference:2.4.0-intel-cpu",
+        "comps/llms/impl/model_server/tgi/docker/.env.cpu",
+        config_override
+    )
 
     try:
         containers.deploy()

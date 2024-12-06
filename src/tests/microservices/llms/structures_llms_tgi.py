@@ -21,13 +21,11 @@ class LLMs_TGI_EnvKeys(Enum):
 
 
 class LLMsTgiDockerSetup(LLMsDockerSetup):
+    """TGI has different docker images and .envs for platforms, but share the rest of the properties."""
 
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
-    MODELSERVER_IMAGE_NAME = "ghcr.io/huggingface/text-generation-inference:2.4.0"
 
     MODELSERVER_PORT = 80
-
-    API_ENDPOINT = "/v1/chat/completions"
 
     @property
     def _ENV_KEYS(self) -> Type[LLMs_TGI_EnvKeys]:
@@ -45,12 +43,16 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
             "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
         }
 
+    def __init__(self, model_server_img_url: str, golden_configuration_src: str, config_override: dict = None):
+        super().__init__(golden_configuration_src, config_override)
+        self._modelserver_image_name = model_server_img_url
+
     def _build_model_server(self):
-        return self._pull_image(self.MODELSERVER_IMAGE_NAME)
+        return self._pull_image(self._modelserver_image_name)
 
     def _run_model_server(self) -> Container:
         container = self._run_container(
-            self.MODELSERVER_IMAGE_NAME,
+            self._modelserver_image_name,
             name=self.MODELSERVER_CONTAINER_NAME,
             ipc="host",  # We should get rid of it as it weakens isolation
             publish=[
@@ -61,7 +63,6 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
                 **self.COMMON_PROXY_SETTINGS,
             },
             volumes=[("./data", "/data")],
-            remove=False,
             command=[
                 "--model-id",
                 self._get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),

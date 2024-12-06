@@ -93,18 +93,272 @@ otelcol-logs:
   # https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml#L187
   # config:
   alternateConfig:
+    ### ----------------------------
+    ### Otelcol configuration
+    ### ----------------------------
+
     #priority: info
     ### Disable unused receivers
     # https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-collector#basic-top-level-configuration
     # This also requires disabling traces/metrics pipeline in services/pipeline.
     receivers:
-      filelog: {} # required: enable only one, will be merged with "helm chart" logsCollection.enabled for Kubernetes pods
+      #filelog: {} # required: enable only one, will be merged with "helm chart" logsCollection.enabled for Kubernetes pods
+
       ## NOTE not needed as subchart with alternateConfig!!!
       # traces/spans receivers are disabled we will have additional otelcol for traces
-      #jaeger: null
-      #zipkin: null
+      # jaeger: null
+      # zipkin: null
       # prometheus: null
       # otlp: null #
+
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        # start_at: beginning
+        include_file_name: false
+        include_file_path: true
+        preserve_trailing_whitespaces: true
+        preserve_leading_whitespaces: false
+        # List all operators
+        # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/README.md
+        operators:
+        ### First step of log processing. Unwrap from cotainerd format.
+        # copied from original logCollection helm template
+        - id: container-parser
+          max_log_size: 102400
+          type: container
+          format: containerd
+          output: router
+
+        ### Second step. Routing based on container name. After that severity parsing, next step is to the last one noop, to avoid go throught all parsers.
+        # How control flow https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/types/operators.md
+        # How set router https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/docs/operators/router.md
+        # And language to express conditions https://github.com/expr-lang/expr/blob/master/docs/language-definition.md
+        - type: router
+          id: router
+          routes:
+            - expr: 'resource["k8s.container.name"] matches "^embedding-usvc$"'
+              output: embedding-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^ingestion-usvc$"'
+              output: embedding-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^torchserve$"'
+              output: torchserve-severity-parser-a
+            - expr: 'resource["k8s.container.name"] matches "^router-server$"'
+              output: router-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^dataprep-usvc$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^llm-usvc$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^reranking-usvc$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^retriever-usvc$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^teirerank$"'
+              output: tei-tgi-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^tgi$"'
+              output: tei-tgi-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^tempo$"'
+              output: loki-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^loki$"'
+              output: loki-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^nginx$"'
+              output: loki-severity-parser-http-code
+            - expr: 'resource["k8s.container.name"] matches "^loki-canary$"'
+              output: canary-severity-parser-a
+            - expr: 'resource["k8s.container.name"] matches "^kindnet-cni$"'
+              output: kube-system_kindnet-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^mongodb$"'
+              output: mongo-severity-parser
+          default: noop
+
+        #### EMBEDDING
+        - id: embedding-severity-parser
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          regex: '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<status_text_http>[^ ]+)'
+          severity:
+            parse_from: attributes.severity_field
+            overwrite_text: true
+            mapping:
+              info: INFO
+              warn: WARN
+              error: ERROR
+              debug: DEBUG
+        #### EMBEDDING
+
+        #### TORCHSERVE
+        - id: torchserve-severity-parser-a
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: torchserve-severity-parser-b
+          regex: '(?P<log_timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d+)\s+\[(?P<severity_field>[A-Z]+)\s*\]\s+((?P<thread>[^ ]+)\s+(?P<log_type>[^ ]+)\s+-\s+(?P<ip>[^ ]+):(?P<port>\d+)\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<response_time>\d+))$'
+          severity:
+            parse_from: attributes.severity_field
+            overwrite_text: true
+            mapping:
+              info: INFO
+              warn: WARN
+              error: ERROR
+              debug: DEBUG
+
+        - id: torchserve-severity-parser-b
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          if: attributes.severity_field == nil
+          output: noop
+          regex: '(?P<log_timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d+)\s+\[(?P<severity_field>[A-Z]+)\s*\]\s*(?P<message>.*)$'
+          severity:
+            parse_from: attributes.severity_field
+            overwrite_text: true
+            mapping:
+              info: INFO
+              warn: WARN
+              error: ERROR
+              debug: DEBUG
+        #### TORCHSERVE
+
+        #### ROUTER
+        - id: router-severity-parser
+          type: json_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          severity:
+            parse_from: attributes.level
+            overwrite_text: true
+        #### ROUTER
+
+        #### LLM RERANKING RETRIEVER DATAPREP
+        - id: python-severity-parser
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          regex: '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code>\d{3})\s+(?P<status_text>[^ ]+)'
+          severity:
+            parse_from: attributes.severity_field
+            overwrite_text: true
+            mapping:
+              info: INFO
+              warn: WARN
+              error: ERROR
+              debug: DEBUG
+        #### LLM RERANKING RETRIEVER DATAPREP
+
+        #### TEI TGI
+        - id: tei-tgi-severity-parser
+          type: regex_parser
+          #on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          # more complex regex not working because log message contains extra ascii formating
+          #regex: '^(?P<timestampapp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+(?P<level>INFO|WARN|ERROR|DEBUG)\s+(?:(?P<details>.*)\s)?(?P<logger>[a-zA-Z_:]*:)\s+(?P<file>[^:]+):(?P<line>\d+):\s+(?P<message>.+)$'
+          regex: '.*(?P<level>INFO|WARN|ERROR|DEBUG)(?P<text>.*)'
+          severity:
+            parse_from: attributes.level
+            overwrite_text: true
+            mapping:
+              info: INFO
+              warn: WARN
+              error: ERROR
+              debug: DEBUG
+        #### TEI TGI
+
+        #### LOKI
+        - id: loki-severity-parser
+          type: key_value_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          severity:
+            parse_from: attributes.level
+            overwrite_text: true
+
+        - id: loki-severity-parser-http-code
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          regex: '(?P<status_code>\d{3}) "(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)'
+          severity:
+            parse_from: attributes.status_code
+            overwrite_text: true
+            mapping:
+              info:
+                - 1xx
+                - 101
+                - 2xx
+              debug:
+                - 3xx
+              warn:
+                - 4xx
+              error:
+                - 5xx
+        #### LOKI
+
+        #### CANARY
+        - id: canary-severity-parser-a
+          type: add
+          output: canary-severity-parser-b
+          field: attributes.severity_text
+          value: DEBUG
+
+        - id: canary-severity-parser-b
+          type: add
+          output: canary-severity-parser-c
+          field: attributes.severity_number
+          value: 5
+
+        - id: canary-severity-parser-c
+          type: severity_parser
+          output: noop
+          parse_from: attributes.severity_text
+          overwrite_text: true
+          mapping:
+            debug: DEBUG
+        #### CANARY
+
+        #### KINDNET
+        - id: kube-system_kindnet-severity-parser
+          type: regex_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          regex: '^(?P<severity_field>[IWEFD])(?P<code>\d{4})\s+(?P<time>\d{2}:\d{2}:\d{2}\.\d+)\s+(?P<process_id>\d+)\s+(?P<file>[^:]+):(?P<line>\d+)\]\s+(?P<message>.+)$'
+          severity:
+            parse_from: attributes.severity_field
+            overwrite_text: true
+            mapping:
+              info: I
+              warn: W
+              error: E
+              debug: D
+              fatal: F
+        #### KINDNET
+
+        #### MONGO
+        - id: mongo-severity-parser
+          type: json_parser
+          on_error: "send_quiet"
+          parse_from: body
+          output: noop
+          severity:
+            parse_from: attributes.s
+            overwrite_text: true
+            mapping:
+              info: I
+              warn: W
+              error: E
+              debug: D
+              fatal: F
+        #### MONGO
+
+        # The noop operator makes no changes to a entry
+        - type: noop
 
     exporters:
       ## Loki native OTLP protocol
@@ -128,6 +382,7 @@ otelcol-logs:
         #use_internal_logger: true
         #verbosity: basic
         #verbosity: normal
+        # WARNING: very verbose every message is shown with metadata
         #verbosity: detailed
 
     extensions:
@@ -147,6 +402,11 @@ otelcol-logs:
         - health_check
         - zpages
         - headers_setter/orgentrag
+      telemetry:
+        logs:
+          # the same can be achieved by adding pod.container.args: --set=service::telemetry::logs::level=debug
+          level: info
+          #level: debug
       pipelines:
         ### Disable unused pipelines
         ## https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/README.md#basic-top-level-configuration
@@ -154,9 +414,9 @@ otelcol-logs:
           # receivers: ['otlp']
           # exporters: ['otlp']
         # metrics: null
-
         logs:
-          # receivers:
+          receivers:
+          - filelog
           # pipeline for metrics send by application !!! from otel-demo otlp protocol
           # - otlp
           exporters:
@@ -351,7 +611,6 @@ loki:
         - "service.namespace"
         # keep that with sync with
         # values-journalctl.yaml directive: "processors.transform.log_statements.statements"
-        - "journald.severity"
         - "journald.transport"
         - "journald.unit"
         - "journald.cmd"

@@ -116,7 +116,7 @@ Check `values.yaml` file for `otelcol-logs.alternateConfig.exporters.debug` sect
 
 ##### f) Change level verbosity from "info" to "debug"
 
-Check `values-journalctl-devel.yaml` file for `otelcol-logs.alternateConfig.service.telemetry.logs.level`.  Change from "info" to "debug".
+Check `values.yaml` file for `otelcol-logs.alternateConfig.service.telemetry.logs.level`.  Change from "info" to "debug".
 
 More details [here](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs).
 

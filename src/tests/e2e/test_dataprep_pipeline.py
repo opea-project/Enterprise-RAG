@@ -57,7 +57,7 @@ def test_dataprep_huge_file_upload(dataprep_api_helper):
     size_in_bytes = 63 * 1024 * 1024  # 63 MB file
 
     print("Creating a temporary file")
-    with NamedTemporaryFile(delete=True, mode='w+') as temp_file:
+    with NamedTemporaryFile(delete=True, mode='w+', suffix=".txt") as temp_file:
         _fill_in_file(temp_file, size_in_bytes)
         response = dataprep_api_helper.call_dataprep_upload_file(temp_file.name)
         assert response.status_code == 200, \
@@ -69,8 +69,8 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
     """
     Upload a large file to dataprep. Check if it responds to other API calls in the meantime
     """
-    size_in_bytes = 63 * 1024 * 1024 # 63 MB file
-    with NamedTemporaryFile(delete=True, mode='w+') as temp_file:
+    size_in_bytes = 63 * 1024 * 1024  # 63 MB file
+    with NamedTemporaryFile(delete=True, mode='w+', suffix=".txt") as temp_file:
         _fill_in_file(temp_file, size_in_bytes)
         with concurrent.futures.ThreadPoolExecutor() as executor:
             # Execute file upload in the background
@@ -81,7 +81,7 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
             start_time = time.time()
             while counter < 60:
                 try:
-                    response = generic_api_helper.call_health_check_api("dataprep", "dataprep-svc", 9399)
+                    response = generic_api_helper.call_health_check_api("dataprep", {"app": "dataprep-svc"}, 9399)
                 except requests.exceptions.ReadTimeout:
                     pytest.fail("Dataprep API is not responsive while the file is being uploaded")
 

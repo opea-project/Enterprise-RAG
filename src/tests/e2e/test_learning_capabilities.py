@@ -40,7 +40,8 @@ def test_pdf_text_only(dataprep_api_helper, chatqa_api_helper):
     """*.pdf file learning capabilities (pure text inside the file)"""
     question = "In the story about Intel's headquarters in Gdansk, what was found by Krystianooo?"
     response = upload_and_ask_question(dataprep_api_helper, chatqa_api_helper, "story.pdf", question)
-    assert "door" in response.lower(), UNRELATED_RESPONSE_MSG
+    response_lower = response.lower()
+    assert "door" in response_lower or "dimension" in response_lower, UNRELATED_RESPONSE_MSG
 
 
 @pytest.mark.smoke

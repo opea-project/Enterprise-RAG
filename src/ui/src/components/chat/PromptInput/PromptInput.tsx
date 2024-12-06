@@ -32,16 +32,16 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { parsePromptRequestParameters } from "@/utils";
 
-const VERTICAL_PADDING = 16;
-const LINE_HEIGHT = 24;
+const VERTICAL_PADDING = 18;
+const LINE_HEIGHT = 22;
 const MAX_ROWS = 10;
 
 const PromptInput = () => {
-  const dispatch = useAppDispatch();
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [prompt, setPrompt] = useState("");
   const [textAreaRows, setTextAreaRows] = useState(1);
 
+  const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
   const hasInputGuard = useAppSelector(hasInputGuardSelector);
   const hasOutputGuard = useAppSelector(hasOutputGuardSelector);
@@ -54,10 +54,13 @@ const PromptInput = () => {
     focusPromptInput();
   }, []);
 
-  const handlePromptInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    const input = event.target;
-    setPrompt(input.value);
+  useEffect(() => {
+    if (prompt === "") {
+      setTextAreaRows(1);
+    }
+  }, [prompt]);
 
+  const recalcuatePromptInputHeight = (input: HTMLTextAreaElement) => {
     input.style.height = "auto";
 
     const textareaScrollHeight = input.scrollHeight - VERTICAL_PADDING;
@@ -69,11 +72,11 @@ const PromptInput = () => {
     input.style.height = "";
   };
 
-  useEffect(() => {
-    if (prompt === "") {
-      setTextAreaRows(1);
-    }
-  }, [prompt]);
+  const handlePromptInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const input = event.target;
+    setPrompt(input.value);
+    recalcuatePromptInputHeight(input);
+  };
 
   const handlePromptInputKeydown: KeyboardEventHandler<HTMLTextAreaElement> = (
     event,
@@ -88,18 +91,7 @@ const PromptInput = () => {
     } else {
       const input = event.target;
       if (input && input instanceof HTMLTextAreaElement) {
-        input.style.height = "auto";
-
-        const textareaScrollHeight = input.scrollHeight - VERTICAL_PADDING;
-        const newRows = Math.max(
-          Math.ceil(textareaScrollHeight / LINE_HEIGHT),
-          1,
-        );
-        if (newRows !== textAreaRows && newRows <= MAX_ROWS) {
-          setTextAreaRows(newRows);
-        }
-
-        input.style.height = "";
+        recalcuatePromptInputHeight(input);
       }
     }
   };
@@ -240,8 +232,6 @@ const PromptInput = () => {
     }
   };
 
-  const textFieldDisabled = isStreaming;
-
   const getPromptInputButton = () => {
     if (isStreaming) {
       return <PromptInputButton icon="mdi:stop" disabled onClick={() => {}} />;
@@ -260,6 +250,8 @@ const PromptInput = () => {
       );
     }
   };
+
+  const textFieldDisabled = isStreaming;
 
   return (
     <>

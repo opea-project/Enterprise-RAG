@@ -21,6 +21,7 @@ const ChatPage = () => {
       </div>
     );
   }
+
   return (
     <div className="chat-page">
       <ConversationFeed />

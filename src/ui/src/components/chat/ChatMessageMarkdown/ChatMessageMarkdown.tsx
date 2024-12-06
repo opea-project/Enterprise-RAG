@@ -3,26 +3,31 @@
 
 import "./ChatMessageMarkdown.scss";
 
-import { PropsWithChildren } from "react";
+import { AnchorHTMLAttributes, PropsWithChildren } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+import Anchor from "@/components/shared/Anchor/Anchor";
+import parseChildrenTextContent from "@/utils/parseChildrenTextContent";
 
 const CustomPre = ({ children }: PropsWithChildren) => (
   <pre className="custom-pre-markdown">{children}</pre>
 );
 
 const CustomCode = ({ children }: PropsWithChildren) => (
-  <code className="custom-code-markdown">{children}</code>
+  <code className="custom-code-markdown">
+    {parseChildrenTextContent(children)}
+  </code>
 );
 
-const CustomParagraph = ({ children }: PropsWithChildren) => (
-  <p className="custom-paragraph-markdown">{children}</p>
+const CustomAnchor = (props: AnchorHTMLAttributes<HTMLAnchorElement>) => (
+  <Anchor {...props} />
 );
 
 const customMarkdownComponents = {
   code: CustomCode,
   pre: CustomPre,
-  p: CustomParagraph,
+  a: CustomAnchor,
 };
 
 interface ChatMessageMarkdownProps {
@@ -30,7 +35,7 @@ interface ChatMessageMarkdownProps {
 }
 
 const ChatMessageMarkdown = ({ text }: ChatMessageMarkdownProps) => (
-  <section className="chatbot-answer">
+  <section className="chat-message-markdown">
     <Markdown remarkPlugins={[remarkGfm]} components={customMarkdownComponents}>
       {text}
     </Markdown>

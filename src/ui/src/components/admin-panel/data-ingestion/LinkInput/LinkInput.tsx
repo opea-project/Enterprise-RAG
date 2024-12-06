@@ -6,24 +6,9 @@ import "./LinkInput.scss";
 import classNames from "classnames";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { BsPlus } from "react-icons/bs";
-import * as Yup from "yup";
 import { ValidationError } from "yup";
 
-import { noImproperCharacters } from "@/utils/validators";
-
-const inputMessage =
-  "Please enter valid URL that starts with protocol (http:// or https://)";
-
-const validationSchema = Yup.object().shape({
-  link: Yup.string()
-    .url(inputMessage)
-    .required(inputMessage)
-    .test(
-      "no-improper-characters",
-      "Your URL contains improper characters. Please try again",
-      noImproperCharacters(),
-    ),
-});
+import { validateLinkInput } from "@/utils/data-ingestion/link-input";
 
 interface LinkInputProps {
   addLinkToList: (value: string) => void;
@@ -36,20 +21,16 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
   const [isInvalid, setIsInvalid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const validateLink = async (value: string) => {
-    try {
-      await validationSchema.validate({ link: value });
-      setIsInvalid(false);
-      setErrorMessage("");
-    } catch (error) {
-      setIsInvalid(true);
-      setErrorMessage((error as ValidationError).message);
-    }
-  };
-
   useEffect(() => {
     const checkValidity = async () => {
-      await validateLink(value);
+      try {
+        await validateLinkInput(value);
+        setIsInvalid(false);
+        setErrorMessage("");
+      } catch (error) {
+        setIsInvalid(true);
+        setErrorMessage((error as ValidationError).message);
+      }
     };
 
     if (value) {

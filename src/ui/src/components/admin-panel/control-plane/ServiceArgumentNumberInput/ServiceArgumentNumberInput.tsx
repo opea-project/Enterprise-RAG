@@ -10,7 +10,7 @@ import { ValidationError } from "yup";
 
 import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
-import { isInRange } from "@/utils/validators";
+import { isInRange } from "@/utils/validators/textInput";
 
 interface ServiceArgumentNumberInputProps {
   name: string;

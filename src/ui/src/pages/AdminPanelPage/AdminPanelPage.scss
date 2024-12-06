@@ -61,10 +61,6 @@
     @apply cursor-pointer accent-light-primary disabled:cursor-default dark:accent-dark-primary;
   }
 
-  a {
-    @apply text-light-link-primary hover:text-light-link-hover dark:text-dark-link-primary dark:hover:text-dark-link-hover;
-  }
-
   label {
     @apply mb-1 font-medium;
   }

@@ -12,48 +12,14 @@ import {
   useRef,
   useState,
 } from "react";
-import * as Yup from "yup";
-import { ValidationError } from "yup";
 
 import {
-  CLIENT_MAX_BODY_SIZE,
-  fileHasSupportedType,
-  noImproperCharactersInFileName,
-  totalFileSizeWithinLimit,
-} from "@/utils/validators";
-
-const acceptedFileTypes =
-  ".pdf,.html,.txt,.doc,.docx,.ppt,.pptx,.md,.xml,.json,.jsonl,.yaml,.xls,.xlsx,.csv";
-const acceptedFileTypesArray = acceptedFileTypes.split(",");
-
-const validationSchema = Yup.array()
-  .of(
-    Yup.mixed()
-      .test(
-        "file-has-supported-type",
-        "Some of the files you are trying to upload are in an unsupported format. Please try again",
-        fileHasSupportedType(acceptedFileTypesArray),
-      )
-      .test(
-        "no-improper-characters-in-file-name",
-        "Some of the files you are trying to upload have improper characters. Please try again",
-        noImproperCharactersInFileName(),
-      ),
-  )
-  .test(
-    "total-file-size-within-limit",
-    `The total size of the files you are trying to upload exceeds the limit - ${CLIENT_MAX_BODY_SIZE}MB. Please upload them separately or in smaller batches`,
-    totalFileSizeWithinLimit(),
-  );
-
-const validateDocuments = async (documents: File[] | FileList) => {
-  try {
-    await validationSchema.validate(Array.from(documents));
-    return "";
-  } catch (error) {
-    return (error as ValidationError).message;
-  }
-};
+  INPUT_FILE_ACCEPT,
+  sanitizeFiles,
+  SUPPORTED_FILE_FORMATS_MSG,
+  TOTAL_SIZE_LIMIT_MSG,
+  validateDocuments,
+} from "@/utils/data-ingestion/documents-file-input";
 
 interface DocumentsFileInputProps {
   documents: File[];
@@ -69,18 +35,24 @@ const DocumentsFileInput = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const processNewFiles = async (newFiles: FileList) => {
+    const fileArray = [...newFiles];
+    const sanitizedFiles = sanitizeFiles(fileArray);
+    const validationMessage = await validateDocuments([
+      ...documents,
+      ...sanitizedFiles,
+    ]);
+    setErrorMessage(validationMessage);
+    if (validationMessage === "") {
+      setDocuments((prevFiles) => [...prevFiles, ...sanitizedFiles]);
+    }
+  };
+
   const handleFileInputDrop = async (event: DragEvent) => {
     event.preventDefault();
     if (!disabled) {
-      const newFiles = [...event.dataTransfer.files];
-      const validationMessage = await validateDocuments([
-        ...documents,
-        ...newFiles,
-      ]);
-      setErrorMessage(validationMessage);
-      if (validationMessage === "") {
-        setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
-      }
+      const newFiles = event.dataTransfer.files;
+      await processNewFiles(newFiles);
     }
   };
 
@@ -96,27 +68,15 @@ const DocumentsFileInput = ({
     event: ChangeEvent<HTMLInputElement>,
   ) => {
     const newFiles = event.target.files;
-
-    if (newFiles) {
-      const validationMessage = await validateDocuments([
-        ...documents,
-        ...newFiles,
-      ]);
-      setErrorMessage(validationMessage);
-      if (validationMessage === "") {
-        setDocuments((prevFiles) => [...prevFiles, ...newFiles]);
-      }
+    if (newFiles !== null && newFiles instanceof FileList) {
+      await processNewFiles(newFiles);
     }
   };
 
   return (
     <>
       {errorMessage !== "" && (
-        <div className="documents-file-input-error-alert">
-          {errorMessage.split(". ").map((sentence, index) => (
-            <p key={index}>{sentence}.</p>
-          ))}
-        </div>
+        <div className="documents-file-input-error-alert">{errorMessage}</div>
       )}
       <div
         onDrop={handleFileInputDrop}
@@ -127,13 +87,7 @@ const DocumentsFileInput = ({
         })}
       >
         <p className="font-medium">Drag and Drop files here</p>
-        <p>
-          Supported file formats:{" "}
-          {acceptedFileTypes
-            .split(",")
-            .map((type) => type.replace(".", "").toUpperCase())
-            .join(", ")}
-        </p>
+        <p>{SUPPORTED_FILE_FORMATS_MSG}</p>
         <p>or</p>
         <button
           className="outlined-button--primary"
@@ -142,11 +96,11 @@ const DocumentsFileInput = ({
         >
           Browse Files
         </button>
-        <p className="pt-2">File size limit: {CLIENT_MAX_BODY_SIZE}MB</p>
+        <p className="pt-2">{TOTAL_SIZE_LIMIT_MSG}</p>
         <input
           ref={fileInputRef}
           type="file"
-          accept={acceptedFileTypes}
+          accept={INPUT_FILE_ACCEPT}
           disabled={disabled}
           multiple
           onChange={handleFileInputChange}

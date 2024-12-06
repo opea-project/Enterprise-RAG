@@ -1,0 +1,14 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+a {
+  @apply inline-flex items-center gap-1.5;
+  @apply text-light-link-primary dark:text-dark-link-primary;
+  @apply hover:text-light-link-hover dark:hover:text-dark-link-hover;
+
+  &.invalid {
+    @apply text-light-status-error-primary dark:text-dark-status-error-primary;
+    @apply hover:text-light-status-error-soft dark:hover:text-dark-status-error-soft;
+    @apply cursor-not-allowed;
+  }
+}

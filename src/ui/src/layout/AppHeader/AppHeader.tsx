@@ -10,12 +10,13 @@ import keycloakService from "@/services/keycloakService";
 
 const AppHeader = () => {
   const username = keycloakService.getUsername();
+  const isAdmin = keycloakService.isAdmin();
 
   return (
     <header className="app-header">
       <p className="app-header__app-name">Intel AI&reg; for Enterprise RAG</p>
       <div className="app-header__actions">
-        <ViewSwitchButton />
+        {isAdmin && <ViewSwitchButton />}
         <ColorSchemeSwitch />
         <p className="app-header__username">{username}</p>
         <LogoutButton />

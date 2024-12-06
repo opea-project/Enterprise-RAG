@@ -1,13 +1,15 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import ExternalLink from "@/components/shared/ExternalLink/ExternalLink";
+import Anchor from "@/components/shared/Anchor/Anchor";
 
 const GRAFANA_DASHBOARD_URL = import.meta.env.VITE_GRAFANA_DASHBOARD_URL;
 
 const TelemetryTab = () => (
   <div className="p-4">
-    <ExternalLink text="Grafana Dashboard" href={GRAFANA_DASHBOARD_URL} />
+    <Anchor href={GRAFANA_DASHBOARD_URL} isExternal>
+      Grafana Dashboard
+    </Anchor>
   </div>
 );
 

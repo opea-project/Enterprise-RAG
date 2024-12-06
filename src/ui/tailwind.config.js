@@ -193,6 +193,7 @@ module.exports = {
             },
             label: "#3d447f",
           },
+          "homoglyph-highlight": "#ff0000",
           primary: "#0054AE",
           focus: "#3d447f",
           status: {
@@ -377,6 +378,7 @@ module.exports = {
             },
             label: "#f2f3ff",
           },
+          "homoglyph-highlight": "#ff0000",
           primary: "#00c7fd",
           focus: "#fef0d3",
           status: {

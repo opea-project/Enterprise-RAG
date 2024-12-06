@@ -334,7 +334,7 @@ def test_out_guard_ban_competitors(guard_helper):
     """Check if question is blocked or redacted when certain competitor appears in the answer"""
     guard_params = {
         "enabled": True,
-        "competitors": ["AMD"]
+        "competitors": ["AMD", "Nvidia", "Qualcomm", "NVIDIA"]
     }
     guard_helper.setup(GuardType.OUTPUT, "ban_competitors", guard_params)
     guard_helper.assert_blocked(questions.INTEL_COMPETITORS)

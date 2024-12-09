@@ -11,6 +11,9 @@ keyclock_config_path="$auth_path/keycloak-config"
 AUTH_NS=${1:-default}
 ADMIN_PASSWORD=${2:-admin}
 
+SSOSESSIONMAXLIFESPAN=10800
+SSOSESSIONIDLETIMEOUT=1800
+
 generate_random_password() {
   local CHAR_SET="a-zA-Z0-9"
   local LENGTH=12
@@ -192,11 +195,29 @@ create_role(){
     -d "$NEW_ROLE_JSON" | jq
 
 }
+
+# Set the default max & idle session timeout for a realm
+set_realm_timeouts(){
+    local realm_name=$1
+
+    curl -X PUT "${KEYCLOAK_URL}/admin/realms/$realm_name" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+    "ssoSessionIdleTimeout": '"$SSOSESSIONIDLETIMEOUT"',
+    "ssoSessionMaxLifespan": '"$SSOSESSIONMAXLIFESPAN"'
+    }'
+
+    echo "Setting SSO session MaxLifespan: $SSOSESSIONMAXLIFESPAN in realm $realm_name"
+    echo "Setting SSO session IdleTimeout: $SSOSESSIONIDLETIMEOUT in realm $realm_name"
+}
+
 CWD="$(pwd)"
 
 # Step 1: Define Variables
 KEYCLOAK_URL=${KEYCLOAK_URL:-localhost:1234}
 KEYCLOAK_REALM=EnterpriseRAG
+KEYCLOAK_DEFAULT_REALM=master
 KEYCLOAK_CLIENT_ID=admin
 
 # Obtain an Access Token using admin credentials
@@ -215,3 +236,5 @@ create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc" "ERAG-user"
 true > $deployment_path/default_credentials.txt
 add_user $KEYCLOAK_REALM "erag-admin" "testadmin@example.com" "Test" "Admin" "$(generate_random_password)" "ERAG-admin" "EnterpriseRAG-oidc"
 add_user $KEYCLOAK_REALM "erag-user" "testuser@example.com" "Test" "User" "$(generate_random_password)" "ERAG-user" "EnterpriseRAG-oidc"
+set_realm_timeouts $KEYCLOAK_REALM
+set_realm_timeouts $KEYCLOAK_DEFAULT_REALM

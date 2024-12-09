@@ -113,7 +113,7 @@ upload_config() {
      -H "Authorization: Bearer $ACCESS_TOKEN" \
      -H "Content-Type: application/json" \
      -d @ERAG-realm-export.json \
-     http://localhost:1234/admin/realms
+     http://${KEYCLOAK_URL}/admin/realms
 }
 
 get_client_id(){
@@ -195,12 +195,12 @@ create_role(){
 CWD="$(pwd)"
 
 # Step 1: Define Variables
-KEYCLOAK_URL=localhost:1234
+KEYCLOAK_URL=${KEYCLOAK_URL:-localhost:1234}
 KEYCLOAK_REALM=EnterpriseRAG
 KEYCLOAK_CLIENT_ID=admin
 
 # Obtain an Access Token using admin credentials
-ACCESS_TOKEN=$(curl -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+ACCESS_TOKEN=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
  -H "Content-Type: application/x-www-form-urlencoded" \
  -d "username=${KEYCLOAK_CLIENT_ID}" \
  -d "password=${ADMIN_PASSWORD}" \

@@ -719,7 +719,7 @@ class InputScannersConfig:
     
     def _create_secrets_scanner(self, scanner_config):
         enabled_redact_types = ['partial', 'all', 'hash']
-        secrets_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        secrets_params = {}
 
         redact = scanner_config.get('redact', None)
 
@@ -746,7 +746,7 @@ class InputScannersConfig:
     
     def _create_token_limit_scanner(self, scanner_config):
         enabled_encodings = ['cl100k_base'] # TODO: test more encoding from tiktoken
-        token_limit_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        token_limit_params = {}
 
         limit = scanner_config.get('limit', None)
         encoding_name = scanner_config.get('encoding', None)

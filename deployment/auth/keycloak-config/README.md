@@ -21,13 +21,6 @@ ACCESS_TOKEN=$(curl -X POST "http://<keycloak-service>/realms/master/protocol/op
 -d "password=admin" \
 -d "grant_type=password" | jq -r '.access_token')
 
-
-#Add realm with the name EnterpriseRAG with saved config
-curl -X POST \
-     -H "Authorization: Bearer $ACCESS_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d @ERAG-realm-export.json \
-     http://<keycloak-service>/admin/realms
 	 
 #Get ID of the client 
 C_ID=$(curl -X GET "http://<keycloak-service>/admin/realms/EnterpriseRAG/clients" -H "Authorization: Bearer $ACCESS_TOKEN" -H "Accept: application/json" | jq -r --arg key "clientId" --arg value "EnterpriseRAG-oidc" '.[] | select(.[$key] == $value)' | jq -r '.id')

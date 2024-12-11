@@ -195,6 +195,6 @@ pvc:
     namespace: dataprep
     storage: 20Gi
   - name: model-volume-llm
-    accessMode: ReadWriteMany
+    accessMode: ReadWriteOnce
     namespace: chatqa
     storage: 100Gi

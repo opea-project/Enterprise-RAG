@@ -106,6 +106,8 @@ spec:
             - --max-num-seqs
             - "$(VLLM_MAX_NUM_SEQS)"
             - --disable-log-requests
+            - --download-dir
+            - "/data"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /data

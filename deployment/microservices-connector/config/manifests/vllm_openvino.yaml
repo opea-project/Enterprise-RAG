@@ -92,17 +92,14 @@ spec:
           securityContext:
             {}
           image: "opea/vllm-openvino:latest"
-          command: ["python3"]
-          args:
-            - -m
-            - "vllm.entrypoints.openai.api_server"
-            - --model
-            - "$(LLM_VLLM_MODEL_NAME)"
-            - --max_model_len
-            - "$(VLLM_MAX_MODEL_LEN)"
-            - --max-num-seqs
-            - "$(VLLM_MAX_NUM_SEQS)"
-            - --disable-log-requests
+          command:
+            - sh
+            - -c
+            - |
+                echo "Converting model to OpenVino IR"
+                optimum-cli export openvino --cache_dir "/data" --model $LLM_VLLM_MODEL_NAME $LLM_VLLM_MODEL_NAME
+                echo "Starting VLLM server"
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - mountPath: /data

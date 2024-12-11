@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-xeon")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-xeon" "langdtct-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -370,6 +370,14 @@ for component in "${components_to_build[@]}"; do
                 image_name="opea/vllm-${dev}"
                 if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             done
+            ;;
+        langdtct-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/language_detection/impl/microservice/Dockerfile"
+            image_name=opea/language-detection
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
     esac
     ) &

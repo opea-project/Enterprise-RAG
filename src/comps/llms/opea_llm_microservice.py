@@ -40,6 +40,7 @@ opea_llm = OPEALlm(
     model_server=sanitize_env(os.getenv('LLM_MODEL_SERVER')),
     model_server_endpoint=sanitize_env(os.getenv('LLM_MODEL_SERVER_ENDPOINT')),
     connector_name=sanitize_env(os.getenv('LLM_CONNECTOR')),
+    disable_streaming=(sanitize_env(os.getenv('LLM_DISABLE_STREAMING')) == "True"),
 )
 
 # Register the microservice with the specified configuration.

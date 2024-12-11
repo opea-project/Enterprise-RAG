@@ -57,6 +57,7 @@ var (
 		"VLLMGaudi",
 		"VLLM",
 		"VLLMOpenVino",
+		"LanguageDetection",
 	}
 )
 

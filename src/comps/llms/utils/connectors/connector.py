@@ -12,7 +12,7 @@ from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class LLMConnector(ABC):
-    def __init__(self, model_name: str, model_server: str, endpoint: str):
+    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
         """
         Initializes a Connector object.
 
@@ -27,6 +27,7 @@ class LLMConnector(ABC):
         self._model_name = model_name
         self._model_server = model_server
         self._endpoint = endpoint
+        self._disable_streaming = disable_streaming
 
     @abstractmethod
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:

@@ -233,7 +233,12 @@ function start_deployment() {
     wait_for_condition check_pods "$GMC_NS"
 
     kubectl apply -f "$manifests_path/chatQnA_$pipeline".yaml
-    kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
+
+    if [[ $pipeline == *"multilingual"* ]]; then
+        kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
+    else 
+        kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
+    fi
 
     print_log "waiting until pods in $DEPLOYMENT_NS and $DATAPREP_NS are ready"
 

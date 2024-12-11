@@ -79,6 +79,7 @@ const (
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
 	VLLMOpenVino             = "VLLMOpenVino"
+	LanguageDetection	 = "LanguageDetection"
 )
 
 var yamlDict = map[string]string{
@@ -109,6 +110,7 @@ var yamlDict = map[string]string{
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 	VLLM:                yaml_dir + "vllm.yaml",
 	VLLMOpenVino:        yaml_dir + "vllm_openvino.yaml",
+	LanguageDetection:   yaml_dir + "langdtct-usvc.yaml",
 }
 
 var (

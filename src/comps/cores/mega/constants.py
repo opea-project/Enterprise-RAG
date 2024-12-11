@@ -32,6 +32,7 @@ class ServiceType(Enum):
     LLM_GUARD_INPUT_SCANNER = 15
     LLM_GUARD_OUTPUT_SCANNER = 16
     INGESTION = 17
+    LANGUAGE_DETECTION = 18
 
 
 class MegaServiceEndpoint(Enum):
@@ -46,6 +47,7 @@ class MegaServiceEndpoint(Enum):
     DOC_SUMMARY = "/v1/docsum"
     SEARCH_QNA = "/v1/searchqna"
     TRANSLATION = "/v1/translation"
+    LANGUAGE_DETECTION = "/v1/language_detection"
     FAQ_GEN = "/v1/faqgen"
     # Follow OPENAI
     EMBEDDINGS = "/v1/embeddings"

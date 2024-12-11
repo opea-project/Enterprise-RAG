@@ -14,8 +14,9 @@ from comps.llms.utils.connectors.connector import LLMConnector
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class TGIConnector:
-    def __init__(self, model_name: str, endpoint: str):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
         self._endpoint = endpoint
+        self._disable_streaming = disable_streaming
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         connector = HuggingFaceEndpoint(
@@ -27,7 +28,7 @@ class TGIConnector:
             repetition_penalty=input.repetition_penalty,
         )
 
-        if input.streaming:
+        if input.streaming and not self._disable_streaming:
             try:
                 def stream_generator():
                     chat_response = ""
@@ -75,9 +76,10 @@ class TGIConnector:
                 raise Exception(f"Error invoking TGI: {e}")
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
         self._endpoint = endpoint+"/v1"
         self._model_name = model_name
+        self._disable_streaming = disable_streaming
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
@@ -88,14 +90,14 @@ class VLLMConnector:
                 model_name=self._model_name,
                 top_p=input.top_p,
                 temperature=input.temperature,
-                streaming=input.streaming,
+                streaming=input.streaming and not self._disable_streaming,
             )
         except Exception as e:
             error_message = "Failed to invoke the Langchain VLLM Connector. Check if the endpoint '{self._endpoint}' is correct and the VLLM service is running."
             logger.error(error_message)
             raise Exception(f"{error_message}: {e}")
 
-        if input.streaming:
+        if input.streaming and not self._disable_streaming:
             try:
                 def stream_generator():
                     chat_response = ""
@@ -144,21 +146,23 @@ SUPPORTED_INTEGRATIONS = {
 
 class LangchainLLMConnector(LLMConnector):
     _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
         if cls._instance is None:
             cls._instance = super(LangchainLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint)
+            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming)
         else:
             if (cls._instance._endpoint != endpoint or
-                cls._instance._model_server != model_server):
+                cls._instance._model_server != model_server or
+                cls._instance._disable_streaming != disable_streaming):
                 logger.warning(f"Existing LangchainLLMConnector instance has different parameters: "
                               f"{cls._instance._endpoint} != {endpoint}, "
                               f"{cls._instance._model_server} != {model_server}, "
+                              f"{cls._instance._disable_streaming} != {disable_streaming}, "
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str):
-        super().__init__(model_name, model_server, endpoint)
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
+        super().__init__(model_name, model_server, endpoint, disable_streaming)
         self._connector = self._get_connector()
         self._validate()
 
@@ -167,7 +171,7 @@ class LangchainLLMConnector(LLMConnector):
             error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
             logger.error(error_message)
             raise ValueError(error_message)
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint)
+        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

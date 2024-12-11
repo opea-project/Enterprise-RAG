@@ -48,6 +48,7 @@ def clean_env_vars():
       del os.environ['LLM_MODEL_SERVER']
       del os.environ['LLM_MODEL_SERVER_ENDPOINT']
       del os.environ['LLM_CONNECTOR']
+      del os.environ['LLM_DISABLE_STREAMING']
    except Exception:
       pass
 
@@ -106,6 +107,7 @@ def test_initialization_succeeds_with_env_vars_present(mock_get_connector, clean
          "LLM_MODEL_SERVER": "test_model_server",
          "LLM_MODEL_SERVER_ENDPOINT": "http://testhost:1234",
          "LLM_CONNECTOR": "",
+         "LLM_DISABLE_STREAMING": "False",
       },
    ):
       try:
@@ -120,6 +122,7 @@ def test_initialization_succeeds_with_env_vars_present(mock_get_connector, clean
       assert test_module.opea_llm._model_server == "test_model_server", "Model server does not match"
       assert test_module.opea_llm._model_server_endpoint == "http://testhost:1234", "Model server endpoint does not match"
       assert test_module.opea_llm._connector_name == "", "Connector name should be empty"
+      assert not test_module.opea_llm._disable_streaming, "Disable streaming flag should be unset"
 
 
 def test_initialization_raises_exception_when_config_params_are_missing(mock_get_connector, clean_env_vars):

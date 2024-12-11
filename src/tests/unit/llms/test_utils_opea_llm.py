@@ -33,20 +33,22 @@ def mock_get_connector():
 
 def test_initialization_succeeds_with_valid_params(reset_singleton, mock_get_connector):
     # Assert that the instance is created successfully
-    assert isinstance(OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain"), OPEALlm), "Instance was not created successfully."
-    assert isinstance(OPEALlm(model_name="model2", model_server="tgi", model_server_endpoint="http://server:1234", connector_name="langchain"), OPEALlm), "Instance was not created successfully."
+    assert isinstance(OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain", disable_streaming=False), OPEALlm), "Instance was not created successfully."
+    assert isinstance(OPEALlm(model_name="model2", model_server="tgi", model_server_endpoint="http://server:1234", connector_name="langchain", disable_streaming=False), OPEALlm), "Instance was not created successfully."
 
-    instance1 = OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain")
+    instance1 = OPEALlm(model_name="model1", model_server="vllm", model_server_endpoint="http://server:1234", connector_name="langchain", disable_streaming=True)
     assert isinstance(instance1, OPEALlm), "Instance was not created successfully."
     assert instance1._model_name == "model1","Is inconsistent with the provided parameters"
     assert instance1._model_server == "vllm","Is inconsistent with the provided parameters"
     assert instance1._model_server_endpoint == "http://server:1234","Is inconsistent with the provided parameters"
     assert instance1._connector_name.upper() == "LANGCHAIN", "Is inconsistent with the provided parameters"
+    assert instance1._disable_streaming, "Is inconsistent with the provided parameters"
 
-    # Assert that the instance is created successfully when connector_name is not provided (as it is optional)
+    # Assert that the instance is created successfully when connector_name and disable_streaming is not provided (as it is optional)
     instance2 = OPEALlm("model2", "tgi", "http://server:1234")
     assert isinstance(instance2, OPEALlm), "Instance was not created successfully."
     assert instance2._connector_name.upper() == "GENERIC", "Connector name should be 'generic' by default."
+    assert not instance2._disable_streaming, "Disable streaming flag should be unset by default"
 
     # Assert that the instance is created successfully when connector_name is empty string (as it is optional)
     instance2 = OPEALlm(model_name="model2", model_server="tgi", model_server_endpoint="http://server:1234", connector_name=" ")
@@ -88,7 +90,7 @@ def test_get_connector_succeeds_for_langchain(MockLangchainLLMConnector, sut_mod
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
 
-    MockLangchainLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint)
+    MockLangchainLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False)
 
 
 @pytest.mark.parametrize("sut_model_server_name", ["vllm", "tgi"])
@@ -100,4 +102,4 @@ def test_get_connector_succeeds_for_generic(MockGenericLLMConnector, sut_model_s
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
 
-    MockGenericLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint)
+    MockGenericLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False)

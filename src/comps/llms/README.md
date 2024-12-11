@@ -28,6 +28,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
 | `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
+| `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request. |
 
 
 ## Getting started

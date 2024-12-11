@@ -11,7 +11,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class OPEALlm:
-    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic"):
+    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic", disable_streaming: Optional[bool] = False):
         """
         Initialize the OPEALlm instance with the given parameters.
 
@@ -27,6 +27,7 @@ class OPEALlm:
         self._model_server = model_server
         self._model_server_endpoint = model_server_endpoint
         self._connector_name = connector_name
+        self._disable_streaming = disable_streaming
         self._validate_config()
         self._connector = self._get_connector()
 
@@ -37,10 +38,10 @@ class OPEALlm:
     def _get_connector(self):
         if self._connector_name.upper() == "LANGCHAIN":
             from comps.llms.utils.connectors import langchain_connector
-            return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
+            return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming)
         elif self._connector_name.upper() == "GENERIC" or not self._connector_name.strip():
             from comps.llms.utils.connectors import generic_connector
-            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint)
+            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming)
         else:
             raise ValueError(f"Invalid connector name: {self._connector_name}. Expected to be either 'langchain', 'generic', or unset.")
 

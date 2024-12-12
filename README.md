@@ -77,7 +77,7 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 ```
 git clone https://github.com/intel/Enterprise-RAG.git
 cd Enterprise-RAG/deployment
-./one_click_chatqna.sh -g HUGGINGFACEHUB_API_TOKEN -z GRAFANA_PASSWORD -k KEYCLOAK_ADMIN_PASSWORD -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+./one_click_chatqna.sh -g HUGGINGFACEHUB_API_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
 ```
 
 Proxy variables are optional.

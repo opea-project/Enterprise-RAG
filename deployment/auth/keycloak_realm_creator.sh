@@ -11,15 +11,10 @@ keyclock_config_path="$auth_path/keycloak-config"
 AUTH_NS=${1:-default}
 ADMIN_PASSWORD=${2:-admin}
 
+source $repo_path/deployment/credentials_utils.sh
+
 SSOSESSIONMAXLIFESPAN=10800
 SSOSESSIONIDLETIMEOUT=1800
-
-generate_random_password() {
-  local CHAR_SET="a-zA-Z0-9"
-  local LENGTH=12
-  random_string=$(tr -dc "$CHAR_SET" < /dev/urandom | head -c $LENGTH)
-  echo "$random_string"
-}
 
 export_realm() {
     local realm_name=$1
@@ -101,7 +96,6 @@ add_user() {
             -H "Content-Type: application/json" \
             -d "[{\"id\": \"$ROLE_ID\", \"name\": \"$role_name\"}]" | jq
     fi
-    echo "username: $username --- password: $password" >> $deployment_path/default_credentials.txt
 }
 
 get_client_id(){
@@ -307,14 +301,18 @@ create_client $KEYCLOAK_REALM "EnterpriseRAG-oidc" 'authorization=false authenti
 create_client $KEYCLOAK_REALM "EnterpriseRAG-oidc-backend" 'authorization=true authentication=true clientauthentication=false'
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc" "ERAG-admin"
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc" "ERAG-user"
+
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc-backend" "ERAG-admin"
 create_role $KEYCLOAK_REALM "EnterpriseRAG-oidc-backend" "ERAG-user"
 create_group $KEYCLOAK_REALM ERAG-admins
 create_group $KEYCLOAK_REALM ERAG-users
 map_role_to_group $KEYCLOAK_REALM ERAG-admins ERAG-admin
 map_role_to_group $KEYCLOAK_REALM ERAG-users ERAG-user
-true > $deployment_path/default_credentials.txt
-add_user $KEYCLOAK_REALM "erag-admin" "testadmin@example.com" "Test" "Admin" "$(generate_random_password)" "ERAG-admin" "EnterpriseRAG-oidc"
-add_user $KEYCLOAK_REALM "erag-user" "testuser@example.com" "Test" "User" "$(generate_random_password)" "ERAG-user" "EnterpriseRAG-oidc"
+
+get_or_create_and_store_credentials KEYCLOAK_ERAG_ADMIN erag-admin ""
+add_user $KEYCLOAK_REALM "erag-admin" "testadmin@example.com" "Test" "Admin" "${NEW_PASSWORD}" "ERAG-admin" "EnterpriseRAG-oidc"
+get_or_create_and_store_credentials KEYCLOAK_ERAG_USER erag-user ""
+add_user $KEYCLOAK_REALM "erag-user" "testuser@example.com" "Test" "User" "${NEW_PASSWORD}" "ERAG-user" "EnterpriseRAG-oidc"
+
 set_realm_timeouts $KEYCLOAK_REALM
 set_realm_timeouts $KEYCLOAK_DEFAULT_REALM

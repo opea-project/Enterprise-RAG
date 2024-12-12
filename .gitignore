@@ -35,3 +35,6 @@ super-linter-output/
 
 # Tox filex
 .tox
+
+# credentials
+/deployment/default_credentials.txt

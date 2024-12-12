@@ -9,6 +9,13 @@ kube-prometheus-stack:
   # example can be found here:
   # https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-demo/values.yaml#L799
   grafana:
+    # https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#login_maximum_inactive_lifetime_duration
+    grafana.ini:
+      auth:
+        login_maximum_lifetime_duration: 3h              # default 30d -> 3h
+        login_maximum_inactive_lifetime_duration: 30m    # default 7d -> 30m
+        token_rotation_interval_minutes: 10m             # default 10m
+
     plugins:
       - grafana-lokiexplore-app
     env:

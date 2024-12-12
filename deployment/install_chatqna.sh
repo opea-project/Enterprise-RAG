@@ -4,6 +4,7 @@
 
 # paths
 repo_path=$(realpath "$(pwd)/../")
+deployment_path="$repo_path/deployment"
 manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
 telemetry_path="$repo_path/deployment/telemetry/helm"
@@ -50,11 +51,13 @@ TAG="latest"
 
 available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
+source $repo_path/deployment/credentials_utils.sh
+
 function usage() {
     echo -e "Usage: $0 [OPTIONS]"
     echo -e "Options:"
-    echo -e "\t--grafana_password (REQUIRED with --telemetry): Initial password for grafana."
-    echo -e "\t--keycloak_admin_password (REQUIRED with --auth): Initial password for keycloak admin."
+    echo -e "\t--grafana_password (OPTIONAL,defaults:random or from default_credentials.txt): Initial password for grafana."
+    echo -e "\t--keycloak_admin_password (OPTIONAL,default:random or from default_credentials.txt): Initial password for keycloak admin."
     echo -e "\t--auth: Start auth services."
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
@@ -260,7 +263,35 @@ function clear_deployment() {
 
 function start_telemetry() {
     print_header "Start telemetry"
+    get_or_create_and_store_credentials GRAFANA admin $GRAFANA_PASSWORD
+    GRAFANA_PASSWORD=${NEW_PASSWORD}
 
+    ### Base variables
+    # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
+    # shellcheck disable=SC2154
+    HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--wait --set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
+    #HELM_INSTALL_TELEMETRY_EXTRA_ARGS
+    echo "*** Telemetry 'base' varialbes:"
+    echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
+    echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
+
+    ### Logs variables
+    TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+    TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
+    HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
+    #HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
+    echo "*** Telemetry 'logs' varialbes:"
+    echo "HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS"
+    echo "HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
+    
+    ### Traces variables
+    HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="--wait $TEMPO_DNS_FLAG"
+    #HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
+    echo "*** Telemetry 'traces' varialbes:"
+    echo "HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS"
+    echo "HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
+
+    # Please use following for any additional flag (for development only):
     kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
     kubectl get namespace $TELEMETRY_TRACES_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_TRACES_NS
 
@@ -321,6 +352,12 @@ function start_authentication() {
     local introspection_url
 
     print_log "Start authentication"
+
+    get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
+    KEYCLOAK_PASS=${NEW_PASSWORD}
+
+    # !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -578,12 +615,6 @@ while [[ "$#" -gt 0 ]]; do
 done
 # Additional validation for required parameters
 if [[ "$telemetry_flag" == "true" ]]; then
-    if [[ -z "$GRAFANA_PASSWORD" ]]; then
-        usage
-        print_log "Error: Grafana initial password is required for --telemetry!. Please provide inital password for Grafana --grafana_password."
-        exit 1
-    fi
-
     # system validation (for journald/ctl systemd OpenTelemetry collector)
     if  [[ $(sysctl -n fs.inotify.max_user_instances) -lt 8000 ]]; then
         print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
@@ -591,34 +622,12 @@ if [[ "$telemetry_flag" == "true" ]]; then
     fi
 fi
 
-if [[ "$auth_flag" == true && -z "$KEYCLOAK_PASS" ]]; then
-    usage
-    print_log "Error: --keycloak_admin_password must be provided when --auth is specified."
-    exit 1
-fi
-
-
-# !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
-# shellcheck disable=SC2154
-HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
-TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
-TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
 HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG --set aliasIP=$IP"
 
 # !TODO needs to be verified if we need values.yaml to be deployed
 HELM_INSTALL_INGRESS_DEFAULT_ARGS="--set controller.hostPort.enabled=true --set controller.ingressClass=nginx -f $configs_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS=""
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS=""
-# !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
-HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user \
-  --set auth.adminPassword=$KEYCLOAK_PASS -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
-
-HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="$TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
-HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="$TEMPO_DNS_FLAG"
-# Please use following for any additional flag (for development only):
-#HELM_INSTALL_TELEMETRY_EXTRA_ARGS
-#HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
-#HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
 
 # Execute given arguments
 if $auth_flag; then

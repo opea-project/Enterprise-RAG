@@ -51,7 +51,7 @@ With the `one_click_chatqna.sh` script,  you can automate all the steps performe
 Use the command below to install via the one click script:
 
 ```bash
-./one_click_chatqna.sh -g HUG_TOKEN -z GRAFANA_PASSWORD -k KEYCLOAK_ADMIN_PASSWORD -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+./one_click_chatqna.sh -g HUG_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
 ```
 > [!NOTE]
 > Using the `one_click_chatqna.sh` is an alternatve option to the Step-by-Step Installation described in the next section.
@@ -121,7 +121,7 @@ The HF access token can be created [here](https://huggingface.co/settings/tokens
 Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 
 ```bash
-./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip instance-ip-address --grafana_password mypassword --keycloak_admin_password adminpaassword
+./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip instance-ip-address
 ```
 
 > [!NOTE]
@@ -269,7 +269,10 @@ Once deployment is complete, there will be file `default_credentials.txt` create
 
 Default credentials for Keycloak and Grafana:
 - **username:** admin
-- **password:** provided during installation
+- **password:** stored in `default_credentials.txt` file, please change passwords after first login in Grafana or Keycloak.
+
+> [!CAUTION]
+> Please remove file `default_credentials.txt` after the first succesfull login and changing passwords.
 
 ### Data Ingestion, UI and Telemetry
 

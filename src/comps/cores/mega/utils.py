@@ -33,23 +33,6 @@ def check_ports_availability(host: Union[str, List[str]], port: Union[int, List[
     return all(is_port_free(h, p) for h in hosts for p in ports)
 
 
-def get_internal_ip():
-    """Return the private IP address of the gateway in the same network.
-
-    :return: Private IP address.
-    """
-    import socket
-
-    ip = "127.0.0.1"
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("10.255.255.255", 1))
-            ip = s.getsockname()[0]
-    except Exception:
-        pass
-    return ip
-
-
 def get_public_ip(timeout: float = 0.3):
     """Return the public IP address of the gateway in the public network."""
     import urllib.request

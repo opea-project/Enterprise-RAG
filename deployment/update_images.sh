@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-xeon" "langdtct-usvc")
+default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -340,37 +340,24 @@ for component in "${components_to_build[@]}"; do
             fi
             ;;
 
-        vllm-xeon)
-            if $do_build_flag; then
-                dockerfile="Dockerfile."
-                image_name="opea/vllm"
+        vllm-cpu)
+            path="${repo_path}/src/comps/llms/impl/model_server/vllm"
+            dockerfile="docker/Dockerfile.cpu"
+            image_name="opea/vllm-cpu"
 
-                docker run --rm -v ${logs_dir}:/logs -v /var/run/docker.sock:/var/run/docker.sock  docker:stable sh -c "
-                    set -eo pipefail && \
-                    export HTTP_PROXY=${http_proxy} && \
-                    export HTTPS_PROXY=${https_proxy} && \
-                    export NO_PROXY=${no_proxy} && \
-                    apk add --no-cache git && \
-                    git clone https://github.com/vllm-project/vllm.git /workspace/vllm && \
-                    cd /workspace/vllm && \
-                    git -c advice.detachedHead=false checkout v0.6.4.post1 && \
-                    sed -i 's|pip install intel-openmp|pip install intel-openmp==2025.0.1|g' Dockerfile.cpu && \
-                    DOCKER_BUILDKIT=1 docker build -t ${image_name}-cpu:${TAG} -f ${dockerfile}cpu ${use_proxy} . &> /logs/build_$(basename ${image_name}-cpu).log && \
-                    DOCKER_BUILDKIT=1 docker build -t ${image_name}-openvino:${TAG} -f ${dockerfile}openvino ${use_proxy} . &> /logs/build_$(basename ${image_name}-openvino).log" &> ${logs_dir}/docker_$(basename ${image_name}).log
-
-                if [ $? -eq 0 ]; then
-                    echo "$image_name built successfully"
-                else
-                    echo "Build failed. Please check the logs at ${logs_dir}/build_$(basename ${image_name}).log for more details."
-                fi
-            fi
-
-            for dev in "cpu" "openvino"; do
-                dockerfile="Dockerfile.${dev}"
-                image_name="opea/vllm-${dev}"
-                if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
-            done
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
+
+        vllm-openvino)
+            path="${repo_path}/src/comps/llms/impl/model_server/vllm"
+            dockerfile="docker/Dockerfile.openvino"
+            image_name="opea/vllm-openvino"
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+
         langdtct-usvc)
             path="${repo_path}/src"
             dockerfile="comps/language_detection/impl/microservice/Dockerfile"

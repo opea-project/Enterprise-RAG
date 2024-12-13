@@ -7,16 +7,20 @@
 
 # Check if LLM_DEVICE is set and valid
 if [ -z "${LLM_DEVICE}" ]; then
-    echo "Error: LLM_DEVICE is not set. Please set it to 'hpu' or 'cpu'."
+    echo "Error: LLM_DEVICE is not set. Please set it to 'hpu' or 'cpu' or 'openvino'."
     exit 1
-elif [ "${LLM_DEVICE}" != "hpu" ] && [ "${LLM_DEVICE}" != "cpu" ]; then
-    echo "Error: LLM_DEVICE must be set to 'hpu' or 'cpu'. Provided value: ${LLM_DEVICE}."
+elif [ "${LLM_DEVICE}" != "hpu" ] && [ "${LLM_DEVICE}" != "cpu" ] && [ "${LLM_DEVICE}" != "openvino" ]; then
+    echo "Error: LLM_DEVICE must be set to 'hpu' or 'cpu' or 'openvino'. Provided value: ${LLM_DEVICE}."
     exit 1
 fi
 
 echo "Info: LLM_DEVICE is set to: $LLM_DEVICE"
 
-ENV_FILE=docker/.env.${LLM_DEVICE}
+if [ "${LLM_DEVICE}" == "openvino" ]; then
+    ENV_FILE=docker/.env.cpu
+else
+    ENV_FILE=docker/.env.${LLM_DEVICE}
+fi
 echo "Reading configuration from $ENV_FILE..."
 
 # Check if docker compose is available (prerequisite)
@@ -61,42 +65,5 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
         echo "Error: 'habana' runtime is not available."
         exit 1
     fi
-
-    docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-vllm-model-server
-
-elif [ "${LLM_DEVICE}" = "cpu" ]; then
-    volume=$PWD/data
-
-    echo "Build the image vllm:cpu"
-    # Clone the vLLM repository (tag v0.5.5) and build a Docker image using the provided Dockerfile.cpu.
-    # The docker:stable container is used to enable BuildKit and ensure a clean, reproducible build by isolating the process from previous artifacts.
-    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:stable sh -c "
-    set -eo pipefail && \
-    export HTTP_PROXY=${HTTP_PROXY} && \
-    export HTTPS_PROXY=${HTTPS_PROXY} && \
-    export NO_PROXY=${NO_PROXY} && \
-    apk add --no-cache git && \
-    git clone https://github.com/vllm-project/vllm.git /workspace/vllm && \
-    cd /workspace/vllm && \
-    git -c advice.detachedHead=false checkout v0.6.4.post1 && \
-    sed -i 's|pip install intel-openmp|pip install intel-openmp==2025.0.1|g' Dockerfile.cpu && \
-    DOCKER_BUILDKIT=1 docker build -f Dockerfile.cpu -t vllm:cpu --shm-size=128g . --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTPS_PROXY --build-arg no_proxy=$NO_PROXY
-    "
-
-    echo "Run vllm service on CPU"
-
-    docker run -it -d --name="llm-vllm-model-server" \
-        -p $LLM_VLLM_PORT:80 \
-        -v $volume:/data \
-        -e HF_TOKEN=$HF_TOKEN \
-        -e HTTPS_PROXY=$HTTP_PROXY \
-        -e HTTP_PROXY=$HTTPS_PROXY \
-        -e NO_PROXY=$NO_PROXY \
-        -e VLLM_CPU_KVCACHE_SPACE=$VLLM_CPU_KVCACHE_SPACE \
-        -e VLLM_DTYPE=$VLLM_DTYPE \
-        -e VLLM_MAX_NUM_SEQS=$VLLM_MAX_NUM_SEQS \
-        -e VLLM_SKIP_WARMUP=$VLLM_SKIP_WARMUP \
-        -e VLLM_TP_SIZE=$VLLM_TP_SIZE \
-        -e VLLM_PP_SIZE=$VLLM_PP_SIZE \
-        vllm:cpu --model $LLM_VLLM_MODEL_NAME --host 0.0.0.0 --port 80
 fi
+docker compose -f docker/docker-compose-${LLM_DEVICE}.yaml up --build -d llm-vllm-model-server

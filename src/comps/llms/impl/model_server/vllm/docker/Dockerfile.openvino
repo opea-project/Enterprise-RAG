@@ -1,0 +1,21 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+FROM ubuntu:22.04 AS dev
+
+RUN apt-get update -y && apt-get install -y git python3-pip
+RUN pip install --upgrade pip==24.3.1
+
+WORKDIR /workspace
+ENV PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
+
+# install requirements based on vllm/requirements-build.txt
+RUN pip install --upgrade cmake==3.31.1 ninja==1.11.1.2 packaging==24.2 setuptools==75.6.0 setuptools-scm==8.1.0 torch==2.5.1 wheel==0.45.0 jinja2==3.1.4 numpy==1.26.4
+
+# install optimum-intel upfront to avoid lengthy process of discovering the proper packages versions
+RUN pip install --upgrade-strategy eager "optimum-intel[nncf]"@git+https://github.com/huggingface/optimum-intel.git
+
+ENV VLLM_TARGET_DEVICE="openvino"
+RUN pip install -v git+https://github.com/vllm-project/vllm@v0.6.4.post1
+
+CMD ["/bin/bash"]

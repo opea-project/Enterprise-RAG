@@ -7,12 +7,11 @@
 FROM python:3.11-slim
 
 # Install system packages needed for building
-RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
-    build-essential \
-    vim \
-    sudo \
-    procps && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
 
 RUN useradd -m -s /bin/bash user
 

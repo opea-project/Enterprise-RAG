@@ -6,13 +6,10 @@
 
 FROM python:3.11-slim
 
-# Install system packages needed for building
-RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
-    build-essential \
-    vim \
-    sudo \
-    procps && \
+RUN apt-get update -y && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
 
 RUN useradd -m -s /bin/bash user
 
@@ -35,4 +32,3 @@ COPY --chown=user:user ./comps/guardrails/llm_guard_output_guardrail/impl/micros
 
 WORKDIR /home/user/comps/guardrails/llm_guard_output_guardrail/
 CMD ["python", "opea_llm_guard_output_guardrail_microservice.py"]
-

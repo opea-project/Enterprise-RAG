@@ -72,7 +72,9 @@ spec:
         app.kubernetes.io/instance: tgi
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: tgi
           envFrom:
@@ -88,8 +90,16 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           securityContext:
-            {}
-          image: "ghcr.io/huggingface/text-generation-inference:2.4.0-intel-cpu"
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          image: "ghcr.io/huggingface/text-generation-inference:3.0.0-intel-cpu"
           args:
             - --model-id
             - "$(LLM_TGI_MODEL_NAME)"
@@ -103,6 +113,8 @@ spec:
               name: model-volume
             - mountPath: /tmp
               name: tmp
+            - mountPath: /usr/src/out
+              name: out
           ports:
             - name: http
               containerPort: 2080
@@ -131,4 +143,6 @@ spec:
           persistentVolumeClaim:
             claimName: model-volume-llm
         - name: tmp
+          emptyDir: {}
+        - name: out
           emptyDir: {}

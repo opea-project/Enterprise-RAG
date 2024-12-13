@@ -72,7 +72,9 @@ spec:
         app.kubernetes.io/instance: vllm-gaudi
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: vllm-gaudi
           envFrom:
@@ -88,7 +90,15 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
           image: "localhost:5000/opea/vllm-gaudi:latest"
           command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --download-dir /data"]
           imagePullPolicy: Always
@@ -97,6 +107,10 @@ spec:
               name: model-volume
             - mountPath: /tmp
               name: tmp
+            - mountPath: /.cache
+              name: cache
+            - mountPath: /.config
+              name: config
           ports:
             - name: http
               containerPort: 2080
@@ -120,4 +134,8 @@ spec:
           persistentVolumeClaim:
             claimName: model-volume-llm
         - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: config
           emptyDir: {}

@@ -72,7 +72,9 @@ spec:
         app.kubernetes.io/instance: tgi
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: tgi
           envFrom:
@@ -88,7 +90,15 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
           image: "ghcr.io/huggingface/tgi-gaudi:2.0.6"
           args:
             - --model-id
@@ -103,6 +113,8 @@ spec:
               name: model-volume
             - mountPath: /tmp
               name: tmp
+            - mountPath: /usr/src/out
+              name: out
           ports:
             - name: http
               containerPort: 2080
@@ -132,4 +144,6 @@ spec:
           persistentVolumeClaim:
             claimName: model-volume-llm
         - name: tmp
+          emptyDir: {}
+        - name: out
           emptyDir: {}

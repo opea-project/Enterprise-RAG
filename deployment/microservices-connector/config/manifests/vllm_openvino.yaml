@@ -72,7 +72,9 @@ spec:
         app.kubernetes.io/instance: vllm
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: vllm
           envFrom:
@@ -90,7 +92,15 @@ spec:
             - name: VLLM_OPENVINO_DEVICE
               value: "CPU"
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
           image: "opea/vllm-openvino:latest"
           command:
             - sh
@@ -108,6 +118,10 @@ spec:
               name: tmp
             - mountPath: /dev/shm
               name: shm
+            - mountPath: /.cache
+              name: cache
+            - mountPath: /.config
+              name: config
           ports:
             - name: http
               containerPort: 8000
@@ -144,3 +158,7 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 12Gi
+        - name: cache
+          emptyDir: {}
+        - name: config
+          emptyDir: {}

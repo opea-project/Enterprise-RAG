@@ -74,7 +74,9 @@ spec:
         app.kubernetes.io/instance: teirerank
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: teirerank
           envFrom:
@@ -84,7 +86,15 @@ spec:
                 name: extra-env-config
                 optional: true
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
           image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.5"
           imagePullPolicy: IfNotPresent
           args:

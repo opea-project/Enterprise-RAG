@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -U   \
     transformers==4.46              \
     accelerate==0.34.2
 
-RUN python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
+# RUN python -m pip install oneccl_bind_pt --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 
 # Install TorchServe pypi dependencies directly from their requirements.txt file
 RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.12.0/requirements/common.txt \

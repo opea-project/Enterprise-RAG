@@ -27,6 +27,18 @@ on:
         options:
         - 'no'
         - 'yes'
+      Validation-group:
+        description: 'Validation group'
+        required: true
+        type: choice
+        options:
+        - 'all'
+        - 'dataprep'
+        - 'embeddings'
+        - 'ingestion'
+        - 'llms'
+        - 'reranks'
+        - 'retrievers'
       Create-PR:
         description: 'Copy PR code to internal Repo'
         required: true
@@ -95,6 +107,7 @@ jobs:
         SSH_CONFIG: ${{ secrets.SSH_CONFIG }}
         SSH_GAUDI1_KNOWN_HOSTS: ${{ secrets.SSH_GAUDI1_KNOWN_HOSTS }}
         RAG_SOLUTION_INFRA_PAT: ${{ secrets.RAG_SOLUTION_INFRA_PAT }}
+        VALIDATION_GROUP: ${{ github.event.inputs.Validation-group }}
 
   copy-pr:
     if: |

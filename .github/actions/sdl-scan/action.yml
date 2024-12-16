@@ -71,21 +71,37 @@ runs:
 
     - name: Archive repo
       run: |
-        cd repo
-        touch test.py
-        echo "print('Hello World')" > test.py
-        cd ..
         zip -r rag-enterprise-repo.zip repo/* -x ".git/*" ".github/*"
+        echo "SOURCE_PACKAGE=rag-enterprise-repo.zip" >> $GITHUB_ENV
+        echo ${{ github.event.pull_request.head.repo.full_name }}
       shell: bash
 
     - name: SDLe Scans
+      if: ${{ github.event.pull_request.head.repo.full_name == inputs.Repository-name }}
       id: compliance
       uses: intel-innersource/frameworks.actions.idf-central-scan@v1
       with:
         config: .github/BuildConfig.json
         ref: ${{ env.SHA_TO_TEST }}
         repository: ${{ inputs.Repository-name }}
-        binary: "rag-enterprise-repo.zip"
+        binary: ${{ env.SOURCE_PACKAGE }}
+        output_directory: ${{ env.GITHUB_WORKSPACE }}/scans_results
+        sdle: ${{ steps.submit.outputs.submit || false }}
+        logfile: IDF_Scans_Results_${{ github.run_id }}.log
+      env:
+        IDFC_USER: ${{ env.CONJUR_SDL_USERNAME }}@intel.com
+        IDFC_PASSWORD: ${{ env.CONJUR_SDL_PASSWORD }}
+        IDFC_STORAGE_USER: ${{ env.CONJUR_SDL_USERNAME }}
+        IDFC_STORAGE_PASS: ${{ env.CONJUR_SDL_PASSWORD }}
+
+    - name: SDLe Scans PR from fork
+      if : ${{ github.event.pull_request.head.repo.full_name != inputs.Repository-name }}
+      id: compliance-fork
+      uses: intel-innersource/frameworks.actions.idf-central-scan@v1
+      with:
+        config: .github/BuildConfig.json
+        source_package: ${{ env.SOURCE_PACKAGE }}
+        binary: ${{ env.SOURCE_PACKAGE }}
         output_directory: ${{ env.GITHUB_WORKSPACE }}/scans_results
         sdle: ${{ steps.submit.outputs.submit || false }}
         logfile: IDF_Scans_Results_${{ github.run_id }}.log

@@ -21,6 +21,9 @@ inputs:
   RAG_SOLUTION_INFRA_PAT:
     description: 'Token to RAG Solution Infra repo'
     required: true
+  VALIDATION_GROUP:
+    description: 'Validation group'
+    required: false
 
 runs:
   using: "composite"
@@ -40,10 +43,9 @@ runs:
         github-token: ${{ github.token }}
 
     - name: "Parse comment arguments"
-      if: ${{ github.event_name == 'issue_comment' }}
       uses: ./.github/actions/parse-microservices-list
       with:
-        comment: ${{ github.event.comment.body }}
+        comment: ${{ github.event_name == 'issue_comment' && github.event.comment.body || inputs.VALIDATION_GROUP }}
 
     - name: Install SSH key
       uses: ./.github/actions/install-ssh-key

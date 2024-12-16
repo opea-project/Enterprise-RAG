@@ -19,7 +19,9 @@ env:
 
 jobs:
   Protex-scan:
-    if: ${{ github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution' }}
+    if: |
+      (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution') &&
+      (github.event.pull_request.head.repo.full_name == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
     runs-on: [innersource.prod.amr.dind]
     container: cache-registry.caas.intel.com/cache/library/python:3.11
     name: Protex Scan

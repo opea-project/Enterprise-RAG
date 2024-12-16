@@ -102,10 +102,11 @@ helm_install() {
       msg="upgrade or installation"
     fi
 
+    print_log "helm $msg of \"$name\" in \"$namespace\" namespace in progress ..."
     if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "helm $msg in $namespace of $name finished succesfully"
+        print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
     else
-        print_log "helm $msg in $namespace of $name failed. Exiting"
+        print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
         exit 1
     fi
 }
@@ -271,7 +272,7 @@ function start_telemetry() {
     # shellcheck disable=SC2154
     HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--wait --set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
     #HELM_INSTALL_TELEMETRY_EXTRA_ARGS
-    echo "*** Telemetry 'base' varialbes:"
+    echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
 
@@ -280,14 +281,14 @@ function start_telemetry() {
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
     #HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
-    echo "*** Telemetry 'logs' varialbes:"
+    echo "*** Telemetry 'logs' variables:"
     echo "HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
     
     ### Traces variables
     HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="--wait $TEMPO_DNS_FLAG"
     #HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
-    echo "*** Telemetry 'traces' varialbes:"
+    echo "*** Telemetry 'traces' variables:"
     echo "HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
 

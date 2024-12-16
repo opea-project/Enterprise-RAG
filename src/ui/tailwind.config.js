@@ -181,6 +181,10 @@ module.exports = {
               text: "#2b2b2b",
             },
             "pulsing-dot": "#3d447f",
+            "scroll-to-bottom-button": {
+              text: "#d9d9d9",
+              bg: "#3d447f",
+            },
           },
           "icon-button": "#3d447f",
           "color-scheme-switch": {
@@ -366,6 +370,10 @@ module.exports = {
               text: "#ffffff",
             },
             "pulsing-dot": "#d9d9d9",
+            "scroll-to-bottom-button": {
+              text: "#d9d9d9",
+              bg: "#4953d5",
+            },
           },
           "icon-button": "#ffffff",
           "color-scheme-switch": {

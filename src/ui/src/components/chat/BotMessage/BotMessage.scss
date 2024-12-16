@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .bot-message {
-  @apply my-4 grid w-full grid-cols-[auto_1fr] items-start gap-6 self-start;
+  @apply mx-auto grid w-[800px] grid-cols-[auto_1fr] items-start gap-6 self-start p-5;
 
-  .bot-message__text {
-    @apply pt-1.5;
-    @apply text-light-chat-bot-message dark:text-dark-chat-bot-message;
+  @media (max-width: 800px) {
+    @apply w-full;
+  }
+
+  & .bot-message__text {
+    @apply w-full text-light-chat-bot-message dark:text-dark-chat-bot-message;
   }
 }

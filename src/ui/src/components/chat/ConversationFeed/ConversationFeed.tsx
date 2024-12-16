@@ -3,81 +3,138 @@
 
 import "./ConversationFeed.scss";
 
-import { useEffect, useRef, useState } from "react";
+import debounce from "lodash.debounce";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import BotMessage from "@/components/chat/BotMessage/BotMessage";
 import UserMessage from "@/components/chat/UserMessage/UserMessage";
-import {
-  selectIsStreaming,
-  selectMessages,
-} from "@/store/conversationFeed.slice";
+import { selectMessages } from "@/store/conversationFeed.slice";
 import { useAppSelector } from "@/store/hooks";
 
-const ConversationFeed = () => {
-  const feedMessages = useAppSelector(selectMessages);
-  const isStreaming = useAppSelector(selectIsStreaming);
-  const conversationFeedRef = useRef<HTMLDivElement>(null);
-  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+import ScrollToBottomButton from "../ScrollToBottomButton/ScrollToBottomButton";
 
-  const scrollConversationFeed = (behavior: ScrollBehavior) => {
+const BOTTOM_MARGIN = 48; // margin to handle bottom detection
+
+const ConversationFeed = () => {
+  const messages = useAppSelector(selectMessages);
+  const conversationFeedRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
+
+  const debouncedScrollToBottom = useCallback(
+    debounce((behavior: ScrollBehavior) => {
+      if (conversationFeedRef.current) {
+        conversationFeedRef.current.scroll({
+          behavior,
+          top: conversationFeedRef.current.scrollHeight,
+        });
+      }
+    }, 50),
+    [conversationFeedRef.current?.scrollHeight],
+  );
+
+  const isAtBottom = useCallback(() => {
     if (conversationFeedRef.current) {
-      conversationFeedRef.current.scroll({
-        behavior,
-        top: conversationFeedRef.current.scrollHeight,
-      });
+      const { scrollTop, scrollHeight, clientHeight } =
+        conversationFeedRef.current;
+      return scrollHeight - scrollTop <= clientHeight + BOTTOM_MARGIN;
     }
-  };
+    return false;
+  }, [
+    conversationFeedRef.current?.scrollHeight,
+    conversationFeedRef.current?.scrollTop,
+    conversationFeedRef.current?.clientHeight,
+  ]);
+
+  const debouncedScrollToBottomButtonUpdate = useCallback(
+    debounce(() => {
+      setShowScrollToBottomBtn(!isAtBottom());
+    }, 100),
+    [isAtBottom],
+  );
 
   useEffect(() => {
-    scrollConversationFeed("instant");
+    debouncedScrollToBottom("instant");
   }, []);
 
   useEffect(() => {
-    if (isAutoScrollEnabled) {
-      scrollConversationFeed("smooth");
-    }
-  }, [feedMessages, isAutoScrollEnabled]);
+    debouncedScrollToBottom("instant");
+  }, [messages.length]);
 
   useEffect(() => {
-    let timeout: string | number | NodeJS.Timeout | undefined;
-    if (!isAutoScrollEnabled) {
-      timeout = setTimeout(() => {
-        setIsAutoScrollEnabled(true);
-      }, 5000);
+    if (isAtBottom() && !isUserScrolling) {
+      debouncedScrollToBottom("smooth");
     }
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [isAutoScrollEnabled]);
+  }, [messages, isUserScrolling]);
 
-  const handleScroll = () => {
-    if (isStreaming) {
-      if (conversationFeedRef.current) {
-        const { clientHeight, scrollTop, scrollHeight } =
-          conversationFeedRef.current;
-        const isScrolledUp = scrollHeight - scrollTop !== clientHeight;
-        setIsAutoScrollEnabled(!isScrolledUp);
+  const handleWheel = useCallback(
+    (event: WheelEvent) => {
+      if (event.deltaY < 0) {
+        setIsUserScrolling(true);
+      } else if (event.deltaY > 0 && isAtBottom()) {
+        setIsUserScrolling(false);
       }
-    } else {
-      setIsAutoScrollEnabled(true);
+    },
+    [isAtBottom],
+  );
+
+  useEffect(() => {
+    const conversationFeedElement = conversationFeedRef.current;
+    if (conversationFeedElement) {
+      conversationFeedElement.addEventListener("wheel", handleWheel, {
+        passive: true,
+      });
     }
-  };
+
+    return () => {
+      if (conversationFeedElement) {
+        conversationFeedElement.removeEventListener("wheel", handleWheel);
+      }
+    };
+  }, [handleWheel]);
+
+  useEffect(() => {
+    if (conversationFeedRef.current) {
+      debouncedScrollToBottomButtonUpdate();
+    }
+  }, [
+    conversationFeedRef.current?.scrollHeight,
+    conversationFeedRef.current?.scrollTop,
+    conversationFeedRef.current?.clientHeight,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      debouncedScrollToBottom.cancel();
+      debouncedScrollToBottomButtonUpdate.cancel();
+    };
+  }, [debouncedScrollToBottom, debouncedScrollToBottomButtonUpdate]);
+
+  const handleScroll = useCallback(() => {
+    debouncedScrollToBottomButtonUpdate();
+  }, [debouncedScrollToBottomButtonUpdate]);
 
   return (
-    <div
-      ref={conversationFeedRef}
-      className="conversation-feed__wrapper"
-      onScrollCapture={handleScroll}
-    >
-      <div className="conversation-feed">
-        {feedMessages.map(({ text, isStreaming, isUserMessage, id }) =>
-          isUserMessage ? (
-            <UserMessage key={id} text={text} />
-          ) : (
-            <BotMessage key={id} text={text} isStreaming={isStreaming} />
-          ),
-        )}
+    <div className="conversation-feed__wrapper">
+      <div
+        ref={conversationFeedRef}
+        onScroll={handleScroll}
+        className="conversation-feed__scroll"
+      >
+        <div className="conversation-feed">
+          {messages.map(({ text, isStreaming, isUserMessage, id }) =>
+            isUserMessage ? (
+              <UserMessage key={id} text={text} />
+            ) : (
+              <BotMessage key={id} text={text} isStreaming={isStreaming} />
+            ),
+          )}
+        </div>
       </div>
+      <ScrollToBottomButton
+        show={showScrollToBottomBtn}
+        onClick={() => debouncedScrollToBottom("smooth")}
+      />
     </div>
   );
 };

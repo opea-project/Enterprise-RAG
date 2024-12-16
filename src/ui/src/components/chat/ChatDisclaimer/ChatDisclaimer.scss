@@ -1,0 +1,13 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat__disclaimer {
+  @apply m-4 text-center text-xs font-normal leading-[0.875rem];
+  @apply text-light-prompt-input-disclaimer dark:text-dark-prompt-input-disclaimer;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+
+  @media (max-width: 800px) {
+    @apply w-[calc(100%_-_2rem)];
+  }
+}

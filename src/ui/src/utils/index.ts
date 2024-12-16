@@ -1,6 +1,7 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { PromptRequestParams } from "@/api/models/chatQnA";
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
 import {
   FetchedServiceDetails,
@@ -119,7 +120,7 @@ const parsePromptRequestParameters = (
   parameters: ServicesParameters,
   hasInputGuard: boolean,
   hasOutputGuard: boolean,
-) => {
+): PromptRequestParams => {
   const serviceParams = Object.fromEntries(
     Object.entries(parameters).filter(
       ([, value]) => typeof value !== "object" || value === null,

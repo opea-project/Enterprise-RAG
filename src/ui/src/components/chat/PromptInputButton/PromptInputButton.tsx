@@ -3,25 +3,17 @@
 
 import "./PromptInputButton.scss";
 
+import { ButtonHTMLAttributes } from "react";
+
 import IconButton from "@/components/shared/IconButton/IconButton";
 
-interface PromptInputButtonProps {
+interface PromptInputButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: string;
-  disabled?: boolean;
-  onClick: () => void;
 }
 
-const PromptInputButton = ({
-  disabled,
-  onClick,
-  icon,
-}: PromptInputButtonProps) => (
-  <IconButton
-    className="prompt-input__button"
-    icon={icon}
-    disabled={disabled}
-    onClick={onClick}
-  />
+const PromptInputButton = ({ icon, ...props }: PromptInputButtonProps) => (
+  <IconButton icon={icon} className="prompt-input__button" {...props} />
 );
 
 export default PromptInputButton;

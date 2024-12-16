@@ -3,278 +3,135 @@
 
 import "./PromptInput.scss";
 
-import { fetchEventSource } from "@microsoft/fetch-event-source";
 import {
-  ChangeEvent,
+  ChangeEventHandler,
+  FormEventHandler,
   KeyboardEventHandler,
-  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { v4 as uuidv4 } from "uuid";
 
-import endpoints from "@/api/endpoints.json";
 import PromptInputButton from "@/components/chat/PromptInputButton/PromptInputButton";
-import keycloakService from "@/services/keycloakService";
-import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
-  hasInputGuardSelector,
-  hasOutputGuardSelector,
-} from "@/store/chatQnAGraph.slice";
-import {
-  addMessage,
+  addNewBotMessage,
+  addNewUserMessage,
+  postPrompt,
+  selectAbortController,
   selectIsStreaming,
-  setIsStreaming,
-  updateMessageIsStreamed,
-  updateMessageText,
 } from "@/store/conversationFeed.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { parsePromptRequestParameters } from "@/utils";
-
-const VERTICAL_PADDING = 18;
-const LINE_HEIGHT = 22;
-const MAX_ROWS = 10;
 
 const PromptInput = () => {
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [textAreaRows, setTextAreaRows] = useState(1);
 
   const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
-  const hasInputGuard = useAppSelector(hasInputGuardSelector);
-  const hasOutputGuard = useAppSelector(hasOutputGuardSelector);
-
-  const focusPromptInput = useCallback(() => {
-    promptInputRef?.current!.focus();
-  }, []);
+  const abortController = useAppSelector(selectAbortController);
 
   useEffect(() => {
     focusPromptInput();
   }, []);
 
   useEffect(() => {
-    if (prompt === "") {
-      setTextAreaRows(1);
-    }
+    recalcuatePromptInputHeight();
   }, [prompt]);
 
-  const recalcuatePromptInputHeight = (input: HTMLTextAreaElement) => {
-    input.style.height = "auto";
+  const focusPromptInput = () => {
+    promptInputRef.current!.focus();
+  };
 
-    const textareaScrollHeight = input.scrollHeight - VERTICAL_PADDING;
-    const newRows = Math.max(Math.ceil(textareaScrollHeight / LINE_HEIGHT), 1);
-    if (newRows !== textAreaRows && newRows <= MAX_ROWS) {
-      setTextAreaRows(newRows);
+  const recalcuatePromptInputHeight = () => {
+    const promptInput = promptInputRef.current;
+    if (promptInput !== null) {
+      promptInput.style.height = "auto";
+      promptInput.style.height = `${promptInput.scrollHeight}px`;
     }
-
-    input.style.height = "";
   };
 
-  const handlePromptInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    const input = event.target;
-    setPrompt(input.value);
-    recalcuatePromptInputHeight(input);
+  const submitPrompt = async () => {
+    dispatch(addNewUserMessage(prompt));
+    dispatch(addNewBotMessage());
+    dispatch(postPrompt(prompt));
+
+    setPrompt("");
+    focusPromptInput();
   };
 
-  const handlePromptInputKeydown: KeyboardEventHandler<HTMLTextAreaElement> = (
-    event,
-  ) => {
+  const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+    submitPrompt();
+  };
+
+  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
+    setPrompt(event.target.value);
+  };
+
+  const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (prompt.trim() !== "" && !isStreaming) {
-        handlePromptInputSubmit().finally(() => {
-          focusPromptInput();
-        });
+        submitPrompt();
       }
-    } else {
-      const input = event.target;
-      if (input && input instanceof HTMLTextAreaElement) {
-        recalcuatePromptInputHeight(input);
-      }
-    }
-  };
-
-  const extractDetail = (errorString: string): string | null => {
-    try {
-      // Extract the JSON part from the error string
-      const jsonMatch = errorString.match(/Guard: ({.*})/);
-      if (!jsonMatch || jsonMatch.length < 2) {
-        throw new Error("Invalid error string format");
-      }
-
-      // Parse the extracted JSON
-      const errorJson = JSON.parse(jsonMatch[1]);
-
-      // Extract the detail field
-      const detailJson = JSON.parse(errorJson.error);
-      return detailJson.detail || null;
-    } catch (error) {
-      console.error("Failed to extract detail:", error);
-      return null;
-    }
-  };
-
-  const handlePromptInputSubmit = async () => {
-    await keycloakService.refreshToken();
-
-    dispatch(setIsStreaming(true));
-
-    const chatBotMessageId = uuidv4();
-
-    const newUserMessage = {
-      text: prompt,
-      isUserMessage: true,
-      id: uuidv4(),
-    };
-    dispatch(addMessage(newUserMessage));
-
-    const newBotMessage = {
-      text: "",
-      isUserMessage: false,
-      id: chatBotMessageId,
-      isStreaming: true,
-    };
-    dispatch(addMessage(newBotMessage));
-
-    try {
-      const parameters = await SystemFingerprintService.appendArguments();
-      const promptRequestParams = parsePromptRequestParameters(
-        parameters,
-        hasInputGuard,
-        hasOutputGuard,
-      );
-
-      const requestBody = {
-        text: prompt,
-        parameters: promptRequestParams,
-      };
-
-      const url = endpoints.chat;
-      const ctrl = new AbortController();
-
-      await fetchEventSource(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${keycloakService.getToken()}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: ctrl.signal,
-        openWhenHidden: true,
-        onopen: async (response) => {
-          if (response.ok) {
-            return;
-          } else if (
-            response.status >= 400 &&
-            response.status < 500 &&
-            response.status !== 429
-          ) {
-            const error = await response.json();
-            let msg = JSON.stringify(error);
-            if (response.status === 466) {
-              // Guardrails
-              msg = "Guard: " + msg;
-            }
-            throw new Error(msg);
-          } else {
-            console.error("Error during opening connection: ", response);
-          }
-        },
-        onmessage: (event) => {
-          if (![null, undefined, ""].includes(event.data)) {
-            const regex = new RegExp(/'(.*?)'/);
-            const matchedContent = event.data.match(regex);
-            if (
-              matchedContent &&
-              Array.isArray(matchedContent) &&
-              matchedContent.length > 1
-            ) {
-              const newChunk = matchedContent[1]
-                .replace(/<\/s>/, "")
-                .replace(/\\n/, "  \n");
-              dispatch(
-                updateMessageText({
-                  messageId: chatBotMessageId,
-                  chunk: newChunk,
-                }),
-              );
-            }
-          }
-        },
-        onerror: (err) => {
-          throw new Error(err);
-        },
-        onclose: () => {
-          setPrompt("");
-        },
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        const extract = extractDetail(error.message);
-        if (extract) {
-          dispatch(
-            updateMessageText({ messageId: chatBotMessageId, chunk: extract }),
-          );
-        }
-        console.error("Error: ", error.message);
-      } else {
-        console.error("Unknown error: ", error);
-      }
-    } finally {
-      dispatch(setIsStreaming(false));
-      dispatch(
-        updateMessageIsStreamed({
-          messageId: chatBotMessageId,
-          isStreaming: false,
-        }),
-      );
     }
   };
 
   const getPromptInputButton = () => {
     if (isStreaming) {
-      return <PromptInputButton icon="mdi:stop" disabled onClick={() => {}} />;
+      const stopStreaming = () => {
+        if (abortController) {
+          abortController.abort(""); // empty string set for further error handling
+        }
+      };
+
+      const handleStopBtnClick = () => {
+        stopStreaming();
+      };
+
+      const handleStopBtnKeyDown: KeyboardEventHandler = (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          stopStreaming();
+          focusPromptInput();
+        }
+      };
+
+      return (
+        <PromptInputButton
+          icon="mdi:stop"
+          type="button"
+          onClick={handleStopBtnClick}
+          onKeyDown={handleStopBtnKeyDown}
+        />
+      );
     } else {
-      const sendDisabled = prompt === "";
+      const submitBtnDisabled = prompt === "";
+
       return (
         <PromptInputButton
           icon="tabler:arrow-up"
-          disabled={sendDisabled}
-          onClick={() => {
-            handlePromptInputSubmit().then(() => {
-              promptInputRef.current!.focus();
-            });
-          }}
+          type="submit"
+          disabled={submitBtnDisabled}
         />
       );
     }
   };
 
-  const textFieldDisabled = isStreaming;
-
   return (
-    <>
-      <div className="prompt-input-wrapper">
-        <textarea
-          ref={promptInputRef}
-          id="prompt-input"
-          className="prompt-input"
-          value={prompt}
-          disabled={textFieldDisabled}
-          rows={textAreaRows}
-          placeholder="Enter your prompt..."
-          onChange={handlePromptInputChange}
-          onKeyDown={handlePromptInputKeydown}
-        />
-        {getPromptInputButton()}
-      </div>
-      <p className="prompt-input__disclaimer">
-        Responses from this solution may require further verification. You are
-        solely responsible for verifying the accuracy of the information
-        provided and how you choose to use it.
-      </p>
-    </>
+    <form className="prompt-input__form" onSubmit={handleSubmit}>
+      <textarea
+        ref={promptInputRef}
+        value={prompt}
+        name="prompt-input"
+        placeholder="Enter your prompt..."
+        className="prompt-input"
+        rows={1}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+      />
+      {getPromptInputButton()}
+    </form>
   );
 };
 

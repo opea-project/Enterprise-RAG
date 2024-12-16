@@ -1,9 +1,8 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.prompt-input-wrapper {
-  @apply mx-auto grid min-h-[3.75rem] w-[800px] grid-cols-[1fr_auto] rounded-[1.875rem] py-2.5 pl-12 pr-2.5 shadow-[0_0_0.5rem_0];
-
+.prompt-input__form {
+  @apply mx-auto grid w-[800px] grid-cols-[1fr_auto] gap-2.5 rounded-[1.875rem] py-2.5 pl-12 pr-2.5 shadow-[0_0_0.5rem_0];
   @apply bg-light-prompt-input-bg dark:bg-dark-prompt-input-bg;
   @apply shadow-light-prompt-input-box-shadow dark:shadow-dark-prompt-input-box-shadow;
   @apply border-light-prompt-input-border dark:border-dark-prompt-input-border;
@@ -16,11 +15,12 @@
 }
 
 .prompt-input {
-  @apply resize-none bg-transparent py-[0.5625rem] text-left text-base font-normal leading-5;
+  @apply my-2 resize-none self-center bg-transparent text-base font-normal;
   @apply text-light-prompt-input-text dark:text-dark-prompt-input-text;
   @apply caret-light-prompt-input-caret dark:caret-dark-prompt-input-caret;
-  text-underline-position: from-font;
-  text-decoration-skip-ink: none;
+  min-height: 1.25rem;
+  max-height: 15rem;
+  overflow-y: auto;
 
   &:focus-visible {
     outline: none;
@@ -28,16 +28,5 @@
 
   &::placeholder {
     @apply text-light-prompt-input-placeholder dark:text-dark-prompt-input-placeholder;
-  }
-}
-
-.prompt-input__disclaimer {
-  @apply m-4 text-center text-xs font-normal leading-[0.875rem];
-  @apply text-light-prompt-input-disclaimer dark:text-dark-prompt-input-disclaimer;
-  text-underline-position: from-font;
-  text-decoration-skip-ink: none;
-
-  @media (max-width: 800px) {
-    @apply w-[calc(100%_-_2rem)];
   }
 }

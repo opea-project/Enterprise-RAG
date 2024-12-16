@@ -5,25 +5,14 @@ import "./IconButton.scss";
 
 import { Icon } from "@iconify/react";
 import classNames from "classnames";
+import { ButtonHTMLAttributes } from "react";
 
-interface IconButtonProps {
-  className?: string;
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: string;
-  disabled?: boolean;
-  onClick: () => void;
 }
 
-const IconButton = ({
-  icon,
-  disabled,
-  className,
-  onClick,
-}: IconButtonProps) => (
-  <button
-    className={classNames("icon-button", className)}
-    disabled={disabled}
-    onClick={onClick}
-  >
+const IconButton = ({ icon, className, ...props }: IconButtonProps) => (
+  <button className={classNames("icon-button", className)} {...props}>
     <Icon icon={icon} />
   </button>
 );

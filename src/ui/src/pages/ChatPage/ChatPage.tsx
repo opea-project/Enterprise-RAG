@@ -3,6 +3,7 @@
 
 import "./ChatPage.scss";
 
+import ChatDisclaimer from "@/components/chat/ChatDisclaimer/ChatDisclaimer";
 import ChatIcon from "@/components/chat/ChatIcon/ChatIcon";
 import ConversationFeed from "@/components/chat/ConversationFeed/ConversationFeed";
 import PromptInput from "@/components/chat/PromptInput/PromptInput";
@@ -18,6 +19,7 @@ const ChatPage = () => {
         <ChatIcon />
         <p className="chat-page__greeting">What do you want to know?</p>
         <PromptInput />
+        <ChatDisclaimer />
       </div>
     );
   }
@@ -26,6 +28,7 @@ const ChatPage = () => {
     <div className="chat-page">
       <ConversationFeed />
       <PromptInput />
+      <ChatDisclaimer />
     </div>
   );
 };

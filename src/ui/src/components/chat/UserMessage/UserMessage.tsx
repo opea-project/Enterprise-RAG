@@ -10,9 +10,11 @@ interface UserMessageProps {
 }
 
 const UserMessage = ({ text }: UserMessageProps) => (
-  <div className="user-message">
-    <ChatMessageMarkdown text={text} />
-  </div>
+  <article className="user-message">
+    <div className="user-message__text">
+      <ChatMessageMarkdown text={text} />
+    </div>
+  </article>
 );
 
 export default UserMessage;

@@ -1,0 +1,45 @@
+name: Continuous Deployment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  continuous-deployment:
+    if: |
+      (github.event.issue.pull_request) && contains(github.event.comment.body, '/RunCD') &&
+      (github.repository == 'intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution')
+    runs-on: [innersource.prod.amr.dind]
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
+    concurrency:
+      group: continuous-deployment
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - name: Set environment variables
+        run: |
+          echo "GIT_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "GIT_BRANCH=$(git name-rev --name-only $(git rev-parse HEAD) | sed -e 's#remotes/origin/##')" >> $GITHUB_ENV
+          echo "GIT_AUTHOR=${{ github.event.comment.user.name }}" >> $GITHUB_ENV
+          echo "GIT_EMAIL=${{ github.event.comment.user.email }}" >> $GITHUB_ENV
+
+      - name: "Parse comment arguments"
+        if: ${{ github.event_name == 'issue_comment' }}
+        uses: ./.github/actions/parse-jenkins-job-list
+        with:
+          comment: ${{ github.event.comment.body }}
+
+      - name: Trigger Jenkins job
+        uses: ./.github/actions/trigger-jenkins-job
+        with:
+          jenkins-ip: ${{ secrets.JENKINS_IP }}
+          job-name: ${{ env.JOB_NAME }}
+          user-name: ${{ secrets.JENKINS_USER }}
+          api-token: ${{ secrets.JENKINS_TOKEN }}

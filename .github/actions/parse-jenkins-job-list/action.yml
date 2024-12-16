@@ -1,0 +1,25 @@
+name: 'Parse list of jenkins jobs'
+description: ''
+inputs:
+  comment:
+    description: 'Content of the comment'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: "Define valid Jenkins jobs"
+      shell: bash
+      run: echo "JENKINS_JOBS=RAG-XEON-CLX" >> $GITHUB_ENV
+
+    - name: "Match jobs in comments"
+      shell: bash
+      run: |
+        JENKINS_JOBS_MATCHES=()
+        for JOB in ${JENKINS_JOBS}; do
+          if [[ "${{ inputs.comment }}" =~ "${JOB}" ]]; then
+            JENKINS_JOBS_MATCHES=("${JENKINS_JOBS_MATCHES[@]}" ${JOB})
+          fi
+        done
+        SEP=" or "
+        printf -v RAW_JOINED_ELEMENTS "%s$SEP" "${JENKINS_JOBS_MATCHES[@]}"
+        echo "JOB_NAME=${RAW_JOINED_ELEMENTS%$SEP}" >> $GITHUB_ENV

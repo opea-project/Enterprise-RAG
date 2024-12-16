@@ -1,0 +1,33 @@
+name: 'Trigger Jenkins job'
+
+description: 'This action is intended to trigger Jenkins job'
+
+inputs:
+  jenkins-ip:
+    description: 'Jenkins server ip address'
+    required: true
+  job-name:
+    description: 'Jenkins job to trigger'
+    required: true
+  user-name:
+    description: 'Jenkins user name'
+    required: true
+  api-token:
+    description: 'Jenkins token'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up proxy
+      shell: bash
+      run: |
+        no_proxy=${{ inputs.jenkins-ip }},$no_proxy
+        export no_proxy
+        printenv
+
+    - name: Trigger RAG-XEON-CLX Job
+      if: contains(inputs.job-name, 'RAG-XEON-CLX')
+      shell: bash
+      run: |
+        curl -X POST http://${{ inputs.jenkins-ip }}:8080/job/${{ inputs.job-name }}/buildWithParameters --user ${{ inputs.user-name }}:${{ inputs.api-token }} --data GIT_BRANCH_NAME=${{ env.GIT_BRANCH }} --data GIT_COMMIT=${{ env.GIT_COMMIT }} --data GIT_AUTHOR="${{ env.GIT_AUTHOR }}" --data GIT_EMAIL=${{ env.GIT_EMAIL }}

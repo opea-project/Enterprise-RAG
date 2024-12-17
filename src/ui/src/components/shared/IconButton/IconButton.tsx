@@ -3,17 +3,16 @@
 
 import "./IconButton.scss";
 
-import { Icon } from "@iconify/react";
 import classNames from "classnames";
-import { ButtonHTMLAttributes } from "react";
+import { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: string;
+  icon: ReactNode;
 }
 
 const IconButton = ({ icon, className, ...props }: IconButtonProps) => (
   <button className={classNames("icon-button", className)} {...props}>
-    <Icon icon={icon} />
+    {icon}
   </button>
 );
 

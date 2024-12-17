@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { MdStop } from "react-icons/md";
+import { TbArrowUp } from "react-icons/tb";
 
 import PromptInputButton from "@/components/chat/PromptInputButton/PromptInputButton";
 import {
@@ -99,7 +101,7 @@ const PromptInput = () => {
 
       return (
         <PromptInputButton
-          icon="mdi:stop"
+          icon={<MdStop />}
           type="button"
           onClick={handleStopBtnClick}
           onKeyDown={handleStopBtnKeyDown}
@@ -110,7 +112,7 @@ const PromptInput = () => {
 
       return (
         <PromptInputButton
-          icon="tabler:arrow-up"
+          icon={<TbArrowUp />}
           type="submit"
           disabled={submitBtnDisabled}
         />

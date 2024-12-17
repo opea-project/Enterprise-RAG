@@ -3,8 +3,8 @@
 
 import "./ColorSchemeSwitch.scss";
 
-import { Icon } from "@iconify/react";
 import classNames from "classnames";
+import { PiMoonStarsFill, PiSunFill } from "react-icons/pi";
 
 import useColorScheme from "@/utils/hooks/useColorScheme";
 
@@ -18,7 +18,11 @@ const ColorSchemeSwitch = () => {
   const getModeLabel = () => (colorScheme === "light" ? "Light" : "Dark");
 
   const getModeIcon = () =>
-    colorScheme === "light" ? "solar:sun-bold" : "solar:moon-stars-bold";
+    colorScheme === "light" ? (
+      <PiSunFill className="color-scheme-switch__thumb--icon" />
+    ) : (
+      <PiMoonStarsFill className="color-scheme-switch__thumb--icon" />
+    );
 
   const colorSchemeSwitchClassNames = classNames(
     "color-scheme-switch",
@@ -27,12 +31,7 @@ const ColorSchemeSwitch = () => {
 
   return (
     <button onClick={handleClick} className={colorSchemeSwitchClassNames}>
-      <div className="color-scheme-switch__thumb">
-        <Icon
-          icon={getModeIcon()}
-          className="color-scheme-switch__thumb--icon"
-        />
-      </div>
+      <div className="color-scheme-switch__thumb">{getModeIcon()}</div>
       <p className="color-scheme-switch__label">{getModeLabel()}</p>
     </button>
   );

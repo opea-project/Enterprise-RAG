@@ -8,13 +8,15 @@
 * {
   box-sizing: border-box;
   scrollbar-width: thin;
+  transition: color 0.3s ease;
+  transition: border 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 body {
   font-family: "Inter", sans-serif;
   font-weight: normal;
   font-size: 16px;
-  transition: background-color border color 0.3s ease;
 
   &.dark * {
     scrollbar-color: #393939 #242528;

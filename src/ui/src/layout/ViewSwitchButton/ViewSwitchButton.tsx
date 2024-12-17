@@ -1,6 +1,7 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { BsDatabaseFillGear, BsFillChatLeftTextFill } from "react-icons/bs";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import IconButton from "@/components/shared/IconButton/IconButton";
@@ -13,7 +14,7 @@ const ViewSwitchButton = () => {
   const isChatPage = location.pathname === "/chat";
   const tooltipTitle = isChatPage ? "Admin Panel" : "Chat";
   const routeToPath = isChatPage ? "/admin-panel" : "/chat";
-  const icon = isChatPage ? "bi:database-fill-gear" : "bi:chat-left-text-fill";
+  const icon = isChatPage ? <BsDatabaseFillGear /> : <BsFillChatLeftTextFill />;
 
   return (
     <Tooltip text={tooltipTitle}>

@@ -35,7 +35,6 @@
     "@eslint/compat": "^1.1.1",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.7.0",
-    "@iconify/react": "^5.0.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^22.5.2",
     "@types/punycode": "^2.1.4",

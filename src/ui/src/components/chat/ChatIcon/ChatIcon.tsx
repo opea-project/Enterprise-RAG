@@ -3,8 +3,8 @@
 
 import "./ChatIcon.scss";
 
-import { Icon } from "@iconify/react";
 import classNames from "classnames";
+import { GiAtom } from "react-icons/gi";
 
 interface ChatIconProps {
   forConversation?: boolean;
@@ -15,7 +15,7 @@ const ChatIcon = ({ forConversation }: ChatIconProps) => {
     "chat-page__icon": true,
     "chat-page__icon--conversation": forConversation,
   });
-  return <Icon icon="token:atom" className={chatIconClassNames} />;
+  return <GiAtom className={chatIconClassNames} />;
 };
 
 export default ChatIcon;

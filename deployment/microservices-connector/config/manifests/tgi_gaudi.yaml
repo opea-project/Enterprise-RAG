@@ -89,11 +89,15 @@ spec:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+            - name: HF_HOME
+              value: /data
+            - name: NUMBA_CACHE_DIR
+              value: /tmp
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
@@ -115,6 +119,10 @@ spec:
               name: tmp
             - mountPath: /usr/src/out
               name: out
+            - mountPath: /var/log
+              name: var-log
+            - mountPath: /.triton
+              name: triton
           ports:
             - name: http
               containerPort: 2080
@@ -146,4 +154,8 @@ spec:
         - name: tmp
           emptyDir: {}
         - name: out
+          emptyDir: {}
+        - name: var-log
+          emptyDir: {}
+        - name: triton
           emptyDir: {}

@@ -93,7 +93,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
@@ -111,6 +111,8 @@ spec:
               name: cache
             - mountPath: /.config
               name: config
+            - mountPath: /var/log
+              name: var-log
           ports:
             - name: http
               containerPort: 2080
@@ -138,4 +140,6 @@ spec:
         - name: cache
           emptyDir: {}
         - name: config
+          emptyDir: {}
+        - name: var-log
           emptyDir: {}

@@ -4,18 +4,19 @@
 
 # paths
 repo_path=$(realpath "$(pwd)/../")
-deployment_path="$repo_path/deployment"
 manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
 telemetry_path="$repo_path/deployment/telemetry/helm"
 telemetry_logs_path="$repo_path/deployment/telemetry/helm/charts/logs"
 telemetry_traces_path="$repo_path/deployment/telemetry/helm/charts/traces"
 telemetry_traces_instr_path="$repo_path/deployment/telemetry/helm/charts/traces-instr"
-ui_path="$repo_path/deployment/ui/chat-qna/helm-ui"
-auth_path="$repo_path/deployment/auth/"
-api_gateway_path="$repo_path/deployment/auth/apisix-helm"
-api_gateway_crd_path="$repo_path/deployment/auth/apis-crd-helm"
-configs_path="$repo_path/deployment/configs"
+ui_path="$repo_path/deployment/ui/chat-qna"
+auth_path="$repo_path/deployment/auth"
+keycloak_path="$repo_path/deployment/auth/keycloak"
+api_gateway_path="$repo_path/deployment/auth/apisix"
+api_gateway_crd_path="$repo_path/deployment/auth/apisix-routes"
+ingress_path="$repo_path/deployment/auth/ingress"
+configs_path="$repo_path/deployment/auth/configs"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -40,6 +41,7 @@ client_secret=""
 KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
+KEYCLOAK_VERSION=22.1.0
 
 GRAFANA_PASSWORD=""
 KEYCLOAK_PASS=""
@@ -67,7 +69,6 @@ function usage() {
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
-    echo -e "\t--ip: external IP adress to be exposed via ingress"
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ch|--clear-auth: Clear auth services."
@@ -75,19 +76,19 @@ function usage() {
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --auth --deploy gaudi_torch_in_out_guards --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease --ip <put host IP here>"
+    echo -e "Example: $0 --auth --deploy gaudi_torch_in_out_guards --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease"
 }
 
-print_header() {
+function print_header() {
     echo "$1"
     echo "-----------------------"
 }
 
-print_log() {
+function print_log() {
     echo "-->$1"
 }
 
-helm_install() {
+function helm_install() {
     local path namespace name args
 
     namespace=$1
@@ -97,7 +98,7 @@ helm_install() {
 
     msg="installation"
     helm_cmd="install"
-    if [[ "$helm_upgrade" ]]; then
+    if $helm_upgrade; then
       helm_cmd="upgrade --install"
       msg="upgrade or installation"
     fi
@@ -112,7 +113,7 @@ helm_install() {
 }
 
 # check if all pods in a namespace or specific pod by name are ready
-check_pods() {
+function check_pods() {
     local namespace="$1"
     local deployment_name="$2"
 
@@ -134,7 +135,7 @@ check_pods() {
 }
 
 # waits until a provided condition function returns true
-wait_for_condition() {
+function wait_for_condition() {
     sleep 5 # safety measures for helm to initialize pod deployments
     local current_time
     local timeout=2700
@@ -175,7 +176,7 @@ function start_and_keep_port_forwarding() {
     done
 }
 
-kill_process() {
+function kill_process() {
     local pattern pid full_command
     pattern=$1
     pid=$(pgrep -f "$pattern")
@@ -214,6 +215,9 @@ function create_certs() {
     if $auth_flag; then
         kubectl get namespace $AUTH_NS > /dev/null 2>&1 || kubectl create namespace $AUTH_NS
         kubectl get secret tls-secret -n $AUTH_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $AUTH_NS
+
+        kubectl get namespace $GATEWAY_NS > /dev/null 2>&1 || kubectl create namespace $GATEWAY_NS
+        kubectl get secret tls-secret -n $GATEWAY_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $GATEWAY_NS
     fi
 }
 
@@ -352,13 +356,12 @@ function clear_telemetry() {
 function start_authentication() {
     local introspection_url
 
-    print_log "Start authentication"
+    print_header "Start authentication"
 
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
-    # !TODO we need to verify if creating ingress object via keycloak helm charts is needed, since we have additional ingress creating via ingress/configs/
-    HELM_INSTALL_AUTH_DEFAULT_ARGS="--version 22.1.0 --set volumePermissions.enabled=true --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $auth_path/keycloak-config/keycloak-additional-values.yaml"
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --version $KEYCLOAK_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -378,7 +381,8 @@ function start_authentication() {
         exit 1
     fi
 
-    bash "$auth_path"/keycloak_realm_creator.sh $AUTH_NS $KEYCLOAK_PASS
+    # fix paths across scripts
+    cd "$auth_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -390,16 +394,6 @@ function clear_authentication() {
     kubectl get secret tls-secret -n $AUTH_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $AUTH_NS
 
     helm status -n "$AUTH_NS" keycloak > /dev/null 2>&1 && helm -n "$AUTH_NS" uninstall keycloak
-
-    # if pvc exists add finalizers & remove it
-    if kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1; then
-        kubectl patch pvc -n "$AUTH_NS" data-keycloak-postgresql-0 -p '{"metadata":{"finalizers":null}}'
-
-        print_log "waiting until keycloak pods are terminated."
-        wait_for_condition check_pods "$AUTH_NS"
-
-        kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1 && kubectl delete pvc -n "$AUTH_NS" data-keycloak-postgresql-0
-    fi
 }
 
 function start_ingress() {
@@ -417,7 +411,6 @@ function start_ingress() {
 function clear_ingress() {
     print_header "Clear ingress"
 
-    rm -f tls.crt tls.key
     helm status -n "$INGRESS_NS" ingress-nginx > /dev/null 2>&1 && helm delete -n "$INGRESS_NS" ingress-nginx
 }
 
@@ -456,6 +449,8 @@ function start_gateway() {
 function clear_gateway() {
     print_header "Clear gateway"
 
+    kubectl get secret tls-secret -n $GATEWAY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $GATEWAY_NS
+
     helm status -n "$GATEWAY_NS" auth-apisix-crds > /dev/null 2>&1 &&  helm uninstall auth-apisix-crds -n "$GATEWAY_NS"
     helm status -n "$GATEWAY_NS" auth-apisix > /dev/null 2>&1 &&  helm uninstall auth-apisix -n "$GATEWAY_NS"
 }
@@ -467,9 +462,6 @@ function start_ui() {
 
     helm_install "$UI_NS" chatqa-app "$ui_path" "$HELM_INSTALL_UI_DEFAULT_ARGS"
 
-    # !TODO this should be moved to UI helm templates
-    kubectl apply -f "$configs_path/ingress-ui.yaml"
-
     print_log "waiting until pods $UI_NS are ready."
     wait_for_condition check_pods "$UI_NS"
 }
@@ -478,14 +470,13 @@ function start_ui() {
 function clear_ui() {
     print_header "Clear UI"
 
-    # !TODO mv ingress object UI to helm
-    kubectl get ingress.networking.k8s.io -n $UI_NS ui > /dev/null 2>&1 && kubectl delete -f "$configs_path"/ingress-ui.yaml
     kubectl get secret tls-secret -n $UI_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $UI_NS
     helm status -n $UI_NS chatqa-app > /dev/null 2>&1 && helm uninstall -n $UI_NS chatqa-app
 }
 
 function clear_all_ns() {
     print_header "removing all EnterpriseRAG namespaces"
+
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
     kubectl get ns $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_NS
@@ -503,6 +494,7 @@ test_flag=false
 telemetry_flag=false
 ui_flag=false
 auth_flag=false
+helm_upgrade=false
 clear_deployment_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
@@ -569,15 +561,6 @@ while [[ "$#" -gt 0 ]]; do
             fi
             REGISTRY=$1
             ;;
-        --ip)
-            shift
-            if [[ -z "$1" || "$1" == --* ]]; then
-                print_log "Error: Invalid or no parameter provided for --ip. Please provide a valid ip."
-                usage
-                exit 1
-            fi
-            IP=$1
-            ;;
         --ui)
             ui_flag=true
             ;;
@@ -614,6 +597,7 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
 # Additional validation for required parameters
 if [[ "$telemetry_flag" == "true" ]]; then
     # system validation (for journald/ctl systemd OpenTelemetry collector)
@@ -623,12 +607,10 @@ if [[ "$telemetry_flag" == "true" ]]; then
     fi
 fi
 
-HELM_INSTALL_UI_DEFAULT_ARGS="--set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG --set aliasIP=$IP"
-
-# !TODO needs to be verified if we need values.yaml to be deployed
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="--set controller.hostPort.enabled=true --set controller.ingressClass=nginx -f $configs_path/ingress-values.yaml"
-HELM_INSTALL_GATEWAY_DEFAULT_ARGS=""
-HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS=""
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="-f $ingress_path/ingress-values.yaml"
+HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait"
+HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait"
 
 # Execute given arguments
 if $auth_flag; then
@@ -685,4 +667,5 @@ if $clear_all_flag; then
     clear_gateway
     clear_all_ns
     rm default_credentials.txt
+    rm -f tls.crt tls.key
 fi

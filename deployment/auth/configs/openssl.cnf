@@ -18,3 +18,4 @@ subjectAltName = @alt_names
 DNS.1 = erag.com
 DNS.2 = auth.erag.com
 DNS.3 = grafana.erag.com
+DNS.4 = apisix.erag.com

@@ -121,11 +121,8 @@ The HF access token can be created [here](https://huggingface.co/settings/tokens
 Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 
 ```bash
-./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui --ip instance-ip-address
+./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui
 ```
-
-> [!NOTE]
-> The IP adress passed via `instance-ip-address` is host IP that is being exposed to access UI. 
 
 You can run `./install_chatqna.sh --help` to get detailed information.
 

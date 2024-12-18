@@ -15,3 +15,6 @@ tls:
   enabled: true
   existingSecret: tls-secret
   usePem: true
+
+volumePermissions:
+  enabled: true

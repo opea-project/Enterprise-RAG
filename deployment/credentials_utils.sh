@@ -1,5 +1,5 @@
-repo_path=$(realpath "$(pwd)/../")
-deployment_path="$repo_path/deployment"
+# repo_path is declared in other scripts that source this one
+credentials_path="$repo_path/deployment/default_credentials.txt"
 
 ### 
 # Default password generation and reuse for upgrade
@@ -13,23 +13,23 @@ generate_random_password() {
 
 load_credentials() {
   # will load into local environment variables values from default_credentials.txt file in a form of target_USERNAME and target_PASSWORD
-  source $deployment_path/default_credentials.txt
+  source $credentials_path
 }
 
 store_credentials() {
   # store give "username" and "password" as $target_USERNAME and $target_PASSWORD variables in default_credentials.txt file
-  local target username password varname
+  local target username password
   target=$1
   username=$2
   password=$3
   # remove old entry (if file exists)
-  if [ -f "$deployment_path/default_credentials.txt" ]; then
-    sed -i "/^${target}_USERNAME=/d" $deployment_path/default_credentials.txt
-    sed -i "/^${target}_PASSWORD=/d" $deployment_path/default_credentials.txt
+  if [ -f "$credentials_path" ]; then
+    sed -i "/^${target}_USERNAME=/d" $credentials_path
+    sed -i "/^${target}_PASSWORD=/d" $credentials_path
   fi
   # always store new password
-  echo "${target}_USERNAME=${username} " >> $deployment_path/default_credentials.txt
-  echo "${target}_PASSWORD=${password}" >> $deployment_path/default_credentials.txt
+  echo "${target}_USERNAME=${username} " >> $credentials_path
+  echo "${target}_PASSWORD=${password}" >> $credentials_path
 }
 
 get_or_create_and_store_credentials() {
@@ -44,14 +44,14 @@ get_or_create_and_store_credentials() {
   password=$3
 
   if [ "$password" == "" ] ; then                                   # if not provided by command line or environment variables to script
-    if [ -f $deployment_path/default_credentials.txt ] ; then       
-        echo "Loading $target default credentials from file: $deployment_path/default_credentials.txt"
+    if [ -f $credentials_path ] ; then
+        echo "Loading $target default credentials from file: $credentials_path"
         load_credentials
         password_varname=${target}_PASSWORD
         password="${!password_varname}"
     fi
     if [ "$password" == "" ] ; then # if password wasn't provided by cmdline nor environment nor found in file
-        echo "Generating random credentials for $target and storing in $deployment_path/default_credentials.txt"
+        echo "Generating random credentials for $target and storing in $credentials_path"
         password=$(generate_random_password)
     fi
   else

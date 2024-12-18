@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0  -g HUG_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]"
+  echo "Usage: $0  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]"
     exit 1
 }
 
@@ -22,7 +22,7 @@ REGISTRY=localhost:5000
 
 # Parse command-line arguments
 # !TODO this should be changed to use non-positional parameters
-while getopts "g:z:p:u:n:d:t:y:i:k:" opt; do
+while getopts "g:p:u:n:d:t:y:" opt; do
     case $opt in
         g) HUG_TOKEN="$OPTARG";;
         p) RAG_HTTP_PROXY="$OPTARG";;
@@ -31,13 +31,12 @@ while getopts "g:z:p:u:n:d:t:y:i:k:" opt; do
         d) PIPELINE="$OPTARG" ;;
         t) TAG="$OPTARG" ;;
         y) REGISTRY="$OPTARG" ;;
-        i) IP="$OPTARG" ;;
         *) usage ;;
     esac
 done
 
 # Check if mandatory parameters are provided
-if [ -z "$HUG_TOKEN" ] || [ -z "$IP" ]; then
+if [ -z "$HUG_TOKEN" ]; then
     usage
 fi
 
@@ -57,4 +56,4 @@ if ! command_exists kubectl; then
 fi
 
 # Install chatqna & run test
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test --ip "$IP"
+bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test

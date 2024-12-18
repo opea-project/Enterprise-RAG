@@ -14,10 +14,26 @@ apisix:
   etcd:
     replicaCount: 1
     persistence:
-      enabled: false
+      enabled: true
   dashboard:
     enabled: false
-  apisix:
+    ingress:
+      enabled: true
+      className: "nginx"
+      hosts:
+        - host: apisix.erag.com
+          paths:
+            - /
+      tls:
+        - hosts:
+            - apisix.erag.com
+          secretName: tls-secret
+    config:
+      conf:
+        etcd:
+          endpoints:
+            - auth-apisix-etcd:2379
+          prefix: "/apisix"
     nginx:
       configurationSnippet:
         httpStart: |

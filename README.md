@@ -1,8 +1,8 @@
 # Intel® AI for Enterprise RAG
 
 <div align="center">
-    <a href="https://www.youtube.com/watch?v=JE_qVw9W-Zc">
-      <img width=560 width=315 alt="Making TGI deployment optimal" src="./images/yt_thumbnail.png">
+    <a href="https://www.youtube.com/watch?v=wWcUNle1kkg">
+      <img width=560 width=315 alt="Enterprise RAG Demo ChatQ&A" src="./images/yt_thumbnail.png">
     </a>
 </div>
 &nbsp;

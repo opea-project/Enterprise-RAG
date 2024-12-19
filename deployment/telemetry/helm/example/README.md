@@ -21,7 +21,7 @@ cd deployment
 #### 1) Create kind cluster and local registry
 
 ```sh
-# Create Local registry and kind-control-plane containers (~3GB, ~2 minutes):
+# Create Local registry and kind-control-plane containers:
 bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
 kind export kubeconfig
 docker ps
@@ -54,18 +54,23 @@ git --no-pager diff microservices-connector/helm/values.yaml
 ### a) Build images (~1h once, ~50GB)
 no_proxy=localhost ./update_images.sh --tag $TAG --build -j 100
 
+# check build progress (output logs in another terminal)
+tail -n 0 -f logs/build_*
+pgrep -laf 'docker build'
 # check build images
 docker image ls | grep $TAG
 
 ### b) Push images (~2h once, ~20GB)
 no_proxy=localhost ./update_images.sh --tag $TAG --push -j 100
 
+# check pushing processes
+pgrep -laf 'docker push'
 # check pushed images
 reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
 # Please modify grafana_password for your own
-./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --grafana_password devonly --ip 127.0.0.1 --keycloak_admin_password admin
+./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --ip 127.0.0.1
 
 # Install or reinstall(upgrade) individual components
 ./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
@@ -112,8 +117,8 @@ docker rm -f kind-registry
 
 # Warning: first time initialize will take a lot time when following steps are executed:
 rm -rf /kind-containerd-images      # removes all pulled images by containerd inside kind (~70GB)
-rm -rf /mnt/opea-models             # removes all models used by model servers (~30GB)
 rm -rf /kind-registry               # removes all images stored in registry (~20GB)
+rm -rf /kind-local-path-provisioner # removes all images stored in registry (~20GB)
 # Warning: Below commands can remove not Enterprise RAG related data
 docker system df
 docker image prune -a -f            # removed build images local registry (~90GB)

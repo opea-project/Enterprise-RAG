@@ -29,14 +29,12 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
   extraMounts:
-  - hostPath: /opea-models
-    containerPath: /opea-models
-  - hostPath: /mnt/opea-models
-    containerPath: /mnt/opea-models
   - hostPath: /var/log/journal
     containerPath: /var/log/journal
   - hostPath: /kind-containerd-images
     containerPath: /var/lib/containerd/
+  - hostPath: /kind-local-path-provisioner
+    containerPath: /opt/local-path-provisioner
   kubeadmConfigPatches:
   - |
     kind: ClusterConfiguration
@@ -93,5 +91,22 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
+# Wait for ready
+kubectl wait --for=condition=Ready pod -n kube-system  --all
+
 # Update kube-proxy cm with proper value of metricsBindAddress
 kubectl get cm kube-proxy -n kube-system -o yaml | sed 's/metricsBindAddress: ""/metricsBindAddress: 0.0.0.0:10249/' | kubectl apply -f -
+
+### Own CSI driver to be able to cache PVC for model-servers (required new version of local-path-provisioner)
+# 1) Install new version of local-path-provisioner that support "parameters"
+# not needed after kind issue with old version of local-path-provisioner (overwrite with never version) until https://github.com/kubernetes-sigs/kind/issues/3810 is resolved
+kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml
+kubectl wait --for=condition=Ready pod -n kube-system  --all
+# 2) keycloak: we cannot reuse data from previous PVC for keycloak so lets clear its contents
+rm -rf /kind-local-path-provisioner/auth/data-keycloak-postgresql-0/
+# 3) reconfigure 
+kubectl delete sc standard      # delete original
+kubectl delete sc local-path    # delete one provided by local-path-install
+kubectl apply -f telemetry/helm/example/sc.yaml # create our own dataclass that will reuse directories on hosts based on PVC name
+
+

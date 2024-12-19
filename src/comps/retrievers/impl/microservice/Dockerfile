@@ -9,6 +9,8 @@ RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
+
 RUN useradd -m -s /bin/bash user
 
 USER user

@@ -12,6 +12,8 @@ RUN apt-get update -y &&                                     \
         libjemalloc-dev &&                                   \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
+
 RUN useradd -m -s /bin/bash user
 USER user
 

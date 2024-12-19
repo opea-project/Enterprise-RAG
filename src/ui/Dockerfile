@@ -10,6 +10,14 @@ RUN npm install && npm run build
 
 FROM nginx:alpine
 
+RUN rm -f /bin/dmesg \
+          /usr/bin/nc \
+          /bin/ping \
+          /bin/base64 \
+          /sbin/apk \
+          /usr/bin/wget \
+          /usr/bin/curl
+
 COPY --from=build /rag-ui/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /rag-ui/dist /usr/share/nginx/html
 

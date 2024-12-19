@@ -13,6 +13,8 @@ RUN apt-get install -y --no-install-recommends --fix-missing \
     vim && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
+
 RUN useradd -m -s /bin/bash user
 
 USER user

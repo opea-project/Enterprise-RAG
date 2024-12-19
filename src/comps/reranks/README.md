@@ -98,20 +98,22 @@ curl http://localhost:8000/v1/reranking \
 
 **Example Output**
 
-The output of the reranking microservice is a json that contains the final prompt query, constructed based on the `top_n` retrieved documents.
-
+The reranking microservice outputs a JSON containing the original user question, a list of relevant documents based on reranked top_n results, and a prompt template (may be null if the default is used) for generating a prompt based on the provided data.
 ```json
 {
-  "id":"c345dc52ce3f806e987f07eab8750340",
-  "model":null,
-  "query":"### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results:  Deep learning is... \n\n### Question: What is Deep Learning? \n\n### Answer:",
-  "max_new_tokens":1024,
-  "top_k":10,
-  "top_p":0.95,
-  "typical_p":0.95,
-  "temperature":0.01,
-  "repetition_penalty":1.03,
-  "streaming":true
+  "id": "d5d4102b8dc9414866d9c2ee550c9229",
+  "data": {
+    "initial_query": "What is Deep Learning?",
+    "reranked_docs": [
+      {
+        "downstream_black_list": [],
+        "id": "22c8b1d78b34945003101708494a24b6",
+        "text": "Deep learning is...",
+        "metadata": {}
+      }
+    ]
+  },
+  "prompt_template": null
 }
 ```
 
@@ -147,7 +149,6 @@ The tree view of the main directories and files:
   │
   ├── utils/
   │   ├── opea_reranking.py
-  │   └── prompt.py
   │
   ├── README.md
   └── opea_reranking_microservice.py

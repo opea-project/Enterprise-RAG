@@ -4,19 +4,15 @@
 import heapq
 import json
 from typing import List, TypedDict
+import aiohttp
 
-import requests
-from docarray import DocList
 from requests.exceptions import RequestException
 
 from comps import (
-    LLMParamsDoc,
     SearchedDoc,
-    TextDoc,
+    PromptTemplateInput,
     get_opea_logger,
 )
-from comps.reranks.utils import prompt
-
 
 class RerankScoreItem(TypedDict):
     index: int
@@ -63,20 +59,22 @@ class OPEAReranker:
         _ = self._call_reranker(initial_query, retrieved_docs)
         logger.info("Reranker service is reachable and working.")
 
-    def run(self, input: SearchedDoc) -> LLMParamsDoc:
+    async def run(self, input: SearchedDoc) -> PromptTemplateInput:
         """
-        Runs the reranking process based on the given input.
-
+        Asynchronously runs the reranking process based on the given input.
         Args:
             input (SearchedDoc): The input document containing the initial query and retrieved documents.
-
         Returns:
-            LLMParamsDoc: The reranked query.
-
+            PromptTemplateInput: The output document after reranking processing, cointaining the initial query and reranked documents.
         Raises:
-            Exception: If there is an error during the reranking process.
+            ValueError: If the initial query is empty or if top_n is less than 1.
+            RequestException: If there is a connection error during the request to the reranking service.
+            Exception: If there is any other error during the request to the reranking service.
         """
+
+
         # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
+        
         if not input.initial_query.strip():
             logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
@@ -90,7 +88,7 @@ class OPEAReranker:
             # Proceed with processing the retrieved documents
             try:
                 retrieved_docs = [doc.text for doc in input.retrieved_docs]
-                response_data = self._call_reranker(
+                response_data = await self._call_reranker(
                     input.initial_query, retrieved_docs
                 )
                 best_response_list = self._filter_top_n(input.top_n, response_data)
@@ -101,19 +99,19 @@ class OPEAReranker:
                 logger.error(f"Error during request to reranking service: {e}")
                 raise Exception(f"Error during request to reranking service: {e}")
 
-            query = self._generate_query(
-                input.initial_query, input.retrieved_docs, best_response_list, prompt
-            )
+            if not best_response_list:
+                logger.warning("No best responses found. Using all retrieved documents.")
+                reranked_docs = input.retrieved_docs
+            else:
+                reranked_docs = [input.retrieved_docs[best_response["index"]] for best_response in best_response_list]
         else:
-            logger.warning("No retrieved documents found. Using the initial query.")
-            query = self._generate_query(
-                input.initial_query
-            )
+            logger.warning("No retrieved documents found")
+            reranked_docs = []
 
-        return LLMParamsDoc(query=query)
+        return PromptTemplateInput(data={"initial_query": input.initial_query.strip(), "reranked_docs": reranked_docs})
 
 
-    def _call_reranker(
+    async def _call_reranker(
         self,
         initial_query: str,
         retrieved_docs: List[str],
@@ -132,13 +130,15 @@ class OPEAReranker:
         data = {"query": initial_query, "texts": retrieved_docs}
 
         try:
-            response = requests.post(
-                self._service_endpoint + "/rerank",
-                data=json.dumps(data),
-                headers={"Content-Type": "application/json"},
-            )
-            response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
-            return response.json()
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    self._service_endpoint + "/rerank",
+                    data=json.dumps(data),
+                    headers={"Content-Type": "application/json"}
+                ) as response:
+                    response_data = await response.json()
+                    response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+                    return response_data
 
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
@@ -148,42 +148,6 @@ class OPEAReranker:
         except Exception as e:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")
-
-
-    def _generate_query(
-        self,
-        initial_query: str,
-        retrieved_docs: DocList[TextDoc] = None,
-        best_response_list: RerankScoreResponse = None,
-        prompt_generator=prompt,
-    ) -> str:
-        """
-        Generates a final prompt. This function utilizes documents scored as best responsens for prompt generation. If the scoring is missed, it uses all retrieved documents.
-
-        Args:
-            initial_query (str): The initial query string.
-            retrieved_docs (DocList[TextDoc]): The list of retrieved documents.
-            best_response_list (List[RerankedResponse]): The list of best responses identified by 'index'.
-            prompt_generator (function, optional): The prompt generator function. Defaults to prompt.
-
-        Returns:
-            str: The final prompt for the query.
-        """
-        context_str = ""
-        if not best_response_list and retrieved_docs:
-            for doc in retrieved_docs:
-                context_str += " " + doc.text
-            final_prompt = prompt_generator.get_prompt(initial_query, context_str)
-        elif best_response_list and retrieved_docs:
-            ## Using only best responses
-            for best_response in best_response_list:
-                context_str += " " + retrieved_docs[best_response["index"]].text
-            final_prompt = prompt_generator.get_prompt(initial_query, context_str)
-        else:
-            logger.debug("No retrieved documents. Context will be empty.")
-            final_prompt = prompt_generator.get_prompt(initial_query)
-
-        return final_prompt
 
 
     def _filter_top_n(self, top_n: int, data: RerankScoreResponse) -> RerankScoreResponse:

@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+
 const (
 	Configmap                = "Configmap"
 	ConfigmapGaudi           = "ConfigmapGaudi"
@@ -48,6 +49,7 @@ const (
 	TorchserveEmbeddingGaudi = "TorchserveEmbeddingGaudi"
 	VectorDB                 = "VectorDB"
 	Retriever                = "Retriever"
+	PromptTemplate           = "PromptTemplate"
 	Reranking                = "Reranking"
 	TeiReranking             = "TeiReranking"
 	Tgi                      = "Tgi"
@@ -90,6 +92,7 @@ var yamlDict = map[string]string{
 	VectorDB:            yaml_dir + "redis-vector-db.yaml",
 	Retriever:           yaml_dir + "retriever-usvc.yaml",
 	Reranking:           yaml_dir + "reranking-usvc.yaml",
+	PromptTemplate:      yaml_dir + "prompt-template-usvc.yaml",
 	TeiReranking:        yaml_dir + "teirerank.yaml",
 	Tgi:                 yaml_dir + "tgi.yaml",
 	TgiGaudi:            yaml_dir + "tgi_gaudi.yaml",

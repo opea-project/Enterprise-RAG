@@ -145,6 +145,18 @@ var _ = Describe("GMConnector Controller", func() {
 										},
 									},
 									{
+										StepName: PromptTemplate,
+										Executor: mcv1alpha3.Executor{
+											InternalService: mcv1alpha3.GMCTarget{
+												NameSpace:   "default",
+												ServiceName: "prompt_template-svc",
+												Config: map[string]string{
+													"endpoint": "/v1/prompt_template",
+												},
+											},
+										},
+									},
+									{
 										StepName: Tgi,
 										Executor: mcv1alpha3.Executor{
 											InternalService: mcv1alpha3.GMCTarget{
@@ -282,6 +294,21 @@ var _ = Describe("GMConnector Controller", func() {
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "teirerank-config",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompt_template-svc",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompt_template-svc-deployment",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompttemplate-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).To(Succeed())
 
@@ -441,6 +468,18 @@ var _ = Describe("GMConnector Controller", func() {
 									},
 								},
 								{
+									StepName: PromptTemplate,
+									Executor: mcv1alpha3.Executor{
+										InternalService: mcv1alpha3.GMCTarget{
+											NameSpace:   "default",
+											ServiceName: "prompt_template-svc",
+											Config: map[string]string{
+												"endpoint": "/v1/prompt_template",
+											},
+										},
+									},
+								},
+								{
 									StepName: Tgi,
 									Executor: mcv1alpha3.Executor{
 										InternalService: mcv1alpha3.GMCTarget{
@@ -533,6 +572,21 @@ var _ = Describe("GMConnector Controller", func() {
 				Name:      "reranking-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).NotTo(Succeed())
+			
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompt_template-svc",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompt_template-svc-deployment",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "prompttemplate-usvc-config",
+				Namespace: "default",
+			}, &corev1.ConfigMap{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "tei-reranking-svc",
@@ -716,6 +770,18 @@ var _ = Describe("Predicate Functions", func() {
 											"endpoint": "/rernk",
 										},
 										IsDownstreamService: true,
+									},
+								},
+							},
+							{
+								StepName: PromptTemplate,
+								Executor: mcv1alpha3.Executor{
+									InternalService: mcv1alpha3.GMCTarget{
+										NameSpace:   "default",
+										ServiceName: "prompt_template-svc",
+										Config: map[string]string{
+											"endpoint": "/v1/prompt_template",
+										},
 									},
 								},
 							},

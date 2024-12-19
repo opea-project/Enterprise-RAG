@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -83,9 +83,9 @@ class SearchedDoc(BaseDoc):
     class Config:
         json_encoders = {np.ndarray: lambda x: x.tolist()}
 
-class RerankedDoc(BaseDoc):
-    reranked_docs: DocList[TextDoc]
-    initial_query: str
+class PromptTemplateInput(BaseDoc):
+    data: Dict[str, Any]
+    prompt_template: Optional[str] = None
 
 class AnonymizeModel(BaseDoc):
     enabled: bool = False

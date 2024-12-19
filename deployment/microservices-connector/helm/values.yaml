@@ -45,6 +45,10 @@ images:
     image: "opea/reranking"
     repository: *repo
     tag: *tag
+  prompt-template-usvc:
+    image: "opea/prompt_template"
+    repository: *repo
+    tag: *tag
   torchserve:
     image: "opea/torchserve"
     repository: *repo

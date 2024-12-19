@@ -37,11 +37,10 @@ const parseServiceDetailsResponseData = (
     "Deployment:apps/v1:output-scan-svc-deployment:chatqa": "output_guard",
     "Deployment:apps/v1:redis-vector-db-deployment:chatqa": "vectordb",
     "Deployment:apps/v1:reranking-svc-deployment:chatqa": "reranker",
+    "Deployment:apps/v1:prompt-template-svc-deployment:chatqa": "prompt_template",
     "Deployment:apps/v1:retriever-svc-deployment:chatqa": "retriever",
-    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa":
-      "reranker_model_server",
-    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa":
-      "embedding_model_server",
+    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa": "reranker_model_server",
+    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa": "embedding_model_server",
   };
 
   const nodesStepsMap: { [key: string]: string } = {
@@ -51,6 +50,7 @@ const parseServiceDetailsResponseData = (
     vectordb: "vectordb",
     reranking: "reranker",
     teireranking: "reranker_model_server",
+    prompttemplate: "prompt_template",
     llm: "llm",
     tgi: "tgi",
   };
@@ -105,6 +105,7 @@ const parseServiceDetailsResponseData = (
     output_guard: {},
     reranker: {},
     reranker_model_server: {},
+    prompt_template: {},
     retriever: {},
     vectordb: {},
   };

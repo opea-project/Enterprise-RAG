@@ -65,6 +65,8 @@ const (
 	Reranking StepNameType = "Reranking"
 	// Tei-Reranking
 	TeiReranking StepNameType = "TeiReranking"
+	// PromptTemplate
+	PromptTemplate StepNameType = "PromptTemplate"
 	// Tgi
 	Tgi StepNameType = "Tgi"
 	// Llm

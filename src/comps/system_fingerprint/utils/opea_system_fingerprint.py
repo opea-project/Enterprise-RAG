@@ -9,6 +9,7 @@ from comps.cores.utils.mongodb import OPEAMongoConnector
 
 from comps.system_fingerprint.utils.object_document_mapper import (
     RerankerParams,
+    PromptTemplateParams,
     LLMParams,
     ComponentDetails,
     Fingerprint,
@@ -50,7 +51,7 @@ from comps.system_fingerprint.utils.object_document_mapper import (
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 document_models = [
-    RerankerParams, ComponentDetails, Fingerprint, Argument,
+    RerankerParams, PromptTemplateParams, ComponentDetails, Fingerprint, Argument,
     ComponentConfiguration, ComponentTopology, LLMGuardInputGuardrailParams,
     LLMGuardOutputGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
     BanCodeModel, BanCompetitorsModel, BanSubstringsModel, BanTopicsModel,
@@ -210,6 +211,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 parameters=PackedParams(
                     llm=LLMParams(),
                     reranker=RerankerParams(),
+                    prompt_template=PromptTemplateParams(),
                     input_guard=LLMGuardInputGuardrailParams(
                         anonymize=AnonymizeModel(),
                         ban_code=BanCodeModel(),
@@ -424,6 +426,10 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 self.current_arguments.parameters.reranker = RerankerParams(
                     **param[1]
                 )
+            elif param[0] == "prompt_template" and param[1] is not None:
+                self.current_arguments.parameters.prompt_template = PromptTemplateParams(
+                    **param[1]
+                )
             elif param[0] == "llm" and param[1] is not None:
                 self.current_arguments.parameters.llm = LLMParams(
                     **param[1]
@@ -570,6 +576,9 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.reranker.model_dump()))
+        packed_parameters.update(
+            remove_id(
+                self.current_arguments.parameters.prompt_template.model_dump()))
         packed_parameters.update(
             {"input_guardrail_params":
                 remove_id(

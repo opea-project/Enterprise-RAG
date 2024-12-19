@@ -254,6 +254,16 @@ class LLMGuardOutputGuardrailParams(Document):
     url_reachability: URLReachabilityModel = None
     output_guard_streaming: bool = True
 
+class PromptTemplateParams(Document):
+    prompt_template: str = """
+### You are a helpful, respectful, and honest assistant to help the user with questions. \
+Please refer to the search results obtained from the local knowledge base. \
+But be careful to not incorporate information that you think is not relevant to the question. \
+If you don't know the answer to a question, please don't share false information. \
+### Search results: {reranked_docs} \n
+### Question: {initial_query} \n
+### Answer:
+"""
 
 class RerankerParams(Document):
     search_type: str = "similarity"
@@ -262,7 +272,6 @@ class RerankerParams(Document):
     fetch_k: int = 20
     lambda_mult: float = 0.5
     score_threshold: float = 0.2
-
 
 class LLMParams(Document):
     max_new_tokens: int = 1024
@@ -279,6 +288,7 @@ class PackedParams(Document):
     reranker: RerankerParams = None
     input_guard: LLMGuardInputGuardrailParams = None
     output_guard: LLMGuardOutputGuardrailParams = None
+    prompt_template: PromptTemplateParams = None
 
 
 class Argument(Document):

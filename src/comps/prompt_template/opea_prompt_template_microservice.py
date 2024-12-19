@@ -6,12 +6,10 @@ import time
 
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from langsmith import traceable
-
 
 from comps import (
+    LLMParamsDoc,
     MegaServiceEndpoint,
-    SearchedDoc,
     PromptTemplateInput,
     ServiceType,
     change_opea_logger_level,
@@ -19,13 +17,12 @@ from comps import (
     opea_microservices,
     register_microservice,
     register_statistics,
-    sanitize_env,
     statistics_dict,
 )
-from comps.reranks.utils.opea_reranking import OPEAReranker
+from comps.prompt_template.utils.opea_prompt_template import OPEAPromptTemplate
 
 # Define the unique service name for the microservice
-USVC_NAME='opea_service@reranking'
+USVC_NAME='opea_service@prompt_template'
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
@@ -35,43 +32,32 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEALlm class with environment variables.
-opea_reranker = OPEAReranker(
-    service_endpoint=sanitize_env(os.getenv('RERANKING_SERVICE_ENDPOINT')),
-)
+opea_prompt_template = OPEAPromptTemplate()
 
 # Register the microservice with the specified configuration.
 @register_microservice(
     name=USVC_NAME,
-    service_type=ServiceType.RERANK,
-    endpoint=str(MegaServiceEndpoint.RERANKING),
+    service_type=ServiceType.PROMPT_TEMPLATE,
+    endpoint=str(MegaServiceEndpoint.PROMPT_TEMPLATE),
     host='0.0.0.0',
-    port=int(os.getenv('RERANKING_USVC_PORT', default=8000)),
-    input_datatype=SearchedDoc,
-    output_datatype=PromptTemplateInput,
+    port=int(os.getenv('PROMPT_TEMPLATE_USVC_PORT', default=7900)),
+    input_datatype=PromptTemplateInput,
+    output_datatype=LLMParamsDoc,
 )
-@traceable(run_type="llm")
+
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-async def process(input: SearchedDoc) -> PromptTemplateInput:
+async def process(input: PromptTemplateInput) -> LLMParamsDoc:
     """
-    Asynchronously process the input document using the OPEAReranker..
-
-    Args:
-        input (SearchedDoc): The input document to be processed.
 
     Returns:
-        PromptTemplateInput: The result of the processing containing reranked top_n documents
-
-    Raises:
-        HTTPException: If a ValueError or any other exception occurs during processing.
-
+        LLMParamsDoc: The processed document with LLM parameters.
     """
-
     start = time.time()
     try:
         # Pass the input to the 'run' method of the microservice instance
-        res = await opea_reranker.run(input)
+        res = await opea_prompt_template.run(input)
     except ValueError as e:
         logger.exception(f"An internal error occurred while processing: {str(e)}")
         raise HTTPException(status_code=400,

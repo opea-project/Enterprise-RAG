@@ -32,6 +32,7 @@ var (
 		"Retriever",
 		"Reranking",
 		"TeiReranking",
+		"PromptTemplate",
 		"Tgi",
 		"TgiGaudi",
 		"TgiNvidia",

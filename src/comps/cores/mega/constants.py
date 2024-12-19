@@ -33,6 +33,7 @@ class ServiceType(Enum):
     LLM_GUARD_OUTPUT_SCANNER = 16
     INGESTION = 17
     LANGUAGE_DETECTION = 18
+    PROMPT_TEMPLATE = 19
 
 
 class MegaServiceEndpoint(Enum):
@@ -56,6 +57,7 @@ class MegaServiceEndpoint(Enum):
     CHAT = "/v1/chat/completions"
     RETRIEVAL = "/v1/retrieval"
     RERANKING = "/v1/reranking"
+    PROMPT_TEMPLATE = "/v1/prompt_template"
     GUARDRAILS = "/v1/guardrails"
     RAGAS = "/v1/ragas"
     GRAPHS = "/v1/graphs"

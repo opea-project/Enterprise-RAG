@@ -149,7 +149,7 @@ var _ = Describe("GMConnector Controller", func() {
 										Executor: mcv1alpha3.Executor{
 											InternalService: mcv1alpha3.GMCTarget{
 												NameSpace:   "default",
-												ServiceName: "prompt_template-svc",
+												ServiceName: "prompt-template-svc",
 												Config: map[string]string{
 													"endpoint": "/v1/prompt_template",
 												},
@@ -298,16 +298,6 @@ var _ = Describe("GMConnector Controller", func() {
 			}, &corev1.ConfigMap{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
-				Name:      "prompt_template-svc",
-				Namespace: "default",
-			}, &corev1.ConfigMap{})).To(Succeed())
-
-			Expect(k8sClient.Get(ctx, types.NamespacedName{
-				Name:      "prompt_template-svc-deployment",
-				Namespace: "default",
-			}, &corev1.ConfigMap{})).To(Succeed())
-
-			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "prompttemplate-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).To(Succeed())
@@ -354,8 +344,8 @@ var _ = Describe("GMConnector Controller", func() {
 
 			pipeline := &mcv1alpha3.GMConnector{}
 			Expect(k8sClient.Get(ctx, typeNamespacedName, pipeline)).To(Succeed())
-			Expect(pipeline.Status.Status).To(Equal("0/0/9"))
-			Expect(len(pipeline.Status.Annotations)).To(Equal(25))
+			Expect(pipeline.Status.Status).To(Equal("0/0/10"))
+			Expect(len(pipeline.Status.Annotations)).To(Equal(28))
 
 		})
 
@@ -395,7 +385,7 @@ var _ = Describe("GMConnector Controller", func() {
 			Expect(err).NotTo(HaveOccurred())
 			pipeline := &mcv1alpha3.GMConnector{}
 			Expect(k8sClient.Get(ctx, typeNamespacedName, pipeline)).To(Succeed())
-			Expect(pipeline.Status.Status).To(Equal("1/0/9"))
+			Expect(pipeline.Status.Status).To(Equal("1/0/10"))
 		})
 
 		It("should successfully reconcile the deployment for removing step", func() {
@@ -472,7 +462,7 @@ var _ = Describe("GMConnector Controller", func() {
 									Executor: mcv1alpha3.Executor{
 										InternalService: mcv1alpha3.GMCTarget{
 											NameSpace:   "default",
-											ServiceName: "prompt_template-svc",
+											ServiceName: "prompt-template-svc",
 											Config: map[string]string{
 												"endpoint": "/v1/prompt_template",
 											},
@@ -572,16 +562,6 @@ var _ = Describe("GMConnector Controller", func() {
 				Name:      "reranking-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).NotTo(Succeed())
-			
-			Expect(k8sClient.Get(ctx, types.NamespacedName{
-				Name:      "prompt_template-svc",
-				Namespace: "default",
-			}, &corev1.ConfigMap{})).To(Succeed())
-
-			Expect(k8sClient.Get(ctx, types.NamespacedName{
-				Name:      "prompt_template-svc-deployment",
-				Namespace: "default",
-			}, &corev1.ConfigMap{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "prompttemplate-usvc-config",
@@ -645,8 +625,8 @@ var _ = Describe("GMConnector Controller", func() {
 
 			pipeline := &mcv1alpha3.GMConnector{}
 			Expect(k8sClient.Get(ctx, typeNamespacedName, pipeline)).To(Succeed())
-			Expect(pipeline.Status.Status).To(Equal("0/0/5"))
-			Expect(len(pipeline.Status.Annotations)).To(Equal(13))
+			Expect(pipeline.Status.Status).To(Equal("0/0/6"))
+			Expect(len(pipeline.Status.Annotations)).To(Equal(16))
 		})
 	})
 })
@@ -778,7 +758,7 @@ var _ = Describe("Predicate Functions", func() {
 								Executor: mcv1alpha3.Executor{
 									InternalService: mcv1alpha3.GMCTarget{
 										NameSpace:   "default",
-										ServiceName: "prompt_template-svc",
+										ServiceName: "prompt-template-svc",
 										Config: map[string]string{
 											"endpoint": "/v1/prompt_template",
 										},

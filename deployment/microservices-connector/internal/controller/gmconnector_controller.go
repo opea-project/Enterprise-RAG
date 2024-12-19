@@ -38,7 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-
 const (
 	Configmap                = "Configmap"
 	ConfigmapGaudi           = "ConfigmapGaudi"
@@ -81,7 +80,7 @@ const (
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
 	VLLMOpenVino             = "VLLMOpenVino"
-	LanguageDetection	 = "LanguageDetection"
+	LanguageDetection        = "LanguageDetection"
 )
 
 var yamlDict = map[string]string{

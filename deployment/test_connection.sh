@@ -20,42 +20,13 @@ NAMESPACE=chatqa
 CLIENT_POD=""
 accessUrl=""
 
-check_pods() {
-    if kubectl get pods -n $NAMESPACE --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
-        return 1
-    else
-        return 0
-    fi
-}
-
-
-
 POD_EXISTS=$(kubectl get pod -n $NAMESPACE -l app=client-test -o jsonpath={.items..metadata.name})
 
 if [ -z "$POD_EXISTS" ]; then
-    kubectl create deployment client-test -n $NAMESPACE --image=python:3.8.13 -- sleep infinity
+    kubectl create deployment client-test -n $NAMESPACE --image=curlimages/curl -- sleep infinity
 fi
 
-
-TIMEOUT=300
-END_TIME=$(( $(date +%s) + TIMEOUT ))
-
-printf "Waiting for all pods to be running and ready..."
-while true; do
-    CURRENT_TIME=$(date +%s)
-    if [[ $CURRENT_TIME -ge $END_TIME ]]; then
-        echo "Timeout reached: Not all pods are ready after 5 minutes."
-        exit 1
-    fi
-
-    if check_pods; then
-        echo "All pods in the $NAMESPACE namespace are running and ready."
-        break
-    else
-        printf '.'
-        sleep 2
-    fi
-done
+kubectl wait --for=condition=available --timeout=300s deployment/client-test -n $NAMESPACE
 
 export CLIENT_POD=$(kubectl get pod -n $NAMESPACE -l app=client-test -o jsonpath={.items..metadata.name})
 export accessUrl=$(kubectl get gmc -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.name=='$NAMESPACE')].status.accessUrl}")
@@ -80,7 +51,7 @@ test_return_code=$?
 
 # !TODO returns 0 if curl succeed, but anwer was not proper
 if [ $test_return_code -eq 0 ]; then
-    echo "Test finished succesfully"
+    echo "Test finished successfully"
 else
     echo "Test failed with return code:$test_return_code"
 fi

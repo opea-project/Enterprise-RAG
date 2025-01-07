@@ -8,6 +8,7 @@ import io
 from dotenv import load_dotenv
 from utils import opea_dataprep
 from fastapi import UploadFile, HTTPException
+from pathvalidate import is_valid_filename
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.utils.utils import sanitize_env
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
@@ -60,18 +61,20 @@ async def process(input: DataPrepInput) -> TextDocList:
         try:
             for fidx, f in enumerate(files):
                 if not f.filename:
-                    logger.warning(f"File #{fidx} filename was empty. Skipping.")
-                    continue
+                    raise ValueError(f"File #{fidx} filename was empty.")
+                if not is_valid_filename(f.filename):
+                    raise ValueError(f"File {f.filename} had an invalid filename.")
                 if not f.data64:
-                    logger.warning(f"File {f.filename} base64 data was empty. Skipping.")
-                    continue
+                    raise ValueError(f"File {f.filename} base64 data was empty.")
                 file_data = base64.b64decode(f.data64)
                 if not file_data:
-                    logger.warning(f"File {f.filename} base64 data was invalid. Skipping.")
-                    continue
+                    raise ValueError(f"File {f.filename} base64 data was invalid.")
                 binary_file = io.BytesIO(file_data)
                 decoded_file = UploadFile(filename=f.filename, file=binary_file)
                 decoded_files.append(decoded_file)
+        except ValueError as e:
+            logger.error(e)
+            raise HTTPException(status_code=400, detail="An error occurred while decoding files.")
         except Exception as e:
             logger.exception(e)
             raise HTTPException(status_code=500, detail="An error occured while persisting files.")

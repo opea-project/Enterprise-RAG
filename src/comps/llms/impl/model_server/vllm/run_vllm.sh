@@ -62,8 +62,10 @@ fi
 if [ "${LLM_DEVICE}" = "hpu" ]; then
     # Check if 'habana' runtime exists
     if ! docker info | grep -q 'Runtimes:.*habana'; then
-        echo "Error: 'habana' runtime is not available."
+        echo "Error: 'habana' runtime is not available. Go to https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Docker_Installation.html and follow Docker installation for Gaudi."
         exit 1
     fi
 fi
+
+mkdir -p docker/data/
 docker compose -f docker/docker-compose-${LLM_DEVICE}.yaml up --build -d llm-vllm-model-server

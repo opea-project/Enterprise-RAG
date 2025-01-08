@@ -18,6 +18,7 @@ services:
     environment:
       HABANA_VISIBLE_DEVICES: ${HABANA_VISIBLE_DEVICES}
       HF_TOKEN: ${HF_TOKEN}
+      HF_HOME: "/data"
       HTTP_PROXY: ${HTTP_PROXY}
       HTTPS_PROXY: ${HTTPS_PROXY}
       NO_PROXY: ${NO_PROXY}

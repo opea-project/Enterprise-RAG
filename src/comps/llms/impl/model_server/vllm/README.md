@@ -12,6 +12,11 @@ Provide your Hugging Face API key to enable access to Hugging Face models. Alter
 export HF_TOKEN=${your_hf_api_token}
 ```
 
+Also, create a folder to preserve model data on host:
+```bash
+mkdir -p docker/data/
+```
+
 ### 🚀 Start the vLLM Service via script (Option 1)
 1.1. Run the script
 
@@ -114,6 +119,7 @@ To build and start the services using Docker Compose
 
 ```bash
 cd docker
+mkdir -p data/
 
 # for HPU device (Gaudi)
 docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d

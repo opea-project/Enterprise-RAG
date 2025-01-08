@@ -101,9 +101,11 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
+            runAsGroup: 3000
+            fsGroup: 2000
             seccompProfile:
               type: RuntimeDefault
-          image: "ghcr.io/huggingface/tgi-gaudi:2.0.6"
+          image: "ghcr.io/huggingface/tgi-gaudi:2.3.1"
           args:
             - --model-id
             - "$(LLM_TGI_MODEL_NAME)"

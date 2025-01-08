@@ -84,6 +84,8 @@ spec:
                 name: extra-env-config
                 optional: true
           env:
+            - name: HF_HOME
+              value: /data
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -97,6 +99,8 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 1000
+            runAsGroup: 3000
+            fsGroup: 2000
             seccompProfile:
               type: RuntimeDefault
           image: "localhost:5000/opea/vllm-gaudi:latest"
@@ -109,7 +113,7 @@ spec:
               name: tmp
             - mountPath: /.cache
               name: cache
-            - mountPath: /.config
+            - mountPath: /home/user/.config
               name: config
             - mountPath: /var/log
               name: var-log

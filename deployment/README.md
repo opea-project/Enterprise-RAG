@@ -131,12 +131,26 @@ To install ChatQnA, use the `install_chatqna.sh` script, a streamlined deploymen
 Enterprise RAG solution. This script automates the setup of ChatQnA services, including pipeline
 deployment, telemetry integration, and UI authentication.
 
+##### Storage settings
+
+> [!NOTE]
+> The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
+
+You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
+
+If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage. 
+
+Similarly, for the selected Vector Store (for example `deployment/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+
+> [!NOTE]
+> The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
+
 ##### Configure
 The `set_values.sh` script automates Helm value configuration for the `microservices-connector` chart,
 simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking:
 
 ```bash
-./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN ] -r [REPOSITORY] -t [TAG]
+./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN] -r [REPOSITORY] -t [TAG]
 ```
 
 The HF access token can be created [here](https://huggingface.co/settings/tokens).
@@ -267,7 +281,7 @@ exposed IP address of the cluster.
 For example, the updated file content should resemble the following:
 
 ```
-<Ingress external IP> erag.com grafana.erag.com auth.erag.com
+<Ingress external IP> erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
 ```
 
 > [!NOTE]
@@ -284,6 +298,12 @@ Keyclock can be accessed via:
 Grafana can be accessed via:
 `https://grafana.erag.com`
 
+MinIO Console can be accessed via:
+`https://minio.erag.com`
+
+S3 API is exposed at:
+`https://s3.erag.com`
+
 ### UI credentials for the first login
 
 Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passowrds for application admin and user. After one time password will be provided you will be requested to change the default password.
@@ -299,6 +319,27 @@ Default credentials for Keycloak and Grafana:
 
 > [!CAUTION]
 > Please remove file `default_credentials.txt` after the first succesfull login and changing passwords.
+
+### Credentials for Vector Store
+
+Default credentials for selected Vector Store are stored in `default_credentials.txt` and are generated on first deployment.
+
+### Credentials for Enhanced Dataprep Pipeline (EDP)
+
+Default credentials for Enhanced Dataprep services:
+
+MinIO:
+- For accessing MinIO either by API or Web-UI (MinIO Console), please use the user credentials for `erag-admin`.
+
+Internal EDP services credentials:
+
+Redis:
+- **username:** default
+- **password:** stored in `default_credentials.txt`
+
+Postgres:
+- **username:** edp
+- **password:** stored in `default_credentials.txt`
 
 ### Data Ingestion, UI and Telemetry
 

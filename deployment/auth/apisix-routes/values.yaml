@@ -45,3 +45,30 @@ endpoints:
     service_path: /v1/system_fingerprint/change_arguments
     permissions:
       - "admin#admin-access"
+  - name: edp
+    namespace: edp
+    hostname: erag.com
+    path: /api/v1/edp/*
+    backend_service: edp-backend
+    service_port: 5000
+    service_regex:
+      - ^/api/v1/edp/links$
+      - /api/links
+      - ^/api/v1/edp/link/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})$
+      - /api/link/$1
+      - ^/api/v1/edp/link/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/retry$
+      - /api/link/$1/retry
+      - ^/api/v1/edp/link/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/task$
+      - /api/link/$1/task
+      - ^/api/v1/edp/files$
+      - /api/files
+      - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})$
+      - /api/file/$1
+      - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/retry$
+      - /api/file/$1/retry
+      - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/task$
+      - /api/file/$1/task
+      - ^/api/v1/edp/presignedUrl$
+      - /api/presignedUrl
+    permissions:
+      - "admin#admin-access"

@@ -70,6 +70,12 @@ spec:
               type: RuntimeDefault
           image: "redis/redis-stack:7.2.0-v9"
           imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_ARGS
+              valueFrom:
+                secretKeyRef:
+                  name: vector-database-config
+                  key: VECTOR_DB_REDIS_ARGS
           volumeMounts:
             - mountPath: /data
               name: data-volume
@@ -94,7 +100,8 @@ spec:
             {}
       volumes:
         - name: data-volume
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: vector-store-data
         - name: redisinsight-volume
           emptyDir: {}
         - name: tmp

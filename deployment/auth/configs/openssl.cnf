@@ -19,3 +19,5 @@ DNS.1 = erag.com
 DNS.2 = auth.erag.com
 DNS.3 = grafana.erag.com
 DNS.4 = apisix.erag.com
+DNS.5 = s3.erag.com
+DNS.6 = minio.erag.com

@@ -4,6 +4,7 @@ KEYCLOAK_URL=localhost:1234
 KEYCLOAK_REALM=EnterpriseRAG
 KEYCLOAK_CLIENT_ID=admin
 ADMIN_PASSWORD=${1:-admin}
+CLIENT_ID=${2:-"EnterpriseRAG-oidc-backend"}
 
 get_client_id(){
     local client_name=$1
@@ -17,7 +18,6 @@ CLIENT_SECRET=$(curl -s -X POST \
      -H "Content-Type: application/json" \
      "http://${KEYCLOAK_URL}/admin/realms/$KEYCLOAK_REALM/clients/$C_ID/client-secret" | \
      jq -r '.value')
-
 }
 
 # Obtain an Access Token using admin credentials
@@ -28,6 +28,6 @@ ACCESS_TOKEN=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-co
  -d 'grant_type=password' \
  -d 'client_id=admin-cli' | jq -r '.access_token')
 
-get_client_id "EnterpriseRAG-oidc-backend"
+get_client_id $CLIENT_ID
 get_client_secret
 echo $CLIENT_SECRET

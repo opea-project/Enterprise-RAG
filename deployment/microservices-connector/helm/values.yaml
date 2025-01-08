@@ -202,3 +202,7 @@ pvc:
     accessMode: ReadWriteOnce
     namespace: chatqa
     storage: 100Gi
+  - name: vector-store-data
+    accessMode: ReadWriteOnce
+    namespace: chatqa
+    storage: 20Gi

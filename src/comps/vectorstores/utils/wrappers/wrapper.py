@@ -83,6 +83,16 @@ class VectorStoreWrapper(ABC):
             logger.exception("Error occured while adding texts to vector store")
             raise e
 
+    def search_and_delete_documents(self, index_name, field_name, field_value, prefix_name):
+        """
+        Search and delete documents from the vector store based on filed name and value.
+        """
+        try:
+            return self.client.search_and_delete_documents(index_name, field_name, field_value, prefix_name)
+        except Exception as e:
+            logger.exception("Error occured while deleting documents.")
+            raise e
+
     def _parse_search_results(self, input: EmbedDoc, results: Iterable[any]) -> SearchedDoc:
         """
         Parses the search results and returns a `SearchedDoc` object.

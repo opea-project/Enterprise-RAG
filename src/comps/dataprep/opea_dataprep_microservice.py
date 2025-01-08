@@ -5,6 +5,8 @@ import os
 import time
 import base64
 import io
+
+from urllib3.exceptions import MaxRetryError
 from dotenv import load_dotenv
 from utils import opea_dataprep
 from fastapi import UploadFile, HTTPException
@@ -85,6 +87,9 @@ async def process(input: DataPrepInput) -> TextDocList:
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"An internal error occurred while processing: {str(e)}")
+    except MaxRetryError as e:
+        logger.exception(e)
+        raise HTTPException(status_code=503, detail=f"Could not connect to remote server: {str(e)}")
     except Exception as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=f"An error occurred while processing: {str(e)}")

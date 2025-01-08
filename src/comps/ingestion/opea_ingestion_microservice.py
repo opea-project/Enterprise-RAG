@@ -3,6 +3,7 @@
 
 import os
 import time
+from typing import Dict
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
@@ -41,7 +42,7 @@ ingestion = opea_ingestion.OPEAIngestion(
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def process(input: EmbedDocList) -> EmbedDocList:
+def ingest(input: EmbedDocList) -> EmbedDocList:
     start = time.time()
     
     embed_vector = None
@@ -53,6 +54,40 @@ def process(input: EmbedDocList) -> EmbedDocList:
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
     return embed_vector
 
+@register_microservice(
+    name=USVC_NAME,
+    service_type=ServiceType.INGESTION,
+    endpoint=f"{str(MegaServiceEndpoint.INGEST)}/delete",
+    host="0.0.0.0",
+    port=int(os.getenv('INGESTION_USVC_PORT', default=6120)),
+    input_datatype=Dict,
+    output_datatype=None,
+)
+@register_statistics(names=[USVC_NAME])
+# Define a function to handle deletion of provided input.
+# Its input and output data types must comply with the registered ones above.
+def delete(input: Dict) -> None:
+    start = time.time()
+    
+    field_name, field_value = None, None
+
+    if 'file_id' in input:
+        field_name, field_value = 'file_id', input['file_id']
+    elif 'link_id' in input:
+        field_name, field_value = 'link_id', input['link_id']
+    else:
+        raise HTTPException(status_code=400, detail="Must either pass link_id or file_id to delete.")
+
+    if not field_value:
+        raise HTTPException(status_code=400, detail="Field value cannot be empty.")
+
+    try:
+        deleted_docs = ingestion.delete(field_name=field_name, field_value=field_value)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error while deleting documents. {e}")
+
+    statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+    return { 'deleted_embeddings': deleted_docs }
 
 if __name__ == "__main__":
     opea_microservices[USVC_NAME].start()

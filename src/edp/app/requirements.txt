@@ -1,0 +1,16 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+fastapi==0.111.0
+uvicorn==0.30.1
+python-dotenv==1.0.1
+SQLAlchemy==2.0.36
+minio==7.2.12
+psycopg2-binary==2.9.10
+PyJWT==2.10.1
+celery==5.4.0
+redis==5.2.1
+flower==2.0.1
+validators==0.34.0
+requests==2.32.3
+prometheus-client==0.21.1

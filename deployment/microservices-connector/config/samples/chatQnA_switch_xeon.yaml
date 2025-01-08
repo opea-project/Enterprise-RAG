@@ -79,7 +79,6 @@ spec:
             serviceName: retriever-svc-large
             config:
               endpoint: /v1/retrieval
-              REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
               TEI_EMBEDDING_ENDPOINT: tei-embedding-svc-bge15
         - name: Retriever
           condition: embedding-model-id==small
@@ -88,7 +87,6 @@ spec:
             serviceName: retriever-svc-small
             config:
               endpoint: /v1/retrieval
-              REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
               TEI_EMBEDDING_ENDPOINT: tei-embedding-svc-bge-small
         - name: VectorDB
           internalService:

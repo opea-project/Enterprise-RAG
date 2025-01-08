@@ -37,7 +37,6 @@ spec:
           serviceName: retriever-svc
           config:
             endpoint: /v1/retrieval
-            REDIS_URL: redis-vector-db
             TEI_EMBEDDING_ENDPOINT: tei-embedding-svc
       - name: VectorDB
         dependency: Hard

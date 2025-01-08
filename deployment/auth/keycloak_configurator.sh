@@ -536,7 +536,7 @@ function create_client_scope() {
         "attributes": {
             "include.in.token.scope": "true",
             "display.on.consent.screen": "true"
-            }
+        }
     }'
 
     if curl_keycloak "$url" "$NEW_SCOPE_JSON"; then

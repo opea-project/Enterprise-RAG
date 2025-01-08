@@ -81,6 +81,8 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+            - secretRef:
+                name: vector-database-config
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

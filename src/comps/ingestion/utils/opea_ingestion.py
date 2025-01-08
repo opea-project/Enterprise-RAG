@@ -28,3 +28,14 @@ class OPEAIngestion:
 
         self.vector_store.add_texts(input=docs)
         return input
+
+    def delete(self, field_name: str, field_value: str) -> None:
+        if '-' in field_value:
+            field_value = field_value.replace('-', '')
+    
+        self.vector_store.delete_texts(
+            search_field_name=field_name,
+            search_field_value=field_value
+        )
+        
+        return None

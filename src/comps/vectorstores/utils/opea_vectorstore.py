@@ -67,6 +67,17 @@ class OPEAVectorStore():
         """
         return self.vector_store.add_texts(input=input)
 
+    def delete_texts(self, search_field_name: str, search_field_value: str) -> None:
+        """
+        Deletes texts from the vector store based on field name and value
+        """
+        return self.vector_store.search_and_delete_documents(
+            index_name="file_index",
+            field_name=search_field_name,
+            field_value=search_field_value,
+            prefix_name="doc:default_index"
+        )
+
     def search(self, input: EmbedDoc) -> SearchedDoc:
         """
         Performs a search in the vector store based on the input.

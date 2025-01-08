@@ -10,6 +10,9 @@ from langchain_core.documents import Document
 from langchain_community.vectorstores.redis.filters import RedisFilterExpression
 from langchain_community.vectorstores.utils import maximal_marginal_relevance
 from langchain_community.utilities.redis import _buffer_to_array
+from redis.commands.search.field import TextField
+from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+from redis.commands.search.query import Query
 
 class OPEARedis(Redis):
     """
@@ -67,6 +70,45 @@ class OPEARedis(Redis):
             key_prefix=key_prefix,
             **kwargs,
         )
+
+    def _create_search_index_if_not_exists(
+        self,
+        index_name, 
+        field_name,
+        prefix_name
+    ):
+        try:
+            # Check if the index already exists
+            self.client.ft(index_name).info()
+        except Exception:
+            # Create the index if it does not exist
+            schema = (TextField(field_name),)
+            definition = IndexDefinition(prefix=[prefix_name], index_type=IndexType.HASH)
+            self.client.ft(index_name).create_index(schema, definition=definition)
+
+    def search_and_delete_documents(
+        self,
+        index_name,
+        field_name,
+        field_value,
+        prefix_name
+    ):
+        # Create the search index if it does not exist
+        self._create_search_index_if_not_exists(index_name, field_name, prefix_name)
+        # Search for documents with the specified field value
+        query_str = f"@{field_name}:{field_value}"
+        query = Query(query_str)
+        query._num = 1000 # The max limit is 10_000 so let's iterate over the results
+
+        num_deleted = 0
+        search_results = self.client.ft(index_name).search(query)
+        while len(search_results.docs) > 0:
+            num_deleted += len(search_results.docs)
+            for doc in search_results.docs:
+                self.client.delete(doc.id)
+            search_results = self.client.ft(index_name).search(query)
+
+        return num_deleted
 
     def similarity_search_with_relevance_scores(
         self,

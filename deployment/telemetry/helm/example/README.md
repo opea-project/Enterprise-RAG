@@ -100,6 +100,8 @@ kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:
 # UI: https://erag.com/
 # Grafana: https://grafana.erag.com/
 # KeyCloak: https://auth.erag.com/
+# Minio: https://minio.erag.com/
+# Minio API: https://s3.erag.com/
 
 # Passwords for Grafana/Keycloak is given above in command line for installation.
 # Passwords for users: 

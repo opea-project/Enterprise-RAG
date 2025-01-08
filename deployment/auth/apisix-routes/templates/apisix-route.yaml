@@ -19,7 +19,14 @@ spec:
     - name: proxy-rewrite
       enable: true
       config:
+        {{- if .service_path }}
         uri: {{ .service_path }}
+        {{- else if .service_regex }}
+        regex_uri:
+          {{- range .service_regex }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
     - name: authz-keycloak
       enable: true
       config:

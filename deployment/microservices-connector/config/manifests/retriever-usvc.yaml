@@ -14,8 +14,6 @@ metadata:
     app.kubernetes.io/version: "v0.8"
     app.kubernetes.io/managed-by: Helm
 data:
-  VECTOR_STORE: redis
-  REDIS_URL: "redis://redis-vector-db:6379"
 ---
 # Source: retriever-usvc/templates/service.yaml
 # Copyright (C) 2024 Intel Corporation
@@ -73,12 +71,19 @@ spec:
       initContainers:
         - name: wait-for-redis
           image: redis:alpine
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: vector-database-config
+                  key: REDIS_URL
           command:
             - sh
             - -c
             - |
                 if [ -z "$REDIS_URL" ]; then
                   echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
+                  exit 1
                 else
                   until redis-cli -u $REDIS_URL ping | grep -q PONG; do
                     echo "waiting for redis server $REDIS_URL to be ready...";
@@ -93,6 +98,8 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+            - secretRef:
+                name: vector-database-config
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

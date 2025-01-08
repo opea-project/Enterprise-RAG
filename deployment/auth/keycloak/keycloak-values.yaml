@@ -10,6 +10,9 @@ ingress:
     - hosts:
         - auth.erag.com
       secretName: tls-secret
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
 
 tls:
   enabled: true
@@ -18,3 +21,7 @@ tls:
 
 volumePermissions:
   enabled: true
+
+extraEnvVars:
+  - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+    value: "true"

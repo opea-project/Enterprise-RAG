@@ -17,6 +17,7 @@ api_gateway_path="$repo_path/deployment/auth/apisix"
 api_gateway_crd_path="$repo_path/deployment/auth/apisix-routes"
 ingress_path="$repo_path/deployment/auth/ingress"
 configs_path="$repo_path/deployment/auth/configs"
+edp_path="$repo_path/deployment/edp/helm"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -25,6 +26,7 @@ KEYCLOAK_FPORT=1234
 DEPLOYMENT_NS=chatqa
 GATEWAY_NS=auth-apisix
 DATAPREP_NS=dataprep
+ENHANCED_DATAPREP_NS=edp
 TELEMETRY_NS=monitoring
 TELEMETRY_TRACES_NS=monitoring-traces
 UI_NS=rag-ui
@@ -45,6 +47,7 @@ KEYCLOAK_VERSION=22.1.0
 
 GRAFANA_PASSWORD=""
 KEYCLOAK_PASS=""
+REDIS_PASSWORD=""
 
 # others
 PIPELINE=""
@@ -69,6 +72,7 @@ function usage() {
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
+    echo -e "\t--edp: Start Enhanced Dataprep services (requires deployment & auth)."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ch|--clear-auth: Clear auth services."
@@ -119,14 +123,14 @@ function check_pods() {
 
     if [ -z "$deployment_name" ]; then
         # Check all pods in the namespace
-        if kubectl get pods -n "$namespace" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
+        if kubectl get pods -n "$namespace" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status,STATUS:.status.phase" | grep False | grep -v Succeeded &> /dev/null; then
             return 1
         else
             return 0
         fi
     else
         # Check specific pod by deployment name
-        if kubectl get pods -n "$namespace" -l app="$deployment_name" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
+        if kubectl get pods -n "$namespace" -l app="$deployment_name" --no-headers -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status,STATUS:.status.phase" | grep False | grep -v Succeeded &> /dev/null; then
             return 1
         else
             return 0
@@ -176,6 +180,25 @@ function start_and_keep_port_forwarding() {
     done
 }
 
+function create_vector_database_secret() {
+    local VECTOR_STORE=$1
+    local NAMESPACE_OF_SECRET=$2
+    local VECTOR_DB_USERNAME=$3
+    local VECTOR_DB_PASSWORD=$4
+    local VECTOR_DB_NAMESPACE=$5
+
+    if [[ "$VECTOR_STORE" == "redis" ]]; then
+        kubectl get secret vector-database-config -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic vector-database-config -n $NAMESPACE_OF_SECRET \
+            --from-literal=VECTOR_STORE="$VECTOR_STORE" \
+            --from-literal=REDIS_URL="redis://$VECTOR_DB_USERNAME:$VECTOR_DB_PASSWORD@redis-vector-db.$VECTOR_DB_NAMESPACE.svc.cluster.local" \
+            --from-literal=REDIS_HOST="redis-vector-db.$VECTOR_DB_NAMESPACE.svc.cluster.local" \
+            --from-literal=REDIS_PORT="6379" \
+            --from-literal=REDIS_USERNAME="$VECTOR_DB_USERNAME" \
+            --from-literal=REDIS_PASSWORD="$VECTOR_DB_PASSWORD" \
+            --from-literal=VECTOR_DB_REDIS_ARGS="--save 60 1000 --appendonly yes --requirepass $VECTOR_DB_PASSWORD"
+    fi
+}
+
 function kill_process() {
     local pattern pid full_command
     pattern=$1
@@ -219,6 +242,11 @@ function create_certs() {
         kubectl get namespace $GATEWAY_NS > /dev/null 2>&1 || kubectl create namespace $GATEWAY_NS
         kubectl get secret tls-secret -n $GATEWAY_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $GATEWAY_NS
     fi
+
+    if $edp_flag; then
+        kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
+        kubectl get secret tls-secret -n $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create secret tls tls-secret --key tls.key --cert tls.crt -n $ENHANCED_DATAPREP_NS
+    fi
 }
 
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
@@ -234,6 +262,17 @@ function start_deployment() {
     kubectl get namespace $GMC_NS > /dev/null 2>&1 || kubectl create namespace $GMC_NS
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
     kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
+    kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
+
+    # Update redis password in chatQnA pipeline's manifest
+    VECTOR_DB_USERNAME=default
+    get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
+    VECTOR_DB_PASSWORD=${NEW_PASSWORD}
+
+    # Create secret for vector db configuration, have to be created in both namespaces
+    # Args: vector_store_type, secret_namespace, username, password, namespace_with_vector_database
+    create_vector_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+    create_vector_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
 
     helm_install $GMC_NS gmc "$gmc_path "
 
@@ -248,7 +287,7 @@ function start_deployment() {
         kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
     fi
 
-    print_log "waiting until pods in $DEPLOYMENT_NS and $DATAPREP_NS are ready"
+    print_log "waiting until pods in $DEPLOYMENT_NS, $DATAPREP_NS are ready"
 
     wait_for_condition check_pods "$DEPLOYMENT_NS"
     wait_for_condition check_pods "$DATAPREP_NS"
@@ -258,6 +297,7 @@ function clear_deployment() {
     print_header "Clear deployment"
 
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
+    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl delete ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
 
     kubectl get crd gmconnectors.gmc.opea.io > /dev/null 2>&1 && kubectl delete crd gmconnectors.gmc.opea.io
@@ -429,6 +469,7 @@ function start_gateway() {
     sed -i -E "s#(.*client_secret:) \"(.*)\"#\1 \"$client_secret\"#g" $api_gateway_crd_path/values.yaml
 
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $DATAPREP_NS
+    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
     kubectl get ns $UI_NS > /dev/null 2>&1 || kubectl create ns $UI_NS
 
@@ -466,6 +507,43 @@ function start_ui() {
     wait_for_condition check_pods "$UI_NS"
 }
 
+function start_edp() {
+    print_header "Start Enhanced Dataprep"
+
+    kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
+
+    start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
+    PID=$!
+
+    sleep 2 # needs a while to work fine
+    local minio_keycloak_client_id="EnterpriseRAG-oidc-minio"
+    local minio_client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
+
+    kill -2 $PID
+    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
+    
+    local minio_access_key=$(tr -dc 'A-Za-z0-9!?%=' < /dev/urandom | head -c 10)
+    local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%=' < /dev/urandom | head -c 16)
+
+    local redis_username="default"
+    get_or_create_and_store_credentials EDP_REDIS $redis_username ""
+    local redis_password=${NEW_PASSWORD}
+
+    helm dependency update "$edp_path" > /dev/null
+    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS --set minioAccessKey=$minio_access_key --set minioSecretKey=$minio_secret_key --set redisUsername=$redis_username --set redisPassword=$redis_password --set minioOidcClientSecret=$minio_client_secret"
+
+    print_log "waiting until pods in $ENHANCED_DATAPREP_NS are ready"
+    wait_for_condition check_pods "$ENHANCED_DATAPREP_NS"
+}
+
+function clear_edp() {
+    print_header "Clear Enhanced Dataprep"
+
+    kubectl get secret tls-secret -n $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $ENHANCED_DATAPREP_NS
+
+    helm status -n $ENHANCED_DATAPREP_NS edp > /dev/null 2>&1 && helm uninstall -n $ENHANCED_DATAPREP_NS edp
+    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
+}
 
 function clear_ui() {
     print_header "Clear UI"
@@ -479,6 +557,7 @@ function clear_all_ns() {
 
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
+    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
     kubectl get ns $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_NS
     kubectl get ns $TELEMETRY_TRACES_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_TRACES_NS
     kubectl get ns $GMC_NS > /dev/null 2>&1 && kubectl delete ns $GMC_NS
@@ -495,11 +574,13 @@ telemetry_flag=false
 ui_flag=false
 auth_flag=false
 helm_upgrade=false
+edp_flag=false
 clear_deployment_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
 clear_all_flag=false
 clear_auth_flag=false
+clear_edp_flag=false
 
 
 # Parse arguments
@@ -564,11 +645,17 @@ while [[ "$#" -gt 0 ]]; do
         --ui)
             ui_flag=true
             ;;
+        --edp)
+            edp_flag=true
+            ;;
         --upgrade)
             helm_upgrade=true
             ;;
         --auth)
             auth_flag=true
+            ;;
+        -ce|--clear-edp)
+            clear_edp_flag=true
             ;;
         -ch|--clear-auth)
             clear_auth_flag=true
@@ -611,6 +698,7 @@ HELM_INSTALL_UI_DEFAULT_ARGS="--wait --set image.ui.repository=$REGISTRY/opea/ch
 HELM_INSTALL_INGRESS_DEFAULT_ARGS="-f $ingress_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --set celery.repository=$REGISTRY/opea/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/opea/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/opea/enhanced-dataprep --set backend.tag=$TAG"
 
 # Execute given arguments
 if $auth_flag; then
@@ -635,6 +723,10 @@ if $ui_flag; then
     start_ui
 fi
 
+if $edp_flag; then
+    start_edp
+fi
+
 if $test_flag; then
     print_header "Test connection"
     bash test_connection.sh
@@ -652,6 +744,10 @@ fi
 
 if $clear_ui_flag; then
     clear_ui
+fi
+
+if $clear_edp_flag; then
+    clear_edp
 fi
 
 if $clear_telemetry_flag; then

@@ -65,7 +65,8 @@ To get the right instances to run Intel® AI for Enterprise RAG, follow these st
 Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instructions to install the components mentioned below:
 
 -   **Kubernetes Cluster**: Access to a Kubernetes v1.29 cluster
--   **CSI Driver**: The K8s cluster must have the CSI driver installed, using the  [local-path-provisioner](https://github.com/rancher/local-path-provisioner)  with  `local_path_provisioner_claim_root`  set to  `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the prerequisites guide:  [CSI Driver](./docs/prerequisites.md#csi-driver).
+-   **CSI Driver**: The K8s cluster must have the CSI driver installed. Users can define their own CSI driver that will be used during EnterpriseRAG install; however StorageClass provided by CSI driver should support ReadWriteMany(RWX) in case of using a multi-node cluster.
+- Current solution was tested on a single node using the CSI driver [local-path-provisioner](https://github.com/rancher/local-path-provisioner), with  `local_path_provisioner_claim_root`  set to  `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the prerequisites guide:  [CSI Driver](./docs/prerequisites.md#csi-driver).
 -   **Operating System**: Ubuntu 22.04
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
 -   **Prepared Gaudi Node**: Please refer to the [Gaudi Software Stack](./docs/prerequisites.md#gaudi-software-stack) section of the prerequisites section.

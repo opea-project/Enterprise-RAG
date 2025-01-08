@@ -38,6 +38,29 @@ This command will configure various tools in your environment, including `Docker
 
 The script completes successfully with the confirmation: `All installations and configurations are complete`.
 
+## Storage Class
+Users can define their own CSI driver that will be used during deployment. StorageClass should support accessMode ReadWriteMany(RWX).
+
+> [!WARNING]
+If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is deployed on a multi-node cluster, we can expect pods to hang in `container creating` state for `tei-reranking` or `vllm`. The root cause is that those pods would be using the same PVC `model-volume-llm` and only one of the pods will be able to access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./microservices-connector/helm/values.yaml) and use it in reranking manifest: [teirerank.yaml](./microservices-connector/config/manifests/teirerank.yaml) in volumes section. However we strongly recommend using a storageClass that supports ReadWriteMany accessMode.
+
+We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
+
+### Seting default storageClass
+Prior to running EnterpriseRAG solution, make sure you have set the correct StorageClass as the default one. Storage classes can be listed as in the below command:
+
+```bash
+ubuntu@node1:~/applications.ai.enterprise-rag.enterprise-ai-solution/deployment$ kubectl get sc -A
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  12d
+```
+We can use the following command to set defined storageClass as default one:
+```bash
+kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+```
+Also make sure the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your storageClass capabilities.
+
+
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
 1.  Quick start with a one click script

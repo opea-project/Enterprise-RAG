@@ -283,6 +283,7 @@ class LLMGuardInputGuardrailParams(BaseDoc):
     toxicity: ToxicityModel = ToxicityModel()
 
 class LLMGuardOutputGuardrailParams(BaseDoc):
+    ban_code: BanCodeModel = BanCodeModel()
     ban_competitors: BanCompetitorsModel = BanCompetitorsModel()
     ban_substrings: BanSubstringsModel = BanSubstringsModel()
     ban_topics: BanTopicsModel = BanTopicsModel()

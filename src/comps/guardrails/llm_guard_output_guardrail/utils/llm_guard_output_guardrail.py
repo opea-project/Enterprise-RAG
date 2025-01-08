@@ -23,7 +23,7 @@ class OPEALLMGuardOutputGuardrail:
     Methods:
         __init__(usv_config: list):
             Initializes the OPEALLMGuardOutputGuardrail with the provided configuration.
-        
+
         scan_llm_output(output_doc: object) -> str:
             Scans the output from an LLM output document and returns the sanitized output.
     """
@@ -78,8 +78,8 @@ class OPEALLMGuardOutputGuardrail:
                     msg = f"LLM Output {output_doc.text} is not valid, scores: {results_score}"
                     logger.error(msg)
                     usr_msg = "I'm sorry, but the model output is not valid according to the policies."
-                    redact = [c.get('redact', False) for _, c in self._scanners_config._output_scanners_config.items()] # to see if sanitized output available
-                    if any(redact):
+                    redact_or_truncated = [c.get('redact', False) or c.get('truncate', False) for _, c in self._scanners_config._output_scanners_config.items()] # to see if sanitized output available
+                    if any(redact_or_truncated):
                         usr_msg = f"We sanitized the answer due to the guardrails policies: {sanitized_output}"
                     raise HTTPException(status_code=466, detail=usr_msg)
                 return sanitized_output

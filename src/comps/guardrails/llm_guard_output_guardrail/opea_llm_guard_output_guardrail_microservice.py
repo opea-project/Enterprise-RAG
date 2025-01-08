@@ -95,5 +95,5 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
 if __name__ == "__main__":
     log_level = usvc_config.get("OPEA_LOGGER_LEVEL", "INFO")
     change_opea_logger_level(logger, log_level)
-    
+
     opea_microservices[USVC_NAME].start()

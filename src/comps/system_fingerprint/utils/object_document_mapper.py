@@ -231,6 +231,7 @@ class LLMGuardInputGuardrailParams(Document):
 
 
 class LLMGuardOutputGuardrailParams(Document):
+    ban_code: BanCodeModel = None
     ban_competitors: BanCompetitorsModel = None
     ban_substrings: BanSubstringsModel = None
     ban_topics: BanTopicsModel = None

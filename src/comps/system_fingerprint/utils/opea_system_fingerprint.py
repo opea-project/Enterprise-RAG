@@ -483,7 +483,10 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                             **v)
             elif param[0] == "output_guard" and param[1] is not None:
                 for k, v in param[1].items():
-                    if k == "ban_competitors":
+                    if k == "ban_code":
+                        self.current_arguments.parameters.output_guard.ban_code = BanCodeModel(
+                            **v)
+                    elif k == "ban_competitors":
                         self.current_arguments.parameters.output_guard.ban_competitors = BanCompetitorsModel(
                             **v)
                     elif k == "ban_substrings":

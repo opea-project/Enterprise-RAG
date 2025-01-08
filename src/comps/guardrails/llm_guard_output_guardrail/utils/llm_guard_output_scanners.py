@@ -864,7 +864,7 @@ class OutputScannersConfig:
         truncate = scanner_config.get('truncate', None)
 
         if max_time is not None:
-            reading_time_params['max_time'] = max_time
+            reading_time_params['max_time'] = float(max_time)
         else:
             logger.error("Max time is required for ReadingTime scanner")
             raise Exception("Max time is required for ReadingTime scanner")

@@ -230,6 +230,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                         toxicity=ToxicityModel()
                     ),
                     output_guard=LLMGuardOutputGuardrailParams(
+                        ban_code=BanCodeModel(),
                         ban_competitors=BanCompetitorsModel(),
                         ban_substrings=BanSubstringsModel(),
                         ban_topics=BanTopicsModel(),

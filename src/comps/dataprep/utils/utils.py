@@ -22,7 +22,7 @@ class TimeoutError(Exception):
     pass
 
 
-async def save_file_to_local_disk(file: UploadFile) -> str:
+def save_file_to_local_disk(file: UploadFile) -> str:
     upload_folder = sanitize_env(os.getenv('UPLOAD_PATH', '/tmp/opea_upload'))
 
     if not os.path.exists(upload_folder):
@@ -31,7 +31,7 @@ async def save_file_to_local_disk(file: UploadFile) -> str:
     save_path = Path(os.path.join(upload_folder, file.filename))
     with save_path.open("wb") as fout:
         try:
-            content = await file.read()
+            content = file.file.read()
             fout.write(content)
             fout.close
         except Exception as e:
@@ -41,7 +41,7 @@ async def save_file_to_local_disk(file: UploadFile) -> str:
     return save_path
 
 
-async def save_link_to_local_disk(link_list: List[str]) -> List[str]:
+def save_link_to_local_disk(link_list: List[str]) -> List[str]:
     upload_folder = sanitize_env(os.getenv('UPLOAD_PATH', '/tmp/opea_upload'))
     if not os.path.exists(upload_folder):
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
@@ -63,13 +63,13 @@ async def save_link_to_local_disk(link_list: List[str]) -> List[str]:
     return save_paths
 
 
-async def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextDoc]:
+def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextDoc]:
     parsed_texts: List[TextDoc] = []
 
     for file in files:
         # if files have to be persisted internally
         try:
-            path = await save_file_to_local_disk(file)
+            path = save_file_to_local_disk(file)
             saved_path = str(path.resolve())
             logger.info(f"saved file {file.filename} to {saved_path}")
 
@@ -89,12 +89,12 @@ async def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextD
     return parsed_texts
 
 
-async def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
+def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
     parsed_texts: List[TextDoc] = []
 
     for link in links:
         try:
-            paths = await save_link_to_local_disk([link])
+            paths = save_link_to_local_disk([link])
             for path in paths:
                 saved_path = str(path.resolve())
                 logger.info(f"saved link {link} to {saved_path}")

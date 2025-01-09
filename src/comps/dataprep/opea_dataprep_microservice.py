@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
 import os
 import time
 import base64
@@ -29,12 +31,27 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEADataprep class with environment variables.
-dataprep = opea_dataprep.OPEADataprep(
-    chunk_size=int(sanitize_env(os.getenv("CHUNK_SIZE"))),
-    chunk_overlap=int(sanitize_env(os.getenv("CHUNK_OVERLAP"))),
-    process_table=sanitize_env(os.getenv("PROCESS_TABLE")),
-    table_strategy=sanitize_env(os.getenv("PROCESS_TABLE_STRATEGY"))
-)
+def run_dataprep(files, links):
+    dataprep = opea_dataprep.OPEADataprep(
+        chunk_size=int(sanitize_env(os.getenv("CHUNK_SIZE"))),
+        chunk_overlap=int(sanitize_env(os.getenv("CHUNK_OVERLAP"))),
+        process_table=sanitize_env(os.getenv("PROCESS_TABLE")),
+        table_strategy=sanitize_env(os.getenv("PROCESS_TABLE_STRATEGY"))
+    )
+    textdocs = dataprep.dataprep(files=files, link_list=links)
+    return textdocs
+
+# Process Pool Executor was introduced due to API being unresponsive while computing non-io tasks.
+# Originally, async functions are run in event loop which means that they block the server thread
+# thus making it unresponsive for other requests - mainly health_check - which then might cause
+# some issues on k8s deployments, showing the pod as not ready by failing the liveness probe.
+# While moving it to sync function fixed that issue this meant that it would run in a separate
+# thread but was instead slower due to not using async io calls. The resolution is to run it
+# as an async function for io improvement, but spawn a separate process for heavy CPU usage calls.
+# Setting max_workers to 1 ensures that the CPU heavy calls are not overutilizing the pod resources.
+# https://github.com/fastapi/fastapi/issues/3725#issuecomment-902629033
+# https://luis-sena.medium.com/how-to-optimize-fastapi-for-ml-model-serving-6f75fb9e040d
+pool = ProcessPoolExecutor(max_workers=1)
 
 # Register the microservice with the specified configuration.
 @register_microservice(
@@ -82,8 +99,9 @@ async def process(input: DataPrepInput) -> TextDocList:
             raise HTTPException(status_code=500, detail="An error occured while persisting files.")
 
     textdocs = None
+    loop = asyncio.get_event_loop()
     try:
-        textdocs = await dataprep.dataprep(files=decoded_files, link_list=link_list)
+        textdocs = await loop.run_in_executor(pool, run_dataprep, decoded_files, link_list)
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"An internal error occurred while processing: {str(e)}")

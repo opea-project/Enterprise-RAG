@@ -34,7 +34,7 @@ class OPEADataprep:
         self.process_table = process_table
         self.table_strategy = table_strategy
 
-    async def dataprep(self, files: any, link_list: list) -> List[TextDoc]:
+    def dataprep(self, files: any, link_list: list) -> List[TextDoc]:
 
         if not files and not link_list:
             raise ValueError("No links and/or files passed for data preparation.")
@@ -50,7 +50,7 @@ class OPEADataprep:
         # Save files
         if files:
             try:
-                textdocs = await parse_files(
+                textdocs = parse_files(
                     files=files,
                     splitter=splitter
                 )
@@ -62,7 +62,7 @@ class OPEADataprep:
         # Save links
         if link_list:
             try:
-                textdocs = await parse_links(
+                textdocs = parse_links(
                     links=link_list,
                     splitter=splitter
                 )

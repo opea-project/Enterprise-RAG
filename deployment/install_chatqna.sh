@@ -522,8 +522,8 @@ function start_edp() {
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
     
-    local minio_access_key=$(tr -dc 'A-Za-z0-9!?%=' < /dev/urandom | head -c 10)
-    local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%=' < /dev/urandom | head -c 16)
+    local minio_access_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 10)
+    local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 16)
 
     local redis_username="default"
     get_or_create_and_store_credentials EDP_REDIS $redis_username ""

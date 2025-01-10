@@ -3,8 +3,8 @@ from enum import Enum
 
 import pytest
 from llms.base_tests import BaseLLMsTest
-from llms.structures_llms_vllm import (LLMs_VLLM_EnvKeys,
-                                       LLMsVllmDockerSetup)
+from llms.structures_llms_vllm_hpu import (LLMs_VLLM_HPU_EnvKeys,
+                                           LLMsVllm_HPU_DockerSetup)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -32,7 +32,7 @@ TEST_ITERATAIONS = [
             "configuration-id": TestConfigurationLabels.MIXTRAL_22B,
         },
         "config": {
-            LLMs_VLLM_EnvKeys.LLM_VLLM_MODEL_NAME.value: "mistralai/Mixtral-8x22B-Instruct-v0.1"
+            LLMs_VLLM_HPU_EnvKeys.LLM_VLLM_MODEL_NAME.value: "mistralai/Mixtral-8x22B-Instruct-v0.1"
         }
     },
     {
@@ -40,7 +40,7 @@ TEST_ITERATAIONS = [
             "configuration-id": TestConfigurationLabels.LLAMA_70B,
         },
         "config": {
-            LLMs_VLLM_EnvKeys.LLM_VLLM_MODEL_NAME.value: "meta-llama/Meta-Llama-3-70B"
+            LLMs_VLLM_HPU_EnvKeys.LLM_VLLM_MODEL_NAME.value: "meta-llama/Meta-Llama-3-70B"
         }
     },
 ]
@@ -56,7 +56,7 @@ def llms_containers_fixture(request):
     logger.debug("Creating LLMs VLLM HPU fixture with following config:")
     logger.debug(config_override)
 
-    containers = LLMsVllmDockerSetup("comps/llms/impl/model_server/vllm/docker/.env.hpu", config_override)
+    containers = LLMsVllm_HPU_DockerSetup("comps/llms/impl/model_server/vllm/docker/.env.hpu", config_override)
 
     try:
         containers.deploy()

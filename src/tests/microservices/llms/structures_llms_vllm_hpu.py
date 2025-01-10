@@ -9,7 +9,7 @@ from structures_base import LLMsDockerSetup
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class LLMs_VLLM_EnvKeys(Enum):
+class LLMs_VLLM_HPU_EnvKeys(Enum):
     """This struct declares all env variables from .env file.
 
     It is created to ensure env variables for testing are in sync with design by devs.
@@ -29,7 +29,7 @@ class LLMs_VLLM_EnvKeys(Enum):
     PT_HPU_LAZY_ACC_PAR_MODE = "PT_HPU_LAZY_ACC_PAR_MODE"
 
 
-class LLMsVllmDockerSetup(LLMsDockerSetup):
+class LLMsVllm_HPU_DockerSetup(LLMsDockerSetup):
 
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
     MODELSERVER_IMAGE_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-vllm"
@@ -37,8 +37,8 @@ class LLMsVllmDockerSetup(LLMsDockerSetup):
     MODELSERVER_PORT = 80
 
     @property
-    def _ENV_KEYS(self) -> Type[LLMs_VLLM_EnvKeys]:
-        return LLMs_VLLM_EnvKeys
+    def _ENV_KEYS(self) -> Type[LLMs_VLLM_HPU_EnvKeys]:
+        return LLMs_VLLM_HPU_EnvKeys
 
     @property
     def _MODEL_SERVER_READINESS_MSG(self) -> str:

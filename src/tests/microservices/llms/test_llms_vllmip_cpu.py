@@ -3,7 +3,7 @@ from enum import Enum
 
 import pytest
 from llms.base_tests import BaseLLMsTest
-from llms.structures_llms_vllmov_cpu import LLMsVllmOV_CPU_DockerSetup
+from llms.structures_llms_vllmip_cpu import LLMsVllmIP_CPU_DockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -13,7 +13,7 @@ class TestConfigurationLabels(Enum):
 
 # Test id in Jira depends on test itself and configuration
 ALLURE_IDS = {
-    (BaseLLMsTest.test_simple_scenario,     TestConfigurationLabels.GOLDEN): "IEASG-T97",
+    (BaseLLMsTest.test_simple_scenario,     TestConfigurationLabels.GOLDEN): "IEASG-T119",
 }
 
 TEST_ITERATAIONS = [
@@ -33,10 +33,10 @@ TEST_ITERATAIONS = [
 )
 def llms_containers_fixture(request):
     config_override = request.param["config"]
-    logger.debug("Creating LLMs VLLM+OpenVino CPU fixture with following config:")
+    logger.debug("Creating LLMs VLLM+IPEX CPU fixture with following config:")
     logger.debug(config_override)
 
-    containers = LLMsVllmOV_CPU_DockerSetup("comps/llms/impl/model_server/vllm/docker/.env.cpu", config_override)
+    containers = LLMsVllmIP_CPU_DockerSetup("comps/llms/impl/model_server/vllm/docker/.env.cpu", config_override)
 
     try:
         containers.deploy()
@@ -58,5 +58,5 @@ def allure_ids():
 @pytest.mark.llms
 @pytest.mark.cpu
 @pytest.mark.vllm
-class Test_LLMs_VllmOV_CPU(BaseLLMsTest):
+class Test_LLMs_VllmIP_CPU(BaseLLMsTest):
     pass

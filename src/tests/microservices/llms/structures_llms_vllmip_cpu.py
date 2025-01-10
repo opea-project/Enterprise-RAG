@@ -3,13 +3,13 @@ import os
 from enum import Enum
 from typing import Type
 
-from python_on_whales import Container, Image, docker
+from python_on_whales import Container, Image
 from structures_base import LLMsDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class LLMs_VllmOV_EnvKeys(Enum):
+class LLMs_VllmIP_CPU_EnvKeys(Enum):
     """This struct declares all env variables from .env file.
 
     It is created to ensure env variables for testing are in sync with design by devs.
@@ -24,12 +24,8 @@ class LLMs_VllmOV_EnvKeys(Enum):
     VLLM_PP_SIZE = "VLLM_PP_SIZE"
     VLLM_MAX_MODEL_LEN = "VLLM_MAX_MODEL_LEN"
 
-    VLLM_OPENVINO_KVCACHE_SPACE = "VLLM_OPENVINO_KVCACHE_SPACE"
-    VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS = "VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS"
-    VLLM_OPENVINO_CPU_KV_CACHE_PRECISION = "VLLM_OPENVINO_CPU_KV_CACHE_PRECISION"
 
-
-class LLMsVllmOVDockerSetup(LLMsDockerSetup):
+class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
     """Implements VLLM with OpenVino Docker setup"""
 
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
@@ -41,8 +37,8 @@ class LLMsVllmOVDockerSetup(LLMsDockerSetup):
     VLLM_TAG = "v0.6.4.post1"
 
     @property
-    def _ENV_KEYS(self) -> Type[LLMs_VllmOV_EnvKeys]:
-        return LLMs_VllmOV_EnvKeys
+    def _ENV_KEYS(self) -> Type[LLMs_VllmIP_CPU_EnvKeys]:
+        return LLMs_VllmIP_CPU_EnvKeys
 
     @property
     def _MODEL_SERVER_READINESS_MSG(self) -> str:
@@ -58,7 +54,7 @@ class LLMsVllmOVDockerSetup(LLMsDockerSetup):
 
     @property
     def _model_server_envs(self) -> dict:
-        envs = [
+        envs_keys = [
             self._ENV_KEYS.VLLM_CPU_KVCACHE_SPACE,
             self._ENV_KEYS.VLLM_DTYPE,
             self._ENV_KEYS.VLLM_MAX_NUM_SEQS,
@@ -67,35 +63,17 @@ class LLMsVllmOVDockerSetup(LLMsDockerSetup):
             self._ENV_KEYS.VLLM_PP_SIZE,
         ]
 
-        return {env_key.value : self._get_docker_env(env_key) for env_key in envs}
+        env_vars = {env_key.value : self._get_docker_env(env_key) for env_key in envs_keys}
+        env_vars["VLLM_OPENVINO_DEVICE"] = "CPU"
+        return env_vars
 
     def _build_model_server(self) -> Image:
-        """Customized build that replicates steps in following script:
-        /src/comps/llms/impl/model_server/vllm/run_vllm.sh
-        This is hopefully subject to simplify.
-        """
-
-        cmd = f"""
-        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:stable sh -c "
-            set -eo pipefail && \
-            export HTTP_PROXY={LLMsVllmOVDockerSetup.COMMON_PROXY_SETTINGS["http_proxy"]} && \
-            export HTTPS_PROXY={LLMsVllmOVDockerSetup.COMMON_PROXY_SETTINGS["https_proxy"]} && \
-            export NO_PROXY={LLMsVllmOVDockerSetup.COMMON_PROXY_SETTINGS["no_proxy"]} && \
-            apk add --no-cache git && \
-            git clone https://github.com/vllm-project/vllm.git /workspace/vllm && \
-            cd /workspace/vllm && \
-            git -c advice.detachedHead=false checkout v0.6.4.post1 && \
-            sed -i 's|pip install intel-openmp|pip install intel-openmp==2025.0.1|g' Dockerfile.cpu && \
-            DOCKER_BUILDKIT=1 docker build -f Dockerfile.cpu -t {LLMsVllmOVDockerSetup.MODELSERVER_IMAGE_NAME} --shm-size=128g . --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTPS_PROXY --build-arg no_proxy=$NO_PROXY
-            "
-        """
-        logger.debug("Execute following command:")
-        logger.debug(cmd)
-        os.system(cmd)
-
-        image = docker.image.inspect(LLMsVllmOVDockerSetup.MODELSERVER_IMAGE_NAME)
-
-        return image
+        return self._build_image(
+            self.MODELSERVER_IMAGE_NAME,
+            file=f"{self._main_src_path}/comps/llms/impl/model_server/vllm/docker/Dockerfile.cpu",
+            context_path=f"{self._main_src_path}/comps/llms/impl/model_server/vllm/",
+            **self.COMMON_BUILD_OPTIONS,
+        )
 
     def _run_model_server(self) -> Container:
         container = self._run_container(
@@ -113,6 +91,20 @@ class LLMsVllmOVDockerSetup(LLMsDockerSetup):
             command=[
                 '--model',
                 f'{self._get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)}',
+                '--device',
+                'cpu',
+                '--tensor-parallel-size',
+                f'{self._get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)}',
+                '--pipeline-parallel-size',
+                f'{self._get_docker_env(self._ENV_KEYS.VLLM_PP_SIZE)}',
+                '--dtype',
+                f'{self._get_docker_env(self._ENV_KEYS.VLLM_DTYPE)}',
+                '--max-num-seqs',
+                f'{self._get_docker_env(self._ENV_KEYS.VLLM_MAX_NUM_SEQS)}',
+                '--max-model-len',
+                f'{self._get_docker_env(self._ENV_KEYS.VLLM_MAX_MODEL_LEN)}',
+                "--download_dir",
+                "/data",
                 "--host",
                 "0.0.0.0",
                 "--port",

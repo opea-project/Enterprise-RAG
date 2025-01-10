@@ -10,9 +10,9 @@ dependencies:
   version: 1.0.0
 - name: kube-prometheus-stack
   repository: https://prometheus-community.github.io/helm-charts
-  version: 65.8.1
+  version: 67.9.0
 - name: prometheus-redis-exporter
   repository: https://prometheus-community.github.io/helm-charts
-  version: 6.8.0
-digest: sha256:c5efc53dfc67868e8a40d19a51cef371de1ccdd6ec466e2206a8e52b5f9b81bf
-generated: "2024-11-08T14:09:38.704816009+01:00"
+  version: 6.9.0
+digest: sha256:80b9cbc0380ee12d12fa85785881b45daf874847d23bd0612f2d209cb86bd35e
+generated: "2025-01-08T04:06:48.446682815-08:00"

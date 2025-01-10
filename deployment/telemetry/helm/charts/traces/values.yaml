@@ -21,7 +21,7 @@ tempo:
   tempo:
     reportingEnabled: false # disable anonymous reporting to Grafana Labs
     receivers:
-      jaeger: null # ignore error because of helm null error for subcharts
+      jaeger: {} # ignore error because of helm null error for subcharts
     # retention of traces (1 week)
     retention: 168h
 

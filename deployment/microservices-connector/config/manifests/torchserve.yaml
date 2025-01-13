@@ -1,0 +1,144 @@
+---
+# Source: torchserve/templates/configmap.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: torchserve-config
+  labels:
+    helm.sh/chart: torchserve-0.8.0
+    app.kubernetes.io/name: torchserve
+    app.kubernetes.io/instance: torchserve
+    app.kubernetes.io/version: "cpu-1.5"
+    app.kubernetes.io/managed-by: Helm
+data:
+  http_proxy: ""
+  https_proxy: ""
+  no_proxy: ""
+  HF_TOKEN: ""
+---
+# Source: torchserve/templates/service.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: torchserve
+  labels:
+    helm.sh/chart: torchserve-0.8.0
+    app.kubernetes.io/name: torchserve
+    app.kubernetes.io/instance: torchserve
+    app.kubernetes.io/version: "cpu-1.5"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8090
+      targetPort: 8090
+      protocol: TCP
+      name: torchserve
+    - port: 8092
+      targetPort: 8092
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: torchserve
+    app.kubernetes.io/instance: torchserve
+---
+# Source: torchserve/templates/deployment.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: torchserve
+  labels:
+    helm.sh/chart: torchserve-0.8.0
+    app.kubernetes.io/name: torchserve
+    app.kubernetes.io/instance: torchserve
+    app.kubernetes.io/version: "cpu-1.5"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: torchserve
+      app.kubernetes.io/instance: torchserve
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: torchserve
+        app.kubernetes.io/instance: torchserve
+    spec:
+      securityContext:
+        {}
+      containers:
+        - name: torchserve
+          envFrom:
+            - configMapRef:
+                name: torchserve-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          securityContext:
+            {}
+          image: "localhost:5000/test/pl-qna-rag-embedding-torchserve:latest"
+          imagePullPolicy: Always
+          env:
+            - name: TS_ENABLE_METRICS_API
+              value: "true"
+            - name: TS_METRICS_MODE
+              value: prometheus
+          resources:
+          limits:
+            cpu: "16"
+            memory: 32Gi
+          requests:
+            cpu: "16"
+            memory: 32Gi
+          volumeMounts:
+            - mountPath: /opt/ml/model
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+            - name: metrics
+              containerPort: 8092
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          startupProbe:
+            failureThreshold: 120
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-embedding
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: tmp
+          emptyDir: {}

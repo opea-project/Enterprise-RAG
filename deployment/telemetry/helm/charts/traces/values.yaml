@@ -1,0 +1,148 @@
+#########################################################
+# Tempo - traces backend
+#########################################################
+tempo:
+  # -------------
+  enabled: true
+  # -------------
+
+  global:
+    clusterDomain: 'cluster.local'
+    # DNS service need to match deployed kubernetes
+    # kubectl get svc --namespace=kube-system -l k8s-app=kube-dns  -o jsonpath='{.items..metadata.name}'
+    # or redefine with extra helm argument: "--set tempo.global.dnsService=kube-dns" when install telemetry-logs
+    #dnsService: "kube-dns"   # for kind based setup
+    dnsService: "coredns"     # for kubespray based setup
+
+  gateway:
+    enabled: true
+  minio:
+    enabled: true
+  storage:
+    trace:
+      backend: s3
+      s3:
+        access_key: 'grafana-tempo'
+        secret_key: 'supersecret'
+        endpoint: 'telemetry-traces-minio:9000' # ORIGINAL for minio.enabled = true
+        bucket: 'tempo-traces'
+        insecure: true
+  traces:
+    otlp:
+      http:
+        enabled: true
+      grpc:
+        enabled: true
+  distributor:
+    affinity: null
+    config:
+      log_received_spans:
+        enabled: true
+
+  # overrides:
+  # global_overrides:
+  #   metrics_generator_processors:
+  #     - "service-graphs"
+  #     - "span-metrics"
+
+  # Global overrides
+  global_overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+
+
+  # grafana-helm-charts/charts/tempo-distributed/values.yaml
+  metricsGenerator:
+    affinity: null
+    enabled: true
+    # processors:
+    #   - "service-graphs"
+    #   - "span-metric"
+    config:
+      # processors:
+      #   - "service-graphs"
+      #   - "span-metric"
+      storage:
+        remote_write_add_org_id_header: false
+        remote_write:
+        - url: http://telemetry-kube-prometheus-prometheus.monitoring:9090/api/v1/write
+          name: prometheus
+          # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/processor/spanmetricsprocessor/v0.95.0/connector/spanmetricsconnector/README.md
+          send_exemplars: true
+
+          # TODO:
+          # https://grafana.com/docs/tempo/latest/metrics-generator/#native-histograms
+          # https://grafana.com/docs/mimir/latest/visualize/native-histograms/#visualize-native-histograms
+          # send_native_histograms: true
+
+#########################################################
+# Jaeger
+#########################################################
+jaeger:
+  # -------------
+  enabled: false
+  # -------------
+  # jaegertracing-helm-charts/charts/jaeger/values.yaml:503
+  collector:
+    service:
+      otlp:
+        grpc:
+          name: otlp-grpc
+          port: 4317
+          # nodePort:
+        http:
+          name: otlp-http
+          port: 4318
+          # nodePort:
+
+#########################################################
+# OpenTelemetry operator
+#########################################################
+otel-operator:
+  # -------------
+  enabled: true
+  # -------------
+  # https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator#tls-certificate-requirement
+  # From otel operator docs:
+  # Do not rely on cert-manager:
+  # "The easiest and default method is to install the cert-manager and set admissionWebhooks.certManager.enabled to true. In this way, cert-manager will generate a self-signed certificate. See cert-manager installation for more details."
+  admissionWebhooks:
+    certManager:
+      enabled: false  # default is true
+    # You can use an automatically generated self-signed certificate by setting admissionWebhooks.certManager.enabled to false and admissionWebhooks.autoGenerateCert.enabled to true. Helm will create a self-signed cert and a secret for you.
+    # opentelemetry-helm-charts/charts/opentelemetry-operator/values.yaml:263
+    autoGenerateCert:
+      enabled: true   # default is true, but added as explicit requirments
+      recreate: false # reuse existing, do not recreate certs/CA for webhooks
+
+  # otel-operator-values.yaml
+  manager:
+    collectorImage:
+      # repository: otel/opentelemetry-collector-k8s
+      # we need contrib for kubernetes processor/prometheus exporter
+      # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
+      repository: "otel/opentelemetry-collector-contrib:0.109.0"
+      # over writen by spec.image from CR
+      # image: "otel/opentelemetry-collector-contrib:0.109.0"
+
+  # /root/ppalucki/rag/opentelemetry-helm-charts/charts/opentelemetry-operator/values.yaml
+  # manager:
+    ### NEED FOR GO
+    # extraArgs:
+    #  https://github.com/open-telemetry/opentelemetry-operator?tab=readme-ov-file#controlling-instrumentation-capabilities
+    # - '--enable-go-instrumentation'
+    # - '--enable-nginx-instrumentation'
+      # The Go instrumentation support in the operator is disabled by default.
+      # To enable it, use the operator.autoinstrumentation.go feature gate.
+      # go:
+      #   repository: ""
+      #   tag: ""
+    # Feature Gates are a comma-delimited list of feature gate identifiers.
+    # Prefix a gate with '-' to disable support.
+    # Prefixing a gate with '+' or no prefix will enable support.
+    # A full list of valid identifiers can be found here: https://github.com/open-telemetry/opentelemetry-operator/blob/main/pkg/featuregate/featuregate.go
+    #featureGates: "+operator.autoinstrumentation.go"
+    #featureGates: "+operator.golang.flags,"

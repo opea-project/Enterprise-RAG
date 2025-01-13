@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.upload-data-panel {
+  @apply fixed bottom-0 right-0 flex w-full items-center justify-end gap-4 border-t border-t-light-border-subtle bg-light-background-1 px-4 py-2 dark:border-t-dark-border-subtle dark:bg-dark-background-1;
+}
+
+.upload-data-button {
+  @apply flex items-center;
+}

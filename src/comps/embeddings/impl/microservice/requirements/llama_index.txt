@@ -1,0 +1,5 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+langsmith==0.1.85
+llama-index-embeddings-text-embeddings-inference==0.1.4

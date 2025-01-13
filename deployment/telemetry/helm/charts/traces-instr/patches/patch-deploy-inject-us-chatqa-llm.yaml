@@ -1,0 +1,26 @@
+spec:
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+      - name: llm-usvc
+        env:
+        - name: LOGGING_PROPAGATE
+          value: "true"
+        # Because of streaming mode in llm service and number of spans created by ASGI autoinstrumenation is so high ("span per token" overhread of traces):
+        # Please use options below to mitigate this problem:
+        # a) trace sampler should be switched to "ratio/fraction based as example below"
+        # https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler
+        - name: OTEL_TRACES_SAMPLER
+          value: "traceidratio"
+        - name: OTEL_TRACES_SAMPLER_ARG
+          value: "0.1"
+        # Alternatively  instrumentation for fastapi can be disabled (but then parent trace_id link is lost)
+        # - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+        #   value: fastapi
+        - name: OTEL_SERVICE_NAME
+          value: "chatqa/llm-usvc"
+
+

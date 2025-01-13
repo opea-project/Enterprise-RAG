@@ -1,0 +1,27 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v2
+name: telemetry
+type: application
+version: 1.0.0
+
+dependencies:
+  # built-in sub charts
+  - name: logs
+    version: "1.0.0"
+    condition: logs.enabled
+  - name: traces
+    version: "1.0.0"
+    condition: traces.enabled
+  - name: traces-instr
+    version: "1.0.0"
+    condition: traces-instr.enabled
+  # external/3rd party subcharts
+  - name: kube-prometheus-stack
+    condition: kube-prometheus-stack.enabled
+    repository: https://prometheus-community.github.io/helm-charts
+    version: "61.7.*"
+  - name: prometheus-redis-exporter
+    condition: prometheus-redis-exporter.enabled
+    repository: https://prometheus-community.github.io/helm-charts
+    version: "6.5.0"

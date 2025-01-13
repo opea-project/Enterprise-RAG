@@ -1,0 +1,62 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Note: For VLLM on Gaudi, --pipeline-parallel-size currently is hardocoded to 1 as pipeline parallelization is not yet supported.
+# todo: expose VLLM_PP_SIZE as configurable parameter in the future, after pipeline parallelization is supported.
+
+services:
+  llm-vllm-model-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.hpu
+    image: vllm:hpu
+    container_name: llm-vllm-model-server
+    ports:
+      - "${LLM_VLLM_PORT}:80"
+    volumes:
+      - "./data:/data"
+    environment:
+      HABANA_VISIBLE_DEVICES: ${HABANA_VISIBLE_DEVICES}
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      NUM_SHARD: ${NUM_SHARD}
+      OMPI_MCA_btl_vader_single_copy_mechanism: ${OMPI_MCA_btl_vader_single_copy_mechanism}
+      PT_HPU_ENABLE_LAZY_COLLECTIVES: ${PT_HPU_ENABLE_LAZY_COLLECTIVES}
+      PT_HPU_LAZY_ACC_PAR_MODE: ${PT_HPU_LAZY_ACC_PAR_MODE}
+      SHARDED: ${SHARDED}
+      VLLM_CPU_KVCACHE_SPACE: ${VLLM_CPU_KVCACHE_SPACE}
+      VLLM_SKIP_WARMUP: ${VLLM_SKIP_WARMUP}
+    runtime: habana
+    cap_add:
+      - SYS_NICE
+    ipc: host
+    command: /bin/bash -c "python3 -m vllm.entrypoints.openai.api_server \
+                           --model $LLM_VLLM_MODEL_NAME \
+                           --device hpu \
+                           --tensor-parallel-size $VLLM_TP_SIZE \
+                           --pipeline-parallel-size 1 \
+                           --dtype $VLLM_DTYPE --max-num-seqs $VLLM_MAX_NUM_SEQS \
+                           --host 0.0.0.0 --port 80"
+
+  llm_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/llms/impl/microservice/Dockerfile
+    image: opea/llm:latest
+    container_name: llm-vllm-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      LLM_CONNECTOR: ${LLM_CONNECTOR}
+      LLM_MODEL_NAME: ${LLM_VLLM_MODEL_NAME}
+      LLM_MODEL_SERVER: "vllm"
+      LLM_MODEL_SERVER_ENDPOINT: http://localhost:${LLM_VLLM_PORT}
+      NO_PROXY: ${NO_PROXY}
+    restart: unless-stopped
+    depends_on:
+      - llm-vllm-model-server

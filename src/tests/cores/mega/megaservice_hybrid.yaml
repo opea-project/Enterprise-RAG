@@ -1,0 +1,13 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+opea_micro_services:
+  s1:
+    endpoint: http://localhost:8081/v1/add
+
+  s2:
+    endpoint: http://fakehost:8008/v1/add # Here change the host to where your remote service is located
+
+opea_mega_service:
+  mega_flow:
+    - s1 >> s2

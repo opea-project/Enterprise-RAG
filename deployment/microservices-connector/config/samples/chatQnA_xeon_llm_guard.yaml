@@ -1,0 +1,90 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: chatqa
+  namespace: chatqa
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Embedding
+        dependency: Hard
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            TEI_EMBEDDING_ENDPOINT: tei-embedding-svc
+      - name: TeiEmbedding
+        dependency: Hard
+        internalService:
+          serviceName: tei-embedding-svc
+          isDownstreamService: true
+      - name: Retriever
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: retriever-svc
+          config:
+            endpoint: /v1/retrieval
+            REDIS_URL: redis-vector-db
+            TEI_EMBEDDING_ENDPOINT: tei-embedding-svc
+      - name: VectorDB
+        dependency: Hard
+        internalService:
+          serviceName: redis-vector-db
+          isDownstreamService: true
+      - name: Reranking
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: reranking-svc
+          config:
+            endpoint: /v1/reranking
+            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
+      - name: TeiReranking
+        dependency: Hard
+        internalService:
+          serviceName: tei-reranking-svc
+          config:
+            endpoint: /rerank
+          isDownstreamService: true
+      - name: LLMGuardInput
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: input-scan-svc
+          config:
+            endpoint: /v1/llmguardinput
+      - name: Llm
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: llm-svc
+          config:
+            endpoint: /v1/chat/completions
+            TGI_LLM_ENDPOINT: tgi-service-m
+      - name: Tgi
+        dependency: Hard
+        internalService:
+          serviceName: tgi-service-m
+          config:
+            endpoint: /generate
+          isDownstreamService: true
+      - name: LLMGuardOutput
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: output-scan-svc
+          config:
+            endpoint: /v1/llmguardoutput

@@ -1,0 +1,33 @@
+server:
+  host: "localhost"
+  port: 8080
+  ssl_enabled: true
+  ssl:
+    certificate: "/path/to/certificate.crt"
+    key: "/path/to/private.key"
+database:
+  type: "postgresql"
+  host: "db.example.com"
+  port: 5432
+  username: "dbuser"
+  password: "securepassword"
+  name: "my_database"
+features:
+  authentication:
+    enabled: true
+    method: "oauth2"
+    providers:
+      google:
+        client_id: "your-client-id"
+        client_secret: "your-client-secret"
+      facebook:
+        app_id: "your-app-id"
+        app_secret: "your-app-secret"
+logging:
+  level: "info"
+  file: "/var/log/myapp.log"
+api_keys:
+  google_maps: "your-google-maps-api-key"
+  sendgrid: "your-sendgrid-api-key"
+environment: "production"
+

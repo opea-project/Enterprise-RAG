@@ -1,0 +1,74 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: chatqa
+  namespace: chatqa
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Embedding
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
+            EMBEDDING_MODEL_NAME: "BAAI/bge-base-en-v1.5"
+            EMBEDDING_MODEL_SERVER: "torchserve"
+            EMBEDDING_CONNECTOR: "langchain"
+      - name: TorchserveEmbedding
+        internalService:
+          serviceName: torchserve-embedding-svc
+          config:
+            TORCHSERVE_MODEL_NAME: "BAAI/bge-base-en-v1.5"
+          isDownstreamService: true
+      - name: Retriever
+        data: $response
+        internalService:
+          serviceName: retriever-svc
+          config:
+            endpoint: /v1/retrieval
+            REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
+            EMBED_MODEL: "BAAI/bge-base-en-v1.5"
+      - name: VectorDB
+        internalService:
+          serviceName: redis-vector-db
+          isDownstreamService: true
+      - name: Reranking
+        data: $response
+        internalService:
+          serviceName: reranking-svc
+          config:
+            endpoint: /v1/reranking
+            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
+      - name: TeiReranking
+        internalService:
+          serviceName: tei-reranking-svc
+          config:
+            endpoint: /rerank
+          isDownstreamService: true
+      - name: Llm
+        data: $response
+        internalService:
+          serviceName: llm-svc
+          config:
+            endpoint: /v1/chat/completions
+            TGI_LLM_ENDPOINT: tgi-service-m
+            LLM_MODEL_SERVER_ENDPOINT: tgi-service-m
+      - name: Tgi
+        internalService:
+          serviceName: tgi-service-m
+          config:
+            endpoint: /generate
+          isDownstreamService: true

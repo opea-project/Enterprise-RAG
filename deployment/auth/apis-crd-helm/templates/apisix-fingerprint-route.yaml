@@ -1,0 +1,58 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: fingerprint-authenticated-endpoints
+  namespace: {{ .Values.fingerprint.namespace }}
+spec:
+  http:
+  - name: fingerprint-append
+    match:
+      hosts:
+      - {{ .Values.fingerprint.hostname }}
+      paths:
+      - {{ .Values.fingerprint.append_api.path }}
+    backends:
+    - serviceName: {{ .Values.fingerprint.append_api.backend_service }}
+      servicePort: {{ .Values.fingerprint.append_api.service_port }}
+    plugins:
+    - name: openid-connect
+      enable: true
+      config:
+        client_id: {{ .Values.oidc.client_id }}
+        client_secret: {{ .Values.oidc.client_secret }}
+        discovery: {{ .Values.oidc.discovery }}
+        introspection_endpoint: {{ .Values.oidc.introspection_endpoint }}
+        introspection_endpoint_auth_method: client_secret_basic
+        scope: openid profile email
+        bearer_only: true
+        realm: {{ .Values.oidc.realm }}
+    - name: proxy-rewrite
+      enable: true
+      config:
+        uri: {{ .Values.fingerprint.append_api.service_path }}
+  - name: fingerprint-change
+    match:
+      hosts:
+      - {{ .Values.fingerprint.hostname }}
+      paths:
+      - {{ .Values.fingerprint.change_api.path }}
+    backends:
+    - serviceName: {{ .Values.fingerprint.change_api.backend_service }}
+      servicePort: {{ .Values.fingerprint.change_api.service_port }}
+    plugins:
+    - name: openid-connect
+      enable: true
+      config:
+        client_id: {{ .Values.oidc.client_id }}
+        client_secret: {{ .Values.oidc.client_secret }}
+        discovery: {{ .Values.oidc.discovery }}
+        introspection_endpoint: {{ .Values.oidc.introspection_endpoint }}
+        introspection_endpoint_auth_method: client_secret_basic
+        scope: openid profile email
+        bearer_only: true
+        realm: {{ .Values.oidc.realm }}
+    - name: proxy-rewrite
+      enable: true
+      config:
+        uri: {{ .Values.fingerprint.change_api.service_path }}
+

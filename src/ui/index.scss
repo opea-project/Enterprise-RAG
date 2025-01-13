@@ -1,0 +1,190 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+@font-face {
+  font-family: "IntelOne Display";
+  src:
+    url("fonts/intelone-display-regular.woff2") format("woff2"),
+    url("fonts/intelone-display-regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IntelOne Display";
+  src:
+    url("fonts/intelone-display-medium.woff2") format("woff2"),
+    url("fonts/intelone-display-medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IntelOne Display";
+  src:
+    url("fonts/intelone-display-light.woff2") format("woff2"),
+    url("fonts/intelone-display-light.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IntelOne Display";
+  src:
+    url("fonts/intelone-display-bold.woff2") format("woff2"),
+    url("fonts/intelone-display-bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IntelClearPro";
+  src:
+    local("IntelClearPro_W_Bd"),
+    url("fonts/IntelClearPro_W_Bd.woff") format("woff");
+}
+
+@font-face {
+  font-family: "intel-one";
+  src: url("fonts/intel-clear-latin.woff") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "intel-one";
+  src: url("fonts/intelone-display-light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "intel-one";
+  src:
+    url("fonts/intelone-display-regular.woff2") format("woff2"),
+    url("fonts/intelone-display-regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "intel-clear";
+  src:
+    url("fonts/intel-clear-latin.woff2") format("woff2"),
+    url("fonts/intel-clear-latin.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IntelOne Text";
+  src: url("fonts/intelone-text-regular.woff") format("woff");
+  src: url("fonts/intelone-text-regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+
+body {
+  font-family: "IntelOne Display", sans-serif;
+  font-weight: normal;
+
+  &.dark * {
+    scrollbar-color: #393939 #242528;
+  }
+}
+
+#root {
+  @apply bg-light-background-1 text-light-text-primary caret-light-primary;
+  @apply dark:bg-dark-background-1 dark:text-dark-text-primary dark:caret-dark-primary;
+}
+
+*::selection {
+  @apply bg-light-primary text-light-text-inverse dark:bg-dark-primary dark:text-dark-text-inverse;
+}
+
+*:focus-visible {
+  @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-light-focus dark:focus-visible:outline-dark-focus;
+}
+
+button {
+  @apply cursor-pointer select-none bg-light-button-contained-primary-background px-5 py-1.5 text-base text-light-button-contained-text hover:bg-light-button-contained-primary-background-hover disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-link-primary dark:text-dark-text-inverse dark:hover:bg-dark-link-hover dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
+
+  &.button--small {
+    @apply px-3 py-1 text-xs;
+  }
+}
+
+button.button__success {
+  @apply bg-light-status-success-primary hover:bg-light-status-success-soft disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-status-success-soft dark:hover:bg-dark-status-success-primary dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
+}
+
+button.outlined-button--primary {
+  @apply border border-light-button-outlined-primary-border bg-light-button-outlined-background text-light-button-outlined-primary-text hover:bg-light-button-outlined-background-hover disabled:border-light-button-icon-outlined-color-disabled disabled:bg-dark-button-outlined-background disabled:text-light-button-icon-outlined-color-disabled dark:border-dark-button-outlined-primary-border dark:bg-dark-button-outlined-background dark:text-dark-button-outlined-primary-text dark:hover:bg-dark-button-outlined-background-hover dark:disabled:border-dark-button-icon-outlined-color-disabled dark:disabled:bg-dark-button-outlined-background dark:disabled:text-dark-button-icon-outlined-color-disabled;
+}
+
+button.outlined-button--danger {
+  @apply border border-light-button-outlined-danger-border bg-light-button-outlined-background text-light-button-outlined-danger-text hover:bg-light-button-outlined-background-hover disabled:border-light-button-icon-outlined-color-disabled disabled:bg-dark-button-outlined-background disabled:text-light-button-icon-outlined-color-disabled dark:border-dark-button-outlined-danger-border dark:bg-dark-button-outlined-background dark:text-dark-button-outlined-danger-text dark:hover:bg-dark-button-outlined-background-hover dark:disabled:border-dark-button-icon-outlined-color-disabled dark:disabled:bg-dark-button-outlined-background dark:disabled:text-dark-button-icon-outlined-color-disabled;
+}
+
+button.icon-button {
+  @apply flex h-10 w-10 cursor-pointer items-center justify-center rounded-none bg-transparent px-2 text-xl text-light-button-icon-ghost-color hover:text-light-button-icon-ghost-hover disabled:cursor-default disabled:text-light-button-disabled-text disabled:hover:bg-transparent dark:bg-transparent dark:text-dark-button-icon-ghost-color dark:hover:text-dark-button-icon-ghost-hover disabled:dark:text-dark-button-disabled-text;
+}
+
+button.icon-button-outlined--primary {
+  @apply flex h-10 w-10 cursor-pointer items-center justify-center rounded-none border border-light-button-icon-outlined-primary-border bg-light-button-icon-outlined-background p-0 text-xl text-light-button-icon-outlined-primary-color hover:bg-light-button-icon-outlined-primary-background-hover hover:text-light-button-icon-outlined-color-hover disabled:border-transparent disabled:bg-light-button-icon-outlined-background-disabled disabled:text-light-button-icon-outlined-color-disabled disabled:hover:cursor-default dark:border-dark-button-icon-outlined-primary-border dark:bg-dark-button-icon-outlined-background dark:text-dark-button-icon-outlined-primary-color dark:hover:bg-dark-button-icon-outlined-primary-background-hover dark:hover:text-dark-button-icon-outlined-color-hover dark:disabled:border-transparent dark:disabled:bg-dark-button-icon-outlined-background-disabled dark:disabled:text-dark-button-icon-outlined-color-disabled;
+}
+
+button.icon-button-outlined--danger {
+  @apply flex h-10 w-10 cursor-pointer items-center justify-center rounded-none border border-light-button-icon-outlined-danger-border bg-light-button-icon-outlined-background p-0 text-light-button-icon-outlined-danger-color hover:bg-light-button-icon-outlined-danger-background-hover hover:text-light-button-icon-outlined-color-hover disabled:border-transparent disabled:bg-dark-button-icon-outlined-danger-background-hover disabled:text-light-button-icon-outlined-color-disabled disabled:hover:cursor-default dark:border-dark-button-icon-outlined-danger-border dark:bg-dark-button-icon-outlined-background dark:text-dark-button-icon-outlined-danger-color dark:hover:bg-dark-button-icon-outlined-danger-background-hover dark:hover:text-dark-button-icon-outlined-color-hover dark:disabled:border-transparent dark:disabled:bg-dark-button-icon-outlined-background dark:disabled:text-dark-button-icon-outlined-color-disabled dark:disabled:hover:cursor-default;
+}
+
+input,
+textarea {
+  @apply border border-light-input-border bg-light-input-background px-4 py-2 text-light-input-text disabled:border-transparent disabled:bg-light-input-disabled-background disabled:text-light-input-disabled-text dark:border-dark-input-border dark:bg-dark-input-background dark:text-dark-input-text dark:disabled:border-transparent dark:disabled:bg-dark-input-disabled-background dark:disabled:text-dark-input-disabled-text;
+}
+
+textarea {
+  resize: none;
+}
+
+input.input--invalid {
+  @apply border-light-input-invalid focus-visible:outline-light-input-invalid dark:border-dark-input-invalid dark:focus-visible:outline-dark-input-invalid;
+}
+
+input[type="checkbox"] {
+  @apply cursor-pointer accent-light-primary disabled:cursor-default dark:accent-dark-primary;
+}
+
+a {
+  @apply text-light-link-primary hover:text-light-link-hover dark:text-dark-link-primary dark:hover:text-dark-link-hover;
+}
+
+label {
+  @apply mb-1 font-medium;
+}
+
+h2 {
+  @apply mb-2 font-medium;
+}
+
+p.error {
+  @apply text-light-text-error dark:text-dark-text-error;
+}

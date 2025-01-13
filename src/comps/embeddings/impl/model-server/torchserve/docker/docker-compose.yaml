@@ -1,0 +1,53 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  embedding-torchserve-model-server:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    image: embedding-torchserve:cpu
+    container_name: embedding-torchserve-model-server
+    ports:
+      - "${TORCHSERVE_PORT}:8090"
+      - "${TORCHSERVE_MGMT_PORT}:8091"
+      - "${TORCHSERVE_METRICS_PORT}:8092"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      TORCHSERVE_AMP_DTYPE: ${TORCHSERVE_AMP_DTYPE}
+      TORCHSERVE_BATCH_SIZE: ${TORCHSERVE_BATCH_SIZE}
+      TORCHSERVE_DEVICE_TYPE: cpu
+      TORCHSERVE_MAX_BATCH_DELAY: ${TORCHSERVE_MAX_BATCH_DELAY}
+      TORCHSERVE_MAX_WORKERS: ${TORCHSERVE_MAX_WORKERS}
+      TORCHSERVE_MIN_WORKERS: ${TORCHSERVE_MIN_WORKERS}
+      TORCHSERVE_MODEL_NAME: ${TORCHSERVE_MODEL_NAME}
+      TORCHSERVE_RESPONSE_TIMEOUT: ${TORCHSERVE_RESPONSE_TIMEOUT}
+    runtime: runc
+    ipc: host
+    cpuset: "0-15"
+    cap_add:
+      - SYS_NICE
+
+  embedding_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/embeddings/impl/microservice/Dockerfile
+      target: ${EMBEDDING_CONNECTOR}
+    container_name: embedding-torchserve-microservice
+    environment:
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      EMBEDDING_CONNECTOR: ${EMBEDDING_CONNECTOR}
+      EMBEDDING_MODEL_NAME: ${TORCHSERVE_MODEL_NAME}
+      EMBEDDING_MODEL_SERVER: torchserve
+      EMBEDDING_MODEL_SERVER_ENDPOINT: http://localhost:${TORCHSERVE_PORT}
+    ipc: host
+    runtime: runc
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - embedding-torchserve-model-server

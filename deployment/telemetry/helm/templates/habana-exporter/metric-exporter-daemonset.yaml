@@ -1,0 +1,57 @@
+{{ if index .Values "habana-exporter" "enabled" }}
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/name: habana-metric-exporter-ds
+    app.kubernetes.io/version: v0.0.1
+  name: habana-metric-exporter-ds
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: habana-metric-exporter-ds
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: habana-metric-exporter-ds
+        app.kubernetes.io/version: v0.0.1
+    spec:
+      priorityClassName: "system-node-critical"
+      imagePullSecrets: []
+      tolerations:
+      - key: "habana.ai/gaudi"
+        operator: "Exists"
+        effect: "NoSchedule"
+      # Required for network monitoring
+      hostNetwork: true
+      containers:
+      - name: metric-exporter
+        image: vault.habana.ai/gaudi-metric-exporter/metric-exporter:{{ index .Values "habana-exporter" "image" "tag" }}
+        imagePullPolicy: Always
+        env:
+        - name: LD_LIBRARY_PATH
+          value: "/usr/lib/habanalabs"
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: pod-resources
+            mountPath: /var/lib/kubelet/pod-resources
+        ports:
+        - name: habana-metrics
+          containerPort: 41611
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 150m
+            memory: 120Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+        - name: pod-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources
+{{- end }}

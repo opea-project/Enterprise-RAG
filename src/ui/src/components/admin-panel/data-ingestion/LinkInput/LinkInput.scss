@@ -1,0 +1,10 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.link-input-wrapper {
+  @apply grid grid-cols-[1fr_2.5rem] items-center gap-x-2 gap-y-1.5;
+}
+
+.link-input-error-message {
+  @apply pl-4 text-sm text-light-text-error dark:text-dark-text-error;
+}

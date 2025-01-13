@@ -1,0 +1,6 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.error-page {
+  @apply flex h-[100vh] w-full flex-col items-center justify-center gap-2;
+}

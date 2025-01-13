@@ -1,0 +1,31 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  llm-fp8-quantization:
+    container_name: llm-fp8-quantization
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ${PWD}/data:/fp8-data
+      - ${PWD}/${HUGGINGFACE_HUB_CACHE}:/data
+    environment:
+      - BATCH_SIZE=${BATCH_SIZE}
+      - LLM_TGI_MODEL_NAME=${LLM_TGI_MODEL_NAME}
+      - HF_TOKEN=${HF_TOKEN}
+      - HUGGINGFACE_HUB_CACHE=/data
+      - HABANA_VISIBLE_DEVICES=${HABANA_VISIBLE_DEVICES}
+      - SHARDED=${SHARDED}
+      - NUM_SHARD=${NUM_SHARD}
+      - OMPI_MCA_btl_vader_single_copy_mechanism=${OMPI_MCA_btl_vader_single_copy_mechanism}
+      - PT_HPU_ENABLE_LAZY_COLLECTIVES=${PT_HPU_ENABLE_LAZY_COLLECTIVES}
+      - QUANT_CONFIG=./quantization_config/maxabs_measure.json
+    runtime: habana
+    cap_add:
+      - SYS_NICE
+    command: >
+      /bin/bash -c "echo $LLM_TGI_MODEL_NAME &&
+      sed -i 's|\"dump_stats_path\": \"\./hqt_output/measure\"|\"dump_stats_path\": \"/fp8-data/${LLM_TGI_MODEL_NAME}/bs_${BATCH_SIZE}_shards_${NUM_SHARD}/hqt_output/measure\"|' ./quantization_config/maxabs_measure.json &&
+      sed -i 's|\"dump_stats_xlsx_path\": \"\./hqt_output/measure/fp8stats.xlsx\"|\"dump_stats_xlsx_path\": \"/fp8-data/${LLM_TGI_MODEL_NAME}/bs_${BATCH_SIZE}_shards_${NUM_SHARD}/hqt_output/measure/fp8stats.xlsx\"|' ./quantization_config/maxabs_measure.json &&
+      python ../gaudi_spawn.py --use_deepspeed --world_size ${NUM_SHARD} run_lm_eval.py -o /fp8-data/${LLM_TGI_MODEL_NAME}/bs_${BATCH_SIZE}_shards_${NUM_SHARD}/acc_bs${BATCH_SIZE}_measure.txt --model_name_or_path ${LLM_TGI_MODEL_NAME} --attn_softmax_bf16 --use_hpu_graphs --trim_logits --use_kv_cache --bucket_size=128 --bucket_internal --use_flash_attention --flash_attention_recompute --bf16 --batch_size ${BATCH_SIZE}"

@@ -1,0 +1,19 @@
+{{- if index .Values "app-monitors" "enabled" }}
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: input-scan-svc
+  labels:
+    release: {{.Release.Name}}
+spec:
+  namespaceSelector:
+    matchNames:
+    - chatqa
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: in-guard-usvc
+  endpoints:
+  - port: "in-guard-usvc"
+{{- end }}

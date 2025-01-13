@@ -1,0 +1,13 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+docarray[full]==0.40.0
+fastapi==0.111.0
+huggingface_hub==0.23.4
+opentelemetry-api==1.25.0
+opentelemetry-exporter-otlp==1.25.0
+opentelemetry-sdk==1.25.0
+prometheus-fastapi-instrumentator==7.0.0
+sentence_transformers==3.0.1
+shortuuid==1.0.13
+uvicorn==0.30.1

@@ -1,0 +1,31 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  mongo:
+    image: mongo:8.0.0
+    container_name: mongodb
+    ports:
+      - ${PROMPT_REGISTRY_MONGO_PORT}:${PROMPT_REGISTRY_MONGO_PORT}
+    environment:
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
+    command: mongod --quiet --logpath /dev/null
+
+  promptregistry_usvc:
+    build:
+      context: ../../../../../
+      dockerfile: ./comps/prompt_registry/impl/microservice/Dockerfile
+    container_name: promptregistry-microservice
+    env_file: ../../microservice/.env
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      no_proxy: ${no_proxy}
+      PROMPT_REGISTRY_MONGO_HOST: ${PROMPT_REGISTRY_MONGO_HOST}
+      PROMPT_REGISTRY_MONGO_PORT: ${PROMPT_REGISTRY_MONGO_PORT}
+    restart: unless-stopped

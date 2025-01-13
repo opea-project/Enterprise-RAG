@@ -1,0 +1,130 @@
+---
+# Source: tgi/templates/configmap.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tgi-config
+  labels:
+    helm.sh/chart: tgi-0.8.0
+    app.kubernetes.io/name: tgi
+    app.kubernetes.io/instance: tgi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  LLM_DEVICE: "hpu"
+  PORT: "2080"
+  HF_TOKEN: "insert-your-huggingface-token-here"
+  http_proxy: ""
+  https_proxy: ""
+  no_proxy: ""
+---
+# Source: tgi/templates/service.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tgi
+  labels:
+    helm.sh/chart: tgi-0.8.0
+    app.kubernetes.io/name: tgi
+    app.kubernetes.io/instance: tgi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 2080
+      protocol: TCP
+      name: tgi
+  selector:
+    app.kubernetes.io/name: tgi
+    app.kubernetes.io/instance: tgi
+---
+# Source: tgi/templates/deployment.yaml
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tgi
+  labels:
+    helm.sh/chart: tgi-0.8.0
+    app.kubernetes.io/name: tgi
+    app.kubernetes.io/instance: tgi
+    app.kubernetes.io/version: "2.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tgi
+      app.kubernetes.io/instance: tgi
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tgi
+        app.kubernetes.io/instance: tgi
+    spec:
+      securityContext:
+        {}
+      containers:
+        - name: tgi
+          envFrom:
+            - configMapRef:
+                name: tgi-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          securityContext:
+            {}
+          image: "ghcr.io/huggingface/tgi-gaudi:2.0.6"
+          args:
+            - --model-id
+            - "$(LLM_TGI_MODEL_NAME)"
+            - --max-input-tokens
+            - "$(MAX_INPUT_TOKENS)"
+            - --max-total-tokens
+            - "$(MAX_TOTAL_TOKENS)"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+          ports:
+            - name: http
+              containerPort: 2080
+              protocol: TCP
+          # livenessProbe:
+          #   failureThreshold: 24
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   tcpSocket:
+          #     port: http
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          startupProbe:
+            failureThreshold: 120
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          resources:
+            limits:
+              habana.ai/gaudi: 8
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-llm
+        - name: tmp
+          emptyDir: {}

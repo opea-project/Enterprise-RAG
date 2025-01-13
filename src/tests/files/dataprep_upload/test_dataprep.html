@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedded Scripts Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            background: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        form {
+            margin-top: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Welcome to My Sample Site</h1>
+</header>
+
+<main>
+    <h2>Change Content Example</h2>
+    <p id="dynamicContent">Click the button to change this text.</p>
+    <button id="changeTextButton">Change Text</button>
+
+    <h2>Contact Form</h2>
+    <form id="contactForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <button type="submit">Submit</button>
+    </form>
+    <div id="formMessage"></div>
+</main>
+
+<script>
+    // Change text content when button is clicked
+    document.getElementById('changeTextButton').onclick = function() {
+        document.getElementById('dynamicContent').innerText = "The text has been successfully changed!";
+    }
+
+    // Handle form submission
+    document.getElementById('contactForm').onsubmit = function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const messageDiv = document.getElementById('formMessage');
+
+        messageDiv.innerHTML = `<p>Thank you, ${name}! We will contact you at ${email} shortly.</p>`;
+        this.reset(); // Reset the form fields
+    }
+</script>
+
+</body>
+</html>

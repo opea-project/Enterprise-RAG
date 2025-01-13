@@ -1,0 +1,10 @@
+{
+  "chat": "/api/v1/chatqna",
+  "dataprep": "/api/v1/dataprep",
+  "systemFingerprint": {
+    "appendArguments": "/v1/system_fingerprint/append_arguments",
+    "changeArguments": "/v1/system_fingerprint/change_arguments",
+    "chatqnaStatus": "/api/v1/chatqa/status",
+    "dataprepStatus": "/api/v1/dataprep/status"
+  }
+}

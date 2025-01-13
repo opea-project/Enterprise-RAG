@@ -1,0 +1,8 @@
+spec:
+  template:
+    spec:
+      containers:
+      - name: router-server
+        env:
+        - name: OTEL_LOGS_GRPC_ENDPOINT
+          value: "otelcol-traces-collector.monitoring-traces:4317"

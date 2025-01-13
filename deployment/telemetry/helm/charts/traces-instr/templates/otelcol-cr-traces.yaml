@@ -1,0 +1,205 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otelcol-traces
+spec:
+  # only relevant if "health_check" extension under service.extensions is enabled
+  livenessProbe:
+    initialDelaySeconds: 3600
+  # readinessProbe:
+  #   initialDelaySeconds: 3600 # make the pod wait an 1h for first readiness check
+  # https://github.com/open-telemetry/opentelemetry-operator/blob/main/docs/api.md#opentelemetrycollectorspecportsindex
+  ports:
+  - port: 8888
+    name: metrics
+    protocol: TCP
+  - port: 55679
+    name: zpages
+    protocol: TCP
+  #otlp-http and otlp-grpc will set automatically on pod
+
+
+  # we need contrib for kubernetes processor/prometheus exporter
+  # Check manifests.yaml for different components available:
+  # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
+  image: "otel/opentelemetry-collector-contrib:0.109.0" 
+  #image: "otel/opentelemetry-collector-k8s:0.109.0"	# string	Image indicates the container image to use for the OpenTelemetry Collector.
+  #imagePullPolicy: "Always" # string	ImagePullPolicy indicates the pull policy to be used for retrieving the container image (Always, Never, IfNotPresent)
+
+  deploymentUpdateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+      batch:
+        send_batch_size: 10000
+        timeout: 10s
+      k8sattributes:
+        extract:
+          metadata:
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.statefulset.name
+          - k8s.daemonset.name
+          - k8s.cronjob.name
+          - k8s.job.name
+          - k8s.node.name
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.pod.start_time
+        filter:
+          node_from_env_var: K8S_NODE_NAME
+        passthrough: false
+        pod_association:
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.ip
+        - sources:
+          - from: resource_attribute
+            name: k8s.pod.uid
+        - sources:
+          - from: connection
+
+    extensions:
+      health_check:
+        endpoint: ${env:MY_POD_IP}:13133
+      zpages:
+        endpoint: ${env:MY_POD_IP}:55679
+      headers_setter/orgentrag:
+        headers:
+          - action: insert
+            key: X-Scope-OrgID
+            #from_context: tenant_id
+            value: entrag
+
+    exporters:
+        #verbosity: normal
+        #verbosity: detailed
+      nop: {}
+      debug/metrics:
+        verbosity: basic
+      debug/logs:
+        verbosity: normal
+      debug/traces:
+        verbosity: basic
+
+      ### TRACES
+      otlp/jaeger:
+        endpoint: 'telemetry-traces-jaeger-collector.{{.Release.Namespace}}:4317' # grpc ??
+        tls:
+          insecure: true
+      otlp/tempo:
+        # endpoint: 'tempo-gateway.tempo:80' # grpc ?? gateway is on 80
+        endpoint: 'telemetry-traces-tempo-distributor.{{.Release.Namespace}}:4317' # grpc ?? 
+        tls:
+          insecure: true
+
+      ### LOGS
+      ### INFO hardcoded name of loki from telemetry-logs release with namespace monitoring (loki doesnot use .Release.Name as prefix for pods!)
+      otlphttp/loki:
+        endpoint: http://loki-write.monitoring:3100/otlp/
+        auth:
+          authenticator: headers_setter/orgentrag
+
+      ### METRICS
+      # INFO hardcoded name of promethues from "telemetry" release with namespace "monitoring"
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusremotewriteexporter
+      # requires enabling feature in prometheus
+      # kube-prometheus-stack:
+      #   prometheus:
+      #     prometheusSpec:
+      #       enableRemoteWriteReceiver: true
+      prometheusremotewrite:
+        endpoint: http://telemetry-kube-prometheus-prometheus.monitoring:9090/api/v1/write
+        # tls:
+        #   insecure: true
+
+    service:
+      extensions:
+        ### THIS enables automatic configuration of liveness and readiness probes in PodSpec
+        # DISABLE IT FOR DEBUGGING traffic
+        # - health_check
+        - zpages
+        - headers_setter/orgentrag
+      pipelines:
+        # METRICS
+        metrics:
+          receivers:
+          - otlp
+          processors:
+          - memory_limiter
+          - batch
+          exporters:
+          # - nop
+          # - debug/metrics
+          - prometheusremotewrite
+
+        # LOGS
+        logs:
+          receivers:
+          - otlp
+          processors:
+          - memory_limiter
+          - batch
+          exporters:
+          # - nop
+          # - debug/logs
+          - otlphttp/loki
+          
+        # TRACES
+        traces:
+          receivers: 
+          - otlp
+          processors:
+          - memory_limiter
+          - batch
+          exporters: 
+          # - nop
+          # - debug/traces
+          - otlp/tempo
+{{- if .Values.jaeger.enabled }}
+          - otlp/jaeger
+{{- end}}
+
+    # https://opentelemetry.io/docs/collector/internal-telemetry/#activate-internal-telemetry-in-the-collector
+    telemetry:
+      # https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs
+      logs:
+        level: warn
+
+      metrics:
+        level: detailed
+---
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: otelcol-traces
+  namespace: monitoring # this and namespace below is required because Prometheus only watches in monitoring tagged with release
+  labels:
+    release: telemetry  # see above
+spec:
+  namespaceSelector:
+    matchNames:
+    - monitoring-traces
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: opentelemetry-collector
+      app.kubernetes.io/instance: monitoring-traces.otelcol-traces
+      app.kubernetes.io/name: otelcol-traces-collector-monitoring
+  endpoints:
+  - port: "monitoring"

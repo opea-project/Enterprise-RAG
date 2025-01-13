@@ -1,0 +1,7 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+langchain==0.2.7
+langchain-core==0.2.25
+langchain-huggingface==0.0.3
+langsmith==0.1.85

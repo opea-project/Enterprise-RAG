@@ -1,0 +1,41 @@
+// Copyright (C) 2024 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.tooltip-wrapper {
+  @apply relative inline-block;
+}
+
+.tooltip {
+  @apply absolute left-1/2 z-50 -translate-x-1/2 whitespace-nowrap bg-tooltip-background px-3 py-2 text-xs font-normal text-tooltip-text drop-shadow-md;
+
+  &.bottom {
+    @apply -bottom-10;
+  }
+
+  &.top {
+    @apply -top-10;
+  }
+
+  &.left {
+    left: auto;
+    right: calc(100% + 0.5rem);
+    top: 50%;
+    transform: translateX(0) translateY(-50%);
+  }
+
+  &.right {
+    left: calc(100% + 0.5rem);
+    top: 50%;
+    transform: translateX(0) translateY(-50%);
+  }
+
+  &.bottom-start {
+    @apply -bottom-10;
+    transform: translateX(-15%);
+  }
+
+  &.bottom-end {
+    @apply -bottom-10;
+    transform: translateX(-75%);
+  }
+}

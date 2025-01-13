@@ -1,0 +1,329 @@
+# Copyright (C) 2024 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+### =================================================
+### opentelemetry-collector for logs subchart
+### =================================================
+otelcol-logs:
+
+  enabled: true
+
+  ### ----------------------
+  # Possible values:
+  # git clone https://github.com/open-telemetry/opentelemetry-helm-charts
+  # opentelemetry-helm-charts/charts/opentelemetry-collector/values.yaml
+  mode: daemonset
+
+  image:
+    # Check manifests.yaml for different components available:
+    # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
+    #repository: "otel/opentelemetry-collector-k8s"
+    repository: "otel/opentelemetry-collector-contrib"
+
+  # to access pod otelcol by node ip (only for debug)
+  # BREAKS access to internal cluster kubernetes network
+  # no access to e.g. loki-gateway.monitoring.svc.cluster.local
+  #hostNetwork: true
+
+  # only works for "deployment" mode !!!
+  #serviceMonitor:
+  #  enabled: true
+  #  extraLabels:
+  #    release: telemetry
+
+  # only works for "daemonset" mode !!!
+  podMonitor:
+    enabled: true
+    extraLabels: # TODO to be deleted when included inside single rag-telemetry helm-chart
+      release: telemetry
+
+  presets:
+    logsCollection:
+      enabled: true # this enable filelog receiver configured for k8s
+      #enabled: false # disable for debugging
+      includeCollectorLogs: false # default: false, do not include internal logs, to prvent logs explosion https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-collector#warning-warning-risk-of-looping-the-exported-logs-back-into-the-receiver-causing-log-explosion
+    kubernetesAttributes:
+      enabled: true
+
+  resources:
+    limits:
+      memory: 200Mi
+
+  service:
+    type: ClusterIP
+
+  # creates Kuberntes Services
+  ports:
+    # disable otlp ports (not used yet for tracing push)
+    otlp:
+      enabled: false
+    otlp-http:
+      enabled: false
+    # disable not used ports
+    jaeger-compact:
+      enabled: false
+    jaeger-thrift:
+      enabled: false
+    jaeger-grpc:
+      enabled: false
+    zipkin:
+      enabled: false
+    zpages:
+      enabled: true
+      containerPort: 55679
+      servicePort: 55679
+      hostPort: 55679
+      protocol: TCP
+    metrics:
+      # The metrics port is disabled by default. However you need to enable the port
+      # in order to use the ServiceMonitor (serviceMonitor.enabled) or PodMonitor (podMonitor.enabled).
+      enabled: true
+      containerPort: 8888
+      servicePort: 8888
+      protocol: TCP
+    # prometheus:
+    #   enabled: true
+    #   containerPort: 9464
+    #   servicePort: 9464
+    #   protocol: TCP
+
+
+  # Use alternateConfig to be able to null pipelines/receivers: please see check this for details
+  # https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml#L187
+  # config:
+  alternateConfig:
+    #priority: info
+    ### Disable unused receivers
+    # https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-collector#basic-top-level-configuration
+    # This also requires disabling traces/metrics pipeline in services/pipeline.
+    receivers:
+      filelog: {} # required: enable only one, will be merged with "helm chart" logsCollection.enabled for Kubernetes pods
+      ## NOTE not needed as subchart with alternateConfig!!!
+      # traces/spans receivers are disabled we will have additional otelcol for traces
+      #jaeger: null
+      #zipkin: null
+      # prometheus: null
+      # otlp: null #
+
+    exporters:
+      ## Loki native OTLP protocol
+      # https://grafana.com/docs/loki/latest/send-data/otel/
+      # https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/
+      # https://grafana.com/docs/loki/latest/send-data/otel/native_otlp_vs_loki_exporter/
+      # Requires: limits_config: allow_structured_metadata: true in Loki configuration
+      otlphttp/loki:
+        ### monolithic
+        # with gateway: dont use without "v1/logs" just otlp and dont pass port) - gateway is on 80
+        #endpoint: http://loki-gateway.monitoring.svc.cluster.local/otlp/
+        # with direct connection (specify both port)
+        #endpoint: http://loki.monitoring.svc.cluster.local:3100/otlp/v1/logs
+        ### simplescalale using service loki-write
+        endpoint: http://loki-write.monitoring.svc.cluster.local:3100/otlp/
+        auth:
+          authenticator: headers_setter/orgentrag
+
+      ## Debug exporter
+      debug: {}
+        #use_internal_logger: true
+        #verbosity: basic
+        #verbosity: normal
+        #verbosity: detailed
+
+    extensions:
+      health_check:
+        endpoint: ${env:MY_POD_IP}:13133
+      headers_setter/orgentrag:
+        headers:
+          - action: insert
+            key: X-Scope-OrgID
+            #from_context: tenant_id
+            value: entrag
+      zpages:
+        endpoint: ${env:MY_POD_IP}:55679
+
+    service:
+      extensions:
+        - health_check
+        - zpages
+        - headers_setter/orgentrag
+      pipelines:
+        ### Disable unused pipelines
+        ## https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/README.md#basic-top-level-configuration
+        # traces:
+          # receivers: ['otlp']
+          # exporters: ['otlp']
+        # metrics: null
+
+        logs:
+          # receivers:
+          # pipeline for metrics send by application !!! from otel-demo otlp protocol
+          # - otlp
+          exporters:
+          - otlphttp/loki
+          # - debug
+
+### =================================================
+### LOKI subchart configuraion
+### =================================================
+loki:
+  enabled: true
+
+  ### ----------------------
+  # https://github.com/grafana/loki/issues/7287#issuecomment-1282339134
+  # DNS service need to match deployed kubernetes
+  # kubectl get svc --namespace=kube-system -l k8s-app=kube-dns  -o jsonpath='{.items..metadata.name}'
+  # or disable with extra helm argument: "--set loki.global.dnsService=null" when install telemetry-logs
+  global:
+    #dnsService: "kube-dns"   # for kind based setup - WARNING: this cannot be null/nil/""/''/ / because will generate broken resolver value ".kube-system.svc.cluster.local." see https://github.com/helm/helm/pull/12879 or Jira IEASG-166 for more details
+    dnsService: "coredns"     # for kubespray based setup
+
+
+  loki:
+
+    commonConfig:
+      # Version for single node deployment (required for single node setups).
+      # **Warning** this disables HA for write path.
+      # Note: This need be with sync with number of ingesters (write.replicas)
+      replication_factor: 1
+
+    schemaConfig:
+      configs:
+        - from: 2024-04-01
+          store: tsdb
+          object_store: s3
+          schema: v13
+          index:
+            prefix: loki_index_
+            period: 24h
+    ingester:
+      chunk_encoding: snappy
+    tracing:
+      enabled: true
+    querier:
+      # Default is 4, if you have enough memory and CPU you can increase, reduce if OOMing
+      max_concurrent: 4
+
+    # https://grafana.com/docs/loki/latest/send-data/otel/#format-considerations
+    distributor:
+      otlp_config:
+        default_resource_attributes_as_index_labels:
+        - "k8s.node.name" # extra attribute thanks to resourcedetection/k8snode (check values-journalctl.yaml)
+        - "cloud.availability_zone"
+        - "cloud.region"
+        - "container.name"
+        - "deployment.environment"
+        - "k8s.cluster.name"
+        - "k8s.container.name"
+        - "k8s.cronjob.name"
+        - "k8s.daemonset.name"
+        - "k8s.deployment.name"
+        - "k8s.job.name"
+        - "k8s.namespace.name"
+        - "k8s.pod.name"
+        - "k8s.replicaset.name"
+        - "k8s.statefulset.name"
+        - "service.instance.id"
+        - "service.name"
+        - "service.namespace"
+        # keep that with sync with
+        # values-journalctl.yaml directive: "processors.transform.log_statements.statements"
+        - "journald.severity"
+        - "journald.transport"
+        - "journald.unit"
+        - "journald.cmd"
+        - "journald.exe"
+        - "journald.cmdline"
+        - "journald.hostname"
+
+  #gateway:
+  #  ingress:
+  #    enabled: true
+  #    hosts:
+  #      - host: FIXME
+  #        paths:
+  #          - path: /
+  #            pathType: Prefix
+
+  deploymentMode: SimpleScalable
+
+  # keep those values in-sync with commonConfig.replication_factor
+  backend:
+    # THIS IS not longer an issue for Kubernetes enviornments with "dynamic provisioning" but can cause issue with redeploy with PVC conflict
+    #persistence:
+    #  # With assumption that there is no "dynamic provisioning" (in Kubespray) with manually created volumes,
+    #  # we don't want to remove PVC after telemetry-logs uninstallation, because we want reuse existing volume with the same date and on Kubespray setup (even when no required by loki-backend)
+    #  # see this comment:
+    #  # https://github.com/grafana/loki/blob/5bffc10d857a3ffaab2700cacc703bbf0f813379/production/helm/loki/templates/backend/statefulset-backend.yaml#L37
+    #  # Other PVC (from writer and minio are currently set autodelete=false and are not removed) so those PVCs will be reused after reinstallation telemetry-logs stack (without binding to new limited number of volumes)
+    #  # See "default" writer config for comparsion, in contrast to what comment says:
+    #  # https://github.com/grafana/loki/blob/5bffc10d857a3ffaab2700cacc703bbf0f813379/production/helm/loki/values.yaml#L1426
+    #  # More information: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#persistentvolumeclaim-retention
+    #  enableStatefulSetAutoDeletePVC: false # defaults to true
+    replicas: 1
+  read:
+    replicas: 1
+  write:
+    replicas: 1
+
+  # Enable minio for storage
+  minio:
+    enabled: true
+
+  # Zero out replica counts of other deployment modes
+  singleBinary:
+    replicas: 0
+
+  ingester:
+    replicas: 0
+  querier:
+    replicas: 0
+  queryFrontend:
+    replicas: 0
+  queryScheduler:
+    replicas: 0
+  distributor:
+    replicas: 0
+  compactor:
+    replicas: 0
+  indexGateway:
+    replicas: 0
+  bloomCompactor:
+    replicas: 0
+  bloomGateway:
+    replicas: 0
+
+  ### SELF-LOGGING
+  # Warning: THIS Is depreacted will be removed in future versions
+  monitoring:
+    dashboards:
+      enabled: true
+      namespace: monitoring
+    rules:
+      enabled: true
+      labels:
+        release: telemetry
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: telemetry
+
+  gateway:
+    # -- Specifies whether the gateway should be enabled
+    enabled: false
+
+### =================================================
+### [OPTIONAL] OpenSearch subchart
+### =================================================
+opensearch:
+  # DISABLED BY DEFAULT (suplementary to "loki")
+  enabled: false
+
+### =================================================
+### [OPTIONAL] Promtail subchart configuraion
+### =================================================
+promtail:
+  # DISABLED BY DEFAULT (required for systemd/journald unit logs without custom journald image check: #OTELCOLIMAGE)
+  # suplementary to: otecol + curstom journalctl image
+  # please use values-promtail.yaml to enable with default values.
+  enabled: false

@@ -72,7 +72,12 @@ spec:
         app.kubernetes.io/instance: dataprep-usvc
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: dataprep-usvc
           envFrom:
@@ -89,10 +94,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: false
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "opea/dataprep:latest"
           imagePullPolicy: Always
           ports:

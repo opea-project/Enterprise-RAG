@@ -55,7 +55,12 @@ spec:
         app.kubernetes.io/instance: redis-vector-db
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: redis-vector-db
           securityContext:
@@ -64,10 +69,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "redis/redis-stack:7.2.0-v9"
           imagePullPolicy: IfNotPresent
           env:

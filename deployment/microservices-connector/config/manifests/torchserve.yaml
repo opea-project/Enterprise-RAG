@@ -75,6 +75,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -101,10 +104,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "localhost:5000/test/pl-qna-rag-embedding-torchserve:latest"
           imagePullPolicy: Always
           resources:

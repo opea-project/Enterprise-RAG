@@ -70,10 +70,21 @@ spec:
         app.kubernetes.io/instance: llm-usvc
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-model-server
           image: alpine/curl
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           command:
             - sh
             - -c
@@ -105,11 +116,8 @@ spec:
             capabilities:
               drop:
               - ALL
-            readOnlyRootFilesystem: false
-            runAsNonRoot: true
+            readOnlyRootFilesystem: true
             runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "opea/llm:latest"
           imagePullPolicy: IfNotPresent
           ports:

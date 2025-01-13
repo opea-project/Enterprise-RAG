@@ -69,7 +69,8 @@ spec:
         app.kubernetes.io/name: langdtct-usvc
         app.kubernetes.io/instance: langdtct-usvc
     spec:
-      securityContext: {}
+      securityContext:
+        runAsNonRoot: true
       containers:
       - name: langdtct-usvc
         envFrom:

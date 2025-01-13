@@ -76,7 +76,12 @@ spec:
         app.kubernetes.io/instance: tei
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: tei
           envFrom:
@@ -86,7 +91,11 @@ spec:
                 name: extra-env-config
                 optional: true
           securityContext:
-            {}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           image: "ghcr.io/huggingface/tei-gaudi:synapse_1.16"
           imagePullPolicy: IfNotPresent
           args:

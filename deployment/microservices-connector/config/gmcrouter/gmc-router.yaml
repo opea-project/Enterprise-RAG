@@ -17,11 +17,23 @@ spec:
       labels:
         app: router-service
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: default
       containers:
       - name: router-server
         image: localhost:5000/opea/gmcrouter:latest
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
         ports:
         - containerPort: 8080
         env:

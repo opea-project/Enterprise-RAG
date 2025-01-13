@@ -47,7 +47,6 @@ KEYCLOAK_VERSION=24.3.2
 
 GRAFANA_PASSWORD=""
 KEYCLOAK_PASS=""
-REDIS_PASSWORD=""
 
 # others
 PIPELINE=""
@@ -600,7 +599,7 @@ while [[ "$#" -gt 0 ]]; do
             PIPELINE=$1
             deploy_flag=true
             ;;
-        --grafana_password)
+        -g|--grafana_password)
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
                 print_log "Error: Invalid or no parameter provided for --grafana_password. Please provide inital password for Grafana."
@@ -609,7 +608,7 @@ while [[ "$#" -gt 0 ]]; do
             fi
             GRAFANA_PASSWORD=$1
             ;;
-        --keycloak_admin_password)
+        -k|--keycloak_admin_password)
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
                 print_log "Error: Invalid or no parameter provided for --keycloak_admin_password. Please provide inital password for Keycloak admin."

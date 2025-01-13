@@ -67,7 +67,12 @@ spec:
         app.kubernetes.io/instance: ingestion-usvc
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-redis
           image: redis:alpine
@@ -77,6 +82,12 @@ spec:
                 secretKeyRef:
                   name: vector-database-config
                   key: REDIS_URL
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           command:
             - sh
             - -c
@@ -106,10 +117,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "opea/ingestion:latest"
           imagePullPolicy: Always
           ports:

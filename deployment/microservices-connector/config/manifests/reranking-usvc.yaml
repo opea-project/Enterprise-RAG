@@ -71,10 +71,21 @@ spec:
         app.kubernetes.io/instance: reranking-usvc
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-svc
           image: alpine/curl
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           command:
             - sh
             - -c
@@ -101,10 +112,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "localhost:5000/opea/reranking:latest"
           imagePullPolicy: Always
           ports:

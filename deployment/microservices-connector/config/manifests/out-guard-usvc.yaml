@@ -71,7 +71,12 @@ spec:
         app.kubernetes.io/instance: out-guard-usvc
     spec:
       securityContext:
-        {}
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: out-guard-usvc
           envFrom:
@@ -86,10 +91,6 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
           image: "localhost:5000/opea/out-guard:latest"
           imagePullPolicy: Always
           ports:

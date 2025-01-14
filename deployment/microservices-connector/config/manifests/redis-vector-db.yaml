@@ -72,6 +72,8 @@ spec:
           image: "redis/redis-stack:7.2.0-v9"
           imagePullPolicy: IfNotPresent
           env:
+            - name: REDISEARCH_ARGS
+              value: "TIMEOUT 5000"
             - name: REDIS_ARGS
               valueFrom:
                 secretKeyRef:

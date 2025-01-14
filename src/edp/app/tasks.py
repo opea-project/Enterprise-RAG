@@ -72,6 +72,12 @@ class WithEDPTask(Task):
             )
         return self._minio
 
+def response_err(response):
+    try:
+        return response.json().get('detail', response.text)
+    except Exception:
+        return response.text
+
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def process_file_task(self, file_id: Any, *args, **kwargs):
     
@@ -89,9 +95,9 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'file_id': str(file_db.id) })
     if response.status_code != 200:
         file_db.status = 'error'
-        file_db.job_message = f"Error encountered while removing existing data related to file. {response.json()}"
+        file_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.db.commit()
-        raise Exception(f"Error encountered while data clean up. {response.json()}")
+        raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{file_db.id}] Deleted existing data related to file.")
 
     # Step 1 - Prepare the file for dataprep request
@@ -120,10 +126,10 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     response = requests.post(DATAPREP_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
     if response.status_code != 200:
         file_db.status = 'error'
-        file_db.job_message = f"Error encountered while data preparation. {response.json()}"
+        file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
         file_db.dataprep_end = datetime.datetime.now()
         self.db.commit()
-        raise Exception(f"Error encountered while data preparation. {response.json()}")
+        raise Exception(f"Error encountered while data preparation. {response_err(response)}")
     logger.debug(f"[{file_db.id}] Data preparation completed.")
 
     dataprep_docs = []
@@ -168,16 +174,16 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:
                 file_db.status = 'error'
-                file_db.job_message = f"Error encountered while ingestion. {response.json()}"
+                file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
                 file_db.embedding_end = datetime.datetime.now()
                 self.db.commit()
-                raise Exception(f"Error encountered while ingestion. {response.json()}")
+                raise Exception(f"Error encountered while ingestion. {response_err(response)}")
         else:
             file_db.status = 'error'
-            file_db.job_message = f"Error encountered while embedding. {response.json()}"
+            file_db.job_message = f"Error encountered while embedding. {response_err(response)}"
             file_db.embedding_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error encountered while embedding. {response.json()}")
+            raise Exception(f"Error encountered while embedding. {response_err(response)}")
         
         # Update the pipeline progress
         file_db.chunks_processed = i + len(docs_batch)
@@ -206,9 +212,9 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
     logger.debug(f"[{file_db.id}] Deleted existing data related to file.")
     if response.status_code != 200:
         file_db.job_status = 'error'
-        file_db.job_message = f"Error encountered while removing existing data related to file. {response.json()}"
+        file_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.db.commit()
-        raise Exception(f"Error encountered while data clean up. {response.json()}")
+        raise Exception(f"Error encountered while data clean up. {response_err(response)}")
 
     # Step 2 - Delete the file from database
     id = file_db.id
@@ -232,9 +238,9 @@ def process_link_task(self, link_id: Any):
     response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'link_id': str(link_db.id) })
     if response.status_code != 200:
         link_db.status = 'error'
-        link_db.job_message = f"Error encountered while removing existing data related to file. {response.json()}"
+        link_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.db.commit()
-        raise Exception(f"Error encountered while data clean up. {response.json()}")
+        raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{link_db.id}] Deleted existing data related to link.")
 
     # Step 1 - Prepare the file for dataprep request
@@ -247,10 +253,10 @@ def process_link_task(self, link_id: Any):
     response = requests.post(DATAPREP_ENDPOINT, json={ 'links': [link_db.uri] })
     if response.status_code != 200:
         link_db.status = 'error'
-        link_db.job_message = f"Error encountered while data preparation. {response.json()}"
+        link_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
         link_db.dataprep_end = datetime.datetime.now()
         self.db.commit()
-        raise Exception(f"Error encountered while data preparation. {response.json()}")
+        raise Exception(f"Error encountered while data preparation. {response_err(response)}")
     logger.debug(f"[{link_db.id}] Data preparation completed.")
 
     dataprep_docs = []
@@ -292,16 +298,16 @@ def process_link_task(self, link_id: Any):
             logger.debug(f"[{link_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:
                 link_db.status = 'error'
-                link_db.job_message = f"Error encountered while ingestion. {response.json()}"
+                link_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
                 link_db.embedding_end = datetime.datetime.now()
                 self.db.commit()
-                raise Exception(f"Error encountered while ingestion. {response.json()}")
+                raise Exception(f"Error encountered while ingestion. {response_err(response)}")
         else:
             link_db.status = 'error'
-            link_db.job_message = f"Error encountered while embedding. {response.json()}"
+            link_db.job_message = f"Error encountered while embedding. {response_err(response)}"
             link_db.embedding_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error encountered while embedding. {response.json()}")
+            raise Exception(f"Error encountered while embedding. {response_err(response)}")
         
         # Update the pipeline progress
         link_db.chunks_processed = i + len(docs_batch)
@@ -330,9 +336,9 @@ def delete_link_task(self, link_id: Any):
     logger.debug(f"[{link_db.id}] Deleted existing data related to file.")
     if response.status_code != 200:
         link_db.job_status = 'error'
-        link_db.job_message = f"Error encountered while removing existing data related to file. {response.json()}"
+        link_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.db.commit()
-        raise Exception(f"Error encountered while data clean up. {response.json()}")
+        raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     
     # Step 2 - Delete the file from database
     id = link_db.id

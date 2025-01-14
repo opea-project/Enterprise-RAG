@@ -1,5 +1,24 @@
 from unittest.mock import patch, MagicMock
-from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task
+from json.decoder import JSONDecodeError
+from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, response_err
+
+def test_response_error_json_reply():
+    mock_r = MagicMock()
+    mock_r.json.return_value = {'detail': 'Error details'}
+    text = response_err(mock_r)
+    assert text == 'Error details'
+
+    mock_r = MagicMock()
+    mock_r.json.return_value = {'key': 'value'}
+    mock_r.text = "{'key': 'value'}"
+    text = response_err(mock_r)
+    assert text ==  "{'key': 'value'}"
+
+    mock_r = MagicMock()
+    mock_r.json.side_effect = JSONDecodeError('JSON error', 'error', 0)
+    mock_r.text = "{'key': 'value'}"
+    text = response_err(mock_r)
+    assert text ==  "{'key': 'value'}"
 
 def test_process_file_task_success():
     with patch('app.tasks.requests.post') as mock_post, \

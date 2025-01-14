@@ -172,7 +172,13 @@ runs:
 
     - name: Bandit Scan
       if: always() && github.workflow != 'Protex Scan'
-      uses: intel-innersource/frameworks.actions.bandit@v1.3
+      run: |
+        pip install bandit==1.8.0
+        bandit repo -c repo/.github/BanditConfig.yaml -r -f html -o bandit-report.html
+      shell: bash
+
+    - uses: actions/upload-artifact@v4
+      if: always() && github.workflow != 'Protex Scan'
       with:
-        bandit-options: '-c .github/BanditConfig.yaml -f html'
-        report-file: 'CT161_bandit-results.html'
+        name: CT161_bandit-results.html
+        path: bandit-report.html

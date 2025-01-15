@@ -9,7 +9,7 @@ from beanie import Document, PydanticObjectId
 
 class AnonymizeModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     hidden_names: Optional[List[str]] = None
     allowed_names: Optional[List[str]] = None
     entity_types: Optional[List[str]] = None
@@ -23,14 +23,14 @@ class AnonymizeModel(Document):
 
 class BanCodeModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
 
 
 class BanCompetitorsModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     competitors: List[str] = ["Competitor1", "Competitor2", "Competitor3"]
     model: Optional[str] = None
     threshold: Optional[float] = None
@@ -48,7 +48,7 @@ class BanSubstringsModel(Document):
 
 class BanTopicsModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     topics: List[str] = ["violence", "attack", "war"]
     threshold: Optional[float] = None
     model: Optional[str] = None
@@ -56,7 +56,7 @@ class BanTopicsModel(Document):
 
 class CodeModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     languages: List[str] = ["Java", "Python"]
     model: Optional[str] = None
     is_blocked: Optional[bool] = None
@@ -65,7 +65,7 @@ class CodeModel(Document):
 
 class GibberishModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
     match_type: Optional[str] = None
@@ -77,7 +77,7 @@ class InvisibleText(Document):
 
 class LanguageModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     valid_languages: List[str] = ["en", "es"]
     model: Optional[str] = None
     threshold: Optional[float] = None
@@ -86,7 +86,7 @@ class LanguageModel(Document):
 
 class PromptInjectionModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
     match_type: Optional[str] = None
@@ -120,7 +120,7 @@ class TokenLimitModel(Document):
 
 class ToxicityModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
     match_type: Optional[str] = None
@@ -128,7 +128,7 @@ class ToxicityModel(Document):
 
 class BiasModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
     match_type: Optional[str] = None
@@ -147,21 +147,21 @@ class JSONModel(Document):
 
 class LanguageSameModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
 
 
 class MaliciousURLsModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
 
 
 class NoRefusalModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
     match_type: Optional[str] = None
@@ -184,21 +184,21 @@ class ReadingTimeModel(Document):
 
 class FactualConsistencyModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     minimum_score: Optional[float] = None
 
 
 class RelevanceModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     model: Optional[str] = None
     threshold: Optional[float] = None
 
 
 class SensitiveModel(Document):
     enabled: bool = False
-    use_onnx: bool = True
+    use_onnx: bool = False
     entity_types: Optional[List[str]] = None
     regex_patterns: Optional[List[str]] = None
     redact: Optional[bool] = None

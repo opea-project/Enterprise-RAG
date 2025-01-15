@@ -60,6 +60,20 @@ kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":
 ```
 Also make sure the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your storageClass capabilities.
 
+### Running solution on CPU
+
+In case we want to deploy the solution on CPUs instead of using Gaudi nodes, we need to make sure we have sufficient resources for running the LLM model server such as VLLM or TGI. The default resources used for deploying system are defined in [pod_resources_allocation](./../docs/pod_resource_allocation.md/)
+
+#### Running solution on reduced model server pod resources
+> [!NOTE]
+It is possible to reduce resources for model server if having issues with node capacity, however performance drop is expected in such case. Always make sure value of `OMP_NUM_THREADS` is equal to number of CPU-s assigned to the container.
+
+##### Setting variables for vllm as a model server
+Please reduce value of `OMP_NUM_THREADS` in  [vllm variables](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu) and reduce resources in [vllm_deployment](./microservices-connector/config/manifests/vllm.yaml)
+
+#### Setting variables for tgi as a model server
+
+Please reduce value of `OMP_NUM_THREADS` in [tgi variables](./../src/comps/llms/impl/model_server/tgi/docker/.env.cpu) and reduce resources in [tgi_deployment](./microservices-connector/config/manifests/vllm.yaml).
 
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:

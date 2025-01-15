@@ -146,7 +146,12 @@ spec:
               path: /health
               port: 8000
           resources:
-            {}
+            requests:
+              cpu: "48"
+              memory: 64Gi
+            limits:
+              cpu: "48"
+              memory: 64Gi
       volumes:
         - name: model-volume
           persistentVolumeClaim:

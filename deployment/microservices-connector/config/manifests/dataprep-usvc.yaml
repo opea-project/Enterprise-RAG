@@ -19,6 +19,7 @@ data:
   no_proxy: ""
   CHUNK_SIZE: "512"
   CHUNK_OVERLAP: "64"
+  OMP_NUM_THREADS: "8"
 ---
 # Source: dataprep-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -124,7 +125,12 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {}
+            requests:
+              cpu: "8"
+              memory: 16Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
       volumes:
         - name: tmp
           emptyDir: {}

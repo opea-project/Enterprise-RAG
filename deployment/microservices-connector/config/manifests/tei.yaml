@@ -96,7 +96,7 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.5"
+          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"
@@ -132,7 +132,12 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {}
+            requests:
+              cpu: "8"
+              memory: 8Gi
+            limits:
+              cpu: "16"
+              memory: 16Gi
       volumes:
         - name: model-volume
           persistentVolumeClaim:

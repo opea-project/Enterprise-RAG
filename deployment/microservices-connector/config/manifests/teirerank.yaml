@@ -21,6 +21,9 @@ data:
   no_proxy: ""
   NUMBA_CACHE_DIR: "/tmp"
   HF_HOME: "/tmp/.cache/huggingface"
+  KMP_AFFINITY: granularity=fine,compact,1,0
+  MKL_NUM_THREADS: "8"
+  OMP_NUM_THREADS: "8"
 ---
 # Source: teirerank/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -94,7 +97,7 @@ spec:
               drop:
               - ALL
             readOnlyRootFilesystem: true
-          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.5"
+          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"
@@ -130,7 +133,12 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {}
+            requests:
+              cpu: "2"
+              memory: 16Gi
+            limits:
+              cpu: "8"
+              memory: 32Gi
       volumes:
         - name: model-volume
           persistentVolumeClaim:

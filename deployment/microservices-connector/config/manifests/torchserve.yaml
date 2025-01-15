@@ -62,7 +62,7 @@ metadata:
     app.kubernetes.io/version: "cpu-1.5"
     app.kubernetes.io/managed-by: Helm
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       app.kubernetes.io/name: torchserve
@@ -107,12 +107,12 @@ spec:
           image: "localhost:5000/test/pl-qna-rag-embedding-torchserve:latest"
           imagePullPolicy: Always
           resources:
-            limits:
-              cpu: "16"
-              memory: 32Gi
             requests:
-              cpu: "16"
-              memory: 32Gi
+              cpu: "4"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
           volumeMounts:
             - mountPath: /opt/ml/model
               name: model-volume

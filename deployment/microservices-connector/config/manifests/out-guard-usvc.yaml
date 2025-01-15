@@ -18,6 +18,9 @@ data:
   https_proxy: ""
   no_proxy: ""
   HF_HOME: /tmp/in-guard/huggingface
+  KMP_AFFINITY: granularity=fine,compact,1,0
+  MKL_NUM_THREADS: "8"
+  OMP_NUM_THREADS: "8"
 ---
 # Source: out-guard-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -121,7 +124,12 @@ spec:
             initialDelaySeconds: 90
             periodSeconds: 60
           resources:
-            {}
+            requests:
+              cpu: "4"
+              memory: 8Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
       volumes:
         - name: tmp
           emptyDir: {}

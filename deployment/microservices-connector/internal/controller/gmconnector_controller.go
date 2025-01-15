@@ -274,7 +274,6 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
-		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT"

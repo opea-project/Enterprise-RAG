@@ -23,7 +23,7 @@ spec:
           serviceName: embedding-svc
           config:
             endpoint: /v1/embeddings
-            EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
+            EMBEDDING_MODEL_SERVER_ENDPOINT: http://torchserve-embedding-svc.chatqa.svc.cluster.local:8090
             EMBEDDING_MODEL_NAME: "sentence-transformers/distiluse-base-multilingual-cased-v1"
             EMBEDDING_MODEL_SERVER: "torchserve"
             EMBEDDING_CONNECTOR: "langchain"

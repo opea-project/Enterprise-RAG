@@ -136,7 +136,12 @@ spec:
             tcpSocket:
               port: http
           resources:
-            {}
+            requests:
+              cpu: "32"
+              memory: 64Gi
+            limits:
+              cpu: "32"
+              memory: 64Gi
       volumes:
         - name: model-volume
           persistentVolumeClaim:

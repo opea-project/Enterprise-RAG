@@ -7,7 +7,7 @@ services:
   reranking-tei-model-server:
     # for 1.5 release there's error: https://github.com/huggingface/text-embeddings-inference/issues/417
     # so we need to wait for next release, or utilize cpu-latest tag
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.2
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.6
     container_name: reranking-tei-model-server
     ports:
       - "${RERANKER_TEI_PORT}:80"

@@ -1,5 +1,5 @@
 # ruff: noqa: E711, E712
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 # To run this test with pytest, run the following command:
 # pytest -s --benchmark-min-rounds=20 --benchmark-group-by=param:max_new_tokens benchmark/llms/

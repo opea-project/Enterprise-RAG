@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 MODEL_CONFIG_FILE="/home/user/utils/model-config.yaml"

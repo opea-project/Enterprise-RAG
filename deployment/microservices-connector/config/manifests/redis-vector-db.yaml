@@ -1,6 +1,6 @@
 ---
 # Source: redis-vector-db/templates/service.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -29,7 +29,7 @@ spec:
     app.kubernetes.io/instance: redis-vector-db
 ---
 # Source: redis-vector-db/templates/deployment.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

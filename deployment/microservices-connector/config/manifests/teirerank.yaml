@@ -1,6 +1,6 @@
 ---
 # Source: teirerank/templates/configmap.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -23,7 +23,7 @@ data:
   HF_HOME: "/tmp/.cache/huggingface"
 ---
 # Source: teirerank/templates/service.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -48,7 +48,7 @@ spec:
     app.kubernetes.io/instance: teirerank
 ---
 # Source: teirerank/templates/deployment.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

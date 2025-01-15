@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # todo: implement docker-compose-cpu.yml for scenario within device CPU

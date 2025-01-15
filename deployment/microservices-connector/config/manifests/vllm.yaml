@@ -1,6 +1,6 @@
 ---
 # Source: vllm/templates/configmap.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -21,7 +21,7 @@ data:
   no_proxy: ""
 ---
 # Source: vllm/templates/service.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -46,7 +46,7 @@ spec:
     app.kubernetes.io/instance: vllm
 ---
 # Source: vllm/templates/deployment.yaml
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

@@ -21,11 +21,10 @@ services:
       VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS: ${VLLM_OPENVINO_ENABLE_QUANTIZED_WEIGHTS}
       VLLM_OPENVINO_CPU_KV_CACHE_PRECISION: ${VLLM_OPENVINO_CPU_KV_CACHE_PRECISION}
     ipc: host
-    command: /bin/bash -c "python3 -m vllm.entrypoints.openai.api_server \
-                           --model $LLM_VLLM_MODEL_NAME \
-                           --max-num-seqs $VLLM_MAX_NUM_SEQS \
-                           --max-model-len $VLLM_MAX_MODEL_LEN \
-                           --host 0.0.0.0 --port 80"
+    command: "--model $LLM_VLLM_MODEL_NAME \
+              --max-num-seqs $VLLM_MAX_NUM_SEQS \
+              --max-model-len $VLLM_MAX_MODEL_LEN \
+              --host 0.0.0.0 --port 80"
 
   llm_usvc:
     build:

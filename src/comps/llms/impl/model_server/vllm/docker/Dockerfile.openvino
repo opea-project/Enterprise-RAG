@@ -16,6 +16,6 @@ RUN pip install --upgrade cmake==3.31.1 ninja==1.11.1.2 packaging==24.2 setuptoo
 RUN pip install --upgrade-strategy eager "optimum-intel[nncf]"@git+https://github.com/huggingface/optimum-intel.git
 
 ENV VLLM_TARGET_DEVICE="openvino"
-RUN pip install -v git+https://github.com/vllm-project/vllm@v0.6.4.post1
+RUN pip install -v git+https://github.com/vllm-project/vllm@v0.6.6.post1
 
-CMD ["/bin/bash"]
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]

@@ -31,7 +31,7 @@ def mock_usv_config():
 @pytest.fixture
 def mock_output_doc():
     ban_code_model = BanCodeModel(enabled=True, use_onnx=True, model=None, threshold=None)
-    output_guardrail_params = LLMGuardOutputGuardrailParams(ban_code=ban_code_model, output_guard_streaming=False)
+    output_guardrail_params = LLMGuardOutputGuardrailParams(ban_code=ban_code_model)
     return GeneratedDoc(
         text="This is a test output",
         prompt="This is a test prompt",

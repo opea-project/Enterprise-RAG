@@ -14,9 +14,10 @@ from comps.llms.utils.connectors.connector import LLMConnector
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class TGIConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
         self._endpoint = endpoint
         self._disable_streaming = disable_streaming
+        self._llm_output_guard_exists = llm_output_guard_exists
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         connector = HuggingFaceEndpoint(
@@ -30,6 +31,12 @@ class TGIConnector:
 
         if input.streaming and not self._disable_streaming:
             try:
+                if self._llm_output_guard_exists:
+                    chat_response = ""
+                    for text in connector.stream(input.query):
+                        chat_response += text
+                    return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                                    output_guardrail_params=input.output_guardrail_params)
                 def stream_generator():
                     chat_response = ""
                     for text in connector.stream(input.query):
@@ -55,7 +62,7 @@ class TGIConnector:
         else:
             try:
                 response = connector.invoke(input.query)
-                return GeneratedDoc(text=response, prompt=input.query,
+                return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
             except ReadTimeout as e:
                 error_message = f"Failed to invoke the Langchain TGI Connector. Connection established with '{e.request.url}' but " \
@@ -76,10 +83,11 @@ class TGIConnector:
                 raise Exception(f"Error invoking TGI: {e}")
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
         self._endpoint = endpoint+"/v1"
         self._model_name = model_name
         self._disable_streaming = disable_streaming
+        self._llm_output_guard_exists = llm_output_guard_exists
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
@@ -99,6 +107,12 @@ class VLLMConnector:
 
         if input.streaming and not self._disable_streaming:
             try:
+                if self._llm_output_guard_exists:
+                    chat_response = ""
+                    for text in llm.stream(input.query):
+                        chat_response += text
+                    return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                                    output_guardrail_params=input.output_guardrail_params)
                 def stream_generator():
                     chat_response = ""
                     for text in llm.stream(input.query):
@@ -124,7 +138,7 @@ class VLLMConnector:
         else:
             try:
                 response = llm.invoke(input.query)
-                return GeneratedDoc(text=response, prompt=input.query,
+                return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
             except ReadTimeout as e:
                 error_message = f"Failed to invoke the Langchain VLLM Connector. Connection established with '{e.request.url}' but " \
@@ -146,23 +160,25 @@ SUPPORTED_INTEGRATIONS = {
 
 class LangchainLLMConnector(LLMConnector):
     _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
         if cls._instance is None:
             cls._instance = super(LangchainLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming)
+            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
         else:
             if (cls._instance._endpoint != endpoint or
                 cls._instance._model_server != model_server or
-                cls._instance._disable_streaming != disable_streaming):
+                cls._instance._disable_streaming != disable_streaming or
+                cls._instance._llm_output_guard_exists != llm_output_guard_exists):
                 logger.warning(f"Existing LangchainLLMConnector instance has different parameters: "
                               f"{cls._instance._endpoint} != {endpoint}, "
                               f"{cls._instance._model_server} != {model_server}, "
                               f"{cls._instance._disable_streaming} != {disable_streaming}, "
+                              f"{cls._instance._llm_output_guard_exists} != {llm_output_guard_exists}, "
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
-        super().__init__(model_name, model_server, endpoint, disable_streaming)
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
         self._connector = self._get_connector()
         self._validate()
 
@@ -171,7 +187,7 @@ class LangchainLLMConnector(LLMConnector):
             error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
             logger.error(error_message)
             raise ValueError(error_message)
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming)
+        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming, self._llm_output_guard_exists)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

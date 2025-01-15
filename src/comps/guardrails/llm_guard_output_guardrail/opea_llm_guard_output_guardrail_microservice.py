@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import os
 
 from dotenv import dotenv_values
@@ -63,28 +64,25 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
     try:
         data = await llm_output.json()
         doc = GeneratedDoc(**data)
-        if doc.output_guardrail_params is not None:
-            output_guard_streaming = doc.output_guardrail_params.output_guard_streaming
-        else:
-            output_guard_streaming = True
     except Exception as e:
         logger.error(f"Problem with creating GenerateDoc: {e}")
         raise HTTPException(status_code=500, detail=f"{e}") from e
 
     scanned_output = output_guardrail.scan_llm_output(doc)
 
-    if output_guard_streaming is False:
-        return GeneratedDoc(text=scanned_output, prompt=doc.prompt)
+    if doc.streaming is False:
+        return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False)
     else:
         generator = scanned_output.split()
-        def stream_generator():
+        async def stream_generator():
             chat_response = ""
             try:
                 for text in generator:
                     chat_response += text
-                    chunk_repr = repr(' ' + text) # Guard is streaming, when LLM is not. Space needed for UI to show properly the output
+                    chunk_repr = repr(' ' + text) # Guard takes over LLM streaming
                     logger.debug("[guard - chat_stream] chunk:{chunk_repr}")
                     yield f"data: {chunk_repr}\n\n"
+                    await asyncio.sleep(0.02)  # Delay of 0.02 second between chunks
                 logger.debug("[guard - chat_stream] stream response: {chat_response}")
                 yield "data: [DONE]\n\n"
             except Exception as e:

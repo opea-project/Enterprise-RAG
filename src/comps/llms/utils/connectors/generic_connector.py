@@ -20,9 +20,10 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class TGIConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
         self._endpoint = endpoint
         self._disable_streaming = disable_streaming
+        self._llm_output_guard_exists = llm_output_guard_exists
         self._client = InferenceClient(model=endpoint, timeout=120)
 
 
@@ -57,6 +58,13 @@ class TGIConnector:
             raise Exception(f"Error invoking TGI: {e}")
 
         if input.streaming and not self._disable_streaming:
+            if self._llm_output_guard_exists:
+                chat_response = ""
+                for text in generator:
+                    chat_response += text
+                return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                                output_guardrail_params=input.output_guardrail_params)
+
             stream_gen_time = []
             start_local = time.time()
             def stream_generator():
@@ -75,14 +83,15 @@ class TGIConnector:
                     yield "data: [ERROR]\n\n"
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator, prompt=input.query,
+            return GeneratedDoc(text=generator, prompt=input.query, streaming=input.streaming,
                                 output_guardrail_params=input.output_guardrail_params)
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
         self._model_name = model_name
         self._endpoint = endpoint+"/v1"
         self._disable_streaming = disable_streaming
+        self._llm_output_guard_exists = llm_output_guard_exists
         self._client = openai.OpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
@@ -118,6 +127,14 @@ class VLLMConnector:
             raise Exception(f"Error invoking VLLM: {e}")
 
         if input.streaming and not self._disable_streaming:
+            if self._llm_output_guard_exists:
+                chat_response = ""
+                for chunk in generator:
+                    text = chunk.choices[0].text
+                    chat_response += text
+                return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                                output_guardrail_params=input.output_guardrail_params)
+
             stream_gen_time = []
             start_local = time.time()
 
@@ -139,7 +156,7 @@ class VLLMConnector:
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator.choices[0].text, prompt=input.query,
+            return GeneratedDoc(text=generator.choices[0].text, prompt=input.query, streaming=input.streaming,
                                 output_guardrail_params=input.output_guardrail_params)
 
 SUPPORTED_INTEGRATIONS = {
@@ -149,23 +166,25 @@ SUPPORTED_INTEGRATIONS = {
 
 class GenericLLMConnector(LLMConnector):
     _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
         if cls._instance is None:
             cls._instance = super(GenericLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming)
+            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
         else:
             if (cls._instance._endpoint != endpoint or
                 cls._instance._model_server != model_server or
-                cls._instance._disable_streaming != disable_streaming):
+                cls._instance._disable_streaming != disable_streaming or
+                cls._llm_output_guard_exists != llm_output_guard_exists):
                 logger.warning(f"Existing GenericLLMConnector instance has different parameters: "
                               f"{cls._instance._endpoint} != {endpoint}, "
                               f"{cls._instance._model_server} != {model_server}, "
-                              f"{cls._instance._disable_streaming} != {disable_streaming},"
+                              f"{cls._instance._disable_streaming} != {disable_streaming}, "
+                              f"{cls._instance._llm_output_guard_exists} != {llm_output_guard_exists}, "
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool):
-        super().__init__(model_name, model_server, endpoint, disable_streaming)
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
         self._connector = self._get_connector()
         self._validate()
 
@@ -176,7 +195,7 @@ class GenericLLMConnector(LLMConnector):
             logger.error(error_message)
             raise ValueError(error_message)
 
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming)
+        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming, self._llm_output_guard_exists)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

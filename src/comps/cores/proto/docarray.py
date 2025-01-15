@@ -305,7 +305,6 @@ class LLMGuardOutputGuardrailParams(BaseDoc):
     sentiment: SentimentModel = SentimentModel()
     toxicity: ToxicityModel = ToxicityModel()
     url_reachability: URLReachabilityModel = URLReachabilityModel()
-    output_guard_streaming: bool = True
     anonymize_vault: Optional[List[Tuple]] = None # the only parameter not available in fingerprint. Used to tramsmit vault
 
 class LLMParamsDoc(BaseDoc):
@@ -317,13 +316,14 @@ class LLMParamsDoc(BaseDoc):
     typical_p: float = 0.95
     temperature: float = 0.01
     repetition_penalty: float = 1.03
-    streaming: bool = False
+    streaming: bool = True
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
+    streaming: bool = True
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class LLMParams(BaseDoc):
@@ -333,7 +333,7 @@ class LLMParams(BaseDoc):
     typical_p: float = 0.95
     temperature: float = 0.01
     repetition_penalty: float = 1.03
-    streaming: bool = False
+    streaming: bool = True
 
 
 class RAGASParams(BaseDoc):

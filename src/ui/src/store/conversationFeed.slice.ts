@@ -51,8 +51,7 @@ export const postPrompt = createAsyncThunk(
       const abortSignal = newAbortController.signal;
 
       const { streaming: isLLMStreaming } = promptRequestParams;
-      const isStreamingEnabled = isLLMStreaming || hasOutputGuard;
-      const handleResponse = isStreamingEnabled
+      const handleResponse = isLLMStreaming
         ? handleStreamedResponse
         : handleBufferedResponse;
 

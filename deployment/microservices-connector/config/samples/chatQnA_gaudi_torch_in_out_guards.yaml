@@ -86,6 +86,7 @@ spec:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
+            LLM_OUTPUT_GUARD_EXISTS: "True"
       - name: VLLMGaudi
         dependency: Hard
         internalService:

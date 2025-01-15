@@ -253,7 +253,6 @@ class LLMGuardOutputGuardrailParams(Document):
     sentiment: SentimentModel = None
     toxicity: ToxicityModel = None
     url_reachability: URLReachabilityModel = None
-    output_guard_streaming: bool = True
 
 class PromptTemplateParams(Document):
     prompt_template: str = """
@@ -281,7 +280,7 @@ class LLMParams(Document):
     typical_p: float = 0.95
     temperature: float = 0.01
     repetition_penalty: float = 1.03
-    streaming: bool = False
+    streaming: bool = True
 
 
 class PackedParams(Document):

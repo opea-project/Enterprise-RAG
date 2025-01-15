@@ -251,8 +251,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                         sensitive=SensitiveModel(),
                         sentiment=SentimentModel(),
                         toxicity=ToxicityModel(),
-                        url_reachability=URLReachabilityModel(),
-                        output_guard_streaming=True
+                        url_reachability=URLReachabilityModel()
                     )
                 )
             )

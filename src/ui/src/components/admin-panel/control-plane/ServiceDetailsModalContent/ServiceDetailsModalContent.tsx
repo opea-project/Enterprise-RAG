@@ -4,7 +4,6 @@
 import "./ServiceDetailsModalContent.scss";
 
 import { useCallback, useEffect, useState } from "react";
-import { BsExclamationTriangleFill } from "react-icons/bs";
 
 import { ChangeArgumentsRequestData } from "@/api/models/systemFingerprint";
 import ServiceArgumentsGrid from "@/components/admin-panel/control-plane/ServiceArgumentsGrid/ServiceArgumentsGrid";
@@ -16,21 +15,9 @@ import ServiceArgument, {
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 import {
   chatQnAGraphEditModeEnabledSelector,
-  chatQnAGraphNodesSelector,
   setChatQnAGraphEditMode,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-
-const LLMServiceWarningAlert = () => (
-  <div className="service-alert service-alert--warning">
-    <BsExclamationTriangleFill />
-    <p>
-      For the current system configuration the LLM Output Guard service is
-      responsible for streaming the output. For this reason, the LLM streaming
-      argument is not available.
-    </p>
-  </div>
-);
 
 interface ServiceArgumentsGridData {
   [argumentName: string]: ServiceArgument;
@@ -56,7 +43,6 @@ const ServiceDetailsModalContent = ({
   const dispatch = useAppDispatch();
 
   const editModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const nodes = useAppSelector(chatQnAGraphNodesSelector);
 
   const [serviceArgumentsGrid, setServiceArgumentsGrid] =
     useState<ServiceArgumentsGridValues>({ name: "", data: {} });
@@ -64,9 +50,6 @@ const ServiceDetailsModalContent = ({
     useState<ServiceArgumentsGridValues>({ name: "", data: {} });
   const [invalidArguments, setInvalidArguments] = useState<string[]>([]);
 
-  const isLLMService = serviceData.id === "llm";
-  const outputGuardNode = nodes.find(({ id }) => id === "output_guard");
-  const outputGuardExist = outputGuardNode !== undefined;
 
   useEffect(() => {
     const serviceArguments = serviceData.args ?? [];
@@ -74,13 +57,7 @@ const ServiceDetailsModalContent = ({
     const gridData: ServiceArgumentsGridData = {};
     for (const argument of serviceArguments) {
       const { displayName } = argument;
-      if (isLLMService && outputGuardExist) {
-        if (displayName !== "streaming") {
-          gridData[displayName] = argument;
-        }
-      } else {
-        gridData[displayName] = argument;
-      }
+      gridData[displayName] = argument;
     }
 
     const initialServiceArgumentsGrid = {
@@ -89,7 +66,7 @@ const ServiceDetailsModalContent = ({
     };
     setServiceArgumentsGrid(initialServiceArgumentsGrid);
     setInitialServiceArgumentsGrid(initialServiceArgumentsGrid);
-  }, [isLLMService, outputGuardExist, serviceData.args, serviceData.id]);
+  }, [serviceData.args, serviceData.id]);
 
   const handleArgumentValueChange = (
     argumentName: string,
@@ -219,7 +196,6 @@ const ServiceDetailsModalContent = ({
           </p>
         </header>
         <div className="service-details-content">
-          {isLLMService && outputGuardExist && <LLMServiceWarningAlert />}
           {serviceData?.details &&
             Object.entries(serviceData.details).length !== 0 && (
               <ServiceDetailsGrid details={serviceData.details} />

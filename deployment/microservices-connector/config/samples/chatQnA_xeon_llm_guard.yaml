@@ -82,6 +82,7 @@ spec:
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-service-m
             LLM_MODEL_NAME: "Intel/neural-chat-7b-v3-3"
+            LLM_OUTPUT_GUARD_EXISTS: "True"
       - name: VLLM
         dependency: Hard
         internalService:

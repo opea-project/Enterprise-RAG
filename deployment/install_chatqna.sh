@@ -52,6 +52,7 @@ KEYCLOAK_PASS=""
 PIPELINE=""
 REGISTRY="localhost:5000"
 TAG="latest"
+HELM_TIMEOUT="10m"
 
 available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
@@ -73,6 +74,7 @@ function usage() {
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--edp: Start Enhanced Dataprep services (requires deployment & auth)."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
+    echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ch|--clear-auth: Clear auth services."
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
@@ -273,7 +275,7 @@ function start_deployment() {
     create_vector_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
     create_vector_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
 
-    helm_install $GMC_NS gmc "$gmc_path "
+    helm_install $GMC_NS gmc "$gmc_path"
 
     print_log "waiting for pods in $GMC_NS are ready"
     wait_for_condition check_pods "$GMC_NS"
@@ -313,14 +315,14 @@ function start_telemetry() {
     ### Base variables
     # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
     # shellcheck disable=SC2154
-    HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--wait --set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
+    HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
     #HELM_INSTALL_TELEMETRY_EXTRA_ARGS
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
 
     ### Logs variables
-    TELEMETRY_LOGS_IMAGE="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+    TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT --set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
     #HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
@@ -329,7 +331,7 @@ function start_telemetry() {
     echo "HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
     
     ### Traces variables
-    HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="--wait $TEMPO_DNS_FLAG"
+    HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT $TEMPO_DNS_FLAG"
     #HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
     echo "*** Telemetry 'traces' variables:"
     echo "HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS"
@@ -400,7 +402,7 @@ function start_authentication() {
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
-    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --version $KEYCLOAK_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -653,6 +655,15 @@ while [[ "$#" -gt 0 ]]; do
         --auth)
             auth_flag=true
             ;;
+        --timeout)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --timeout. Please provide a valid timeout."
+                usage
+                exit 1
+            fi
+            HELM_TIMEOUT=$1
+            ;;
         -ce|--clear-edp)
             clear_edp_flag=true
             ;;
@@ -693,11 +704,11 @@ if [[ "$telemetry_flag" == "true" ]]; then
     fi
 fi
 
-HELM_INSTALL_UI_DEFAULT_ARGS="--wait --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="-f $ingress_path/ingress-values.yaml"
-HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait"
-HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait"
-HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --set celery.repository=$REGISTRY/opea/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/opea/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/opea/enhanced-dataprep --set backend.tag=$TAG"
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT -f $ingress_path/ingress-values.yaml"
+HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
+HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/opea/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/opea/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/opea/enhanced-dataprep --set backend.tag=$TAG"
 
 # Execute given arguments
 if $auth_flag; then

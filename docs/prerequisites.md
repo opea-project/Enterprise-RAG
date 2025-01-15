@@ -123,7 +123,7 @@ Install `sshpass` to be able to send machine credentials via Ansible scripts:
 ```bash
 sudo apt-get install sshpass
 ```
-if you are behing a corporate VPN, setup proxy by editing the `all.yaml` file:
+if you are behing a corporate VPN, setup proxy by editing the `all.yml` file:
 
 ```bash
 # Edit proxy settings and save file
@@ -162,7 +162,7 @@ Reset K8s cluster to make sure we are making install on a clean environment:
 ```bash
 ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root -e override_system_hostname=false -kK reset.yml
 ```
->**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). 
+>**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
 
 A similar output can be seen after a successful reset:
 ```bash
@@ -200,7 +200,7 @@ kubernetes/preinstall : Remove swapfile from /etc/fstab ------------------------
 ```bash
 ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root -e override_system_hostname=false -kK cluster.yml
 ```
->**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). 
+>**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
 
 After a successful execution of the Ansible playbook, a similar output is observed:
 ```bash
@@ -238,7 +238,7 @@ container-engine/containerd : Download_file | Download item --------------------
 mkdir ~/.kube
 sudo cp /etc/kubernetes/admin.conf ~/.kube/config
 # change owner to user 
-sudo chown -R <username>:<username> ~/.kube
+sudo chown -R <username>:<groupname> ~/.kube
 ```
 To verify that the K8s cluster is working and all pods are in running state, run `kubectl get pods -A` .
 
@@ -305,7 +305,7 @@ For more details, refer to the [Gaudi Firmware installation](https://docs.habana
 
 ## Install K8s Plugin
 
-Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Installation_Methods/Kubernetes_Installation/index.html#intel-gaudi-device-plugin) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
+Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Kubernetes_Installation/index.html#intel-gaudi-device-plugin-for-kubernetes ) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
 
 Verify that the plugin is installed successfully by running `kubectl get pods -A`:
 ```

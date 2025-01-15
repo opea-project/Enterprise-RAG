@@ -195,7 +195,7 @@ class ApiRequestHelper:
             elif not line.startswith("data:"):
                 raise InvalidChatqaResponseBody(
                     "Chatqa API response body does not follow "f"'Server-Sent Events' structure. "
-                    f"Response: {response.text}"
+                    f"Response: {response.text}.\n\nHeaders: {response.headers}"
                 )
             else:
                 response_text += line[7:-1]

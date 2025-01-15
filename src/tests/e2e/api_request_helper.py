@@ -15,8 +15,8 @@ import time
 
 class CustomPortForward(object):
 
-    def __init__(self, remote_port, namespace, label_selector):
-        local_port = self._find_unused_port()
+    def __init__(self, remote_port, namespace, label_selector, local_port=None):
+        local_port = self._find_unused_port() if local_port is None else local_port
         pod = self._get_pod(namespace, label_selector)
         self.pf = kr8s.portforward.PortForward(pod, remote_port=remote_port, local_port=local_port)
 
@@ -257,3 +257,14 @@ class ApiRequestHelper:
                 timeout=10
             )
             return response
+
+    def fill_in_file(self, temp_file, size):
+        """Write data to the temp file until we reach the desired size"""
+        chunk_size = 1024   # Write in chunks of 1KB
+        current_size = 0
+        while current_size < size:
+            chunk = 'A' * chunk_size
+            temp_file.write(chunk)
+            current_size += chunk_size
+            temp_file.flush()
+        print(f"Temporary file created at: {temp_file.name}")

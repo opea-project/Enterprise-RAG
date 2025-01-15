@@ -1,0 +1,45 @@
+= Sample Asciidoc Document
+John Doe
+2025-01-08: Sample Adoc File
+
+== Introduction
+
+This is a sample Asciidoc file used for demonstration purposes. Asciidoc is a lightweight markup language that is easy to read and write.
+
+== Features
+
+Asciidoc provides various features for writing structured documents:
+
+- **Headers and Subheaders**
+- **Lists** (ordered and unordered)
+- **Links**, e.g., https://asciidoc.org[Asciidoc Official Website]
+- **Images**, e.g.,
+  image::https://via.placeholder.com/150[Placeholder Image, width=150, height=150]
+- **Tables**, e.g.,
+
+[cols="1,2", options="header"]
+|===
+|Column 1 |Column 2
+|Data 1   |Data 2
+|Data 3   |Data 4
+|===
+
+== Example Code
+
+You can also include code snippets:
+
+[source,python]
+----
+def greet(name):
+    return f"Hello, {name}!"
+
+print(greet("World"))
+----
+
+== Conclusion
+
+Asciidoc is a powerful yet simple markup language that can be used for writing books, documentation, and more.
+
+== Further Reading
+
+Visit https://asciidoctor.org[Asciidoctor] to learn more about using Asciidoc for your documentation needs.

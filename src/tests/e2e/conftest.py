@@ -5,7 +5,9 @@
 
 import logging
 import pytest
+import urllib3
 from api_request_helper import ApiRequestHelper
+from helpers.edp_helper import EdpHelper
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -17,6 +19,7 @@ def suppress_logging():
     logging.getLogger("asyncio").setLevel(logging.ERROR)
     logging.getLogger("httpx").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     yield
 
 
@@ -28,6 +31,11 @@ def chatqa_api_helper():
 @pytest.fixture
 def dataprep_api_helper():
     return ApiRequestHelper("dataprep", {"app": "router-service"})
+
+
+@pytest.fixture
+def edp_helper():
+    return EdpHelper()
 
 
 @pytest.fixture

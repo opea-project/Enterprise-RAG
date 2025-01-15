@@ -58,7 +58,7 @@ def test_dataprep_huge_file_upload(dataprep_api_helper):
 
     print("Creating a temporary file")
     with NamedTemporaryFile(delete=True, mode='w+', suffix=".txt") as temp_file:
-        _fill_in_file(temp_file, size_in_bytes)
+        dataprep_api_helper.fill_in_file(temp_file, size_in_bytes)
         response = dataprep_api_helper.call_dataprep_upload_file(temp_file.name)
         assert response.status_code == 200, \
             "Unexpected status code returned when invalid request is made to dataprep pipeline"
@@ -71,7 +71,7 @@ def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, gener
     """
     size_in_bytes = 63 * 1024 * 1024  # 63 MB file
     with NamedTemporaryFile(delete=True, mode='w+', suffix=".txt") as temp_file:
-        _fill_in_file(temp_file, size_in_bytes)
+        dataprep_api_helper._fill_in_file(temp_file, size_in_bytes)
         with concurrent.futures.ThreadPoolExecutor() as executor:
             # Execute file upload in the background
             exec_handler = executor.submit(dataprep_api_helper.call_dataprep_upload_file,
@@ -187,19 +187,3 @@ def test_dataprep_chunk_overlapping(dataprep_api_helper):
         else:
             chunks = [chunk["text"] for chunk in docs]
             pytest.fail(f"Looks like the chunks do not overlap with each other. List of chunks: {chunks}")
-
-
-def _fill_in_file(temp_file, size):
-    """
-    Write data to the temp file until we reach the desired size
-    """
-    chunk_size = 1024 * 1024
-    current_size = 0 # Write in chunks of 1 MB
-    while current_size < size:
-        chunk = 'A' * chunk_size
-        temp_file.write(chunk)
-        current_size += chunk_size
-        temp_file.flush()
-    # Flush the file to ensure all data is written
-    temp_file.flush()
-    print(f"Temporary file created at: {temp_file.name}")

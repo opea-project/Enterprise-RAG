@@ -4,14 +4,9 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 
-import { PromptRequestParams } from "@/api/models/chatQnA";
 import ChatQnAService from "@/services/chatQnAService";
 import { RootState } from "@/store/index";
-import {
-  handleBufferedResponse,
-  handleError,
-  handleStreamedResponse,
-} from "@/utils/chat/conversationFeed";
+import { handleError } from "@/utils/chat/conversationFeed";
 
 interface ChatMessage {
   text: string;
@@ -36,26 +31,12 @@ const initialState: ConversationFeedState = {
 
 export const postPrompt = createAsyncThunk(
   "conversationFeed/postPrompt",
-  async (prompt: string, { dispatch, getState }) => {
+  async (prompt: string, { dispatch }) => {
     try {
-      const rootState = getState() as RootState;
-      const { hasInputGuard, hasOutputGuard } = rootState.chatQnAGraph;
-      const promptRequestParams: PromptRequestParams =
-        await ChatQnAService.getPromptRequestParams(
-          hasInputGuard,
-          hasOutputGuard,
-        );
-
       const newAbortController = new AbortController();
       dispatch(setAbortController(newAbortController));
       const abortSignal = newAbortController.signal;
-
-      const { streaming: isLLMStreaming } = promptRequestParams;
-      const handleResponse = isLLMStreaming
-        ? handleStreamedResponse
-        : handleBufferedResponse;
-
-      await handleResponse(prompt, promptRequestParams, abortSignal, dispatch);
+      await ChatQnAService.postPrompt(prompt, abortSignal, dispatch);
     } catch (error) {
       const errorMessage = handleError(error);
       dispatch(updateBotMessageText(errorMessage));

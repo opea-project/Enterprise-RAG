@@ -53,6 +53,8 @@ type StepNameType string
 
 // StepDependency Enum
 const (
+	// Fingerprint
+	Fingerprint StepNameType = "Fingerprint"
 	// Emebdding
 	Embedding StepNameType = "Embedding"
 	// Tei-Embedding

@@ -1,7 +1,6 @@
 {
   "chatQnA": {
-    "postPrompt": "/api/v1/chatqna",
-    "getPromptRequestParams": "/v1/system_fingerprint/append_arguments"
+    "postPrompt": "/api/v1/chatqna"
   },
   "dataprep": "/api/v1/dataprep",
   "systemFingerprint": {

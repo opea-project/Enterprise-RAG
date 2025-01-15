@@ -31,16 +31,10 @@ kubectl wait --for=condition=available --timeout=300s deployment/client-test -n 
 export CLIENT_POD=$(kubectl get pod -n $NAMESPACE -l app=client-test -o jsonpath={.items..metadata.name})
 export accessUrl=$(kubectl get gmc -n $NAMESPACE -o jsonpath="{.items[?(@.metadata.name=='$NAMESPACE')].status.accessUrl}")
 
-JSON_PAYLOAD='
-{
-  "text": "What is AVX512?",
-  "parameters": {
-    "max_new_tokens": 5,
-    "do_sample": true,
-    "streaming": false
-  }
-}
-'
+
+JSON_PAYLOAD='{
+    "text": "What is AVX512?"
+}'
 
 echo "Connecting to the server through the pod $CLIENT_POD using URL $accessUrl..."
 

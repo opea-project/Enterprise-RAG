@@ -115,6 +115,10 @@ images:
     repository: *repo
     tag: *tag
     envfile: "src/comps/language_detection/impl/microservice/.env"
+  fingerprint-usvc:
+    image: "system-fingerprint"
+    repository: *repo
+    tag: *tag
 
 
 imagePullSecrets:

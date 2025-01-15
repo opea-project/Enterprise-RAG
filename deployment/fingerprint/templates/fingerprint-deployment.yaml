@@ -1,0 +1,147 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fingerprint.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "fingerprint.name" . }}
+    helm.sh/chart: {{ include "fingerprint.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fingerprint.selectorLabels" . | nindent 8 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fingerprint.selectorLabels" . | nindent 12 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-mongo
+          image: docker.io/bitnami/mongodb:8.0.4-debian-12-r0
+          env:
+            - name: MONGO_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-database-secret
+                  key: MONGO_DATABASE_NAME
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-database-secret
+                  key: MONGO_USER
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-database-secret
+                  key: MONGO_PASSWORD
+            - name: MONGO_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-database-secret
+                  key: MONGO_HOST
+            - name: MONGO_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-database-secret
+                  key: MONGO_PORT
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$MONGO_DATABASE_NAME" ] || [ -z "$MONGO_HOST" ] || [ -z "$MONGO_PORT" ] || [ -z "$MONGO_USER" ] || [ -z "$MONGO_PASSWORD" ]; then
+                  echo "Environment variables MONGO_DATABASE_NAME, MONGO_HOST, MONGO_PORT, MONGO_USER OR MONGO_PASSWORD are not set. Skipping wait-for-mongo init container.";
+                  exit 1
+                else
+                  until mongosh $MONGO_HOST:$MONGO_PORT/$MONGO_DATABASE_NAME --username $MONGO_USER --password $MONGO_PASSWORD --quiet --eval "db.runCommand({ connectionStatus: 1 })"; do
+                    echo "Waiting for MongoDB...";
+                    sleep 2;
+                  done;
+                fi;
+      containers:
+        - name: {{ include "fingerprint.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: {{ .Values.image.fingerprint.repository }}:{{ .Values.image.fingerprint.tag }}
+          imagePullPolicy: {{ .Values.image.fingerprint.pullPolicy }}
+          env:
+            - name: SYSTEM_FINGERPRINT_MONGODB_HOST
+              value: "{{ .Values.mongodb.fullnameOverride }}"
+            - name: SYSTEM_FINGERPRINT_MONGODB_PORT
+              value: "{{ .Values.mongodb.service.port }}"
+            - name: MONGODB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: "mongo-database-secret"
+                  key: MONGO_DATABASE_NAME
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: "mongo-database-secret"
+                  key: MONGO_USER
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "mongo-database-secret"
+                  key: MONGO_PASSWORD
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 6012
+          livenessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "{{ .Values.resources.requests.memory }}"
+              cpu: "{{ .Values.resources.requests.cpu }}"
+            limits:
+              memory: "{{ .Values.resources.limits.memory }}"
+              cpu: "{{ .Values.resources.limits.cpu }}"
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

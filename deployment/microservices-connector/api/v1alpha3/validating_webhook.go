@@ -25,6 +25,7 @@ var (
 	//setup a logger for the webhooks.
 	vlog      = logf.Log.WithName("validating-webhook")
 	stepNames = []string{
+		"Fingerprint",
 		"TeiEmbedding",
 		"TeiEmbeddingGaudi",
 		"Embedding",

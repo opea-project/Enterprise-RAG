@@ -40,7 +40,7 @@ def edp_helper():
 
 @pytest.fixture
 def fingerprint_api_helper():
-    return ApiRequestHelper("rag-ui", {"app.kubernetes.io/name": "fingerprint-usvc"}, 6012)
+    return ApiRequestHelper("fingerprint", {"app.kubernetes.io/name": "fingerprint"}, 6012)
 
 
 @pytest.fixture

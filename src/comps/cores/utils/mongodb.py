@@ -1,13 +1,13 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from abc import ABC
-from beanie import Document, init_beanie
-import motor.motor_asyncio as motor
 from typing import List, Union
-
+from urllib.parse import quote_plus
+import motor.motor_asyncio as motor
+from beanie import Document, init_beanie
 from comps import get_opea_logger
-
 
 logger = get_opea_logger("OPEAMongoConnector")
 
@@ -17,14 +17,21 @@ class OPEAMongoConnector(ABC):
         self.host = host
         self.port = port
         self.db_name = db_name
-        self.documents = documents
+        self.documents = documents if isinstance(documents, list) else [documents]
 
-        if not isinstance(documents, List):
-            self.documents = [self.documents]
+        username = os.getenv('MONGO_USER')
+        password = os.getenv('MONGO_PASSWORD')
 
-        conn_url = f"mongodb://{self.host}:{self.port}/{self.db_name}"
+        if username and password:
+            conn_url = f"mongodb://{quote_plus(username)}:{quote_plus(password)}@{self.host}:{self.port}/{self.db_name}"
+        else:
+            conn_url = f"mongodb://{self.host}:{self.port}/{self.db_name}"
 
-        self.client = motor.AsyncIOMotorClient(conn_url)
+        try:
+            self.client = motor.AsyncIOMotorClient(conn_url)
+        except Exception as e:
+            logger.error(f"Failed to create MongoDB client: {e}")
+            raise
 
     async def init_async(self) -> None:
         await init_beanie(database=self.client.get_database(), document_models=self.documents)

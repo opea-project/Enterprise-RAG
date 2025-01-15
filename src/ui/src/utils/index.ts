@@ -1,14 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { PromptRequestParams } from "@/api/models/chatQnA";
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
-import {
-  FetchedServiceDetails,
-  ServicesParameters,
-} from "@/api/models/systemFingerprint";
-import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
-import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
+import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
 
 const documentToBase64 = (document: File) =>
   new Promise((resolve, reject) => {
@@ -37,10 +31,13 @@ const parseServiceDetailsResponseData = (
     "Deployment:apps/v1:output-scan-svc-deployment:chatqa": "output_guard",
     "Deployment:apps/v1:redis-vector-db-deployment:chatqa": "vectordb",
     "Deployment:apps/v1:reranking-svc-deployment:chatqa": "reranker",
-    "Deployment:apps/v1:prompt-template-svc-deployment:chatqa": "prompt_template",
+    "Deployment:apps/v1:prompt-template-svc-deployment:chatqa":
+      "prompt_template",
     "Deployment:apps/v1:retriever-svc-deployment:chatqa": "retriever",
-    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa": "reranker_model_server",
-    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa": "embedding_model_server",
+    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa":
+      "reranker_model_server",
+    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa":
+      "embedding_model_server",
   };
 
   const nodesStepsMap: { [key: string]: string } = {
@@ -117,55 +114,4 @@ const parseServiceDetailsResponseData = (
   return serviceDetails;
 };
 
-const parsePromptRequestParameters = (
-  parameters: ServicesParameters,
-  hasInputGuard: boolean,
-  hasOutputGuard: boolean,
-): PromptRequestParams => {
-  const serviceParams = Object.fromEntries(
-    Object.entries(parameters).filter(
-      ([, value]) => typeof value !== "object" || value === null,
-    ),
-  ) as ServicesParameters;
-
-  let inputGuardParams = {};
-  let outputGuardParams = {};
-  if (hasInputGuard) {
-    const supportedInputScanners = Object.keys(inputGuardArguments);
-    inputGuardParams = Object.fromEntries(
-      Object.entries(parameters.input_guardrail_params || {}).filter(
-        ([scannerName]) => supportedInputScanners.includes(scannerName),
-      ),
-    );
-  }
-
-  if (hasOutputGuard) {
-    const supportedOutputScanners = Object.keys(outputGuardArguments);
-    outputGuardParams = Object.fromEntries(
-      Object.entries(parameters.output_guardrail_params || {}).filter(
-        ([scannerName]) => supportedOutputScanners.includes(scannerName),
-      ),
-    );
-  }
-
-  const guardParams = Object.fromEntries(
-    Object.entries({
-      input_guardrail_params: inputGuardParams,
-      output_guardrail_params: outputGuardParams,
-    }).filter(
-      ([, params]) =>
-        typeof params === "object" && Object.keys(params).length > 0,
-    ),
-  );
-
-  return {
-    ...serviceParams,
-    ...guardParams,
-  };
-};
-
-export {
-  documentToBase64,
-  parsePromptRequestParameters,
-  parseServiceDetailsResponseData,
-};
+export { documentToBase64, parseServiceDetailsResponseData };

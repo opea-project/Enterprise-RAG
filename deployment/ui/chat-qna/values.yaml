@@ -1,6 +1,5 @@
-# Default values for helm-ui.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
 replicaCount: 1
 
@@ -13,17 +12,11 @@ image:
   - ui:
       repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
       pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-      tag: "latest"
-  - fingerprint:
-      repository: "localhost:5000/system-fingerprint"
       tag: "latest"
 
 imagePullSecrets:
   - name: regcred
 nameOverride: "ui-app"
-fpNameOverride: "fingerprint-usvc"
-mongoNameOverride: "mongodb"
 fullnameOverride: "ui-chart"
 
 serviceAccount:
@@ -54,11 +47,6 @@ service:
   port: 4173
 
 aliasIP: localhost
-
-mongodb:
-  name: SYSTEM_FINGERPRINT
-  svc: mongodb
-  port: 27017
 
 ingress:
   enabled: true

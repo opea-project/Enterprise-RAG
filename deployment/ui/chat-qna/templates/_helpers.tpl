@@ -4,13 +4,6 @@ Expand the name of the chart.
 {{- define "helm-ui.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
-{{- define "helm-fp.name" -}}
-{{- default .Chart.Name .Values.fpNameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-{{- define "helm-mongo.name" -}}
-{{- default .Chart.Name .Values.mongoNameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
 
 {{/*
 Create a default fully qualified app name.
@@ -56,23 +49,6 @@ Selector labels
 app.kubernetes.io/name: {{ include "helm-ui.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
-
-{{/*
-fingerprint labels
-*/}}
-{{- define "helm-fp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm-fp.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
-{{/*
-mongo labels
-*/}}
-{{- define "helm-mongo.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm-mongo.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
 
 {{/*
 Create the name of the service account to use

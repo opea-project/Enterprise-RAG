@@ -1,120 +1,95 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  EventSourceMessage,
-  fetchEventSource,
-} from "@microsoft/fetch-event-source";
+import { PayloadAction } from "@reduxjs/toolkit";
 
 import endpoints from "@/api/endpoints.json";
-import { PromptRequestParams } from "@/api/models/chatQnA";
 import keycloakService from "@/services/keycloakService";
-import { parsePromptRequestParameters } from "@/utils";
+import { updateBotMessageText } from "@/store/conversationFeed.slice";
 
 class ChatQnAService {
-  async getPromptRequestParams(
-    hasInputGuard: boolean,
-    hasOutputGuard: boolean,
-  ) {
-    await keycloakService.refreshToken();
-
-    const body = JSON.stringify({ text: "" });
-
-    const response = await fetch(endpoints.chatQnA.getPromptRequestParams, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keycloakService.getToken()}`,
-        "Content-Type": "application/json",
-      },
-      body,
-    });
-
-    if (response.ok) {
-      const { parameters } = await response.json();
-      const promptRequestParams = parsePromptRequestParameters(
-        parameters,
-        hasInputGuard,
-        hasOutputGuard,
-      );
-      return promptRequestParams;
-    } else {
-      throw new Error("Failed to get prompt request parameters");
-    }
-  }
-
-  async postPromptForBufferedResponse(
+  async postPrompt(
     prompt: string,
-    promptRequestParams: PromptRequestParams,
     abortSignal: AbortSignal,
+    dispatch: (action: PayloadAction<string>) => void,
   ) {
     await keycloakService.refreshToken();
 
     const body = JSON.stringify({
       text: prompt,
-      parameters: promptRequestParams,
     });
 
     const response = await fetch(endpoints.chatQnA.postPrompt, {
       method: "POST",
+      body,
       headers: {
         Authorization: `Bearer ${keycloakService.getToken()}`,
       },
-      body,
       signal: abortSignal,
     });
 
-    const data = await response.json();
-    if (!data.text) {
+    if (
+      response.status >= 400 &&
+      response.status < 500 &&
+      response.status !== 429
+    ) {
+      const error = await response.json();
+      let msg = JSON.stringify(error);
+      if (response.status === 466) {
+        // Guardrails
+        msg = `Guard: ${msg}`;
+      }
+      throw new Error(msg);
+    } else if (!response.ok) {
       throw new Error("Failed to get response from chat");
     }
-    return data.text;
-  }
 
-  async postPromptForStreamedResponse(
-    prompt: string,
-    promptRequestParams: PromptRequestParams,
-    abortSignal: AbortSignal,
-    onMessageHandler: (event: EventSourceMessage) => void,
-  ) {
-    await keycloakService.refreshToken();
+    const contentType = response.headers.get("Content-Type");
+    if (contentType && contentType.includes("application/json")) {
+      const json = await response.json();
+      dispatch(updateBotMessageText(json.text));
+    } else if (contentType && contentType.includes("text/event-stream")) {
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
 
-    const body = JSON.stringify({
-      text: prompt,
-      parameters: promptRequestParams,
-    });
+      let done = false;
+      while (!done) {
+        const result = await reader?.read();
+        done = result?.done ?? true;
+        if (done) break;
 
-    await fetchEventSource(endpoints.chatQnA.postPrompt, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keycloakService.getToken()}`,
-      },
-      body,
-      signal: abortSignal,
-      openWhenHidden: true,
-      onopen: async (response) => {
-        if (response.ok) {
-          return;
-        } else if (
-          response.status >= 400 &&
-          response.status < 500 &&
-          response.status !== 429
-        ) {
-          const error = await response.json();
-          let msg = JSON.stringify(error);
-          if (response.status === 466) {
-            // Guardrails
-            msg = `Guard: ${msg}`;
+        // decoding streamed events for a given moment in time
+        const decodedValue = decoder.decode(result?.value, { stream: true });
+
+        // in case of streaming multiple events at one time - configuration with output guard
+        const events = decodedValue.split("\n\n");
+
+        for (const event of events) {
+          if (event.startsWith("data:")) {
+            // skip to the next iteration if event data message is a keyword indicating that stream has finished
+            if (event.includes("[DONE]") || event.includes("</s>")) {
+              continue;
+            }
+
+            // extract chunk of text from event data message
+            let newTextChunk = event.slice(5).trim();
+            let quoteRegex = /(?<!\\)'/g;
+            if (newTextChunk.startsWith('"')) {
+              quoteRegex = /"/g;
+            }
+            newTextChunk = newTextChunk
+              .replace(quoteRegex, "")
+              .replace(/\\n/, "  \n");
+
+            dispatch(updateBotMessageText(newTextChunk));
           }
-          throw new Error(msg);
-        } else {
-          throw new Error("Opening connection failed");
         }
-      },
-      onmessage: onMessageHandler,
-      onerror: (err) => {
-        throw new Error(err);
-      },
-    });
+      }
+    } else {
+      throw new Error(
+        "Response from chat cannot be processed - Unsupported Content-Type",
+      );
+    }
   }
 }
 

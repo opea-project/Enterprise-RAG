@@ -693,6 +693,41 @@ func handleEnsemblePipeline(
 	return combinedIOReader, 200, nil
 }
 
+func processFingerprintResponse(responseBody []byte) ([]byte, map[string]interface{}, error) {
+	var responseMap map[string]interface{}
+	if err := json.Unmarshal(responseBody, &responseMap); err != nil {
+		return nil, nil, err
+	}
+
+	parameters, ok := responseMap["parameters"]
+	if !ok {
+		return responseBody, nil, nil
+	}
+
+	delete(responseMap, "parameters")
+
+	modifiedResponseBody, err := json.Marshal(responseMap)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return modifiedResponseBody, map[string]interface{}{"parameters": parameters}, nil
+}
+
+func handleFingerprintStep(responseBody io.ReadCloser) (io.ReadCloser, map[string]interface{}, error) {
+	responseBytes, err := io.ReadAll(responseBody)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	responseBytes, initReqData, err := processFingerprintResponse(responseBytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error processing response: %w", err)
+	}
+
+	return io.NopCloser(bytes.NewReader(responseBytes)), initReqData, nil
+}
+
 func handleSequencePipeline(
 	ctx context.Context,
 	nodeName string,
@@ -787,6 +822,14 @@ func handleSequencePipeline(
 			stepSpan.SetStatus(codes.Error, err.Error())
 			stepSpan.End()
 			return nil, 500, err
+		}
+
+		if step.StepName == "Fingerprint" && responseBody != nil {
+			responseBody, initReqData, err = handleFingerprintStep(responseBody)
+			if err != nil {
+				otlpr.WithContext(log, ctx).Error(err, "Error processing fingerprint step")
+				return nil, 500, err
+			}
 		}
 
 		stepLatencyMilliseconds := float64(time.Since(stepStartTime)) / float64(time.Millisecond)
@@ -938,12 +981,13 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			}
 		}()
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "text/event-stream")
 		firstTokenCollected := false
 		firstTokenLatencyMilliseconds := 0.0
 		nextTokenLatencyTotal := 0.0
 		nextTokenLatencyCount := 0.0
 		buffer := make([]byte, BufferSize)
+		var collectedParts []string
 		// ---------------------- Tokens
 		ctx, spanTokens := mainTracer.Start(ctx, "tokens")
 		for {
@@ -977,8 +1021,49 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				http.Error(w, "failed to read from response body", http.StatusInternalServerError)
 				return
 			}
+
 			if n == 0 {
 				break
+			}
+
+			if !strings.HasPrefix(string(buffer[:n]), "data:") {
+				collectedParts = append(collectedParts, string(buffer[:n]))
+				if err == io.EOF {
+					// Concatenate all parts into a single JSON string
+					fullJSON := strings.Join(collectedParts, "")
+
+					var jsonResponse map[string]interface{}
+					if err := json.Unmarshal([]byte(fullJSON), &jsonResponse); err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "failed to unmarshal JSON response")
+						spanTokens.RecordError(err)
+						spanTokens.SetStatus(codes.Error, err.Error())
+						spanTokens.End()
+						return
+					}
+					cleanedResponse := map[string]interface{}{
+						"id":   jsonResponse["id"],
+						"text": jsonResponse["text"],
+					}
+
+					cleanedResponseBytes, err := json.Marshal(cleanedResponse)
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "failed to marshal cleaned JSON response")
+						spanTokens.RecordError(err)
+						spanTokens.SetStatus(codes.Error, err.Error())
+						spanTokens.End()
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if _, err := w.Write(cleanedResponseBytes); err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "failed to write cleaned JSON response")
+						spanTokens.RecordError(err)
+						spanTokens.SetStatus(codes.Error, err.Error())
+						spanTokens.End()
+						return
+					}
+					break
+				}
+				continue
 			}
 
 			// Write the chunk to the ResponseWriter

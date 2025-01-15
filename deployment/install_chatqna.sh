@@ -6,6 +6,7 @@
 repo_path=$(realpath "$(pwd)/../")
 manifests_path="$repo_path/deployment/microservices-connector/config/samples"
 gmc_path="$repo_path/deployment/microservices-connector/helm"
+fingerprint_path="$repo_path/deployment/fingerprint"
 telemetry_path="$repo_path/deployment/telemetry/helm"
 telemetry_logs_path="$repo_path/deployment/telemetry/helm/charts/logs"
 telemetry_traces_path="$repo_path/deployment/telemetry/helm/charts/traces"
@@ -24,6 +25,7 @@ KEYCLOAK_FPORT=1234
 
 # namespaces
 DEPLOYMENT_NS=chatqa
+FINGERPRINT_NS=fingerprint
 GATEWAY_NS=auth-apisix
 DATAPREP_NS=dataprep
 ENHANCED_DATAPREP_NS=edp
@@ -181,25 +183,6 @@ function start_and_keep_port_forwarding() {
     done
 }
 
-function create_vector_database_secret() {
-    local VECTOR_STORE=$1
-    local NAMESPACE_OF_SECRET=$2
-    local VECTOR_DB_USERNAME=$3
-    local VECTOR_DB_PASSWORD=$4
-    local VECTOR_DB_NAMESPACE=$5
-
-    if [[ "$VECTOR_STORE" == "redis" ]]; then
-        kubectl get secret vector-database-config -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic vector-database-config -n $NAMESPACE_OF_SECRET \
-            --from-literal=VECTOR_STORE="$VECTOR_STORE" \
-            --from-literal=REDIS_URL="redis://$VECTOR_DB_USERNAME:$VECTOR_DB_PASSWORD@redis-vector-db.$VECTOR_DB_NAMESPACE.svc.cluster.local" \
-            --from-literal=REDIS_HOST="redis-vector-db.$VECTOR_DB_NAMESPACE.svc.cluster.local" \
-            --from-literal=REDIS_PORT="6379" \
-            --from-literal=REDIS_USERNAME="$VECTOR_DB_USERNAME" \
-            --from-literal=REDIS_PASSWORD="$VECTOR_DB_PASSWORD" \
-            --from-literal=VECTOR_DB_REDIS_ARGS="--save 60 1000 --appendonly yes --requirepass $VECTOR_DB_PASSWORD"
-    fi
-}
-
 function kill_process() {
     local pattern pid full_command
     pattern=$1
@@ -250,7 +233,39 @@ function create_certs() {
     fi
 }
 
-# deploys GMConnector, chatqna pipeline and dataprep pipeline
+function start_fingerprint() {
+    print_header "Start fingerprint"
+    kubectl get namespace $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create namespace $FINGERPRINT_NS
+
+    MONGO_DATABASE_NAME="SYSTEM_FINGERPRINT"
+
+    FINGERPRINT_DB_USERNAME="usr"
+    get_or_create_and_store_credentials MONGO_DB $FINGERPRINT_DB_USERNAME ""
+    FINGERPRINT_DB_PASSWORD=${NEW_PASSWORD}
+
+    FINGERPRINT_DB_ROOT_USERNAME="root"
+    get_or_create_and_store_credentials MONGO_DB_ADMIN $FINGERPRINT_DB_ROOT_USERNAME ""
+    FINGERPRINT_DB_ROOT_PASSWORD=${NEW_PASSWORD}
+
+    # Secret for fingerprint db configuration
+    create_database_secret "mongo" $FINGERPRINT_NS $FINGERPRINT_DB_USERNAME $FINGERPRINT_DB_PASSWORD $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment for fingerprint namespace
+    create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME $FINGERPRINT_DB_PASSWORD $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
+
+    if ! helm repo list | grep -q 'bitnami' ; then helm repo add bitnami https://charts.bitnami.com/bitnami ; fi
+
+    helm repo update > /dev/null
+    helm dependency build "$fingerprint_path" > /dev/null
+
+    helm_install $FINGERPRINT_NS fingerprint $fingerprint_path \
+        "--set mongodb.auth.usernames[0]=$FINGERPRINT_DB_USERNAME \
+         --set mongodb.auth.passwords[0]=$FINGERPRINT_DB_PASSWORD \
+         --set mongodb.auth.databases[0]=$MONGO_DATABASE_NAME \
+         --set mongodb.auth.rootPassword=$FINGERPRINT_DB_ROOT_PASSWORD"
+
+    wait_for_condition check_pods "$FINGERPRINT_NS"
+}
+
+# deploys GMConnector, fingerprint, chatqna pipeline and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
 
@@ -272,19 +287,31 @@ function start_deployment() {
 
     # Create secret for vector db configuration, have to be created in both namespaces
     # Args: vector_store_type, secret_namespace, username, password, namespace_with_vector_database
-    create_vector_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
-    create_vector_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+    create_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+    create_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
 
     helm_install $GMC_NS gmc "$gmc_path"
 
     print_log "waiting for pods in $GMC_NS are ready"
     wait_for_condition check_pods "$GMC_NS"
 
-    kubectl apply -f "$manifests_path/chatQnA_$pipeline".yaml
+    # Fingerprint deployment
+    local deployment_manifest="$manifests_path/chatQnA_$pipeline.yaml"
+    if grep -q "Fingerprint" $deployment_manifest; then
+        start_fingerprint
+    fi
 
+    # Apply deployment manifest
+    kubectl apply -f $deployment_manifest
+
+    # Dataprep deployment
+    print_header "Start dataprep"
+
+    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
+    
     if [[ $pipeline == *"multilingual"* ]]; then
         kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
-    else 
+    else
         kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
     fi
 
@@ -305,6 +332,14 @@ function clear_deployment() {
 
     helm status -n $GMC_NS gmc > /dev/null 2>&1 && helm delete -n $GMC_NS gmc
     kubectl get ns $GMC_NS > /dev/null 2>&1 && kubectl delete ns $GMC_NS
+}
+
+function clear_fingerprint() {
+    print_header "Clear fingerprint"
+
+    kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 && kubectl delete ns $FINGERPRINT_NS
+
+    helm status -n $FINGERPRINT_NS fingerprint > /dev/null 2>&1 && helm uninstall -n $FINGERPRINT_NS fingerprint
 }
 
 function start_telemetry() {
@@ -472,6 +507,7 @@ function start_gateway() {
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $DATAPREP_NS
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
+    kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create ns $FINGERPRINT_NS
     kubectl get ns $UI_NS > /dev/null 2>&1 || kubectl create ns $UI_NS
 
     helm dependency update "$api_gateway_path" > /dev/null
@@ -566,6 +602,7 @@ function clear_all_ns() {
     kubectl get ns $UI_NS > /dev/null 2>&1 && kubectl delete ns $UI_NS
     kubectl get ns $INGRESS_NS > /dev/null 2>&1 && kubectl delete ns $INGRESS_NS
     kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
+    kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 && kubectl delete ns $FINGERPRINT_NS
 }
 
 # Initialize flags
@@ -577,6 +614,7 @@ auth_flag=false
 helm_upgrade=false
 edp_flag=false
 clear_deployment_flag=false
+clear_fingerprint_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
 clear_all_flag=false
@@ -679,6 +717,9 @@ while [[ "$#" -gt 0 ]]; do
         -ct|--clear-telemetry)
             clear_telemetry_flag=true
             ;;
+        -cf|--clear-fingerprint)
+            clear_fingerprint_flag=true
+            ;;
         -ca|--clear-all)
             clear_all_flag=true
             ;;
@@ -704,7 +745,7 @@ if [[ "$telemetry_flag" == "true" ]]; then
     fi
 fi
 
-HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG"
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG "
 HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT -f $ingress_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
@@ -764,13 +805,11 @@ if $clear_telemetry_flag; then
     clear_telemetry
 fi
 
+if $clear_fingerprint_flag; then
+    clear_fingerprint
+fi
+
 if $clear_all_flag; then
-    clear_deployment
-    clear_authentication
-    clear_ui
-    clear_telemetry
-    clear_ingress
-    clear_gateway
     clear_all_ns
     rm default_credentials.txt
     rm -f tls.crt tls.key

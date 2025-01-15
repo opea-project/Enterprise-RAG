@@ -39,6 +39,7 @@ import (
 )
 
 const (
+	Fingerprint				 = "Fingerprint"
 	Configmap                = "Configmap"
 	ConfigmapGaudi           = "ConfigmapGaudi"
 	Embedding                = "Embedding"
@@ -84,6 +85,7 @@ const (
 )
 
 var yamlDict = map[string]string{
+	Fingerprint:		 yaml_dir + "fingerprint-usvc.yaml",
 	TeiEmbedding:        yaml_dir + "tei.yaml",
 	TeiEmbeddingGaudi:   yaml_dir + "tei_gaudi.yaml",
 	TorchserveEmbedding: yaml_dir + "torchserve.yaml",

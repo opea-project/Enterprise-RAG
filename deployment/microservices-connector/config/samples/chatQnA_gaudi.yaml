@@ -18,7 +18,14 @@ spec:
     root:
       routerType: Sequence
       steps:
+      - name: Fingerprint
+        internalService:
+          serviceName: fgp-svc
+          config:
+            endpoint: /v1/system_fingerprint/append_arguments
       - name: Embedding
+        data: $response
+        dependency: Hard
         internalService:
           serviceName: embedding-svc
           config:

@@ -19,6 +19,8 @@ import {
   setChatQnAGraphLoading,
   setChatQnAGraphNodes,
   setChatQnAGraphSelectedServiceNode,
+  setHasInputGuard,
+  setHasOutputGuard,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
@@ -52,6 +54,14 @@ const ControlPlaneTab = () => {
 
     SystemFingerprintService.getChatQnAServiceDetails().then(
       (fetchedDetails) => {
+        if (fetchedDetails) {
+          const hasInputGuard = fetchedDetails.input_guard.status !== undefined;
+          const hasOutputGuard =
+            fetchedDetails.output_guard.status !== undefined;
+          dispatch(setHasInputGuard(hasInputGuard));
+          dispatch(setHasOutputGuard(hasOutputGuard));
+        }
+
         SystemFingerprintService.appendArguments().then(
           (parameters: ServicesParameters) => {
             dispatch(

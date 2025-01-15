@@ -27,21 +27,20 @@ endpoints:
     permissions:
       - "admin#admin-access"
   - name: fingerprint-append
-    namespace: rag-ui
+    namespace: fingerprint
     hostname: erag.com
     path: /v1/system_fingerprint/append_arguments
     service_port: 6012
-    backend_service: fingerprint-usvc
+    backend_service: fingerprint-svc
     service_path: /v1/system_fingerprint/append_arguments
     permissions:
       - "admin#admin-access"
-      - "user#user-access"
   - name: fingerprint-change
-    namespace: rag-ui
+    namespace: fingerprint
     hostname: erag.com
     path: /v1/system_fingerprint/change_arguments
     service_port: 6012
-    backend_service: fingerprint-usvc
+    backend_service: fingerprint-svc
     service_path: /v1/system_fingerprint/change_arguments
     permissions:
       - "admin#admin-access"

@@ -531,7 +531,7 @@ def test_out_guard_reading_time(guard_helper):
     guard_params["truncate"] = True
     guard_params["max_time"] = 0.2
     guard_helper.setup(GuardType.OUTPUT, "reading_time", guard_params)
-    guard_helper.assert_allowed(questions.LONG_ANSWER)
+    guard_helper.assert_truncated(questions.LONG_ANSWER)
 
 
 @allure.testcase("IEASG-T102")

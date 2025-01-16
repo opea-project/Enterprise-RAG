@@ -244,7 +244,8 @@ class GuardHelper:
 
     def assert_blocked(self, question, reason=None):
         response = self.call_chatqa(question)
-        print(f"ChatQA response: {self.chatqa_api_helper.format_response(response)}")
+        print(f"ChatQA response: {self.chatqa_api_helper.format_response(response)}; "
+              f"status code: {response.status_code}")
         if reason:
             message = f"Question should be blocked because {reason}. Question: {question}"
         else:
@@ -253,7 +254,8 @@ class GuardHelper:
 
     def assert_allowed(self, question, reason=None):
         response = self.call_chatqa(question)
-        print(f"ChatQA response: {self.chatqa_api_helper.format_response(response)}")
+        print(f"ChatQA response: {self.chatqa_api_helper.format_response(response)}; "
+              f"status code: {response.status_code}")
         if reason:
             message = f"Question should be allowed because {reason}. Question: {question}"
         else:
@@ -266,6 +268,13 @@ class GuardHelper:
             f"Output guard didn't consider the output to be forbidden. Question: {question}. Output: {response.content}"
         assert "REDACT" in str(response.content), \
             f"Output should be redacted. Question: {question}. Output: {response.content}"
+
+    def assert_truncated(self, question):
+        response = self.call_chatqa(question)
+        assert response.status_code == 466, \
+            f"Output guard didn't consider the output to be forbidden. Question: {question}. Output: {response.content}"
+        assert "We sanitized the answer due to the guardrails policies" in str(response.content), \
+            f"Output should be truncated. Question: {question}. Output: {response.content}"
 
     def code_snippets(self):
         """

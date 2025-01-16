@@ -3,7 +3,6 @@ namespace: auth-apisix
 
 # APISIX Helm chart configs
 apisix:
-  version: 2.8.1
   enabled: true
   ingress-controller:
     enabled: true
@@ -40,3 +39,9 @@ apisix:
         httpStart: |
           proxy_read_timeout 3600s;
           proxy_send_timeout 3600s;
+  extraEnvVars:
+    - name: CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: apisix-secret
+          key: CLIENT_SECRET

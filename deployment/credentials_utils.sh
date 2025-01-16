@@ -28,7 +28,7 @@ store_credentials() {
     sed -i "/^${target}_PASSWORD=/d" $credentials_path
   fi
   # always store new password
-  echo "${target}_USERNAME=${username} " >> $credentials_path
+  echo "${target}_USERNAME=${username}" >> $credentials_path
   echo "${target}_PASSWORD=${password}" >> $credentials_path
 }
 

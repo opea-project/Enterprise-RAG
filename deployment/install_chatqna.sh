@@ -45,7 +45,9 @@ client_secret=""
 KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
-KEYCLOAK_VERSION=24.3.2
+
+INGRESS_CHARTS_VERSION=4.12.0
+KEYCLOAK_CHARTS_VERSION=24.3.2
 
 GRAFANA_PASSWORD=""
 KEYCLOAK_PASS=""
@@ -248,24 +250,41 @@ function start_fingerprint() {
     FINGERPRINT_DB_ROOT_PASSWORD=${NEW_PASSWORD}
 
     # Secret for fingerprint db configuration
-    create_database_secret "mongo" $FINGERPRINT_NS $FINGERPRINT_DB_USERNAME $FINGERPRINT_DB_PASSWORD $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment for fingerprint namespace
-    create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME $FINGERPRINT_DB_PASSWORD $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
+    create_database_secret "mongo" $FINGERPRINT_NS $FINGERPRINT_DB_USERNAME "$FINGERPRINT_DB_PASSWORD" $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment for fingerprint namespace
+    create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME "$FINGERPRINT_DB_PASSWORD" $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
+
+    HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.fingerprint.repository=$REGISTRY/system-fingerprint --set image.fingerprint.tag=$TAG \
+        --set mongodb.auth.usernames[0]=$FINGERPRINT_DB_USERNAME \
+        --set mongodb.auth.passwords[0]=$FINGERPRINT_DB_PASSWORD \
+        --set mongodb.auth.databases[0]=$MONGO_DATABASE_NAME \
+        --set mongodb.auth.rootPassword=$FINGERPRINT_DB_ROOT_PASSWORD"
 
     if ! helm repo list | grep -q 'bitnami' ; then helm repo add bitnami https://charts.bitnami.com/bitnami ; fi
 
     helm repo update > /dev/null
     helm dependency build "$fingerprint_path" > /dev/null
 
-    helm_install $FINGERPRINT_NS fingerprint $fingerprint_path \
-        "--set mongodb.auth.usernames[0]=$FINGERPRINT_DB_USERNAME \
-         --set mongodb.auth.passwords[0]=$FINGERPRINT_DB_PASSWORD \
-         --set mongodb.auth.databases[0]=$MONGO_DATABASE_NAME \
-         --set mongodb.auth.rootPassword=$FINGERPRINT_DB_ROOT_PASSWORD"
+    helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS"
 
     wait_for_condition check_pods "$FINGERPRINT_NS"
 }
 
 # deploys GMConnector, fingerprint, chatqna pipeline and dataprep pipeline
+function create_secret() {
+    local secret_name=$1
+    local secret_namespace=$2
+    local secret_data=$3
+
+    kubectl get namespace $secret_namespace > /dev/null 2>&1 || kubectl create namespace $secret_namespace
+
+    if kubectl get secret $secret_name -n $secret_namespace > /dev/null 2>&1; then
+        print_log "Secret $secret_name already exists in $secret_namespace namespace. Proceeding with existing secret."
+    else
+        kubectl create secret generic $secret_name -n $secret_namespace --from-literal=$secret_data
+    fi
+}
+
+# deploys GMConnector, chatqna pipeline and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
 
@@ -325,7 +344,7 @@ function clear_deployment() {
     print_header "Clear deployment"
 
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
-    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl delete ns $ENHANCED_DATAPREP_NS
+    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
 
     kubectl get crd gmconnectors.gmc.opea.io > /dev/null 2>&1 && kubectl delete crd gmconnectors.gmc.opea.io
@@ -337,9 +356,8 @@ function clear_deployment() {
 function clear_fingerprint() {
     print_header "Clear fingerprint"
 
-    kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 && kubectl delete ns $FINGERPRINT_NS
-
     helm status -n $FINGERPRINT_NS fingerprint > /dev/null 2>&1 && helm uninstall -n $FINGERPRINT_NS fingerprint
+    kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 && kubectl delete ns $FINGERPRINT_NS
 }
 
 function start_telemetry() {
@@ -437,7 +455,7 @@ function start_authentication() {
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
-    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_CHARTS_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -459,6 +477,12 @@ function start_authentication() {
 
     # fix paths across scripts
     cd "$auth_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
+
+    # create apisix-secret with client_secret
+    if ! kubectl get secret apisix-secret -n $GATEWAY_NS > /dev/null 2>&1; then
+        client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS)
+        create_secret apisix-secret $GATEWAY_NS "CLIENT_SECRET=$client_secret"
+    fi
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -493,17 +517,6 @@ function clear_ingress() {
 function start_gateway() {
     print_header "Start gateway"
 
-    start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
-    PID=$!
-
-    sleep 2 # needs a while to work fine
-    client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS)
-
-    kill -2 $PID
-    kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
-
-    sed -i -E "s#(.*client_secret:) \"(.*)\"#\1 \"$client_secret\"#g" $api_gateway_crd_path/values.yaml
-
     kubectl get ns $DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $DATAPREP_NS
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
@@ -516,7 +529,6 @@ function start_gateway() {
     print_log "waiting until pods in $GATEWAY_NS are ready"
     wait_for_condition check_pods "$GATEWAY_NS"
 
-    helm dependency update "$api_gateway_crd_path" > /dev/null
     helm_install "$GATEWAY_NS" auth-apisix-crds "$api_gateway_crd_path" "$HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS"
 
     print_log "waiting until pods in $GATEWAY_NS are ready"
@@ -528,6 +540,7 @@ function clear_gateway() {
     print_header "Clear gateway"
 
     kubectl get secret tls-secret -n $GATEWAY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $GATEWAY_NS
+    kubectl get secret apisix-secret -n $GATEWAY_NS> /dev/null 2>&1 && kubectl delete secret apisix-secret -n $AUTH_NS
 
     helm status -n "$GATEWAY_NS" auth-apisix-crds > /dev/null 2>&1 &&  helm uninstall auth-apisix-crds -n "$GATEWAY_NS"
     helm status -n "$GATEWAY_NS" auth-apisix > /dev/null 2>&1 &&  helm uninstall auth-apisix -n "$GATEWAY_NS"
@@ -554,6 +567,10 @@ function start_edp() {
 
     sleep 2 # needs a while to work fine
     local minio_keycloak_client_id="EnterpriseRAG-oidc-minio"
+
+    # get passwd from file
+    get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
+    KEYCLOAK_PASS=${NEW_PASSWORD}
     local minio_client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
 
     kill -2 $PID
@@ -606,6 +623,7 @@ function clear_all_ns() {
 }
 
 # Initialize flags
+create_flag=false
 deploy_flag=false
 test_flag=false
 telemetry_flag=false
@@ -638,6 +656,7 @@ while [[ "$#" -gt 0 ]]; do
             fi
             PIPELINE=$1
             deploy_flag=true
+            create_flag=true
             ;;
         -g|--grafana_password)
             shift
@@ -671,6 +690,7 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --telemetry)
             telemetry_flag=true
+            create_flag=true
             ;;
         --registry)
             shift
@@ -683,15 +703,18 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --ui)
             ui_flag=true
+            create_flag=true
             ;;
         --edp)
             edp_flag=true
+            create_flag=true
             ;;
         --upgrade)
             helm_upgrade=true
             ;;
         --auth)
             auth_flag=true
+            create_flag=true
             ;;
         --timeout)
             shift
@@ -746,14 +769,17 @@ if [[ "$telemetry_flag" == "true" ]]; then
 fi
 
 HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/opea/chatqna-conversation-ui --set image.ui.tag=$TAG "
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT -f $ingress_path/ingress-values.yaml"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/opea/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/opea/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/opea/enhanced-dataprep --set backend.tag=$TAG"
 
 # Execute given arguments
-if $auth_flag; then
+if $create_flag; then
     create_certs
+fi
+
+if $auth_flag; then
     start_authentication
     start_gateway
 fi
@@ -810,7 +836,13 @@ if $clear_fingerprint_flag; then
 fi
 
 if $clear_all_flag; then
+    clear_deployment
+    clear_authentication
+    clear_ui
+    clear_telemetry
+    clear_ingress
+    clear_gateway
     clear_all_ns
-    rm default_credentials.txt
+    rm -f default_credentials.txt
     rm -f tls.crt tls.key
 fi

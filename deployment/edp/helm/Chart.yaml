@@ -28,11 +28,11 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: minio
-    version: "*"  # Use the latest stable version
+    version: "14.10.3"  # Use the latest stable version
     repository: "https://charts.bitnami.com/bitnami"
   - name: redis
-    version: "*"  # Use the latest stable version
+    version: "20.6.3"  # Use the latest stable version
     repository: "https://charts.bitnami.com/bitnami"
   - name: postgresql
-    version: "*"  # Use the latest stable version
+    version: "16.4.3"  # Use the latest stable version
     repository: "https://charts.bitnami.com/bitnami"

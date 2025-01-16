@@ -24,12 +24,23 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        runAsGroup: 3000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - command:
         - /manager
         image: opea/gmcmanager:latest
         imagePullPolicy: IfNotPresent
         name: manager
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
         env:
           - name: NAMESPACE
             valueFrom:
@@ -38,11 +49,6 @@ spec:
         volumeMounts:
         - name: yaml-file
           mountPath: /tmp/microservices/yamls
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - "ALL"
         livenessProbe:
           httpGet:
             path: /healthz

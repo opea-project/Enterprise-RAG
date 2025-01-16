@@ -2,7 +2,6 @@
 auth:
   realm: EnterpriseRAG
   client_id: EnterpriseRAG-oidc-backend
-  client_secret: ""
   resource_registration_endpoint: "https://keycloak.auth.svc/realms/EnterpriseRAG/authz/protection/resource_set"
   token_endpoint: "https://keycloak.auth.svc/realms/EnterpriseRAG/protocol/openid-connect/token"
 

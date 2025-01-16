@@ -33,7 +33,7 @@ spec:
         resource_registration_endpoint: {{ $.Values.auth.resource_registration_endpoint }}
         token_endpoint: {{ $.Values.auth.token_endpoint }}
         client_id: {{ $.Values.auth.client_id }}
-        client_secret: {{ $.Values.auth.client_secret }}
+        client_secret: "$ENV://CLIENT_SECRET"
         policy_enforcement_mode: "ENFORCING"
         ssl_verify: false
         permissions:

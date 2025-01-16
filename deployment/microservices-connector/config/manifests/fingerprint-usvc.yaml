@@ -119,7 +119,7 @@ spec:
                 fi;
       containers:
         - name: fgp-usvc
-          image: "localhost:5000/system-fgp:latest"
+          image: "localhost:5000/system-fingerprint:latest"
           imagePullPolicy: Always
           ports:
             - name: fgp-usvc

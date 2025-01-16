@@ -202,13 +202,15 @@ function create_realm() {
     local realm_name=$1
     local url="${KEYCLOAK_URL}/admin/realms"
     local response=""
+    local password_policy="length(12) and digits(1) and upperCase(1) and lowerCase(1) and specialChars(1) and notUsername and passwordHistory(5)"
 
     NEW_REALM_JSON='{
         "realm": "'$realm_name'",
         "enabled": true,
         "displayName": "",
         "sslRequired": "none",
-        "registrationAllowed": true
+        "registrationAllowed": true,
+        "passwordPolicy": "'$password_policy'"
     }'
 
     if curl_keycloak "$url" "$NEW_REALM_JSON"; then

@@ -5,10 +5,22 @@ credentials_path="$repo_path/deployment/default_credentials.txt"
 # Default password generation and reuse for upgrade
 
 generate_random_password() {
-  local CHAR_SET="a-zA-Z0-9"
   local LENGTH=12
-  random_string=$(tr -dc "$CHAR_SET" < /dev/urandom | head -c $LENGTH)
-  echo "$random_string"
+  local NUMERIC="0-9"
+  local UPPERCASE="A-Z"
+  local LOWERCASE="a-z"
+  local SPECIAL="!@#$%^&*()_+|:<>?"
+
+  local password=$(tr -dc "$NUMERIC" < /dev/urandom | head -c 1)
+  password+=$(tr -dc "$UPPERCASE" < /dev/urandom | head -c 1)
+  password+=$(tr -dc "$LOWERCASE" < /dev/urandom | head -c 1)
+  password+=$(tr -dc "$SPECIAL" < /dev/urandom | head -c 1)
+
+  local ALL="$NUMERIC$UPPERCASE$LOWERCASE$SPECIAL"
+  password+=$(tr -dc "$ALL" < /dev/urandom | head -c $(($LENGTH - 4)))
+
+  password=$(echo "$password" | fold -w1 | shuf | tr -d '\n')
+  echo "$password"
 }
 
 load_credentials() {
@@ -28,8 +40,8 @@ store_credentials() {
     sed -i "/^${target}_PASSWORD=/d" $credentials_path
   fi
   # always store new password
-  echo "${target}_USERNAME=${username}" >> $credentials_path
-  echo "${target}_PASSWORD=${password}" >> $credentials_path
+  echo "${target}_USERNAME=${username} " >> $credentials_path
+  echo "${target}_PASSWORD=\"${password}\"" >> $credentials_path
 }
 
 get_or_create_and_store_credentials() {

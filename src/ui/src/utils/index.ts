@@ -20,6 +20,7 @@ const parseServiceDetailsResponseData = (
     "Deployment:apps/v1:embedding-svc-deployment:chatqa": "embedding",
     "Deployment:apps/v1:input-scan-svc-deployment:chatqa": "input_guard",
     "Deployment:apps/v1:llm-svc-deployment:chatqa": "llm",
+    "Deployment:apps/v1:vllm-service-m-deployment:chatqa": "vllm",
     "Deployment:apps/v1:output-scan-svc-deployment:chatqa": "output_guard",
     "Deployment:apps/v1:redis-vector-db-deployment:chatqa": "vectordb",
     "Deployment:apps/v1:reranking-svc-deployment:chatqa": "reranker",
@@ -41,6 +42,7 @@ const parseServiceDetailsResponseData = (
     teireranking: "reranker_model_server",
     prompttemplate: "prompt_template",
     llm: "llm",
+    vllm: "vllm",
     tgi: "tgi",
   };
 
@@ -91,6 +93,7 @@ const parseServiceDetailsResponseData = (
     embedding_model_server: {},
     input_guard: {},
     llm: {},
+    vllm: {},
     output_guard: {},
     reranker: {},
     reranker_model_server: {},

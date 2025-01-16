@@ -10,12 +10,12 @@ import { ServiceDetails } from "@/models/admin-panel/control-plane/serviceData";
 const formatLabel = (label: string) => {
   let labelWords = label.split("_");
   labelWords = labelWords.map((word) => {
-    if (word.length > 2) {
-      word = word.toLowerCase();
-      return `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
-    } else {
+    if (["LLM", "DB"].includes(word)) {
       return word;
     }
+
+    word = word.toLowerCase();
+    return `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
   });
   return labelWords.join(" ");
 };

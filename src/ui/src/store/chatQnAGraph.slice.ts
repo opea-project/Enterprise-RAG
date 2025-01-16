@@ -29,6 +29,7 @@ import {
   graphEdges,
   graphNodes,
   LLM_NODE_POSITION_NO_GUARDS,
+  VLLM_NODE_POSITION_NO_GUARDS,
 } from "@/utils/chatQnAGraph";
 
 interface ChatQnAGraphState {
@@ -190,6 +191,7 @@ export const chatQnAGraphSlice = createSlice({
 
       const updatedNodesIds = updatedNodes.map(({ id }) => id);
       const llmNodeIndex = updatedNodes.findIndex(({ id }) => id === "llm");
+      const vllmNodeIndex = updatedNodes.findIndex(({ id }) => id === "vllm");
 
       if (
         !updatedNodesIds.includes("input_guard") &&
@@ -197,6 +199,14 @@ export const chatQnAGraphSlice = createSlice({
         llmNodeIndex !== -1
       ) {
         updatedNodes[llmNodeIndex].position = LLM_NODE_POSITION_NO_GUARDS;
+      }
+
+      if (
+        !updatedNodesIds.includes("input_guard") &&
+        !updatedNodesIds.includes("output_guard") &&
+        vllmNodeIndex !== -1
+      ) {
+        updatedNodes[vllmNodeIndex].position = VLLM_NODE_POSITION_NO_GUARDS;
       }
 
       state.nodes = updatedNodes;

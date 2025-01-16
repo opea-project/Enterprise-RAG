@@ -10,6 +10,7 @@ import { rerankerArguments } from "@/models/admin-panel/control-plane/reranker";
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 
 export const LLM_NODE_POSITION_NO_GUARDS = { x: 640, y: 144 };
+export const VLLM_NODE_POSITION_NO_GUARDS = { x: 640, y: 288 };
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -117,18 +118,18 @@ const graphNodes: Node<ServiceData>[] = [
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalSourcePosition: Position.Bottom,
-      additionalSourceId: "llm-llm_model_server-source",
+      additionalSourceId: "llm-vllm-source",
       selected: false,
     },
     type: "serviceNode",
     focusable: true,
   },
   {
-    id: "llm_model_server",
+    id: "vllm",
     position: { x: 840, y: 288 },
     data: {
-      id: "llm_model_server",
-      displayName: "LLM Model Server",
+      id: "vllm",
+      displayName: "vLLM Model Server",
       targetPosition: Position.Top,
       selected: false,
     },
@@ -203,10 +204,10 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm-llm_model_server",
+    id: "llm-vllm",
     source: "llm",
-    target: "llm_model_server",
-    sourceHandle: "llm-llm_model_server-source",
+    target: "vllm",
+    sourceHandle: "llm-vllm-source",
     selectable: false,
   },
   {

@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Union
+from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
 
@@ -11,7 +11,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class OPEALlm:
-    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic", disable_streaming: Optional[bool] = False, llm_output_guard_exists: Optional[bool] = True):
+    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic", disable_streaming: Optional[bool] = False, llm_output_guard_exists: Optional[bool] = True, headers: Optional[Dict[str, str]] = None):
         """
         Initialize the OPEALlm instance with the given parameters.
 
@@ -29,6 +29,7 @@ class OPEALlm:
         self._connector_name = connector_name
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
+        self._headers = headers if headers is not None else {}
         self._validate_config()
         self._connector = self._get_connector()
 
@@ -39,10 +40,10 @@ class OPEALlm:
     def _get_connector(self):
         if self._connector_name.upper() == "LANGCHAIN":
             from comps.llms.utils.connectors import langchain_connector
-            return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists)
+            return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists, self._headers)
         elif self._connector_name.upper() == "GENERIC" or not self._connector_name.strip():
             from comps.llms.utils.connectors import generic_connector
-            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists)
+            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists, self._headers)
         else:
             raise ValueError(f"Invalid connector name: {self._connector_name}. Expected to be either 'langchain', 'generic', or unset.")
 

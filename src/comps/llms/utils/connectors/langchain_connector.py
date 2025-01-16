@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Union
+from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
 from langchain_community.llms import VLLMOpenAI
@@ -83,11 +83,12 @@ class TGIConnector:
                 raise Exception(f"Error invoking TGI: {e}")
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
         self._endpoint = endpoint+"/v1"
         self._model_name = model_name
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
+        self._headers = headers if headers is not None else {}
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
@@ -99,6 +100,7 @@ class VLLMConnector:
                 top_p=input.top_p,
                 temperature=input.temperature,
                 streaming=input.streaming and not self._disable_streaming,
+                default_headers=self._headers
             )
         except Exception as e:
             error_message = "Failed to invoke the Langchain VLLM Connector. Check if the endpoint '{self._endpoint}' is correct and the VLLM service is running."
@@ -160,10 +162,10 @@ SUPPORTED_INTEGRATIONS = {
 
 class LangchainLLMConnector(LLMConnector):
     _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: object):
         if cls._instance is None:
             cls._instance = super(LangchainLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
+            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, headers)
         else:
             if (cls._instance._endpoint != endpoint or
                 cls._instance._model_server != model_server or
@@ -177,8 +179,8 @@ class LangchainLLMConnector(LLMConnector):
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
-        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: object):
+        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, headers)
         self._connector = self._get_connector()
         self._validate()
 
@@ -187,7 +189,15 @@ class LangchainLLMConnector(LLMConnector):
             error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
             logger.error(error_message)
             raise ValueError(error_message)
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming, self._llm_output_guard_exists)
+        kwargs = {
+            "model_name": self._model_name,
+            "endpoint": self._endpoint,
+            "disable_streaming": self._disable_streaming,
+            "llm_output_guard_exists": self._llm_output_guard_exists
+        }
+        if self._model_server == "vllm":
+            kwargs["headers"] = self._headers
+        return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

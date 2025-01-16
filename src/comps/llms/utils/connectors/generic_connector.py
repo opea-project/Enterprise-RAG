@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
-from typing import Union
+from typing import Optional, Dict, Union
 
 import openai
 from fastapi.responses import StreamingResponse
@@ -87,15 +87,17 @@ class TGIConnector:
                                 output_guardrail_params=input.output_guardrail_params)
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None):
         self._model_name = model_name
         self._endpoint = endpoint+"/v1"
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
+        self._headers = headers if headers is not None else {}
         self._client = openai.OpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
             timeout=120,
+            default_headers=self._headers
         )
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
@@ -166,10 +168,10 @@ SUPPORTED_INTEGRATIONS = {
 
 class GenericLLMConnector(LLMConnector):
     _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: object):
         if cls._instance is None:
             cls._instance = super(GenericLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
+            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, headers)
         else:
             if (cls._instance._endpoint != endpoint or
                 cls._instance._model_server != model_server or
@@ -183,8 +185,8 @@ class GenericLLMConnector(LLMConnector):
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
-        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists)
+    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: object):
+        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, headers)
         self._connector = self._get_connector()
         self._validate()
 
@@ -194,8 +196,15 @@ class GenericLLMConnector(LLMConnector):
 
             logger.error(error_message)
             raise ValueError(error_message)
-
-        return SUPPORTED_INTEGRATIONS[self._model_server](self._model_name, self._endpoint, self._disable_streaming, self._llm_output_guard_exists)
+        kwargs = {
+            "model_name": self._model_name,
+            "endpoint": self._endpoint,
+            "disable_streaming": self._disable_streaming,
+            "llm_output_guard_exists": self._llm_output_guard_exists
+        }
+        if self._model_server == "vllm":
+            kwargs["headers"] = self._headers
+        return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
     def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return self._connector.generate(input)

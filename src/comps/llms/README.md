@@ -31,6 +31,11 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
 
+Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
+| `LLM_VLLM_CLIENT_ID`                      | The id of the client in auth provider |
+| `LLM_VLLM_CLIENT_SECRET`                 | The secret of the client in auth provider |
+| `LLM_VLLM_TOKEN_URL`                     | The token URL to get the access token |
+
 
 ## Getting started
 

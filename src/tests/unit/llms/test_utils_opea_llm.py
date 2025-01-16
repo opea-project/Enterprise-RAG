@@ -90,7 +90,7 @@ def test_get_connector_succeeds_for_langchain(MockLangchainLLMConnector, sut_mod
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
 
-    MockLangchainLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False, True)
+    MockLangchainLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False, True, {})
 
 
 @pytest.mark.parametrize("sut_model_server_name", ["vllm", "tgi"])
@@ -102,4 +102,4 @@ def test_get_connector_succeeds_for_generic(MockGenericLLMConnector, sut_model_s
     except Exception as e:
         pytest.fail(f"OPEA LLM init raised {type(e)} unexpectedly!")
 
-    MockGenericLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False, True)
+    MockGenericLLMConnector.assert_called_once_with(sut_instance._model_name, sut_instance._model_server, sut_instance._model_server_endpoint, False, True, {})

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
 from requests.exceptions import ConnectionError, ReadTimeout
@@ -12,7 +12,7 @@ from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class LLMConnector(ABC):
-    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
+    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None):
         """
         Initializes a Connector object.
 
@@ -28,6 +28,7 @@ class LLMConnector(ABC):
         self._model_server = model_server
         self._endpoint = endpoint
         self._disable_streaming = disable_streaming
+        self._headers = headers if headers is not None else {}
         self._llm_output_guard_exists = llm_output_guard_exists
 
     @abstractmethod

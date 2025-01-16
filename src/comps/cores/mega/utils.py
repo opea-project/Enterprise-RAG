@@ -8,6 +8,10 @@ import random
 from socket import AF_INET, SOCK_STREAM, socket
 from typing import List, Optional, Union
 import logging
+import requests
+from .logger import get_opea_logger
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_token")
 
 def is_port_free(host: str, port: int) -> bool:
     """Check if a given port on a host is free.
@@ -165,6 +169,25 @@ def random_port() -> Optional[int]:
         unassigned_ports.clear()
         return _random_port()
 
+def get_access_token(token_url: str, client_id: str, client_secret: str) -> str:
+    """Get access token using OAuth client credentials flow."""
+    data = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'client_credentials',
+    }
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    try:
+        response = requests.post(token_url, data=data, headers=headers)
+        response.raise_for_status()  # Raises an HTTPError if the response status code is 4xx/5xx
+        logger.info("Successfully retrieved access token")
+        token_info = response.json()
+        return token_info.get('access_token', '')
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to retrieve access token: {e}")
+        return ''
 
 class SafeContextManager:
     """This context manager ensures that the `__exit__` method of the

@@ -23,6 +23,7 @@ from comps import (
     statistics_dict,
 )
 from comps.llms.utils.opea_llm import OPEALlm
+from comps.cores.mega.utils import get_access_token
 
 # Define the unique service name for the microservice
 USVC_NAME='opea_service@llm'
@@ -34,6 +35,12 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
+# Get the token
+access_token = get_access_token(sanitize_env(os.getenv('LLM_VLLM_TOKEN_URL')), sanitize_env(os.getenv('LLM_VLLM_CLIENT_ID')), sanitize_env(os.getenv('LLM_VLLM_CLIENT_SECRET'))) if sanitize_env(os.getenv('LLM_VLLM_TOKEN_URL')) and sanitize_env(os.getenv('LLM_VLLM_CLIENT_ID')) and sanitize_env(os.getenv('LLM_VLLM_CLIENT_SECRET')) else None
+headers = {}
+if access_token:
+    headers = {"Authorization": f"Bearer {access_token}"}
+
 # Initialize an instance of the OPEALlm class with environment variables.
 opea_llm = OPEALlm(
     model_name=sanitize_env(os.getenv('LLM_MODEL_NAME')),
@@ -41,6 +48,7 @@ opea_llm = OPEALlm(
     model_server_endpoint=sanitize_env(os.getenv('LLM_MODEL_SERVER_ENDPOINT')),
     connector_name=sanitize_env(os.getenv('LLM_CONNECTOR')),
     disable_streaming=(sanitize_env(os.getenv('LLM_DISABLE_STREAMING')) == "True"),
+    headers=headers,
     llm_output_guard_exists=(sanitize_env(os.getenv('LLM_OUTPUT_GUARD_EXISTS')) == "True"),
 )
 

@@ -4,12 +4,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
-import concurrent.futures
 import constants
 import os
 import pytest
-import requests
-import time
 from tempfile import NamedTemporaryFile
 
 
@@ -62,42 +59,6 @@ def test_dataprep_huge_file_upload(dataprep_api_helper):
         response = dataprep_api_helper.call_dataprep_upload_file(temp_file.name)
         assert response.status_code == 200, \
             "Unexpected status code returned when invalid request is made to dataprep pipeline"
-
-
-@allure.testcase("IEASG-T38")
-def test_dataprep_responsiveness_while_uploading_file(dataprep_api_helper, generic_api_helper):
-    """
-    Upload a large file to dataprep. Check if it responds to other API calls in the meantime
-    """
-    size_in_bytes = 63 * 1024 * 1024  # 63 MB file
-    with NamedTemporaryFile(delete=True, mode='w+', suffix=".txt") as temp_file:
-        dataprep_api_helper._fill_in_file(temp_file, size_in_bytes)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # Execute file upload in the background
-            exec_handler = executor.submit(dataprep_api_helper.call_dataprep_upload_file,
-                                           temp_file.name)
-            print("Starting to periodically call /v1/health_check API of dataprep service")
-            counter = 0
-            start_time = time.time()
-            while counter < 60:
-                try:
-                    response = generic_api_helper.call_health_check_api("dataprep", {"app": "dataprep-svc"}, 9399)
-                except requests.exceptions.ReadTimeout:
-                    pytest.fail("Dataprep API is not responsive while the file is being uploaded")
-
-                print(f"Response #{counter} after: {time.time() - start_time} seconds")
-                assert response.status_code == 200, "Got unexpected status code"
-                time.sleep(1)
-                counter += 1
-                if exec_handler.done():
-                    print("Uploading file finished")
-                    break
-
-            # Wait for the upload to finish and get the result
-            result = exec_handler.result()
-            print(f"Upload finished with response: {result}")
-
-        assert result.status_code == 200, "Unexpected status code returned"
 
 
 @allure.testcase("IEASG-T37")

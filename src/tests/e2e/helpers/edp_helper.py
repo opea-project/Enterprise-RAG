@@ -13,7 +13,7 @@ from tempfile import NamedTemporaryFile
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
-DATAPREP_STATUS_FLOW = ["processing", "dataprep", "embedding", "ingested"]
+DATAPREP_STATUS_FLOW = ["uploaded", "processing", "dataprep", "embedding", "ingested"]
 
 
 class EdpHelper(ApiRequestHelper):

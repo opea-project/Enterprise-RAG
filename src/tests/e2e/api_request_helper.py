@@ -242,7 +242,7 @@ class ApiRequestHelper:
             )
         return response
 
-    def call_health_check_api(self, namespace, selector, port):
+    def call_health_check_api(self, namespace, selector, port, health_path="v1/health_check"):
         """
         API call to microservice health_check API.
         Microservices are not exposed so we need to forward their ports first.
@@ -252,7 +252,7 @@ class ApiRequestHelper:
         with CustomPortForward(port, namespace, selector) as pf:
             print(f"Attempting to make a request to {namespace}/{selector}...")
             response = requests.get(
-                f"http://127.0.0.1:{pf.local_port}/v1/health_check",
+                f"http://127.0.0.1:{pf.local_port}/{health_path}",
                 headers=self.default_headers,
                 timeout=10
             )

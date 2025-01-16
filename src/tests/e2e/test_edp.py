@@ -257,5 +257,37 @@ def test_edp_delete_nonexistent_link(edp_helper):
     assert response.status_code == 400, f"Unexpected status code. Response: {response.text}"
 
 
+@allure.testcase("IEASG-T38")
+def test_edp_responsiveness_while_uploading_file(edp_helper):
+    """
+    Upload a file and periodically call dataprep and edp health check APIs
+    Note: this test will take at least 2 minutes to complete
+    """
+    threshold = 120
+    file = edp_helper.upload_test_file(size=10, prefix=method_name(), status="dataprep", timeout=300)
+
+    print("Starting to periodically call dataprep /v1/health_check API and edp /health API")
+    counter = 0
+    start_time = time.time()
+    while time.time() < start_time + threshold:
+        try:
+            response = edp_helper.call_health_check_api("dataprep", {"app": "dataprep-svc"}, 9399)
+            assert response.status_code == 200, "Got unexpected status code when calling dataprep health check API"
+        except requests.exceptions.ReadTimeout:
+            pytest.fail("Dataprep API is not responsive while the file is being uploaded")
+        try:
+            response = edp_helper.call_health_check_api("edp", {"app.kubernetes.io/name": "edp-backend"}, 5000,
+                                                        "health")
+            assert response.status_code == 200, "Got unexpected status code when calling edp health API"
+        except requests.exceptions.ReadTimeout:
+            pytest.fail("Edp API is not responsive while the file is being uploaded")
+
+        print(f"Response #{counter} after: {time.time() - start_time} seconds")
+        time.sleep(1)
+        counter += 1
+    # Cancel task if not finished
+    edp_helper.cancel_processing_task(file["id"])
+
+
 def method_name():
     return f"{inspect.stack()[1].function}_"

@@ -7,11 +7,10 @@ import debounce from "lodash.debounce";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import BotMessage from "@/components/chat/BotMessage/BotMessage";
+import ScrollToBottomButton from "@/components/chat/ScrollToBottomButton/ScrollToBottomButton";
 import UserMessage from "@/components/chat/UserMessage/UserMessage";
 import { selectMessages } from "@/store/conversationFeed.slice";
 import { useAppSelector } from "@/store/hooks";
-
-import ScrollToBottomButton from "../ScrollToBottomButton/ScrollToBottomButton";
 
 const BOTTOM_MARGIN = 48; // margin to handle bottom detection
 

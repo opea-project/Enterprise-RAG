@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./DocumentsFileInput.scss";
+import "./FilesInput.scss";
 
 import classNames from "classnames";
 import {
@@ -12,39 +12,42 @@ import {
   useRef,
   useState,
 } from "react";
+import { ImFolderUpload } from "react-icons/im";
 
 import {
   INPUT_FILE_ACCEPT,
   sanitizeFiles,
   SUPPORTED_FILE_FORMATS_MSG,
   TOTAL_SIZE_LIMIT_MSG,
-  validateDocuments,
-} from "@/utils/data-ingestion/documents-file-input";
+  validateFiles,
+} from "@/utils/data-ingestion/files-input";
 
-interface DocumentsFileInputProps {
-  documents: File[];
-  setDocuments: Dispatch<SetStateAction<File[]>>;
+interface FilesInputProps {
+  files: File[];
+  setFiles: Dispatch<SetStateAction<File[]>>;
   disabled: boolean;
 }
 
-const DocumentsFileInput = ({
-  documents,
-  setDocuments,
-  disabled,
-}: DocumentsFileInputProps) => {
+const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const processNewFiles = async (newFiles: FileList) => {
     const fileArray = [...newFiles];
     const sanitizedFiles = sanitizeFiles(fileArray);
-    const validationMessage = await validateDocuments([
-      ...documents,
+    const validationMessage = await validateFiles([
+      ...files,
       ...sanitizedFiles,
     ]);
     setErrorMessage(validationMessage);
     if (validationMessage === "") {
-      setDocuments((prevFiles) => [...prevFiles, ...sanitizedFiles]);
+      setFiles((prevFiles) => [...prevFiles, ...sanitizedFiles]);
+    }
+
+    // Clear file input value
+    if (fileInputRef.current) {
+      fileInputRef.current.files = null;
+      fileInputRef.current.value = "";
     }
   };
 
@@ -75,28 +78,25 @@ const DocumentsFileInput = ({
 
   return (
     <>
-      {errorMessage !== "" && (
-        <div className="documents-file-input-error-alert">{errorMessage}</div>
-      )}
       <div
-        onDrop={handleFileInputDrop}
-        onDragOver={handleFileInputDragOver}
         className={classNames({
-          "documents-file-input-box": true,
-          "documents-file-input-box__disabled": disabled,
+          "files-input-box": true,
+          "files-input-box__disabled": disabled,
         })}
+        onDragOver={handleFileInputDragOver}
+        onDrop={handleFileInputDrop}
       >
-        <p className="font-medium">Drag and Drop files here</p>
-        <p>{SUPPORTED_FILE_FORMATS_MSG}</p>
-        <p>or</p>
-        <button
-          className="outlined-button--primary"
-          disabled={disabled}
-          onClick={handleBrowseFilesButtonClick}
-        >
-          Browse Files
-        </button>
-        <p className="pt-2">{TOTAL_SIZE_LIMIT_MSG}</p>
+        <ImFolderUpload fontSize={40} />
+        <p>
+          Drag and drop your files here or{" "}
+          <button
+            className="files-input-box__choose-file-btn"
+            onClick={handleBrowseFilesButtonClick}
+          >
+            choose files
+          </button>
+        </p>
+        <p className="text-xs">{TOTAL_SIZE_LIMIT_MSG}</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -107,8 +107,12 @@ const DocumentsFileInput = ({
           className="hidden"
         />
       </div>
+      {errorMessage !== "" && (
+        <div className="files-input-error-alert">{errorMessage}</div>
+      )}
+      <p className="pt-2 text-xs">{SUPPORTED_FILE_FORMATS_MSG}</p>
     </>
   );
 };
 
-export default DocumentsFileInput;
+export default FilesInput;

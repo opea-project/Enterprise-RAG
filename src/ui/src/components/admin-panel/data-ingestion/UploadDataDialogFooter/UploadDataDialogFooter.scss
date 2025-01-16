@@ -1,0 +1,23 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.upload-dialog__footer {
+  @apply flex items-center gap-4;
+
+  & .upload-data__footer--button {
+    @apply flex items-center;
+  }
+
+  & .upload-dialog__error {
+    @apply flex items-center gap-2 text-sm;
+
+    & .upload-dialog__error--icon {
+      @apply text-light-button-outlined-danger-text dark:text-dark-button-outlined-danger-text;
+    }
+
+    & .upload-dialog__error--text {
+      @apply cursor-pointer underline hover:no-underline;
+      @apply text-light-button-outlined-danger-text dark:text-dark-button-outlined-danger-text;
+    }
+  }
+}

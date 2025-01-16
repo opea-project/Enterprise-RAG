@@ -3,19 +3,20 @@
 
 import "./Tooltip.scss";
 
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, ReactNode, useState } from "react";
 
-type TooltipPosition =
+export type TooltipPosition =
   | "top"
   | "bottom"
   | "left"
   | "right"
   | "bottom-start"
-  | "bottom-end";
+  | "bottom-end"
+  | "bottom-right";
 
 interface TooltipProps extends PropsWithChildren {
   position?: TooltipPosition;
-  text: string;
+  text: string | ReactNode;
 }
 
 const Tooltip = ({ children, text, position = "bottom" }: TooltipProps) => {

@@ -12,7 +12,7 @@ import {
   totalFileSizeWithinLimit,
 } from "@/utils/validators/fileInput";
 
-const DOCUMENTS_SUPPORTED_FILE_EXTENSIONS = [
+const SUPPORTED_FILE_EXTENSIONS = [
   "pdf",
   "html",
   "txt",
@@ -28,9 +28,14 @@ const DOCUMENTS_SUPPORTED_FILE_EXTENSIONS = [
   "xls",
   "xlsx",
   "csv",
+  "tiff",
+  "jpg",
+  "jpeg",
+  "png",
+  "svg",
 ];
 
-const DOCUMENTS_SUPPORTED_MIME_TYPES = [
+const SUPPORTED_MIME_TYPES = [
   "application/pdf",
   "text/html",
   "text/plain",
@@ -44,13 +49,17 @@ const DOCUMENTS_SUPPORTED_MIME_TYPES = [
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
   "text/csv",
+  "image/tiff",
+  "image/jpeg",
+  "image/png",
+  "image/svg+xml",
 ];
 
-const INPUT_FILE_ACCEPT = DOCUMENTS_SUPPORTED_FILE_EXTENSIONS.map(
+const INPUT_FILE_ACCEPT = SUPPORTED_FILE_EXTENSIONS.map(
   (extension) => `.${extension}`,
 ).join(",");
 
-const SUPPORTED_FILE_FORMATS_MSG = `Supported file formats:  ${DOCUMENTS_SUPPORTED_FILE_EXTENSIONS.map(
+const SUPPORTED_FILE_FORMATS_MSG = `Supported file formats:  ${SUPPORTED_FILE_EXTENSIONS.map(
   (extension) => extension.toUpperCase(),
 ).join(", ")}`;
 
@@ -76,12 +85,12 @@ const validationSchema = Yup.array()
       .test(
         "supported-file-extension",
         ({ value }) => UNSUPPORTED_FILE_EXTENSION_MSG((value as File).name),
-        isFileExtensionSupported(DOCUMENTS_SUPPORTED_FILE_EXTENSIONS),
+        isFileExtensionSupported(SUPPORTED_FILE_EXTENSIONS),
       )
       .test(
         "supported-file-mime-type",
         ({ value }) => UNSUPPORTED_FILE_MIME_TYPE_MSG((value as File).name),
-        isMIMETypeSupported(DOCUMENTS_SUPPORTED_MIME_TYPES),
+        isMIMETypeSupported(SUPPORTED_MIME_TYPES),
       )
       .test(
         "no-invalid-characters-in-file-name",
@@ -95,9 +104,9 @@ const validationSchema = Yup.array()
     totalFileSizeWithinLimit(),
   );
 
-const validateDocuments = async (documents: File[] | FileList) => {
+const validateFiles = async (files: File[] | FileList) => {
   try {
-    await validationSchema.validate(Array.from(documents));
+    await validationSchema.validate(Array.from(files));
     return "";
   } catch (error) {
     return (error as ValidationError).message;
@@ -129,5 +138,5 @@ export {
   sanitizeFiles,
   SUPPORTED_FILE_FORMATS_MSG,
   TOTAL_SIZE_LIMIT_MSG,
-  validateDocuments,
+  validateFiles,
 };

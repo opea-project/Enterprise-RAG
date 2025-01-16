@@ -1,0 +1,10 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.upload-dialog__trigger-button {
+  @apply flex items-center gap-2;
+}
+
+.upload-dialog__ingestion-panels-grid {
+  @apply grid grid-cols-1 gap-4 lg:grid-cols-2;
+}

@@ -4,14 +4,6 @@
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
 import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
 
-const documentToBase64 = (document: File) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(document);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-
 const parseServiceDetailsResponseData = (
   response: ServiceDetailsResponse,
 ): FetchedServiceDetails => {
@@ -114,4 +106,4 @@ const parseServiceDetailsResponseData = (
   return serviceDetails;
 };
 
-export { documentToBase64, parseServiceDetailsResponseData };
+export { parseServiceDetailsResponseData };

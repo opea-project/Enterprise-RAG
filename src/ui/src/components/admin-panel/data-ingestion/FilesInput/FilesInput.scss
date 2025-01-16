@@ -1,0 +1,20 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.files-input-error-alert {
+  @apply -mt-2 rounded-b bg-light-notification-error-background p-4 py-3 text-sm text-light-notification-text dark:bg-dark-notification-error-background dark:text-dark-text-primary;
+}
+
+.files-input-box {
+  @apply flex w-full select-none flex-col items-center justify-center gap-2 rounded border-light-border-strong bg-light-background-2 p-6 text-center dark:border-dark-border-strong dark:bg-dark-background-2;
+
+  &.files-input-box__disabled {
+    @apply text-light-text-disabled dark:text-dark-text-disabled;
+  }
+
+  & button.files-input-box__choose-file-btn {
+    @apply inline cursor-pointer p-0;
+    @apply text-light-link-primary underline dark:text-dark-link-primary;
+    background-color: transparent !important;
+  }
+}

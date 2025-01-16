@@ -12,6 +12,10 @@
     @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-light-primary dark:focus-visible:outline-dark-primary;
   }
 
+  button {
+    @apply rounded;
+  }
+
   button:not(.react-flow__controls-button) {
     @apply cursor-pointer select-none bg-light-button-contained-primary-background px-5 py-1.5 text-base text-light-button-contained-text hover:bg-light-button-contained-primary-background-hover disabled:cursor-default disabled:bg-light-button-disabled-background disabled:text-light-button-disabled-text disabled:hover:bg-light-button-disabled-background disabled:hover:text-light-button-disabled-text dark:bg-dark-link-primary dark:text-dark-text-inverse dark:hover:bg-dark-link-hover dark:disabled:bg-dark-button-disabled-background dark:disabled:text-dark-button-disabled-text dark:disabled:hover:bg-dark-button-disabled-background dark:disabled:hover:text-dark-button-disabled-text;
 
@@ -69,6 +73,10 @@
     @apply mb-2 font-medium;
   }
 
+  h3 {
+    @apply mb-1 font-medium;
+  }
+
   p.error {
     @apply text-light-text-error dark:text-dark-text-error;
   }
@@ -77,7 +85,7 @@
     @apply border-b border-b-light-tabs-border-bottom dark:border-b-dark-tabs-border-bottom;
 
     & button.admin-panel-tab-button {
-      @apply border-b-2 border-b-light-tabs-button-not-active-border-bottom bg-transparent text-light-tabs-button-not-active-text dark:border-dark-tabs-button-not-active-border-bottom dark:text-dark-tabs-button-not-active-text;
+      @apply rounded-none border-b-2 border-b-light-tabs-button-not-active-border-bottom bg-transparent text-light-tabs-button-not-active-text dark:border-dark-tabs-button-not-active-border-bottom dark:text-dark-tabs-button-not-active-text;
       @apply hover:bg-transparent dark:hover:bg-transparent;
 
       &.active-tab {
@@ -90,7 +98,7 @@
     @apply relative overflow-auto;
 
     &.data-ingestion-tab-content {
-      @apply max-h-[calc(100vh-11.75rem)];
+      @apply max-h-[calc(100vh-8.5rem)];
     }
   }
 }

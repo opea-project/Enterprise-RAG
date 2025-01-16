@@ -3,98 +3,58 @@
 
 import "./DataIngestionTab.scss";
 
-import { useState } from "react";
+import { MdRefresh } from "react-icons/md";
 
-import DataIngestionUploadPanel from "@/components/admin-panel/data-ingestion/DataIngestionUploadPanel/DataIngestionUploadPanel";
-import DocumentsIngestionPanel from "@/components/admin-panel/data-ingestion/DocumentsIngestionPanel/DocumentsIngestionPanel";
-import LinksIngestionPanel from "@/components/admin-panel/data-ingestion/LinksIngestionPanel/LinksIngestionPanel";
-import NotificationToast, {
-  Notification,
-} from "@/components/shared/NotificationToast/NotificationToast";
-import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
-import DataIngestionService from "@/services/dataIngestionService";
+import FilesDataTable from "@/components/admin-panel/data-ingestion/FilesDataTable/FilesDataTable";
+import LinksDataTable from "@/components/admin-panel/data-ingestion/LinksDataTable/LinksDataTable";
+import UploadDataDialog from "@/components/admin-panel/data-ingestion/UploadDataDialog/UploadDataDialog";
+import NotificationToast from "@/components/shared/NotificationToast/NotificationToast";
+import {
+  getFiles,
+  getLinks,
+  notificationSelector,
+} from "@/store/dataIngestion.slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
-const DataIngestionTab = () => {
-  const [documents, setDocuments] = useState<File[]>([]);
-  const [links, setLinks] = useState<LinkForIngestion[]>([]);
-  const [uploadNotification, setUploadNotification] = useState<Notification>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-  const [isUploading, setIsUploading] = useState(false);
-
-  const submitUploadData = async () => {
-    setIsUploading(true);
-
-    const newUploadNotification: Notification = {
-      open: true,
-      message: "",
-      severity: "success",
-    };
-    try {
-      const response = await DataIngestionService.postDataToIngest(
-        documents,
-        links,
-      );
-
-      if (response.ok) {
-        newUploadNotification.message = "Successful data upload!";
-      } else {
-        newUploadNotification.message = "Error occurred during upload";
-        newUploadNotification.severity = "error";
-      }
-    } catch (e) {
-      if (e instanceof Error) {
-        newUploadNotification.message = e.message;
-        newUploadNotification.severity = "error";
-        throw new Error(e.message);
-      } else {
-        throw new Error();
-      }
-    } finally {
-      setUploadNotification(newUploadNotification);
-      setIsUploading(false);
-
-      if (newUploadNotification.severity === "success") {
-        setDocuments([]);
-        setLinks([]);
-      }
-    }
-  };
-
-  const hideNotification = () => {
-    setUploadNotification((prevNotification) => ({
-      ...prevNotification,
-      open: false,
-    }));
+const RefreshButton = () => {
+  const dispatch = useAppDispatch();
+  const refreshData = () => {
+    dispatch(getFiles());
+    dispatch(getLinks());
   };
 
   return (
-    <>
-      <div className="data-ingestion-panel">
-        <DocumentsIngestionPanel
-          documents={documents}
-          setDocuments={setDocuments}
-          disabled={isUploading}
-        />
-        <LinksIngestionPanel
-          links={links}
-          setLinks={setLinks}
-          disabled={isUploading}
-        />
-      </div>
-      <DataIngestionUploadPanel
-        documents={documents}
-        links={links}
-        isUploading={isUploading}
-        onUploadBtnClick={submitUploadData}
-      />
-      <NotificationToast
-        {...uploadNotification}
-        hideNotification={hideNotification}
-      />
-    </>
+    <button
+      className="refresh-btn outlined-button--primary"
+      onClick={refreshData}
+    >
+      <MdRefresh fontSize={20} /> Refresh
+    </button>
+  );
+};
+
+const DataIngestionTab = () => {
+  const notification = useAppSelector(notificationSelector);
+
+  return (
+    <div className="data-ingestion-panel">
+      <header>
+        <h2>Stored Data</h2>
+        <div className="data-ingestion-panel__actions">
+          <RefreshButton />
+          <UploadDataDialog />
+        </div>
+      </header>
+      <section>
+        <h3>Files</h3>
+        <FilesDataTable />
+      </section>
+      <section>
+        <h3>Links</h3>
+        <LinksDataTable />
+      </section>
+      <NotificationToast {...notification} />
+    </div>
   );
 };
 

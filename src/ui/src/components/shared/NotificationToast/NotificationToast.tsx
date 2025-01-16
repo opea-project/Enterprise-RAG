@@ -7,6 +7,10 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { BsCheck2, BsXLg } from "react-icons/bs";
 
+import { setNotification } from "@/store/dataIngestion.slice";
+import { useAppDispatch } from "@/store/hooks";
+import { NOTIFICATION_DISPLAY_TIME } from "@/utils/notifications";
+
 type NotificationSeverity = "success" | "error";
 
 export interface Notification {
@@ -15,23 +19,28 @@ export interface Notification {
   severity: NotificationSeverity;
 }
 
-interface NotificationToastProps extends Notification {
-  hideNotification: () => void;
-}
+type NotificationToastProps = Notification;
 
 const NotificationToast = ({
   open,
   message,
   severity,
-  hideNotification,
 }: NotificationToastProps) => {
+  const dispatch = useAppDispatch();
+
   useEffect(() => {
     if (open) {
       setTimeout(() => {
-        hideNotification();
-      }, 5000);
+        dispatch(
+          setNotification({
+            open: false,
+            message: "",
+            severity: "success",
+          }),
+        );
+      }, NOTIFICATION_DISPLAY_TIME);
     }
-  }, [hideNotification, open]);
+  }, [dispatch, open]);
 
   return open
     ? createPortal(

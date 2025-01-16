@@ -1,0 +1,22 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chunks-progress-bar__wrapper {
+  @apply flex flex-nowrap items-center gap-2;
+
+  & progress.chunks-progress-bar {
+    @apply overflow-hidden rounded-sm border;
+
+    &::-webkit-progress-bar {
+      @apply bg-light-background-main dark:bg-dark-background-main;
+    }
+
+    &::-webkit-progress-value {
+      @apply bg-light-primary dark:bg-dark-primary;
+    }
+  }
+
+  & .chunks-progress-bar__text {
+    @apply text-xs;
+  }
+}

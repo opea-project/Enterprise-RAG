@@ -2,11 +2,19 @@
   "chatQnA": {
     "postPrompt": "/api/v1/chatqna"
   },
-  "dataprep": "/api/v1/dataprep",
   "systemFingerprint": {
     "appendArguments": "/v1/system_fingerprint/append_arguments",
     "changeArguments": "/v1/system_fingerprint/change_arguments",
     "chatqnaStatus": "/api/v1/chatqa/status",
     "dataprepStatus": "/api/v1/dataprep/status"
+  },
+  "edp": {
+    "getLinks": "/api/v1/edp/links",
+    "postLinks": "/api/v1/edp/links",
+    "deleteLink": "/api/v1/edp/link",
+    "retryLinkAction": "/api/v1/edp/link/{uuid}/retry",
+    "getFiles": "/api/v1/edp/files",
+    "getPresignedUrl": "/api/v1/edp/presignedUrl",
+    "retryFileAction": "/api/v1/edp/file/{uuid}/retry"
   }
 }

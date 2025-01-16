@@ -45,6 +45,7 @@ def test_dataprep_link_check_status_code_and_headers(dataprep_api_helper):
     assert content_type_header == "application/json", "Unexpected Content-Type header in response"
 
 
+@pytest.mark.timeout(3600)
 @allure.testcase("IEASG-T39")
 def test_dataprep_huge_file_upload(dataprep_api_helper):
     """

@@ -8,11 +8,7 @@ kind: Service
 metadata:
   name: redis-vector-db
   labels:
-    helm.sh/chart: redis-vector-db-0.8.0
-    app.kubernetes.io/name: redis-vector-db
-    app.kubernetes.io/instance: redis-vector-db
-    app.kubernetes.io/version: "7.2.0-v9"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -25,8 +21,7 @@ spec:
         protocol: TCP
         name: redis-insight
   selector:
-    app.kubernetes.io/name: redis-vector-db
-    app.kubernetes.io/instance: redis-vector-db
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: redis-vector-db/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -37,38 +32,24 @@ kind: Deployment
 metadata:
   name: redis-vector-db
   labels:
-    helm.sh/chart: redis-vector-db-0.8.0
-    app.kubernetes.io/name: redis-vector-db
-    app.kubernetes.io/instance: redis-vector-db
-    app.kubernetes.io/version: "7.2.0-v9"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: redis-vector-db
-      app.kubernetes.io/instance: redis-vector-db
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: redis-vector-db
-        app.kubernetes.io/instance: redis-vector-db
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 2000
-        runAsGroup: 3000
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: redis-vector-db
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            readOnlyRootFilesystem: true
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "redis/redis-stack:7.2.0-v9"
           imagePullPolicy: IfNotPresent
           env:

@@ -8,17 +8,14 @@ kind: ConfigMap
 metadata:
   name: tgi-config
   labels:
-    helm.sh/chart: tgi-0.8.0
-    app.kubernetes.io/name: tgi
-    app.kubernetes.io/instance: tgi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   LLM_DEVICE: "cpu"
   PORT: "2080"
-  http_proxy: ""
-  https_proxy: ""
-  no_proxy: ""
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -29,11 +26,7 @@ kind: Service
 metadata:
   name: tgi
   labels:
-    helm.sh/chart: tgi-0.8.0
-    app.kubernetes.io/name: tgi
-    app.kubernetes.io/instance: tgi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -42,8 +35,7 @@ spec:
       protocol: TCP
       name: tgi
   selector:
-    app.kubernetes.io/name: tgi
-    app.kubernetes.io/instance: tgi
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: tgi/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -54,30 +46,20 @@ kind: Deployment
 metadata:
   name: tgi
   labels:
-    helm.sh/chart: tgi-0.8.0
-    app.kubernetes.io/name: tgi
-    app.kubernetes.io/instance: tgi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: tgi
-      app.kubernetes.io/instance: tgi
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: tgi
-        app.kubernetes.io/instance: tgi
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 2000
-        runAsGroup: 3000
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: tgi
           envFrom:
@@ -93,11 +75,7 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            readOnlyRootFilesystem: true
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "ghcr.io/huggingface/text-generation-inference:3.0.0-intel-cpu"
           args:
             - --model-id

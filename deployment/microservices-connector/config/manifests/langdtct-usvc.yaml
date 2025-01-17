@@ -8,15 +8,12 @@ kind: ConfigMap
 metadata:
   name: langdtct-usvc-config
   labels:
-    helm.sh/chart: langdtct-usvc-0.8.0
-    app.kubernetes.io/name: langdtct-usvc
-    app.kubernetes.io/instance: langdtct-usvc
-    app.kubernetes.io/version: "v0.8"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
-  http_proxy: ""
-  https_proxy: ""
-  no_proxy: ""
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
 # Source: langdtct-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -27,11 +24,7 @@ kind: Service
 metadata:
   name: langdtct-usvc
   labels:
-    helm.sh/chart: langdtct-usvc-0.8.0
-    app.kubernetes.io/name: langdtct-usvc
-    app.kubernetes.io/instance: langdtct-usvc
-    app.kubernetes.io/version: "v0.8"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -40,8 +33,7 @@ spec:
     protocol: TCP
     name: langdtct-usvc
   selector:
-    app.kubernetes.io/name: langdtct-usvc
-    app.kubernetes.io/instance: langdtct-usvc
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: langdtct-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -52,25 +44,20 @@ kind: Deployment
 metadata:
   name: langdtct-usvc
   labels:
-    helm.sh/chart: langdtct-usvc-0.8.0
-    app.kubernetes.io/name: langdtct-usvc
-    app.kubernetes.io/instance: langdtct-usvc
-    app.kubernetes.io/version: "v0.8"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: langdtct-usvc
-      app.kubernetes.io/instance: langdtct-usvc
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: langdtct-usvc
-        app.kubernetes.io/instance: langdtct-usvc
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
       - name: langdtct-usvc
         envFrom:
@@ -80,17 +67,9 @@ spec:
             name: extra-env-config
             optional: true
         securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 1000
-          seccompProfile:
-            type: RuntimeDefault
-        image: "localhost:5000/opea/language-detection:latest"
-        imagePullPolicy: Always
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+        imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
         ports:
         - name: langdtct-usvc
           containerPort: 8001

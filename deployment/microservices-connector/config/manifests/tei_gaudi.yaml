@@ -8,17 +8,14 @@ kind: ConfigMap
 metadata:
   name: tei-config
   labels:
-    helm.sh/chart: tei-0.8.0
-    app.kubernetes.io/name: tei
-    app.kubernetes.io/instance: tei
-    app.kubernetes.io/version: "cpu-1.5"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   MODEL_ID: "BAAI/bge-base-en-v1.5"
   PORT: "2081"
-  http_proxy: ""
-  https_proxy: ""
-  no_proxy: ""
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
   NUMBA_CACHE_DIR: "/tmp"
   TRANSFORMERS_CACHE: "/tmp/transformers_cache"
   HF_HOME: "/tmp/.cache/huggingface"
@@ -33,11 +30,7 @@ kind: Service
 metadata:
   name: tei
   labels:
-    helm.sh/chart: tei-0.8.0
-    app.kubernetes.io/name: tei
-    app.kubernetes.io/instance: tei
-    app.kubernetes.io/version: "cpu-1.5"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -46,8 +39,7 @@ spec:
       protocol: TCP
       name: tei
   selector:
-    app.kubernetes.io/name: tei
-    app.kubernetes.io/instance: tei
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: tei/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -58,30 +50,20 @@ kind: Deployment
 metadata:
   name: tei
   labels:
-    helm.sh/chart: tei-0.8.0
-    app.kubernetes.io/name: tei
-    app.kubernetes.io/instance: tei
-    app.kubernetes.io/version: "cpu-1.5"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: tei
-      app.kubernetes.io/instance: tei
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: tei
-        app.kubernetes.io/instance: tei
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 2000
-        runAsGroup: 3000
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: tei
           envFrom:
@@ -91,11 +73,7 @@ spec:
                 name: extra-env-config
                 optional: true
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
-            readOnlyRootFilesystem: true
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "ghcr.io/huggingface/tei-gaudi:synapse_1.16"
           imagePullPolicy: IfNotPresent
           args:

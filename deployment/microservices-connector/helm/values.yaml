@@ -121,8 +121,8 @@ images:
     tag: *tag
 
 
-imagePullSecrets:
-  - name: regcred
+# imagePullSecrets:
+#   - name: regcred
 nameOverride: ""
 fullnameOverride: ""
 
@@ -141,8 +141,13 @@ podAnnotations: {}
 podLabels:
   control-plane: gmc-controller
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
 
 securityContext:
   capabilities:
@@ -150,6 +155,7 @@ securityContext:
       - ALL
   runAsNonRoot: true
   allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
 
 resources:
   limits:

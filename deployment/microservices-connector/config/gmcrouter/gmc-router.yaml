@@ -5,8 +5,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+{{- `
   name: {{.DplymntName}}
   namespace: {{.Namespace}}
+` -}}
 spec:
   replicas: 1
   selector:
@@ -18,25 +20,20 @@ spec:
         app: router-service
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 3000
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: default
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
       - name: router-server
-        image: localhost:5000/opea/gmcrouter:latest
-        imagePullPolicy: Always
+        {{- $image := "gmcRouter" }}
+        image: {{ toYaml (index .Values "images" $image "repository") }}/{{ toYaml (index .Values "images" $image "image") }}:{{ toYaml (index .Values "images" $image "tag") }}
+        imagePullPolicy: {{ toYaml (index .Values "images" $image "pullPolicy" | default "Always") }}
         securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
+            {{- toYaml .Values.securityContext | nindent 10 }}
         ports:
         - containerPort: 8080
         env:
+        {{- `
         - name: no_proxy
           value: {{.NoProxy}}
         - name: http_proxy
@@ -65,15 +62,20 @@ spec:
         ### OTEL/Logs: Warning: Enabling logs through collector disables logs to stdout
         # - name: OTEL_LOGS_GRPC_ENDPOINT
         #   value: "otelcol-traces-collector.monitoring-traces:4317"
+        ` -}}
         args:
+        {{- `
         - "--graph-json"
         - {{.GRAPH_JSON}}
+        ` -}}
 ---
 apiVersion: v1
 kind: Service
 metadata:
+{{- `
   name: {{.SvcName}}
   namespace: {{.Namespace}}
+` -}}
 spec:
   type: ClusterIP
   selector:

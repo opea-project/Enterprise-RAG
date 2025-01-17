@@ -60,3 +60,66 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{/*
+Common labels for manifests with deployment name as an argument
+*/}}
+{{- define "manifest.labels" -}}
+{{- $deploymentName := index . 0 -}}
+{{- $context := index . 1 -}}
+helm.sh/chart: {{ printf "%s-%s" $deploymentName $context.Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+app.kubernetes.io/name: {{ $deploymentName }}
+app.kubernetes.io/instance: {{ $deploymentName }}
+app.kubernetes.io/version: {{ $context.Chart.AppVersion | quote }}
+app.kubernetes.io/managed-by: {{ $context.Release.Service }}
+{{- end }}
+
+
+{{/*
+Selector labels for manifests with deployment name as an argument
+*/}}
+{{- define "manifest.selectorLabels" -}}
+{{- $deploymentName := index . 0 -}}
+{{- $context := index . 1 -}}
+app.kubernetes.io/name: {{ $deploymentName }}
+app.kubernetes.io/instance: {{ $deploymentName }}
+{{- end }}
+
+
+{{/*
+Helper placeholder for image pull secrets
+*/}}
+{{- define "gmc.imagePullSecrets" -}}
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.imagePullSecrets }}
+          - name: {{ .name }}
+        {{- end }}
+      {{- end }}
+{{- end }}
+
+
+
+{{/*
+Helper for adding environment variables and env files
+*/}}
+    {{- define "manifest.addEnvsAndEnvFile" -}}
+    {{- $deploymentName := index . 0 -}}
+    {{- $context := index . 1 -}}
+    {{- $imageKey := index $context.Values.images $deploymentName -}}
+    {{- if $imageKey.envfile }}
+        {{- $envfile := (printf "envs/%s" $imageKey.envfile) }}
+        {{- $envContent := $context.Files.Get $envfile }}
+        {{- $envContent = regexReplaceAll "#.*" $envContent "" | trim }}
+        {{- $envContent = regexReplaceAll "(?m)\\s+$" $envContent "" }}
+        {{- $envContent = $envContent | replace "=" ": " }}
+        {{- $envContent = regexReplaceAll "(?m)^([^:]+):\\s*[\"']?(.*?)[\"']?$" $envContent "$1: \"$2\"" }}
+        {{- $envContent }}
+    {{- end -}}
+    {{- if $imageKey.envs }}
+        {{- range $key, $value := $imageKey.envs }}
+            {{- $key | nindent 0 }}: {{ $value | quote }}
+        {{- end -}}
+    {{- end -}}
+{{- end -}}

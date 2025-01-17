@@ -8,17 +8,14 @@ kind: ConfigMap
 metadata:
   name: vllm-gaudi-config
   labels:
-    helm.sh/chart: vllm-gaudi-0.8.0
-    app.kubernetes.io/name: vllm-gaudi
-    app.kubernetes.io/instance: vllm-gaudi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
   LLM_DEVICE: "hpu"
   PORT: "2080"
-  http_proxy: ""
-  https_proxy: ""
-  no_proxy: ""
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
 # Source: vllm/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -29,11 +26,7 @@ kind: Service
 metadata:
   name: vllm
   labels:
-    helm.sh/chart: vllm-gaudi-0.8.0
-    app.kubernetes.io/name: vllm-gaudi
-    app.kubernetes.io/instance: vllm-gaudi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
@@ -42,8 +35,7 @@ spec:
       protocol: TCP
       name: vllm-gaudi
   selector:
-    app.kubernetes.io/name: vllm-gaudi
-    app.kubernetes.io/instance: vllm-gaudi
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: vllm-gaudi/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -54,30 +46,20 @@ kind: Deployment
 metadata:
   name: vllm-gaudi
   labels:
-    helm.sh/chart: vllm-gaudi-0.8.0
-    app.kubernetes.io/name: vllm-gaudi
-    app.kubernetes.io/instance: vllm-gaudi
-    app.kubernetes.io/version: "2.1.0"
-    app.kubernetes.io/managed-by: Helm
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: vllm-gaudi
-      app.kubernetes.io/instance: vllm-gaudi
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: vllm-gaudi
-        app.kubernetes.io/instance: vllm-gaudi
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 2000
-        runAsGroup: 3000
-        seccompProfile:
-          type: RuntimeDefault
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: vllm-gaudi
           envFrom:
@@ -95,12 +77,9 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
-          image: "localhost:5000/opea/vllm-gaudi:latest"
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --download-dir /data"]
           imagePullPolicy: Always
           volumeMounts:

@@ -837,6 +837,8 @@ fi
 
 if $clear_all_flag; then
     clear_deployment
+    clear_fingerprint
+    clear_edp
     clear_authentication
     clear_ui
     clear_edp

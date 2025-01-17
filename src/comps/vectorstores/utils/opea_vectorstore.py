@@ -72,7 +72,7 @@ class OPEAVectorStore():
         Deletes texts from the vector store based on field name and value
         """
         return self.vector_store.search_and_delete_documents(
-            index_name="file_index",
+            index_name=f"{search_field_name}_index",
             field_name=search_field_name,
             field_value=search_field_value,
             prefix_name="doc:default_index"

@@ -74,17 +74,19 @@ def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextDoc]:
             logger.info(f"saved file {file.filename} to {saved_path}")
 
             metadata = {
-                'path': saved_path,
                 'timestamp': time.time()
             }
 
             chunks = splitter.split(saved_path)
             for chunk in chunks:
                 parsed_texts.append(TextDoc(text=chunk, metadata=metadata))
-
         except Exception as e:
             logger.exception(e)
             raise e
+        finally:
+            if os.path.exists(saved_path):
+                logger.info(f"removed {saved_path} after processing")
+                os.remove(saved_path)
 
     return parsed_texts
 
@@ -100,7 +102,6 @@ def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
                 logger.info(f"saved link {link} to {saved_path}")
 
                 metadata = {
-                    'path': saved_path,
                     'url': link,
                     'timestamp': time.time()
                 }
@@ -112,6 +113,10 @@ def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
         except Exception as e:
             logger.exception(e)
             raise e
+        finally:
+            if os.path.exists(saved_path):
+                logger.info(f"removed {saved_path} after processing")
+                os.remove(saved_path)
 
     return parsed_texts
 

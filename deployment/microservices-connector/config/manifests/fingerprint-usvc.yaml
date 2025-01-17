@@ -109,11 +109,11 @@ spec:
             - -c
             - |
                 if [ -z "$MONGO_DATABASE_NAME" ] || [ -z "$MONGO_HOST" ] || [ -z "$MONGO_PORT" ] || [ -z "$MONGO_USER" ] || [ -z "$MONGO_PASSWORD" ]; then
-                  echo "Environment variables MONGO_DATABASE_NAME, MONGO_HOST, MONGO_PORT, MONGO_USER OR MONGO_PASSWORD are not set. Skipping wait-for-mongo init container.";
+                  echo "Environment variables MONGO_DATABASE_NAME, MONGO_HOST, MONGO_PORT, MONGO_USER or MONGO_PASSWORD are not set. Skipping wait-for-mongo init container.";
                   exit 1
                 else
                   until mongosh $MONGO_HOST:$MONGO_PORT/$MONGO_DATABASE_NAME --username $MONGO_USER --password $MONGO_PASSWORD --quiet --eval "db.runCommand({ connectionStatus: 1 })"; do
-                    echo "Waiting for MongoDB...";
+                    echo "Waiting for MongoDB server $MONGO_HOST:$MONGO_PORT to be ready...";
                     sleep 2;
                   done;
                 fi;

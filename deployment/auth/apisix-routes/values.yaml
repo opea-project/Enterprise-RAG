@@ -17,16 +17,6 @@ endpoints:
     permissions:
       - "admin#admin-access"
       - "user#user-access"
-  - name: dataprep
-    namespace: dataprep
-    hostname: erag.com
-    path: /api/v1/dataprep
-    backend_service: router-service
-    service_port: 8080
-    service_path: /
-    rate_limit_count: 10
-    permissions:
-      - "admin#admin-access"
   - name: fingerprint-append
     namespace: fingerprint
     hostname: erag.com

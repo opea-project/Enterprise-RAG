@@ -114,14 +114,13 @@ async def metrics():
     reserved = celery_inspector.reserved()
     scheduled = celery_inspector.scheduled()
     active = celery_inspector.active()
-    default_worker = 'celery@worker'
 
     gauge_reserved = Gauge(name='edp_celery_reserved_tasks_total', documentation='Total number of reserved tasks', registry=registry)
-    gauge_reserved.set(len(reserved[default_worker]) if reserved and default_worker in reserved else 0)
+    gauge_reserved.set(sum(len(v) for v in reserved.values()) if reserved else 0)
     gauge_scheduled = Gauge(name='edp_celery_scheduled_tasks_total', documentation='Total number of scheduled tasks', registry=registry)
-    gauge_scheduled.set(len(scheduled[default_worker]) if scheduled and default_worker in scheduled else 0)
+    gauge_scheduled.set(sum(len(v) for v in scheduled.values()) if scheduled else 0)
     gauge_active = Gauge(name='edp_celery_active_tasks_total', documentation='Total number of active tasks', registry=registry)
-    gauge_active.set(len(active[default_worker]) if active and default_worker in active else 0)
+    gauge_active.set(sum(len(v) for v in active.values()) if active else 0)
 
     data = generate_latest(registry)
     return Response(content=data, media_type=CONTENT_TYPE_LATEST)
@@ -282,6 +281,85 @@ def delete_existing_file(bucket_name, object_name):
             logger.debug(f"File processing task enqueued with id {task.id}")
 
 
+def add_new_link(uri):
+    """
+    Adds a new link to the database and enqueues a processing task.
+
+    This function performs the following steps:
+    1. Deletes any existing links with the same URI.
+    2. Adds a new link with the status 'uploaded' to the database.
+    3. Enqueues a background task to process the link.
+
+    Args:
+        uri (str): The URI of the link to be added.
+
+    Returns:
+        LinkStatus: The newly created LinkStatus object.
+
+    Raises:
+        HTTPException: If there is an error deleting existing links or committing to the database.
+    """
+    db = next(get_db())
+    try:
+        old_links = db.query(LinkStatus).filter(LinkStatus.uri == uri).all()
+        for old_link in old_links:
+            delete_existing_link(old_link.uri)
+    except Exception as e:
+        logger.error(f"Error deleting existing link: {e}")
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Error deleting existing link")
+
+    link_status = LinkStatus(
+        uri=uri,
+        status='uploaded',
+        created_at=datetime.now(timezone.utc)
+    )
+    db.add(link_status)
+    db.commit()
+
+    logger.debug(f"Link {uri} saved in database with id {link_status.id}.")
+
+    try:
+        task = process_link_task.delay(link_id=link_status.id)
+        link_status.job_name = 'link_processing_job'
+        link_status.task_id = task.id
+        db.commit()
+        logger.debug(f"Link {link_status.id} processing task enqueued with id {task.id}")
+    except Exception as e:
+        logger.error(f"Error committing to database: {e}")
+        db.rollback() # rollback only the delay job
+    return link_status
+
+def delete_existing_link(uri):
+    """
+    Marks an existing link for deletion and enqueues a deletion task.
+
+    This function retrieves a link from the database using the provided URI.
+    If the link exists, it updates the link's status to 'deleting', marks it
+    for deletion, and commits the changes to the database. It then enqueues
+    a deletion task and updates the link with the task details.
+
+    Args:
+        uri (str): The URI of the link to be deleted.
+
+    Returns:
+        None
+    """
+    db = next(get_db())
+    link_statuses = db.query(LinkStatus).filter(LinkStatus.uri == uri, LinkStatus.marked_for_deletion == False).all()  # noqa: E712
+
+    if link_statuses:
+        for link_status in link_statuses:
+            link_status.marked_for_deletion = True
+            link_status.status = 'deleting'
+            db.commit()
+            task = delete_link_task.delay(link_id=link_status.id)
+            link_status.job_name = 'link_deleting_job'
+            link_status.job_message = ''
+            link_status.task_id = task.id
+            db.commit()
+            logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
+
 @app.post('/minio_event')
 def process_minio_event(event: MinioEventData, request: Request):
     """
@@ -347,67 +425,55 @@ def api_links(request: Request) -> List[LinkResponse]:
 @app.post('/api/links')
 def api_add_link(input: LinkRequest, request: Request):
     """
-    Adds a new link to the database after validating the request and the link URLs.
-    Returns:
-        Response: A JSON response with a message and an appropriate HTTP status code.
-    Responses:
-        200: Link added successfully.
-        400: Invalid request, missing links object, invalid URL, or one or more links already exist.
+    Adds new links to the database after validating them.
+
+    Args:
+        input (LinkRequest): An object containing the list of links to be added.
+        request (Request): The request object.
+
     Raises:
-        Exception: If there is an error adding the link to the database.
+        HTTPException: If any of the URLs in the input are invalid.
+
+    Returns:
+        JSONResponse: A JSON response containing a success message and the list of added URLs.
     """
 
-    # Validate url here
-    for link_url in input.links:
+    links = list(set([unquote_plus(link.strip()) for link in input.links]))
+    # Validate urls
+    for link_url in links:
         if not validators.url(link_url):
             raise HTTPException(status_code=400, detail=f"Invalid URL passed: {link_url}")
 
-    db = next(get_db())
-    existing_links = db.query(LinkStatus).filter(LinkStatus.uri.in_(input.links), LinkStatus.marked_for_deletion == False).all()  # noqa: E712
-    if len(existing_links) > 0:
-        links = ', '.join([link.uri for link in existing_links])
-        raise HTTPException(status_code=400, detail=f"One or more of the supplied links already exists: {links}")
-
-    try:
-        for link_url in input.links:
-            link_status = LinkStatus(
-                uri=link_url.strip(),
-                status='uploaded',
-                created_at=datetime.now(timezone.utc)
-            )
-
-            db.add(link_status)
-            db.commit()
-
-            logger.debug(f"Link {link_url} saved in database with id {link_status.id}.")
-
-            task = process_link_task.delay(link_status.id)
-            link_status.job_name = 'link_processing_job'
-            link_status.task_id = task.id
-            db.commit()
-            logger.debug(f"Link {link_status.id} processing task enqueued with id {task.id}")
-
-        return JSONResponse(content={'message': 'Link added successfully', 'id': str(link_status.id)})
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error adding link. {e}")
+    added_urls = []
+    for link_url in links:
+        try:
+            uri = unquote_plus(link_url.strip())
+            link_status = add_new_link(uri)
+            added_urls.append(str(link_status.id))
+        except Exception as e:
+            logger.error(f"Error adding link {uri} to database: {e}")
+    if len(added_urls) == 0:
+        raise HTTPException(status_code=400, detail="Error adding link(s) to database")
+    else:
+        return JSONResponse(content={'message': 'Link(s) added successfully', 'id': added_urls})
 
 
 @app.delete('/api/link/{link_uuid}')
 def api_delete_link(link_uuid: str, request: Request):
     """
-    Deletes a link identified by the given UUID.
-
-    This function checks if the provided UUID is valid,
-    and marks the link for deletion in the database. It also initiates an asynchronous
-    task to delete the link and updates the link's job name and task ID.
+    Deletes a link based on the provided UUID.
 
     Args:
         link_uuid (str): The UUID of the link to be deleted.
+        request (Request): The request object.
+
+    Raises:
+        HTTPException: If the provided UUID is invalid.
+        HTTPException: If the link is not found.
+        HTTPException: If an error occurs during deletion.
 
     Returns:
-        Response: A JSON response indicating the result of the deletion operation.
-        - 200: If the link is successfully marked for deletion.
-        - 400: If the provided UUID is invalid or there is an error deleting the link.
+        JSONResponse: A JSON response indicating the result of the deletion.
     """
 
     try:
@@ -415,20 +481,11 @@ def api_delete_link(link_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid link_id passed: #{link_uuid}")
 
+    db = next(get_db())
     try:
-        db = next(get_db())
         link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
-
         if link:
-            link.marked_for_deletion = True
-            link.status = 'deleting'
-            db.commit()
-            task = delete_link_task.delay(link.id)
-            link.job_name = 'link_deleting_job'
-            link.job_message = ''
-            link.task_id = task.id
-            db.commit()
-            logger.debug(f"Link {link.id} deletion task enqueued with id {task.id}")
+            delete_existing_link(link.uri)
             return JSONResponse(content={'message': 'Link deleted successfully'})
         else:
             raise HTTPException(status_code=404, detail="Link not found")
@@ -469,7 +526,7 @@ def api_link_task_retry(link_uuid: str, request: Request):
         link.job_message = ''
         link.status = 'uploaded'
         db.commit()
-        task = process_link_task.delay(link.id)
+        task = process_link_task.delay(link_id=link.id)
         link.job_name = 'link_processing_job'
         link.task_id = task.id
         db.commit()
@@ -567,7 +624,7 @@ def api_file_task_retry(file_uuid: str, request: Request):
         file.job_message = ''
         file.status = 'uploaded'
         db.commit()
-        task = process_file_task.delay(file.id)
+        task = process_file_task.delay(file_id=file.id)
         file.job_name = 'file_processing_job'
         file.task_id = task.id
         db.commit()

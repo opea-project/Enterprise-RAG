@@ -76,7 +76,7 @@ function usage() {
     echo -e "\t--telemetry: Start telemetry services."
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
-    echo -e "\t--edp: Start Enhanced Dataprep services (requires deployment & auth)."
+    echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
@@ -269,7 +269,6 @@ function start_fingerprint() {
     wait_for_condition check_pods "$FINGERPRINT_NS"
 }
 
-# deploys GMConnector, fingerprint, chatqna pipeline and dataprep pipeline
 function create_secret() {
     local secret_name=$1
     local secret_namespace=$2
@@ -284,7 +283,7 @@ function create_secret() {
     fi
 }
 
-# deploys GMConnector, chatqna pipeline and dataprep pipeline
+# deploys GMConnector, fingerprint and chatqna pipeline
 function start_deployment() {
     local pipeline=$1
 
@@ -296,18 +295,15 @@ function start_deployment() {
     # create namespaces
     kubectl get namespace $GMC_NS > /dev/null 2>&1 || kubectl create namespace $GMC_NS
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
-    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-    kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
 
     # Update redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
     get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
     VECTOR_DB_PASSWORD=${NEW_PASSWORD}
 
-    # Create secret for vector db configuration, have to be created in both namespaces
-    # Args: vector_store_type, secret_namespace, username, password, namespace_with_vector_database
+    # Create or reuse secret for db configuration
+    # Args: database_type, secret_namespace, username, password, namespace_with_database
     create_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
-    create_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
 
     helm_install $GMC_NS gmc "$gmc_path"
 
@@ -322,30 +318,13 @@ function start_deployment() {
 
     # Apply deployment manifest
     kubectl apply -f $deployment_manifest
-
-    # Dataprep deployment
-    print_header "Start dataprep"
-
-    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-    
-    if [[ $pipeline == *"multilingual"* ]]; then
-        kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
-    else
-        kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
-    fi
-
-    print_log "waiting until pods in $DEPLOYMENT_NS, $DATAPREP_NS are ready"
-
     wait_for_condition check_pods "$DEPLOYMENT_NS"
-    wait_for_condition check_pods "$DATAPREP_NS"
 }
 
 function clear_deployment() {
     print_header "Clear deployment"
 
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
-    kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
-    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
 
     kubectl get crd gmconnectors.gmc.opea.io > /dev/null 2>&1 && kubectl delete crd gmconnectors.gmc.opea.io
 
@@ -558,7 +537,28 @@ function start_ui() {
 }
 
 function start_edp() {
+    local pipeline=$1
     print_header "Start Enhanced Dataprep"
+
+    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
+
+    # Update redis password in chatQnA pipeline's manifest
+    VECTOR_DB_USERNAME=default
+    get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
+    VECTOR_DB_PASSWORD=${NEW_PASSWORD}
+
+    # Create or reuse secret for db configuration
+    # Args: database_type, secret_namespace, username, password, namespace_with_database
+    create_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+
+    if [[ $pipeline == *"multilingual"* ]]; then
+        kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
+    else
+        kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
+    fi
+
+    print_log "waiting until pods in $DATAPREP_NS are ready"
+    wait_for_condition check_pods "$DATAPREP_NS"
 
     kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
 
@@ -597,6 +597,7 @@ function clear_edp() {
 
     helm status -n $ENHANCED_DATAPREP_NS edp > /dev/null 2>&1 && helm uninstall -n $ENHANCED_DATAPREP_NS edp
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
+    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
 }
 
 function clear_ui() {
@@ -630,7 +631,7 @@ telemetry_flag=false
 ui_flag=false
 auth_flag=false
 helm_upgrade=false
-edp_flag=false
+edp_flag=true
 clear_deployment_flag=false
 clear_fingerprint_flag=false
 clear_ui_flag=false
@@ -705,9 +706,8 @@ while [[ "$#" -gt 0 ]]; do
             ui_flag=true
             create_flag=true
             ;;
-        --edp)
-            edp_flag=true
-            create_flag=true
+        --no-edp)
+            edp_flag=false
             ;;
         --upgrade)
             helm_upgrade=true
@@ -800,8 +800,8 @@ if $ui_flag; then
     start_ui
 fi
 
-if $edp_flag; then
-    start_edp
+if $edp_flag && ! $clear_edp_flag && ! $clear_all_flag; then
+    start_edp "$PIPELINE"
 fi
 
 if $test_flag; then
@@ -839,6 +839,8 @@ if $clear_all_flag; then
     clear_deployment
     clear_authentication
     clear_ui
+    clear_edp
+    clear_fingerprint
     clear_telemetry
     clear_ingress
     clear_gateway

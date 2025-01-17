@@ -51,11 +51,11 @@ spec:
             - -c
             - |
                 if [ -z "$DATABASE_HOST" ] || [ -z "$DATABASE_PORT" ] || [ -z "$DATABASE_USERNAME" ]; then
-                  echo "Environment variables DATABASE_HOST, DATABASE_PORT or DATABASE_USERNAME are not set. Skipping wait-for-postgresql init container.";
+                  echo "Environment variables DATABASE_HOST, DATABASE_PORT, and DATABASE_USERNAME must be set. Skipping wait-for-postgresql init container.";
                   exit 1
                 else
                   until pg_isready -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USERNAME; do
-                    echo "Waiting for PostgreSQL...";
+                    echo "Waiting for PostgreSQL server $DATABASE_HOST:$DATABASE_PORT to be ready...";
                     sleep 2;
                   done;
                 fi;
@@ -75,13 +75,14 @@ spec:
                   echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
                   exit 1
                 else
+                  REDIS_URL_OBFUSCATED=$(echo $REDIS_URL | sed -e 's|//.*:.*@|//********:********@|')
                   until redis-cli -u $REDIS_URL ping | grep -q PONG; do
-                    echo "waiting for redis server $REDIS_URL to be ready...";
+                    echo "waiting for redis server $REDIS_URL_OBFUSCATED to be ready...";
                     sleep 2;
                   done;
                 fi;
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Values.celery.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
           image: "{{ .Values.celery.repository }}:{{ .Values.celery.tag | default .Chart.AppVersion }}"

@@ -102,7 +102,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
 
     # Step 1 - Prepare the file for dataprep request
     file_db.dataprep_start = datetime.datetime.now()
-    file_db.status = 'processing'
+    file_db.status = 'dataprep'
     file_db.job_message = 'Data preparation in progress.'
     self.db.commit()
 
@@ -220,10 +220,11 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
     id = file_db.id
     self.db.delete(file_db)
     logger.debug(f"[{id}] File deleted successfully from database.")
+    return True
 
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
-def process_link_task(self, link_id: Any):
+def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:
         raise Exception(f"Link with id {link_db} not found")
@@ -245,7 +246,7 @@ def process_link_task(self, link_id: Any):
 
     # Step 1 - Prepare the file for dataprep request
     link_db.dataprep_start = datetime.datetime.now()
-    link_db.status = 'processing'
+    link_db.status = 'dataprep'
     link_db.job_message = 'Data preparation in progress.'
     self.db.commit()
 
@@ -324,7 +325,7 @@ def process_link_task(self, link_id: Any):
 
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
-def delete_link_task(self, link_id: Any):
+def delete_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:
         raise Exception(f"Link with id {link_id} not found")
@@ -344,3 +345,4 @@ def delete_link_task(self, link_id: Any):
     id = link_db.id
     self.db.delete(link_db)
     logger.debug(f"[{id}] File deleted successfully from database.")
+    return True

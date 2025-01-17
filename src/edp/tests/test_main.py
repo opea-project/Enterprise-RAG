@@ -210,7 +210,7 @@ def test_api_add_link():
             mock_task.return_value = MagicMock(job_name="link_processing_job", id="123e4567-e89b-12d3-a456-426614174000")
             response = client.post('/api/links', json=payload)
         assert response.status_code == 200
-        assert response.json() == {'id': 'None', 'message': 'Link added successfully'}
+        assert response.json() == {'id': ['None'], 'message': 'Link(s) added successfully'}
 
 def test_api_add_invalid_link():
     payload = {
@@ -224,16 +224,17 @@ def test_api_add_existing_link():
     payload = {
         "links": ["http://example.com"]
     }
-    with patch('app.main.get_db') as mock_get_db:
+    with patch('app.main.get_db') as mock_get_db, \
+         patch('app.main.delete_existing_link') as mock_delete_existing_link:
         mock_db = MagicMock()
         mock_get_db.return_value = iter([mock_db])
         mock_db.query.return_value.filter.return_value.all.return_value = [
             MagicMock(uri="http://example.com")
         ]
         response = client.post('/api/links', json=payload)
-        assert response.status_code == 400
-        assert response.json()['detail'].startswith('One or more of the supplied links already exists')
-        assert response.json()['detail'].count('http://example.com') == 1
+        mock_delete_existing_link.assert_called_once_with("http://example.com")
+        assert response.status_code == 200
+        assert response.json() == {'id': ['None'], 'message': 'Link(s) added successfully'}
 
 def test_api_add_link_exception():
     payload = {
@@ -246,17 +247,17 @@ def test_api_add_link_exception():
         mock_db.commit.side_effect = Exception("Database commit failed")
         response = client.post('/api/links', json=payload)
         assert response.status_code == 400
-        assert response.json()['detail'].startswith('Error adding link')
+        assert response.json()['detail'].startswith('Error adding link(s) to database')
 
-def test_api_delete_link():
+@patch('app.main.delete_existing_link')
+def test_api_delete_link(mock_delete_existing_link):
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
         mock_get_db.return_value = iter([mock_db])
         mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
-        with patch('app.main.delete_link_task') as mock_task:
-            mock_task.return_value = MagicMock(job_name="link_deleting_job", id="123e4567-e89b-12d3-a456-426614174000")
-            response = client.delete(f'/api/link/{link_uuid}')
+        mock_delete_existing_link.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
+        response = client.delete(f'/api/link/{link_uuid}')
         assert response.status_code == 200
         assert response.json() == {'message': 'Link deleted successfully'}
 
@@ -266,10 +267,13 @@ def test_api_delete_link_invalid_id():
     assert response.status_code == 400
     assert response.json()['detail'].startswith('Invalid link_id')
 
-def test_api_delete_link_exception():
+@patch('app.main.delete_existing_link')
+def test_api_delete_link_exception(mock_delete_existing_link):
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
-    with patch('app.main.get_db'):
+    mock_delete_existing_link.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
+    with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
+        mock_get_db.return_value = iter([mock_db])
         mock_db.query.side_effect = Exception("Database query failed")
         response = client.delete(f'/api/link/{link_uuid}')
         assert response.status_code == 400

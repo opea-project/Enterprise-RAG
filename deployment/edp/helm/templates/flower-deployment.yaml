@@ -44,13 +44,14 @@ spec:
                   echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
                   exit 1
                 else
+                  REDIS_URL_OBFUSCATED=$(echo $REDIS_URL | sed -e 's|//.*:.*@|//********:********@|')
                   until redis-cli -u $REDIS_URL ping | grep -q PONG; do
-                    echo "waiting for redis server $REDIS_URL to be ready...";
+                    echo "waiting for redis server $REDIS_URL_OBFUSCATED to be ready...";
                     sleep 2;
                   done;
                 fi;
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ .Values.flower.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.flower.repository }}:{{ .Values.flower.tag | default .Chart.AppVersion }}"

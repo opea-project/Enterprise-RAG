@@ -27,6 +27,14 @@ spec:
           - {{ . }}
           {{- end }}
         {{- end }}
+    - name: limit-count
+      enable: true
+      config:
+        count: {{ .rate_limit_count }}
+        time_window: 60
+        key_type: var
+        key: http_authorization
+        rejected_code: 429
     - name: authz-keycloak
       enable: true
       config:

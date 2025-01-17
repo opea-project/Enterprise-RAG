@@ -8,5 +8,3 @@ dependencies:
     version: 2.10.0
     repository: https://charts.apiseven.com
     condition: apisix.enabled
-
-

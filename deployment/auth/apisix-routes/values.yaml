@@ -13,6 +13,7 @@ endpoints:
     backend_service: router-service
     service_port: 8080
     service_path: /
+    rate_limit_count: 10
     permissions:
       - "admin#admin-access"
       - "user#user-access"
@@ -23,6 +24,7 @@ endpoints:
     backend_service: router-service
     service_port: 8080
     service_path: /
+    rate_limit_count: 10
     permissions:
       - "admin#admin-access"
   - name: fingerprint-append
@@ -32,6 +34,7 @@ endpoints:
     service_port: 6012
     backend_service: fingerprint-svc
     service_path: /v1/system_fingerprint/append_arguments
+    rate_limit_count: 30
     permissions:
       - "admin#admin-access"
   - name: fingerprint-change
@@ -41,6 +44,7 @@ endpoints:
     service_port: 6012
     backend_service: fingerprint-svc
     service_path: /v1/system_fingerprint/change_arguments
+    rate_limit_count: 30
     permissions:
       - "admin#admin-access"
   - name: edp
@@ -49,6 +53,7 @@ endpoints:
     path: /api/v1/edp/*
     backend_service: edp-backend
     service_port: 5000
+    rate_limit_count: 120
     service_regex:
       - ^/api/v1/edp/links$
       - /api/links

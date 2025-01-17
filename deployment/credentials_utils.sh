@@ -9,7 +9,7 @@ generate_random_password() {
   local NUMERIC="0-9"
   local UPPERCASE="A-Z"
   local LOWERCASE="a-z"
-  local SPECIAL="!?)"
+  local SPECIAL="!_)"
 
   local password=$(tr -dc "$NUMERIC" < /dev/urandom | head -c 1)
   password+=$(tr -dc "$UPPERCASE" < /dev/urandom | head -c 1)

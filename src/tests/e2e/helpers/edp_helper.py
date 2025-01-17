@@ -120,7 +120,7 @@ class EdpHelper(ApiRequestHelper):
         """Upload a file to MinIO using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
                                self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
-            print(f"Attempting to upload file {file_path} to MinIO using presigned URL: {presigned_url}")
+            print(f"Attempting to upload file {file_path} to MinIO using presigned URL")
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False)
             return response
@@ -155,7 +155,7 @@ class EdpHelper(ApiRequestHelper):
         """Delete a file from MinIO using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
                                self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
-            print(f"Attempting to delete file from MinIO using presigned URL: {presigned_url}")
+            print("Attempting to delete file from MinIO using presigned URL")
             return requests.delete(presigned_url, verify=False)
 
     def _status_reached(self, status, desired_status):

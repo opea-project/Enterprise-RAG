@@ -13,6 +13,32 @@ import time
 import uuid
 
 
+IN_PROGRESS_STATUSES = ["uploaded", "processing", "dataprep", "embedding"]
+
+
+@pytest.fixture(autouse=True)
+def cleanup(edp_helper):
+    yield
+    print("\nAttempting to clean up all items created during the test")
+    files = edp_helper.list_files()
+    for file in files.json():
+        file_name = file["object_name"]
+        if file_name.startswith("test_edp_"):
+            if file["status"] in IN_PROGRESS_STATUSES:
+                print(f"Canceling in progress task: {file_name}")
+                edp_helper.cancel_processing_task(file["id"])
+            elif file["status"] == "ingested":
+                print(f"Removing file: {file_name}")
+                response = edp_helper.generate_presigned_url(file["object_name"], "DELETE")
+                edp_helper.delete_from_minio(response.json().get("url"))
+
+    links = edp_helper.list_links()
+    for link in links.json():
+        if "test_edp_" in link["uri"]:
+            print(f"Removing link: {link['uri']}")
+            edp_helper.delete_link(link["id"])
+
+
 @allure.testcase("IEASG-T120")
 def test_edp_list_files(edp_helper):
     """Check whether the list of files is returned correctly"""
@@ -234,7 +260,7 @@ def test_edp_reupload_link(edp_helper):
 @allure.testcase("IEASG-T137")
 def test_edp_upload_nonexistent_link(edp_helper):
     """Upload a link to a nonexistent website"""
-    nonexistent_link = "https://some-nonexisting-webpage-12345.com"
+    nonexistent_link = "https://test_edp_some-nonexisting-webpage-12345.com"
     response = edp_helper.upload_links({"links": [nonexistent_link]})
     assert response.status_code == 200, f"Unexpected status code. Response: {response.text}"
 

@@ -22,6 +22,8 @@ tls:
 volumePermissions:
   enabled: true
 
+resourcesPreset: "xlarge"
+
 extraEnvVars:
   - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
     value: "true"

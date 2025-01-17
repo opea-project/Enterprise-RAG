@@ -1106,8 +1106,21 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 	select {
 	case <-ctx.Done():
-		otlpr.WithContext(log, ctx).Error(errors.New("request timed out"), "failed to process request")
-		http.Error(w, "request timed out", http.StatusGatewayTimeout)
+		otlpr.WithContext(log, ctx).Error(ctx.Err(), "context is in done state")
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			otlpr.WithContext(log, ctx).Error(errors.New("request timed out"), "failed to process request")
+			http.Error(w, "request timed out", http.StatusGatewayTimeout)
+		} else {
+			// Context was cancelled, we need to wait for subroutine to clearly finish
+			// in order to avoid race condition when subroutine is writing to http request
+			// and http server is writing to the same object when we quit mcGraphHandler function
+			// otherwise router would crash with: 'fatal error: concurrent map writes'
+			otlpr.WithContext(log, ctx).Info("waiting for subroutine due to context error")
+			select {
+			case <-done:
+				otlpr.WithContext(log, ctx).Info("mcGraphHandler is done after previous context error")
+			}
+		}
 	case <-done:
 		otlpr.WithContext(log, ctx).Info("mcGraphHandler is done")
 	}

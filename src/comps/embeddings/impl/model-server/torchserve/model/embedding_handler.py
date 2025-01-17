@@ -50,7 +50,6 @@ class EmbeddingHandler(BaseHandler, ABC):
         super(EmbeddingHandler, self).__init__()
         self.batch_size = None
         self.initialized = False
-        self.hf_hub = False
 
 
     def initialize(self, ctx : Context):
@@ -105,12 +104,21 @@ class EmbeddingHandler(BaseHandler, ABC):
 
 
     def preprocess(self, requests):
+        texts = []
         logger.debug(f"Received requests: {requests}")
-        input_texts = [data.get("data") or data.get("body") for data in requests]
-        if isinstance(input_texts[0], dict):
-            input_texts = input_texts[0]["inputs"]
-            self.hf_hub = True
-        texts = list(map(lambda x: x.replace("\n", " "), input_texts))
+
+        bodies = [data.get("data") or data.get("body") for data in requests]
+
+        for body in bodies:
+            input_text = body['inputs']
+            logger.debug(f"Received input_text: {input_text}")
+            if isinstance(input_text, dict):
+                input_text = body['inputs'][0]
+
+            text = list(map(lambda x: x.replace("\n", " "), input_text))
+            texts.append(text[0])
+
+        logger.debug(f"Received texts: {texts}")
         return texts
 
 
@@ -122,9 +130,12 @@ class EmbeddingHandler(BaseHandler, ABC):
             dtype=self.amp_dtype,
             ):
             embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
+
         return embeddings.tolist()
 
+
     def postprocess(self, inference_output):
-        if self.hf_hub:
-            return [inference_output]
-        return inference_output
+        if len(inference_output) > 1:
+            return inference_output
+
+        return [inference_output]

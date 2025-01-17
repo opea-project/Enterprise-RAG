@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 from docarray import BaseDoc
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
@@ -63,7 +64,7 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
         if api_config is not None:
             self._set_api_config(api_config)
 
-        self._validate()
+        asyncio.run(self._validate())
 
     def _select_embedder(self, **kwargs) -> BaseEmbedding:
         """
@@ -80,7 +81,7 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
 
         return SUPPORTED_INTEGRATIONS[self._model_server](model_name=self._model_name, base_url=self._endpoint, **kwargs)
 
-    def embed_documents(self, input_text: List[str]) -> List[List[float]]:
+    async def embed_documents(self, input_text: List[str]) -> List[List[float]]:
         """
         Embeds a list of documents.
 
@@ -92,14 +93,14 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
 
         """
         try:
-            output = self._embedder._get_text_embeddings(input_text)
+            output = await self._embedder._aget_text_embeddings(input_text)
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise
 
         return output
 
-    def embed_query(self, input_text: str) -> BaseDoc:
+    async def embed_query(self, input_text: str) -> BaseDoc:
         """
         Embeds a query.
 
@@ -111,7 +112,7 @@ class LlamaIndexEmbedding(EmbeddingWrapper):
 
         """
         try:
-            output = self._embedder._get_query_embedding(input_text)
+            output = await self._embedder._aget_query_embedding(input_text)
         except Exception as e:
             logger.exception(f"Error embedding query: {e}")
             raise

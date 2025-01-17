@@ -3,7 +3,7 @@
 
 # TODO: Implement a Generic Connector
 
-import concurrent
+import asyncio
 import os
 import yaml
 
@@ -75,7 +75,7 @@ class OPEAEmbedding:
         else:
             self._SUPPORTED_FRAMEWORKS[self._connector]()
 
-    def run(self, input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
+    async def run(self, input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
         """
         Processes the input document using the OPEAEmbedding.
 
@@ -91,7 +91,7 @@ class OPEAEmbedding:
             if input.text.strip() == "":
                 raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
 
-            embed_vector = self.embed_query(input.text)
+            embed_vector = await self.embed_query(input.text)
             res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
             return res # return EmbedDoc
         else:
@@ -102,17 +102,27 @@ class OPEAEmbedding:
                 raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
 
             # Multithreaded executor is needed to enabled batching in the model server
-            def multithreaded_embed_query(doc):
-                res_vector = self.embed_query(doc.text)
+            async def multithreaded_embed_query(doc):
+                # TODO: Process a batch of documents instead of handling them one by one
+                res_vector = await self.embed_documents([doc.text])
+
+                if len(res_vector) == 1:
+                    # For documents of 1 KB or smaller, TorchServe returns the result vector wrapped in an additional list,
+                    # extract the inner list to ensure compatibility with the next steps
+                    res_vector = res_vector[0]
+
+
                 return EmbedDoc(text=doc.text, embedding=res_vector, metadata=doc.metadata)
 
-            # Hardcoded to 4 workers per request
-            # TODO: Make the number of workers configurable
-            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                f = [executor.submit(multithreaded_embed_query, doc) for doc in docs_to_parse]
-                docs = [future.result() for future in concurrent.futures.as_completed(f)]
+
+            # Create tasks for each document
+            tasks = [multithreaded_embed_query(doc) for doc in docs_to_parse]
+
+            # Run all tasks concurrently
+            docs = await asyncio.gather(*tasks)
 
             return EmbedDocList(docs=docs) # return EmbedDocList
+
 
     def _import_langchain(self) -> None:
         try:

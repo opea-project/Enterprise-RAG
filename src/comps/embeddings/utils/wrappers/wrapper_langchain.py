@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import json
 
 from langchain_core.embeddings import Embeddings
@@ -17,10 +18,11 @@ def texts_to_single_line(texts: List[str]) -> List[str]:
     return [text.replace("\n", " ") for text in texts]
 
 class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+
         input_data = texts_to_single_line(texts)
         try:
-            responses = self.client.post(
+            responses = await self.async_client.post(
                 json={"inputs": input_data}
             )
 
@@ -46,14 +48,18 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
     model_name: str
     input_name: str = None
 
-    def get_input_name(self, url: str) -> str:
+    async def get_input_name(self, url: str) -> str:
         if self.input_name is None:
-            import requests
+            import aiohttp
             try:
-                response = requests.get(url)
-                response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-                self.input_name = json.loads(response.text)["inputs"][0]["name"]
-            except requests.exceptions.RequestException as e:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as response:
+                        response_text = await response.text()
+                        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+                        self.input_name = json.loads(response_text)["inputs"][0]["name"]
+
+            except aiohttp.ClientError as e:
                 logger.error(f"Request failed: {e}")
                 raise
             except json.JSONDecodeError as e:
@@ -64,15 +70,16 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
                 raise
         return self.input_name
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+
         endpoint = f"v2/models/{self.model_name}"
         url = f"{self.model}/{endpoint}"
 
         try:
             from huggingface_hub import (
-                    InferenceClient,
+                    AsyncInferenceClient,
                 )
-            self.client = InferenceClient(
+            self.async_client = AsyncInferenceClient(
                     model=f"{url}/infer",
                 )
         except ImportError as e:
@@ -83,7 +90,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
             raise
 
         try:
-            input_name = self.get_input_name(url)
+            input_name = await self.get_input_name(url)
         except Exception:
             raise
 
@@ -96,7 +103,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
         }]
 
         try:
-            responses = self.client.post(
+            responses = await self.async_client.post(
                 json={"inputs": input_data}
             )
             responses_data = json.loads(responses.decode())
@@ -109,6 +116,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
             raise
 
         return []
+
 
 SUPPORTED_INTEGRATIONS = {
     "tei": HuggingFaceEndpointEmbeddings,
@@ -154,7 +162,7 @@ class LangchainEmbedding(EmbeddingWrapper):
         if api_config is not None:
             self._set_api_config(api_config)
 
-        self._validate()
+        asyncio.run(self._validate())
 
     def _select_embedder(self, **kwargs) -> Embeddings:
         """
@@ -175,6 +183,7 @@ class LangchainEmbedding(EmbeddingWrapper):
             if self._model_server == "torchserve":
                 self._endpoint = self._endpoint.rstrip('/')
                 kwargs["model"] = self._endpoint + f"/predictions/{self._model_name.split('/')[-1]}"
+
             elif self._model_server == "mosec":
                 kwargs["model"] = self._endpoint.rstrip('/') + "/embed"
             else:
@@ -185,7 +194,7 @@ class LangchainEmbedding(EmbeddingWrapper):
 
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
         Embeds a list of documents.
 
@@ -196,14 +205,14 @@ class LangchainEmbedding(EmbeddingWrapper):
             List[List[float]]: The embedded documents.
         """
         try:
-            output = self._embedder.embed_documents(texts)
+            output = await self._embedder.aembed_documents(texts)
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise
 
         return output
 
-    def embed_query(self, input_text: str) -> List[float]:
+    async def embed_query(self, input_text: str) -> List[float]:
         """
         Embeds a query.
 
@@ -214,7 +223,7 @@ class LangchainEmbedding(EmbeddingWrapper):
             List[float]: The embedded query.
         """
         try:
-            output = self._embedder.embed_query(input_text)
+            output = await self._embedder.aembed_query(input_text)
         except Exception as e:
             logger.exception(f"Error embedding query: {e}")
             raise

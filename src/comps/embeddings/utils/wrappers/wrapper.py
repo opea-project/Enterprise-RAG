@@ -93,7 +93,7 @@ class EmbeddingWrapper(ABC):
         """
         raise NotImplementedError
 
-    def _validate(self) -> None:
+    async def _validate(self) -> None:
         """
         Validates the embedder by embedding an empty query.
 
@@ -101,7 +101,7 @@ class EmbeddingWrapper(ABC):
             RuntimeError: If there is an error initializing the embedder.
         """
         try:
-            self.embed_query("test")
+            await self.embed_query("test")
             logger.info("Embedder model server validated successfully.")
         except RuntimeError as e:
             logger.exception(f"Error initializing the embedder: {e}")

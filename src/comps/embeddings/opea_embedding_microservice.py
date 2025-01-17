@@ -58,7 +58,7 @@ opea_embedding = OPEAEmbedding(
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
+async def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
     """
     Process the input document using the OPEAEmbedding.
 
@@ -70,7 +70,7 @@ def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]
 
     try:
         # Pass the input to the 'run' method of the microservice instance
-        res = opea_embedding.run(input)
+        res = await opea_embedding.run(input)
 
     except ValueError as e:
         logger.exception(f"An internal error occurred while processing: {str(e)}")

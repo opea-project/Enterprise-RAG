@@ -24,7 +24,7 @@ class OPEALLMGuardInputGuardrail:
     Methods:
         __init__(usv_config: dict):
             Initializes the OPEALLMGuardInputGuardrail with the provided configuration.
-        
+
         scan_llm_input(input_doc: LLMParamsDoc) -> tuple[str, dict[str, bool], dict[str, float]]:
             Scans the prompt from an LLMParamsDoc object and returns the sanitized prompt,
             validation results, and scores.
@@ -43,6 +43,9 @@ class OPEALLMGuardInputGuardrail:
         try:
             self._scanners_config = InputScannersConfig(usv_config)
             self._scanners = self._scanners_config.create_enabled_input_scanners()
+        except ValueError as e:
+            logger.exception(f"Value Error occured while initializing LLM Guard Input Guardrail scanners: {e}")
+            raise
         except Exception as e:
             logger.exception(
                 f"An unexpected error occured during initializing \
@@ -106,9 +109,13 @@ class OPEALLMGuardInputGuardrail:
             else:
                 logger.info("No input scanners enabled. Skipping scanning.")
                 return input_doc
+        except HTTPException as e:
+            raise e
+        except ValueError as e:
+            error_msg = f"Validation Error occured while initializing LLM Guard Input Guardrail scanners: {e}"
+            logger.exception(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
         except Exception as e:
-            logger.exception(
-                f"An unexpected error occured during scanning prompt with \
-                    LLM Guard Output Guardrail: {e}"
-            )
-            raise
+            error_msg = f"An unexpected error occured during scanning prompt with LLM Guard Input Guardrail: {e}"
+            logger.exception(error_msg)
+            raise HTTPException(status_code=500, detail=error_msg)

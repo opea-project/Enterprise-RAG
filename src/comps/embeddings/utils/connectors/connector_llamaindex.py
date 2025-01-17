@@ -8,7 +8,7 @@ from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInfer
 from typing import List, Optional
 
 from comps import get_opea_logger
-from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
+from comps.embeddings.utils.connectors.connector import EmbeddingConnector
 
 SUPPORTED_INTEGRATIONS = {
     "tei": TextEmbeddingsInference,
@@ -17,7 +17,7 @@ SUPPORTED_INTEGRATIONS = {
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
-class LlamaIndexEmbedding(EmbeddingWrapper):
+class LlamaIndexEmbedding(EmbeddingConnector):
     """
     A class representing an embedding model using LlamaIndex.
 

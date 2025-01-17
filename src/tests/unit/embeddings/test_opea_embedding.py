@@ -12,7 +12,7 @@ from comps.embeddings.utils.opea_embedding import OPEAEmbedding
 
 @pytest.fixture
 def mock_langchain():
-    with mock.patch('comps.embeddings.utils.wrappers.wrapper_langchain.LangchainEmbedding', autospec=True) as MockClass:
+    with mock.patch('comps.embeddings.utils.connectors.connector_langchain.LangchainEmbedding', autospec=True) as MockClass:
         mock_instance = MockClass.return_value
         mock_instance.embed_documents.return_value = 'works'
         mock_instance.embed_query.return_value = 'works'
@@ -20,7 +20,7 @@ def mock_langchain():
 
 @pytest.fixture
 def mock_llamaindex():
-    with mock.patch('comps.embeddings.utils.wrappers.wrapper_llamaindex.LlamaIndexEmbedding', autospec=True) as MockClass:
+    with mock.patch('comps.embeddings.utils.connectors.connector_llamaindex.LlamaIndexEmbedding', autospec=True) as MockClass:
         mock_instance = MockClass.return_value
         mock_instance.embed_documents.return_value = 'works'
         mock_instance.embed_query.return_value = 'works'

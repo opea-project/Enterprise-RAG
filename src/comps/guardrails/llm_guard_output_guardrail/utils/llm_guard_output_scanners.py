@@ -104,7 +104,7 @@ ENABLED_SCANNERS = [
     'url_reachability'
 ]
 
-from comps import get_opea_logger
+from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 
 class OutputScannersConfig:
@@ -542,10 +542,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for BanCode scanner: {model_name}")
+                logger.info(f"Using selected model for BanCode scanner: {model_name}")
                 bancode_params['model'] = enabled_models[model_name] # Model class from LLM Guard
             else:
-                logger.error("Model name is not valid for BanCode scanner")
+                err_msg = f"Model name is not valid for BanCode scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             bancode_params['threshold'] = threshold
         logger.info(f"Creating BanCode scanner with params: {bancode_params}")
@@ -560,6 +562,9 @@ class OutputScannersConfig:
         redact = scanner_config.get('redact', None)
         model_name = scanner_config.get('model', None)
 
+        if isinstance(competitors, str):
+            competitors = sanitize_env(competitors)
+
         if competitors:
             if isinstance(competitors, str):
                 artifacts = set([',', '', '.'])
@@ -570,18 +575,20 @@ class OutputScannersConfig:
                 logger.error("Provided type is not valid for BanCompetitors scanner")
                 raise ValueError("Provided type is not valid for BanCompetitors scanner")
         else:
-            logger.error("Competitors list is required for BanCompetitors scanner")
-            raise Exception("Competitors list is required for BanCompetitors scanner")
+            logger.error("Competitors list is required for BanCompetitors scanner. Please provide a list of competitors.")
+            raise TypeError("Competitors list is required for BanCompetitors scanner. Please provide a list of competitors.")
         if threshold is not None:
             ban_competitors_params['threshold'] = threshold
         if redact is not None:
             ban_competitors_params['redact'] = redact
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for BanCompetitors scanner: {model_name}")
+                logger.info(f"Using selected model for BanCompetitors scanner: {model_name}")
                 ban_competitors_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for BanCompetitors scanner")
+                err_msg = f"Model name is not valid for BanCompetitors scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         logger.info(f"Creating BanCompetitors scanner with params: {ban_competitors_params}")
         return BanCompetitors(**ban_competitors_params)
 
@@ -595,6 +602,9 @@ class OutputScannersConfig:
         redact = scanner_config.get('redact', None)
         contains_all = scanner_config.get('contains_all', None)
 
+        if isinstance(substrings, str):
+            substrings = sanitize_env(substrings)
+
         if substrings:
             if isinstance(substrings, str):
                 artifacts = set([',', '', '.'])
@@ -606,7 +616,7 @@ class OutputScannersConfig:
                 raise ValueError("Provided type is not valid for BanSubstrings scanner")
         else:
             logger.error("Substrings list is required for BanSubstrings scanner")
-            raise Exception("Substrings list is required for BanSubstrings scanner")
+            raise TypeError("Substrings list is required for BanSubstrings scanner")
         if match_type is not None and match_type in available_match_types:
             ban_substrings_params['match_type'] = match_type
         if case_sensitive is not None:
@@ -632,6 +642,9 @@ class OutputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         model_name = scanner_config.get('model', None)
 
+        if isinstance(topics, str):
+            topics = sanitize_env(topics)
+
         if topics:
             if isinstance(topics, str):
                 artifacts = set([',', '', '.'])
@@ -643,15 +656,17 @@ class OutputScannersConfig:
                 raise ValueError("Provided type is not valid for BanTopics scanner")
         else:
             logger.error("Topics list is required for BanTopics scanner")
-            raise Exception("Topics list is required for BanTopics scanner")
+            raise TypeError("Topics list is required for BanTopics scanner")
         if threshold is not None:
             ban_topics_params['threshold'] = threshold
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for BanTopics scanner: {model_name}")
+                logger.info(f"Using selected model for BanTopics scanner: {model_name}")
                 ban_topics_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for BanTopics scanner")
+                err_msg = f"Model name is not valid for BanTopics scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         logger.info(f"Creating BanTopics scanner with params: {ban_topics_params}")
         return BanTopics(**ban_topics_params)
 
@@ -670,10 +685,12 @@ class OutputScannersConfig:
             bias_params['match_type'] = match_type
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Bias scanner: {model_name}")
+                logger.info(f"Using selected model for Bias scanner: {model_name}")
                 bias_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Bias scanner")
+                err_msg = f"Model name is not valid for Bias scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
 
         logger.info(f"Creating Bias scanner with params: {bias_params}")
         return Bias(**bias_params)
@@ -684,8 +701,11 @@ class OutputScannersConfig:
 
         languages = scanner_config.get('languages', None)
         model_name = scanner_config.get('model', None)
-        is_blocked = scanner_config.get('is_blocked', None) 
+        is_blocked = scanner_config.get('is_blocked', None)
         threshold = scanner_config.get('threshold', None)
+
+        if isinstance(languages, str):
+            languages = sanitize_env(languages)
 
         if languages:
             if isinstance(languages, str):
@@ -698,13 +718,15 @@ class OutputScannersConfig:
                 raise ValueError("Provided type is not valid for Code scanner")
         else:
             logger.error("Languages list is required for Code scanner")
-            raise Exception("Languages list is required for Code scanner")
+            raise TypeError("Languages list is required for Code scanner")
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Code scanner: {model_name}")
+                logger.info(f"Using selected model for Code scanner: {model_name}")
                 code_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Code scanner")
+                err_msg = f"Model name is not valid for Code scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if is_blocked is not None:
             code_params['is_blocked'] = is_blocked
         if threshold is not None:
@@ -748,6 +770,9 @@ class OutputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
 
+        if isinstance(valid_languages, str):
+            valid_languages = sanitize_env(valid_languages)
+
         if valid_languages:
             if isinstance(valid_languages, str):
                 artifacts = set([',', '', '.'])
@@ -758,14 +783,16 @@ class OutputScannersConfig:
                 logger.error("Provided type is not valid for Language scanner")
                 raise ValueError("Provided type is not valid for Language scanner")
         else:
-            logger.error("Valid languages list is required for Langudage scanner")
-            raise Exception("Valid languages list is required for Language scanner")
+            logger.error("Valid languages list is required for Language scanner")
+            raise TypeError("Valid languages list is required for Language scanner")
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Language scanner: {model_name}")
+                logger.info(f"Using selected model for Language scanner: {model_name}")
                 language_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Language scanner")
+                err_msg = f"Model name is not valid for Language scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             language_params['threshold'] = threshold
         if match_type is not None and match_type in enabled_match_types:
@@ -782,10 +809,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for LanguageSame scanner: {model_name}")
+                logger.info(f"Using selected model for LanguageSame scanner: {model_name}")
                 language_same_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for LanguageSame scanner")
+                err_msg = f"Model name is not valid for LanguageSame scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             language_same_params['threshold'] = threshold
 
@@ -801,10 +830,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for MaliciousURLs scanner: {model_name}")
+                logger.info(f"Using selected model for MaliciousURLs scanner: {model_name}")
                 malicious_urls_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for MaliciousURLs scanner")
+                err_msg = f"Model name is not valid for MaliciousURLs scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             malicious_urls_params['threshold'] = threshold
 
@@ -824,10 +855,12 @@ class OutputScannersConfig:
             no_refusal_params['threshold'] = threshold
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for NoRefusal scanner: {model_name}")
+                logger.info(f"Using selected model for NoRefusal scanner: {model_name}")
                 no_refusal_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for NoRefusal scanner")
+                err_msg = f"Model name is not valid for NoRefusal scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if match_type is not None and match_type in enabled_match_types:
             no_refusal_params['match_type'] = match_type
 
@@ -842,6 +875,9 @@ class OutputScannersConfig:
         case_sensitive = scanner_config.get('case_sensitive', None)
         react = scanner_config.get('react', None)
         contains_all = scanner_config.get('contains_all', None)
+
+        if isinstance(substrings, str):
+            substrings = sanitize_env(substrings)
 
         if substrings is not None:
             no_refusal_light_params['substrings'] = substrings
@@ -867,7 +903,7 @@ class OutputScannersConfig:
             reading_time_params['max_time'] = float(max_time)
         else:
             logger.error("Max time is required for ReadingTime scanner")
-            raise Exception("Max time is required for ReadingTime scanner")
+            raise TypeError("Max time is required for ReadingTime scanner")
         if truncate is not None:
             reading_time_params['truncate'] = truncate
 
@@ -883,10 +919,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for NoRefusal scanner: {model_name}")
+                logger.info(f"Using selected model for NoRefusal scanner: {model_name}")
                 factual_consistency_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for NoRefusal scanner")
+                err_msg = f"Model name is not valid for NoRefusal scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if minimum_score is not None:
             factual_consistency_params['minimum_score'] = minimum_score
 
@@ -906,10 +944,12 @@ class OutputScannersConfig:
             gibberish_params['threshold'] = threshold
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Gibberish scanner: {model_name}")
+                logger.info(f"Using selected model for Gibberish scanner: {model_name}")
                 gibberish_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Gibberish scanner")
+                err_msg = f"Model name is not valid for Gibberish scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if match_type is not None and match_type in enabled_match_types:
             gibberish_params['match_type'] = match_type
 
@@ -925,18 +965,21 @@ class OutputScannersConfig:
         match_type = scanner_config.get('match_type', None)
         redact = scanner_config.get('redact', None)
 
+        if isinstance(patterns, str):
+            patterns = sanitize_env(patterns)
+
         if patterns:
             if isinstance(patterns, str):
                 artifacts = set([',', '', '.'])
-                regex_params['valid_languages'] = list(set(patterns.split(',')) - artifacts)
+                regex_params['patterns'] = list(set(patterns.split(',')) - artifacts)
             elif isinstance(patterns, list):
-                regex_params['valid_languages'] = patterns
+                regex_params['patterns'] = patterns
             else:
                 logger.error("Provided type is not valid for Regex scanner")
                 raise ValueError("Provided type is not valid for Regex scanner")
         else:
             logger.error("Patterns list is required for Regex scanner")
-            raise Exception("Patterns list is required for Regex scanner")
+            raise TypeError("Patterns list is required for Regex scanner")
         if is_blocked is not None:
             regex_params['is_blocked'] = is_blocked
         if match_type is not None and match_type in enabled_match_types:
@@ -958,10 +1001,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Gibberish scanner: {model_name}")
+                logger.info(f"Using selected model for Gibberish scanner: {model_name}")
                 relevance_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Gibberish scanner")
+                err_msg = f"Model name is not valid for Relevance scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             relevance_params['threshold'] = threshold
 
@@ -1018,10 +1063,12 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info("Using selected model for Toxicity scanner: {model_name}")
+                logger.info(f"Using selected model for Toxicity scanner: {model_name}")
                 toxicity_params['model'] = enabled_models[model_name]
             else:
-                logger.error("Model name is not valid for Toxicity scanner")
+                err_msg = f"Model name is not valid for Toxicity scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
+                logger.error(err_msg)
+                raise ValueError(err_msg)
         if threshold is not None:
             toxicity_params['threshold'] = threshold
         if match_type is not None and match_type in enabled_match_types:
@@ -1110,16 +1157,40 @@ class OutputScannersConfig:
         """
         enabled_scanners_names_and_configs = {k: v for k, v in self._output_scanners_config.items() if isinstance(v, dict) and v.get("enabled")}
         enabled_scanners_objects = []
+
+        err_msgs = {} # list for all erronous scanners
+        only_validation_errors = True
         for scanner_name, scanner_config in enabled_scanners_names_and_configs.items():
             try:
                 logger.info(f"Attempting to create scanner: {scanner_name}")
                 scanner_object = self._create_output_scanner(scanner_name, scanner_config, vault=self.vault)
                 enabled_scanners_objects.append(scanner_object)
-            except Exception as e:
-                logger.exception(
-                    f"An unexpected error occured during creating output scanner {scanner_name}: {e}"
-                )
+            except ValueError as e:
+                err_msg = f"A ValueError occured during creating output scanner {scanner_name}: {e}"
+                logger.error(err_msg)
+                err_msgs[scanner_name] = err_msg
+                self._output_scanners_config[scanner_name]["enabled"] = False
                 continue
+            except TypeError as e:
+                err_msg = f"A TypeError occured during creating output scanner {scanner_name}: {e}"
+                logger.error(err_msg)
+                err_msgs[scanner_name] = err_msg
+                self._output_scanners_config[scanner_name]["enabled"] = False
+                continue
+            except Exception as e:
+                err_msg = f"An unexpected error occured during creating output scanner {scanner_name}: {e}"
+                logger.error(err_msg)
+                err_msgs[scanner_name] = err_msg
+                self._output_scanners_config[scanner_name]["enabled"] = False
+                only_validation_errors = False
+                continue
+
+        if err_msgs:
+            if only_validation_errors:
+                raise ValueError(f"Some scanners failed to be created due to validation errors. The details: {err_msgs}")
+            else:
+                raise Exception(f"Some scanners failed to be created due to validation or unexpected errors. The details: {err_msgs}")
+
         return [s for s in enabled_scanners_objects if s is not None]
 
     def changed(self, new_scanners_config):

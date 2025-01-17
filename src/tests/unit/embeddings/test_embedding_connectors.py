@@ -1,7 +1,7 @@
 # ruff: noqa: E711, E712
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-# test_wrappers.py
+# test_embedding_connectors.py
 
 from typing import List
 from unittest import mock
@@ -10,14 +10,14 @@ from unittest.mock import MagicMock
 import pytest
 from docarray import BaseDoc
 
-from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
-from comps.embeddings.utils.wrappers.wrapper_langchain import (
+from comps.embeddings.utils.connectors.connector import EmbeddingConnector
+from comps.embeddings.utils.connectors.connector_langchain import (
     HuggingFaceEndpointEmbeddings,
     LangchainEmbedding,
     MosecEmbeddings,
     OVMSEndpointEmbeddings,
 )
-from comps.embeddings.utils.wrappers.wrapper_llamaindex import (
+from comps.embeddings.utils.connectors.connector_llamaindex import (
     LlamaIndexEmbedding,
     TextEmbeddingsInference,
 )
@@ -30,7 +30,7 @@ def teardown():
 def clean_singleton():
     LangchainEmbedding._instance = None
 
-class MockEmbeddingWrapper(EmbeddingWrapper):
+class MockEmbeddingConnector(EmbeddingConnector):
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return [[0.1, 0.2, 0.3] for _ in texts]
 
@@ -43,20 +43,20 @@ class MockEmbeddingWrapper(EmbeddingWrapper):
         pass
 
 def test_embed_query_valid_input():
-    wrapper = MockEmbeddingWrapper("model", "server", "endpoint")
-    result = wrapper.embed_query("test query")
+    connector = MockEmbeddingConnector("model", "server", "endpoint")
+    result = connector.embed_query("test query")
     assert isinstance(result, BaseDoc)
     assert result.embedding == [0.1, 0.2, 0.3]
 
 def test_embed_query_empty_string():
-    wrapper = MockEmbeddingWrapper("model", "server", "endpoint")
-    result = wrapper.embed_query("")
+    connector = MockEmbeddingConnector("model", "server", "endpoint")
+    result = connector.embed_query("")
     assert isinstance(result, BaseDoc)
     assert result.embedding == [0.1, 0.2, 0.3]
 
-def test_EmbeddingWrapper_not_implemented():
+def test_EmbeddingConnector_not_implemented():
     with pytest.raises(TypeError):
-        EmbeddingWrapper("model", "server", "endpoint")
+        EmbeddingConnector("model", "server", "endpoint")
 
 # TODO: Fix the tests below. 
 # Currently, they are skipped because the configuration option asyncio_default_fixture_loop_scope is unset

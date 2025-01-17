@@ -5,7 +5,7 @@ from typing import List, Optional
 from comps.cores.mega.logger import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc
 
-logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
 class OPEAVectorStore():
     """
@@ -52,7 +52,9 @@ class OPEAVectorStore():
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
-            logger.error(f"Unsupported vector store: {self._vector_store_name}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}")
+            err_msg = f"Unsupported vector store: {self._vector_store_name}.\nSupported vector stores: {[vs for vs in self._SUPPORTED_VECTOR_STORES]}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
         else:
             logger.info(f"Loading {self._vector_store_name}")
             self._SUPPORTED_VECTOR_STORES[self._vector_store_name]()
@@ -88,15 +90,18 @@ class OPEAVectorStore():
         """
         search_res = None
         if input.search_type == "similarity":
-            search_res = self.vector_store.similarity_search_by_vector(input=input)
+            search_res = self.vector_store.similarity_search_by_vector(input.text, input.embedding, input.k)
         elif input.search_type == "similarity_distance_threshold":
             if input.distance_threshold is None:
-                raise ValueError("distance_threshold must be provided for " + "similarity_distance_threshold retriever")
-            search_res = self.vector_store.similarity_search_by_vector(input=input)
+                raise ValueError("distance_threshold must be provided for similarity_distance_threshold retriever")
+            search_res = self.vector_store.similarity_search_by_vector(input.text, input.embedding, input.k, input.distance_threshold)
         elif input.search_type == "similarity_score_threshold":
-            raise NotImplementedError
+            raise NotImplementedError("similarity_score_threshold is not implemented")
+            # search_res = self.vector_store.similarity_search_with_relevance_scores(input.text, input.embedding, input.k, input.score_threshold)
         elif input.search_type == "mmr":
-            search_res = self.vector_store.max_marginal_relevance_search(input=input)
+            search_res = self.vector_store.max_marginal_relevance_search(input.text, input.embedding, input.k, input.fetch_k, input.lambda_mult)
+        else:
+            raise ValueError(f"Invalid search type: {input.search_type}")
         return search_res
 
     def _import_redis(self):

@@ -3,10 +3,12 @@
 
 import heapq
 import json
+import requests
 from typing import List, TypedDict
 import aiohttp
 
-from requests.exceptions import RequestException
+from asyncio import TimeoutError
+from requests.exceptions import RequestException, Timeout
 
 from comps import (
     SearchedDoc,
@@ -74,7 +76,7 @@ class OPEAReranker:
 
 
         # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
-        
+
         if not input.initial_query.strip():
             logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
@@ -88,13 +90,16 @@ class OPEAReranker:
             # Proceed with processing the retrieved documents
             try:
                 retrieved_docs = [doc.text for doc in input.retrieved_docs]
-                response_data = await self._call_reranker(
+                response_data = await self._async_call_reranker(
                     input.initial_query, retrieved_docs
                 )
                 best_response_list = self._filter_top_n(input.top_n, response_data)
+            except TimeoutError as e:
+                raise TimeoutError(e)
+            except Timeout as e:
+                raise Timeout(e)
             except RequestException as e:
-                logger.error(f"Connection Error during request to reranking service: {e}")
-                raise RequestException(f"Connection Error during request to reranking service: {e}")
+                raise RequestException(e)
             except Exception as e:
                 logger.error(f"Error during request to reranking service: {e}")
                 raise Exception(f"Error during request to reranking service: {e}")
@@ -111,7 +116,52 @@ class OPEAReranker:
         return PromptTemplateInput(data={"initial_query": input.initial_query.strip(), "reranked_docs": reranked_docs})
 
 
-    async def _call_reranker(
+    async def _async_call_reranker(
+        self,
+        initial_query: str,
+        retrieved_docs: List[str],
+    ) -> RerankScoreResponse:
+        """
+        Async calls the reranker service to rerank the retrieved documents based on the initial query.
+        Args:
+            initial_query (str): The initial query string.
+            retrieved_docs (List[str]): The list of retrieved documents.
+        Returns:
+            RerankScoreResponse: The response from the reranker service.
+        Raises:
+            Timeout: If the request to the reranking service times out.
+            RequestException: If there is an issue with the request to the reranking service.
+            Exception: For any other exceptions that occur during the request.
+        """
+
+        data = {"query": initial_query, "texts": retrieved_docs}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    self._service_endpoint + "/rerank",
+                    data=json.dumps(data),
+                    headers={"Content-Type": "application/json"},
+                    timeout=180
+                ) as response:
+                    response_data = await response.json()
+                    response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+                    return response_data
+
+        except TimeoutError:
+            error_message = f"Request to reranking service timed out. Check if the service is running and reachable at '{self._service_endpoint}'."
+            logger.error(error_message)
+            raise TimeoutError(error_message)
+        except RequestException as e:
+            error_code = e.response.status_code if e.response else 'No response'
+            error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_endpoint}', status_code: {error_code}. Check if the service url is reachable."
+            logger.error(error_message)
+            raise RequestException(error_message)
+        except Exception as e:
+            logger.error(f"An error occurred while requesting to the reranking service: {e}")
+            raise Exception(f"An error occurred while requesting to the reranking service: {e}")
+
+    def _call_reranker(
         self,
         initial_query: str,
         retrieved_docs: List[str],
@@ -124,22 +174,24 @@ class OPEAReranker:
         Returns:
             RerankScoreResponse: The response from the reranker service.
         Raises:
-            requests.exceptions.RequestException: If failed to reach the service after the maximum number of attempts.
+            Timeout: If the request to the reranking service times out.
+            RequestException: If there is an issue with the request to the reranking service.
+            Exception: For any other exceptions that occur during the request.
         """
 
         data = {"query": initial_query, "texts": retrieved_docs}
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self._service_endpoint + "/rerank",
-                    data=json.dumps(data),
-                    headers={"Content-Type": "application/json"}
-                ) as response:
-                    response_data = await response.json()
-                    response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
-                    return response_data
-
+            response = requests.post(self._service_endpoint + "/rerank",
+                                     data=json.dumps(data),
+                                     headers={"Content-Type": "application/json"},
+                                     timeout=180)
+            response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
+            return response.json()
+        except Timeout:
+            error_message = f"Request to reranking service timed out. Check if the service is running and reachable at '{self._service_endpoint}'."
+            logger.error(error_message)
+            raise Timeout(error_message)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
             error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_endpoint}', status_code: {error_code}. Check if the service url is reachable."
@@ -148,7 +200,6 @@ class OPEAReranker:
         except Exception as e:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")
-
 
     def _filter_top_n(self, top_n: int, data: RerankScoreResponse) -> RerankScoreResponse:
         """

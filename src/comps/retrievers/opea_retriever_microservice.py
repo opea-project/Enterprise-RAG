@@ -45,7 +45,8 @@ def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
     start = time.time()
 
     vector = []
-    if isinstance(input, EmbedDocList): # only one doc is allowed
+    if isinstance(input, EmbedDocList):
+        logger.warning("Only one document is allowed for retrieval. Using the first document.")
         vector = input.docs[0] # EmbedDocList[0]
     else:
         vector = input # EmbedDoc
@@ -53,8 +54,19 @@ def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
     result_vectors = None
     try:
         result_vectors = retriever.retrieve(vector)
+    except ValueError as e:
+        logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
+        raise HTTPException(status_code=400,
+                            detail=f"A ValueError occured while validating the input in retriever: {str(e)}"
+        )
+    except NotImplementedError as e:
+        logger.exception(f"A NotImplementedError occured in retriever: {str(e)}")
+        raise HTTPException(status_code=501,
+                            detail=f"A NotImplementedError occured in retriever: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error while retrieving documents. {e}")
+        logger.exception(f"An Error occured while retrieving documents: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An Error while retrieving documents. {e}")
 
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
     return result_vectors

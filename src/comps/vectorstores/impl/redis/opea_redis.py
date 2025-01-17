@@ -28,8 +28,8 @@ class OPEARedis(Redis):
         key_prefix (Optional[str], optional): The prefix for the Redis keys. Defaults to None.
         **kwargs (Any): Additional keyword arguments.
     Methods:
-        similarity_search_with_relevance_scores(embedding: List[float], k: int, score_threshold: float) -> List[Document]:
-            Performs a similarity search with relevance scores using the given embedding.
+        _create_search_index_if_not_exists(index_name, field_name, prefix_name): Creates a search index if it does not already exist.
+        search_and_delete_documents(index_name, field_name, field_value, prefix_name): Searches for documents with the specified field value and deletes them.
         max_marginal_relevance_search(embedding: List[float], k: int = 4, fetch_k: int = 20, lambda_mult: float = 0.5,
                                       filter: Optional[RedisFilterExpression] = None, return_metadata: bool = True,
                                       distance_threshold: Optional[float] = None, **kwargs: Any) -> List[Document]:
@@ -73,7 +73,7 @@ class OPEARedis(Redis):
 
     def _create_search_index_if_not_exists(
         self,
-        index_name, 
+        index_name,
         field_name,
         prefix_name
     ):
@@ -109,23 +109,6 @@ class OPEARedis(Redis):
             search_results = self.client.ft(index_name).search(query)
 
         return num_deleted
-
-    def similarity_search_with_relevance_scores(
-        self,
-        embedding: List[float],
-        k: int,
-        score_threshold: float
-    ) -> List[Document]:
-        """
-        Performs a similarity search with relevance scores using the given embedding.
-        Args:
-            embedding (List[float]): The embedding to search for.
-            k (int): The number of results to return.
-            score_threshold (float): The threshold for relevance scores.
-        Returns:
-            List[Document]: The list of documents matching the search criteria.
-        """
-        raise NotImplementedError # via lanchain_core > vectorstores > base.py > similaryty_search_with_score
 
     # Default mmr search overriden to take embedding instead of query!
     def max_marginal_relevance_search(

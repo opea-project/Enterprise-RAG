@@ -7,7 +7,6 @@ import asyncio
 import os
 import yaml
 
-from fastapi import HTTPException
 from typing import Union
 
 from comps import get_opea_logger
@@ -48,7 +47,7 @@ class OPEAEmbedding:
             model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5'). 
                       Internally, only the short name (the last part after the final '/') will be used. For instance, 
                       'bge-large-en-v1.5' will be extracted from 'BAAI/bge-large-en-v1.5'.
-                      
+
             model_server (str): The URL of the model server.
             endpoint (str): The endpoint for the model server.
             connector (str): The name of the connector framework to be used.
@@ -89,7 +88,7 @@ class OPEAEmbedding:
         docs = []
         if isinstance(input, TextDoc):
             if input.text.strip() == "":
-                raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
+                raise ValueError("Input text is empty. Provide a valid input text.")
 
             embed_vector = await self.embed_query(input.text)
             res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
@@ -99,7 +98,7 @@ class OPEAEmbedding:
 
             docs_to_parse = [s for s in docs_to_parse if s.text.strip()]
             if len(docs_to_parse) == 0:
-                raise HTTPException(status_code=400, detail="Input text is empty. Provide a valid input text.")
+                raise ValueError("Input text is empty. Provide a valid input text.")
 
             # Multithreaded executor is needed to enabled batching in the model server
             async def multithreaded_embed_query(doc):
@@ -126,28 +125,28 @@ class OPEAEmbedding:
 
     def _import_langchain(self) -> None:
         try:
-            from comps.embeddings.utils.wrappers import wrapper_langchain
-            self.embed_query = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
-            self.embed_documents = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
-            self.validate_method = wrapper_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
+            from comps.embeddings.utils.connectors import connector_langchain
+            self.embed_query = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
+            self.embed_documents = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
+            self.validate_method = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
         except ModuleNotFoundError:
             logger.exception("langchain module not found. Ensure it is installed if you need its functionality.")
             raise
         except Exception as e:
-            logger.exception(f"An unexpected error occurred while initializing the wrapper_langchain module {e}")
+            logger.exception(f"An unexpected error occurred while initializing the connector_langchain module {e}")
             raise
 
     def _import_llamaindex(self) -> None:
         try:
-            from comps.embeddings.utils.wrappers import wrapper_llamaindex
-            self.embed_query = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
-            self.embed_documents = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
-            self.validate_method = wrapper_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
+            from comps.embeddings.utils.connectors import connector_llamaindex
+            self.embed_query = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
+            self.embed_documents = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
+            self.validate_method = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
         except ModuleNotFoundError:
             logger.exception("llama_index module not found. Ensure it is installed if you need its functionality.")
             raise
         except Exception as e:
-            logger.exception(f"An unexpected error occurred while initializing the wrapper_llamaindex module: {e}")
+            logger.exception(f"An unexpected error occurred while initializing the connector_llamaindex module: {e}")
             raise
 
     def _get_api_config(self) -> dict:

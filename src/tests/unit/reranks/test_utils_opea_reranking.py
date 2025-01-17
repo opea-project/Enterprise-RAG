@@ -220,20 +220,22 @@ async def test_run_raises_exception_on_empty_initial_query(test_class):
 @pytest.mark.asyncio(scope="module")
 @patch("comps.reranks.utils.opea_reranking.aiohttp.ClientSession.post")
 async def test_run_raises_exception_on_top_N_below_one(mock_post, test_class):
-    input_data = SearchedDoc(
-        initial_query="This is my sample query?",
-        retrieved_docs=[
-            TextDoc(text="Document 1"),
-            TextDoc(text="Document 2"),
-            TextDoc(text="Document 3"),
-        ],
-        top_n=0,
-    )
+    from pydantic import ValidationError
 
-    with pytest.raises(ValueError) as context:
+    with pytest.raises(ValidationError) as context:
+        input_data = SearchedDoc(
+            initial_query="This is my sample query?",
+            retrieved_docs=[
+                TextDoc(text="Document 1"),
+                TextDoc(text="Document 2"),
+                TextDoc(text="Document 3"),
+            ],
+            top_n=0,
+        )
+
         await test_class.run(input_data)
 
     # Invalid query shouldn't be sent to the reranking service, so `post` shouldn't be called."
     mock_post.assert_not_called()
 
-    assert str(context.value) == "Top N value must be greater than 0, but it is 0"
+    assert "Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]" in str(context.value)

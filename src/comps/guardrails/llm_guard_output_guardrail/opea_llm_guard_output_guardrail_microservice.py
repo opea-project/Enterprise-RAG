@@ -7,6 +7,7 @@ import os
 from dotenv import dotenv_values
 from fastapi import Request, HTTPException
 from fastapi.responses import Response, StreamingResponse
+from pydantic import ValidationError
 
 from comps import (
     GeneratedDoc,
@@ -58,12 +59,16 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
         StreamingResponse: The processed streaming response with sanitized LLM output.
 
     Raises:
-        Exception: If there is an error creating the GeneratedDoc or decoding the streaming 
+        Exception: If there is an error creating the GeneratedDoc or decoding the streaming
         response.
     """
     try:
         data = await llm_output.json()
         doc = GeneratedDoc(**data)
+    except ValidationError as e:
+        err_msg = f"ValidationError creating GeneratedDoc: {e.errors()}"
+        logger.error(err_msg)
+        raise HTTPException(status_code=422, detail=err_msg) from e
     except Exception as e:
         logger.error(f"Problem with creating GenerateDoc: {e}")
         raise HTTPException(status_code=500, detail=f"{e}") from e

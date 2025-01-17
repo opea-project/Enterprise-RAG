@@ -111,6 +111,25 @@ type ReadCloser struct {
 	*bytes.Reader
 }
 
+type ErrorResponse struct {
+	Detail string `json:"detail"`
+}
+
+type Detail struct {
+	Type  string   `json:"type"`
+	Loc   []string `json:"loc"`
+	Msg   string   `json:"msg"`
+	Input int      `json:"input"`
+	Ctx   struct {
+		Gt int `json:"gt"`
+	} `json:"ctx"`
+}
+
+type PydanticErrorResponse struct {
+	Detail []Detail    `json:"detail"`
+	Body   interface{} `json:"body"` // Use interface{} to ignore the nested structure of Body
+}
+
 var (
 	firstTokenLatencyMeasure metric.Float64Histogram
 	nextTokenLatencyMeasure  metric.Float64Histogram
@@ -821,7 +840,7 @@ func handleSequencePipeline(
 			stepSpan.RecordError(err)
 			stepSpan.SetStatus(codes.Error, err.Error())
 			stepSpan.End()
-			return nil, 500, err
+			return nil, statusCode, err
 		}
 
 		if step.StepName == "Fingerprint" && responseBody != nil {
@@ -843,14 +862,61 @@ func handleSequencePipeline(
 		*/
 		if step.Dependency == mcv1alpha3.Hard {
 			if !isSuccessFul(statusCode) {
+				if statusCode == 466 {
+					// Guardrails scanners error will be parsed later
+					return responseBody, statusCode, err
+				}
+				if responseBody != nil {
+					responseBytes, err = io.ReadAll(responseBody)
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "Error while reading the error message")
+						stepSpan.RecordError(err)
+						stepSpan.SetStatus(codes.Error, err.Error())
+						if debugRequestTraces {
+							stepSpan.SetAttributes(attribute.String("failed response", string(responseBytes[:])))
+						}
+						stepSpan.End()
+						return nil, 500, err
+					}
+					err = responseBody.Close()
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "Error while trying to close the error message in handleSequencePipeline")
+						return nil, 500, err
+					}
+				}
+
+				var errorDetail string
+				if statusCode == 422 {
+					var errorResponse PydanticErrorResponse
+					err := json.Unmarshal([]byte(responseBytes), &errorResponse)
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "Error while unmarshalling the error message")
+						return nil, 500, err
+					}
+					detailJSON, err := json.Marshal(errorResponse.Detail[0])
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "Error while marshalling the error message")
+						return nil, 500, err
+					}
+					errorDetail = "Pydantic error: " + string(detailJSON)
+				} else {
+					var errorResponse ErrorResponse
+					err = json.Unmarshal(responseBytes, &errorResponse)
+					if err != nil {
+						otlpr.WithContext(log, ctx).Error(err, "Error while unmarshalling the error message")
+						return nil, 500, err
+					}
+					errorDetail = errorResponse.Detail
+				}
+
 				// Stop the execution of sequence right away if step is a hard dependency and is unsuccessful
-				otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful. Stop pipeline execution.", "stepName", step.StepName, "statusCode", statusCode)
+				otlpr.WithContext(log, ctx).Info("This step is a hard dependency and it is unsuccessful. Stop pipeline execution.", "stepName", step.StepName, "statusCode", statusCode, "responseBytes", errorDetail)
 				// err is nil here, so we cannot record any details about this unsuccesful response without parsing the responseBody.
-				err := fmt.Errorf("This step (stepName=%s) is a hard dependency and it is unsuccessful with statusCode=%d. Stop pipeline execution.", step.StepName, statusCode)
+				err := fmt.Errorf("Error occured for step (stepName=%s) with statusCode=%d. Stopping pipeline execution. Error details: %s", step.StepName, statusCode, errorDetail)
 				stepSpan.RecordError(err)
 				stepSpan.SetStatus(codes.Error, err.Error())
 				stepSpan.End()
-				return responseBody, statusCode, nil
+				return responseBody, statusCode, err
 			}
 		}
 		stepSpan.End()

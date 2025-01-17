@@ -129,6 +129,8 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - mountPath: /home/user/.cache
+              name: user-cache
           livenessProbe:
             failureThreshold: 24
             httpGet:
@@ -158,4 +160,6 @@ spec:
               memory: 2Gi
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: user-cache
           emptyDir: {}

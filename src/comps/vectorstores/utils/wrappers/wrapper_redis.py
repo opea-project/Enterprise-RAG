@@ -3,6 +3,7 @@
 
 import os
 from comps.vectorstores.impl.redis.opea_redis import OPEARedis
+from comps.cores.utils.utils import sanitize_env
 from comps.vectorstores.utils.wrappers.wrapper import VectorStoreWrapper
 from comps.cores.utils.utils import get_boolean_env_var
 
@@ -28,7 +29,7 @@ class RedisVectorStore(VectorStoreWrapper):
         url = RedisVectorStore.format_url_from_env()
         self.batch_size = batch_size
         self.client = self._client(url, index_name)
-        
+
     def _client(self, url, index_name):
         return OPEARedis(url=url, index_name=index_name)
 
@@ -39,7 +40,7 @@ class RedisVectorStore(VectorStoreWrapper):
         Returns:
             str: The formatted Redis URL.
         """
-        redis_url = os.getenv("REDIS_URL", None)
+        redis_url = sanitize_env(os.getenv("REDIS_URL", None))
         if redis_url:
             return redis_url
         else:

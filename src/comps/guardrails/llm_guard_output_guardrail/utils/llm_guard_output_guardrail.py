@@ -86,9 +86,13 @@ class OPEALLMGuardOutputGuardrail:
             else:
                 logger.warning("No output scanners enabled. Skipping scanning.")
                 return output_doc.text
+        except HTTPException as e:
+            raise e
+        except ValueError as e:
+            error_msg = f"Validation Error occured while initializing LLM Guard Output Guardrail scanners: {e}"
+            logger.exception(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
         except Exception as e:
-            logger.exception(
-                f"An unexpected error occured during scanning LLM output with \
-                    LLM Guard output scanners: {e}"
-            )
-            raise
+            error_msg = f"An unexpected error occured during scanning prompt with LLM Guard Output Guardrail: {e}"
+            logger.exception(error_msg)
+            raise HTTPException(status_code=500, detail=error_msg)

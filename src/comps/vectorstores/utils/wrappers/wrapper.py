@@ -6,7 +6,7 @@ from abc import ABC
 from comps.cores.mega.logger import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc, TextDoc
 
-logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
 class VectorStoreWrapper(ABC):
     """
@@ -46,15 +46,15 @@ class VectorStoreWrapper(ABC):
         self.batch_size = batch_size
         self.client = None
 
-    def _check_embedding_index(self, input: EmbedDoc):
+    def _check_embedding_index(self, embedding: List):
         """
         Checks if the index exists in the vector store.
         Args:
-            input (EmbedDoc): The input document containing the embedding.
+            embedding (List): The embedding to check.
         """
         try:
             if self.client is not None:
-                self.client._create_index_if_not_exist(dim=len(input.embedding))
+                self.client._create_index_if_not_exist(dim=len(embedding))
         except Exception as e:
             logger.exception("Error occured while checking vector store index")
             raise e
@@ -93,11 +93,11 @@ class VectorStoreWrapper(ABC):
             logger.exception("Error occured while deleting documents.")
             raise e
 
-    def _parse_search_results(self, input: EmbedDoc, results: Iterable[any]) -> SearchedDoc:
+    def _parse_search_results(self, input_text: str, results: Iterable[any]) -> SearchedDoc:
         """
         Parses the search results and returns a `SearchedDoc` object.
         Args:
-            input (EmbedDoc): The input document used for the search.
+            input_text (str): The input document used for the search.
             results (Iterable[any]): The search results.
         Returns:
             SearchedDoc: The parsed search results as a `SearchedDoc` object.
@@ -105,68 +105,81 @@ class VectorStoreWrapper(ABC):
         searched_docs = []
         for r in results:
             searched_docs.append(TextDoc(text=r.page_content))
-        return SearchedDoc(retrieved_docs=searched_docs, initial_query=input.text)
+        return SearchedDoc(retrieved_docs=searched_docs, initial_query=input_text)
 
-    def similarity_search_by_vector(self, input: EmbedDoc) -> SearchedDoc:
+    def similarity_search_by_vector(self, input_text: str, embedding: List, k: int, distance_threshold: float=None) -> SearchedDoc:
         """
         Perform a similarity search by vector.
         Args:
-            input (EmbedDoc): The input document containing the vector to search for.
+            input_text (str): The input text to search for.
+            embedding (List): The embedding to search for.
+            k (int): The number of results to retrieve.
+            distance_threshold (float): The distance threshold for the search.
         Returns:
             SearchedDoc: The searched document containing the search results.
         """
 
-        self._check_embedding_index(input=input)
+        self._check_embedding_index(embedding)
         try:
             search_res = self.client.similarity_search_by_vector(
-                k=input.k,
-                embedding=input.embedding,
-                distance_threshold=input.distance_threshold
+                k=k,
+                embedding=embedding,
+                distance_threshold=distance_threshold
             )
-            return self._parse_search_results(input=input, results=search_res)
+            return self._parse_search_results(input_text=input_text, results=search_res)
         except Exception as e:
             logger.exception("Error occured while searching by vector")
             raise e
 
-    def similarity_search_with_relevance_scores(self, input: EmbedDoc) -> SearchedDoc:
+    def similarity_search_with_relevance_scores(self, input_text: str, embedding: List, k: int, score_threshold: float) -> SearchedDoc:
         """
         Perform a similarity search with relevance scores.
         Args:
-            input (EmbedDoc): The input document containing the vector to search for.
+            embedding (List): The embedding to search for.
+            k (int): The number of results to retrieve.
+            score_threshold (float): The distance threshold for the search.
         Returns:
             SearchedDoc: The searched document containing the search results.
         """
+        if score_threshold < 0 or score_threshold > 1:
+            raise ValueError(f"score_threshold must be between 0 and 1. Received: {score_threshold}")
 
-        self._check_embedding_index(input=input)
+        self._check_embedding_index(embedding)
         try:
-            search_res = self.client.similarity_search_with_relevance_scores(
-                k=input.k,
-                embedding=input.embedding,
-                score_threshold=input.score_threshold
+            # FIXME: redis.exceptions.ResponseError: Error parsing vector similarity query: query vector blob size (4096) does not match index's expected size (16)
+            docs_and_similarities = self.client.similarity_search_with_relevance_scores(
+                k=k,
+                query=input_text,
+                score_threshold=score_threshold
             )
-            return self._parse_search_results(input=input, results=search_res)
+            search_res = [doc for doc, _ in docs_and_similarities]
+            return self._parse_search_results(input_text=input_text, results=search_res)
         except Exception as e:
             logger.exception("Error occured while searching with relevance scores")
             raise e
 
-    def max_marginal_relevance_search(self, input: EmbedDoc) -> SearchedDoc:
+    def max_marginal_relevance_search(self, input_text: str, embedding: List, k: int, fetch_k: float, lambda_mult: float) -> SearchedDoc:
         """
         Perform a max marginal relevance search.
         Args:
-            input (EmbedDoc): The input document containing the vector to search for.
+            embedding (List): The embedding to search for.
+            k (int): The number of results to retrieve.
+            distance_threshold (float): The distance threshold for the search.
         Returns:
             SearchedDoc: The searched document containing the search results.
         """
+        if lambda_mult < 0 or lambda_mult > 1:
+            raise ValueError(f"lambda_mult must be between 0 and 1. Received: {lambda_mult}")
 
-        self._check_embedding_index(input=input)
+        self._check_embedding_index(embedding)
         try:
             search_res = self.client.max_marginal_relevance_search(
-                k=input.k,
-                embedding=input.embedding,
-                fetch_k=input.fetch_k,
-                lambda_mult=input.lambda_mult
+                k=k,
+                embedding=embedding,
+                fetch_k=fetch_k,
+                lambda_mult=lambda_mult
             )
-            return self._parse_search_results(input=input, results=search_res)
+            return self._parse_search_results(input_text=input_text, results=search_res)
         except Exception as e:
             logger.exception("Error occured while searching with max marginal relevance")
             raise e

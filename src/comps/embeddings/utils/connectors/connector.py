@@ -13,9 +13,9 @@ from comps import get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
-class EmbeddingWrapper(ABC):
+class EmbeddingConnector(ABC):
     """
-    Wrapper class for language chain embeddings.
+    Connector class for language chain embeddings.
 
     Args:
         model_name (str): The name of the model.

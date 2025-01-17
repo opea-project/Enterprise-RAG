@@ -48,8 +48,8 @@ opea_llm = OPEALlm(
     model_server_endpoint=sanitize_env(os.getenv('LLM_MODEL_SERVER_ENDPOINT')),
     connector_name=sanitize_env(os.getenv('LLM_CONNECTOR')),
     disable_streaming=(sanitize_env(os.getenv('LLM_DISABLE_STREAMING')) == "True"),
-    headers=headers,
     llm_output_guard_exists=(sanitize_env(os.getenv('LLM_OUTPUT_GUARD_EXISTS')) == "True"),
+    headers=headers,
 )
 
 # Register the microservice with the specified configuration.
@@ -81,19 +81,27 @@ def process(input: LLMParamsDoc) -> Response:
     try:
         # Pass the input to the 'run' method of the microservice instance
         res = opea_llm.run(input)
+    except ValueError as e:
+        error_message = f"A ValueError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
     except ReadTimeout as e:
-        error_message = f"An error occurred while processing: {str(e)}"
+        error_message = f"A Timeout error occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=408, detail=error_message)
     except ConnectionError as e:
-        error_message = f"An error occurred while processing: {str(e)}"
+        error_message = f"A Connection error occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=404, detail=error_message)
     except RequestException as e:
         error_code = e.response.status_code if e.response else 500
-        error_message = f"An error occurred while processing: {str(e)}"
+        error_message = f"A RequestException occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=error_code, detail=error_message)
+    except NotImplementedError as e:
+        error_message = f"A NotImplementedError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=501, detail=error_message)
     except Exception as e:
         error_message = f"An error occurred while processing: {str(e)}"
         logger.exception(error_message)

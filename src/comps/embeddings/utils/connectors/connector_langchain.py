@@ -9,7 +9,7 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from typing import List, Optional
 
 from comps import get_opea_logger
-from comps.embeddings.utils.wrappers.wrapper import EmbeddingWrapper
+from comps.embeddings.utils.connectors.connector import EmbeddingConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
@@ -125,9 +125,9 @@ SUPPORTED_INTEGRATIONS = {
     "ovms": OVMSEndpointEmbeddings,
 }
 
-class LangchainEmbedding(EmbeddingWrapper):
+class LangchainEmbedding(EmbeddingConnector):
     """
-    Wrapper class for language chain embeddings.
+    Connector class for language chain embeddings.
 
     Args:
         model_name (str): The name of the model.

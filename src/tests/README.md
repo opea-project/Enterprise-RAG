@@ -14,10 +14,11 @@ For Docker installation, refer to [link](https://docs.docker.com/engine/install/
 
 ### Unit tests
 
-Tests execution:
+Check `tox.ini` for possible environments of unit tests - each microservice has its own environment.
+Example Tests execution:
 ```
 cd src/
-tox -e unit
+tox -e embeddings_unit_tests
 ```
 
 
@@ -34,12 +35,12 @@ Apart from the terminal output, microservices tests results will be stored in `s
 * In order to change tests environment configuration edit `tox.ini` file.
 * You may pass additional parameters to pytest after `--`. Examples:
 ```
-# This will execute all unit tests with names starting from "test_langchain"
-tox -e unit -- -k test_langchain
+# This will execute all embedding unit tests with names starting from "test_langchain"
+tox -e embeddings_unit_tests -- -k test_langchain
 ```
-* Tox will install test requirements accordingly to `deps` parameter in `tox.ini`. When `tox` is launched, new `.tox` directory is created with the virtualenv containing the dependency packages. If there were no changes in the packages, tox will re-use the same virtualenv that was created before. In order to recreate the virtualenv, pass '-r' option:
+* Tox will install test requirements accordingly to `deps` parameter in `tox.ini`. When `tox` is launched, new `.tox` directory is created with the virtualenv containing the dependency packages. If there were no changes in the packages, tox will re-use the same virtualenv that was created before. In order to recreate the virtualenv, pass '-r' option, for example:
 ```
-tox -r -e unit
+tox -r -e embeddings_unit_tests
 ```
 * If you use a new python package in your tests, remember to add it to `requirements.txt` file in `tests/unit/` or `tests/microservices` directory
 

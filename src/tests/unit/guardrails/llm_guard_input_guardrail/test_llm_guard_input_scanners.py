@@ -40,10 +40,12 @@ def test_create_enabled_input_scanners(input_scanners_config_instance):
 @patch('comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_scanners.logger')
 def test_create_enabled_input_scanners_with_exception(mock_logger, input_scanners_config_instance):
     with patch('comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_scanners.InvisibleText', side_effect=Exception("Test Exception")):
-        scanners = input_scanners_config_instance.create_enabled_input_scanners()
-        assert len(scanners) == 1  # Only BanSubstrings should be created
-        assert isinstance(scanners[0], BanSubstrings)
-        mock_logger.exception.assert_called_once_with("An unexpected error occured during creating input scanner invisible_text: Test Exception")
+        with pytest.raises(Exception) as e:
+            input_scanners_config_instance.create_enabled_input_scanners()
+            assert "Some scanners failed to be created due to validation or unexpected errors. The details: {'invisible_text': 'An unexpected error occured during creating input scanner invisible_text: Test Exception'}" in e.value.detail
+        scanners = {k: v for k, v in input_scanners_config_instance._input_scanners_config.items() if v.get("enabled")}
+        assert len(scanners.keys()) == 1  # Only BanSubstrings should be created
+        assert list(scanners.keys())[0] == "ban_substrings"
 
 def test_validate_value(input_scanners_config_instance):
     assert input_scanners_config_instance._validate_value("true") is True

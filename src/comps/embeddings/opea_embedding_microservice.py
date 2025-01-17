@@ -73,15 +73,20 @@ async def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDo
         res = await opea_embedding.run(input)
 
     except ValueError as e:
-        logger.exception(f"An internal error occurred while processing: {str(e)}")
+        logger.exception(f"ValueError occured while validating the input: {str(e)}")
         raise HTTPException(status_code=400,
-                            detail=f"An internal error occurred while processing: {str(e)}"
+                            detail=f"ValueError occured while validating the input: {str(e)}"
         )
     except requests.exceptions.HTTPError as e:
         if hasattr(e.response, "status_code") and e.response.status_code == 413:
             raise HTTPException(status_code=413, detail=f"Input text is too long. Provide a valid input text. Error: {ast.literal_eval(e.response.text)['error']}")
         else:
             raise HTTPException(status_code=e.response.status_code, detail=ast.literal_eval(e.response.text)['error'])
+    except NotImplementedError as e:
+        logger.exception(f"NotImplementedError occured: {str(e)}")
+        raise HTTPException(status_code=501,
+                            detail=f"NotImplementedError occured: {str(e)}"
+        )
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
          raise HTTPException(status_code=500,

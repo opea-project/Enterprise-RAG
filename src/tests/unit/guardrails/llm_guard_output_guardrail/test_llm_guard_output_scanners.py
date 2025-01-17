@@ -29,10 +29,14 @@ def test_create_enabled_output_scanners(output_scanners_config_instance):
 @patch('comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_scanners.logger')
 def test_create_enabled_output_scanners_with_exception(mock_logger, output_scanners_config_instance):
     with patch('comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_scanners.JSON', side_effect=Exception("Test Exception")):
-        scanners = output_scanners_config_instance.create_enabled_output_scanners()
-        assert len(scanners) == 1  # Only BanSubstrings should be created
-        assert isinstance(scanners[0], BanSubstrings)
-        mock_logger.exception.assert_called_once_with("An unexpected error occured during creating output scanner json_scanner: Test Exception")
+        with pytest.raises(Exception) as e:
+            output_scanners_config_instance.create_enabled_output_scanners()
+
+            assert "Some scanners failed to be created due to validation or unexpected errors. The details: {'json_scanner': 'An unexpected error occured during creating output scanner json_scanner: Test Exception'}" in e.value.detail
+
+        scanners = {k: v for k, v in output_scanners_config_instance._output_scanners_config.items() if v.get("enabled")}
+        assert len(scanners.keys()) == 1  # Only BanSubstrings should be created
+        assert list(scanners.keys())[0] == "ban_substrings"
 
 def test_validate_value(output_scanners_config_instance):
     assert output_scanners_config_instance._validate_value("true") is True

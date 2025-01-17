@@ -10,7 +10,7 @@ Configuration is done by selecting the desired vector store type. In addition, t
 
 | Environment Variable    | Default Value     | Description                                                                                      |
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
-| `VECTOR_STORE`          | `redis`           | Vector Store database type  
+| `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
 
 ### Vector Store Support Matrix
 
@@ -30,7 +30,7 @@ Since this service is utilizing VectorStore code, you have to configure the unde
 
 To run this microservice, a vector database should be already running. To run one of the [supported vector](#vector-store-support-matrix) databases you can use sample docker-compose files [located here](../vectorstores/impl/).
 
-We offer 2 ways to run this microservice: 
+We offer 2 ways to run this microservice:
   - [via Python](#running-the-microservice-via-python-option-1)
   - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
 
@@ -67,12 +67,12 @@ docker build -t opea/retriever:latest -f comps/retrievers/impl/microservice/Dock
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command, such as the vector database configuration and database endpoint.
 
 ```bash
-docker run -d --name="retriever" --env-file comps/retrievers/impl/microservice/.env -p 6620:6620 opea/retriever:latest
+docker run -d --name=retriever --network=host --ipc=host --env-file comps/retrievers/impl/microservice/.env opea/retriever:latest
 ```
 
 ### Example input
 
-Retriever microservice as an input accepts a json. The input is required to have an already embedded text query along with query configuration type and parameters. 
+Retriever microservice as an input accepts a json. The input is required to have an already embedded text query along with query configuration type and parameters.
 
 #### Query parameters
 
@@ -99,9 +99,9 @@ Additional search parameters that can be added to the query to configure the sea
 An example request can look as follows:
 
 ```bash
-  curl http://localhost:6620/v1/retrieval \
+  curl -v http://localhost:6620/v1/retrieval \
     -X POST \
-    -d '{ "text": "What is Intel AVX-512?", "embeddings": [...], "search_type": "similarity" }' \
+    -d '{ "text": "What is Intel AVX-512?", "embedding": [0.024471128, 0.047724035, -0.02704641, 0.0013827643], "search_type": "similarity" }' \
     -H 'Content-Type: application/json'
 ```
 
@@ -110,7 +110,7 @@ Alternatively, you can pass multiple docs but this will limit the retrieval only
 ```bash
   curl http://localhost:6620/v1/retrieval \
     -X POST \
-    -d '{ docs: [ { "text": "What is Intel AVX-512?", "embeddings": [...], "search_type": "similarity" } ] }' \
+    -d '{ "docs": [ { "text": "What is Intel AVX-512?", "embedding": [0.024471128, 0.047724035, -0.02704641, 0.0013827643], "search_type": "similarity" } ] }' \
     -H 'Content-Type: application/json'
 ```
 
@@ -125,7 +125,6 @@ Alternatively, you can pass multiple docs but this will limit the retrieval only
 ```
 
 ## Additional Information
-   
 ### Project Structure
 
 The project is organized into several directories:

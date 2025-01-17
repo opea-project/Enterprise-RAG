@@ -4,9 +4,11 @@
 import os
 import time
 
+from asyncio import TimeoutError
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from langsmith import traceable
+from requests.exceptions import RequestException, Timeout
 
 
 from comps import (
@@ -73,10 +75,22 @@ async def process(input: SearchedDoc) -> PromptTemplateInput:
         # Pass the input to the 'run' method of the microservice instance
         res = await opea_reranker.run(input)
     except ValueError as e:
-        logger.exception(f"An internal error occurred while processing: {str(e)}")
-        raise HTTPException(status_code=400,
-                            detail=f"An internal error occurred while processing: {str(e)}"
-        )
+        error_message = f"A ValueError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
+    except TimeoutError as e:
+        error_message = f"A Timeout error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=408, detail=error_message)
+    except Timeout as e:
+        error_message = f"A Timeout error occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=408, detail=error_message)
+    except RequestException as e:
+        error_code = e.response.status_code if e.response else 503
+        error_message = f"A RequestException occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=error_code, detail=error_message)
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
          raise HTTPException(status_code=500,

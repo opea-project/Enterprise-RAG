@@ -7,7 +7,7 @@ import numpy as np
 from docarray import BaseDoc, DocList
 from docarray.documents import AudioDoc
 from docarray.typing import AudioUrl
-from pydantic import Field, conint, conlist
+from pydantic import Field, conint, conlist, PositiveInt, NonNegativeFloat
 
 class ComponentArgument(BaseDoc):
     name: str
@@ -42,11 +42,11 @@ class EmbedDoc(BaseDoc):
     text: str
     embedding: conlist(float, min_length=0)
     search_type: str = "similarity"
-    k: int = 4
+    k: PositiveInt = 4
     distance_threshold: Optional[float] = None
-    fetch_k: int = 20
-    lambda_mult: float = 0.5
-    score_threshold: float = 0.2
+    fetch_k: PositiveInt = 20
+    lambda_mult: NonNegativeFloat = 0.5
+    score_threshold: NonNegativeFloat = 0.2
     metadata: Optional[dict] = {}
 
 class EmbedDocList(BaseDoc):
@@ -78,7 +78,7 @@ class DataPrepInput(BaseDoc):
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
     initial_query: str
-    top_n: int = 1
+    top_n: PositiveInt = 1
 
     class Config:
         json_encoders = {np.ndarray: lambda x: x.tolist()}
@@ -310,12 +310,12 @@ class LLMGuardOutputGuardrailParams(BaseDoc):
 class LLMParamsDoc(BaseDoc):
     model: Optional[str] = None  # for openai and ollama
     query: str
-    max_new_tokens: int = 1024
-    top_k: int = 10
-    top_p: float = 0.95
-    typical_p: float = 0.95
-    temperature: float = 0.01
-    repetition_penalty: float = 1.03
+    max_new_tokens: PositiveInt = 1024
+    top_k: PositiveInt = 10
+    top_p: NonNegativeFloat = 0.95
+    typical_p: NonNegativeFloat = 0.95
+    temperature: NonNegativeFloat = 0.01
+    repetition_penalty: NonNegativeFloat = 1.03
     streaming: bool = True
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
@@ -327,12 +327,12 @@ class GeneratedDoc(BaseDoc):
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
 
 class LLMParams(BaseDoc):
-    max_new_tokens: int = 1024
-    top_k: int = 10
-    top_p: float = 0.95
-    typical_p: float = 0.95
-    temperature: float = 0.01
-    repetition_penalty: float = 1.03
+    max_new_tokens: PositiveInt = 1024
+    top_k: PositiveInt = 10
+    top_p: NonNegativeFloat = 0.95
+    typical_p: NonNegativeFloat = 0.95
+    temperature: NonNegativeFloat = 0.01
+    repetition_penalty: NonNegativeFloat = 1.03
     streaming: bool = True
 
 

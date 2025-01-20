@@ -34,7 +34,7 @@ mongodb:
         - port: 15008
   persistence:
     enabled: true
-    size: 10Gi
+    size: 4Gi
 
 proxy:
   httpProxy: ""
@@ -46,8 +46,8 @@ resources:
     memory: "64Mi"
     cpu: "250m"
   limits:
-    memory: "128Mi"
-    cpu: "500m"
+    memory: "512Mi"
+    cpu: 1
 
 nodeSelector: {}
 tolerations: []

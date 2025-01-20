@@ -90,7 +90,9 @@ class OPEAEmbedding:
             if input.text.strip() == "":
                 raise ValueError("Input text is empty. Provide a valid input text.")
 
-            embed_vector = await self.embed_query(input.text)
+            embed_vector = await self.embed_documents([input.text])
+            if len(embed_vector) == 1 and isinstance(embed_vector[0], list):
+                embed_vector = embed_vector[0]
             res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
             return res # return EmbedDoc
         else:

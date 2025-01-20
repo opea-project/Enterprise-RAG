@@ -1,0 +1,69 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-postgresql
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-redis-master
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-backend
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-backend
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-minio
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-minio
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-minio
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/ingress-nginx/sa/ingress-nginx

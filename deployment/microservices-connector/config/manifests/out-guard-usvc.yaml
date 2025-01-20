@@ -39,6 +39,14 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: out-guard-usvc
+    app.kubernetes.io/instance: out-guard-usvc
+  name: out-guard-usvc
+---
 # Source: out-guard-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -62,6 +70,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
+      serviceAccountName: out-guard-usvc
       containers:
         - name: out-guard-usvc
           envFrom:

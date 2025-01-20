@@ -32,6 +32,14 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: ingestion-usvc
+    app.kubernetes.io/instance: ingestion-usvc
+  name: ingestion-usvc
+---
 # Source: retriever-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -54,6 +62,7 @@ spec:
     spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: ingestion-usvc
       initContainers:
         - name: wait-for-redis
           image: redis:alpine

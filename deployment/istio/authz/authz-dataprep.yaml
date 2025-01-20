@@ -1,0 +1,109 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-router
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: router-service
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/dataprep/sa/client-test
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-torchserve-embedding-svc
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: torchserve
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/dataprep/sa/embedding-usvc
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-tei-embedding-svc
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tei
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/dataprep/sa/embedding-usvc
+---
+# dataprep-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-dataprep-svc
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dataprep-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/dataprep/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/edp/sa/edp-chart
+---
+# embedding-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-embedding-svc
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embedding-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/dataprep/sa/default
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# ingestion-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: dataprep-ingestion-svc
+  namespace: dataprep
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingestion-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/dataprep/sa/default
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus

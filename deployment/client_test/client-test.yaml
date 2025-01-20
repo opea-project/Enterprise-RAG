@@ -1,0 +1,30 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: client-test
+  name: client-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-test
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: client-test
+    spec:
+      serviceAccountName: client-test
+      containers:
+      - image: curlimages/curl
+        name: curl
+        command: ["sleep", "infinity"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: client-test

@@ -19,6 +19,7 @@ api_gateway_crd_path="$repo_path/deployment/auth/apisix-routes"
 ingress_path="$repo_path/deployment/auth/ingress"
 configs_path="$repo_path/deployment/auth/configs"
 edp_path="$repo_path/deployment/edp/helm"
+istio_path="$repo_path/deployment/istio"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -35,6 +36,7 @@ UI_NS=rag-ui
 AUTH_NS=auth
 INGRESS_NS=ingress-nginx
 GMC_NS=system
+ISTIO_NS="istio-system"
 
 AUTH_HELM="oci://registry-1.docker.io/bitnamicharts/keycloak"
 INGRESS_HELM="ingress-nginx/ingress-nginx"
@@ -57,6 +59,7 @@ PIPELINE=""
 REGISTRY="localhost:5000"
 TAG="latest"
 HELM_TIMEOUT="10m"
+ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
 
 available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
@@ -68,6 +71,8 @@ function usage() {
     echo -e "\t--grafana_password (OPTIONAL,defaults:random or from default_credentials.txt): Initial password for grafana."
     echo -e "\t--keycloak_admin_password (OPTIONAL,default:random or from default_credentials.txt): Initial password for keycloak admin."
     echo -e "\t--auth: Start auth services."
+    echo -e "\t--mesh: Deploy service mesh installation for enhanced (default: true during pipeline deployment)"
+    echo -e "\t--no-mesh: Don't deploy service mesh, not event during pipeline installation"
     echo -e "\t--kind: Changes dns value for telemetry(kind is kube-dns based)."
     echo -e "\t--deploy <PIPELINE_NAME>: Start the deployment process."
     echo -e "\tPipelines available: $available_pipelines"
@@ -81,6 +86,7 @@ function usage() {
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ch|--clear-auth: Clear auth services."
+    echo -e "\t-cm|--clear-mesh: Clear mesh deployment."
     echo -e "\t-ct|--clear-telemetry: Clear telemetry services."
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
@@ -143,6 +149,16 @@ function check_pods() {
     fi
 }
 
+check_istio() {
+    local istio_ns="$1"
+    local label="$2"
+    if kubectl get pods -n "$istio_ns" -l $label -o custom-columns="NAME:.metadata.name,READY:.status.conditions[?(@.type=='Ready')].status" | grep "False" &> /dev/null; then
+        return 1
+    else
+        return 0
+    fi
+}
+
 # waits until a provided condition function returns true
 function wait_for_condition() {
     sleep 5 # safety measures for helm to initialize pod deployments
@@ -198,6 +214,11 @@ function kill_process() {
             kill -2 "$pid"
         fi
     fi
+}
+
+function configure_ns_mesh() {
+    ns=$1
+    kubectl label namespace $ns istio.io/dataplane-mode=ambient --overwrite
 }
 
 function create_certs() {
@@ -283,7 +304,45 @@ function create_secret() {
     fi
 }
 
-# deploys GMConnector, fingerprint and chatqna pipeline
+function start_mesh() {
+    # https://istio.io/latest/docs/ambient/install/helm/#base-components
+    # Please note following instruction may be needed for multi node kind
+    # https://medium.com/@SabujJanaCodes/touring-the-kubernetes-istio-ambient-mesh-part-1-setup-ztunnel-c80336fcfb2d
+    # Install Istio
+    print_log "installing Istio"
+    helm repo add istio https://istio-release.storage.googleapis.com/charts
+    helm repo update
+    kubectl get namespace $ISTIO_NS > /dev/null 2>&1 || kubectl create namespace $ISTIO_NS
+
+    # 1) base: crds
+    helm_install $ISTIO_NS istio-base istio/base "--set defaultRevision=default --version $ISTIO_VERSION"
+    # 2) control plane: istiod
+    helm_install $ISTIO_NS istiod istio/istiod "--wait --version $ISTIO_VERSION --set profile=ambient"
+    print_log "waiting until istiod ready" ; wait_for_condition check_pods "$ISTIO_NS"
+
+    # 3) control-plane: CNI
+    helm_install $ISTIO_NS istio-cni istio/cni "--set profile=ambient"
+    # Fix for https://github.com/istio/istio/issues/53849
+    kubectl patch -n $ISTIO_NS ds/istio-cni-node --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/securityContext/capabilities/add/-", "value": "DAC_OVERRIDE"}]'
+    print_log "waiting until istio-cni ready" ; wait_for_condition check_istio "$ISTIO_NS" "app.kubernetes.io/instance=istio-cni"
+
+    # 4) data-plane: ztunnel
+    helm_install $ISTIO_NS ztunnel istio/ztunnel "--wait"
+
+    print_log "waiting until pods in $ISTIO_NS are ready"
+    wait_for_condition check_pods "$ISTIO_NS"
+}
+
+function clear_mesh() {
+    print_log "Clear mesh"
+    helm status -n $ISTIO_NS ztunnel > /dev/null 2>&1 && helm uninstall ztunnel -n $ISTIO_NS
+    helm status -n $ISTIO_NS istio-cni > /dev/null 2>&1 && helm uninstall istio-cni -n $ISTIO_NS
+    helm status -n $ISTIO_NS istiod > /dev/null 2>&1 && helm uninstall istiod -n $ISTIO_NS
+    helm status -n $ISTIO_NS istio-base > /dev/null 2>&1 && helm uninstall istio-base -n $ISTIO_NS
+    kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
+}
+
+# deploys GMConnector, chatqna pipeline and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
 
@@ -345,10 +404,8 @@ function start_telemetry() {
     GRAFANA_PASSWORD=${NEW_PASSWORD}
 
     ### Base variables
-    # !TODO this is hacky stuff - especially using env variables @ GRAFANA_PROXY
     # shellcheck disable=SC2154
     HELM_INSTALL_TELEMETRY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set kube-prometheus-stack.grafana.env.http_proxy=$http_proxy --set kube-prometheus-stack.grafana.env.https_proxy=$https_proxy --set kube-prometheus-stack.grafana.env.no_proxy=127.0.0.1\,localhost\,monitoring\,monitoring-traces --set kube-prometheus-stack.grafana.adminPassword=$GRAFANA_PASSWORD"
-    #HELM_INSTALL_TELEMETRY_EXTRA_ARGS
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
@@ -357,14 +414,12 @@ function start_telemetry() {
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT --set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
-    #HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS
     echo "*** Telemetry 'logs' variables:"
     echo "HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_LOGS_EXTRA_ARGS"
-    
+
     ### Traces variables
     HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT $TEMPO_DNS_FLAG"
-    #HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS
     echo "*** Telemetry 'traces' variables:"
     echo "HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_TRACES_EXTRA_ARGS"
@@ -376,6 +431,7 @@ function start_telemetry() {
     # add repo if needed
     if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi # for prometheus/k8s/prometheus operator
     if ! helm repo list | grep -q 'grafana' ; then helm repo add grafana https://grafana.github.io/helm-charts ; fi # for grafana/loki/tempo
+    if ! helm repo list | grep -q 'opensearch' ; then helm repo add opensearch https://opensearch-project.github.io/helm-charts/ ; fi # opensearch
     if ! helm repo list | grep -q 'open-telemetry' ; then helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts ; fi # opentelemetry collector/opentelemetry operator
 
     helm repo update  > /dev/null
@@ -431,6 +487,8 @@ function start_authentication() {
 
     print_header "Start authentication"
 
+    kubectl get namespace $AUTH_NS > /dev/null 2>&1 || kubectl create namespace $AUTH_NS
+
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
@@ -440,6 +498,7 @@ function start_authentication() {
 
     print_log "waiting until pods in $AUTH_NS are ready"
     wait_for_condition check_pods "$AUTH_NS"
+
 
     start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
     PID=$!
@@ -473,10 +532,19 @@ function clear_authentication() {
     kubectl get secret tls-secret -n $AUTH_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $AUTH_NS
 
     helm status -n "$AUTH_NS" keycloak > /dev/null 2>&1 && helm -n "$AUTH_NS" uninstall keycloak
+
+    if kubectl get pvc -n "$AUTH_NS" data-keycloak-postgresql-0 > /dev/null 2>&1; then
+        print_log "waiting until keycloak pods are terminated."
+        wait_for_condition check_pods "$AUTH_NS"
+    fi
+
+    kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
 }
 
 function start_ingress() {
     print_header "Start ingress"
+
+    kubectl get namespace $INGRESS_NS > /dev/null 2>&1 || kubectl create namespace $INGRESS_NS
 
     # Install ingress
     if ! helm repo list | grep -q 'ingress-nginx' ; then helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx ; fi
@@ -502,6 +570,8 @@ function start_gateway() {
     kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create ns $FINGERPRINT_NS
     kubectl get ns $UI_NS > /dev/null 2>&1 || kubectl create ns $UI_NS
 
+    kubectl get namespace $GATEWAY_NS > /dev/null 2>&1 || kubectl create namespace $GATEWAY_NS
+
     helm dependency update "$api_gateway_path" > /dev/null
     helm_install "$GATEWAY_NS" auth-apisix "$api_gateway_path" "$HELM_INSTALL_GATEWAY_DEFAULT_ARGS"
 
@@ -523,6 +593,8 @@ function clear_gateway() {
 
     helm status -n "$GATEWAY_NS" auth-apisix-crds > /dev/null 2>&1 &&  helm uninstall auth-apisix-crds -n "$GATEWAY_NS"
     helm status -n "$GATEWAY_NS" auth-apisix > /dev/null 2>&1 &&  helm uninstall auth-apisix -n "$GATEWAY_NS"
+
+    kubectl get ns $GATEWAY_NS > /dev/null 2>&1 && kubectl delete ns $GATEWAY_NS
 }
 
 function start_ui() {
@@ -575,7 +647,7 @@ function start_edp() {
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
-    
+
     local minio_access_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 10)
     local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 16)
 
@@ -621,14 +693,20 @@ function clear_all_ns() {
     kubectl get ns $INGRESS_NS > /dev/null 2>&1 && kubectl delete ns $INGRESS_NS
     kubectl get ns $AUTH_NS > /dev/null 2>&1 && kubectl delete ns $AUTH_NS
     kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 && kubectl delete ns $FINGERPRINT_NS
+    kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
 }
 
 # Initialize flags
+# if true then any service is about to get created
 create_flag=false
 deploy_flag=false
 test_flag=false
 telemetry_flag=false
 ui_flag=false
+# mesh installation is undecided, unless deploy is given or mesh explicitly requested
+default_mesh_flag=true
+mesh_flag=""
+mesh_installed=false
 auth_flag=false
 helm_upgrade=false
 edp_flag=true
@@ -637,6 +715,7 @@ clear_deployment_flag=false
 clear_fingerprint_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
+clear_mesh_flag=false
 clear_all_flag=false
 clear_auth_flag=false
 clear_edp_flag=false
@@ -710,6 +789,13 @@ while [[ "$#" -gt 0 ]]; do
         --no-edp)
             edp_flag=false
             ;;
+        --no-mesh)
+            mesh_flag=false
+            ;;
+        --mesh)
+            # explicitly request mesh, even outside deployment
+            mesh_flag=true
+            ;;
         --upgrade)
             helm_upgrade=true
             ;;
@@ -750,6 +836,11 @@ while [[ "$#" -gt 0 ]]; do
             clear_fingerprint_flag=true
             clear_any_flag=true
             ;;
+        -cm|--clear-mesh)
+            clear_mesh_flag=true
+            mesh_flag=false
+            clear_any_flag=true
+            ;;
         -ca|--clear-all)
             clear_all_flag=true
             clear_any_flag=true
@@ -766,6 +857,28 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+# additional logic for-default settings
+# - if mesh not given explicitly:
+#   - mesh is by default (true) for deployment
+#   - otherwise it is auto-detected,
+#     and will be installed if new services are started
+# - if given alone:
+#   - will be installed
+if [ -z $mesh_flag ]; then
+    if $deploy_flag; then
+        mesh_flag=$default_mesh_flag
+    elif $create_flag; then
+        # auto-detect istio
+        if helm status -n $ISTIO_NS istio-base > /dev/null 2>&1; then
+            echo "Mesh detected and enabled for new services"
+            mesh_installed=true
+            mesh_flag=true
+        else
+            mesh_flag=false
+        fi
+    fi
+fi
 
 # Additional validation for required parameters
 if [[ "$telemetry_flag" == "true" ]]; then
@@ -787,34 +900,78 @@ if $create_flag; then
     create_certs
 fi
 
+if $mesh_flag && $create_flag; then
+    if ! $mesh_installed || $helm_upgrade; then
+        start_mesh
+    fi
+fi
+
+updated_ns_list=()
+
 if $auth_flag; then
     start_authentication
     start_gateway
+    updated_ns_list+=($AUTH_NS $GATEWAY_NS)
 fi
 
 if $deploy_flag; then
     start_deployment "$PIPELINE"
+    updated_ns_list+=($GMC_NS $DEPLOYMENT_NS $DATAPREP_NS $FINGERPRINT_NS)
 fi
 
 if $telemetry_flag; then
     start_telemetry
+    updated_ns_list+=($TELEMETRY_NS $TELEMETRY_TRACES_NS)
 fi
 
 if $auth_flag; then
     start_ingress
+    updated_ns_list+=($INGRESS_NS)
 fi
 
 if $ui_flag; then
     start_ui
+    updated_ns_list+=($UI_NS)
 fi
 
 if $edp_flag && ! $clear_any_flag; then
     start_edp "$PIPELINE"
+    updated_ns_list+=($ENHANCED_DATAPREP_NS)
+fi
+
+if $mesh_flag && $create_flag; then
+    # introduce namespace into mesh
+    for ns in "${updated_ns_list[@]}"; do
+        configure_ns_mesh $ns
+    done
+    # configure mTLS strict mode for namespace
+    for ns in "${updated_ns_list[@]}"; do
+        if [ $ns == $INGRESS_NS ]; then
+            # ingress needs dedicated configuration
+            kubectl apply -n $INGRESS_NS -f $istio_path/mTLS-strict-ingress-nginx.yaml
+        else
+            kubectl apply -n $ns -f $istio_path/mTLS-strict.yaml
+        fi
+    done
+
+    # apply authorization policies
+    authz_policies=""
+    for ns in "${updated_ns_list[@]}"; do
+        authz_file=$(printf "$istio_path/authz/authz-%s.yaml" "$ns")
+        if [ -f $authz_file ]; then
+            authz_policies="${authz_policies}${authz_policies:+ }${authz_file}"
+        fi
+    done
+    kubectl apply $(printf " -f %s" $authz_policies)
 fi
 
 if $test_flag; then
     print_header "Test connection"
-    bash test_connection.sh
+    test_args=""
+    if $mesh_flag; then
+        test_args="--mesh --istio-path $istio_path"
+    fi
+    bash test_connection.sh $test_args
 fi
 
 if $clear_auth_flag; then
@@ -835,6 +992,10 @@ if $clear_edp_flag; then
     clear_edp
 fi
 
+if $clear_mesh_flag; then
+    clear_mesh
+fi
+
 if $clear_telemetry_flag; then
     clear_telemetry
 fi
@@ -844,6 +1005,9 @@ if $clear_fingerprint_flag; then
 fi
 
 if $clear_all_flag; then
+    # disable strict mode and authorization policies first to avoid cleanup lock-up
+    kubectl delete --ignore-not-found $(printf " -f %s" $(ls $istio_path/authz/authz-*))
+    kubectl get peerauthentication -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' | xargs -ti kubectl delete --ignore-not-found peerauthentication default -n '{}'
     clear_deployment
     clear_fingerprint
     clear_edp
@@ -851,7 +1015,9 @@ if $clear_all_flag; then
     clear_ui
     clear_telemetry
     clear_ingress
+    clear_fingerprint
     clear_gateway
+    clear_mesh
     clear_all_ns
     rm -f default_credentials.txt
     rm -f tls.crt tls.key

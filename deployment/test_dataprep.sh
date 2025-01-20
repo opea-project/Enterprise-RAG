@@ -23,7 +23,7 @@ accessUrl=""
 POD_EXISTS=$(kubectl get pod -n $NAMESPACE -l app=client-test -o jsonpath={.items..metadata.name})
 
 if [ -z "$POD_EXISTS" ]; then
-    kubectl create deployment client-test -n $NAMESPACE --image=curlimages/curl -- sleep infinity
+    kubectl apply -f client_test/client-test.yaml -n $NAMESPACE
 fi
 
 kubectl wait --for=condition=available --timeout=300s deployment/client-test -n $NAMESPACE

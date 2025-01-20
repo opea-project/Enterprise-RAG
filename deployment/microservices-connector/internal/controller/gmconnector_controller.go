@@ -66,6 +66,7 @@ const (
 	yaml_dir                 = "/tmp/microservices/yamls/"
 	Service                  = "Service"
 	Deployment               = "Deployment"
+	ServiceAccount           = "ServiceAccount"
 	dplymtSubfix             = "-deployment"
 	METADATA_PLATFORM        = "gmc/platform"
 	DefaultRouterServiceName = "router-service"
@@ -208,6 +209,18 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 			err = scheme.Scheme.Convert(service_obj, obj, nil)
 			if err != nil {
 				_log.Error(err, "Failed to convert service to object", "name", svc)
+				return nil, err
+			}
+		} else if obj.GetKind() == ServiceAccount {
+			svc_account_obj := &corev1.ServiceAccount{}
+			err = scheme.Scheme.Convert(obj, svc_account_obj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert unstructured to service account", "name", svc)
+				return nil, err
+			}
+			err = scheme.Scheme.Convert(svc_account_obj, obj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert service account to object", "name", svc)
 				return nil, err
 			}
 		} else if obj.GetKind() == Deployment {

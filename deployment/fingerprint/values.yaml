@@ -28,6 +28,10 @@ mongodb:
     enabled: true
   service:
     port: 27017
+  networkPolicy:
+    extraIngress:
+      - ports:
+        - port: 15008
   persistence:
     enabled: true
     size: 10Gi

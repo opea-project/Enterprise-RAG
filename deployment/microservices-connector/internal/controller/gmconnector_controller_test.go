@@ -223,6 +223,11 @@ var _ = Describe("GMConnector Controller", func() {
 			}, &appsv1.Deployment{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "embedding-usvc",
+				Namespace: "default",
+			}, &corev1.ServiceAccount{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "embedding-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).To(Succeed())
@@ -263,6 +268,11 @@ var _ = Describe("GMConnector Controller", func() {
 			}, &appsv1.Deployment{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "retriever-usvc",
+				Namespace: "default",
+			}, &corev1.ServiceAccount{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "retriever-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).To(Succeed())
@@ -276,6 +286,11 @@ var _ = Describe("GMConnector Controller", func() {
 				Name:      "rerank-service-deployment",
 				Namespace: "default",
 			}, &appsv1.Deployment{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "reranking-usvc",
+				Namespace: "default",
+			}, &corev1.ServiceAccount{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "reranking-usvc-config",
@@ -328,6 +343,11 @@ var _ = Describe("GMConnector Controller", func() {
 			}, &appsv1.Deployment{})).To(Succeed())
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      "llm-usvc",
+				Namespace: "default",
+			}, &corev1.ServiceAccount{})).To(Succeed())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
 				Name:      "llm-usvc-config",
 				Namespace: "default",
 			}, &corev1.ConfigMap{})).To(Succeed())
@@ -345,7 +365,7 @@ var _ = Describe("GMConnector Controller", func() {
 			pipeline := &mcv1alpha3.GMConnector{}
 			Expect(k8sClient.Get(ctx, typeNamespacedName, pipeline)).To(Succeed())
 			Expect(pipeline.Status.Status).To(Equal("0/0/10"))
-			Expect(len(pipeline.Status.Annotations)).To(Equal(28))
+			Expect(len(pipeline.Status.Annotations)).To(Equal(32))
 
 		})
 

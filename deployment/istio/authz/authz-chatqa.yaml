@@ -1,0 +1,279 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-router
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: router-service
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/chatqa/sa/client-test
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-redis-vector-db
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis-vector-db
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/retriever-usvc
+        - cluster.local/ns/dataprep/sa/ingestion-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-prometheus-redis-exporter
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-torchserve-embedding-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: torchserve
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/embedding-usvc
+        - cluster.local/ns/dataprep/sa/embedding-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-tei-embedding-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tei
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/embedding-usvc
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-tei-reranking-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: teirerank
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/reranking-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-vllm-service-m
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/llm-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-vllm-service-gaudi
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm-gaudi
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/llm-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-tgi-service
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tgi
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/llm-usvc
+---
+# embedding-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-embedding-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: embedding-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# fgp-usvc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-fgp-usvc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fgp-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+---
+# reranking-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-reranking-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: reranking-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# prompt-tmpl-usvc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-prompt-tmpl-usvc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prompt-tmpl-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+---
+# retriever-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-retriever-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: retriever-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# llm-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-llm-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llm-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# in-guard-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-in-guard-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: in-guard-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+---
+# out-guard-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-out-guard-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: out-guard-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default

@@ -38,6 +38,14 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: dataprep-usvc
+    app.kubernetes.io/instance: dataprep-usvc
+  name: dataprep-usvc
+---
 # Source: dataprep-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -61,6 +69,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
+      serviceAccountName: dataprep-usvc
       containers:
         - name: dataprep-usvc
           envFrom:

@@ -23,6 +23,10 @@ minio:
     size: 10Gi
   metrics:
     enabled: true
+  networkPolicy:
+    extraIngress:
+      - ports:
+        - port: 15008
   ingress:
     enabled: true
     ingressClassName: "nginx"
@@ -98,6 +102,10 @@ minio:
         - mc event add --event "put,delete" provisioning/default arn:minio:sqs::EDP:webhook
 
 redis:
+  networkPolicy:
+    extraIngress:
+      - ports:
+        - port: 15008
   replica:
     replicaCount: 0
   auth:
@@ -117,6 +125,10 @@ postgresql:
       userPasswordKey: "DATABASE_PASSWORD"
       adminPasswordKey: "DATABASE_ADMIN_PASSWORD"
   primary:
+    networkPolicy:
+      extraIngress:
+        - ports:
+          - port: 15008
     persistence:
       enabled: true
       size: 10Gi

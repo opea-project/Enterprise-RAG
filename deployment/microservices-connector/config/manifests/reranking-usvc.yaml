@@ -36,6 +36,14 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: reranking-usvc
+    app.kubernetes.io/instance: reranking-usvc
+  name: reranking-usvc
+---
 # Source: reranking-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -58,6 +66,7 @@ spec:
     spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: reranking-usvc
       initContainers:
         - name: wait-for-svc
           image: alpine/curl

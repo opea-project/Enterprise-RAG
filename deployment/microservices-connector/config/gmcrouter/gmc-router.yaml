@@ -14,10 +14,14 @@ spec:
   selector:
     matchLabels:
       app: router-service
+      app.kubernetes.io/name: router-service
+      app.kubernetes.io/version: "v0.8"
   template:
     metadata:
       labels:
         app: router-service
+        app.kubernetes.io/name: router-service
+        app.kubernetes.io/version: "v0.8"
     spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -80,6 +84,8 @@ spec:
   type: ClusterIP
   selector:
     app: router-service
+    app.kubernetes.io/name: router-service
+    app.kubernetes.io/version: "v0.8"
   ports:
     - protocol: TCP
       port: 8080

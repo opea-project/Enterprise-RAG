@@ -4,6 +4,8 @@ namespace: auth-apisix
 # APISIX Helm chart configs
 apisix:
   enabled: true
+  serviceAccount:
+    create: true
   ingress-controller:
     enabled: true
     config:

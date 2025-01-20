@@ -39,6 +39,14 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: fgp-usvc
+    app.kubernetes.io/instance: fgp-usvc
+  name: fgp-usvc
+---
 # Source: fgp-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -62,6 +70,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
+      serviceAccountName: fgp-usvc
       initContainers:
         - name: wait-for-mongo
           image: docker.io/bitnami/mongodb:8.0.4-debian-12-r0

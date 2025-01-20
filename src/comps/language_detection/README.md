@@ -1,7 +1,16 @@
 # Language Detection microservice
 
-The Language Detection microservice detects the language of the user's query as well as the response from the first llm microservice. It then configures a translation prompt to convert the answer from the response language to the query language. This prompt is sent to the second llm microservice to generate the final answer. This ensures seamless, accurate communication across different languages in real time.
+The Language Detection microservice makes sure that the response of the pipeline is in the same language as that of the query to gurantee seamless, accurate communication across different languages in real time.
 
+# Design Proposal
+
+![Multilingual support microservice](../language_detection/impl/microservice/multilingual-support-diagram.png)
+
+The Language Detection microservice performs the following actions -
+1. It receives the original query as well as the response returned by LLM-1.
+2. It detects the language of the user's query (L1) and of the answer from the first llm microservice (L2).
+3. It then configures a translation prompt to convert the answer from the response language (L2) to the query language (L1).
+4.  This prompt is sent to the second llm microservice (LLM-2) to generate the final answer in language of the user's query (L1).
 
 ## Configuration Options
 

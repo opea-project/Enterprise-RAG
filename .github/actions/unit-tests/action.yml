@@ -1,0 +1,24 @@
+name: "Unit tests"
+
+inputs:
+  test-name:
+    description: 'Unit test name'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Trigger unit tests
+      run: |
+        echo "Attempting to run unit tests"
+        cd repo/src
+        sudo tox -e ${{ inputs.test-name }}
+        exit_code=$?
+        echo "Unit tests finished"
+        exit $exit_code
+      shell: bash
+    - name: Clean up virtualenv
+      run: |
+        cd repo/src
+        sudo rm -rf .tox/${{ inputs.test-name }}
+      shell: bash

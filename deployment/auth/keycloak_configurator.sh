@@ -222,6 +222,24 @@ function create_realm() {
     fi
 }
 
+function prevent_bruteforce() {
+    local realm_name=$1
+
+    curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${realm_name}" \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "bruteForceProtected": true,
+      "maxFailureWaitSeconds": 900,
+      "minimumQuickLoginWaitSeconds": 60,
+      "waitIncrementSeconds": 60,
+      "quickLoginCheckMilliSeconds": 1000,
+      "maxDeltaTimeSeconds": 86400,
+      "failureFactor": 3
+    }'
+}
+
+
 function delete_realm() {
     local realm_name=$1
 
@@ -667,7 +685,7 @@ print_header "Configuring Keycloak"
 get_access_token
 
 create_realm "$KEYCLOAK_REALM"
-
+prevent_bruteforce "$KEYCLOAK_REALM"
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "authorization='false' authentication='false' clientauthentication='true'"
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "authorization='true' authentication='true' clientauthentication='false'"
 

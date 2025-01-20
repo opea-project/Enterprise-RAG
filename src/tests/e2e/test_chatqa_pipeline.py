@@ -9,7 +9,7 @@ import pytest
 import requests
 import statistics
 import time
-from api_request_helper import InvalidChatqaResponseBody
+from helpers.api_request_helper import InvalidChatqaResponseBody
 
 
 @allure.testcase("IEASG-T32")

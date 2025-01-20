@@ -157,7 +157,6 @@ def test_edp_reupload_file_after_deletion(edp_helper):
         response = edp_helper.generate_presigned_url(file_basename)
         edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
         second_upload = edp_helper.wait_for_file_upload(file_basename, "ingested")
-        os.remove(temp_file.name)
         assert first_upload["size"] < second_upload["size"]
 
 
@@ -260,7 +259,7 @@ def test_edp_reupload_link(edp_helper):
 @allure.testcase("IEASG-T137")
 def test_edp_upload_nonexistent_link(edp_helper):
     """Upload a link to a nonexistent website"""
-    nonexistent_link = "https://test_edp_some-nonexisting-webpage-12345.com"
+    nonexistent_link = "https://some-nonexisting-webpage-12345.com"
     response = edp_helper.upload_links({"links": [nonexistent_link]})
     assert response.status_code == 200, f"Unexpected status code. Response: {response.text}"
 

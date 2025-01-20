@@ -6,7 +6,7 @@
 import os
 import requests
 import time
-from api_request_helper import ApiRequestHelper, CustomPortForward
+from helpers.api_request_helper import ApiRequestHelper, CustomPortForward
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
@@ -18,8 +18,8 @@ DATAPREP_STATUS_FLOW = ["uploaded", "processing", "dataprep", "embedding", "inge
 
 class EdpHelper(ApiRequestHelper):
 
-    def __init__(self):
-        super().__init__(namespace="edp", label_selector={"app.kubernetes.io/name": "edp-backend"}, api_port=5000)
+    def __init__(self, namespace, label_selector, api_port):
+        super().__init__(namespace=namespace, label_selector=label_selector, api_port=api_port)
         self.default_headers = {
             "Content-Type": "application/json"
         }
@@ -183,6 +183,17 @@ class EdpHelper(ApiRequestHelper):
             response = self.generate_presigned_url(file_basename)
             self.upload_to_minio(temp_file.name, response.json().get("url"))
         return self.wait_for_file_upload(file_basename, status, timeout=timeout)
+
+    def fill_in_file(self, temp_file, size):
+        """Write data to the temp file until we reach the desired size"""
+        chunk_size = 1024   # Write in chunks of 1KB
+        current_size = 0
+        while current_size < size:
+            chunk = 'A' * chunk_size
+            temp_file.write(chunk)
+            current_size += chunk_size
+            temp_file.flush()
+        print(f"Temporary file created at: {temp_file.name}")
 
 
 class DeleteTimeoutException(Exception):

@@ -6,7 +6,7 @@
 import logging
 import pytest
 import urllib3
-from api_request_helper import ApiRequestHelper
+from helpers.api_request_helper import ApiRequestHelper
 from helpers.edp_helper import EdpHelper
 
 
@@ -29,13 +29,8 @@ def chatqa_api_helper():
 
 
 @pytest.fixture
-def dataprep_api_helper():
-    return ApiRequestHelper("dataprep", {"app": "router-service"})
-
-
-@pytest.fixture
 def edp_helper():
-    return EdpHelper()
+    return EdpHelper(namespace="edp", label_selector={"app.kubernetes.io/name": "edp-backend"}, api_port=5000)
 
 
 @pytest.fixture

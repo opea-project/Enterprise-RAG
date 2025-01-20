@@ -6,7 +6,7 @@
 import allure
 import pytest
 
-from guard_helper import GuardHelper, GuardType, GuardQuestions as questions
+from helpers.guard_helper import GuardHelper, GuardType, GuardQuestions as questions
 
 
 @pytest.fixture

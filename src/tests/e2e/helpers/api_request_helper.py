@@ -3,10 +3,8 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import base64
 import concurrent
 import kr8s
-from pathlib import Path
 import requests
 import secrets
 import socket
@@ -27,6 +25,7 @@ class CustomPortForward(object):
 
     def __exit__(self, type, value, traceback):
         self.pf.stop()
+        time.sleep(1)
 
     def _find_unused_port(self, start=10000, end=60000):
         """
@@ -202,46 +201,6 @@ class ApiRequestHelper:
         # Replace new line characters for better output
         return response_text.replace('\\n', '\n')
 
-    def call_dataprep_upload_file(self, filepath):
-        """
-        Make /v1/dataprep API call to upload a specified file.
-        """
-        with open(filepath, "rb") as f:
-            file_content = f.read()
-            file_content_base64 = base64.b64encode(file_content)
-            file_content_base64_str = str(file_content_base64, "utf-8")
-
-        json_data = {
-            "files": [{
-                    "filename": Path(filepath).name,
-                    "data64": file_content_base64_str
-                }
-            ]
-        }
-        return self._call_dataprep_upload(json_data)
-
-    def call_dataprep_upload_custom_body(self, custom_body):
-        """
-        Make /v1/dataprep API call with a specified custom request body
-        """
-        return self._call_dataprep_upload(custom_body)
-
-    def call_dataprep_upload_links(self, links):
-        """
-        API call to upload a link to a website
-        """
-        body = {"links": links}
-        return self._call_dataprep_upload(body)
-
-    def _call_dataprep_upload(self, request_body):
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/dataprep",
-                headers=self.default_headers,
-                json=request_body
-            )
-        return response
-
     def call_health_check_api(self, namespace, selector, port, health_path="v1/health_check"):
         """
         API call to microservice health_check API.
@@ -257,14 +216,3 @@ class ApiRequestHelper:
                 timeout=10
             )
             return response
-
-    def fill_in_file(self, temp_file, size):
-        """Write data to the temp file until we reach the desired size"""
-        chunk_size = 1024   # Write in chunks of 1KB
-        current_size = 0
-        while current_size < size:
-            chunk = 'A' * chunk_size
-            temp_file.write(chunk)
-            current_size += chunk_size
-            temp_file.flush()
-        print(f"Temporary file created at: {temp_file.name}")

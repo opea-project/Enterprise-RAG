@@ -8,6 +8,7 @@ import {
   ChangeEvent,
   Dispatch,
   DragEvent,
+  Fragment,
   SetStateAction,
   useRef,
   useState,
@@ -15,10 +16,10 @@ import {
 import { ImFolderUpload } from "react-icons/im";
 
 import {
-  INPUT_FILE_ACCEPT,
+  fileInputAccept,
   sanitizeFiles,
-  SUPPORTED_FILE_FORMATS_MSG,
-  TOTAL_SIZE_LIMIT_MSG,
+  supportedFileFormatsMsg,
+  totalSizeLimitMsg,
   validateFiles,
 } from "@/utils/data-ingestion/files-input";
 
@@ -96,11 +97,11 @@ const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
             choose files
           </button>
         </p>
-        <p className="text-xs">{TOTAL_SIZE_LIMIT_MSG}</p>
+        <p className="text-xs">{totalSizeLimitMsg}</p>
         <input
           ref={fileInputRef}
           type="file"
-          accept={INPUT_FILE_ACCEPT}
+          accept={fileInputAccept}
           disabled={disabled}
           multiple
           onChange={handleFileInputChange}
@@ -108,9 +109,16 @@ const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
         />
       </div>
       {errorMessage !== "" && (
-        <div className="files-input-error-alert">{errorMessage}</div>
+        <p className="files-input-error-alert">
+          {errorMessage.split("\n").map((msg, index) => (
+            <Fragment key={`files-input-error-msg-${index}`}>
+              {msg}
+              <br />
+            </Fragment>
+          ))}
+        </p>
       )}
-      <p className="pt-2 text-xs">{SUPPORTED_FILE_FORMATS_MSG}</p>
+      <p className="pt-2 text-xs">{supportedFileFormatsMsg}</p>
     </>
   );
 };

@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import DOMPurify from "dompurify";
+
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
 import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
 
@@ -109,4 +111,9 @@ const parseServiceDetailsResponseData = (
   return serviceDetails;
 };
 
-export { parseServiceDetailsResponseData };
+const sanitizeString = (value: string) => {
+  const decodedValue = decodeURIComponent(value);
+  return DOMPurify.sanitize(decodedValue);
+};
+
+export { parseServiceDetailsResponseData, sanitizeString };

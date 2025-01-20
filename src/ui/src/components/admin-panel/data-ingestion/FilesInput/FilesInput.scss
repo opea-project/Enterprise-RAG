@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .files-input-error-alert {
-  @apply -mt-2 rounded-b bg-light-notification-error-background p-4 py-3 text-sm text-light-notification-text dark:bg-dark-notification-error-background dark:text-dark-text-primary;
+  @apply -mt-2 rounded-b text-center bg-light-notification-error-background p-4 py-3 text-sm text-light-notification-text dark:bg-dark-notification-error-background dark:text-dark-text-primary;
 }
 
 .files-input-box {

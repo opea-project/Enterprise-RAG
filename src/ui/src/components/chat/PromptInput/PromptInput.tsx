@@ -7,6 +7,8 @@ import {
   ChangeEventHandler,
   FormEventHandler,
   KeyboardEventHandler,
+  MouseEventHandler,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -23,6 +25,11 @@ import {
   selectIsStreaming,
 } from "@/store/conversationFeed.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { sanitizeString } from "@/utils";
+
+const MAX_REQUEST_BODY_SIZE = 1 * 1024 * 1024; // 1MB in bytes - from default.conf
+const REQUEST_BODY_FORMAT_OVERHEAD = '{ "text": "" }'.length;
+const PROMPT_MAX_LENGTH = MAX_REQUEST_BODY_SIZE - REQUEST_BODY_FORMAT_OVERHEAD;
 
 const PromptInput = () => {
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -52,10 +59,20 @@ const PromptInput = () => {
     }
   };
 
+  const isSubmitDisabled = useCallback(() => {
+    const sanitizedPrompt = sanitizeString(prompt).trim();
+    const isPromptEmpty = sanitizedPrompt.length === 0;
+    const isPromptMaxLengthExceeded =
+      sanitizedPrompt.length > PROMPT_MAX_LENGTH;
+
+    return isPromptEmpty || isPromptMaxLengthExceeded;
+  }, [prompt]);
+
   const submitPrompt = async () => {
-    dispatch(addNewUserMessage(prompt));
+    const sanitizedPrompt = sanitizeString(prompt);
+    dispatch(addNewUserMessage(sanitizedPrompt));
     dispatch(addNewBotMessage());
-    dispatch(postPrompt(prompt));
+    dispatch(postPrompt(sanitizedPrompt));
 
     setPrompt("");
     focusPromptInput();
@@ -73,52 +90,44 @@ const PromptInput = () => {
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (prompt.trim() !== "" && !isStreaming) {
+      if (!isSubmitDisabled() && !isStreaming) {
         submitPrompt();
       }
     }
   };
 
-  const getPromptInputButton = () => {
-    if (isStreaming) {
-      const stopStreaming = () => {
-        if (abortController) {
-          abortController.abort(""); // empty string set for further error handling
-        }
-      };
+  const stopStreaming = () => {
+    abortController?.abort(""); // empty string set for further error handling
+  };
 
-      const handleStopBtnClick = () => {
-        stopStreaming();
-      };
+  const handleStopBtnClick: MouseEventHandler = (event) => {
+    event.preventDefault();
+    stopStreaming();
+    focusPromptInput();
+  };
 
-      const handleStopBtnKeyDown: KeyboardEventHandler = (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          stopStreaming();
-          focusPromptInput();
-        }
-      };
-
-      return (
-        <PromptInputButton
-          icon={<MdStop />}
-          type="button"
-          onClick={handleStopBtnClick}
-          onKeyDown={handleStopBtnKeyDown}
-        />
-      );
-    } else {
-      const submitBtnDisabled = prompt === "";
-
-      return (
-        <PromptInputButton
-          icon={<TbArrowUp />}
-          type="submit"
-          disabled={submitBtnDisabled}
-        />
-      );
+  const handleStopBtnKeyDown: KeyboardEventHandler = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      stopStreaming();
+      focusPromptInput();
     }
   };
+
+  const promptInputButton = isStreaming ? (
+    <PromptInputButton
+      icon={<MdStop />}
+      type="button"
+      onClick={handleStopBtnClick}
+      onKeyDown={handleStopBtnKeyDown}
+    />
+  ) : (
+    <PromptInputButton
+      icon={<TbArrowUp />}
+      type="submit"
+      disabled={isSubmitDisabled()}
+    />
+  );
 
   return (
     <form className="prompt-input__form" onSubmit={handleSubmit}>
@@ -132,7 +141,7 @@ const PromptInput = () => {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
       />
-      {getPromptInputButton()}
+      {promptInputButton}
     </form>
   );
 };

@@ -5,11 +5,11 @@ import "./ServiceArgumentTextInput.scss";
 
 import classNames from "classnames";
 import { ChangeEvent, useState } from "react";
-import * as Yup from "yup";
-import { ValidationError } from "yup";
+import { object, string, ValidationError } from "yup";
 
 import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import { sanitizeString } from "@/utils";
 import { noEmpty } from "@/utils/validators/textInput";
 
 interface ServiceArgumentTextInputProps {
@@ -40,8 +40,8 @@ const ServiceArgumentTextInput = ({
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
 
-  const validationSchema = Yup.object().shape({
-    textInput: Yup.string().test(
+  const validationSchema = object().shape({
+    textInput: string().test(
       "no-empty",
       "This value cannot be empty",
       noEmpty(emptyValueAllowed),
@@ -64,12 +64,14 @@ const ServiceArgumentTextInput = ({
   const handleChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
     setValue(newValue);
-    const isValid = await validateInput(newValue);
+    const sanitizedValue = sanitizeString(newValue);
+    const isValid = await validateInput(sanitizedValue);
     setIsInvalid(!isValid);
     onArgumentValidityChange(name, !isValid);
     if (isValid) {
       const isValueEmpty = newValue.trim() === "";
-      const argumentValue = isValueEmpty && emptyValueAllowed ? null : newValue;
+      const argumentValue =
+        isValueEmpty && emptyValueAllowed ? null : sanitizedValue;
       onArgumentValueChange(name, argumentValue);
     }
   };

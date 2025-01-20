@@ -1,8 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import * as Yup from "yup";
-import { ValidationError } from "yup";
+import { array, mixed, ValidationError } from "yup";
 
 import { CLIENT_MAX_BODY_SIZE } from "@/utils/validators/constants";
 import {
@@ -12,7 +11,7 @@ import {
   totalFileSizeWithinLimit,
 } from "@/utils/validators/fileInput";
 
-const SUPPORTED_FILE_EXTENSIONS = [
+const supportedFileExtensions = [
   "pdf",
   "html",
   "txt",
@@ -35,7 +34,7 @@ const SUPPORTED_FILE_EXTENSIONS = [
   "svg",
 ];
 
-const SUPPORTED_MIME_TYPES = [
+const supportedMIMETypes = [
   "application/pdf",
   "text/html",
   "text/plain",
@@ -55,53 +54,54 @@ const SUPPORTED_MIME_TYPES = [
   "image/svg+xml",
 ];
 
-const INPUT_FILE_ACCEPT = SUPPORTED_FILE_EXTENSIONS.map(
-  (extension) => `.${extension}`,
-).join(",");
+const fileInputAccept = supportedFileExtensions
+  .map((extension) => `.${extension}`)
+  .join(",");
 
-const SUPPORTED_FILE_FORMATS_MSG = `Supported file formats:  ${SUPPORTED_FILE_EXTENSIONS.map(
-  (extension) => extension.toUpperCase(),
-).join(", ")}`;
+const supportedFileFormatsMsg = `Supported file formats:  ${supportedFileExtensions
+  .map((extension) => extension.toUpperCase())
+  .join(", ")}`;
 
-const TOTAL_SIZE_LIMIT_MSG = `Single upload size limit: ${CLIENT_MAX_BODY_SIZE}MB`;
+const totalSizeLimitMsg = `Single upload size limit: ${CLIENT_MAX_BODY_SIZE}MB`;
 
 // - Characters reserved for file systems (<>:"/\\|?*)
 // - ASCII control characters (\x00-\x1F)
 // eslint-disable-next-line no-control-regex
-const FILE_NAME_UNSAFE_CHARS_REGEX = new RegExp(/[<>:"/\\|?*\x00-\x1F]/g);
-const FILE_NAME_MAX_LENGTH = 255;
+const filenameUnsafeCharsRegex = new RegExp(/[<>:"/\\|?*\x00-\x1F]/g);
+const filenameMaxLength = 255;
 
-const UNSUPPORTED_FILE_EXTENSION_MSG = (filename: string) =>
-  `The file ${filename} has an unsupported file extension. Please upload a file with supported file format.`;
-const UNSUPPORTED_FILE_MIME_TYPE_MSG = (filename: string) =>
-  `The file type not recognized for ${filename}. Please upload a file with a valid format.`;
-const FILE_NAME_INVALID_CHARACTERS_MSG = (filename: string) =>
-  `The file name - ${filename} contain invalid characters. Please change the name of this file and try again.`;
-const TOTAL_FILE_SIZE_WITHIN_LIMIT_MSG = `Total files size exceeds the limit: ${CLIENT_MAX_BODY_SIZE}MB. Please upload files separately or in smaller batches.`;
+const getUnsupportedFileExtensionMsg = ({ value: file }: { value: File }) =>
+  `The file ${file.name} has an unsupported extension\nPlease upload a file with one of supported formats listed below`;
+const getUnsupportedFileMIMETypeMsg = ({ value: file }: { value: File }) =>
+  `The file MIME type not recognized for ${file.name}\nPlease upload a file with a valid MIME type`;
+const getFilenameInvalidCharactersMsg = ({ value: file }: { value: File }) =>
+  `The file name - ${file.name} contain invalid characters\nPlease change the name of this file and try again`;
 
-const validationSchema = Yup.array()
+const totalFileSizeWithinLimitMsg = `Total upload size will exceed the limit: ${CLIENT_MAX_BODY_SIZE}MB\nPlease upload files separately or in smaller batches`;
+
+const validationSchema = array()
   .of(
-    Yup.mixed()
+    mixed<File>()
       .test(
         "supported-file-extension",
-        ({ value }) => UNSUPPORTED_FILE_EXTENSION_MSG((value as File).name),
-        isFileExtensionSupported(SUPPORTED_FILE_EXTENSIONS),
+        getUnsupportedFileExtensionMsg,
+        isFileExtensionSupported,
       )
       .test(
         "supported-file-mime-type",
-        ({ value }) => UNSUPPORTED_FILE_MIME_TYPE_MSG((value as File).name),
-        isMIMETypeSupported(SUPPORTED_MIME_TYPES),
+        getUnsupportedFileMIMETypeMsg,
+        isMIMETypeSupported,
       )
       .test(
         "no-invalid-characters-in-file-name",
-        ({ value }) => FILE_NAME_INVALID_CHARACTERS_MSG((value as File).name),
-        noInvalidCharactersInFileName(),
+        getFilenameInvalidCharactersMsg,
+        noInvalidCharactersInFileName,
       ),
   )
   .test(
     "total-file-size-within-limit",
-    TOTAL_FILE_SIZE_WITHIN_LIMIT_MSG,
-    totalFileSizeWithinLimit(),
+    totalFileSizeWithinLimitMsg,
+    totalFileSizeWithinLimit,
   );
 
 const validateFiles = async (files: File[] | FileList) => {
@@ -116,13 +116,10 @@ const validateFiles = async (files: File[] | FileList) => {
 const sanitizeFileName = (filename: string) => {
   const normalizedFileName = filename.normalize("NFKC");
   const sanitizedFileName = normalizedFileName.replace(
-    FILE_NAME_UNSAFE_CHARS_REGEX,
+    filenameUnsafeCharsRegex,
     "_",
   );
-  const truncatedFileName = sanitizedFileName.substring(
-    0,
-    FILE_NAME_MAX_LENGTH,
-  );
+  const truncatedFileName = sanitizedFileName.substring(0, filenameMaxLength);
   const encodedFileName = encodeURIComponent(truncatedFileName);
   return encodedFileName;
 };
@@ -134,9 +131,11 @@ const sanitizeFiles = (files: File[]): File[] =>
   });
 
 export {
-  INPUT_FILE_ACCEPT,
+  fileInputAccept,
   sanitizeFiles,
-  SUPPORTED_FILE_FORMATS_MSG,
-  TOTAL_SIZE_LIMIT_MSG,
+  supportedFileExtensions,
+  supportedFileFormatsMsg,
+  supportedMIMETypes,
+  totalSizeLimitMsg,
   validateFiles,
 };

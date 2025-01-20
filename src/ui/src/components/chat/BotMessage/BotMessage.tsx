@@ -6,6 +6,7 @@ import "./BotMessage.scss";
 import ChatIcon from "@/components/chat/ChatIcon/ChatIcon";
 import ChatMessageMarkdown from "@/components/chat/ChatMessageMarkdown/ChatMessageMarkdown";
 import PulsingDot from "@/components/chat/PulsingDot/PulsingDot";
+import { sanitizeString } from "@/utils";
 
 interface BotMessageProps {
   text: string;
@@ -14,13 +15,15 @@ interface BotMessageProps {
 
 const BotMessage = ({ text, isStreaming }: BotMessageProps) => {
   const isWaitingForMessage = isStreaming && text === "";
+  const sanitizedMessage = sanitizeString(text);
+
   return (
     <div className="bot-message">
       <ChatIcon forConversation />
       {isWaitingForMessage && <PulsingDot />}
-      {text !== "" && (
+      {sanitizedMessage !== "" && (
         <div className="bot-message__text">
-          <ChatMessageMarkdown text={text} />
+          <ChatMessageMarkdown text={sanitizedMessage} />
         </div>
       )}
     </div>

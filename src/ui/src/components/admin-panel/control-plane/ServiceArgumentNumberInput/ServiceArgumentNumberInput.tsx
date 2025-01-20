@@ -5,11 +5,11 @@ import "./ServiceArgumentNumberInput.scss";
 
 import classNames from "classnames";
 import { ChangeEvent, useState } from "react";
-import * as Yup from "yup";
-import { ValidationError } from "yup";
+import { object, string, ValidationError } from "yup";
 
 import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import { sanitizeString } from "@/utils";
 import { isInRange } from "@/utils/validators/textInput";
 
 interface ServiceArgumentNumberInputProps {
@@ -40,8 +40,8 @@ const ServiceArgumentNumberInput = ({
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
 
-  const validationSchema = Yup.object().shape({
-    numberInput: Yup.string().test(
+  const validationSchema = object().shape({
+    numberInput: string().test(
       "is-in-range",
       `Please enter a number between ${range.min} and ${range.max}`,
       isInRange(nullable, range),
@@ -64,10 +64,11 @@ const ServiceArgumentNumberInput = ({
   const handleChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
     setValue(newValue);
-    const isValid = await validateInput(event.target.value);
+    const sanitizedValue = sanitizeString(newValue);
+    const isValid = await validateInput(sanitizedValue);
     onArgumentValidityChange(name, !isValid);
     if (isValid) {
-      const argumentValue = parseFloat(event.target.value) || null;
+      const argumentValue = parseFloat(sanitizedValue) || null;
       onArgumentValueChange(name, argumentValue);
     }
   };

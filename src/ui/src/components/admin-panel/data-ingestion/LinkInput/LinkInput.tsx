@@ -8,7 +8,11 @@ import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { BsPlus } from "react-icons/bs";
 import { ValidationError } from "yup";
 
-import { validateLinkInput } from "@/utils/data-ingestion/link-input";
+import { sanitizeString } from "@/utils";
+import {
+  urlErrorMessage,
+  validateLinkInput,
+} from "@/utils/data-ingestion/link-input";
 
 interface LinkInputProps {
   addLinkToList: (value: string) => void;
@@ -22,9 +26,14 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const checkValidity = async () => {
+    const checkValidity = async (value: string) => {
       try {
-        await validateLinkInput(value);
+        const sanitizedValue = sanitizeString(value);
+        if (value !== sanitizedValue) {
+          throw new Error(urlErrorMessage);
+        }
+
+        await validateLinkInput(sanitizedValue);
         setIsInvalid(false);
         setErrorMessage("");
       } catch (error) {
@@ -34,7 +43,7 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
     };
 
     if (value) {
-      checkValidity();
+      checkValidity(value);
     } else {
       setIsInvalid(false);
       setErrorMessage("");
@@ -57,7 +66,8 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
   };
 
   const handleAddNewLinkItem = () => {
-    addLinkToList(value);
+    const sanitizedValue = sanitizeString(value);
+    addLinkToList(sanitizedValue);
     clearNewFileLinkInput();
     inputRef.current!.focus();
   };
@@ -69,10 +79,11 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
       <input
         ref={inputRef}
         value={value}
-        className={classNames({ "input--invalid": isInvalid })}
         name="link-input"
-        disabled={disabled}
+        type="url"
         placeholder="Enter valid URL (starting with http:// or https://)"
+        className={classNames({ "input--invalid": isInvalid })}
+        disabled={disabled}
         onChange={handleLinkInputChange}
         onKeyDown={handleLinkInputKeyDown}
       />

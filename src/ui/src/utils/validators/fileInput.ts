@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { TestFunction } from "yup";
+import { AnyObject, TestFunction } from "yup";
 
 import { containsNullCharacters } from "@/utils/validators";
 import {
@@ -9,45 +9,65 @@ import {
   FILE_EXTENSIONS_WITHOUT_MIME_TYPES,
 } from "@/utils/validators/constants";
 
+import {
+  supportedFileExtensions,
+  supportedMIMETypes,
+} from "../data-ingestion/files-input";
+
+type FileTestFunction = TestFunction<File | undefined, AnyObject>;
+type FileArrayTestFunction = TestFunction<
+  (File | undefined)[] | undefined,
+  AnyObject
+>;
+
 const getFileExtension = (file: File) =>
   file.name.split(".").pop()?.toLowerCase();
 
-export const isFileExtensionSupported =
-  (acceptedExtensions: string[]): TestFunction =>
-  (value) => {
-    const file = value as File;
-    const fileExtension = getFileExtension(file);
-    const isFileExtensionValid =
-      fileExtension !== undefined && acceptedExtensions.includes(fileExtension);
+export const isFileExtensionSupported: FileTestFunction = (file) => {
+  if (!(file instanceof File)) {
+    return false;
+  }
 
-    return isFileExtensionValid;
-  };
+  const fileExtension = getFileExtension(file);
+  const isFileExtensionValid =
+    fileExtension !== undefined &&
+    supportedFileExtensions.includes(fileExtension);
 
-export const isMIMETypeSupported =
-  (acceptedMIMETypes: string[]): TestFunction =>
-  (value) => {
-    const file = value as File;
-    const fileExtension = getFileExtension(file);
-    const isMIMETypeUnavailable =
-      fileExtension !== undefined &&
-      FILE_EXTENSIONS_WITHOUT_MIME_TYPES.includes(fileExtension);
-
-    if (isMIMETypeUnavailable) {
-      return true;
-    } else {
-      const fileMIMEType = file.type;
-      return acceptedMIMETypes.includes(fileMIMEType);
-    }
-  };
-
-export const noInvalidCharactersInFileName = (): TestFunction => (value) => {
-  const file = value as File;
-  const fileName = file.name;
-  return !containsNullCharacters(fileName);
+  return isFileExtensionValid;
 };
 
-export const totalFileSizeWithinLimit = (): TestFunction => (value) => {
-  const files = value as File[];
+export const isMIMETypeSupported: FileTestFunction = (file) => {
+  if (!(file instanceof File)) {
+    return false;
+  }
+
+  const fileExtension = getFileExtension(file);
+  const isMIMETypeUnavailable =
+    fileExtension !== undefined &&
+    FILE_EXTENSIONS_WITHOUT_MIME_TYPES.includes(fileExtension);
+
+  if (isMIMETypeUnavailable) {
+    return true;
+  } else {
+    const fileMIMEType = file.type;
+    return supportedMIMETypes.includes(fileMIMEType);
+  }
+};
+
+export const noInvalidCharactersInFileName: FileTestFunction = (file) => {
+  if (!(file instanceof File)) {
+    return false;
+  }
+
+  const fileName = file.name;
+  return fileName !== "" && !containsNullCharacters(fileName);
+};
+
+export const totalFileSizeWithinLimit: FileArrayTestFunction = (files) => {
+  if (files === undefined || !files.every((file) => file instanceof File)) {
+    return false;
+  }
+
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
   return totalSize <= CLIENT_MAX_BODY_SIZE * 1024 * 1024;
 };

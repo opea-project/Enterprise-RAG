@@ -383,7 +383,7 @@ class InputScannersConfig:
 
     def _create_anonymize_scanner(self, scanner_config):
         vault = Vault()
-        anonymize_params = {'vault': vault, 'use_onnx': scanner_config.get('use_onnx', True)}
+        anonymize_params = {'vault': vault, 'use_onnx': scanner_config.get('use_onnx', False)}
         hidden_names = scanner_config.get('hidden_names', None)
         allowed_names = scanner_config.get('allowed_names', None)
         entity_types = scanner_config.get('entity_types', None)
@@ -457,7 +457,7 @@ class InputScannersConfig:
 
     def _create_ban_code_scanner(self, scanner_config):
         enabled_models = {'MODEL_SM': BANCODE_MODEL_SM, 'MODEL_TINY': BANCODE_MODEL_TINY}
-        bancode_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
+        bancode_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we dont't want to use onnx
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -477,7 +477,7 @@ class InputScannersConfig:
 
     def _create_ban_competitors_scanner(self, scanner_config):
         enabled_models = {'MODEL_V1': BANCOMPETITORS_MODEL_V1}
-        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
+        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we don't want to use onnx
 
         competitors = scanner_config.get('competitors', None)
         threshold = scanner_config.get('threshold', None)
@@ -558,7 +558,7 @@ class InputScannersConfig:
             'MODEL_ROBERTA_LARGE_C_V2': BANTOPICS_MODEL_ROBERTA_LARGE_C_V2,
             'MODEL_ROBERTA_BASE_C_V2': BANTOPICS_MODEL_ROBERTA_BASE_C_V2
         }
-        ban_topics_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        ban_topics_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         topics = scanner_config.get('topics', None)
         threshold = scanner_config.get('threshold', None)
@@ -594,7 +594,7 @@ class InputScannersConfig:
 
     def _create_code_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': CODE_DEFAULT_MODEL}
-        code_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        code_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         languages = scanner_config.get('languages', None)
         model_name = scanner_config.get('model', None)
@@ -634,7 +634,7 @@ class InputScannersConfig:
     def _create_gibberish_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': GIBBERISH_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        gibberish_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        gibberish_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -662,7 +662,7 @@ class InputScannersConfig:
     def _create_language_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': LANGUAGE_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        language_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        language_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         valid_languages = scanner_config.get('valid_languages', None)
         model_name = scanner_config.get('model', None)
@@ -706,7 +706,7 @@ class InputScannersConfig:
             'V2_SMALL_MODEL': PROMPTINJECTION_V2_SMALL_MODEL
         }
         enabled_match_types = ['sentence', 'full', "truncate_token_head_tail", "truncate_head_tail", "chunks"]
-        prompt_injection_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        prompt_injection_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -806,7 +806,7 @@ class InputScannersConfig:
     def _create_toxicity_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': TOXICITY_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        toxicity_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        toxicity_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)

@@ -169,11 +169,6 @@ class NoRefusalModel(Document):
 
 class NoRefusalLightModel(Document):
     enabled: bool = False
-    substrings: Optional[List[str]] = None
-    match_type: Optional[str] = None
-    case_sensitive: bool = False
-    redact: Optional[bool] = None
-    contains_all: Optional[bool] = None
 
 
 class ReadingTimeModel(Document):

@@ -7,13 +7,17 @@ import {
   gibberishScanner,
   languageScanner,
   promptInjectionScanner,
+  codeScanner,
+  regexScanner,
 } from "@/models/admin-panel/control-plane/guardrails/scanners";
 import { GuardrailArguments } from "@/models/admin-panel/control-plane/serviceData";
 
 export const inputGuardArguments: GuardrailArguments = {
-  ban_competitors: banCompetitorsScanner,
+  prompt_injection: promptInjectionScanner,
   ban_substrings: banSubstringsScanner,
+  code: codeScanner,
+  regex: regexScanner,
   gibberish: gibberishScanner,
   language: languageScanner,
-  prompt_injection: promptInjectionScanner,
+  ban_competitors: banCompetitorsScanner,
 };

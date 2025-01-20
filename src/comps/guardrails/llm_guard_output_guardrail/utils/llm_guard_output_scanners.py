@@ -535,7 +535,7 @@ class OutputScannersConfig:
 
     def _create_ban_code_scanner(self, scanner_config):
         enabled_models = {'MODEL_SM': BANCODE_MODEL_SM, 'MODEL_TINY': BANCODE_MODEL_TINY}
-        bancode_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
+        bancode_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we don't want to use onnx
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -555,7 +555,7 @@ class OutputScannersConfig:
 
     def _create_ban_competitors_scanner(self, scanner_config):
         enabled_models = {'MODEL_V1': BANCOMPETITORS_MODEL_V1}
-        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', True)} # by default we want to use onnx
+        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we want don't to use onnx
 
         competitors = scanner_config.get('competitors', None)
         threshold = scanner_config.get('threshold', None)
@@ -636,7 +636,7 @@ class OutputScannersConfig:
             'MODEL_ROBERTA_LARGE_C_V2': BANTOPICS_MODEL_ROBERTA_LARGE_C_V2,
             'MODEL_ROBERTA_BASE_C_V2': BANTOPICS_MODEL_ROBERTA_BASE_C_V2
         }
-        ban_topics_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        ban_topics_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         topics = scanner_config.get('topics', None)
         threshold = scanner_config.get('threshold', None)
@@ -673,7 +673,7 @@ class OutputScannersConfig:
     def _create_bias_scanner(self, scanner_config):
         available_match_types = ['str', 'word']
         enabled_models = {'DEFAULT_MODEL': BIAS_DEFAULT_MODEL}
-        bias_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        bias_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
@@ -697,7 +697,7 @@ class OutputScannersConfig:
 
     def _create_code_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': CODE_DEFAULT_MODEL}
-        code_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        code_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         languages = scanner_config.get('languages', None)
         model_name = scanner_config.get('model', None)
@@ -763,7 +763,7 @@ class OutputScannersConfig:
     def _create_language_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': LANGUAGE_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        language_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        language_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         valid_languages = scanner_config.get('valid_languages', None)
         model_name = scanner_config.get('model', None)
@@ -802,7 +802,7 @@ class OutputScannersConfig:
 
     def _create_language_same_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': LANGUAGE_DEFAULT_MODEL}
-        language_same_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        language_same_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -823,7 +823,7 @@ class OutputScannersConfig:
 
     def _create_malicious_urls_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': MALICIOUS_URLS_DEFAULT_MODEL}
-        malicious_urls_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        malicious_urls_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         threshold = scanner_config.get('threshold', None)
         model_name = scanner_config.get('model', None)
@@ -845,7 +845,7 @@ class OutputScannersConfig:
     def _create_no_refusal_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': NO_REFUSAL_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        no_refusal_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        no_refusal_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         threshold = scanner_config.get('threshold', None)
         model_name = scanner_config.get('model', None)
@@ -867,31 +867,9 @@ class OutputScannersConfig:
         logger.info(f"Creating NoRefusal scanner with params: {no_refusal_params}")
         return NoRefusal(**no_refusal_params)
 
-    def _create_no_refusal_light_scanner(self, scanner_config):
-        no_refusal_light_params = {}
-
-        substrings = scanner_config.get('substrings', None)
-        match_type = scanner_config.get('match_type', None)
-        case_sensitive = scanner_config.get('case_sensitive', None)
-        react = scanner_config.get('react', None)
-        contains_all = scanner_config.get('contains_all', None)
-
-        if isinstance(substrings, str):
-            substrings = sanitize_env(substrings)
-
-        if substrings is not None:
-            no_refusal_light_params['substrings'] = substrings
-        if match_type is not None:
-            no_refusal_light_params['match_type'] = match_type
-        if case_sensitive is not None:
-            no_refusal_light_params['case_sensitive'] = case_sensitive
-        if react is not None:
-            no_refusal_light_params['react'] = react
-        if contains_all is not None:
-            no_refusal_light_params['contains_all'] = contains_all
-
-        logger.info(f"Creating NoRefusalLight scanner with params: {no_refusal_light_params}")
-        return NoRefusalLight(**no_refusal_light_params)
+    def _create_no_refusal_light_scanner(self):
+        logger.info("Creating NoRefusalLight scanner.")
+        return NoRefusalLight()
 
     def _create_reading_time_scanner(self, scanner_config):
         reading_time_params = {}
@@ -912,7 +890,7 @@ class OutputScannersConfig:
 
     def _create_factual_consistency_scanner(self, scanner_config):
         enabled_models = {"DEFAULT_MODEL": BANTOPICS_MODEL_DEBERTA_BASE_V2} # BanTopics model is used as deault in FactualConsistency
-        factual_consistency_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        factual_consistency_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model_name', None)
         minimum_score = scanner_config.get('minimum_score', None)
@@ -934,7 +912,7 @@ class OutputScannersConfig:
     def _create_gibberish_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': GIBBERISH_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        gibberish_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        gibberish_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -994,7 +972,7 @@ class OutputScannersConfig:
         enabled_models = {'MODEL_EN_BGE_BASE': RELEVANCE_MODEL_EN_BGE_BASE,
                           'MODEL_EN_BGE_LARGE': RELEVANCE_MODEL_EN_BGE_LARGE,
                           'MODEL_EN_BGE_SMALL': RELEVANCE_MODEL_EN_BGE_SMALL}
-        relevance_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        relevance_params = {'use_onnx': scanner_config.get('use_onnx', False)} # TODO: onnx off, because of bug on LLM Guard side
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -1014,7 +992,7 @@ class OutputScannersConfig:
         return Relevance(**relevance_params)
 
     def _create_sensitive_scanner(self, scanner_config):
-        sensitive_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        sensitive_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         entity_types = scanner_config.get('entity_types', None)
         regex_patterns = scanner_config.get('regex_patterns', None)
@@ -1054,7 +1032,7 @@ class OutputScannersConfig:
     def _create_toxicity_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': TOXICITY_DEFAULT_MODEL}
         enabled_match_types = ['sentence', 'full']
-        toxicity_params = {'use_onnx': scanner_config.get('use_onnx', True)}
+        toxicity_params = {'use_onnx': scanner_config.get('use_onnx', False)}
 
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
@@ -1127,7 +1105,7 @@ class OutputScannersConfig:
         elif scanner_name == "no_refusal":
             return self._create_no_refusal_scanner(scanner_config)
         elif scanner_name == "no_refusal_light":
-            return self._create_no_refusal_light_scanner(scanner_config)
+            return self._create_no_refusal_light_scanner()
         elif scanner_name == "reading_time":
             return self._create_reading_time_scanner(scanner_config)
         elif scanner_name == "factual_consistency":

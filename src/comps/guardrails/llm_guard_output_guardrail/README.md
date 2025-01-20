@@ -171,12 +171,6 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | Environment Variable            | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |-------------------------------- |-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `NO_REFUSAL_LIGHT_ENABLED`      | Enables NoRefusalLight scanner.                                               | bool   | false               | Required            |
-| `NO_REFUSAL_LIGHT_SUBSTRINGS`   | List of substrings to be banned.                                              | string | [LLMGuard documentation](https://github.com/protectai/llm-guard/blob/main/llm_guard/output_scanners/no_refusal.py#L120)              | Optional            |
-| `NO_REFUSAL_LIGHT_MATCH_TYPE`   | Match type for substrings.                                                    | string | "str"                 | Optional            |
-| `NO_REFUSAL_LIGHT_CASE_SENSITIVE` | Enables case sensitivity for substrings.                                    | bool   | false               | Optional            |
-| `NO_REFUSAL_LIGHT_REACT`        | Enables redaction of banned substrings.                                       | bool   | false               | Optional            |
-| `NO_REFUSAL_LIGHT_CONTAINS_ALL` | Requires all substrings to be present.                                        | bool   | false               | Optional            |
-
 
 ### ReadingTime scanner
 

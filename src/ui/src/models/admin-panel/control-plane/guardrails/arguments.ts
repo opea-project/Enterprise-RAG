@@ -77,3 +77,10 @@ export const VALID_LANGUAGES: ServiceArgument = {
   value: null,
   commaSeparated: true,
 };
+
+export const PATTERNS: ServiceArgument = {
+  displayName: "patterns",
+  type: "text",
+  value: null,
+  commaSeparated: true,
+};

@@ -3,11 +3,11 @@
 
 import "./UploadDataDialogFooter.scss";
 
-import { useCallback } from "react";
-import { BsCloudUploadFill, BsExclamationCircleFill } from "react-icons/bs";
+import { BsCloudUploadFill } from "react-icons/bs";
 
-import Tooltip from "@/components/shared/Tooltip/Tooltip";
 import { UploadErrors } from "@/models/admin-panel/data-ingestion/dataIngestion";
+
+import UploadErrorsDialog from "../UploadErrorsDialog/UploadErrorsDialog";
 
 interface UploadDataDialogFooterProps {
   uploadErrors: UploadErrors;
@@ -27,34 +27,6 @@ const UploadDataDialogFooter = ({
   const hasUploadErrors =
     uploadErrors.files !== "" || uploadErrors.links !== "";
 
-  const getFooterMessage = useCallback(() => {
-    if (hasUploadErrors) {
-      const tooltipText = (
-        <>
-          {uploadErrors.files !== "" && <p>Files: {uploadErrors.files}</p>}
-          {uploadErrors.links !== "" && <p>Links: {uploadErrors.links}</p>}
-        </>
-      );
-      return (
-        <>
-          <Tooltip text={tooltipText} position="left">
-            <div className="upload-dialog__error">
-              <BsExclamationCircleFill className="upload-dialog__error--icon" />
-              <p className="upload-dialog__error--text">Error during upload</p>
-            </div>
-          </Tooltip>
-        </>
-      );
-    }
-
-    return toBeUploadedMessage;
-  }, [
-    hasUploadErrors,
-    uploadErrors.files,
-    uploadErrors.links,
-    toBeUploadedMessage,
-  ]);
-
   const uploadBtnContent = isUploading ? (
     <>
       <BsCloudUploadFill className="mr-2" />
@@ -66,7 +38,11 @@ const UploadDataDialogFooter = ({
 
   return (
     <div className="upload-dialog__footer">
-      <p>{getFooterMessage()}</p>
+      {hasUploadErrors ? (
+        <UploadErrorsDialog uploadErrors={uploadErrors} />
+      ) : (
+        toBeUploadedMessage
+      )}
       <button
         className="upload-data__footer--button"
         disabled={uploadDisabled}

@@ -589,7 +589,7 @@ function clear_gateway() {
     print_header "Clear gateway"
 
     kubectl get secret tls-secret -n $GATEWAY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $GATEWAY_NS
-    kubectl get secret apisix-secret -n $GATEWAY_NS> /dev/null 2>&1 && kubectl delete secret apisix-secret -n $AUTH_NS
+    kubectl get secret apisix-secret -n $GATEWAY_NS> /dev/null 2>&1 && kubectl delete secret apisix-secret -n $GATEWAY_NS
 
     helm status -n "$GATEWAY_NS" auth-apisix-crds > /dev/null 2>&1 &&  helm uninstall auth-apisix-crds -n "$GATEWAY_NS"
     helm status -n "$GATEWAY_NS" auth-apisix > /dev/null 2>&1 &&  helm uninstall auth-apisix -n "$GATEWAY_NS"
@@ -677,6 +677,8 @@ function clear_ui() {
 
     kubectl get secret tls-secret -n $UI_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $UI_NS
     helm status -n $UI_NS chatqa-app > /dev/null 2>&1 && helm uninstall -n $UI_NS chatqa-app
+
+    kubectl get ns $UI_NS > /dev/null 2>&1 && kubectl delete ns $UI_NS
 }
 
 function clear_all_ns() {

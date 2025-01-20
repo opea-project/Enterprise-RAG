@@ -154,6 +154,30 @@ func setEnvVars(containers []corev1.Container, envVars []corev1.EnvVar) []corev1
 	return containers
 }
 
+func (r *GMConnectorReconciler) getLLMModelNameFromVLLMConfigMap(ctx context.Context, graphNs string) string {
+	for _, configMapName := range []string{"vllm-gaudi-config", "vllm-config"} {
+		configMap := &corev1.ConfigMap{}
+		err := r.Client.Get(ctx, client.ObjectKey{Namespace: graphNs, Name: configMapName}, configMap)
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				continue
+			}
+			_log.Error(err, "Failed to get ConfigMap", "namespace", graphNs, "name", configMapName)
+			return ""
+		}
+
+		if modelName, exists := configMap.Data["LLM_VLLM_MODEL_NAME"]; exists {
+			return modelName
+		} else {
+			_log.Error(err, "LLM_VLLM_MODEL_NAME not found in ConfigMap", "name", configMapName)
+		}
+	}
+
+	_log.Info("No VLLM ConfigMap found")
+	return ""
+}
+
+
 func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv1alpha3.Router, graph *mcv1alpha3.GMConnector) ([]*unstructured.Unstructured, error) {
 	if stepCfg == nil || nodeCfg == nil {
 		return nil, errors.New("invalid svc config")
@@ -259,6 +283,18 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 					newEnvVars = append(newEnvVars, itemEnvVar)
 				}
 			}
+
+			if stepCfg.StepName == Llm {
+				llmModelName := r.getLLMModelNameFromVLLMConfigMap(ctx, graphNs)
+				if llmModelName != "" {
+					newEnvVars = append(newEnvVars, corev1.EnvVar{
+						Name:  "LLM_MODEL_NAME",
+						Value: llmModelName,
+					})
+					_log.Info("[DEBUG] LLM_MODEL_NAME set from graph configuration", "LLM_MODEL_NAME", llmModelName)
+				}
+			}
+
 			if len(newEnvVars) > 0 {
 				deployment_obj.Spec.Template.Spec.Containers = setEnvVars(deployment_obj.Spec.Template.Spec.Containers, newEnvVars)
 				deployment_obj.Spec.Template.Spec.InitContainers = setEnvVars(deployment_obj.Spec.Template.Spec.InitContainers, newEnvVars)

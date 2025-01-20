@@ -69,6 +69,12 @@ spec:
           serviceName: prompt-template-svc
           config:
             endpoint: /v1/prompt_template
+      - name: VLLM
+        internalService:
+          serviceName: vllm-service-m
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
       - name: Llm
         data: $response
         internalService:
@@ -77,10 +83,3 @@ spec:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-service-m
-            LLM_MODEL_NAME: "Intel/neural-chat-7b-v3-3"
-      - name: VLLM
-        internalService:
-          serviceName: vllm-service-m
-          config:
-            endpoint: /v1/completions
-          isDownstreamService: true

@@ -83,6 +83,13 @@ spec:
           serviceName: input-scan-svc
           config:
             endpoint: /v1/llmguardinput
+      - name: VLLMGaudi
+        dependency: Hard
+        internalService:
+          serviceName: vllm-gaudi-svc
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
       - name: Llm
         data: $response
         dependency: Hard
@@ -93,13 +100,6 @@ spec:
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
             LLM_OUTPUT_GUARD_EXISTS: "True"
-      - name: VLLMGaudi
-        dependency: Hard
-        internalService:
-          serviceName: vllm-gaudi-svc
-          config:
-            endpoint: /v1/completions
-          isDownstreamService: true
       - name: LLMGuardOutput
         dependency: Hard
         data: $response

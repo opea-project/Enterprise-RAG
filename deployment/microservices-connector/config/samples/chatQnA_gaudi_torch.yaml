@@ -71,6 +71,13 @@ spec:
           serviceName: prompt-template-svc
           config:
             endpoint: /v1/prompt_template
+      - name: VLLMGaudi
+        dependency: Hard
+        internalService:
+          serviceName: vllm-gaudi-svc
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
       - name: Llm
         data: $response
         internalService:
@@ -79,10 +86,3 @@ spec:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
-      - name: VLLMGaudi
-        dependency: Hard
-        internalService:
-          serviceName: vllm-gaudi-svc
-          config:
-            endpoint: /v1/completions
-          isDownstreamService: true

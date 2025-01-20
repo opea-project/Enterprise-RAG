@@ -67,8 +67,6 @@ images:
     repository: *repo
     tag: *tag
     envfile: "src/comps/llms/impl/microservice/.env"
-    envs:
-      LLM_MODEL_NAME: *hpu_model
   in-guard-usvc:
     image: "opea/in-guard"
     repository: *repo

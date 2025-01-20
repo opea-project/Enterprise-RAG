@@ -29,6 +29,7 @@ COPY --chown=user:user ./comps/guardrails/llm_guard_output_guardrail/__init__.py
 COPY --chown=user:user ./comps/guardrails/llm_guard_output_guardrail/utils ./comps/guardrails/llm_guard_output_guardrail/utils
 COPY --chown=user:user ./comps/guardrails/llm_guard_output_guardrail/opea_llm_guard_output_guardrail_microservice.py ./comps/guardrails/llm_guard_output_guardrail/opea_llm_guard_output_guardrail_microservice.py
 COPY --chown=user:user ./comps/guardrails/llm_guard_output_guardrail/impl/microservice/.env ./comps/guardrails/llm_guard_output_guardrail/.env
+COPY --chown=user:user ./comps/guardrails/utils/scanners.py ./comps/guardrails/utils/scanners.py
 
 WORKDIR /home/user/comps/guardrails/llm_guard_output_guardrail/
 CMD ["python", "opea_llm_guard_output_guardrail_microservice.py"]

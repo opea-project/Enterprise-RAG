@@ -3,7 +3,8 @@
 import pytest
 from unittest.mock import patch
 from comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_scanners import OutputScannersConfig
-from llm_guard.output_scanners import JSON, BanSubstrings
+from comps.guardrails.utils.scanners import OPEABanSubstrings
+from llm_guard.output_scanners import JSON
 
 @pytest.fixture
 def mock_output_scanners_config():
@@ -23,7 +24,7 @@ def output_scanners_config_instance(mock_output_scanners_config):
 def test_create_enabled_output_scanners(output_scanners_config_instance):
     scanners = output_scanners_config_instance.create_enabled_output_scanners()
     assert len(scanners) == 2  # Only JSONScanner and BanSubstrings are enabled
-    assert isinstance(scanners[0], BanSubstrings)
+    assert isinstance(scanners[0], OPEABanSubstrings)
     assert isinstance(scanners[1], JSON)
 
 @patch('comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_scanners.logger')

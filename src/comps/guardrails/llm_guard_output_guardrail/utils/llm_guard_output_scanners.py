@@ -5,7 +5,6 @@ from llm_guard.vault import Vault
 from llm_guard.output_scanners import (
     BanCode,
     BanCompetitors,
-    BanSubstrings,
     BanTopics,
     Bias,
     Code,
@@ -104,6 +103,7 @@ ENABLED_SCANNERS = [
     'url_reachability'
 ]
 
+from comps.guardrails.utils.scanners import OPEABanSubstrings
 from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 
@@ -626,7 +626,7 @@ class OutputScannersConfig:
         if contains_all is not None:
             ban_substrings_params['contains_all'] = contains_all
         logger.info(f"Creating BanSubstrings scanner with params: {ban_substrings_params}")
-        return BanSubstrings(**ban_substrings_params)
+        return OPEABanSubstrings(**ban_substrings_params)
 
     def _create_ban_topics_scanner(self, scanner_config):
         enabled_models = {
@@ -918,6 +918,10 @@ class OutputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
 
+        if match_type == "sentence":
+            import nltk
+            nltk.download('punkt_tab')
+
         if threshold is not None:
             gibberish_params['threshold'] = threshold
         if model_name is not None:
@@ -1037,6 +1041,10 @@ class OutputScannersConfig:
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
+
+        if match_type == "sentence":
+            import nltk
+            nltk.download('punkt_tab')
 
 
         if model_name is not None:

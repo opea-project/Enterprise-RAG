@@ -90,6 +90,8 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: tmp
+            - mountPath: /home/user/nltk_data
+              name: nltk-data
           livenessProbe:
             failureThreshold: 24
             httpGet:
@@ -119,4 +121,6 @@ spec:
               memory: 16Gi
       volumes:
         - name: tmp
+          emptyDir: {}
+        - name: nltk-data
           emptyDir: {}

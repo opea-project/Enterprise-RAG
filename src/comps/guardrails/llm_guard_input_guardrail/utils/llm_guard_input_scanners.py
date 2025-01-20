@@ -6,7 +6,6 @@ from llm_guard.input_scanners import (
     Anonymize,
     BanCode,
     BanCompetitors,
-    BanSubstrings,
     BanTopics,
     Code,
     Gibberish,
@@ -78,6 +77,7 @@ ENABLED_SCANNERS = [
     'toxicity'
 ]
 
+from comps.guardrails.utils.scanners import OPEABanSubstrings
 from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
 
@@ -381,14 +381,20 @@ class InputScannersConfig:
 
 #### METHODS FOR CREATING SCANNERS
 
-    def _create_anonymize_scanner(self, scanner_config):
+    def _create_anonymize_scanner(self, scanner_config=None):
+        if scanner_config is None:
+            logger.warning("_create_anonymize_scanner was invoked without scanner_config. Recreating with saved config to clear the Vault.")
+            if hasattr(self, "_anonymize_params") and self._anonymize_params is not None:
+                scanner_config = self._anonymize_params
+            else:
+                raise ValueError("_create_anonymize_scanner was invoked without scanner_config but no self._anonymize_params were saved. Such action is not allowed.")
         vault = Vault()
         anonymize_params = {'vault': vault, 'use_onnx': scanner_config.get('use_onnx', False)}
         hidden_names = scanner_config.get('hidden_names', None)
         allowed_names = scanner_config.get('allowed_names', None)
         entity_types = scanner_config.get('entity_types', None)
         preamble = scanner_config.get('preamble', None)
-        regex_patters = scanner_config.get('regex_patterns', None)
+        regex_patterns = scanner_config.get('regex_patterns', None)
         use_faker = scanner_config.get('use_faker', None)
         recognizer_conf = scanner_config.get('recognizer_conf', None)
         threshold = scanner_config.get('threshold', None)
@@ -403,8 +409,8 @@ class InputScannersConfig:
         if isinstance(entity_types, str):
             entity_types = sanitize_env(entity_types)
 
-        if isinstance(regex_patters, str):
-            regex_patters = sanitize_env(regex_patters)
+        if isinstance(regex_patterns, str):
+            regex_patterns = sanitize_env(regex_patterns)
 
         if hidden_names is not None:
             if isinstance(hidden_names, str):
@@ -435,12 +441,12 @@ class InputScannersConfig:
                 raise ValueError("Provided type is not valid for Anonymize scanner")
         if preamble is not None:
             anonymize_params['preamble'] = preamble
-        if regex_patters is not None:
-            if isinstance(regex_patters, str):
+        if regex_patterns is not None:
+            if isinstance(regex_patterns, str):
                 artifacts = set([',', '', '.'])
-                anonymize_params['regex_patterns'] = list(set(regex_patters.split(',')) - artifacts)
+                anonymize_params['regex_patterns'] = list(set(regex_patterns.split(',')) - artifacts)
             elif isinstance(hidden_names, list):
-                anonymize_params['regex_patterns'] = regex_patters
+                anonymize_params['regex_patterns'] = regex_patterns
             else:
                 logger.error("Provided type is not valid for Anonymize scanner")
                 raise ValueError("Provided type is not valid for Anonymize scanner")
@@ -453,6 +459,7 @@ class InputScannersConfig:
         if language is not None:
             anonymize_params['language'] = language
         logger.info(f"Creating Anonymize scanner with params: {anonymize_params}")
+        self._anonymize_params = {key: value for key, value in anonymize_params.items() if key != 'vault'}
         return Anonymize(**anonymize_params)
 
     def _create_ban_code_scanner(self, scanner_config):
@@ -548,7 +555,7 @@ class InputScannersConfig:
         if contains_all is not None:
             ban_substrings_params['contains_all'] = contains_all # bool
         logger.info(f"Creating BanSubstrings scanner with params: {ban_substrings_params}")
-        return BanSubstrings(**ban_substrings_params)
+        return OPEABanSubstrings(**ban_substrings_params)
 
     def _create_ban_topics_scanner(self, scanner_config):
         enabled_models = {
@@ -640,6 +647,10 @@ class InputScannersConfig:
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
 
+        if match_type == "sentence":
+            import nltk
+            nltk.download('punkt_tab')
+
         if threshold is not None:
             gibberish_params['threshold'] = threshold
         if model_name is not None:
@@ -711,6 +722,10 @@ class InputScannersConfig:
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
+
+        if match_type == "sentence":
+            import nltk
+            nltk.download('punkt_tab')
 
         if model_name is not None:
             if model_name in enabled_models:
@@ -811,6 +826,10 @@ class InputScannersConfig:
         model_name = scanner_config.get('model', None)
         threshold = scanner_config.get('threshold', None)
         match_type = scanner_config.get('match_type', None)
+
+        if match_type == "sentence":
+            import nltk
+            nltk.download('punkt_tab')
 
 
         if model_name is not None:

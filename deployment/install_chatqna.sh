@@ -632,6 +632,7 @@ ui_flag=false
 auth_flag=false
 helm_upgrade=false
 edp_flag=true
+clear_any_flag=false
 clear_deployment_flag=false
 clear_fingerprint_flag=false
 clear_ui_flag=false
@@ -727,24 +728,31 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -ce|--clear-edp)
             clear_edp_flag=true
+            clear_any_flag=true
             ;;
         -ch|--clear-auth)
             clear_auth_flag=true
+            clear_any_flag=true
             ;;
         -cd|--clear-deployment)
             clear_deployment_flag=true
+            clear_any_flag=true
             ;;
         -cu|--clear-ui)
             clear_ui_flag=true
+            clear_any_flag=true
             ;;
         -ct|--clear-telemetry)
             clear_telemetry_flag=true
+            clear_any_flag=true
             ;;
         -cf|--clear-fingerprint)
             clear_fingerprint_flag=true
+            clear_any_flag=true
             ;;
         -ca|--clear-all)
             clear_all_flag=true
+            clear_any_flag=true
             ;;
         -h|--help)
             usage
@@ -800,7 +808,7 @@ if $ui_flag; then
     start_ui
 fi
 
-if $edp_flag && ! $clear_edp_flag && ! $clear_all_flag; then
+if $edp_flag && ! $clear_any_flag; then
     start_edp "$PIPELINE"
 fi
 
@@ -841,8 +849,6 @@ if $clear_all_flag; then
     clear_edp
     clear_authentication
     clear_ui
-    clear_edp
-    clear_fingerprint
     clear_telemetry
     clear_ingress
     clear_gateway

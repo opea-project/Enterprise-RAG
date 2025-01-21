@@ -30,6 +30,9 @@ build/
 # Ignore the .vscode directory
 .vscode/
 
+# Ignore JetBrains IDE files
+.idea/
+
 # Super-Linter output directory
 super-linter-output/
 

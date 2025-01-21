@@ -83,59 +83,12 @@ class ApiRequestHelper:
         self.api_port = api_port
         self.default_headers = {"Content-Type": "application/json"}
 
-    def change_arguments(self, json_data):
-        """
-        /v1/system_fingerprint/change_arguments API call
-        """
-        print(f"Changing fingerprint arguments to: {json_data}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            start_time = time.time()
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/system_fingerprint/change_arguments",
-                headers=self.default_headers,
-                json=json_data
-            )
-            duration = round(time.time() - start_time, 2)
-            print(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
-            return ApiResponse(response, duration)
-
-    def append_arguments(self, text):
-        """
-        /v1/system_fingerprint/append_arguments API call
-        """
-        return self._append_arguments({"text": text})
-
-    def append_arguments_custom_body(self, json_body):
-        """
-        /v1/append_arguments API call to Fingerprint microservice with a custom JSON body
-        """
-        return self._append_arguments(json_body)
-
-    def _append_arguments(self, json_data):
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            start_time = time.time()
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/system_fingerprint/append_arguments",
-                headers=self.default_headers,
-                json=json_data
-            )
-            duration = round(time.time() - start_time, 2)
-            print(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
-            return ApiResponse(response, duration)
-
-    def call_chatqa_custom_json(self, json_body):
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            return self._call_chatqa(json_body, pf)
-
     def call_chatqa(self, question, **custom_params):
         """
         Make /v1/chatqa API call with the provided question.
         """
         json_data = {
-            "text": question,
-            "parameters": {
-                "streaming": False
-            }
+            "text": question
         }
         json_data.update(custom_params)
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
@@ -181,26 +134,29 @@ class ApiRequestHelper:
         """
         Parse raw response_body from the chatqa response and return a human-readable text
         """
-        if response.headers.get("Transfer-Encoding") != "chunked":
-            # Most likely it's JSON-like response
-            return response.text
-
-        response_lines = response.text.splitlines()
-        response_text = ""
-        for line in response_lines:
-            if isinstance(line, bytes):
-                line = line.decode('utf-8')
-            if line == "":
-                continue
-            elif not line.startswith("data:"):
-                raise InvalidChatqaResponseBody(
-                    "Chatqa API response body does not follow "f"'Server-Sent Events' structure. "
-                    f"Response: {response.text}.\n\nHeaders: {response.headers}"
-                )
-            else:
-                response_text += line[7:-1]
-        # Replace new line characters for better output
-        return response_text.replace('\\n', '\n')
+        print(f"response.headers: {response.headers}")
+        if response.headers.get("Content-Type") == "application/json":
+            return response.json().get("text")
+        elif response.headers.get("Content-Type") == "text/event-stream":
+            response_lines = response.text.splitlines()
+            response_text = ""
+            for line in response_lines:
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8')
+                if line == "":
+                    continue
+                elif not line.startswith("data:"):
+                    raise InvalidChatqaResponseBody(
+                        "Chatqa API response body does not follow 'Server-Sent Events' structure. "
+                        f"Response: {response.text}.\n\nHeaders: {response.headers}"
+                    )
+                else:
+                    response_text += line[7:-1]
+            # Replace new line characters for better output
+            return response_text.replace('\\n', '\n')
+        else:
+            raise InvalidChatqaResponseBody(
+                f"Unexpected Content-Type in the response: {response.headers.get('Content-Type')}")
 
     def call_health_check_api(self, namespace, selector, port, health_path="v1/health_check"):
         """

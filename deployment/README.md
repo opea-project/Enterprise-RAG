@@ -1,6 +1,6 @@
 # Deploy Intel&reg; AI for Enterprise RAG
 
-### Verify System Status
+## Verify System Status
 
 Before proceeding with this guide, verify that the following output is displayed when running `kubectl get pods -A`. This output indicates that all necessary Kubernetes components are running and ready to use. If not, refer to the [prerequisites](../docs/prerequisites.md) guide to set up your system to run the example in this document.
 
@@ -371,3 +371,12 @@ Run this command to delete all namespaces, custom resource definitions, releases
 ```bash
 ./install_chatqna.sh -ca
 ```
+
+## Additional features
+
+### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
+
+For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® TDX), refer to the [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](../docs/tdx.md) guide.
+
+> [!NOTE]
+> Intel TDX feature in Enterprise RAG is experimental.

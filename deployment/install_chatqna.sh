@@ -60,6 +60,7 @@ REGISTRY="localhost:5000"
 TAG="latest"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
+FEATURES=""
 
 available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
@@ -84,6 +85,7 @@ function usage() {
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
+    echo -e "\t--features <FEATURES>: Comma-separated list of features to enable. Available features: tdx (experimental)"
     echo -e "\t-cd|--clear-deployment: Clear deployment services."
     echo -e "\t-ch|--clear-auth: Clear auth services."
     echo -e "\t-cm|--clear-mesh: Clear mesh deployment."
@@ -117,6 +119,19 @@ function helm_install() {
       helm_cmd="upgrade --install"
       msg="upgrade or installation"
     fi
+
+    IFS=',' read -ra feature_list <<< "$FEATURES"
+    for feature in "${feature_list[@]}"; do
+        case $feature in
+            tdx)
+                if [ -z "$KBS_ADDRESS" ]; then
+                    print_log "Error: KBS_ADDRESS environment variable is not set. Exiting."
+                    exit 1
+                fi
+                helm_cmd+=" --values $gmc_path/tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
+                ;;
+        esac
+    done
 
     print_log "helm $msg of \"$name\" in \"$namespace\" namespace in progress ..."
     if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
@@ -847,6 +862,15 @@ while [[ "$#" -gt 0 ]]; do
             clear_all_flag=true
             clear_any_flag=true
             ;;
+        --features)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --features. Please provide a comma-separated list of features."
+                usage
+                exit 1
+            fi
+            FEATURES=$1
+            ;;
         -h|--help)
             usage
             exit 0
@@ -888,6 +912,18 @@ if [[ "$telemetry_flag" == "true" ]]; then
     if  [[ $(sysctl -n fs.inotify.max_user_instances) -lt 8000 ]]; then
         print_log "Error: Host OS System is not configured properly. Insufficent inotify.max_user_instances < 8000 (for OpenTelemetry systemd/journald collector). Did you run configure.sh? Or fix it with: sudo sysctl -w fs.inotify.max_user_instances=8192"
         exit 1
+    fi
+fi
+
+if [[ "$FEATURES" == *"tdx"* ]]; then
+  if [[ ! "$PIPELINE" == *"xeon"* ]]; then
+    print_log "Error: TDX feature is only supported for xeon pipelines."
+    exit 1
+  fi
+
+  if [[ "$REGISTRY" == *"localhost"* ]]; then
+      print_log "Error: TDX feature is only supported for public image registries."
+      exit 1
     fi
 fi
 

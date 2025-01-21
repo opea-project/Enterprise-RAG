@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]"
+    echo "Usage: $0  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]"
     exit 1
 }
 
@@ -19,19 +19,21 @@ command_exists() {
 PIPELINE=gaudi_torch_guard
 TAG=latest
 REGISTRY=localhost:5000
+FEATURES=""
 
 # Parse command-line arguments
-# !TODO this should be changed to use non-positional parameters
-while getopts "g:p:u:n:d:t:y:" opt; do
-    case $opt in
-        g) HUG_TOKEN="$OPTARG";;
-        p) RAG_HTTP_PROXY="$OPTARG";;
-        u) RAG_HTTPS_PROXY="$OPTARG";;
-        n) RAG_NO_PROXY="$OPTARG" ;;
-        d) PIPELINE="$OPTARG" ;;
-        t) TAG="$OPTARG" ;;
-        y) REGISTRY="$OPTARG" ;;
-        *) usage ;;
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -g) HUG_TOKEN="$2"; shift 2 ;;
+        -p) RAG_HTTP_PROXY="$2"; shift 2 ;;
+        -u) RAG_HTTPS_PROXY="$2"; shift 2 ;;
+        -n) RAG_NO_PROXY="$2"; shift 2 ;;
+        -d) PIPELINE="$2"; shift 2 ;;
+        -t) TAG="$2"; shift 2 ;;
+        -y) REGISTRY="$2"; shift 2 ;;
+        --features) FEATURES="$2"; shift 2 ;;
+        -*) echo "Unknown option: $1" >&2; usage ;;
+        *) break ;;
     esac
 done
 
@@ -55,5 +57,8 @@ if ! command_exists kubectl; then
     exit 1
 fi
 
-# Install chatqna & run test
-bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test
+if [ -n "$FEATURES" ]; then
+  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test --features "$FEATURES"
+else
+  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" --test
+fi

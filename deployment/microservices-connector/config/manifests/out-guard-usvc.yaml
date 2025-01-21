@@ -66,7 +66,9 @@ spec:
     metadata:
       labels:
         {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
@@ -114,11 +116,11 @@ spec:
             periodSeconds: 60
           resources:
             requests:
-              cpu: "4"
-              memory: 8Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "4" "name" .filename "Values" .Values "type" "resources.requests.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "8Gi" "name" .filename "Values" .Values "type" "resources.requests.memory") | trim }}
             limits:
-              cpu: "8"
-              memory: 16Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "8" "name" .filename "Values" .Values "type" "resources.limits.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "16Gi" "name" .filename "Values" .Values "type" "resources.limits.memory") | trim }}
       volumes:
         - name: tmp
           emptyDir: {}

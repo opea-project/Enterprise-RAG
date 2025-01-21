@@ -56,7 +56,9 @@ spec:
     metadata:
       labels:
         {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
@@ -134,11 +136,11 @@ spec:
               port: 8000
           resources:
             requests:
-              cpu: "32"
-              memory: 64Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "32" "name" .filename "Values" .Values "type" "resources.requests.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "64Gi" "name" .filename "Values" .Values "type" "resources.requests.memory") | trim }}
             limits:
-              cpu: "32"
-              memory: 100Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "32" "name" .filename "Values" .Values "type" "resources.limits.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "100Gi" "name" .filename "Values" .Values "type" "resources.limits.memory") | trim }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

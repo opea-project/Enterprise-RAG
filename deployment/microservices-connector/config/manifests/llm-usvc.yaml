@@ -62,7 +62,9 @@ spec:
     metadata:
       labels:
         {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       serviceAccountName: llm-usvc
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -128,7 +130,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           startupProbe:
-            failureThreshold: 120
+            failureThreshold: {{ include "manifest.tdx.values" (dict "default" 120 "name" .filename "Values" .Values "type" "startupProbe.failureThreshold") | trim }}
             httpGet:
               path: v1/health_check
               port: llm-usvc
@@ -136,11 +138,11 @@ spec:
             periodSeconds: 60
           resources:
             requests:
-              cpu: "1"
-              memory: 2Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "1" "name" .filename "Values" .Values "type" "resources.requests.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "2Gi" "name" .filename "Values" .Values "type" "resources.requests.memory") | trim }}
             limits:
-              cpu: "4"
-              memory: 6Gi
+              cpu: {{ include "manifest.tdx.values" (dict "default" "4" "name" .filename "Values" .Values "type" "resources.limits.cpu") | trim }}
+              memory: {{ include "manifest.tdx.values" (dict "default" "6Gi" "name" .filename "Values" .Values "type" "resources.limits.memory") | trim }}
       volumes:
         - name: tmp
           emptyDir: {}

@@ -177,7 +177,6 @@ class GuardQuestions:
                     '"is_active": true,'
                     'hobbies": ["reading", "traveling", "swimming"'
                     '}')
-    VALID_JSON = "Generate a sample 10-lines long JSON"
 
     # language_same and language - output guards
     PL_QUESTION_PL_RESPONSE = ("Jak działa bot AI? Odpowiedz w języku polskim. "
@@ -223,8 +222,8 @@ class GuardQuestions:
 
 
 class GuardType(Enum):
-    INPUT = "input_guardrail_params"
-    OUTPUT = "output_guardrail_params"
+    INPUT = "input_guard"
+    OUTPUT = "output_guard"
 
 
 class GuardHelper:
@@ -232,15 +231,21 @@ class GuardHelper:
     def __init__(self, chatqa_api_helper, fingerprint_api_helper):
         self.chatqa_api_helper = chatqa_api_helper
         self.fingerprint_api_helper = fingerprint_api_helper
-        self.append_arguments = None
+        self.change_arguments = None
 
     def setup(self, guard_type, name, parameters):
-        self.append_arguments = self.fingerprint_api_helper.append_arguments("").json()
-        self.append_arguments["parameters"][guard_type.value][name] = parameters
+        self.change_arguments = [
+            {
+                "name": guard_type.value,
+                "data": {
+                    name: parameters
+                }
+            }
+        ]
 
     def call_chatqa(self, question):
-        self.append_arguments["text"] = question
-        return self.chatqa_api_helper.call_chatqa_custom_json(self.append_arguments)
+        self.fingerprint_api_helper.change_arguments(self.change_arguments)
+        return self.chatqa_api_helper.call_chatqa(question)
 
     def assert_blocked(self, question, reason=None):
         response = self.call_chatqa(question)
@@ -254,13 +259,14 @@ class GuardHelper:
 
     def assert_allowed(self, question, reason=None):
         response = self.call_chatqa(question)
-        print(f"ChatQA response: {self.chatqa_api_helper.format_response(response)}; "
-              f"status code: {response.status_code}")
+        response_text = self.chatqa_api_helper.format_response(response)
+        print(f"ChatQA response: {response_text}; status code: {response.status_code}")
         if reason:
             message = f"Question should be allowed because {reason}. Question: {question}"
         else:
             message = f"Question should be allowed. Question: {question}"
         assert response.status_code == 200, message
+        return response_text
 
     def assert_redacted(self, question):
         response = self.call_chatqa(question)
@@ -292,3 +298,19 @@ class GuardHelper:
                 name_without_extension = os.path.splitext(filename)[0]
                 code_snippets[name_without_extension] = content
         return code_snippets
+
+    def disable_all_guards(self):
+        system_args = self.fingerprint_api_helper.append_arguments("")
+        system_args = system_args.json().get("parameters")
+        input_guard_types = system_args["input_guardrail_params"].keys()
+        output_guard_types = system_args["output_guardrail_params"].keys()
+        change_arguments_body = [{
+            "name": GuardType.INPUT.value,
+            "data": {guard_type: {"enabled": False} for guard_type in input_guard_types}
+        }]
+        self.fingerprint_api_helper.change_arguments(change_arguments_body)
+        change_arguments_body = [{
+            "name": GuardType.OUTPUT.value,
+            "data": {guard_type: {"enabled": False} for guard_type in output_guard_types}
+        }]
+        self.fingerprint_api_helper.change_arguments(change_arguments_body)

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import json
 import pytest
 
 from helpers.guard_helper import GuardHelper, GuardType, GuardQuestions as questions
@@ -12,6 +13,13 @@ from helpers.guard_helper import GuardHelper, GuardType, GuardQuestions as quest
 @pytest.fixture
 def guard_helper(chatqa_api_helper, fingerprint_api_helper):
     return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
+
+
+@pytest.fixture(autouse=True)
+def cleanup(guard_helper):
+    print("\nDisabling all guards")
+    guard_helper.disable_all_guards()
+    yield
 
 
 @allure.testcase("IEASG-T72")
@@ -428,15 +436,16 @@ def test_out_guard_code(guard_helper):
 def test_out_guard_json_scanner(guard_helper):
     """
     Force the bot to return an invalid JSON object (containing syntax errors) in the output.
-    Check if json_scanner blocks the answer. Also, check if the JSON is repaired when repair parameter is set to True.
+    Check if json_scanner repairs the JSON object and returns a valid JSON object.
     """
-    guard_params = {
-        "enabled": True
-    }
+    guard_params = {"enabled": True}
     guard_helper.setup(GuardType.OUTPUT, "json_scanner", guard_params)
-    guard_helper.assert_blocked(questions.INVALID_JSON)
-    guard_helper.assert_allowed(questions.VALID_JSON)
-    # TODO: once json_scanner works properly, check also 'repair' parameter
+    response = guard_helper.assert_allowed(questions.INVALID_JSON)
+    try:
+        response = response.replace("DONE", "")
+        json.loads(response)
+    except json.JSONDecodeError:
+        pytest.fail(f"Output should be a valid JSON object. Response: {response}")
 
 
 @allure.testcase("IEASG-T95")

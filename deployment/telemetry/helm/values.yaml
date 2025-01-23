@@ -88,6 +88,12 @@ prometheus-redis-exporter:
     targets:
       - url: redis://redis-vector-db.chatqa.svc.cluster.local:6379
         name: redis-vector-db
+  auth:
+    enabled: true
+    redisUser: default
+    secret:
+      name: vector-database-config
+      key: REDIS_PASSWORD
 
 ### ============================================================================
 # LOGS subchart (logs backends and collectors)

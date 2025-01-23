@@ -637,6 +637,7 @@ function start_edp() {
     # Create or reuse secret for db configuration
     # Args: database_type, secret_namespace, username, password, namespace_with_database
     create_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+    create_database_secret "redis" $TELEMETRY_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS  # for redis exporter in telemetry namespace 
 
     if [[ $pipeline == *"multilingual"* ]]; then
         kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
@@ -957,11 +958,6 @@ if $deploy_flag; then
     updated_ns_list+=($GMC_NS $DEPLOYMENT_NS $DATAPREP_NS $FINGERPRINT_NS)
 fi
 
-if $telemetry_flag; then
-    start_telemetry
-    updated_ns_list+=($TELEMETRY_NS $TELEMETRY_TRACES_NS)
-fi
-
 if $auth_flag; then
     start_ingress
     updated_ns_list+=($INGRESS_NS)
@@ -975,6 +971,11 @@ fi
 if $edp_flag && ! $clear_any_flag; then
     start_edp "$PIPELINE"
     updated_ns_list+=($ENHANCED_DATAPREP_NS)
+fi
+
+if $telemetry_flag; then
+    start_telemetry
+    updated_ns_list+=($TELEMETRY_NS $TELEMETRY_TRACES_NS)
 fi
 
 if $mesh_flag && $create_flag; then

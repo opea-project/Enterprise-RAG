@@ -134,18 +134,22 @@ class ApiRequestHelper:
         """
         Parse raw response_body from the chatqa response and return a human-readable text
         """
-        print(f"response.headers: {response.headers}")
         if response.headers.get("Content-Type") == "application/json":
-            return response.json().get("text")
+            response_text = response.json().get("text")
+            if response_text is None:
+                response_text = response.json().get("error")
+            return response_text
         elif response.headers.get("Content-Type") == "text/event-stream":
-            response_lines = response.text.splitlines()
+            text = self.fix_encoding(response.text)
+            response_lines = text.splitlines()
             response_text = ""
             for line in response_lines:
                 if isinstance(line, bytes):
                     line = line.decode('utf-8')
                 if line == "":
                     continue
-                elif not line.startswith("data:"):
+                if not line.startswith("data:"):
+                    print(f"Unexpected line in the response: {line}")
                     raise InvalidChatqaResponseBody(
                         "Chatqa API response body does not follow 'Server-Sent Events' structure. "
                         f"Response: {response.text}.\n\nHeaders: {response.headers}"
@@ -157,6 +161,13 @@ class ApiRequestHelper:
         else:
             raise InvalidChatqaResponseBody(
                 f"Unexpected Content-Type in the response: {response.headers.get('Content-Type')}")
+
+    def fix_encoding(self, string):
+        try:
+            # Encode as bytes, then decode with UTF-8
+            return string.encode('latin1').decode('utf-8')
+        except Exception:
+            return string  # Append original if there's an error
 
     def call_health_check_api(self, namespace, selector, port, health_path="v1/health_check"):
         """

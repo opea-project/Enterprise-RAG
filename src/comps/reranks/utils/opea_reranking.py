@@ -8,7 +8,8 @@ from typing import List, TypedDict
 import aiohttp
 
 from asyncio import TimeoutError
-from requests.exceptions import RequestException, Timeout
+from aiohttp.client_exceptions import ClientResponseError
+from requests.exceptions import HTTPError, RequestException, Timeout
 
 from comps import (
     SearchedDoc,
@@ -100,6 +101,10 @@ class OPEAReranker:
                 raise Timeout(e)
             except RequestException as e:
                 raise RequestException(e)
+            except HTTPError as e:
+                raise HTTPError(e)
+            except ClientResponseError:
+                raise
             except Exception as e:
                 logger.error(f"Error during request to reranking service: {e}")
                 raise Exception(f"Error during request to reranking service: {e}")
@@ -157,6 +162,9 @@ class OPEAReranker:
             error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_endpoint}', status_code: {error_code}. Check if the service url is reachable."
             logger.error(error_message)
             raise RequestException(error_message)
+        except ClientResponseError as e:
+            logger.error(f"A ClientResponseError error occurred while sending a request to the reranking service: {e}")
+            raise
         except Exception as e:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")
@@ -192,6 +200,9 @@ class OPEAReranker:
             error_message = f"Request to reranking service timed out. Check if the service is running and reachable at '{self._service_endpoint}'."
             logger.error(error_message)
             raise Timeout(error_message)
+        except HTTPError as e:
+            logger.error(f"A HTTPError error occurred while requesting to the reranking service: {e}")
+            raise HTTPError(e)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
             error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_endpoint}', status_code: {error_code}. Check if the service url is reachable."

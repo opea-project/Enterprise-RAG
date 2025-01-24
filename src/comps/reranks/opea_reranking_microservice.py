@@ -4,11 +4,12 @@
 import os
 import time
 
+from aiohttp.client_exceptions import ClientResponseError
 from asyncio import TimeoutError
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from langsmith import traceable
-from requests.exceptions import RequestException, Timeout
+from requests.exceptions import HTTPError, RequestException, Timeout
 
 
 from comps import (
@@ -86,11 +87,27 @@ async def process(input: SearchedDoc) -> PromptTemplateInput:
         error_message = f"A Timeout error occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=408, detail=error_message)
+    except HTTPError as e:
+        err_message = e.response.json()['error']
+        if hasattr(e.response, "status_code") and e.response.status_code == 413:
+            raise HTTPException(status_code=413, detail=f"Too many documents provided into reranker. Adjust 'k' parameter in retriever or consider changing reranking model. Error: {err_message}")
+        elif hasattr(e.response, "status_code"):
+            raise HTTPException(status_code=e.response.status_code, detail=err_message)
+        else:
+            raise HTTPException(status_code=500, detail=err_message)
+    except ClientResponseError as e:
+        if hasattr(e, "status") and e.status == 413:
+            raise HTTPException(status_code=413, detail=f"Too many documents provided into reranker. Adjust 'k' parameter in retriever or consider changing reranking model. Error: {e.message}")
+        elif hasattr(e, "status"):
+            raise HTTPException(status_code=e.status, detail=e.message)
+        else:
+            raise HTTPException(status_code=500, detail=e.message)
     except RequestException as e:
         error_code = e.response.status_code if e.response else 503
         error_message = f"A RequestException occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=error_code, detail=error_message)
+
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")
          raise HTTPException(status_code=500,

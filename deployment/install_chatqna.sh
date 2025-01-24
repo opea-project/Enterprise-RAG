@@ -120,6 +120,12 @@ function helm_install() {
       msg="upgrade or installation"
     fi
 
+    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
+        helm_cmd+=" --values $gmc_path/resources-cpu.yaml"
+    else
+        helm_cmd+=" --values $gmc_path/resources-gaudi.yaml"
+    fi
+
     IFS=',' read -ra feature_list <<< "$FEATURES"
     for feature in "${feature_list[@]}"; do
         case $feature in
@@ -128,7 +134,7 @@ function helm_install() {
                     print_log "Error: KBS_ADDRESS environment variable is not set. Exiting."
                     exit 1
                 fi
-                helm_cmd+=" --values $gmc_path/tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
+                helm_cmd+=" --values $gmc_path/resources-tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
                 ;;
         esac
     done

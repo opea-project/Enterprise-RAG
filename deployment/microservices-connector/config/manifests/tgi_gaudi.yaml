@@ -48,7 +48,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
   selector:
     matchLabels:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
@@ -122,8 +122,8 @@ spec:
             tcpSocket:
               port: http
           resources:
-            limits:
-              habana.ai/gaudi: 8
+            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
+            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

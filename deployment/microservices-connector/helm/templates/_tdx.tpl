@@ -6,12 +6,11 @@ Annotations for the TDX deployment
 {{- $context := index . 1 -}}
 {{- if $context.Values.tdx }}
 {{- $tdx := $context.Values.tdx }}
-{{- range $service := $tdx.services | default (list) }}
-  {{- if and (eq $service.name $deploymentName) (eq $service.tdxEnabled true) }}
+{{- $service := index $tdx.services $deploymentName | default dict }}
+{{- if $service.tdxEnabled }}
 annotations:
   {{- range $key, $value := $tdx.common.annotations }}
   {{ $key }}: {{ tpl $value $context | quote | trim }}
-  {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}
@@ -25,10 +24,9 @@ runtime class for the TDX deployment
 {{- $context := index . 1 -}}
 {{- if $context.Values.tdx }}
 {{- $tdx := $context.Values.tdx }}
-{{- range $service := $tdx.services | default (list) }}
-  {{- if and (eq $service.name $deploymentName) (eq $service.tdxEnabled true) }}
+{{- $service := index $tdx.services $deploymentName | default dict }}
+{{- if $service.tdxEnabled }}
 runtimeClassName: {{ $tdx.common.runtimeClassName | quote }}
-  {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -42,34 +40,41 @@ Values for the TDX deployment
 {{- $deploymentName := .name }}
 {{- $valueType := .type }}
 {{- $tdx := .Values.tdx }}
-{{- $serviceFound := false }}
-{{- range $service := $tdx.services | default (list) }}
-  {{- if eq $service.name $deploymentName }}
-    {{- $serviceFound = true }}
-    {{- if eq $service.tdxEnabled true }}
-      {{- if eq $valueType "startupProbe.failureThreshold" }}
-        {{- include "compareValues" (dict "default" $default "value" ($service.startupProbe.failureThreshold | default 0)) }}
-      {{- else if eq $valueType "resources.limits.memory" }}
-        {{- include "compareMemory" (dict "default" $default "value" ($service.resources.limits.memory | default "2Gi")) }}
-      {{- else if eq $valueType "resources.limits.cpu" }}
-        {{- include "compareCPU" (dict "default" $default "value" ($service.resources.limits.cpu | default "1")) }}
-      {{- else if eq $valueType "resources.requests.memory" }}
-        {{- include "compareMemory" (dict "default" $default "value" ($service.resources.requests.memory | default "2Gi")) }}
-      {{- else if eq $valueType "resources.requests.cpu" }}
-        {{- include "compareCPU" (dict "default" $default "value" ($service.resources.requests.cpu | default "1")) }}
-      {{- end }}
-    {{- else }}
-      {{- $default }}
-    {{- end }}
+{{- $service := index $tdx.services $deploymentName | default dict }}
+{{- if $service.tdxEnabled }}
+  {{- if eq $valueType "startupProbe.failureThreshold" }}
+    {{- include "compareValues" (dict "default" $default "value" ($service.startupProbe.failureThreshold | default 0)) }}
+  {{- else if eq $valueType "resources.limits.memory" }}
+    {{- include "compareMemory" (dict "default" $default "value" ($service.resources.limits.memory | default "2Gi")) }}
+  {{- else if eq $valueType "resources.limits.cpu" }}
+    {{- include "compareCPU" (dict "default" $default "value" ($service.resources.limits.cpu | default "1")) }}
+  {{- else if eq $valueType "resources.requests.memory" }}
+    {{- include "compareMemory" (dict "default" $default "value" ($service.resources.requests.memory | default "2Gi")) }}
+  {{- else if eq $valueType "resources.requests.cpu" }}
+    {{- include "compareCPU" (dict "default" $default "value" ($service.resources.requests.cpu | default "1")) }}
   {{- end }}
-{{- end }}
-{{- if not $serviceFound }}
+{{- else }}
   {{- $default }}
 {{- end }}
 {{- else }}
   {{- $default }}
 {{- end }}
 {{- end }}
+
+{{- /*
+Retrieves resource values specifically for TDX deployment.
+*/ -}}
+{{- define "manifest.tdx.getResourceValues" -}}
+{{- $defaultValues := index . "defaultValues" -}}
+{{- $filename := index . "filename" -}}
+{{- $values := index . "values" -}}
+requests:
+  cpu: {{ include "manifest.tdx.values" (dict "default" (index $defaultValues "requests").cpu "name" $filename "Values" $values "type" "resources.requests.cpu") | trim }}
+  memory: {{ include "manifest.tdx.values" (dict "default" (index $defaultValues "requests").memory "name" $filename "Values" $values "type" "resources.requests.memory") | trim }}
+limits:
+  cpu: {{ include "manifest.tdx.values" (dict "default" (index $defaultValues "limits").cpu "name" $filename "Values" $values "type" "resources.limits.cpu") | trim }}
+  memory: {{ include "manifest.tdx.values" (dict "default" (index $defaultValues "limits").memory "name" $filename "Values" $values "type" "resources.limits.memory") | trim }}
+{{- end -}}
 
 {{/*
 Custom comparison function for memory values

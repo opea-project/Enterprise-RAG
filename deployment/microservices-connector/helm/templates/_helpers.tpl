@@ -123,3 +123,37 @@ Helper for adding environment variables and env files
         {{- end -}}
     {{- end -}}
 {{- end -}}
+
+{{- /*
+  Retrieves resource values based on the provided filename and values.
+*/ -}}
+{{- define "manifest.getResource" -}}
+{{- $filename := index . 0 -}}
+{{- $defaultValues := fromYaml (index . 1) -}}
+{{- $values := index . 2 -}}
+
+{{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "resources") }}
+  {{- $defaultValues = index $values "services" $filename "resources" }}
+{{- end -}}
+
+{{- $isTDXEnabled := hasKey $values "tdx" -}}
+{{- $isGaudiService := regexMatch "(?i)gaudi" $filename -}}
+
+{{- if and $isTDXEnabled (not $isGaudiService) }}
+  {{- include "manifest.tdx.getResourceValues" (dict "defaultValues" $defaultValues "filename" $filename "values" $values) }}
+{{- else }}
+  {{- $defaultValues | toYaml }}
+{{- end -}}
+{{- end -}}
+
+{{- /*
+  Retrieves replica values based on the provided filename and values.
+*/ -}}
+{{- define "getReplicas" -}}
+{{- $filename := index . 0 -}}
+{{- $values := index . 1 -}}
+
+{{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "replicas") }}
+  {{- index $values "services" $filename "replicas" }}
+{{- end -}}
+{{- end -}}

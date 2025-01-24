@@ -50,7 +50,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
-  replicas: 4
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 4 }}
   selector:
     matchLabels:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
@@ -87,12 +87,8 @@ spec:
           image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           resources:
-            requests:
-              cpu: {{ include "manifest.tdx.values" (dict "default" "4" "name" .filename "Values" .Values "type" "resources.requests.cpu") | trim }}
-              memory: {{ include "manifest.tdx.values" (dict "default" "4Gi" "name" .filename "Values" .Values "type" "resources.requests.memory") | trim }}
-            limits:
-              cpu: {{ include "manifest.tdx.values" (dict "default" "4" "name" .filename "Values" .Values "type" "resources.limits.cpu") | trim }}
-              memory: {{ include "manifest.tdx.values" (dict "default" "16Gi" "name" .filename "Values" .Values "type" "resources.limits.memory") | trim }}
+            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
           volumeMounts:
             - mountPath: /opt/ml/model
               name: model-volume

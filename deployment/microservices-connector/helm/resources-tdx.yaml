@@ -8,21 +8,21 @@ tdx:
       io.katacontainers.config.runtime.create_container_timeout: "1800"
 
   services:
-    - name: embedding-usvc
+    embedding-usvc:
       tdxEnabled: false # due to https://github.com/kata-containers/kata-containers/issues/10571
       resources:
         limits:
           memory: 16Gi
         requests:
           memory: 16Gi
-    - name: in-guard-usvc
+    in-guard-usvc:
       tdxEnabled: true
       resources:
         limits:
           memory: 16Gi
         requests:
           memory: 16Gi
-    - name: llm-usvc
+    llm-usvc:
       tdxEnabled: true
       startupProbe:
         failureThreshold: 240
@@ -31,49 +31,49 @@ tdx:
           memory: 16Gi
         requests:
           memory: 16Gi
-    - name: out-guard-usvc
+    out-guard-usvc:
       tdxEnabled: true
       resources:
         limits:
           memory: 16Gi
         requests:
           memory: 16Gi
-    - name: redis-vector-db
+    redis-vector-db:
       tdxEnabled: true
       resources:
         limits:
           memory: 4Gi
         requests:
           memory: 4Gi
-    - name: reranking-usvc
+    reranking-usvc:
       tdxEnabled: true
       resources:
         limits:
           memory: 4Gi
         requests:
           memory: 4Gi
-    - name: retriever-usvc
+    retriever-usvc:
       tdxEnabled: true
       resources:
         limits:
           memory: 7Gi
         requests:
           memory: 7Gi
-    - name: tei
+    tei:
       tdxEnabled: true
       resources:
         limits:
           memory: 4Gi
         requests:
           memory: 4Gi
-    - name: teirerank
+    teirerank:
       tdxEnabled: true
       resources:
         limits:
           memory: 16Gi
         requests:
           memory: 16Gi
-    - name: torchserve
+    torchserve:
       tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
       resources:
         limits:
@@ -82,7 +82,7 @@ tdx:
         requests:
           memory: 32Gi
           cpu: "16"
-    - name: vllm
+    vllm:
       tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
       resources:
         limits:

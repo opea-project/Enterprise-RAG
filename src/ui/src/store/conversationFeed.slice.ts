@@ -13,6 +13,12 @@ interface ChatMessage {
   id: string;
   isUserMessage: boolean;
   isStreaming?: boolean;
+  isError?: boolean;
+}
+
+export interface UpdatedChatMessage {
+  text: string;
+  isError: boolean;
 }
 
 interface ConversationFeedState {
@@ -78,17 +84,33 @@ export const conversationFeedSlice = createSlice({
     ) => {
       state.abortController = action.payload;
     },
-    updateBotMessageText: (state, action: PayloadAction<string>) => {
+    updateBotMessageText: (
+      state,
+      action: PayloadAction<string | UpdatedChatMessage>,
+    ) => {
       const previousMessages: ChatMessage[] = [...state.messages];
-      const chunk = action.payload;
-      state.messages = previousMessages.map((message) =>
-        message.id === state.currentChatBotMessageId
-          ? {
-              ...message,
-              text: message.text + chunk,
-            }
-          : message,
-      );
+      if (typeof action.payload === "string") {
+        const chunk = action.payload;
+        state.messages = previousMessages.map((message) =>
+          message.id === state.currentChatBotMessageId
+            ? {
+                ...message,
+                text: `${message.text}${chunk}`,
+              }
+            : message,
+        );
+      } else {
+        const { text, isError } = action.payload;
+        state.messages = previousMessages.map((message) =>
+          message.id === state.currentChatBotMessageId
+            ? {
+                ...message,
+                text: `${message.text}${text}`,
+                isError,
+              }
+            : message,
+        );
+      }
     },
     updateMessageIsStreamed: (state, action: PayloadAction<boolean>) => {
       const previousMessages: ChatMessage[] = [...state.messages];

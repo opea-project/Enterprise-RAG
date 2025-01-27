@@ -4,15 +4,14 @@
 import { useEffect } from "react";
 
 import DataTable from "@/components/shared/DataTable/DataTable";
-import { Notification } from "@/components/shared/NotificationToast/NotificationToast";
 import DataIngestionService from "@/services/dataIngestionService";
 import {
   filesDataIsLoadingSelector,
   filesDataSelector,
   getFiles,
-  setNotification,
 } from "@/store/dataIngestion.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addNotification } from "@/store/notifications.slice";
 import { getFilesTableColumns } from "@/utils/data-ingestion/dataTableColumns";
 
 const FilesDataTable = () => {
@@ -49,12 +48,7 @@ const FilesDataTable = () => {
         error instanceof Error
           ? error.message
           : `Failed to download file: ${name}`;
-      const notification: Notification = {
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      };
-      dispatch(setNotification(notification));
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
     }
   };
 
@@ -64,12 +58,7 @@ const FilesDataTable = () => {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to retry file action";
-      const notification: Notification = {
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      };
-      dispatch(setNotification(notification));
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
     } finally {
       dispatch(getFiles());
     }
@@ -83,12 +72,7 @@ const FilesDataTable = () => {
         error instanceof Error
           ? error.message
           : `Failed to delete file: ${name}`;
-      const notification: Notification = {
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      };
-      dispatch(setNotification(notification));
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
     } finally {
       dispatch(getFiles());
     }

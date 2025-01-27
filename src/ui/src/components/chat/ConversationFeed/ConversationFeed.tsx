@@ -121,11 +121,16 @@ const ConversationFeed = () => {
         className="conversation-feed__scroll"
       >
         <div className="conversation-feed">
-          {messages.map(({ text, isStreaming, isUserMessage, id }) =>
+          {messages.map(({ text, isStreaming, isUserMessage, id, isError }) =>
             isUserMessage ? (
               <UserMessage key={id} text={text} />
             ) : (
-              <BotMessage key={id} text={text} isStreaming={isStreaming} />
+              <BotMessage
+                key={id}
+                text={text}
+                isStreaming={isStreaming}
+                isError={isError}
+              />
             ),
           )}
         </div>

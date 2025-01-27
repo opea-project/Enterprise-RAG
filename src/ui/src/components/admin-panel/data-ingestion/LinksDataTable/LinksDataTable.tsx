@@ -4,15 +4,14 @@
 import { useEffect } from "react";
 
 import DataTable from "@/components/shared/DataTable/DataTable";
-import { Notification } from "@/components/shared/NotificationToast/NotificationToast";
 import DataIngestionService from "@/services/dataIngestionService";
 import {
   getLinks,
   linksDataIsLoadingSelector,
   linksDataSelector,
-  setNotification,
 } from "@/store/dataIngestion.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addNotification } from "@/store/notifications.slice";
 import { getLinksTableColumns } from "@/utils/data-ingestion/dataTableColumns";
 
 const LinksDataTable = () => {
@@ -30,12 +29,7 @@ const LinksDataTable = () => {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete link";
-      const notification: Notification = {
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      };
-      dispatch(setNotification(notification));
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
     } finally {
       dispatch(getLinks());
     }
@@ -47,12 +41,7 @@ const LinksDataTable = () => {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to retry link action";
-      const notification: Notification = {
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      };
-      dispatch(setNotification(notification));
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
     } finally {
       dispatch(getLinks());
     }

@@ -9,7 +9,7 @@
   }
 
   & .user-message__text {
-    @apply ml-16 min-h-[2.75rem] self-end rounded-[2rem] px-5 py-3;
+    @apply ml-16 min-h-[2.5rem] self-end rounded-[2rem] px-4 py-2;
     @apply bg-light-chat-user-message-bg dark:bg-dark-chat-user-message-bg;
     @apply text-light-chat-user-message-text dark:text-dark-chat-user-message-text;
 

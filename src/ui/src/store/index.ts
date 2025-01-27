@@ -7,6 +7,7 @@ import chatQnAGraphReducer from "@/store/chatQnAGraph.slice";
 import colorSchemeReducer from "@/store/colorScheme.slice";
 import conversationFeedReducer from "@/store/conversationFeed.slice";
 import dataIngestionReducer from "@/store/dataIngestion.slice";
+import notificationsReducer from "@/store/notifications.slice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     colorScheme: colorSchemeReducer,
     conversationFeed: conversationFeedReducer,
     dataIngestion: dataIngestionReducer,
+    notifications: notificationsReducer,
   },
 });
 

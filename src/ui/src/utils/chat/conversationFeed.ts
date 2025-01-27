@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { UpdatedChatMessage } from "@/store/conversationFeed.slice";
+
 export const extractGuardError = (errorString: string): string | null => {
   try {
     // Extract the JSON part from the error string
@@ -29,19 +31,30 @@ export const extractGuardError = (errorString: string): string | null => {
   }
 };
 
-export const handleError = (error: unknown): string => {
+export const handleError = (error: unknown): string | UpdatedChatMessage => {
   if (typeof error === "string") {
-    return error;
+    return { text: error, isError: false };
   }
 
   if (error instanceof Error) {
-    if (error.message.includes("Guard:")) {
+    if (error.name === "AbortError") {
+      return "";
+    }
+
+    if (error.name === "TypeError" && error.message === "Failed to fetch") {
+      return {
+        text: `${error.message}. This is probably network related error. Please contact your system administrator for further details.`,
+        isError: true,
+      };
+    }
+
+    if (error.message.startsWith("Guard:")) {
       const errorDetails = extractGuardError(error.message);
-      return errorDetails ?? error.message;
+      return errorDetails ?? { text: error.message, isError: false };
     } else {
-      return error.message;
+      return { text: error.message, isError: true };
     }
   } else {
-    return JSON.stringify(error);
+    return { text: JSON.stringify(error), isError: true };
   }
 };

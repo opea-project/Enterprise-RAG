@@ -40,6 +40,7 @@ interface ChatQnAGraphState {
   hasInputGuard: boolean;
   hasOutputGuard: boolean;
   selectedServiceNode: Node<ServiceData> | null;
+  canBeRendered: boolean;
 }
 
 const initialState: ChatQnAGraphState = {
@@ -50,6 +51,7 @@ const initialState: ChatQnAGraphState = {
   hasInputGuard: false,
   hasOutputGuard: false,
   selectedServiceNode: null,
+  canBeRendered: false,
 };
 
 const updateServiceArgs = (
@@ -241,6 +243,9 @@ export const chatQnAGraphSlice = createSlice({
     setHasOutputGuard: (state, action: PayloadAction<boolean>) => {
       state.hasOutputGuard = action.payload;
     },
+    setCanBeRendered: (state, action: PayloadAction<boolean>) => {
+      state.canBeRendered = action.payload;
+    },
   },
 });
 
@@ -255,7 +260,9 @@ export const {
   setChatQnAGraphSelectedServiceNode,
   setHasInputGuard,
   setHasOutputGuard,
+  setCanBeRendered,
 } = chatQnAGraphSlice.actions;
+
 export const chatQnAGraphEditModeEnabledSelector = (state: RootState) =>
   state.chatQnAGraph.editModeEnabled;
 export const chatQnAGraphNodesSelector = (state: RootState) =>
@@ -270,5 +277,7 @@ export const hasInputGuardSelector = (state: RootState) =>
   state.chatQnAGraph.hasInputGuard;
 export const hasOutputGuardSelector = (state: RootState) =>
   state.chatQnAGraph.hasOutputGuard;
+export const chatQnAGraphCanBeRenderedSelector = (state: RootState) =>
+  state.chatQnAGraph.canBeRendered;
 
 export default chatQnAGraphSlice.reducer;

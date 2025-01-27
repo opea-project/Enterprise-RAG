@@ -9,6 +9,12 @@
   }
 
   & .bot-message__text {
-    @apply w-full text-light-chat-bot-message dark:text-dark-chat-bot-message;
+    @apply mt-[0.4375rem] w-full text-light-chat-bot-message dark:text-dark-chat-bot-message;
+  }
+
+  & .bot-message__error {
+    @apply grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-[2rem] px-4 py-2;
+    @apply bg-light-notification-error-background dark:bg-dark-notification-error-background;
+    @apply text-light-notification-text drop-shadow dark:text-dark-notification-text;
   }
 }

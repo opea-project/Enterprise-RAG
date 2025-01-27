@@ -5,13 +5,16 @@ import { PayloadAction } from "@reduxjs/toolkit";
 
 import endpoints from "@/api/endpoints.json";
 import keycloakService from "@/services/keycloakService";
-import { updateBotMessageText } from "@/store/conversationFeed.slice";
+import {
+  updateBotMessageText,
+  UpdatedChatMessage,
+} from "@/store/conversationFeed.slice";
 
 class ChatQnAService {
   async postPrompt(
     prompt: string,
     abortSignal: AbortSignal,
-    dispatch: (action: PayloadAction<string>) => void,
+    dispatch: (action: PayloadAction<string | UpdatedChatMessage>) => void,
   ) {
     await keycloakService.refreshToken();
 
@@ -28,20 +31,34 @@ class ChatQnAService {
       signal: abortSignal,
     });
 
-    if (
-      response.status >= 400 &&
-      response.status < 500 &&
-      response.status !== 429
-    ) {
+    if (response.status === 408) {
+      // 408 - Request timeout
+      throw new Error(`
+        Your request took too long to complete.
+        Please try again later or contact your administrator if the problem persists.
+      `);
+    } else if (response.status === 413) {
+      // 413 - Payload Too Large
+      throw new Error(`
+        Your prompt seems to be too large to be processed.
+        Please shorten your prompt and send it again.
+        If the issue persists, please contact your administrator.
+      `);
+    } else if (response.status === 429) {
+      // 413 - Too Many Requests
+      throw new Error(`
+        You've reached the limit of requests.
+        Please take a short break and try again soon.
+      `);
+    } else if (response.status === 466) {
+      // 466 - Custom Error - Guardrails
       const error = await response.json();
-      let msg = JSON.stringify(error);
-      if (response.status === 466) {
-        // Guardrails
-        msg = `Guard: ${msg}`;
-      }
-      throw new Error(msg);
+      throw new Error(`Guard: ${JSON.stringify(error)}`);
     } else if (!response.ok) {
-      throw new Error("Failed to get response from chat");
+      // Handle all other errors that are not strictly related to user's prompt and actions
+      throw new Error(
+        "An error occurred. Please contact your administrator for further details.",
+      );
     }
 
     const contentType = response.headers.get("Content-Type");

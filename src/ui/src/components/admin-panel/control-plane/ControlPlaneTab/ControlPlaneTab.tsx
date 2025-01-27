@@ -7,14 +7,15 @@ import "./ControlPlaneTab.scss";
 import { useEffect } from "react";
 import { BsHurricane } from "react-icons/bs";
 
-import { ServicesParameters } from "@/api/models/systemFingerprint";
 import ChatQnAGraph from "@/components/admin-panel/control-plane/ChatQnAGraph/ChatQnAGraph";
 import ServiceDetailsModal from "@/components/admin-panel/control-plane/ServiceDetailsModal/ServiceDetailsModal";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
 import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
+  chatQnAGraphCanBeRenderedSelector,
   chatQnAGraphLoadingSelector,
+  setCanBeRendered,
   setChatQnAGraphEdges,
   setChatQnAGraphLoading,
   setChatQnAGraphNodes,
@@ -23,6 +24,7 @@ import {
   setHasOutputGuard,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addNotification } from "@/store/notifications.slice";
 
 const ServiceStatusLegend = () => (
   <div className="chatqna-graph-legend">
@@ -44,57 +46,82 @@ const ServiceStatusLegend = () => (
 const ControlPlaneTab = () => {
   const dispatch = useAppDispatch();
   const loading = useAppSelector(chatQnAGraphLoadingSelector);
+  const canBeRendered = useAppSelector(chatQnAGraphCanBeRenderedSelector);
 
   useEffect(() => {
     dispatch(setChatQnAGraphSelectedServiceNode([]));
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(setChatQnAGraphLoading(true));
+    const fetchGraphData = async () => {
+      dispatch(setChatQnAGraphLoading(true));
 
-    SystemFingerprintService.getChatQnAServiceDetails().then(
-      (fetchedDetails) => {
-        if (fetchedDetails) {
+      try {
+        const [fetchedDetails, parameters] = await Promise.all([
+          SystemFingerprintService.getChatQnAServiceDetails(),
+          SystemFingerprintService.appendArguments(),
+        ]);
+
+        if (fetchedDetails && parameters) {
           const hasInputGuard = fetchedDetails.input_guard.status !== undefined;
           const hasOutputGuard =
             fetchedDetails.output_guard.status !== undefined;
           dispatch(setHasInputGuard(hasInputGuard));
           dispatch(setHasOutputGuard(hasOutputGuard));
-        }
 
-        SystemFingerprintService.appendArguments().then(
-          (parameters: ServicesParameters) => {
-            dispatch(
-              setChatQnAGraphNodes({
-                parameters,
-                fetchedDetails: fetchedDetails ?? {},
-              }),
-            );
-            dispatch(setChatQnAGraphEdges());
-            dispatch(setChatQnAGraphLoading(false));
-          },
-        );
-      },
-    );
+          dispatch(
+            setChatQnAGraphNodes({
+              parameters,
+              fetchedDetails: fetchedDetails ?? {},
+            }),
+          );
+          dispatch(setChatQnAGraphEdges());
+          dispatch(setCanBeRendered(true));
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        dispatch(addNotification({ severity: "error", text: errorMessage }));
+        dispatch(setCanBeRendered(false));
+      } finally {
+        dispatch(setChatQnAGraphLoading(false));
+      }
+    };
+
+    fetchGraphData();
   }, [dispatch]);
 
-  return (
-    <div className="configure-services-panel">
-      <div className="chatqna-graph-wrapper">
-        {loading ? (
-          <div className="configure-services-panel-loading__overlay">
-            <div className="configure-services-panel-loading__message">
-              <BsHurricane className="animate-spin" />
-              <p>Loading...</p>
-            </div>
+  const getControlPlaneContent = () => {
+    if (loading) {
+      return (
+        <div className="configure-services-panel-loading__overlay">
+          <div className="configure-services-panel-loading__message">
+            <BsHurricane className="animate-spin" />
+            <p>Loading...</p>
           </div>
-        ) : (
+        </div>
+      );
+    } else {
+      if (canBeRendered) {
+        return (
           <>
             <ServiceStatusLegend />
             <ChatQnAGraph />
           </>
-        )}
-      </div>
+        );
+      } else {
+        return (
+          <div className="flex h-full w-full items-center justify-center">
+            <p>Pipeline graph cannot be rendered</p>
+          </div>
+        );
+      }
+    }
+  };
+
+  return (
+    <div className="configure-services-panel">
+      <div className="chatqna-graph-wrapper">{getControlPlaneContent()}</div>
       <ServiceDetailsModal />
     </div>
   );

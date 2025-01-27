@@ -15,12 +15,9 @@ import {
   UploadErrors,
 } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import DataIngestionService from "@/services/dataIngestionService";
-import {
-  getFiles,
-  getLinks,
-  setNotification,
-} from "@/store/dataIngestion.slice";
+import { getFiles, getLinks } from "@/store/dataIngestion.slice";
 import { useAppDispatch } from "@/store/hooks";
+import { addNotification } from "@/store/notifications.slice";
 import {
   createToBeUploadedMessage,
   isUploadDisabled,
@@ -84,9 +81,8 @@ const UploadDataDialog = () => {
     } else {
       closeDialog();
       dispatch(
-        setNotification({
-          open: true,
-          message: "Successful data upload!",
+        addNotification({
+          text: "Successful data upload!",
           severity: "success",
         }),
       );

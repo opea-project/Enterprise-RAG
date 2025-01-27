@@ -4,17 +4,16 @@
 import {
   createAsyncThunk,
   createSlice,
-  PayloadAction,
   SerializedError,
 } from "@reduxjs/toolkit";
 
-import { Notification } from "@/components/shared/NotificationToast/NotificationToast";
 import {
   FileDataItem,
   LinkDataItem,
 } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import DataIngestionService from "@/services/dataIngestionService";
 import { RootState } from "@/store/index";
+import { addNotification } from "@/store/notifications.slice";
 
 interface DataIngestionState {
   files: {
@@ -27,7 +26,6 @@ interface DataIngestionState {
     isLoading: boolean;
     error: SerializedError | null;
   };
-  notification: Notification;
 }
 
 const initialState: DataIngestionState = {
@@ -41,31 +39,42 @@ const initialState: DataIngestionState = {
     isLoading: false,
     error: null,
   },
-  notification: {
-    open: false,
-    message: "",
-    severity: "success",
-  },
 };
 
 export const getFiles = createAsyncThunk(
   "dataIngestion/getFiles",
-  async () => await DataIngestionService.getFiles(),
+  async (_, { dispatch }) => {
+    try {
+      return await DataIngestionService.getFiles();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.name !== "SyntaxError"
+          ? error.message
+          : "Failed to fetch files";
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
+    }
+  },
 );
 
 export const getLinks = createAsyncThunk(
   "dataIngestion/getLinks",
-  async () => await DataIngestionService.getLinks(),
+  async (_, { dispatch }) => {
+    try {
+      return await DataIngestionService.getLinks();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error && error.name !== "SyntaxError"
+          ? error.message
+          : "Failed to fetch links";
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
+    }
+  },
 );
 
 export const dataIngestionSlice = createSlice({
   name: "dataIngestion",
   initialState,
-  reducers: {
-    setNotification(state, action: PayloadAction<Notification>) {
-      state.notification = action.payload;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getFiles.pending, (state) => {
       state.files.isLoading = true;
@@ -81,11 +90,6 @@ export const dataIngestionSlice = createSlice({
       if (state.files.isLoading) {
         state.files.isLoading = false;
         state.files.error = action.error;
-        state.notification = {
-          open: true,
-          message: "Failed fetching files",
-          severity: "error",
-        };
       }
     });
 
@@ -103,17 +107,10 @@ export const dataIngestionSlice = createSlice({
       if (state.links.isLoading) {
         state.links.isLoading = false;
         state.links.error = action.error;
-        state.notification = {
-          open: true,
-          message: "Failed fetching links",
-          severity: "error",
-        };
       }
     });
   },
 });
-
-export const { setNotification } = dataIngestionSlice.actions;
 
 export const filesDataSelector = (state: RootState) =>
   state.dataIngestion.files.data;
@@ -127,7 +124,5 @@ export const linksDataIsLoadingSelector = (state: RootState) =>
   state.dataIngestion.links.isLoading;
 export const linksDataErrorSelector = (state: RootState) =>
   state.dataIngestion.links.error;
-export const notificationSelector = (state: RootState) =>
-  state.dataIngestion.notification;
 
 export default dataIngestionSlice.reducer;

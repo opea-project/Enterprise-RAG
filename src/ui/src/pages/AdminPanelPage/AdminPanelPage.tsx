@@ -10,6 +10,7 @@ import AuthenticationTab from "@/components/admin-panel/authentication/Authentic
 import ControlPlaneTab from "@/components/admin-panel/control-plane/ControlPlaneTab/ControlPlaneTab";
 import DataIngestionTab from "@/components/admin-panel/data-ingestion/DataIngestionTab/DataIngestionTab";
 import TelemetryTab from "@/components/admin-panel/telemetry/TelemetryTab/TelemetryTab";
+import NotificationsProvider from "@/components/shared/NotificationsProvider/NotificationsProvider";
 
 const adminPanelTabs = [
   "Control Plane",
@@ -58,6 +59,7 @@ const AdminPanelPage = () => {
         {isTabSelected("Telemetry") && <TelemetryTab />}
         {isTabSelected("Authentication") && <AuthenticationTab />}
       </div>
+      <NotificationsProvider />
     </div>
   );
 };

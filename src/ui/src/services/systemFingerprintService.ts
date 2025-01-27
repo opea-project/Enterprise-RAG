@@ -16,24 +16,20 @@ class SystemFingerprintService {
     const url = endpoints.systemFingerprint.appendArguments;
     const body: AppendArgumentsRequestBody = { text: "" };
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${keycloakService.getToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${keycloakService.getToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-      if (response.ok) {
-        const { parameters } = await response.json();
-        return parameters;
-      } else {
-        throw new Error("Failed to fetch arguments");
-      }
-    } catch (e) {
-      console.error(e);
+    if (response.ok) {
+      const { parameters } = await response.json();
+      return parameters;
+    } else {
+      throw new Error("Failed to fetch service arguments");
     }
   }
   async changeArguments(requestBody: ChangeArgumentsRequestBody) {
@@ -41,23 +37,19 @@ class SystemFingerprintService {
 
     const url = endpoints.systemFingerprint.changeArguments;
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${keycloakService.getToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${keycloakService.getToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error("Failed to change arguments");
-      }
-    } catch (e) {
-      console.error(e);
+    if (response.ok) {
+      return await response.json();
+    } else {
+      throw new Error("Failed to change service arguments");
     }
   }
 
@@ -69,18 +61,22 @@ class SystemFingerprintService {
     try {
       const response = await fetch(url, {
         headers: {
-          Authorization: `${keycloakService.getToken()}`
-        }
+          Authorization: `${keycloakService.getToken()}`,
+        },
       });
 
       if (response.ok) {
         const servicesData = await response.json();
         return parseServiceDetailsResponseData(servicesData);
-      } else {
-        throw new Error("Failed to fetch ChatQnA services status");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === "SyntaxError") {
+          throw new Error("Failed to fetch services statuses");
+        } else {
+          throw new Error(error.message);
+        }
+      }
     }
   }
 }

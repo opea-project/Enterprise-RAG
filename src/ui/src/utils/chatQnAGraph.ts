@@ -5,6 +5,7 @@ import { Edge, Node, Position } from "@xyflow/react";
 
 import { inputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/inputGuard";
 import { outputGuardArguments } from "@/models/admin-panel/control-plane/guardrails/outputGuard";
+import { retrieverArguments } from "@/models/admin-panel/control-plane/retriever";
 import { llmArguments } from "@/models/admin-panel/control-plane/llm";
 import { rerankerArguments } from "@/models/admin-panel/control-plane/reranker";
 import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
@@ -45,6 +46,7 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "retriever",
       displayName: "Retriever",
+      args: retrieverArguments,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalTargetPosition: Position.Top,

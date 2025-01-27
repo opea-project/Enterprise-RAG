@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from pydantic import model_validator
+from pydantic import model_validator, PositiveInt, NonNegativeFloat
 from typing import Optional, List, Tuple, Dict
 from datetime import datetime
 from beanie import Document, PydanticObjectId
@@ -260,13 +260,16 @@ If you don't know the answer to a question, please don't share false information
 ### Answer:
 """
 
-class RerankerParams(Document):
+class RetrieverParams(Document):
     search_type: str = "similarity"
-    k: int = 4
+    k: PositiveInt = 4
     distance_threshold: Optional[float] = None
-    fetch_k: int = 20
-    lambda_mult: float = 0.5
-    score_threshold: float = 0.2
+    fetch_k: PositiveInt = 20
+    lambda_mult: NonNegativeFloat = 0.5
+    score_threshold: NonNegativeFloat = 0.2
+
+class RerankerParams(Document):
+    top_n: PositiveInt = 1
 
 class LLMParams(Document):
     max_new_tokens: int = 1024
@@ -280,6 +283,7 @@ class LLMParams(Document):
 
 class PackedParams(Document):
     llm: LLMParams = None
+    retriever: RetrieverParams = None
     reranker: RerankerParams = None
     input_guard: LLMGuardInputGuardrailParams = None
     output_guard: LLMGuardOutputGuardrailParams = None

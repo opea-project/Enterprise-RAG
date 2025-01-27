@@ -8,6 +8,7 @@ from comps import get_opea_logger
 from comps.cores.utils.mongodb import OPEAMongoConnector
 
 from comps.system_fingerprint.utils.object_document_mapper import (
+    RetrieverParams,
     RerankerParams,
     PromptTemplateParams,
     LLMParams,
@@ -51,7 +52,7 @@ from comps.system_fingerprint.utils.object_document_mapper import (
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 document_models = [
-    RerankerParams, PromptTemplateParams, ComponentDetails, Fingerprint, Argument,
+    RetrieverParams, RerankerParams, PromptTemplateParams, ComponentDetails, Fingerprint, Argument,
     ComponentConfiguration, ComponentTopology, LLMGuardInputGuardrailParams,
     LLMGuardOutputGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
     BanCodeModel, BanCompetitorsModel, BanSubstringsModel, BanTopicsModel,
@@ -210,6 +211,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 timestamp=datetime.now(),
                 parameters=PackedParams(
                     llm=LLMParams(),
+                    retriever=RetrieverParams(),
                     reranker=RerankerParams(),
                     prompt_template=PromptTemplateParams(),
                     input_guard=LLMGuardInputGuardrailParams(
@@ -422,7 +424,11 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
             Argument: An `Argument` object with the unpacked arguments.
         """
         for param in params:
-            if param[0] == "reranker" and param[1] is not None:
+            if param[0] == "retriever" and param[1] is not None:
+                self.current_arguments.parameters.retriever = RetrieverParams(
+                    **param[1]
+                )
+            elif param[0] == "reranker" and param[1] is not None:
                 self.current_arguments.parameters.reranker = RerankerParams(
                     **param[1]
                 )
@@ -576,6 +582,9 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.llm.model_dump()))
+        packed_parameters.update(
+            remove_id(
+                self.current_arguments.parameters.retriever.model_dump()))
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.reranker.model_dump()))

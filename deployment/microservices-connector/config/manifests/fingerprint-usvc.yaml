@@ -14,7 +14,7 @@ data:
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
-  SYSTEM_FINGERPRINT_MONGODB_HOST: "fingerprint-mongodb.fingerprint.svc.cluster.local"
+  SYSTEM_FINGERPRINT_MONGODB_HOST: "fingerprint-mongodb.fingerprint.svc"
   SYSTEM_FINGERPRINT_MONGODB_PORT: "27017"
   MONGODB_NAME: "SYSTEM_FINGERPRINT"
 

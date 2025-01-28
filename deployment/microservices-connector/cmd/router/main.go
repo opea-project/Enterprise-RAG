@@ -500,7 +500,7 @@ func callService(
 // TODO: add more features here, such as K8s service selector, labels, etc.
 func getServiceURLByStepTarget(step *mcv1alpha3.Step, svcNameSpace string) string {
 	if step.ServiceURL == "" {
-		serviceURL := fmt.Sprintf("http://%s.%s.svc.cluster.local", step.StepName, svcNameSpace)
+		serviceURL := fmt.Sprintf("http://%s.%s.svc", step.StepName, svcNameSpace)
 		return serviceURL
 	}
 	return step.ServiceURL

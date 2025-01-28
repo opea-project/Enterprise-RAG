@@ -58,7 +58,7 @@ minio:
     - name: "MINIO_BROWSER_REDIRECT_URL"
       value: "https://minio.erag.com/"
     - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
-      value: "http://keycloak.auth.svc.cluster.local/realms/EnterpriseRAG/.well-known/openid-configuration"
+      value: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
     - name: "MINIO_IDENTITY_OPENID_CLIENT_ID"
       value: "EnterpriseRAG-oidc-minio"
     - name: "MINIO_IDENTITY_OPENID_CLIENT_SECRET"
@@ -163,11 +163,11 @@ celery:
           name: edp-celery-secrets
           key: CELERY_BACKEND_URL
     - name: DATAPREP_ENDPOINT
-      value: "http://dataprep-svc.dataprep.svc.cluster.local:9399/v1/dataprep"
+      value: "http://dataprep-svc.dataprep.svc:9399/v1/dataprep"
     - name: EMBEDDING_ENDPOINT
-      value: "http://embedding-svc.dataprep.svc.cluster.local:6000/v1/embeddings"
+      value: "http://embedding-svc.dataprep.svc:6000/v1/embeddings"
     - name: INGESTION_ENDPOINT
-      value: "http://ingestion-svc.dataprep.svc.cluster.local:6120/v1/ingestion"
+      value: "http://ingestion-svc.dataprep.svc:6120/v1/ingestion"
     - name: DATABASE_HOST
       valueFrom:
         secretKeyRef:

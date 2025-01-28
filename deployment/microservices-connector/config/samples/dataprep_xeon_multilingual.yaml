@@ -45,5 +45,5 @@ spec:
           serviceName: ingestion-svc
           config:
             VECTOR_STORE: redis
-            REDIS_URL: "redis://redis-vector-db.chatqa.svc.cluster.local:6379"
+            REDIS_URL: "redis://redis-vector-db.chatqa.svc:6379"
             endpoint: /v1/ingestion

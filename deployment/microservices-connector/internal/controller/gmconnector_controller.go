@@ -365,9 +365,9 @@ func getDownstreamSvcEndpoint(graphNs string, dsName string, stepCfg *mcv1alpha3
 		}
 
 		if stepCfg.StepName == VectorDB {
-			return fmt.Sprintf("redis://%s.%s.svc.cluster.local:%d", altSvcName, altNs, port), nil
+			return fmt.Sprintf("redis://%s.%s.svc:%d", altSvcName, altNs, port), nil
 		} else {
-			return fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", altSvcName, altNs, port), nil
+			return fmt.Sprintf("http://%s.%s.svc:%d", altSvcName, altNs, port), nil
 		}
 	} else {
 		return "", errors.New(fmt.Sprintf("failed to get service details for %s: %v\n", dsName, err))
@@ -379,7 +379,7 @@ func getServiceURL(service *corev1.Service) string {
 	case corev1.ServiceTypeClusterIP:
 		// For ClusterIP, return the cluster IP and port
 		if len(service.Spec.Ports) > 0 {
-			return fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", service.Name, service.Namespace, service.Spec.Ports[0].Port)
+			return fmt.Sprintf("http://%s.%s.svc:%d", service.Name, service.Namespace, service.Spec.Ports[0].Port)
 		}
 	case corev1.ServiceTypeNodePort:
 		// For NodePort, return the node IP and node port. You need to replace <node-ip> with the actual node IP.

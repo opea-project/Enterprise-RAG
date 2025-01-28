@@ -914,7 +914,7 @@ func TestGetServiceURL(t *testing.T) {
 		},
 	}
 
-	expectedURL := "http://test-service.default.svc.cluster.local:8080"
+	expectedURL := "http://test-service.default.svc:8080"
 	actualURL := getServiceURL(service)
 
 	if actualURL != expectedURL {

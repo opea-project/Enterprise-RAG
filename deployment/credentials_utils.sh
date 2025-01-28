@@ -88,8 +88,8 @@ create_database_secret() {
     if [[ "$DATABASE" == "redis" ]]; then
         kubectl get secret vector-database-config -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic vector-database-config -n $NAMESPACE_OF_SECRET \
             --from-literal=VECTOR_STORE="$DATABASE" \
-            --from-literal=REDIS_URL="redis://$DB_USERNAME:$VECTOR_DB_PASSWORD@redis-vector-db.$DB_NAMESPACE.svc.cluster.local" \
-            --from-literal=REDIS_HOST="redis-vector-db.$DB_NAMESPACE.svc.cluster.local" \
+            --from-literal=REDIS_URL="redis://$DB_USERNAME:$VECTOR_DB_PASSWORD@redis-vector-db.$DB_NAMESPACE.svc" \
+            --from-literal=REDIS_HOST="redis-vector-db.$DB_NAMESPACE.svc" \
             --from-literal=REDIS_PORT="6379" \
             --from-literal=REDIS_USERNAME="$DB_USERNAME" \
             --from-literal=REDIS_PASSWORD="$DB_PASSWORD" \
@@ -99,7 +99,7 @@ create_database_secret() {
             --from-literal=MONGO_DATABASE_NAME="$ADDITIONAL_ARG_1" \
             --from-literal=MONGO_USER="$DB_USERNAME" \
             --from-literal=MONGO_PASSWORD="$DB_PASSWORD" \
-            --from-literal=MONGO_HOST="fingerprint-mongodb.$DB_NAMESPACE.svc.cluster.local" \
+            --from-literal=MONGO_HOST="fingerprint-mongodb.$DB_NAMESPACE.svc" \
             --from-literal=MONGO_PORT="27017"
     fi
 }

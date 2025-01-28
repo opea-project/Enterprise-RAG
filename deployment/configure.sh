@@ -26,7 +26,7 @@ while getopts "p:u:n:" opt; do
     case $opt in
         p) RAG_HTTP_PROXY="$OPTARG";;
         u) RAG_HTTPS_PROXY="$OPTARG";;
-        n) RAG_NO_PROXY="$OPTARG,.cluster.local";;
+        n) RAG_NO_PROXY="$OPTARG";;
         *) usage ;;
     esac
 done

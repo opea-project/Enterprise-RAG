@@ -30,7 +30,7 @@ while getopts "p:u:n:g:r:t:" opt; do
     case $opt in
         p) RAG_HTTP_PROXY="$OPTARG" ;;
         u) RAG_HTTPS_PROXY="$OPTARG" ;;
-        n) RAG_NO_PROXY="$OPTARG,cluster.local,monitoring,monitoring-traces" ;;
+        n) RAG_NO_PROXY="$OPTARG,.svc,monitoring,monitoring-traces" ;;
         g) RAG_HUG_TOKEN="$OPTARG" ;;
         r) RAG_REPOSITORY="$OPTARG" ;;
         t) RAG_TAG="$OPTARG" ;;

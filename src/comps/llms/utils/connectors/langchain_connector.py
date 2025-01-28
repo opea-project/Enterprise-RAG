@@ -19,7 +19,7 @@ class TGIConnector:
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         connector = HuggingFaceEndpoint(
             endpoint_url=self._endpoint,
             max_new_tokens=input.max_new_tokens,
@@ -33,13 +33,13 @@ class TGIConnector:
             try:
                 if self._llm_output_guard_exists:
                     chat_response = ""
-                    for text in connector.stream(input.query):
+                    async for text in connector.astream(input.query):
                         chat_response += text
                     return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
-                def stream_generator():
+                async def stream_generator():
                     chat_response = ""
-                    for text in connector.stream(input.query):
+                    async for text in connector.astream(input.query):
                         chat_response += text
                         chunk_repr = repr(text)
                         yield f"data: {chunk_repr}\n\n"
@@ -61,7 +61,7 @@ class TGIConnector:
                 raise Exception(f"Error streaming from TGI: {e}")
         else:
             try:
-                response = connector.invoke(input.query)
+                response = await connector.ainvoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
             except ReadTimeout as e:
@@ -90,7 +90,8 @@ class VLLMConnector:
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+
         try:
             llm = VLLMOpenAI(
                 openai_api_key="EMPTY",
@@ -111,13 +112,13 @@ class VLLMConnector:
             try:
                 if self._llm_output_guard_exists:
                     chat_response = ""
-                    for text in llm.stream(input.query):
+                    async for text in llm.astream(input.query):
                         chat_response += text
                     return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
-                def stream_generator():
+                async def stream_generator():
                     chat_response = ""
-                    for text in llm.stream(input.query):
+                    async for text in llm.astream(input.query):
                         chat_response += text
                         chunk_repr = repr(text)
                         yield f"data: {chunk_repr}\n\n"
@@ -139,7 +140,7 @@ class VLLMConnector:
                 raise Exception(f"Error streaming from VLLM: {e}")
         else:
             try:
-                response = llm.invoke(input.query)
+                response = await llm.ainvoke(input.query)
                 return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
             except ReadTimeout as e:
@@ -199,8 +200,8 @@ class LangchainLLMConnector(LLMConnector):
             kwargs["headers"] = self._headers
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        return self._connector.generate(input)
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+        return await self._connector.generate(input)
 
     def change_configuration(self, **kwargs) -> None:
         logger.error("Change configuration not supported for LangchainLLMConnector")

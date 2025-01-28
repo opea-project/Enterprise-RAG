@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import importlib
 import os
 from unittest.mock import MagicMock, patch
@@ -148,6 +149,7 @@ def test_initialization_raises_exception_when_config_params_are_missing(mock_get
       assert str(context.value) == "The 'LLM_MODEL_SERVER_ENDPOINT' cannot be empty."
 
 
+
 @patch('comps.llms.opea_llm_microservice.OPEALlm.run')
 def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice, mock_get_connector):
    mock_input = MagicMock(spec=LLMParamsDoc)
@@ -160,8 +162,10 @@ def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice, m
    except Exception as e:
       pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
 
-   # Call the process function
-   response = test_module.process(mock_input)
+   # Call the process function (async)
+   loop = asyncio.get_event_loop()
+   response = loop.run_until_complete(test_module.process(mock_input))
+
    mock_run.assert_called_once_with(mock_input)
    assert response == mock_response
 
@@ -181,8 +185,9 @@ def test_microservice_process_failure(mock_run, mock_cores_mega_microservice, mo
       pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
 
    # Call the process function and assert exception
+   loop = asyncio.get_event_loop()
    with pytest.raises(HTTPException) as context:
-      test_module.process(mock_input)
+      loop.run_until_complete(test_module.process(mock_input))
 
    # Assertions
    assert context.value.status_code == 500

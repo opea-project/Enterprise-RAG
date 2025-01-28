@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Union
 
@@ -32,7 +33,7 @@ class LLMConnector(ABC):
         self._llm_output_guard_exists = llm_output_guard_exists
 
     @abstractmethod
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         logger.error("generate method in LLMConnector is abstract.")
         raise NotImplementedError
 
@@ -40,7 +41,7 @@ class LLMConnector(ABC):
         try:
             tested_params = {"query": "test", "max_new_tokens": 5}
             test_input = LLMParamsDoc(**tested_params, streaming=False)
-            self.generate(test_input)
+            asyncio.run(self.generate(test_input))
             logger.info("Connection with LLM model server validated successfully.")
         except ReadTimeout as e:
             error_message = f"Error initializing the LLM: {e}"

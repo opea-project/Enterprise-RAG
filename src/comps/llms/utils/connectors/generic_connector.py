@@ -6,7 +6,7 @@ from typing import Optional, Dict, Union
 
 import openai
 from fastapi.responses import StreamingResponse
-from huggingface_hub import InferenceClient
+from huggingface_hub import AsyncInferenceClient
 from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
@@ -24,12 +24,12 @@ class TGIConnector:
         self._endpoint = endpoint
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
-        self._client = InferenceClient(model=endpoint, timeout=120)
+        self._client = AsyncInferenceClient(model=endpoint, timeout=120)
 
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
-            generator = self._client.text_generation(
+            generator = await self._client.text_generation(
                             prompt=input.query,
                             stream=input.streaming and not self._disable_streaming,
                             max_new_tokens=input.max_new_tokens,
@@ -67,10 +67,10 @@ class TGIConnector:
 
             stream_gen_time = []
             start_local = time.time()
-            def stream_generator():
+            async def stream_generator():
                 chat_response = ""
                 try:
-                    for text in generator:
+                    async for text in generator:
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
                         chunk_repr = repr(text)
@@ -93,16 +93,16 @@ class VLLMConnector:
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
-        self._client = openai.OpenAI(
+        self._client = openai.AsyncOpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
             timeout=120,
             default_headers=self._headers
         )
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
-            generator = self._client.completions.create(
+            generator = await self._client.completions.create(
                 model=self._model_name,
                 prompt=input.query,
                 max_tokens=input.max_new_tokens,
@@ -131,7 +131,7 @@ class VLLMConnector:
         if input.streaming and not self._disable_streaming:
             if self._llm_output_guard_exists:
                 chat_response = ""
-                for chunk in generator:
+                async for chunk in generator:
                     text = chunk.choices[0].text
                     chat_response += text
                 return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
@@ -140,10 +140,10 @@ class VLLMConnector:
             stream_gen_time = []
             start_local = time.time()
 
-            def stream_generator():
+            async def stream_generator():
                 chat_response = ""
                 try:
-                    for chunk in generator:
+                    async for chunk in generator:
                         text = chunk.choices[0].text
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
@@ -206,8 +206,8 @@ class GenericLLMConnector(LLMConnector):
             kwargs["headers"] = self._headers
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
-    def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        return self._connector.generate(input)
+    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+        return await self._connector.generate(input)
 
     def change_configuration(self, **kwargs) -> None:
         logger.error("Change configuration not supported for GenericLLMConnector")

@@ -60,5 +60,5 @@ class OPEALlm:
             logger.exception(f"Configuration validation error: {e}")
             raise
 
-    def run(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        return self._connector.generate(input)
+    async def run(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
+        return await self._connector.generate(input)

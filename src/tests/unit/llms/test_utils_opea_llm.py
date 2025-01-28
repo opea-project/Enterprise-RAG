@@ -10,6 +10,13 @@ from comps.llms.utils.connectors.generic_connector import GenericLLMConnector
 from comps.llms.utils.connectors.langchain_connector import LangchainLLMConnector
 from comps.llms.utils.opea_llm import OPEALlm
 
+"""
+To execute these tests with coverage report, navigate to the `src` folder and run the following command:
+   pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms/test_utils_opea_llm.py
+
+Alternatively, to run all tests for the 'llms' module, execute the following command:
+   pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms
+"""
 
 @pytest.fixture
 def mock_connector_validate():

@@ -67,7 +67,7 @@ opea_llm = OPEALlm(
 @traceable(run_type="llm")
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def process(input: LLMParamsDoc) -> Response:
+async def process(input: LLMParamsDoc) -> Response:
     """
     Processes the given LLMParamsDoc input using the OPEA LLM microservice.
 
@@ -80,7 +80,7 @@ def process(input: LLMParamsDoc) -> Response:
     start = time.time()
     try:
         # Pass the input to the 'run' method of the microservice instance
-        res = opea_llm.run(input)
+        res = await opea_llm.run(input)
     except ValueError as e:
         error_message = f"A ValueError occurred while processing: {str(e)}"
         logger.exception(error_message)

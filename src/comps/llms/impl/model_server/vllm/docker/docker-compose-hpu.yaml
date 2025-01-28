@@ -22,11 +22,9 @@ services:
       HTTP_PROXY: ${HTTP_PROXY}
       HTTPS_PROXY: ${HTTPS_PROXY}
       NO_PROXY: ${NO_PROXY}
-      NUM_SHARD: ${NUM_SHARD}
       OMPI_MCA_btl_vader_single_copy_mechanism: ${OMPI_MCA_btl_vader_single_copy_mechanism}
       PT_HPU_ENABLE_LAZY_COLLECTIVES: ${PT_HPU_ENABLE_LAZY_COLLECTIVES}
       PT_HPU_LAZY_ACC_PAR_MODE: ${PT_HPU_LAZY_ACC_PAR_MODE}
-      SHARDED: ${SHARDED}
       VLLM_CPU_KVCACHE_SPACE: ${VLLM_CPU_KVCACHE_SPACE}
       VLLM_SKIP_WARMUP: ${VLLM_SKIP_WARMUP}
     runtime: habana

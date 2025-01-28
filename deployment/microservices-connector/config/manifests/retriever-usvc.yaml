@@ -109,7 +109,7 @@ spec:
             readOnlyRootFilesystem: true
             seccompProfile:
               type: RuntimeDefault
-          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           ports:
             - name: retriever-usvc

@@ -78,7 +78,7 @@ spec:
                   key: HF_TOKEN
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --download-dir /data"]
           imagePullPolicy: Always

@@ -2,14 +2,14 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-DEFAULT_REGISTRY=localhost:5000
-REGISTRY_NAME=${DEFAULT_REGISTRY}
+REGISTRY_NAME=localhost:5000
+REGISTRY_PATH=erag
 TAG=latest
 _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc")
+default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -28,8 +28,9 @@ usage() {
     echo -e "\t-j|--jobs <N>: max number of parallel builds (default is $_max_parallel_jobs)."
     echo -e "\t--push: Push specified components to the registry."
     echo -e "\t--setup-registry: Setup local registry at port 5000."
-    echo -e "\t--registry: Specify the registry (default is $DEFAULT_REGISTRY)."
+    echo -e "\t--registry: Specify the registry (default is $REGISTRY_NAME)."
     echo -e "\t--tag: Specify the tag (default is latest)."
+    echo -e "\t--hpu: Build components for HPU platform."
     echo -e "Components available (default is all):"
     echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
@@ -130,6 +131,7 @@ build_component() {
 do_build_flag=false
 do_push_flag=false
 setup_registry_flag=false
+if_gaudi_flag=true
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -158,6 +160,9 @@ while [ $# -gt 0 ]; do
                 echo "Warning! The input '${1}' is not a valid number. Setting number of max parallel jobs to the default value of ${_max_parallel_jobs}."
             fi
             ;;
+        --hpu)
+            if_gaudi_flag=true
+            ;;
         --help)
             usage
             exit 0
@@ -173,8 +178,6 @@ if_gaudi_flag=
 __pcidev=$(grep PCI_ID /sys/bus/pci/devices/*/uevent | grep -i 1da3: || echo "")
 if echo $__pcidev | grep -qE '1000|1001|1010|1011|1020|1030|1060'; then
     if_gaudi_flag=true
-else
-    if_gaudi_flag=false
 fi
 
 echo "if_gaudi_flag = $if_gaudi_flag"
@@ -201,27 +204,26 @@ for component in "${components_to_build[@]}"; do
     case $component in
         gmcManager)
             path="${repo_path}/deployment/microservices-connector"
-            if $do_build_flag; then
-                cd "$path"
-                make docker.build VERSION="$TAG" &> ${logs_dir}/build_${component}.log
+            dockerfile="Dockerfile.manager"
+            image_name=$REGISTRY_PATH/gmcmanager
 
-                if [ $? -eq 0 ]; then
-                    echo "$component built successfully"
-                else
-                    echo "Build failed. Please check the logs at ${logs_dir}/build_${component}.log for more details."
-                fi
-            fi
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
 
-            if $do_push_flag; then
-                tag_and_push "$REGISTRY_NAME" opea/gmcmanager "$TAG"
-                tag_and_push "$REGISTRY_NAME" opea/gmcrouter "$TAG"
-            fi
+        gmcRouter)
+            path="${repo_path}/deployment/microservices-connector"
+            dockerfile="Dockerfile.router"
+            image_name=$REGISTRY_PATH/gmcrouter
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
             ;;
 
         embedding-usvc)
             path="${repo_path}/src"
             dockerfile="comps/embeddings/impl/microservice/Dockerfile"
-            image_name=opea/embedding
+            image_name=$REGISTRY_PATH/embedding
             additional_args="--target langchain"
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG "$additional_args";fi
@@ -231,7 +233,7 @@ for component in "${components_to_build[@]}"; do
         torchserve)
             path="${repo_path}/src/comps/embeddings/impl/model-server/torchserve"
             dockerfile="docker/Dockerfile"
-            image_name=opea/torchserve
+            image_name=$REGISTRY_PATH/torchserve
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -240,7 +242,7 @@ for component in "${components_to_build[@]}"; do
         reranking-usvc)
             path="${repo_path}/src"
             dockerfile="comps/reranks/impl/microservice/Dockerfile"
-            image_name=opea/reranking
+            image_name=$REGISTRY_PATH/reranking
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -249,7 +251,7 @@ for component in "${components_to_build[@]}"; do
         prompt-template-usvc)
             path="${repo_path}/src"
             dockerfile="comps/prompt_template/impl/microservice/Dockerfile"
-            image_name=opea/prompt_template
+            image_name=$REGISTRY_PATH/prompt_template
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -258,7 +260,7 @@ for component in "${components_to_build[@]}"; do
         dataprep-usvc)
             path="${repo_path}/src"
             dockerfile="comps/dataprep/impl/microservice/Dockerfile"
-            image_name=opea/dataprep
+            image_name=$REGISTRY_PATH/dataprep
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -267,7 +269,7 @@ for component in "${components_to_build[@]}"; do
         retriever-usvc)
             path="${repo_path}/src"
             dockerfile="comps/retrievers/impl/microservice/Dockerfile"
-            image_name=opea/retriever
+            image_name=$REGISTRY_PATH/retriever
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -276,7 +278,7 @@ for component in "${components_to_build[@]}"; do
         ingestion-usvc)
             path="${repo_path}/src"
             dockerfile="comps/ingestion/impl/microservice/Dockerfile"
-            image_name=opea/ingestion
+            image_name=$REGISTRY_PATH/ingestion
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -285,7 +287,7 @@ for component in "${components_to_build[@]}"; do
         llm-usvc)
             path="${repo_path}/src"
             dockerfile="comps/llms/impl/microservice/Dockerfile"
-            image_name=opea/llm
+            image_name=$REGISTRY_PATH/llm
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -294,7 +296,7 @@ for component in "${components_to_build[@]}"; do
         in-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile"
-            image_name=opea/in-guard
+            image_name=$REGISTRY_PATH/in-guard
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -303,7 +305,7 @@ for component in "${components_to_build[@]}"; do
         out-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
-            image_name=opea/out-guard
+            image_name=$REGISTRY_PATH/out-guard
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -312,7 +314,7 @@ for component in "${components_to_build[@]}"; do
         ui-usvc)
             path="${repo_path}/src"
             dockerfile="ui/Dockerfile"
-            image_name=opea/chatqna-conversation-ui
+            image_name=$REGISTRY_PATH/chatqna-conversation-ui
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -321,7 +323,7 @@ for component in "${components_to_build[@]}"; do
         fingerprint-usvc)
             path="${repo_path}/src"
             dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
-            image_name=system-fingerprint
+            image_name=$REGISTRY_PATH/system-fingerprint
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -339,7 +341,7 @@ for component in "${components_to_build[@]}"; do
         vllm-gaudi)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.hpu"
-            image_name=opea/vllm-gaudi
+            image_name=$REGISTRY_PATH/vllm-gaudi
 
             if $if_gaudi_flag;then
                 if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
@@ -352,7 +354,7 @@ for component in "${components_to_build[@]}"; do
         vllm-cpu)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.cpu"
-            image_name="opea/vllm-cpu"
+            image_name="$REGISTRY_PATH/vllm-cpu"
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -361,7 +363,7 @@ for component in "${components_to_build[@]}"; do
         vllm-openvino)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.openvino"
-            image_name="opea/vllm-openvino"
+            image_name="$REGISTRY_PATH/vllm-openvino"
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -370,7 +372,7 @@ for component in "${components_to_build[@]}"; do
         langdtct-usvc)
             path="${repo_path}/src"
             dockerfile="comps/language_detection/impl/microservice/Dockerfile"
-            image_name=opea/language-detection
+            image_name=$REGISTRY_PATH/language-detection
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
@@ -379,7 +381,7 @@ for component in "${components_to_build[@]}"; do
         edp-usvc)
             path="${repo_path}/src"
             dockerfile="edp/Dockerfile"
-            image_name=opea/enhanced-dataprep
+            image_name=$REGISTRY_PATH/enhanced-dataprep
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi

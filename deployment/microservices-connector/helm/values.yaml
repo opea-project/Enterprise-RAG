@@ -18,106 +18,11 @@ tokens:
 
 # Common tag & repository for all images. Override if needed for specific images.
 common_tag: &tag "latest"
-common_repository: &repo "localhost:5000"
+common_registry: &repo "localhost:5000"
+common_registry_path: &path "erag"
 
 llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
-
-images:
-  gmcManager:
-    image: "opea/gmcmanager"
-    repository: *repo
-    tag: *tag
-    pullPolicy: Always
-  gmcRouter:
-    image: "opea/gmcrouter"
-    repository: *repo
-    tag: *tag
-  dataprep-usvc:
-    image: "opea/dataprep"
-    repository: *repo
-    tag: *tag
-  embedding-usvc:
-    image: "opea/embedding"
-    repository: *repo
-    tag: *tag
-  reranking-usvc:
-    image: "opea/reranking"
-    repository: *repo
-    tag: *tag
-  prompt-template-usvc:
-    image: "opea/prompt_template"
-    repository: *repo
-    tag: *tag
-  torchserve:
-    image: "opea/torchserve"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
-  retriever-usvc:
-    image: "opea/retriever"
-    repository: *repo
-    tag: *tag
-  ingestion-usvc:
-    image: "opea/ingestion"
-    repository: *repo
-    tag: *tag
-  llm-usvc:
-    image: "opea/llm"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/llms/impl/microservice/.env"
-  in-guard-usvc:
-    image: "opea/in-guard"
-    repository: *repo
-    tag: *tag
-  out-guard-usvc:
-    image: "opea/out-guard"
-    repository: *repo
-    tag: *tag
-  ui-usvc:
-    image: "opea/chatqna-conversation-ui"
-    repository: *repo
-    tag: *tag
-  tgi:
-    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.cpu"
-    envs:
-      LLM_TGI_MODEL_NAME: *cpu_model
-  tgi_gaudi:
-    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.hpu"
-    envs:
-      LLM_TGI_MODEL_NAME: *hpu_model
-  vllm_gaudi:
-    image: "opea/vllm-gaudi"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
-    envs:
-      LLM_VLLM_MODEL_NAME: *hpu_model
-  vllm:
-    image: "opea/vllm-cpu"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
-    envs:
-      LLM_VLLM_MODEL_NAME: *cpu_model
-  vllm_openvino:
-    image: "opea/vllm-openvino"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
-    envs:
-      LLM_VLLM_MODEL_NAME: *cpu_model
-  langdtct-usvc:
-    image: "opea/language_detection"
-    repository: *repo
-    tag: *tag
-    envfile: "src/comps/language_detection/impl/microservice/.env"
-  fingerprint-usvc:
-    image: "system-fingerprint"
-    repository: *repo
-    tag: *tag
-
 
 # imagePullSecrets:
 #   - name: regcred
@@ -210,3 +115,133 @@ pvc:
     accessMode: ReadWriteOnce
     namespace: chatqa
     storage: 20Gi
+
+images:
+  gmcManager:
+    image: "gmcmanager"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  gmcRouter:
+    image: "gmcrouter"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  dataprep-usvc:
+    image: "dataprep"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  embedding-usvc:
+    image: "embedding"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  reranking-usvc:
+    image: "reranking"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  prompt-template-usvc:
+    image: "prompt_template"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  torchserve:
+    image: "torchserve"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
+  retriever-usvc:
+    image: "retriever"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  ingestion-usvc:
+    image: "ingestion"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  llm-usvc:
+    image: "llm"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/llms/impl/microservice/.env"
+  in-guard-usvc:
+    image: "in-guard"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  out-guard-usvc:
+    image: "out-guard"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  ui-usvc:
+    image: "chatqna-conversation-ui"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  tgi:
+    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.cpu"
+    envs:
+      LLM_TGI_MODEL_NAME: *cpu_model
+  tgi_gaudi:
+    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.hpu"
+    envs:
+      LLM_TGI_MODEL_NAME: *hpu_model
+  vllm_gaudi:
+    image: "vllm-gaudi"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *hpu_model
+  vllm:
+    image: "vllm-cpu"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
+  vllm_openvino:
+    image: "vllm-openvino"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
+  langdtct-usvc:
+    image: "language_detection"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/language_detection/impl/microservice/.env"
+  fingerprint-usvc:
+    image: "system-fingerprint"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always

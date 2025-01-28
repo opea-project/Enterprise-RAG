@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: hf-token-secret
-  namespace: dataprep
-type: Opaque
-data:
-  HF_TOKEN: {{ .Values.tokens.hugToken | b64enc | quote }}

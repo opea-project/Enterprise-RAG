@@ -8,7 +8,7 @@ import pytest
 from python_on_whales import Container, Image
 
 
-from structures_base import EmbeddingsDockerSetup
+from src.tests.docker_setups.base import EmbeddingsDockerSetup
 
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Type
 
 from python_on_whales import Container, Image
-from structures_base import LLMsDockerSetup
+from src.tests.docker_setups.base import LLMsDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -47,7 +47,7 @@ class LLMsVllm_HPU_DockerSetup(LLMsDockerSetup):
     @property
     def _microservice_envs(self) -> dict:
         return {
-            "LLM_MODEL_NAME": self._get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
+            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
             "LLM_MODEL_SERVER": "vllm",
             "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
         }
@@ -65,7 +65,7 @@ class LLMsVllm_HPU_DockerSetup(LLMsDockerSetup):
             self._ENV_KEYS.VLLM_SKIP_WARMUP
         ]
 
-        return {env_key.value : self._get_docker_env(env_key) for env_key in envs}
+        return {env_key.value : self.get_docker_env(env_key) for env_key in envs}
 
     def _build_model_server(self) -> Image:
         return self._build_image(
@@ -87,16 +87,18 @@ class LLMsVllm_HPU_DockerSetup(LLMsDockerSetup):
             envs={
                 "HF_TOKEN": os.environ["HF_TOKEN"],
                 **self._model_server_envs,
+                **self._model_server_extra_envs,
                 **self.COMMON_PROXY_SETTINGS,
             },
             volumes=[("./data", "/data")],
             command=[
                 '/bin/bash',
                 '-c',
-                f"python3 -m vllm.entrypoints.openai.api_server --model {self._get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)} --device hpu --tensor-parallel-size {self._get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)} --pipeline-parallel-size 1 --dtype {self._get_docker_env(self._ENV_KEYS.VLLM_DTYPE)} --max-num-seqs {self._get_docker_env(self._ENV_KEYS.VLLM_MAX_NUM_SEQS)} --host 0.0.0.0 --port 80"
+                f"python3 -m vllm.entrypoints.openai.api_server --model {self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)} --device hpu --tensor-parallel-size {self.get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)} --pipeline-parallel-size 1 --dtype {self.get_docker_env(self._ENV_KEYS.VLLM_DTYPE)} --max-num-seqs {self.get_docker_env(self._ENV_KEYS.VLLM_MAX_NUM_SEQS)} --host 0.0.0.0 --port 80"
             ],
             wait_after=60,
             runtime="habana",
+            **self._model_server_docker_extras,
             **self.COMMON_RUN_OPTIONS,
         )
         return container

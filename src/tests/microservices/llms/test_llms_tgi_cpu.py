@@ -2,8 +2,8 @@ import logging
 from enum import Enum
 
 import pytest
-from llms.base_tests import BaseLLMsTest
-from llms.structures_llms_tgi import LLMs_TGI_EnvKeys, LLMsTgiDockerSetup
+from src.tests.microservices.llms.base_tests import BaseLLMsTest
+from src.tests.docker_setups.llms.tgi import LLMs_TGI_EnvKeys, LLMsTgiDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

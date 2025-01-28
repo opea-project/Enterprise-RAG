@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Type
 
 from python_on_whales import Container
-from structures_base import LLMsDockerSetup
+from src.tests.docker_setups.base import LLMsDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -38,13 +38,20 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
     @property
     def _microservice_envs(self) -> dict:
         return {
-            "LLM_MODEL_NAME": self._get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),
+            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),
             "LLM_MODEL_SERVER": "tgi",
             "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
         }
 
-    def __init__(self, model_server_img_url: str, golden_configuration_src: str, config_override: dict = None):
-        super().__init__(golden_configuration_src, config_override)
+    def __init__(
+            self,
+            model_server_img_url: str,
+            golden_configuration_src: str,
+            config_override: dict = None,
+            custom_model_server_envs: dict = None,
+            custom_model_server_docker_params: dict = None
+    ):
+        super().__init__(golden_configuration_src, config_override, custom_model_server_envs, custom_model_server_docker_params)
         self._modelserver_image_name = model_server_img_url
 
     def _build_model_server(self):
@@ -60,18 +67,20 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
             ],
             envs={
                 "HF_TOKEN": os.environ["HF_TOKEN"],
+                **self._model_server_extra_envs,
                 **self.COMMON_PROXY_SETTINGS,
             },
             volumes=[("./data", "/data")],
             command=[
                 "--model-id",
-                self._get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),
+                self.get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),
                 "--max-input-tokens",
-                self._get_docker_env(self._ENV_KEYS.MAX_INPUT_TOKENS),
+                self.get_docker_env(self._ENV_KEYS.MAX_INPUT_TOKENS),
                 "--max-total-tokens",
-                self._get_docker_env(self._ENV_KEYS.MAX_TOTAL_TOKENS),
+                self.get_docker_env(self._ENV_KEYS.MAX_TOTAL_TOKENS),
             ],
             wait_after=60,
+            **self._model_server_docker_extras,
             **self.COMMON_RUN_OPTIONS,
         )
         return container

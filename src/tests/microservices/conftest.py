@@ -2,11 +2,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import sys
+from os.path import dirname, abspath
 
 import pytest
 import subprocess # nosec B404
 from pathlib import Path
 
+# Add repository root to paths to include modules from every place
+repository_root = dirname(dirname(dirname(dirname(abspath(__file__)))))
+sys.path.append(repository_root)
 
 @pytest.fixture
 def assert_bash_test_succeeds():

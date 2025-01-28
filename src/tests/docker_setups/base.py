@@ -264,15 +264,36 @@ class LLMsDockerSetup(LanguageUsvcDockerSetup):
 
     INTERNAL_COMMUNICATION_PORT = 5001
 
-    def __init__(self, golden_configuration_src: str, config_override: dict = None):
+    def __init__(
+            self,
+            golden_configuration_src: str,
+            config_override: dict = None,
+            custom_model_server_envs: dict = None,
+            custom_model_server_docker_params: dict = None
+    ):
         """
         :param str golden_configuration_src: Path to .env, with respect to src root
         :param dict config_override: Overrides of golden configuration
+        :param dict custom_model_server_envs: Add your own ENV variables (aside from .env file)
+        :param dict custom_model_server_docker_params: Add your own docker flags
         """
         super().__init__(config_override)
         self._docker_conf = None  # TODO: Generalize to base classes.
 
         self._load_golden_configuration(golden_configuration_src)
+        self._model_server_extra_envs = custom_model_server_envs if custom_model_server_envs else dict()
+        self._model_server_docker_extras = custom_model_server_docker_params if custom_model_server_docker_params else dict()
+
+    def get_docker_env(self, key_member) -> str:
+        """Get value from golden configuration or it's overrider value"""
+        key = key_member.value
+        try:
+            value = self._config_override[key]
+            logger.debug(f"Found {key} in config overrides. {key}={value}")
+        except (TypeError, KeyError):   # When override is None or key does not exist
+            value = self._docker_conf[key]
+            logger.debug(f"Using {key} from golden configuration. {key}={value}")
+        return value
 
     @property
     @abstractmethod
@@ -303,17 +324,6 @@ class LLMsDockerSetup(LanguageUsvcDockerSetup):
         for member in self._ENV_KEYS:
             key_name = member.value
             assert key_name in self._docker_conf, f"{key_name} not found in configuration"
-
-    def _get_docker_env(self, key_member) -> str:
-        """Get value from golden configuration or it's overrider value"""
-        key = key_member.value
-        if key in self._config_override:
-            value = self._config_override[key]
-            logger.debug(f"Found {key} in config overrides. {key}={value}")
-        else:
-            value = self._docker_conf[key]
-            logger.debug(f"Using {key} from golden configuration. {key}={value}")
-        return value
 
     def _build_microservice(self):
         return self._build_image(

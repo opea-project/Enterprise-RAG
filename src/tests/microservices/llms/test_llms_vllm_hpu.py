@@ -2,9 +2,9 @@ import logging
 from enum import Enum
 
 import pytest
-from llms.base_tests import BaseLLMsTest
-from llms.structures_llms_vllm_hpu import (LLMs_VLLM_HPU_EnvKeys,
-                                           LLMsVllm_HPU_DockerSetup)
+from src.tests.microservices.llms.base_tests import BaseLLMsTest
+from src.tests.docker_setups.llms.vllm_hpu import (LLMs_VLLM_HPU_EnvKeys,
+                                               LLMsVllm_HPU_DockerSetup)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

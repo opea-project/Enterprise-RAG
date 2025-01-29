@@ -56,7 +56,7 @@ Follow the below steps on the server node with Intel Xeon Processor to deploy th
 7. Deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes:
 
    ```bash
-   git clone https://github.com/intel/Enterprise-RAG.git
+   git clone https://github.com/opea-project/Enterprise-RAG
    cd Enterprise-RAG/deployment
    ./one_click_chatqna.sh --features tdx -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
    ```

@@ -76,7 +76,7 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 # Installation
 
 ```
-git clone https://github.com/intel/Enterprise-RAG.git
+git clone https://github.com/opea-project/Enterprise-RAG
 cd Enterprise-RAG/deployment
 ./one_click_chatqna.sh -g HUGGINGFACEHUB_API_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
 ```

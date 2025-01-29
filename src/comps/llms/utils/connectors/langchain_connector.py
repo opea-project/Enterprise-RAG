@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
@@ -183,7 +184,7 @@ class LangchainLLMConnector(LLMConnector):
     def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: object):
         super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, headers)
         self._connector = self._get_connector()
-        self._validate()
+        asyncio.run(self._validate())
 
     def _get_connector(self):
         if self._model_server not in SUPPORTED_INTEGRATIONS:

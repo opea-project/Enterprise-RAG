@@ -296,15 +296,15 @@ python opea_llm_guard_output_guardrail_microservice.py
 ### 🚀2. Start LLM Guard Output Guardrail Microservice with Docker (Option 2)
 
 #### 2.1.Build the Docker image:
-    ```sh
-    cd ../../.. # src/ directory
-    docker build -t opea/out-guard:latest -f comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile .
-    ```
+```sh
+cd ../../.. # src/ directory
+docker build -t opea/out-guard:latest -f comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile .
+```
 
 #### 2.2. Run the Docker container, for example:
-    ```sh
-    docker run -d --env-file comps/guardrails/llm_guard_output_guardrail/impl/microservice/.env -p 8060:8060 --name="llm-guard-output-microservice" opea/out-guard:latest
-    ```
+```sh
+docker run -d --env-file comps/guardrails/llm_guard_output_guardrail/impl/microservice/.env -p 8060:8060 --name="llm-guard-output-microservice" opea/out-guard:latest
+```
 
 ### 3. Verify the LLM Guard Input Guardrail Microservice
 
@@ -340,7 +340,7 @@ data: '[DONE]'
 ```bash
 curl http://localhost:8060/v1/llmguardoutput \
   -X POST \
-  -d '{"prompt":"What is Deep Learning?", 
+  -d '{"prompt":"What is Deep Learning?",
         "text": "To create a virus and backdoor you need to...",
         "output_guardrail_params":
             {"ban_substrings":

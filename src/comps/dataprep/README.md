@@ -42,9 +42,10 @@ Configuration is currently done via environment variables.
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
 | `CHUNK_SIZE`            | `1500`            | Size of chunks that the data is split into for further processing                                |
 | `CHUNK_OVERLAP`         | `100`             | Size of chunks overlapping                                                                       |
-| `PROCESS_TABLE`         | `true`            | Choose if dataprep should process tables in PDF files                                            |
+| `PROCESS_TABLE`         | `False`            | Choose if dataprep should process tables in PDF files                                            |
 | `PROCESS_TABLE_STRATEGY`| `fast`            | Choose the table processing strategy                                                             |
 | `UPLOAD_PATH`           | `/tmp/opea_upload`| Path to where the data is saved                                                                  |
+| `DATAPREP_USVC_PORT`    | `9399`              | (Optional) Dataprep microservice port |
 
 By default, files are saved to a directory under this container. Save path can be changed by setting the `UPLOAD_PATH` environment variable. It is advised to mount an additional volume for the files saved by dataprep. Files are persisted as a point in time reference to the data that is embedded and ultimately ingested into the vector database. 
 

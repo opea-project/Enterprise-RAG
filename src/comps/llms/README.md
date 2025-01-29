@@ -24,7 +24,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | Environment Variable            | Description                                                                                                           |
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `LLM_USVC_PORT`                 | The port of the microservice, by default 9000.                                                                        |
-| `LLM_MODEL_NAME`                | The name of language model to be used (e.g., "Intel/neural-chat-7b-v3-3")                                             |
+| `LLM_MODEL_NAME`                | The name of language model to be used (e.g., "mistralai/Mistral-7B-Instruct-v0.1")                                             |
 | `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
 | `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |

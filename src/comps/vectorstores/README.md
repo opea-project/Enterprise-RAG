@@ -145,7 +145,6 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
-| `similarity_score_threshold`     | `similarity_search_with_relevance_scores` | `k`, `score_threshold`        |
 | `mmr`                            | `max_marginal_relevance_search`           | `k`, `fetch_k`, `lambda_mult` |
 
 Additional search parameters that can be added to the query to configure the search:

@@ -8,7 +8,8 @@ Configuration is done by selecting the desired vector store type. In addition, t
 
 | Environment Variable    | Default Value     | Description                                                                                      |
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
-| `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
+| `VECTOR_STORE`          | `redis`           | Vector Store database type         |
+| `INGESTION_USVC_PORT`          | `6120`           | (Optional) Ingestion microservice port         |
 
 ### Vector Store Support Matrix
 
@@ -24,7 +25,7 @@ Support for specific vector databases:
 
 Since this service is utilizing VectorStore code, you have to configure the underlying implementation by setting an env variable `VECTOR_STORE` along with vector database configuration for the selected endpoint.
 
-We offer 2 ways to run this microservice: 
+We offer 2 ways to run this microservice:
   - [via Python](#running-the-microservice-via-python-option-1)
   - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
 
@@ -85,7 +86,7 @@ Output data, if the request is successfull, is equal to input data.
 {
   "docs": [
     {
-      "text": "What is Intel AVX-512?", 
+      "text": "What is Intel AVX-512?",
       "embedding": [1, 2, 3]
     }
   ]

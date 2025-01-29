@@ -11,6 +11,7 @@ Configuration is done by selecting the desired vector store type. In addition, t
 | Environment Variable    | Default Value     | Description                                                                                      |
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
 | `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
+| `RETRIEVER_USVC_PORT`          | `6620`           | (Optional) Retriever microservice port         |
 
 ### Vector Store Support Matrix
 

@@ -17,10 +17,10 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 | Model server                | langchain | llama_index |
 | ------------                | ----------| ------------|
-| [torchserve](./torchserve)  | &#x2713;  | &#x2717;    |
-| [TEI](./tei)                | &#x2713;  | &#x2713;    |
-| [OVMS](./ovms)              | &#x2713;  | &#x2717;    |
-| [mosec](./mosec)            | &#x2713;  | &#x2717;    |
+| [torchserve](./impl/model-server/torchserve)  | &#x2713;  | &#x2717;    |
+| [TEI](./impl/model-server/tei/)                | &#x2713;  | &#x2713;    |
+| [OVMS](./impl/model-server/ovms)              | &#x2713;  | &#x2717;    |
+| [mosec](./impl/model-server/mosec)            | &#x2713;  | &#x2717;    |
 
 ## Configuration Options
 
@@ -194,7 +194,7 @@ For a single text input:
   "distance_threshold":null,
   "fetch_k":20,
   "lambda_mult":0.5,
-  "score_threshold":0.2z,
+  "score_threshold":0.2,
   "metadata": {}
 }
 ```

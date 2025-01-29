@@ -5,3 +5,4 @@
 langchain==0.3.6
 langchain-huggingface==0.1.2
 langsmith==0.1.125
+huggingface_hub==0.23.4

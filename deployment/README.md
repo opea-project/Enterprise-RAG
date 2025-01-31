@@ -88,7 +88,7 @@ With the `one_click_chatqna.sh` script,  you can automate all the steps performe
 Use the command below to install via the one click script:
 
 ```bash
-./one_click_chatqna.sh -g HUG_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
 > [!NOTE]
 > Using the `one_click_chatqna.sh` is an alternatve option to the Step-by-Step Installation described in the next section.

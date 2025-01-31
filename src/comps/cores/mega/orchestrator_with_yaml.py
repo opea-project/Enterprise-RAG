@@ -56,7 +56,7 @@ class ServiceOrchestratorWithYaml(DAG):
 
     def _load_from_yaml(self):
         """Parse the yaml and output docs, whether the mega graph is valid, the mega graph."""
-        with open(self.yaml_file_path) as file:
+        with open(self.yaml_file_path, mode='r') as file:
             docs = yaml.safe_load(file)
 
         if "mega_flow" in docs["opea_mega_service"]:

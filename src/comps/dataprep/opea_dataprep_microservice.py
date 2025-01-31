@@ -51,6 +51,7 @@ def run_dataprep(files, links):
 # Setting max_workers to 1 ensures that the CPU heavy calls are not overutilizing the pod resources.
 # https://github.com/fastapi/fastapi/issues/3725#issuecomment-902629033
 # https://luis-sena.medium.com/how-to-optimize-fastapi-for-ml-model-serving-6f75fb9e040d
+
 pool = ProcessPoolExecutor(max_workers=1)
 
 # Register the microservice with the specified configuration.

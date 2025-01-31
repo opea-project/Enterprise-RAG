@@ -34,11 +34,17 @@ store_credentials() {
   target=$1
   username=$2
   password=$3
-  # remove old entry (if file exists)
-  if [ -f "$credentials_path" ]; then
+
+  if [ ! -f "$credentials_path" ]; then
+    # create file with restricted access (owner: rw)
+    touch $credentials_path
+    chmod 600 $credentials_path
+  else
+    # remove old entry (if file exists)
     sed -i "/^${target}_USERNAME=/d" $credentials_path
     sed -i "/^${target}_PASSWORD=/d" $credentials_path
   fi
+
   # always store new password
   echo "${target}_USERNAME=${username} " >> $credentials_path
   echo "${target}_PASSWORD=\"${password}\"" >> $credentials_path

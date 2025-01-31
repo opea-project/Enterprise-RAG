@@ -27,6 +27,8 @@ def save_file_to_local_disk(file: UploadFile) -> str:
 
     if not os.path.exists(upload_folder):
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
+        # Set the directory permission to 700 (owner: rwx)
+        os.chmod(upload_folder, 0o700)
 
     save_path = Path(os.path.join(upload_folder, file.filename))
     with save_path.open("wb") as fout:
@@ -45,6 +47,8 @@ def save_link_to_local_disk(link_list: List[str]) -> List[str]:
     upload_folder = sanitize_env(os.getenv('UPLOAD_PATH', '/tmp/opea_upload'))
     if not os.path.exists(upload_folder):
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
+        # Set the directory permission to 700 (owner: rwx)
+        os.chmod(upload_folder, 0o700)
 
     data_collection = parse_html(link_list)  # crawl through the page
 

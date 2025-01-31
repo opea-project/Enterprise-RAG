@@ -39,6 +39,8 @@ def validate_output_directory(path):
     path = os.path.abspath(os.path.normpath(path))
     if not os.path.isdir(path):
         os.makedirs(path)
+        # Set the directory permission to 700 (owner: rwx)
+        os.chmod(path, 0o700)
     return path
 
 

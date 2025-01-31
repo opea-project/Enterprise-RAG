@@ -5,13 +5,8 @@
 set -e
 set -o pipefail
 
-
-echo "USE WITH CAUTION THIS SCRIPT USES SUDO PRIVILAGES TO INSTALL NEEDED PACKAGES LOCALLY AND CONFIGURE THEM. \
-USING IT MAY OVERWRITE EXISTING CONFIGURATION. Press ctrl+c to cancel. Sleeping for 30s." && sleep 30
-
-
 usage() {
-    echo "Usage: $0 -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]"
+    echo "Usage: $0 [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]"
     exit 1
 }
 
@@ -30,6 +25,9 @@ while getopts "p:u:n:" opt; do
         *) usage ;;
     esac
 done
+
+echo "USE WITH CAUTION THIS SCRIPT USES SUDO PRIVILAGES TO INSTALL NEEDED PACKAGES LOCALLY AND CONFIGURE THEM. \
+USING IT MAY OVERWRITE EXISTING CONFIGURATION. Press ctrl+c to cancel. Sleeping for 30s." && sleep 30
 
 # Update package list
 sudo apt-get update -q

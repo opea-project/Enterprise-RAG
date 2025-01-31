@@ -15,6 +15,9 @@ repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
 mkdir -p $logs_dir
 
+# only owner - read, write, and execute
+chmod 700 $logs_dir
+
 use_proxy=""
 
 [ -n "$https_proxy" ] && use_proxy+="--build-arg https_proxy=$https_proxy "

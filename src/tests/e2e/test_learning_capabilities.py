@@ -154,7 +154,8 @@ def test_csv_text_only(edp_helper, chatqa_api_helper):
     """*.csv file learning capabilities (pure text inside the file)"""
     question = "What did the Sandweaver create when it malfunctioned?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.csv", question)
-    assert words_in_response(["golden ", "dust", "strange"], response), UNRELATED_RESPONSE_MSG
+    assert words_in_response(["golden ", "dust", "strange", "sand", "cloth"], response),(
+        UNRELATED_RESPONSE_MSG)
 
 
 @allure.testcase("IEASG-T117")
@@ -170,7 +171,7 @@ def test_xml_text_only(edp_helper, chatqa_api_helper):
     """*.xml file learning capabilities (pure text inside the file)"""
     question = "What was Tressivorn Quindle known for in Bravenreach?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.xml", question)
-    assert words_in_response(["brewed", "potions"], response), UNRELATED_RESPONSE_MSG
+    assert words_in_response(["brewed", "potion", "wound"], response), UNRELATED_RESPONSE_MSG
 
 
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question):

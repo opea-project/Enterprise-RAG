@@ -213,7 +213,7 @@ def test_edp_delete_link(edp_helper):
     link_to_delete = f"https://www.example.org/?test_edp_delete_links={uuid.uuid4()}"
     payload = {"links": [link_to_delete]}
     response = edp_helper.upload_links(payload)
-    link_id = response.json().get("id")
+    link_id = response.json().get("id")[0]
     edp_helper.wait_for_link_upload(link_to_delete, "ingested")
     response = edp_helper.delete_link(link_id)
     assert response.status_code == 200, f"Failed to delete link. Response: {response.text}"

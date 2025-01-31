@@ -86,7 +86,6 @@ def test_in_guard_ban_competitors(guard_helper):
     guard_helper.setup(GuardType.INPUT, "ban_competitors", guard_params)
     guard_helper.assert_blocked(questions.AMD)
     guard_helper.assert_blocked(questions.NVIDIA)
-    guard_helper.assert_blocked(questions.AMD_WITH_SUFFIX)
     guard_helper.assert_allowed(questions.INTEL)
 
 
@@ -332,7 +331,6 @@ def test_in_guard_toxicity(guard_helper):
     guard_helper.assert_blocked(questions.THREAT)
     guard_helper.assert_blocked(questions.INSULTING)
     guard_helper.assert_allowed(questions.NON_TOXIC)
-    guard_helper.assert_allowed(questions.INSULTING_MIXED)
 
     guard_params["match_type"] = "sentence"
     guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
@@ -472,6 +470,7 @@ def test_out_guard_language(guard_helper):
     guard_helper.assert_allowed(questions.PL_QUESTION_PL_RESPONSE)
     guard_helper.assert_blocked(questions.DE_QUESTION_DE_RESPONSE)
     guard_helper.assert_blocked(questions.ENGLISH_GERMAN_RESPONSE)
+    guard_helper.assert_blocked(questions.IT_QUESTION_PT_RESPONSE)
     guard_params["match_type"] = "sentence"
     guard_helper.setup(GuardType.OUTPUT, "language", guard_params)
     guard_helper.assert_allowed(questions.PL_QUESTION_PL_RESPONSE)

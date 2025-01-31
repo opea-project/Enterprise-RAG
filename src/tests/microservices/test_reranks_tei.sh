@@ -71,7 +71,7 @@ function test_clean() {
 }
 
 function main() {
-    source "${WORKPATH}/comps/reranks/impl/model_server/tei/docker/.env"
+    source "${WORKPATH}/comps/reranks/impl/model_server/tei/docker/.env.cpu"
     check_prerequisites
     test_clean
 

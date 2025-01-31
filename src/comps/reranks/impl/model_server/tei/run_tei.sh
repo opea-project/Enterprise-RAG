@@ -3,7 +3,18 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-ENV_FILE=docker/.env
+# Check if RERANK_DEVICE is set and valid
+if [ -z "${RERANK_DEVICE}" ]; then
+    echo "Error: RERANK_DEVICE is not set. Please set it to 'hpu' or 'cpu'."
+    exit 1
+elif [ "${RERANK_DEVICE}" != "hpu" ] && [ "${RERANK_DEVICE}" != "cpu" ]; then
+    echo "Error: RERANK_DEVICE must be set to 'hpu' or 'cpu'. Provided value: ${RERANK_DEVICE}."
+    exit 1
+fi
+
+echo "Info: RERANK_DEVICE is set to: $RERANK_DEVICE"
+
+ENV_FILE=docker/.env.${RERANK_DEVICE}
 echo "Reading configuration from $ENV_FILE..."
 
 # Check if docker compose is available (prerequisite)
@@ -41,4 +52,16 @@ else
     exit 1
 fi
 
-docker compose -f docker/docker-compose.yaml up --build -d reranking-tei-model-server
+if [ "${RERANK_DEVICE}" = "hpu" ]; then
+    # Check if 'habana' runtime exists
+    if ! docker info | grep -q 'Runtimes:.*habana'; then
+        echo "Error: 'habana' runtime is not available."
+        exit 1
+    fi
+
+    docker compose -f docker/docker-compose-hpu.yaml up --build -d reranking-tei-model-server
+
+elif [ "${RERANK_DEVICE}" = "cpu" ]; then
+    # Build the image and run the server
+    docker compose -f docker/docker-compose.yaml up --build reranking-tei-model-server
+fi

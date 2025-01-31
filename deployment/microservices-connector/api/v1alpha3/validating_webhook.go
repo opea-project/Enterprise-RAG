@@ -33,6 +33,7 @@ var (
 		"Retriever",
 		"Reranking",
 		"TeiReranking",
+		"TeiRerankingGaudi",
 		"PromptTemplate",
 		"Tgi",
 		"TgiGaudi",

@@ -67,6 +67,8 @@ const (
 	Reranking StepNameType = "Reranking"
 	// Tei-Reranking
 	TeiReranking StepNameType = "TeiReranking"
+	// Tei-Reranking-Gaudi
+	TeiRerankingGaudi StepNameType = "TeiRerankingGaudi"
 	// PromptTemplate
 	PromptTemplate StepNameType = "PromptTemplate"
 	// Tgi

@@ -14,10 +14,11 @@ export HF_TOKEN=${your_hf_api_token}
 
 ### 🚀 1. Start the TEI Service via script (Option 1)
 #### 1.1. Run the script
+Depending on what Hardware you want to run the TEI on, you can either specify `RERANK_DEVICE` to `"cpu"` or `"hpu"`.
 
 ```bash
 chmod +x run_tei.sh
-./run_tei.sh
+RERANK_DEVICE="cpu" ./run_tei.sh
 ```
 
 The run_tei.sh script is a Bash script that starts a Docker container running the TEI model server, which defaults to exposing the service on port `RERANKER_TEI_PORT` (default: **6060**). To change the port or the model (BAAI/bge-reranker-large), please edit the Bash script accordingly.
@@ -44,7 +45,7 @@ To launch TEI along with the OPEA Reranking Microservice, follow these steps:
 
 #### 2.1. Modify the environment configuration file to align it to your case
 
-Modify the `./docker/.env` file:
+Modify the `./docker/.env.cpu` file or `./docker/.env.hpu`, depending on what Hardware do you want to run the TEI:
 
 ```env
 #HF_TOKEN=<your-hf-api-key>
@@ -66,7 +67,7 @@ To build and start the services using Docker Compose
 ```bash
 cd docker
 
-docker compose --env-file=.env up --build -d
+docker compose --env-file=.env.cpu up --build -d
 ```
 
 #### 2.3. Verify the Services
@@ -104,4 +105,3 @@ cd docker
 
 docker compose down
 ```
-

@@ -71,18 +71,9 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
-          env:
-            - name: OMP_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
-            - name: MKL_NUM_THREADS
-              valueFrom:
-                resourceFieldRef:
-                  resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6"
+          image: "ghcr.io/huggingface/tei-gaudi:1.5.2"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"
@@ -93,6 +84,12 @@ spec:
               name: shm
             - mountPath: /tmp
               name: tmp
+            - mountPath: /.cache
+              name: cache
+            - mountPath: /home/user/.config
+              name: config
+            - mountPath: /var/log
+              name: var-log
           ports:
             - name: http
               containerPort: 2082
@@ -118,7 +115,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- $defaultValues := "{requests: {cpu: '2', memory: '16Gi'}, limits: {cpu: '8', memory: '32Gi'}}" -}}
+            {{- $defaultValues := "{limits: {habana.ai/gaudi: '1'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
       volumes:
         - name: model-volume
@@ -129,4 +126,10 @@ spec:
             medium: Memory
             sizeLimit: 1Gi
         - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+        - name: var-log
           emptyDir: {}

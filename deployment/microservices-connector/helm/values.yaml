@@ -147,6 +147,16 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
+  teirerank:
+    image: "teirerank"
+    repository: *repo
+    tag: *tag
+    envfile: "src/comps/reranks/impl/model_server/tei/docker/.env.cpu"
+  teirerank_gaudi:
+    image: "teirerank_gaudi"
+    repository: *repo
+    tag: *tag
+    envfile: "src/comps/reranks/impl/model_server/tei/docker/.env.hpu"
   prompt-template-usvc:
     image: "prompt_template"
     repository: *repo

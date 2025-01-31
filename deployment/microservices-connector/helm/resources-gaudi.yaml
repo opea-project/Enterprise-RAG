@@ -114,6 +114,11 @@ services:
       limits:
         cpu: 8
         memory: 32Gi
+  teirerank_gaudi:
+    replicas: 1
+    resources:
+      limits:
+        habana.ai/gaudi: 1
   tei:
     replicas: 1
     resources:

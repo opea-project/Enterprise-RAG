@@ -52,6 +52,7 @@ const (
 	PromptTemplate           = "PromptTemplate"
 	Reranking                = "Reranking"
 	TeiReranking             = "TeiReranking"
+	TeiRerankingGaudi        = "TeiRerankingGaudi"
 	Tgi                      = "Tgi"
 	TgiGaudi                 = "TgiGaudi"
 	TgiNvidia                = "TgiNvidia"
@@ -96,6 +97,7 @@ var yamlDict = map[string]string{
 	Reranking:           yaml_dir + "reranking-usvc.yaml",
 	PromptTemplate:      yaml_dir + "prompt-template-usvc.yaml",
 	TeiReranking:        yaml_dir + "teirerank.yaml",
+	TeiRerankingGaudi:   yaml_dir + "teirerank_gaudi.yaml",
 	Tgi:                 yaml_dir + "tgi.yaml",
 	TgiGaudi:            yaml_dir + "tgi_gaudi.yaml",
 	Llm:                 yaml_dir + "llm-usvc.yaml",

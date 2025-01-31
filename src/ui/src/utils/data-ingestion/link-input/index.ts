@@ -6,7 +6,7 @@ import { string } from "yup";
 import { noInvalidCharacters } from "@/utils/validators/textInput";
 
 export const urlErrorMessage =
-  "Please enter valid URL that starts with protocol (http:// or https://).";
+  "Enter valid URL that starts with protocol (http:// or https://).";
 
 const urlInvalidCharactersMsg =
   "URL contains invalid characters. Please try again.";

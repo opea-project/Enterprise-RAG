@@ -6,7 +6,8 @@
 }
 
 .content {
-  @apply relative flex h-full max-w-full flex-1 flex-col overflow-hidden;
+  @apply relative h-full max-w-full overflow-hidden;
+  @apply flex flex-1 flex-col;
 }
 
 .main-outlet {

@@ -11,14 +11,9 @@ import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngest
 interface LinksIngestionPanelProps {
   links: LinkForIngestion[];
   setLinks: Dispatch<SetStateAction<LinkForIngestion[]>>;
-  disabled: boolean;
 }
 
-const LinksIngestionPanel = ({
-  links,
-  setLinks,
-  disabled,
-}: LinksIngestionPanelProps) => {
+const LinksIngestionPanel = ({ links, setLinks }: LinksIngestionPanelProps) => {
   const addLinkToList = (value: string) => {
     setLinks((prevState) => [
       ...prevState,
@@ -36,12 +31,11 @@ const LinksIngestionPanel = ({
   return (
     <section>
       <h2>Links</h2>
-      <LinkInput addLinkToList={addLinkToList} disabled={disabled} />
+      <LinkInput addLinkToList={addLinkToList} />
       {links.length > 0 && (
         <LinksList
           links={links}
           setLinks={setLinks}
-          disabled={disabled}
           removeLinkFromList={removeLinkFromList}
         />
       )}

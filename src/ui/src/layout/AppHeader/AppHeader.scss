@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .app-header {
-  @apply flex h-[6rem] items-center justify-between px-16;
-  @apply bg-light-app-header-bg dark:bg-dark-app-header-bg;
+  @apply h-[6rem] px-16;
+  @apply flex items-center justify-between;
+  @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
   & .app-header__app-name {
     @apply text-left text-base font-black leading-5;
-    @apply text-light-app-header-app-name dark:text-dark-app-header-app-name;
+    @apply text-light-secondary dark:text-dark-secondary;
     text-underline-position: from-font;
     text-decoration-skip-ink: none;
   }
@@ -17,7 +18,7 @@
 
     & .app-header__username {
       @apply text-left text-xs font-normal leading-4;
-      @apply text-light-app-header-username dark:text-dark-app-header-username;
+      @apply text-light-text-accent dark:text-dark-text-accent;
       text-underline-position: from-font;
       text-decoration-skip-ink: none;
     }

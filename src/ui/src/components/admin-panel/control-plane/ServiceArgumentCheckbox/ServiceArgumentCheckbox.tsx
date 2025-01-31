@@ -3,15 +3,16 @@
 
 import "./ServiceArgumentCheckbox.scss";
 
-import { ChangeEvent, useCallback, useState } from "react";
+import classNames from "classnames";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
-import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
-import { useAppSelector } from "@/store/hooks";
 
 interface ServiceArgumentCheckboxProps {
   initialValue: boolean;
   name: string;
+  readOnly?: boolean;
   onArgumentValueChange: (
     argumentName: string,
     argumentValue: ServiceArgumentInputValue,
@@ -21,13 +22,16 @@ interface ServiceArgumentCheckboxProps {
 const ServiceArgumentCheckbox = ({
   initialValue,
   name,
+  readOnly,
   onArgumentValueChange,
 }: ServiceArgumentCheckboxProps) => {
   const [checked, setChecked] = useState(initialValue);
 
-  const editModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-
-  const disabled = !editModeEnabled;
+  useEffect(() => {
+    if (readOnly) {
+      setChecked(initialValue);
+    }
+  }, [readOnly, initialValue]);
 
   const handleChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -37,15 +41,31 @@ const ServiceArgumentCheckbox = ({
     [name, onArgumentValueChange],
   );
 
+  const inputId = `${name}-checkbox-${uuidv4()}`;
+
+  const labelClassNames = classNames([
+    "service-argument-checkbox__label",
+    { "pointer-events-none": readOnly },
+  ]);
+  const inputClassNames = classNames([
+    "service-argument-checkbox",
+    { "pointer-events-none": readOnly },
+  ]);
+
   return (
-    <input
-      className="service-argument-checkbox"
-      type="checkbox"
-      name={name}
-      disabled={disabled}
-      checked={checked}
-      onChange={handleChange}
-    />
+    <div className="service-argument-checkbox__wrapper">
+      <label htmlFor={inputId} className={labelClassNames}>
+        {name}
+      </label>
+      <input
+        className={inputClassNames}
+        type="checkbox"
+        id={inputId}
+        name={inputId}
+        checked={checked}
+        onChange={handleChange}
+      />
+    </div>
   );
 };
 

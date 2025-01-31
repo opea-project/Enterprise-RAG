@@ -4,10 +4,10 @@
 import "./ServiceArgumentNumberInput.scss";
 
 import classNames from "classnames";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { object, string, ValidationError } from "yup";
 
-import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
 import { sanitizeString } from "@/utils";
 import { isInRange } from "@/utils/validators/textInput";
@@ -17,6 +17,7 @@ interface ServiceArgumentNumberInputProps {
   initialValue: number | null;
   range: { min: number; max: number };
   nullable?: boolean;
+  readOnly?: boolean;
   onArgumentValueChange: (
     argumentName: string,
     argumentValue: ServiceArgumentInputValue,
@@ -32,18 +33,25 @@ const ServiceArgumentNumberInput = ({
   initialValue,
   range,
   nullable = false,
+  readOnly = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
   const [value, setValue] = useState<number | string>(initialValue || "");
-  const [isFocused, setIsFocused] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (readOnly) {
+      setValue(initialValue ?? "");
+      setIsInvalid(false);
+    }
+  }, [readOnly, initialValue]);
 
   const validationSchema = object().shape({
     numberInput: string().test(
       "is-in-range",
-      `Please enter a number between ${range.min} and ${range.max}`,
+      `Enter number between ${range.min} and ${range.max}`,
       isInRange(nullable, range),
     ),
   });
@@ -73,38 +81,31 @@ const ServiceArgumentNumberInput = ({
     }
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-  };
-
   const inputClassNames = classNames({
     "service-argument-number-input": true,
     "input--invalid": isInvalid,
   });
 
+  const inputId = `${name}-number-input-${uuidv4()}`;
+  const placeholder = `Enter number between ${range.min} and ${range.max}`;
+
   return (
-    <div className="relative">
-      {isFocused && !isInvalid && (
-        <ServiceArgumentInputMessage
-          message={`Please enter a number between ${range.min} and ${range.max}`}
-          forFocus
-        />
-      )}
-      {isInvalid && <ServiceArgumentInputMessage message={error} forInvalid />}
+    <>
+      <label htmlFor={inputId} className="service-argument-number-input__label">
+        {name}
+      </label>
       <input
         className={inputClassNames}
-        type="text"
-        name={`${name}-number-input`}
         value={value}
+        id={inputId}
+        name={inputId}
+        type="text"
+        placeholder={placeholder}
+        readOnly={readOnly}
         onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
       />
-    </div>
+      {isInvalid && <p className="error my-1 pl-2 text-xs italic">{error}</p>}
+    </>
   );
 };
 

@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .user-message {
-  @apply mx-auto flex w-[800px] flex-row-reverse;
-
-  @media (max-width: 800px) {
-    @apply w-full;
-  }
+  @apply mx-auto flex flex-row-reverse;
+  @apply w-full md:w-[50rem];
 
   & .user-message__text {
     @apply ml-16 min-h-[2.5rem] self-end rounded-[2rem] px-4 py-2;
-    @apply bg-light-chat-user-message-bg dark:bg-dark-chat-user-message-bg;
-    @apply text-light-chat-user-message-text dark:text-dark-chat-user-message-text;
-
-    @media (max-width: 800px) {
-      @apply mr-4;
-    }
+    @apply mr-4 md:mr-0;
+    @apply bg-light-bg-2 dark:bg-dark-bg-inverse/10;
+    @apply text-light-text-primary dark:text-dark-text-primary;
   }
 }

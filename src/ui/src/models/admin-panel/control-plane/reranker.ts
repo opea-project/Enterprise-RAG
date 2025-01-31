@@ -10,6 +10,4 @@ const TOP_N: ServiceArgument = {
   value: null,
 };
 
-export const rerankerArguments = [
-  TOP_N,
-];
+export const rerankerArguments = [TOP_N];

@@ -3,11 +3,8 @@
 
 .chat__disclaimer {
   @apply m-4 text-center text-xs font-normal leading-[0.875rem];
-  @apply text-light-prompt-input-disclaimer dark:text-dark-prompt-input-disclaimer;
+  @apply text-light-text-placeholder dark:text-dark-text-placeholder;
   text-underline-position: from-font;
   text-decoration-skip-ink: none;
-
-  @media (max-width: 800px) {
-    @apply w-[calc(100%_-_2rem)];
-  }
+  @apply w-[calc(100%_-_2rem)] md:w-full;
 }

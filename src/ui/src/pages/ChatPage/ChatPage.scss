@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .chat-page--no-messages {
-  @apply relative mx-auto mb-32 flex h-full w-[800px] flex-col items-center justify-center;
-
-  @media (max-width: 800px) {
-    @apply w-full;
-  }
+  @apply relative mx-auto mb-32 h-full;
+  @apply flex flex-col items-center justify-center;
+  @apply w-full md:w-[50rem];
 
   & .chat-page__greeting {
     @apply mb-9 text-center text-[2.5rem] font-semibold leading-[3rem];
-    @apply bg-light-chat-greeting dark:bg-dark-chat-greeting;
+    @apply bg-light-text-accent-2 dark:bg-dark-text-accent-2;
     text-underline-position: from-font;
     text-decoration-skip-ink: none;
     background-clip: text;

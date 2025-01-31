@@ -4,10 +4,10 @@
 import {
   banCompetitorsScanner,
   banSubstringsScanner,
+  codeScanner,
   gibberishScanner,
   languageScanner,
   promptInjectionScanner,
-  codeScanner,
   regexScanner,
 } from "@/models/admin-panel/control-plane/guardrails/scanners";
 import { GuardrailArguments } from "@/models/admin-panel/control-plane/serviceData";

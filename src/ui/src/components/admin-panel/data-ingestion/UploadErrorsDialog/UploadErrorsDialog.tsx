@@ -4,8 +4,8 @@
 import "./UploadErrorsDialog.scss";
 
 import { useRef } from "react";
-import { BsExclamationCircleFill } from "react-icons/bs";
 
+import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import Anchor from "@/components/shared/Anchor/Anchor";
 import Dialog from "@/components/shared/Dialog/Dialog";
 import { UploadErrors } from "@/models/admin-panel/data-ingestion/dataIngestion";
@@ -37,7 +37,7 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
 
   const trigger = (
     <div className="upload-errors-dialog__trigger" onClick={showDialog}>
-      <BsExclamationCircleFill className="upload-errors-dialog__trigger--icon" />
+      <ErrorIcon className="upload-errors-dialog__trigger--icon" />
       <p className="upload-errors-dialog__trigger--text">Error during upload</p>
     </div>
   );
@@ -68,8 +68,10 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
       title="Error during upload"
       onClose={handleClose}
     >
-      {getUploadErrors("files")}
-      {getUploadErrors("links")}
+      <div className="px-4 py-3">
+        {getUploadErrors("files")}
+        {getUploadErrors("links")}
+      </div>
     </Dialog>
   );
 };

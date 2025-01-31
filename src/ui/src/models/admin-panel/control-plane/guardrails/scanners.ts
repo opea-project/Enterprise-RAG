@@ -7,19 +7,14 @@ import {
   CONTAINS_ALL,
   ENABLED,
   MATCH_TYPE,
+  PATTERNS,
   REDACT,
   SUBSTRINGS,
   THRESHOLD,
   VALID_LANGUAGES,
-  PATTERNS,
 } from "./arguments";
 
-export const banCompetitorsScanner = [
-  ENABLED,
-  COMPETITORS,
-  REDACT,
-  THRESHOLD,
-];
+export const banCompetitorsScanner = [ENABLED, COMPETITORS, REDACT, THRESHOLD];
 
 export const banSubstringsScanner = [
   ENABLED,
@@ -32,11 +27,7 @@ export const banSubstringsScanner = [
 
 export const biasScanner = [ENABLED, THRESHOLD, MATCH_TYPE];
 
-export const gibberishScanner = [
-  ENABLED,
-  THRESHOLD,
-  MATCH_TYPE,
-];
+export const gibberishScanner = [ENABLED, THRESHOLD, MATCH_TYPE];
 
 export const languageScanner = [
   ENABLED,
@@ -45,27 +36,12 @@ export const languageScanner = [
   MATCH_TYPE,
 ];
 
-export const promptInjectionScanner = [
-  ENABLED,
-  THRESHOLD,
-  MATCH_TYPE,
-];
+export const promptInjectionScanner = [ENABLED, THRESHOLD, MATCH_TYPE];
 
 export const relevanceScanner = [ENABLED, THRESHOLD];
 
-export const codeScanner = [
-  ENABLED,
-  THRESHOLD,
-];
+export const codeScanner = [ENABLED, THRESHOLD];
 
-export const regexScanner = [
-  ENABLED,
-  PATTERNS,
-  MATCH_TYPE,
-  REDACT,
-];
+export const regexScanner = [ENABLED, PATTERNS, MATCH_TYPE, REDACT];
 
-export const maliciousUrlScanner = [
-  ENABLED,
-  THRESHOLD,
-];
+export const maliciousUrlScanner = [ENABLED, THRESHOLD];

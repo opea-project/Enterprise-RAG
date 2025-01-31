@@ -9,20 +9,13 @@ import FilesList from "@/components/admin-panel/data-ingestion/FilesList/FilesLi
 interface FilesIngestionPanelProps {
   files: File[];
   setFiles: Dispatch<SetStateAction<File[]>>;
-  disabled: boolean;
 }
 
-const FilesIngestionPanel = ({
-  files,
-  setFiles,
-  disabled,
-}: FilesIngestionPanelProps) => (
+const FilesIngestionPanel = ({ files, setFiles }: FilesIngestionPanelProps) => (
   <section>
     <h2>Files</h2>
-    <FilesInput files={files} setFiles={setFiles} disabled={disabled} />
-    {files.length > 0 && (
-      <FilesList files={files} setFiles={setFiles} disabled={disabled} />
-    )}
+    <FilesInput files={files} setFiles={setFiles} />
+    {files.length > 0 && <FilesList files={files} setFiles={setFiles} />}
   </section>
 );
 

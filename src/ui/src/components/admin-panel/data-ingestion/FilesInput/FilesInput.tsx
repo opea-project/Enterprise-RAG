@@ -3,7 +3,6 @@
 
 import "./FilesInput.scss";
 
-import classNames from "classnames";
 import {
   ChangeEvent,
   Dispatch,
@@ -13,8 +12,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { ImFolderUpload } from "react-icons/im";
 
+import FileInputIcon from "@/components/icons/FileInputIcon/FileInputIcon";
+import Button from "@/components/shared/Button/Button";
 import {
   fileInputAccept,
   sanitizeFiles,
@@ -26,10 +26,9 @@ import {
 interface FilesInputProps {
   files: File[];
   setFiles: Dispatch<SetStateAction<File[]>>;
-  disabled: boolean;
 }
 
-const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
+const FilesInput = ({ files, setFiles }: FilesInputProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -54,10 +53,9 @@ const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
 
   const handleFileInputDrop = async (event: DragEvent) => {
     event.preventDefault();
-    if (!disabled) {
-      const newFiles = event.dataTransfer.files;
-      await processNewFiles(newFiles);
-    }
+
+    const newFiles = event.dataTransfer.files;
+    await processNewFiles(newFiles);
   };
 
   const handleFileInputDragOver = (event: DragEvent) => {
@@ -80,29 +78,21 @@ const FilesInput = ({ files, setFiles, disabled }: FilesInputProps) => {
   return (
     <>
       <div
-        className={classNames({
-          "files-input-box": true,
-          "files-input-box__disabled": disabled,
-        })}
+        className="files-input-box"
         onDragOver={handleFileInputDragOver}
         onDrop={handleFileInputDrop}
       >
-        <ImFolderUpload fontSize={40} />
-        <p>
-          Drag and drop your files here or{" "}
-          <button
-            className="files-input-box__choose-file-btn"
-            onClick={handleBrowseFilesButtonClick}
-          >
-            choose files
-          </button>
-        </p>
+        <FileInputIcon fontSize={20} />
+        <p>Drag and Drop Files Here</p>
+        <p className="text-xs">or</p>
+        <Button size="sm" onClick={handleBrowseFilesButtonClick}>
+          Browse Files
+        </Button>
         <p className="text-xs">{totalSizeLimitMsg}</p>
         <input
           ref={fileInputRef}
           type="file"
           accept={fileInputAccept}
-          disabled={disabled}
           multiple
           onChange={handleFileInputChange}
           className="hidden"

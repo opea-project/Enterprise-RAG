@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .prompt-input__button {
-  @apply flex h-10 w-10 items-center justify-center self-end;
-  @apply bg-light-prompt-input-button-bg dark:bg-dark-prompt-input-button-bg;
-  @apply text-light-prompt-input-button-text dark:text-dark-prompt-input-button-text;
-  @apply disabled:bg-light-prompt-input-button-disabled-bg dark:disabled:bg-dark-prompt-input-button-disabled-bg;
+  @apply h-10 w-10 rounded-full;
+  @apply flex items-center justify-center self-end;
+  @apply bg-light-primary dark:bg-dark-primary;
+  @apply text-light-text-inverse dark:text-dark-text-primary;
+
+  &:disabled {
+    @apply disabled:bg-light-primary/60 dark:disabled:bg-dark-primary/60;
+  }
 }

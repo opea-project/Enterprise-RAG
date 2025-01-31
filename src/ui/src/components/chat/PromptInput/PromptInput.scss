@@ -2,31 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .prompt-input__form {
-  @apply mx-auto grid w-[800px] grid-cols-[1fr_auto] gap-2.5 rounded-[1.875rem] py-2.5 pl-12 pr-2.5 shadow-[0_0_0.5rem_0];
-  @apply bg-light-prompt-input-bg dark:bg-dark-prompt-input-bg;
-  @apply shadow-light-prompt-input-box-shadow dark:shadow-dark-prompt-input-box-shadow;
-  @apply border-light-prompt-input-border dark:border-dark-prompt-input-border;
+  @apply rounded-[1.875rem] shadow-[0_0_0.5rem_0];
+  @apply grid grid-cols-[1fr_auto] gap-2.5;
+  @apply mx-4 md:mx-auto;
+  @apply py-2.5 pl-12 pr-2.5;
+  @apply w-[calc(100%_-_2rem)] md:w-[50rem];
+  @apply bg-light-bg-2 dark:bg-dark-bg-contrast;
+  @apply shadow-light-border/40 dark:shadow-dark-border/80;
+  @apply border-light-border border-opacity-0 dark:border-dark-border dark:border-opacity-100;
   border-width: 0.03125rem;
   border-style: solid;
-
-  @media (max-width: 800px) {
-    @apply mx-4 w-[calc(100%_-_2rem)];
-  }
 }
 
 .prompt-input {
   @apply my-2 resize-none self-center bg-transparent text-base font-normal;
-  @apply text-light-prompt-input-text dark:text-dark-prompt-input-text;
-  @apply caret-light-prompt-input-caret dark:caret-dark-prompt-input-caret;
+  @apply text-light-text-primary dark:text-dark-text-primary;
+  @apply caret-light-text-primary dark:caret-dark-text-primary;
   min-height: 1.25rem;
   max-height: 15rem;
   overflow-y: auto;
+
+  // reset regular input styles
+  @apply rounded-none border-none p-0;
+  background: transparent !important;
 
   &:focus-visible {
     outline: none;
   }
 
   &::placeholder {
-    @apply text-light-prompt-input-placeholder dark:text-dark-prompt-input-placeholder;
+    @apply text-light-text-placeholder dark:text-dark-text-placeholder;
   }
 }

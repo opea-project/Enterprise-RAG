@@ -3,13 +3,14 @@
 
 import "./PromptInputButton.scss";
 
-import { ButtonHTMLAttributes, ReactNode } from "react";
+import { ButtonHTMLAttributes } from "react";
 
+import { IconName } from "@/components/icons";
 import IconButton from "@/components/shared/IconButton/IconButton";
 
 interface PromptInputButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: ReactNode;
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
+  icon: IconName;
 }
 
 const PromptInputButton = ({ icon, ...props }: PromptInputButtonProps) => (

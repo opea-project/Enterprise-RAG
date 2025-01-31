@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .service-details-grid {
-  @apply grid auto-rows-[1.75rem] grid-cols-2 items-center justify-items-start;
+  @apply mb-4 grid auto-rows-[1.75rem] grid-cols-2 items-center justify-items-start;
   column-gap: 0.5rem;
   row-gap: 0.25rem;
 
@@ -11,6 +11,8 @@
   }
 
   & .service-detail-value {
-    @apply w-full overflow-hidden text-ellipsis whitespace-nowrap border border-transparent px-2 py-1 text-xs;
+    @apply w-full px-2 py-1;
+    @apply overflow-hidden text-ellipsis whitespace-nowrap text-xs;
+    @apply border border-transparent;
   }
 }

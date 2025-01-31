@@ -5,7 +5,6 @@ import "./Dialog.scss";
 
 import { forwardRef, PropsWithChildren, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { BsX } from "react-icons/bs";
 
 import IconButton from "@/components/shared/IconButton/IconButton";
 
@@ -25,7 +24,7 @@ const Dialog = forwardRef<HTMLDialogElement, DialogProps>(
           <div className="dialog__box">
             <header className="dialog__header">
               <h3>{title}</h3>
-              <IconButton icon={<BsX />} onClick={onClose} />
+              <IconButton icon="close" onClick={onClose} />
             </header>
             <section className="dialog__content">{children}</section>
             {footer && <footer className="dialog__actions">{footer}</footer>}

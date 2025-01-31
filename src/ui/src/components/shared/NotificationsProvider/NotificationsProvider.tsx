@@ -5,12 +5,10 @@ import "./NotificationsProvider.scss";
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import {
-  BsCheck2Circle,
-  BsExclamationCircle,
-  BsXCircleFill,
-} from "react-icons/bs";
 
+import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
+import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
+import IconButton from "@/components/shared/IconButton/IconButton";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   deleteNotification,
@@ -41,19 +39,18 @@ const NotificationToast = ({ id, text, severity }: NotificationToastProps) => {
     dispatch(deleteNotification(id));
   };
 
-  const icon =
-    severity === "error" ? <BsExclamationCircle /> : <BsCheck2Circle />;
+  const icon = severity === "error" ? <ErrorIcon /> : <SuccessIcon />;
 
   return (
     <div className={`notification-toast notification-toast--${severity}`}>
       {icon}
       <span>{text}</span>
-      <button
+      <IconButton
+        size="sm"
+        icon="close-notification"
         className="notification-toast__dismiss-btn"
         onClick={handleClickDismissBtn}
-      >
-        <BsXCircleFill />
-      </button>
+      />
     </div>
   );
 };

@@ -5,17 +5,14 @@ import "./ListHeader.scss";
 
 import classNames from "classnames";
 
+import Button from "@/components/shared/Button/Button";
+
 interface ListHeaderProps {
   title?: string;
-  disabled: boolean;
   onClearListBtnClick: () => void;
 }
 
-const ListHeader = ({
-  title,
-  disabled,
-  onClearListBtnClick,
-}: ListHeaderProps) => (
+const ListHeader = ({ title, onClearListBtnClick }: ListHeaderProps) => (
   <header
     className={classNames({
       "list-header": true,
@@ -23,13 +20,9 @@ const ListHeader = ({
     })}
   >
     {title && <h3>{title}</h3>}
-    <button
-      className="outlined-button--danger"
-      disabled={disabled}
-      onClick={onClearListBtnClick}
-    >
-      Clear List
-    </button>
+    <Button color="error" size="sm" onClick={onClearListBtnClick}>
+      Delete All
+    </Button>
   </header>
 );
 

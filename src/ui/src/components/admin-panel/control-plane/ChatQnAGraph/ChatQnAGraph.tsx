@@ -61,7 +61,7 @@ const ChatQnAGraph = () => {
   };
 
   const fitViewOptions: FitViewOptions = {
-    padding: nodes.length > 8 ? 0.2 : 0.8,
+    padding: nodes.length > 8 ? 0.27 : 0.8,
   };
 
   return (

@@ -3,8 +3,4 @@
 
 .upload-dialog__footer {
   @apply flex items-center gap-4;
-
-  & .upload-data__footer--button {
-    @apply flex items-center;
-  }
 }

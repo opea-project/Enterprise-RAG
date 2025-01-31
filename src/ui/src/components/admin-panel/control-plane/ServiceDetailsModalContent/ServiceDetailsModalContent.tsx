@@ -9,6 +9,7 @@ import { ChangeArgumentsRequestData } from "@/api/models/systemFingerprint";
 import ServiceArgumentsGrid from "@/components/admin-panel/control-plane/ServiceArgumentsGrid/ServiceArgumentsGrid";
 import ServiceDetailsGrid from "@/components/admin-panel/control-plane/ServiceDetailsGrid/ServiceDetailsGrid";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
+import Button from "@/components/shared/Button/Button";
 import ServiceArgument, {
   ServiceArgumentInputValue,
 } from "@/models/admin-panel/control-plane/serviceArgument";
@@ -49,7 +50,6 @@ const ServiceDetailsModalContent = ({
   const [initialServiceArgumentsGrid, setInitialServiceArgumentsGrid] =
     useState<ServiceArgumentsGridValues>({ name: "", data: {} });
   const [invalidArguments, setInvalidArguments] = useState<string[]>([]);
-
 
   useEffect(() => {
     const serviceArguments = serviceData.args ?? [];
@@ -157,30 +157,31 @@ const ServiceDetailsModalContent = ({
     if (editModeEnabled) {
       bottomPanel = (
         <div className="service-details-bottom-panel">
-          <button
-            className="button--small button__success w-full"
+          <Button
+            size="sm"
+            color="success"
+            fullWidth
             disabled={confirmChangesBtnDisabled}
             onClick={handleConfirmChangesBtnClick}
           >
             Confirm Changes
-          </button>
-          <button
-            className="button--small outlined-button--primary w-full"
+          </Button>
+          <Button
+            size="sm"
+            variant="outlined"
+            fullWidth
             onClick={handleCancelChangesBtnClick}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       );
     } else {
       bottomPanel = (
         <div className="service-details-bottom-panel">
-          <button
-            className="button--small w-full"
-            onClick={handleEditArgumentsBtnClick}
-          >
+          <Button size="sm" fullWidth onClick={handleEditArgumentsBtnClick}>
             Edit Service Arguments
-          </button>
+          </Button>
         </div>
       );
     }
@@ -188,7 +189,7 @@ const ServiceDetailsModalContent = ({
 
   return (
     <div className="service-details-content-panel">
-      <div className="p-4">
+      <div>
         <header className="service-details-card-header">
           <ServiceStatusIndicator status={serviceData.status} />
           <p className="service-details__service-name">

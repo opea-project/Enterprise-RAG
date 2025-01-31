@@ -3,11 +3,10 @@
 
 import "./BotMessage.scss";
 
-import { BsExclamationCircleFill } from "react-icons/bs";
-
-import ChatIcon from "@/components/chat/ChatIcon/ChatIcon";
 import ChatMessageMarkdown from "@/components/chat/ChatMessageMarkdown/ChatMessageMarkdown";
 import PulsingDot from "@/components/chat/PulsingDot/PulsingDot";
+import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
+import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import { sanitizeString } from "@/utils";
 
 interface BotMessageProps {
@@ -22,7 +21,7 @@ const BotMessage = ({ text, isStreaming, isError }: BotMessageProps) => {
 
   const botMessage = isError ? (
     <div className="bot-message__error">
-      <BsExclamationCircleFill />
+      <ErrorIcon />
       <p>{sanitizedMessage}</p>
     </div>
   ) : (
@@ -33,7 +32,7 @@ const BotMessage = ({ text, isStreaming, isError }: BotMessageProps) => {
 
   return (
     <div className="bot-message">
-      <ChatIcon forConversation />
+      <ChatBotIcon forConversation />
       {isWaitingForMessage && <PulsingDot />}
       {sanitizedMessage !== "" && botMessage}
     </div>

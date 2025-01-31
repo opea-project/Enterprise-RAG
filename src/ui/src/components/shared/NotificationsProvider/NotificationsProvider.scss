@@ -5,19 +5,21 @@
   @apply absolute bottom-4 right-4 flex flex-col items-end gap-2;
 
   & .notification-toast {
-    @apply flex items-center gap-2 break-words rounded-lg py-2 px-3 text-sm text-light-notification-text drop-shadow dark:text-dark-notification-text;
+    @apply flex items-center gap-2 break-words rounded-lg px-3 py-2 text-sm drop-shadow;
+    @apply text-light-text-inverse dark:text-dark-text-primary;
     word-wrap: break-word;
 
     &.notification-toast--success {
-      @apply bg-light-notification-success-background dark:bg-dark-notification-success-background;
+      @apply bg-light-status-success dark:bg-dark-status-success;
     }
 
     &.notification-toast--error {
-      @apply bg-light-notification-error-background dark:bg-dark-notification-error-background;
+      @apply bg-light-status-error dark:bg-dark-status-error;
     }
 
-& .notification-toast__dismiss-btn {
-@apply ml-1;
-}
+    & .notification-toast__dismiss-btn {
+      @apply ml-1;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
+    }
   }
 }

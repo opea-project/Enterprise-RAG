@@ -2,13 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .three-state-switch {
-  @apply grid w-full grid-cols-3 gap-1 rounded-sm bg-light-background-2 p-1 dark:bg-dark-background-2;
+  @apply w-full rounded p-1;
+  @apply grid grid-cols-3 gap-1;
+  @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
-  & button.three-state-switch--button {
-    @apply rounded-sm bg-light-background-3 p-0 text-xs text-light-text-primary dark:bg-dark-background-3 dark:text-dark-text-primary;
+  & button.three-state-switch__button {
+    @apply h-4 rounded p-0 text-xs;
 
-    &.three-state-switch--button__active {
-      @apply bg-light-button-contained-primary-background p-0 text-xs text-light-text-inverse dark:bg-dark-button-contained-primary-background dark:text-dark-text-inverse;
+    @apply bg-light-bg-1 dark:bg-dark-bg-1;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+
+    &.three-state-switch__button--active {
+      @apply bg-light-primary dark:bg-dark-primary;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
     }
   }
+
+  &.three-state-switch--read-only {
+    & button.three-state-switch__button {
+      @apply cursor-default;
+
+      &.three-state-switch__button--active {
+        @apply p-0 text-xs;
+        @apply bg-light-bg-2 dark:bg-dark-bg-2;
+        @apply text-light-text-primary dark:text-dark-text-primary;
+      }
+    }
+  }
+}
+
+.three-state-switch__label {
+  @apply mb-2 inline-block text-sm;
 }

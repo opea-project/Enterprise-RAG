@@ -4,9 +4,9 @@
 import "./ChatPage.scss";
 
 import ChatDisclaimer from "@/components/chat/ChatDisclaimer/ChatDisclaimer";
-import ChatIcon from "@/components/chat/ChatIcon/ChatIcon";
 import ConversationFeed from "@/components/chat/ConversationFeed/ConversationFeed";
 import PromptInput from "@/components/chat/PromptInput/PromptInput";
+import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
 import { selectMessages } from "@/store/conversationFeed.slice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -16,7 +16,7 @@ const ChatPage = () => {
   if (messages.length === 0) {
     return (
       <div className="chat-page--no-messages">
-        <ChatIcon />
+        <ChatBotIcon />
         <p className="chat-page__greeting">What do you want to know?</p>
         <PromptInput />
         <ChatDisclaimer />

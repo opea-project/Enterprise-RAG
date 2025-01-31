@@ -5,10 +5,10 @@
   @apply flex flex-nowrap items-center gap-2;
 
   & progress.chunks-progress-bar {
-    @apply overflow-hidden rounded-sm border;
+    @apply overflow-hidden rounded border;
 
     &::-webkit-progress-bar {
-      @apply bg-light-background-main dark:bg-dark-background-main;
+      @apply bg-light-bg-1 dark:bg-dark-bg-1;
     }
 
     &::-webkit-progress-value {

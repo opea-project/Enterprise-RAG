@@ -4,3 +4,7 @@
 input.service-argument-number-input {
   @apply w-full px-2 py-1 text-xs;
 }
+
+label.service-argument-number-input__label {
+  @apply text-xs;
+}

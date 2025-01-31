@@ -6,17 +6,15 @@ import "./AdminPanelPage.scss";
 import classNames from "classnames";
 import { useCallback, useState } from "react";
 
-import AuthenticationTab from "@/components/admin-panel/authentication/AuthenticationTab/AuthenticationTab";
 import ControlPlaneTab from "@/components/admin-panel/control-plane/ControlPlaneTab/ControlPlaneTab";
 import DataIngestionTab from "@/components/admin-panel/data-ingestion/DataIngestionTab/DataIngestionTab";
-import TelemetryTab from "@/components/admin-panel/telemetry/TelemetryTab/TelemetryTab";
+import TelemetryAuthenticationTab from "@/components/admin-panel/telemetry-authentication/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
 import NotificationsProvider from "@/components/shared/NotificationsProvider/NotificationsProvider";
 
 const adminPanelTabs = [
   "Control Plane",
   "Data Ingestion",
-  "Telemetry",
-  "Authentication",
+  "Telemetry & Authentication",
 ];
 
 const AdminPanelPage = () => {
@@ -56,8 +54,9 @@ const AdminPanelPage = () => {
       >
         {isTabSelected("Control Plane") && <ControlPlaneTab />}
         {isTabSelected("Data Ingestion") && <DataIngestionTab />}
-        {isTabSelected("Telemetry") && <TelemetryTab />}
-        {isTabSelected("Authentication") && <AuthenticationTab />}
+        {isTabSelected("Telemetry & Authentication") && (
+          <TelemetryAuthenticationTab />
+        )}
       </div>
       <NotificationsProvider />
     </div>

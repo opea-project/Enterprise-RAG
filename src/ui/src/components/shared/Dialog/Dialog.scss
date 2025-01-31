@@ -2,38 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 
 dialog {
-  position: fixed;
-  z-index: 100;
-  top: 0;
-  @apply m-4 h-[100vh] w-full overflow-hidden bg-transparent;
+  @apply fixed top-0 z-[100];
+  @apply my-6 h-[100vh] w-full overflow-hidden bg-transparent;
 
   & .dialog__box {
     @apply relative w-full rounded;
-    @apply bg-light-background-main dark:bg-dark-background-main;
+    @apply bg-light-bg-1 dark:bg-dark-bg-1;
     @apply text-light-text-primary dark:text-dark-text-primary;
 
     & header.dialog__header {
-      @apply flex h-14 w-full items-center justify-between rounded-t py-2 pl-4 pr-2;
-      @apply bg-light-background-main dark:bg-dark-background-main;
-      @apply border-b border-b-light-border-subtle dark:border-b-dark-border-subtle;
+      @apply h-14 w-full rounded-t py-2 pl-4 pr-2;
+      @apply flex items-center justify-between;
+      @apply bg-light-bg-1 dark:bg-dark-bg-1;
+      @apply border-b border-b-light-border dark:border-b-dark-border;
 
       & h3 {
-        @apply mb-0 text-xl;
+        @apply mb-0 text-lg;
       }
     }
 
     & section.dialog__content {
-      @apply max-h-[calc(100vh-9.5rem)] overflow-y-auto px-4 py-3;
+      @apply max-h-[calc(100vh-9.5rem)] overflow-y-auto;
     }
 
     & footer.dialog__actions {
-      @apply flex h-14 w-full items-center justify-end rounded-b px-4 py-2;
-      @apply bg-light-background-main dark:bg-dark-background-main;
-      @apply border-t border-t-light-border-subtle dark:border-t-dark-border-subtle;
+      @apply h-14 w-full rounded-b px-4 py-2;
+      @apply flex items-center justify-end;
+      @apply bg-light-bg-1 dark:bg-dark-bg-1;
+      @apply border-t border-t-light-border dark:border-t-dark-border;
     }
   }
 
   &::backdrop {
-    @apply bg-black opacity-75;
+    @apply bg-black/75;
   }
 }

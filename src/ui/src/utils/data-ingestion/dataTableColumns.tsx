@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import ChunksProgressBar from "@/components/admin-panel/data-ingestion/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/components/admin-panel/data-ingestion/DataItemStatus/DataItemStatus";
+import Button from "@/components/shared/Button/Button";
 import {
   FileDataItem,
   LinkDataItem,
@@ -82,26 +83,21 @@ const getFilesTableColumns = ({
       },
     }) => (
       <div className="flex items-center justify-center gap-2">
-        <button
-          className="button--small"
-          onClick={() => downloadHandler(object_name)}
-        >
+        <Button size="sm" onClick={() => downloadHandler(object_name)}>
           Download
-        </button>
+        </Button>
         {status === "error" && (
-          <button
-            className="button--small outlined-button--primary"
-            onClick={() => retryHandler(id)}
-          >
+          <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
             Retry
-          </button>
+          </Button>
         )}
-        <button
-          className="button--small outlined-button--danger"
+        <Button
+          size="sm"
+          color="error"
           onClick={() => deleteHandler(object_name)}
         >
           Delete
-        </button>
+        </Button>
       </div>
     ),
   },
@@ -159,19 +155,13 @@ const getLinksTableColumns = ({
     }) => (
       <div className="flex items-center justify-center gap-2">
         {status === "error" && (
-          <button
-            className="button--small outlined-button--primary"
-            onClick={() => retryHandler(id)}
-          >
+          <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
             Retry
-          </button>
+          </Button>
         )}
-        <button
-          className="button--small outlined-button--danger"
-          onClick={() => deleteHandler(id)}
-        >
+        <Button size="sm" color="error" onClick={() => deleteHandler(id)}>
           Delete
-        </button>
+        </Button>
       </div>
     ),
   },

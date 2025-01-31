@@ -4,18 +4,17 @@
 import "./FilesList.scss";
 
 import { Dispatch, SetStateAction } from "react";
-import { BsTrash } from "react-icons/bs";
 
 import ListHeader from "@/components/admin-panel/data-ingestion/ListHeader/ListHeader";
+import IconButton from "@/components/shared/IconButton/IconButton";
 import { formatFileSize } from "@/utils/data-ingestion";
 
 interface FilesListProps {
   files: File[];
   setFiles: Dispatch<SetStateAction<File[]>>;
-  disabled: boolean;
 }
 
-const FilesList = ({ files, setFiles, disabled }: FilesListProps) => {
+const FilesList = ({ files, setFiles }: FilesListProps) => {
   const clearList = () => {
     setFiles([]);
   };
@@ -28,7 +27,7 @@ const FilesList = ({ files, setFiles, disabled }: FilesListProps) => {
 
   return (
     <>
-      <ListHeader disabled={disabled} onClearListBtnClick={clearList} />
+      <ListHeader onClearListBtnClick={clearList} />
       <ul>
         {files.map((file, index) => (
           <li key={`file-list-item-${index}`} className="file-list-item">
@@ -38,13 +37,11 @@ const FilesList = ({ files, setFiles, disabled }: FilesListProps) => {
                 {formatFileSize(file.size)}
               </p>
             </div>
-            <button
-              className="icon-button-outlined--danger"
-              disabled={disabled}
+            <IconButton
+              icon="delete"
+              color="error"
               onClick={() => removeDocumentFromList(index)}
-            >
-              <BsTrash />
-            </button>
+            />
           </li>
         ))}
       </ul>

@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ServiceArgumentValue.scss";
+import { ReactElement } from "react";
 
 import ServiceArgumentCheckbox from "@/components/admin-panel/control-plane/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/components/admin-panel/control-plane/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
@@ -35,74 +35,69 @@ const ServiceArgumentValue = ({
 
   const editModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
 
-  let argumentValue = <p className="service-argument-value">{value}</p>;
+  let argumentValue: ReactElement | null = null;
 
   if (type === "text") {
-    if (editModeEnabled) {
-      if (typeof value === "string" || (value === null && nullable)) {
-        argumentValue = (
-          <ServiceArgumentTextInput
-            name={displayName}
-            initialValue={value}
-            emptyValueAllowed={nullable}
-            commaSeparated={commaSeparated}
-            onArgumentValueChange={onArgumentValueChange}
-            onArgumentValidityChange={onArgumentValidityChange}
-          />
-        );
-      }
-    } else {
-      const valueText = value === null ? "not set" : value.toString();
-      argumentValue = <p className="service-argument-value">{valueText}</p>;
+    if (typeof value === "string" || (value === null && nullable)) {
+      argumentValue = (
+        <ServiceArgumentTextInput
+          name={displayName}
+          initialValue={value}
+          emptyValueAllowed={nullable}
+          commaSeparated={commaSeparated}
+          readOnly={!editModeEnabled}
+          onArgumentValueChange={onArgumentValueChange}
+          onArgumentValidityChange={onArgumentValidityChange}
+        />
+      );
     }
   }
 
   if (type === "boolean") {
-    if (editModeEnabled) {
-      if (typeof value === "boolean" && !nullable) {
-        argumentValue = (
-          <ServiceArgumentCheckbox
-            name={displayName}
-            initialValue={value}
-            onArgumentValueChange={onArgumentValueChange}
-          />
-        );
-      } else if ((typeof value === "boolean" && nullable) || value === null) {
-        const handleChange = (newValue: boolean | null) => {
-          onArgumentValueChange(displayName, newValue);
-        };
+    if (typeof value === "boolean" && !nullable) {
+      argumentValue = (
+        <ServiceArgumentCheckbox
+          name={displayName}
+          initialValue={value}
+          readOnly={!editModeEnabled}
+          onArgumentValueChange={onArgumentValueChange}
+        />
+      );
+    } else if ((typeof value === "boolean" && nullable) || value === null) {
+      const handleChange = (newValue: boolean | null) => {
+        onArgumentValueChange(displayName, newValue);
+      };
 
-        argumentValue = (
-          <ThreeStateSwitch initialValue={value} onChange={handleChange} />
-        );
-      }
-    } else {
-      const valueText = value === null ? "not set" : value.toString();
-      argumentValue = <p className="service-argument-value">{valueText}</p>;
+      argumentValue = (
+        <ThreeStateSwitch
+          initialValue={value}
+          readOnly={!editModeEnabled}
+          name={displayName}
+          onChange={handleChange}
+        />
+      );
     }
   }
 
   if (type === "number") {
     const isValidNotNullable = typeof value === "number" && range;
     const isNullable = value === null && nullable && range;
-    if (editModeEnabled && (isValidNotNullable || isNullable)) {
+    if (isValidNotNullable || isNullable) {
       argumentValue = (
         <ServiceArgumentNumberInput
           name={displayName}
           initialValue={value}
           nullable={nullable}
+          readOnly={!editModeEnabled}
           range={range}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />
       );
-    } else {
-      const valueText = value === null ? "not set" : value;
-      argumentValue = <p className="service-argument-value">{valueText}</p>;
     }
   }
 
-  return argumentValue;
+  return <div>{argumentValue}</div>;
 };
 
 export default ServiceArgumentValue;

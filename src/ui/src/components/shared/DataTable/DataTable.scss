@@ -7,9 +7,9 @@ table {
   & thead {
     & th {
       @apply bg-light-primary dark:bg-dark-primary;
-      @apply text-light-text-inverse dark:text-dark-text-inverse;
-      @apply text-left;
-      @apply h-8 px-3 py-1 font-semibold;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
+      @apply text-left font-semibold;
+      @apply h-8 px-3 py-1;
 
       &:first-of-type {
         @apply rounded-tl;
@@ -27,11 +27,12 @@ table {
 
   & tr {
     &:not(:has(th)):not(:last-of-type) {
-      @apply border-b border-b-light-border-subtle dark:border-b-dark-border-subtle;
+      @apply border-b border-b-light-border dark:border-b-dark-border;
     }
   }
 
   & *::selection {
-    @apply bg-light-text-inverse text-light-primary dark:bg-dark-primary dark:text-dark-text-inverse;
+    @apply bg-light-text-inverse dark:bg-dark-bg-inverse;
+    @apply text-light-primary dark:text-dark-primary;
   }
 }

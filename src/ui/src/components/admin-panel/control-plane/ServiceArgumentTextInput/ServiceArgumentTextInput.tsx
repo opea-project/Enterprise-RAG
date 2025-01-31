@@ -4,10 +4,10 @@
 import "./ServiceArgumentTextInput.scss";
 
 import classNames from "classnames";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { object, string, ValidationError } from "yup";
 
-import ServiceArgumentInputMessage from "@/components/admin-panel/control-plane/ServiceArgumentInputMessage/ServiceArgumentInputMessage";
 import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
 import { sanitizeString } from "@/utils";
 import { noEmpty } from "@/utils/validators/textInput";
@@ -17,6 +17,7 @@ interface ServiceArgumentTextInputProps {
   initialValue: string | null;
   emptyValueAllowed?: boolean;
   commaSeparated?: boolean;
+  readOnly?: boolean;
   onArgumentValueChange: (
     argumentName: string,
     argumentValue: ServiceArgumentInputValue,
@@ -32,13 +33,20 @@ const ServiceArgumentTextInput = ({
   initialValue,
   emptyValueAllowed = false,
   commaSeparated = false,
+  readOnly = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentTextInputProps) => {
   const [value, setValue] = useState(initialValue ?? "");
-  const [isFocused, setIsFocused] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (readOnly) {
+      setValue(initialValue ?? "");
+      setIsInvalid(false);
+    }
+  }, [readOnly, initialValue]);
 
   const validationSchema = object().shape({
     textInput: string().test(
@@ -76,40 +84,31 @@ const ServiceArgumentTextInput = ({
     }
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-  };
-
   const inputClassNames = classNames({
     "service-argument-text-input": true,
     "input--invalid": isInvalid,
   });
 
-  const showCSTextInputMessage = commaSeparated && isFocused && !isInvalid;
+  const inputId = `${name}-text-input-${uuidv4()}`;
+  const placeholder = commaSeparated ? "Enter values separated by comma" : "";
 
   return (
-    <div className="relative">
-      {isInvalid && <ServiceArgumentInputMessage message={error} forInvalid />}
-      {showCSTextInputMessage && (
-        <ServiceArgumentInputMessage
-          message="Please enter values separated by commas"
-          forFocus
-        />
-      )}
+    <>
+      <label htmlFor={inputId} className="service-argument-text-input__label">
+        {name}
+      </label>
       <input
         className={inputClassNames}
         type="text"
-        name={`${name}-text-input`}
+        id={inputId}
+        name={inputId}
         value={value}
+        placeholder={placeholder}
+        readOnly={readOnly}
         onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
       />
-    </div>
+      {isInvalid && <p className="error my-1 pl-2 text-xs italic">{error}</p>}
+    </>
   );
 };
 

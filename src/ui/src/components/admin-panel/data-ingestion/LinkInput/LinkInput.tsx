@@ -5,9 +5,9 @@ import "./LinkInput.scss";
 
 import classNames from "classnames";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { BsPlus } from "react-icons/bs";
 import { ValidationError } from "yup";
 
+import IconButton from "@/components/shared/IconButton/IconButton";
 import { sanitizeString } from "@/utils";
 import {
   urlErrorMessage,
@@ -16,10 +16,9 @@ import {
 
 interface LinkInputProps {
   addLinkToList: (value: string) => void;
-  disabled: boolean;
 }
 
-const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
+const LinkInput = ({ addLinkToList }: LinkInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [isInvalid, setIsInvalid] = useState(false);
@@ -72,7 +71,7 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
     inputRef.current!.focus();
   };
 
-  const addLinkBtnDisabled = !value || isInvalid || disabled;
+  const addLinkBtnDisabled = !value || isInvalid;
 
   return (
     <div className="link-input-wrapper">
@@ -83,17 +82,15 @@ const LinkInput = ({ addLinkToList, disabled }: LinkInputProps) => {
         type="url"
         placeholder="Enter valid URL (starting with http:// or https://)"
         className={classNames({ "input--invalid": isInvalid })}
-        disabled={disabled}
         onChange={handleLinkInputChange}
         onKeyDown={handleLinkInputKeyDown}
       />
-      <button
-        className="icon-button-outlined--primary"
+      <IconButton
+        icon="plus"
+        variant="contained"
         disabled={addLinkBtnDisabled}
         onClick={handleAddNewLinkItem}
-      >
-        <BsPlus />
-      </button>
+      />
       {isInvalid && <p className="link-input-error-message">{errorMessage}</p>}
     </div>
   );

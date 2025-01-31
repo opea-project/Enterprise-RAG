@@ -5,12 +5,11 @@ import "./ScrollToBottomButton.scss";
 
 import classNames from "classnames";
 import { ButtonHTMLAttributes } from "react";
-import { BsChevronDown } from "react-icons/bs";
 
 import IconButton from "@/components/shared/IconButton/IconButton";
 
 interface ScrollToBottomButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
   show: boolean;
 }
 
@@ -19,7 +18,7 @@ const ScrollToBottomButton = ({
   ...props
 }: ScrollToBottomButtonProps) => (
   <IconButton
-    icon={<BsChevronDown />}
+    icon="scroll-to-bottom"
     className={classNames({
       "scroll-to-bottom-button": true,
       visible: show,

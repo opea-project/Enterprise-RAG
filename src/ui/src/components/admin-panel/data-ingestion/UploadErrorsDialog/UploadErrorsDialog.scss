@@ -5,16 +5,20 @@
   @apply flex items-center gap-2 text-sm;
 
   & .upload-errors-dialog__trigger--icon {
-    @apply text-light-button-outlined-danger-text dark:text-dark-button-outlined-danger-text;
+    @apply text-light-text-error dark:text-dark-text-error;
   }
 
   & .upload-errors-dialog__trigger--text {
-    @apply cursor-pointer underline hover:no-underline;
-    @apply text-light-button-outlined-danger-text dark:text-dark-button-outlined-danger-text;
+    @apply cursor-pointer underline;
+    @apply text-light-text-error dark:text-dark-text-error;
   }
 }
 
 .upload-errors-dialog__section {
+  &:not(:last-child) {
+    @apply mb-4;
+  }
+
   & h4 {
     @apply mb-2 font-medium;
   }

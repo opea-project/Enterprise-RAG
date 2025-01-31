@@ -11,17 +11,23 @@ import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 interface ServiceStatusIndicatorProps {
   status?: ServiceStatus;
   forNode?: boolean;
+  noTooltip?: boolean;
 }
 
 const ServiceStatusIndicator = ({
   status = ServiceStatus.NotAvailable,
   forNode,
+  noTooltip,
 }: ServiceStatusIndicatorProps) => {
   const serviceStatusIndicatorClassNames = classNames({
     "service-status-indicator": true,
     [status.split(" ").join("-").toLowerCase()]: true,
     "service-status-indicator--node": forNode,
   });
+
+  if (noTooltip) {
+    return <div className={serviceStatusIndicatorClassNames}></div>;
+  }
 
   return (
     <Tooltip text={status} position={forNode ? "top" : "left"}>

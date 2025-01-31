@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .error-page {
-  @apply flex h-[100vh] w-full flex-col items-center justify-center gap-2;
+  @apply h-[100vh] w-full;
+  @apply flex flex-col items-center justify-center gap-2;
 
   & .error-message {
     @apply text-light-text-error dark:text-dark-text-error;
   }
 
   & a {
-    @apply text-light-link-primary hover:text-light-link-hover dark:text-dark-link-primary dark:hover:text-dark-link-hover;
+    @apply text-light-text-accent dark:text-dark-text-accent;
   }
 }

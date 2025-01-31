@@ -13,6 +13,7 @@ import {
 import ServiceArgumentValue from "@/components/admin-panel/control-plane/ServiceArgumentValue/ServiceArgumentValue";
 import ServiceDetailsGrid from "@/components/admin-panel/control-plane/ServiceDetailsGrid/ServiceDetailsGrid";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
+import Button from "@/components/shared/Button/Button";
 import ServiceArgument, {
   ServiceArgumentInputValue,
 } from "@/models/admin-panel/control-plane/serviceArgument";
@@ -238,28 +239,29 @@ const GuardServiceDetailsModalContent = ({
     if (serviceHasGuardArgs) {
       return editModeEnabled ? (
         <div className="guard-details-bottom-panel">
-          <button
-            className="button--small button__success w-full"
+          <Button
+            size="sm"
+            color="success"
+            fullWidth
             disabled={confirmChangesBtnDisabled}
             onClick={handleConfirmChangesBtnClick}
           >
             Confirm Changes
-          </button>
-          <button
-            className="button--small outlined-button--primary w-full"
+          </Button>
+          <Button
+            size="sm"
+            variant="outlined"
+            fullWidth
             onClick={handleCancelChangesBtnClick}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="guard-details-bottom-panel">
-          <button
-            className="button--small w-full"
-            onClick={handleEditArgumentsBtnClick}
-          >
+          <Button size="sm" fullWidth onClick={handleEditArgumentsBtnClick}>
             Edit Service Arguments
-          </button>
+          </Button>
         </div>
       );
     }
@@ -292,12 +294,9 @@ const GuardServiceDetailsModalContent = ({
                       </p>
                       <div className="guard-arguments-grid">
                         {scannerArgs.map((argumentData) => (
-                          <Fragment
+                          <div
                             key={`${scannerName}.${argumentData.displayName}`}
                           >
-                            <p className="guard-argument-label">
-                              {argumentData.displayName}
-                            </p>
                             <ServiceArgumentValue
                               argumentData={argumentData}
                               onArgumentValueChange={(
@@ -321,7 +320,7 @@ const GuardServiceDetailsModalContent = ({
                                 )
                               }
                             />
-                          </Fragment>
+                          </div>
                         ))}
                       </div>
                     </Fragment>

@@ -3,9 +3,10 @@
 import "./Anchor.scss";
 
 import classNames from "classnames";
-import { toASCII } from "punycode";
 import { AnchorHTMLAttributes, MouseEventHandler } from "react";
-import { BsBoxArrowUpRight } from "react-icons/bs";
+
+import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon/ExternalLinkIcon";
+import { getPunycodeHref, isHrefSafe } from "@/utils";
 
 interface AnchorProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   isExternal?: boolean;
@@ -19,20 +20,11 @@ const Anchor = ({
   isExternal,
   ...props
 }: AnchorProps) => {
-  const getPunycodeHref = () => {
-    if (!href) {
-      return href;
-    }
-
-    const decodedHref = decodeURIComponent(href);
-    return toASCII(decodedHref);
-  };
-  const isHrefSafe = getPunycodeHref() === href;
-  const linkClassNames = classNames({ className, invalid: !isHrefSafe });
-  const safeHref = isHrefSafe ? getPunycodeHref() : undefined;
+  const linkClassNames = classNames({ className, invalid: !isHrefSafe(href) });
+  const safeHref = isHrefSafe(href) ? getPunycodeHref(href) : undefined;
 
   const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (!isHrefSafe) {
+    if (!isHrefSafe(href)) {
       event.preventDefault();
     }
   };
@@ -47,7 +39,7 @@ const Anchor = ({
     >
       {!isHrefSafe && "Caution: Malicious link - "}
       {children}
-      {isExternal && <BsBoxArrowUpRight size={12} />}
+      {isExternal && <ExternalLinkIcon size={12} />}
     </a>
   );
 };

@@ -2,21 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .data-ingestion-panel {
-  @apply h-[calc(100vh-8.5rem)] overflow-y-auto p-4;
+  @apply h-[calc(100vh-8.5rem)] overflow-y-auto px-16 pt-6;
 
   & > header {
-    @apply flex items-center justify-between;
+    @apply mb-2 flex items-center justify-between;
 
     & > h2 {
-      @apply mb-0 self-start text-xl;
+      @apply mb-0 text-xl;
     }
 
     & > .data-ingestion-panel__actions {
       @apply flex items-center justify-between gap-3;
-
-      & .refresh-btn {
-        @apply flex items-center gap-2;
-      }
     }
   }
 }

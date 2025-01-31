@@ -5,11 +5,11 @@ import "@xyflow/react/dist/style.css";
 import "./ControlPlaneTab.scss";
 
 import { useEffect } from "react";
-import { BsHurricane } from "react-icons/bs";
 
 import ChatQnAGraph from "@/components/admin-panel/control-plane/ChatQnAGraph/ChatQnAGraph";
 import ServiceDetailsModal from "@/components/admin-panel/control-plane/ServiceDetailsModal/ServiceDetailsModal";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
+import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
@@ -29,15 +29,15 @@ import { addNotification } from "@/store/notifications.slice";
 const ServiceStatusLegend = () => (
   <div className="chatqna-graph-legend">
     <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.Ready} />
+      <ServiceStatusIndicator status={ServiceStatus.Ready} noTooltip />
       <p>Ready</p>
     </div>
     <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.NotReady} />
+      <ServiceStatusIndicator status={ServiceStatus.NotReady} noTooltip />
       <p>Not Ready</p>
     </div>
     <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.NotAvailable} />
+      <ServiceStatusIndicator status={ServiceStatus.NotAvailable} noTooltip />
       <p>Status Not Available</p>
     </div>
   </div>
@@ -96,7 +96,7 @@ const ControlPlaneTab = () => {
       return (
         <div className="configure-services-panel-loading__overlay">
           <div className="configure-services-panel-loading__message">
-            <BsHurricane className="animate-spin" />
+            <LoadingIcon />
             <p>Loading...</p>
           </div>
         </div>

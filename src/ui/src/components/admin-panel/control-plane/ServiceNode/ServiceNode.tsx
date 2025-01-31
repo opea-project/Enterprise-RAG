@@ -43,7 +43,9 @@ const ServiceNode = ({
       )}
       <div className={serviceNodeClassNames}>
         <ServiceStatusIndicator status={status} forNode />
-        <p>{displayName}</p>
+        <div className="service-node__label">
+          <p>{displayName}</p>
+        </div>
       </div>
       {sourcePosition && (
         <Handle

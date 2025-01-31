@@ -4,8 +4,9 @@
 import "./ColorSchemeSwitch.scss";
 
 import classNames from "classnames";
-import { PiMoonStarsFill, PiSunFill } from "react-icons/pi";
 
+import DarkModeIcon from "@/components/icons/DarkModeIcon/DarkModeIcon";
+import LightModeIcon from "@/components/icons/LightModeIcon/LightModeIcon";
 import useColorScheme from "@/utils/hooks/useColorScheme";
 
 const ColorSchemeSwitch = () => {
@@ -18,11 +19,7 @@ const ColorSchemeSwitch = () => {
   const getModeLabel = () => (colorScheme === "light" ? "Light" : "Dark");
 
   const getModeIcon = () =>
-    colorScheme === "light" ? (
-      <PiSunFill className="color-scheme-switch__thumb--icon" />
-    ) : (
-      <PiMoonStarsFill className="color-scheme-switch__thumb--icon" />
-    );
+    colorScheme === "light" ? <LightModeIcon /> : <DarkModeIcon />;
 
   const colorSchemeSwitchClassNames = classNames(
     "color-scheme-switch",

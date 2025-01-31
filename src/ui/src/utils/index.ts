@@ -2,9 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import DOMPurify from "dompurify";
+import { toASCII } from "punycode";
 
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
 import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
+
+const getPunycodeHref = (href: string | undefined) => {
+  if (!href) {
+    return href;
+  }
+
+  const decodedHref = decodeURIComponent(href);
+  return toASCII(decodedHref);
+};
+
+const isHrefSafe = (href: string | undefined) => getPunycodeHref(href) === href;
 
 const parseServiceDetailsResponseData = (
   response: ServiceDetailsResponse,
@@ -116,4 +128,9 @@ const sanitizeString = (value: string) => {
   return DOMPurify.sanitize(decodedValue);
 };
 
-export { parseServiceDetailsResponseData, sanitizeString };
+export {
+  getPunycodeHref,
+  isHrefSafe,
+  parseServiceDetailsResponseData,
+  sanitizeString,
+};

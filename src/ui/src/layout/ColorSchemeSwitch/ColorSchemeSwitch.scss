@@ -3,23 +3,18 @@
 
 .color-scheme-switch {
   @apply flex h-6 w-[3.688rem] items-center rounded-xl border-[0.03125rem] border-solid p-0.5;
-  @apply border-light-color-scheme-switch-border dark:border-dark-color-scheme-switch-border;
-  @apply bg-light-color-scheme-switch-bg dark:bg-dark-color-scheme-switch-bg;
+  @apply rounded-xl border-[0.03125rem] border-solid border-light-accent dark:border-dark-accent;
+  @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
   & .color-scheme-switch__thumb {
     @apply flex h-5 w-5 items-center justify-center rounded-[0.625rem] border-[0.03125rem] border-solid transition-transform duration-[0.3s];
-    @apply border-light-color-scheme-switch-thumb-border dark:border-dark-color-scheme-switch-thumb-border;
-    @apply bg-light-color-scheme-switch-thumb-bg dark:bg-dark-color-scheme-switch-thumb-bg;
-
-    & .color-scheme-switch__thumb--icon {
-      @apply text-base;
-      @apply text-light-color-scheme-switch-thumb-icon dark:text-dark-color-scheme-switch-thumb-icon;
-    }
+    @apply border-light-border dark:border-dark-bg-1;
+    @apply bg-light-bg-1 dark:bg-dark-bg-inverse;
   }
 
   & .color-scheme-switch__label {
     @apply text-xs leading-6 transition-transform duration-[0.3s];
-    @apply text-light-color-scheme-switch-label dark:text-dark-color-scheme-switch-label;
+    @apply text-light-text-accent dark:text-dark-text-accent;
   }
 }
 

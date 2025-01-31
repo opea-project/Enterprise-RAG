@@ -2,19 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .bot-message {
-  @apply mx-auto grid w-[800px] grid-cols-[auto_1fr] items-start gap-6 self-start p-5;
-
-  @media (max-width: 800px) {
-    @apply w-full;
-  }
+  @apply mx-auto p-5;
+  @apply grid grid-cols-[auto_1fr] items-start gap-6 self-start;
+  @apply w-full md:w-[800px];
 
   & .bot-message__text {
-    @apply mt-[0.4375rem] w-full text-light-chat-bot-message dark:text-dark-chat-bot-message;
+    @apply mt-1 w-full;
+    @apply text-light-text-accent dark:text-dark-text-accent;
   }
 
   & .bot-message__error {
-    @apply grid w-full grid-cols-[auto_1fr] items-center gap-3 rounded-[2rem] px-4 py-2;
-    @apply bg-light-notification-error-background dark:bg-dark-notification-error-background;
-    @apply text-light-notification-text drop-shadow dark:text-dark-notification-text;
+    @apply w-full rounded-[2rem] border px-4 py-2;
+    @apply grid grid-cols-[auto_1fr] items-center gap-3;
+    @apply bg-light-status-error dark:bg-dark-status-error;
+    @apply border-light-status-error dark:border-dark-status-error;
+    @apply text-light-text-inverse dark:text-dark-text-primary;
   }
 }

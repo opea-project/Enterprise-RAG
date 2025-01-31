@@ -3,11 +3,10 @@
 
 import "./UploadDataDialogFooter.scss";
 
-import { BsCloudUploadFill } from "react-icons/bs";
-
+import UploadErrorsDialog from "@/components/admin-panel/data-ingestion/UploadErrorsDialog/UploadErrorsDialog";
+import { IconName } from "@/components/icons";
+import Button from "@/components/shared/Button/Button";
 import { UploadErrors } from "@/models/admin-panel/data-ingestion/dataIngestion";
-
-import UploadErrorsDialog from "../UploadErrorsDialog/UploadErrorsDialog";
 
 interface UploadDataDialogFooterProps {
   uploadErrors: UploadErrors;
@@ -27,14 +26,10 @@ const UploadDataDialogFooter = ({
   const hasUploadErrors =
     uploadErrors.files !== "" || uploadErrors.links !== "";
 
-  const uploadBtnContent = isUploading ? (
-    <>
-      <BsCloudUploadFill className="mr-2" />
-      <p>Uploading...</p>
-    </>
-  ) : (
-    <p>Upload Data</p>
-  );
+  const uploadBtnContent = isUploading ? "Uploading..." : "Upload Data";
+  const uploadBtnIcon: IconName | undefined = isUploading
+    ? "loading"
+    : undefined;
 
   return (
     <div className="upload-dialog__footer">
@@ -43,13 +38,9 @@ const UploadDataDialogFooter = ({
       ) : (
         toBeUploadedMessage
       )}
-      <button
-        className="upload-data__footer--button"
-        disabled={uploadDisabled}
-        onClick={onSubmit}
-      >
+      <Button icon={uploadBtnIcon} disabled={uploadDisabled} onClick={onSubmit}>
         {uploadBtnContent}
-      </button>
+      </Button>
     </div>
   );
 };

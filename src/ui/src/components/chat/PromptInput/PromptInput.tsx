@@ -13,8 +13,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { MdStop } from "react-icons/md";
-import { TbArrowUp } from "react-icons/tb";
 
 import PromptInputButton from "@/components/chat/PromptInputButton/PromptInputButton";
 import {
@@ -116,14 +114,14 @@ const PromptInput = () => {
 
   const promptInputButton = isStreaming ? (
     <PromptInputButton
-      icon={<MdStop />}
+      icon="prompt-stop"
       type="button"
       onClick={handleStopBtnClick}
       onKeyDown={handleStopBtnKeyDown}
     />
   ) : (
     <PromptInputButton
-      icon={<TbArrowUp />}
+      icon="prompt-send"
       type="submit"
       disabled={isSubmitDisabled()}
     />

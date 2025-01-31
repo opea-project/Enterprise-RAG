@@ -4,11 +4,11 @@
 import "./UploadDataDialog.scss";
 
 import { useRef, useState } from "react";
-import { MdFileUpload } from "react-icons/md";
 
 import FilesIngestionPanel from "@/components/admin-panel/data-ingestion/FilesIngestionPanel/FilesIngestionPanel";
 import LinksIngestionPanel from "@/components/admin-panel/data-ingestion/LinksIngestionPanel/LinksIngestionPanel";
 import UploadDataDialogFooter from "@/components/admin-panel/data-ingestion/UploadDataDialogFooter/UploadDataDialogFooter";
+import Button from "@/components/shared/Button/Button";
 import Dialog from "@/components/shared/Dialog/Dialog";
 import {
   LinkForIngestion,
@@ -109,9 +109,9 @@ const UploadDataDialog = () => {
   };
 
   const triggerButton = (
-    <button className="upload-dialog__trigger-button" onClick={showDialog}>
-      <MdFileUpload fontSize={20} /> Upload
-    </button>
+    <Button icon="upload" onClick={showDialog}>
+      Upload
+    </Button>
   );
 
   const toBeUploadedMessage = createToBeUploadedMessage(files, links);
@@ -134,16 +134,9 @@ const UploadDataDialog = () => {
       onClose={closeDialog}
     >
       <div className="upload-dialog__ingestion-panels-grid">
-        <FilesIngestionPanel
-          files={files}
-          setFiles={setFiles}
-          disabled={isUploading}
-        />
-        <LinksIngestionPanel
-          links={links}
-          setLinks={setLinks}
-          disabled={isUploading}
-        />
+        <FilesIngestionPanel files={files} setFiles={setFiles} />
+        <LinksIngestionPanel links={links} setLinks={setLinks} />
+        {isUploading && <div className="upload-dialog__blur-overlay"></div>}
       </div>
     </Dialog>
   );

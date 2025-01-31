@@ -5,10 +5,10 @@ import {
   banCompetitorsScanner,
   banSubstringsScanner,
   biasScanner,
-  relevanceScanner,
+  codeScanner,
   languageScanner,
   maliciousUrlScanner,
-  codeScanner,
+  relevanceScanner,
 } from "@/models/admin-panel/control-plane/guardrails/scanners";
 import { GuardrailArguments } from "@/models/admin-panel/control-plane/serviceData";
 

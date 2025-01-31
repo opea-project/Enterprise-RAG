@@ -3,12 +3,11 @@
 
 a {
   @apply inline-flex items-center gap-1.5;
-  @apply text-light-link-primary dark:text-dark-link-primary;
-  @apply hover:text-light-link-hover dark:hover:text-dark-link-hover;
+  @apply underline underline-offset-4;
+  @apply text-light-text-accent dark:text-dark-text-accent;
 
   &.invalid {
-    @apply text-light-status-error-primary dark:text-dark-status-error-primary;
-    @apply hover:text-light-status-error-soft dark:hover:text-dark-status-error-soft;
+    @apply text-light-text-error dark:text-dark-text-error;
     @apply cursor-not-allowed;
   }
 }

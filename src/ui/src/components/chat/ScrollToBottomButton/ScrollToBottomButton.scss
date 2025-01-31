@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .scroll-to-bottom-button {
-  @apply absolute bottom-4 right-1/2 translate-x-1/2;
-  @apply bg-light-chat-scroll-to-bottom-button-bg dark:bg-dark-chat-scroll-to-bottom-button-bg;
-  @apply text-sm text-light-chat-scroll-to-bottom-button-text dark:text-dark-chat-scroll-to-bottom-button-text;
+  @apply absolute bottom-4 right-1/2 translate-x-1/2 rounded-full;
+  @apply bg-light-primary dark:bg-dark-primary;
+  @apply text-sm text-light-text-inverse dark:text-dark-text-primary;
 }

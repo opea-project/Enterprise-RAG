@@ -9,14 +9,14 @@
   }
 
   &.ready {
-    @apply bg-light-status-success-primary dark:bg-dark-status-success-soft;
+    @apply bg-light-status-success dark:bg-dark-status-success;
   }
 
   &.not-ready {
-    @apply bg-light-status-error-primary dark:bg-dark-status-error-soft;
+    @apply bg-light-status-error dark:bg-dark-status-error;
   }
 
   &.status-not-available {
-    @apply bg-light-status-unknown-primary dark:bg-dark-status-unknown-primary;
+    @apply bg-light-status-unknown dark:bg-dark-status-unknown;
   }
 }

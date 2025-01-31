@@ -10,7 +10,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
-import { FaSpinner } from "react-icons/fa";
+
+import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 
 interface DataTableProps<T extends object> {
   defaultData: T[];
@@ -41,7 +42,7 @@ const DataTable = <T extends object>({
         <tr>
           <td colSpan={100}>
             <div className="flex items-center justify-center">
-              <FaSpinner className="mr-2 animate-spin text-sm" />
+              <LoadingIcon className="mr-2 text-sm" />
               <p>Loading data...</p>
             </div>
           </td>

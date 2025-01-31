@@ -4,42 +4,34 @@
 import "./LinksList.scss";
 
 import { Dispatch, SetStateAction } from "react";
-import { BsTrash } from "react-icons/bs";
 
 import ListHeader from "@/components/admin-panel/data-ingestion/ListHeader/ListHeader";
+import IconButton from "@/components/shared/IconButton/IconButton";
 import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 
 interface LinksListProps {
   links: LinkForIngestion[];
   setLinks: Dispatch<SetStateAction<LinkForIngestion[]>>;
   removeLinkFromList: (id: string) => void;
-  disabled: boolean;
 }
 
-const LinksList = ({
-  links,
-  setLinks,
-  disabled,
-  removeLinkFromList,
-}: LinksListProps) => {
+const LinksList = ({ links, setLinks, removeLinkFromList }: LinksListProps) => {
   const clearList = () => {
     setLinks([]);
   };
 
   return (
     <>
-      <ListHeader disabled={disabled} onClearListBtnClick={clearList} />
+      <ListHeader onClearListBtnClick={clearList} />
       <ul>
         {links.map(({ id, value }) => (
           <li key={id} className="link-list-item">
             <p className="link-list-item__url">{value}</p>
-            <button
-              className="icon-button-outlined--danger"
-              disabled={disabled}
+            <IconButton
+              icon="delete"
+              color="error"
               onClick={() => removeLinkFromList(id)}
-            >
-              <BsTrash size={16} />
-            </button>
+            />
           </li>
         ))}
       </ul>

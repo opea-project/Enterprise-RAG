@@ -3,15 +3,19 @@
 
 import "./DataIngestionTab.scss";
 
-import { MdRefresh } from "react-icons/md";
-
 import FilesDataTable from "@/components/admin-panel/data-ingestion/FilesDataTable/FilesDataTable";
 import LinksDataTable from "@/components/admin-panel/data-ingestion/LinksDataTable/LinksDataTable";
 import UploadDataDialog from "@/components/admin-panel/data-ingestion/UploadDataDialog/UploadDataDialog";
-import { getFiles, getLinks } from "@/store/dataIngestion.slice";
-import { useAppDispatch } from "@/store/hooks";
+import Button from "@/components/shared/Button/Button";
+import {
+  filesDataIsLoadingSelector,
+  getFiles,
+  getLinks,
+} from "@/store/dataIngestion.slice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const RefreshButton = () => {
+  const filesDataIsLoading = useAppSelector(filesDataIsLoadingSelector);
   const dispatch = useAppDispatch();
   const refreshData = () => {
     dispatch(getFiles());
@@ -19,12 +23,14 @@ const RefreshButton = () => {
   };
 
   return (
-    <button
-      className="refresh-btn outlined-button--primary"
+    <Button
+      variant="outlined"
+      icon="refresh"
+      disabled={filesDataIsLoading}
       onClick={refreshData}
     >
-      <MdRefresh fontSize={20} /> Refresh
-    </button>
+      Refresh
+    </Button>
   );
 };
 
@@ -37,11 +43,11 @@ const DataIngestionTab = () => (
         <UploadDataDialog />
       </div>
     </header>
-    <section>
+    <section className="mb-4">
       <h3>Files</h3>
       <FilesDataTable />
     </section>
-    <section>
+    <section className="mb-4">
       <h3>Links</h3>
       <LinksDataTable />
     </section>

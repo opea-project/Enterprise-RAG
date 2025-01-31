@@ -3,16 +3,15 @@
 
 import { AnyObject, TestFunction } from "yup";
 
+import {
+  supportedFileExtensions,
+  supportedMIMETypes,
+} from "@/utils/data-ingestion/files-input";
 import { containsNullCharacters } from "@/utils/validators";
 import {
   CLIENT_MAX_BODY_SIZE,
   FILE_EXTENSIONS_WITHOUT_MIME_TYPES,
 } from "@/utils/validators/constants";
-
-import {
-  supportedFileExtensions,
-  supportedMIMETypes,
-} from "../data-ingestion/files-input";
 
 type FileTestFunction = TestFunction<File | undefined, AnyObject>;
 type FileArrayTestFunction = TestFunction<

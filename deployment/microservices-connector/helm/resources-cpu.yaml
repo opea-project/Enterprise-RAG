@@ -89,8 +89,8 @@ services:
         cpu: 1
         memory: 2Gi
       limits:
-        cpu: 4
-        memory: 2Gi
+        cpu: 6
+        memory: 6Gi
   retriever-usvc:
     replicas: 1
     resources:

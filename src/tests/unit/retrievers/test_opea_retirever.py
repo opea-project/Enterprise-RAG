@@ -26,7 +26,7 @@ def mock_vectorstore():
             return True
         def _create_index_if_not_exist(**kwargs):
             return True
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_redis.RedisVectorStore._client', return_value=MockDbClient):
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore._client', return_value=MockDbClient):
         yield
 
 def test_retrieve_docs(mock_vectorstore):

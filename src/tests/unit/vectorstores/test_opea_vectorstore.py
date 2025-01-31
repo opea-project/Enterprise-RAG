@@ -21,7 +21,7 @@ def vectorstore_instance(vector_store_name="redis"):
 
 @pytest.fixture
 def mock_redis_vectorstore():
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_redis.RedisVectorStore', autospec=True) as MockClass:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore', autospec=True) as MockClass:
         mock_instance = MockClass.return_value
         #mock_instance.add_texts = ['a', 'b', 'c']
         mock_instance.search = SearchedDoc(
@@ -81,42 +81,14 @@ def test_search_types(mock_redis_vectorstore):
 
 def test_import_redis_success():
     vectorstore_instance = OPEAVectorStore("redis")
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_redis.RedisVectorStore', autospec=True) as MockRedisVectorStore:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore', autospec=True) as MockRedisVectorStore:
         vectorstore_instance._import_redis()
         assert isinstance(vectorstore_instance.vector_store, MockRedisVectorStore.__class__)
 
 def test_import_redis_failure(caplog):
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_redis', side_effect=ModuleNotFoundError) as MockRedisVectorStore:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis', side_effect=ModuleNotFoundError) as MockRedisVectorStore:
         with caplog.at_level(logging.ERROR):
             with pytest.raises(ModuleNotFoundError):
                 MockRedisVectorStore("redis")
                 assert "exception when loading RedisVectorStore" in caplog.text
                 assert MockRedisVectorStore.vector_store is None
-
-def test_import_qdrant_success():
-    vectorstore_instance = OPEAVectorStore("qdrant")
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_qdrant.QdrantVectorStore', autospec=True) as MockQdrantVectorStore:
-        vectorstore_instance._import_qdrant()
-        assert isinstance(vectorstore_instance.vector_store, MockQdrantVectorStore.__class__)
-
-def test_import_qdrant_failure(caplog):
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_qdrant', side_effect=ModuleNotFoundError) as MockQdrantVectorStore:
-        with caplog.at_level(logging.ERROR):
-            with pytest.raises(ModuleNotFoundError):
-                MockQdrantVectorStore("qdrant")
-                assert "exception when loading QdrantVectorStore" in caplog.text
-                assert MockQdrantVectorStore.vector_store is None
-
-def test_import_milvus_success():
-    vectorstore_instance = OPEAVectorStore("milvus")
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_milvus.MilvusVectorStore', autospec=True) as MilvusVectorStore:
-        vectorstore_instance._import_milvus()
-        assert isinstance(vectorstore_instance.vector_store, MilvusVectorStore.__class__)
-
-def test_import_milvus_failure(caplog):
-    with mock.patch('comps.vectorstores.utils.wrappers.wrapper_milvus', side_effect=ModuleNotFoundError) as MockMilvusVectorStore:
-        with caplog.at_level(logging.ERROR):
-            with pytest.raises(ModuleNotFoundError):
-                MockMilvusVectorStore("milvus")
-                assert "exception when loading MilvusVectorStore" in caplog.text
-                assert MockMilvusVectorStore.vector_store is None

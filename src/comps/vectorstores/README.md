@@ -8,8 +8,6 @@ Support for specific vector databases:
 | Vector Database    |  Status   |
 | -------------------| --------- |
 | [REDIS](#redis)    | &#x2713;  |
-| [MILVUS](#milvus)  | &#x2717;  |
-| [QDRANT](#qdrant)  | &#x2717;  |
 
 ## Getting Started
 
@@ -29,30 +27,6 @@ cd impl/redis
 docker compose up -d
 ```
 To configure VectorStore to use Redis, please refer to [RedisVectorStore](#redisvectorstore).
-
-#### Milvus
-
-For more information on this database, refer to https://milvus.io/
-
-To run an instance of this database, run the following code:
-```bash
-cd impl/milvus
-docker compose up -d
-```
-
-To configure VectorStore to use Milvus, please refer to [MilvusVectorStore](#milvusvectorstore).
-
-#### Qdrant
-
-For more information on this database, refer to  https://qdrant.tech/
-
-To run an instance of this database, run the following code:
-```bash
-cd impl/qdrant
-docker compose up -d
-```
-
-To configure VectorStore to use Qdrant, please refer to [QdrantVectorStore](#qdrantvectorstore).
 
 ### VectorStore implementations
 
@@ -75,41 +49,6 @@ Or use more specific configuration for endpoint URL:
 | REDIS_SSL            | false         | Schema to use, if `true` is passed, `rediss://` schema is used              |
 | REDIS_USERNAME       | Not set       | Database username (Optional)                                                |
 | REDIS_PASSWORD       | Not set       | Database password (Optional)                                                |
-
-#### QdrantVectorStore
-
-Configure the full endpoint URL:
-
-| Environment Variable | Default Value | Description                                                                 |
-|----------------------|---------------|-----------------------------------------------------------------------------|
-| QDRANT_URL           | Not set       | Full URL for Qdrant database endpoint                                       |
-
-Or use more specific configuration for endpoint URL:
-
-| Environment Variable | Default Value | Description                                                                 |
-|----------------------|---------------|-----------------------------------------------------------------------------|
-| QDRANT_HOST          | localhost     | Hostname or IP Address of the Qdrant endpoint                               |
-| QDRANT_PORT          | 6333          | Port of the Qdrant endpoint                                                 |
-
-
-Default schema is `http`.
-
-#### MilvusVectorStore
-
-Configure the full endpoint URL:
-
-| Environment Variable | Default Value | Description                                                                 |
-|----------------------|---------------|-----------------------------------------------------------------------------|
-| MILVUS_URL           | Not set       | Full URL for Milvus database endpoint                                       |
-
-Or use more specific configuration for endpoint URL:
-
-| Environment Variable | Default Value | Description                                                                 |
-|----------------------|---------------|-----------------------------------------------------------------------------|
-| MILVUS_HOST          | localhost     | Hostname or IP Address of the Milvus endpoint                               |
-| MILVUS_PORT          | 19530         | Port of the Milvus endpoint                                                 |
-
-Default schema is `http`.
 
 ### Example usage
 
@@ -165,19 +104,13 @@ The project is organized into several directories:
 
 - `impl/`: This directory contains the implementation of clients for different databases along with example docker compose files for running the database services.
 
-- `utils/`: This directory contains utility scripts and modules that are used by the Vector Store. This also included a common wrapper class and wrappers for each supported vector store database.
+- `utils/`: This directory contains utility scripts and modules that are used by the Vector Store. This also included a common connector class and connectors for each supported vector store database.
 
 The tree view of the main directories and files:
 
 ```bash
 .
 ├── impl
-│   ├── milvus
-│   │   ├── docker-compose.yml
-│   │   ├── opea_milvus.py
-│   ├── qdrant
-│   │   ├── docker-compose.yml
-│   │   ├── opea_qdrant.py
 │   ├── redis
 │   │   ├── docker-compose.yml
 │   │   ├── opea_redis.py
@@ -185,9 +118,7 @@ The tree view of the main directories and files:
 ├── README.md
 └── utils
     ├── opea_vectorstore.py
-    └── wrappers
-        ├── wrapper_milvus.py
-        ├── wrapper.py
-        ├── wrapper_qdrant.py
-        └── wrapper_redis.py
+    └── connectors
+        ├── connector.py
+        └── connector_redis.py
 ```

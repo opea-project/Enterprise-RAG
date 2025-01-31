@@ -166,12 +166,14 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
+    envfile: "src/comps/retrievers/impl/microservice/.env"
   ingestion-usvc:
     image: "ingestion"
     repository: *repo
     tag: *tag
     path: *path
     pullPolicy: Always
+    envfile: "src/comps/ingestion/impl/microservice/.env"
   llm-usvc:
     image: "llm"
     repository: *repo

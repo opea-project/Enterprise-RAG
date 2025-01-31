@@ -1,8 +1,10 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor
 from typing import Union
 from dotenv import load_dotenv
 from fastapi import HTTPException
@@ -25,9 +27,16 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEARetriever class with environment variables.
-retriever = opea_retriever.OPEARetriever(
-    vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
-)
+
+def run_retriever(vector):
+    retriever = opea_retriever.OPEARetriever(
+        vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
+    )
+    searcheddocs = retriever.retrieve(vector)
+    return searcheddocs
+
+workers = int(sanitize_env(os.getenv("MAX_POOL_WORKERS", 8)))
+pool = ProcessPoolExecutor(max_workers=workers)
 
 @register_microservice(
     name=USVC_NAME,
@@ -41,7 +50,7 @@ retriever = opea_retriever.OPEARetriever(
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
+async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
     start = time.time()
 
     vector = []
@@ -52,8 +61,9 @@ def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         vector = input # EmbedDoc
 
     result_vectors = None
+    loop = asyncio.get_event_loop()
     try:
-        result_vectors = retriever.retrieve(vector)
+        result_vectors = await loop.run_in_executor(pool, run_retriever, vector)
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,
@@ -69,6 +79,7 @@ def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         raise HTTPException(status_code=500, detail=f"An Error while retrieving documents. {e}")
 
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+    logger.info(f"Retrieved {len(result_vectors.retrieved_docs)} documents in {time.time() - start} seconds.")
     return result_vectors
 
 

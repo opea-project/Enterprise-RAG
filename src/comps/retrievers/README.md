@@ -20,8 +20,6 @@ Support for specific vector databases:
 | Vector Database                             |  Status   |
 | --------------------------------------------| --------- |
 | [REDIS](../vectorstores/README.md#redis)    | &#x2713;  |
-| [MILVUS](../vectorstores/README.md#milvus)  | &#x2717;  |
-| [QDRANT](../vectorstores/README.md#qdrant)  | &#x2717;  |
 
 ## Getting started
 

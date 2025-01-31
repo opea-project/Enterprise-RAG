@@ -52,7 +52,7 @@ spec:
         - name: redis-vector-db
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "redis/redis-stack:7.2.0-v9"
+          image: "redis/redis-stack:7.4.0-v2"
           imagePullPolicy: IfNotPresent
           env:
             - name: REDISEARCH_ARGS

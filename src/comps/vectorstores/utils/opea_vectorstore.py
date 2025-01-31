@@ -46,9 +46,7 @@ class OPEAVectorStore():
         self._vector_store_name = vector_store_name
 
         self._SUPPORTED_VECTOR_STORES = {
-            "redis": self._import_redis,
-            "qdrant": self._import_qdrant,
-            "milvus": self._import_milvus
+            "redis": self._import_redis
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
@@ -106,30 +104,10 @@ class OPEAVectorStore():
 
     def _import_redis(self):
         """
-        Imports the RedisVectorStore wrapper.
+        Imports the RedisVectorStore connector.
         """
         try:
-            from comps.vectorstores.utils.wrappers import wrapper_redis
-            self.vector_store = wrapper_redis.RedisVectorStore()
+            from comps.vectorstores.utils.connectors import connector_redis
+            self.vector_store = connector_redis.RedisVectorStore()
         except ModuleNotFoundError:
             logger.exception("exception when loading RedisVectorStore")
-
-    def _import_qdrant(self):
-        """
-        Imports the QdrantVectorStore wrapper.
-        """
-        try:
-            from comps.vectorstores.utils.wrappers import wrapper_qdrant
-            self.vector_store = wrapper_qdrant.QdrantVectorStore()
-        except ModuleNotFoundError:
-            logger.exception("exception when loading QdrantVectorStore")
-
-    def _import_milvus(self):
-        """
-        Imports the MilvusVectorStore wrapper.
-        """
-        try:
-            from comps.vectorstores.utils.wrappers import wrapper_milvus
-            self.vector_store = wrapper_milvus.MilvusVectorStore()
-        except ModuleNotFoundError:
-            logger.exception("exception when loading MilvusVectorStore")

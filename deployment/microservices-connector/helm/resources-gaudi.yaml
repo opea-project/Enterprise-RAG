@@ -98,8 +98,8 @@ services:
         cpu: 1
         memory: 2Gi
       limits:
-        cpu: 4
-        memory: 2Gi
+        cpu: 8
+        memory: 8Gi
   tei_gaudi:
     replicas: 1
     resources:

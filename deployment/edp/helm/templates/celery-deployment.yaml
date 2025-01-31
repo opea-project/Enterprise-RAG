@@ -29,6 +29,8 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
         - name: wait-for-postgresql
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: bitnami/postgresql:16.3.0
           env:
             - name: DATABASE_HOST
@@ -60,6 +62,8 @@ spec:
                   done;
                 fi;
         - name: wait-for-redis
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: redis:alpine
           env:
             - name: REDIS_URL

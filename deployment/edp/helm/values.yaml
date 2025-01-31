@@ -323,14 +323,20 @@ serviceAccount:
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
 
 securityContext:
   capabilities:
     drop:
     - ALL
   readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
   runAsNonRoot: true
   runAsUser: 1000
 
@@ -339,6 +345,7 @@ securityContextWithTemp:
     drop:
     - ALL
   readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
   runAsNonRoot: true
   runAsUser: 1000
 

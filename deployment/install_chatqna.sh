@@ -261,6 +261,7 @@ function configure_ns_mesh() {
     kubectl label namespace $ns istio.io/dataplane-mode=ambient --overwrite
 }
 
+
 function create_certs() {
     print_header "Generate self-signed certificates"
 
@@ -299,7 +300,7 @@ function create_certs() {
 function start_fingerprint() {
     print_header "Start fingerprint"
     kubectl get namespace $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create namespace $FINGERPRINT_NS
-
+    kubectl label namespaces $FINGERPRINT_NS pod-security.kubernetes.io/enforce=restricted --overwrite
     MONGO_DATABASE_NAME="SYSTEM_FINGERPRINT"
 
     FINGERPRINT_DB_USERNAME="usr"
@@ -351,7 +352,7 @@ function start_mesh() {
     helm repo add istio https://istio-release.storage.googleapis.com/charts
     helm repo update
     kubectl get namespace $ISTIO_NS > /dev/null 2>&1 || kubectl create namespace $ISTIO_NS
-
+    kubectl label namespaces $ISTIO_NS pod-security.kubernetes.io/enforce=privileged --overwrite
     # 1) base: crds
     helm_install $ISTIO_NS istio-base istio/base "--set defaultRevision=default --version $ISTIO_VERSION"
     # 2) control plane: istiod
@@ -390,10 +391,12 @@ function start_deployment() {
     bash set_values.sh -r "$REGISTRY" -t "$TAG"
 
     # create namespaces
+    
     for ns in $GMC_NS $DEPLOYMENT_NS $DATAPREP_NS; do
         kubectl get namespace $ns > /dev/null 2>&1 || kubectl create namespace $ns
     done
-
+    
+    kubectl label namespaces $GMC_NS $DEPLOYMENT_NS pod-security.kubernetes.io/enforce=restricted --overwrite
     # Update redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
     get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
@@ -463,7 +466,9 @@ function start_telemetry() {
 
     # Please use following for any additional flag (for development only):
     kubectl get namespace $TELEMETRY_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_NS
+    kubectl label namespaces $TELEMETRY_NS pod-security.kubernetes.io/enforce=privileged --overwrite
     kubectl get namespace $TELEMETRY_TRACES_NS > /dev/null 2>&1 || kubectl create namespace $TELEMETRY_TRACES_NS
+    kubectl label namespaces $TELEMETRY_TRACES_NS pod-security.kubernetes.io/enforce=privileged --overwrite
 
     # add repo if needed
     if ! helm repo list | grep -q 'prometheus-community' ; then helm repo add prometheus-community https://prometheus-community.github.io/helm-charts ; fi # for prometheus/k8s/prometheus operator
@@ -525,7 +530,7 @@ function start_authentication() {
     print_header "Start authentication"
 
     kubectl get namespace $AUTH_NS > /dev/null 2>&1 || kubectl create namespace $AUTH_NS
-
+    kubectl label namespaces $AUTH_NS pod-security.kubernetes.io/enforce=restricted --overwrite
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
@@ -582,6 +587,7 @@ function start_ingress() {
     print_header "Start ingress"
 
     kubectl get namespace $INGRESS_NS > /dev/null 2>&1 || kubectl create namespace $INGRESS_NS
+    kubectl label namespaces $INGRESS_NS pod-security.kubernetes.io/enforce=privileged --overwrite
 
     # Install ingress
     if ! helm repo list | grep -q 'ingress-nginx' ; then helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx ; fi
@@ -605,10 +611,11 @@ function start_gateway() {
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
     kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create ns $FINGERPRINT_NS
+    kubectl label namespaces $DATAPREP_NS $ENHANCED_DATAPREP_NS $DEPLOYMENT_NS $FINGERPRINT_NS pod-security.kubernetes.io/enforce=restricted --overwrite
     kubectl get ns $UI_NS > /dev/null 2>&1 || kubectl create ns $UI_NS
 
     kubectl get namespace $GATEWAY_NS > /dev/null 2>&1 || kubectl create namespace $GATEWAY_NS
-
+    kubectl label namespaces $UI_NS $GATEWAY_NS pod-security.kubernetes.io/enforce=privileged --overwrite 
     helm dependency update "$api_gateway_path" > /dev/null
     helm_install "$GATEWAY_NS" auth-apisix "$api_gateway_path" "$HELM_INSTALL_GATEWAY_DEFAULT_ARGS"
 
@@ -638,6 +645,7 @@ function start_ui() {
     print_header "Start ui"
 
     kubectl get namespace $UI_NS > /dev/null 2>&1 || kubectl create namespace $UI_NS
+    kubectl label namespaces $UI_NS pod-security.kubernetes.io/enforce=privileged
 
     helm_install "$UI_NS" chatqa-app "$ui_path" "$HELM_INSTALL_UI_DEFAULT_ARGS"
 
@@ -650,7 +658,7 @@ function start_edp() {
     print_header "Start Enhanced Dataprep"
 
     kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-
+    kubectl label namespaces $DATAPREP_NS pod-security.kubernetes.io/enforce=restricted   
     # Update redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
     get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
@@ -671,6 +679,7 @@ function start_edp() {
     wait_for_condition check_pods "$DATAPREP_NS"
 
     kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
+    kubectl label namespaces $ENHANCED_DATAPREP_NS pod-security.kubernetes.io/enforce=restricted
 
     start_and_keep_port_forwarding "keycloak" "$AUTH_NS" "$KEYCLOAK_FPORT" 80 &
     PID=$!
@@ -961,6 +970,7 @@ HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag/enhanced-dataprep --set backend.tag=$TAG"
 
 # Execute given arguments
+
 if $create_flag; then
     create_certs
 fi
@@ -1068,6 +1078,7 @@ fi
 if $clear_fingerprint_flag; then
     clear_fingerprint
 fi
+
 
 if $clear_all_flag; then
     # disable strict mode and authorization policies first to avoid cleanup lock-up

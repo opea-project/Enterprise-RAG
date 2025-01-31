@@ -34,6 +34,8 @@ spec:
       serviceAccountName: fingerprint
       initContainers:
         - name: wait-for-mongo
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           image: docker.io/bitnami/mongodb:8.0.4-debian-12-r0
           env:
             - name: MONGO_DATABASE_NAME

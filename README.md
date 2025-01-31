@@ -46,7 +46,7 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 | Operating System   | Ubuntu 22.04                                                               |
 | Hardware Platforms | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator |
 | Kubernetes Version   | 1.29
-| Gaudi Firmware Version   | 1.18.0
+| Gaudi Firmware Version   | 1.19.1
 
 ## Hardware Prerequisites
 To get the right instances to run Intel® AI for Enterprise RAG, follow these steps:
@@ -54,7 +54,7 @@ To get the right instances to run Intel® AI for Enterprise RAG, follow these st
 - visit Intel® Tiber™ AI Cloud using this [link](https://console.cloud.intel.com/home).
 - In the left pane select `Catalog > Hardware`.
 - Select `Gaudi® 2 Deep Learning Server` or `Gaudi® 2 Deep Learning Server - Dell`.
-- Select the Machine image - `ubuntu-22.04-gaudi2-v1.18.0-metal-cloudimg-amd64-v20240803` with `Architecture: X86_64 (Baremetal only)`.
+- Select the Machine image - `ubuntu-22.04-gaudi2-v1.19.1-metal-cloudimg-amd64-v<version>` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
 - Upload your public key and launch the instance
 - Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
   

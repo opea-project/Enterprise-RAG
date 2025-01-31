@@ -14,8 +14,8 @@ ADMIN_PASSWORD=${1:-admin}
 KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:1234}
 HTTP_CODE=""
 
-SSOSESSIONMAXLIFESPAN=10800
-SSOSESSIONIDLETIMEOUT=1800
+SSO_SESSION_MAX_LIFESPAN=10800
+SSO_SESSION_IDLE_TIMEOUT=1800
 
 source $repo_path/deployment/credentials_utils.sh
 
@@ -365,8 +365,10 @@ function set_realm_timeouts() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}"
 
     TIMEOUT_REALM_JSON='{
-    "ssoSessionIdleTimeout": '"$SSOSESSIONIDLETIMEOUT"',
-    "ssoSessionMaxLifespan": '"$SSOSESSIONMAXLIFESPAN"'
+    "ssoSessionIdleTimeout": '"$SSO_SESSION_IDLE_TIMEOUT"',
+    "ssoSessionMaxLifespan": '"$SSO_SESSION_MAX_LIFESPAN"',
+    "clientSessionIdleTimeout": '"$SSO_SESSION_IDLE_TIMEOUT"',
+    "clientSessionMaxLifespan": '"$SSO_SESSION_MAX_LIFESPAN"'
     }'
 
     if curl_keycloak "$url" "$TIMEOUT_REALM_JSON" "PUT"; then

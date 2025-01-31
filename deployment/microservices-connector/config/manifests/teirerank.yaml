@@ -19,8 +19,6 @@ data:
   NUMBA_CACHE_DIR: "/tmp"
   HF_HOME: "/tmp/.cache/huggingface"
   KMP_AFFINITY: granularity=fine,compact,1,0
-  MKL_NUM_THREADS: "8"
-  OMP_NUM_THREADS: "8"
 ---
 # Source: teirerank/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -75,6 +73,15 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+            - name: MKL_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6"

@@ -82,6 +82,10 @@ spec:
               value: "true"
             - name: TS_METRICS_MODE
               value: prometheus
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}

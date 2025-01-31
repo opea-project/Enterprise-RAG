@@ -78,6 +78,10 @@ spec:
               value: /data
             - name: NUMBA_CACHE_DIR
               value: /tmp
+            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
+            {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
+            - name: NUM_SHARD
+              value: {{ index $resourceLimits.limits "habana.ai/gaudi" | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "ghcr.io/huggingface/tgi-gaudi:2.3.1"
@@ -122,8 +126,7 @@ spec:
             tcpSocket:
               port: http
           resources:
-            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
-            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+            {{- toYaml $resourceLimits | nindent 12 }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

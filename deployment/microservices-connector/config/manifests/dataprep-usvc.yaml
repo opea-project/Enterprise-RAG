@@ -16,7 +16,6 @@ data:
   no_proxy: {{ .Values.proxy.noProxy | quote }}
   CHUNK_SIZE: "512"
   CHUNK_OVERLAP: "64"
-  OMP_NUM_THREADS: "8"
 ---
 # Source: dataprep-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -80,6 +79,11 @@ spec:
                 optional: true
             - secretRef:
                 name: vector-database-config
+          env:
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
           securityContext:
             {{- toYaml (set (deepCopy .Values.securityContext) "readOnlyRootFilesystem" false) | nindent 12 }}
           image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}

@@ -16,8 +16,6 @@ data:
   no_proxy: {{ .Values.proxy.noProxy | quote }}
   HF_HOME: /tmp/in-guard/huggingface
   KMP_AFFINITY: granularity=fine,compact,1,0
-  MKL_NUM_THREADS: "8"
-  OMP_NUM_THREADS: "8"
 ---
 # Source: in-guard-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -81,6 +79,15 @@ spec:
             - configMapRef:
                 name: extra-env-config
                 optional: true
+          env:
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+            - name: MKL_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}

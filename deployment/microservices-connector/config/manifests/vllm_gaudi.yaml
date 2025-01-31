@@ -76,6 +76,10 @@ spec:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
+            {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
+            - name: VLLM_TP_SIZE
+              value: {{ index $resourceLimits.limits "habana.ai/gaudi" | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
@@ -109,8 +113,7 @@ spec:
             tcpSocket:
               port: http
           resources:
-            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
-            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+            {{- toYaml $resourceLimits | nindent 12 }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

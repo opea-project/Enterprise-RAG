@@ -31,7 +31,8 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -47,7 +48,7 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -64,7 +65,8 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/loki-canary
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -97,7 +99,7 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -113,7 +115,7 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -132,6 +134,9 @@ spec:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/telemetry-logs-otelcol-logs
         - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/loki-canary # loki-canary-
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus # prometheus-telemetry-kube-prometheus-prometheus-
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -151,6 +156,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -169,6 +175,7 @@ spec:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/telemetry-grafana
         - cluster.local/ns/monitoring/sa/loki-canary
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -188,6 +195,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -236,7 +244,7 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -268,7 +276,9 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/dataprep/sa/default
+        - cluster.local/ns/chatqa/sa/default
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -284,7 +294,7 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -300,6 +310,6 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
         - cluster.local/ns/monitoring/sa/telemetry-grafana
         - cluster.local/ns/monitoring-traces/sa/otelcol-traces-collector
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus

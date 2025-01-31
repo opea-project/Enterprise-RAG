@@ -16,6 +16,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

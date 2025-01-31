@@ -1073,7 +1073,10 @@
   ],
   "refresh": "",
   "schemaVersion": 39,
-  "tags": [],
+  "tags": [
+    "entrag",
+    "microservices"
+  ],
   "templating": {
     "list": [
       {

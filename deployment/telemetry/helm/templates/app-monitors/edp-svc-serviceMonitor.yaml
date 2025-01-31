@@ -4,16 +4,17 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vllm-gaudi-svc
+  name: edp-backend-svc
   labels:
-    release: {{ $.Release.Name }}
+    release: {{.Release.Name}}
 spec:
   namespaceSelector:
     matchNames:
-    - chatqa
+    - edp
   selector:
     matchLabels:
-      app.kubernetes.io/instance: vllm-gaudi
+      app.kubernetes.io/instance: edp
+      app.kubernetes.io/name: edp-backend
   endpoints:
-  - port: "vllm-gaudi"
+  - port: "http"
 {{- end }}

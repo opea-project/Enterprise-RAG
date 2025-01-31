@@ -96,9 +96,9 @@ For debugging only purposes:
 kubectl proxy
 ```
 
-on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-prometheus:http-web/proxy/graph`
+on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/graph`
 
-Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-prometheus:http-web/proxy/targets?search=&scrapePool=` .
+Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/targets?search=&scrapePool=` .
 
 ##### IV c) Access alert manager:
 

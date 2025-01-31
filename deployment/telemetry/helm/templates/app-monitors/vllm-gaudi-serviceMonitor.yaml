@@ -4,16 +4,16 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: tgi-service-m
+  name: vllm-gaudi-svc
   labels:
-    release: {{.Release.Name}}
+    release: {{ $.Release.Name }}
 spec:
   namespaceSelector:
     matchNames:
     - chatqa
   selector:
     matchLabels:
-      app.kubernetes.io/instance: tgi
+      app.kubernetes.io/instance: vllm_gaudi
   endpoints:
-  - port: "tgi"
+  - port: "vllm-gaudi"
 {{- end }}

@@ -4,7 +4,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: tgi-service-m
+  name: fgp-svc
   labels:
     release: {{.Release.Name}}
 spec:
@@ -13,7 +13,7 @@ spec:
     - chatqa
   selector:
     matchLabels:
-      app.kubernetes.io/instance: tgi
+      app.kubernetes.io/instance: fingerprint-usvc
   endpoints:
-  - port: "tgi"
+  - port: "fgp-usvc"
 {{- end }}

@@ -36,6 +36,20 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
+  name: edp-flower
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-flower
+  action: DENY
+  rules:
+    # no access from within cluster; only for cluster admin to use
+  - {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
   name: edp-backend
   namespace: edp
 spec:
@@ -49,6 +63,7 @@ spec:
         notPrincipals:
         - cluster.local/ns/edp/sa/edp-minio
         - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

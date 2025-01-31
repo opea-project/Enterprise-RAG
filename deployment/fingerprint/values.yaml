@@ -18,6 +18,7 @@ image:
 service:
   targetPort: http
   port: 6012
+  name: http
 
 mongodb:
   fullnameOverride: "fingerprint-mongodb"

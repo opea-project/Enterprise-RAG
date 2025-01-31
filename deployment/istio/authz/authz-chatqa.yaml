@@ -165,13 +165,32 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: fgp-usvc
+      app.kubernetes.io/name: fingerprint-usvc
   action: DENY
   rules:
   - from:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# in-guard-usvc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: in-guard-usvc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: in-guard-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+          - cluster.local/ns/chatqa/sa/default # router-service-deployment-
+          - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 # reranking-svc
 apiVersion: security.istio.io/v1
@@ -191,6 +210,24 @@ spec:
         - cluster.local/ns/chatqa/sa/default
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
+# out-guard-usvc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: out-guard-usvc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: out-guard-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+          - cluster.local/ns/chatqa/sa/default # router-service-deployment-
+          - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
 # prompt-tmpl-usvc
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -200,7 +237,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: prompt-tmpl-usvc
+      app.kubernetes.io/name: prompt-template-usvc
   action: DENY
   rules:
   - from:
@@ -243,37 +280,3 @@ spec:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/default
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
----
-# in-guard-svc
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: chatqa-in-guard-svc
-  namespace: chatqa
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: in-guard-usvc
-  action: DENY
-  rules:
-  - from:
-    - source:
-        notPrincipals:
-        - cluster.local/ns/chatqa/sa/default
----
-# out-guard-svc
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: chatqa-out-guard-svc
-  namespace: chatqa
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: out-guard-usvc
-  action: DENY
-  rules:
-  - from:
-    - source:
-        notPrincipals:
-        - cluster.local/ns/chatqa/sa/default

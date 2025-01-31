@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 54,
+  "id": 10,
   "links": [
     {
       "asDropdown": true,
@@ -35,7 +35,6 @@
       "url": ""
     }
   ],
-  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
@@ -67,6 +66,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -135,7 +135,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:638",
@@ -177,6 +177,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -245,7 +246,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:638",
@@ -287,6 +288,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -354,7 +356,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:214",
@@ -396,6 +398,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -494,7 +497,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:140",
@@ -536,6 +539,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -620,7 +624,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:766",
@@ -662,6 +666,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 25,
             "gradientMode": "none",
@@ -731,7 +736,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:426",
@@ -773,6 +778,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -841,7 +847,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "$$hashKey": "object:146",
@@ -875,6 +881,10 @@
           "datasource": {
             "type": "loki",
             "uid": "loki"
+          },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
           },
           "gridPos": {
             "h": 11,
@@ -914,6 +924,10 @@
             "type": "loki",
             "uid": "loki"
           },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 10,
             "w": 24,
@@ -952,14 +966,17 @@
       "type": "row"
     }
   ],
+  "preload": false,
   "refresh": "",
-  "schemaVersion": 39,
-  "tags": [],
+  "schemaVersion": 40,
+  "tags": [
+    "entrag",
+    "microservices"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
           "text": "chatqa",
           "value": "chatqa"
         },
@@ -967,27 +984,22 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(http_requests_total{namespace=~\"chatqa|dataprep\"},namespace)",
-        "hide": 0,
+        "definition": "label_values(http_requests_total{namespace=~\"chatqa|dataprep|fingerprint\"},namespace)",
         "includeAll": false,
         "label": "Namespace",
-        "multi": false,
         "name": "namespace",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(http_requests_total{namespace=~\"chatqa|dataprep\"},namespace)",
+          "query": "label_values(http_requests_total{namespace=~\"chatqa|dataprep|fingerprint\"},namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": true,
           "text": [
             "All"
           ],
@@ -1000,7 +1012,6 @@
           "uid": "prometheus"
         },
         "definition": "label_values(http_requests_total{namespace=~\"$namespace\"},container)",
-        "hide": 0,
         "includeAll": true,
         "multi": true,
         "name": "container_name",
@@ -1012,19 +1023,14 @@
         },
         "refresh": 1,
         "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
         "type": "query"
       },
       {
         "current": {
-          "selected": true,
           "text": "95",
           "value": "95"
         },
-        "hide": 0,
         "includeAll": false,
-        "multi": false,
         "name": "Percentage",
         "options": [
           {
@@ -1049,8 +1055,6 @@
           }
         ],
         "query": "99,95,90,50",
-        "queryValue": "",
-        "skipUrlSync": false,
         "type": "custom"
       }
     ]

@@ -70,14 +70,14 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 ### c) Deploy everything (~30 once, 70GB)
 # Please modify grafana_password for your own
-./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry --ip 127.0.0.1
+./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry
 
 # Install or reinstall(upgrade) individual components
 ./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
 ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade                        # namespaces: system, chatqa, dataprep
 ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade              # namespaces: system, chatqa, dataprep
 ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-namespace
-./install_chatqna.sh --tag $TAG --kind --ui --upgrade --ip 127.0.0.1                        # namespaces: erag-ui
+./install_chatqna.sh --tag $TAG --kind --ui --upgrade                                       # namespaces: erag-ui
 
 # check ChatQnA response
 kubectl proxy

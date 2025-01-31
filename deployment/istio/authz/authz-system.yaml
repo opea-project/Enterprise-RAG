@@ -4,8 +4,8 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: auth-apisix-etcd
-  namespace: auth-apisix
+  name: auth-system-gmc-controller
+  namespace: system
 spec:
   selector:
     matchLabels:

@@ -16,6 +16,7 @@ spec:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
+      name: {{ .Values.service.name }}
   selector:
     app.kubernetes.io/name: {{ include "fingerprint.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}

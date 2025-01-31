@@ -335,4 +335,4 @@ habana.ai/gaudi: 8
 habana.ai/gaudi 8 8
 ```
 
- You have successfully installed and verified the prerequisites on your system. Proceed to the [Getting Started Guide](./getting_started.md) to learn how to deploy and configure the Enterprise RAG Solution.
+ You have successfully installed and verified the prerequisites on your system. Proceed to the [Deployment Guide](../deployment/README.md) to learn how to deploy and configure the Enterprise RAG Solution.

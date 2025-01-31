@@ -19,6 +19,7 @@ mkdir -p $logs_dir
 chmod 700 $logs_dir
 
 use_proxy=""
+no_cache=""
 
 [ -n "$https_proxy" ] && use_proxy+="--build-arg https_proxy=$https_proxy "
 [ -n "$http_proxy" ] && use_proxy+="--build-arg http_proxy=$http_proxy "
@@ -34,6 +35,7 @@ usage() {
     echo -e "\t--registry: Specify the registry (default is $REGISTRY_NAME)."
     echo -e "\t--tag: Specify the tag (default is latest)."
     echo -e "\t--hpu: Build components for HPU platform."
+    echo -e "\t--no-cache: Build images without using docker cache."
     echo -e "Components available (default is all):"
     echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
@@ -122,7 +124,7 @@ build_component() {
 
     cd "${component_path}"
 
-    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} --progress=plain &> ${logs_dir}/build_$(basename ${image_name}).log
+    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} ${no_cache} --progress=plain &> ${logs_dir}/build_$(basename ${image_name}).log
 
     if [ $? -eq 0 ]; then
         echo "$full_image_name built successfully"
@@ -165,6 +167,9 @@ while [ $# -gt 0 ]; do
             ;;
         --hpu)
             if_gaudi_flag=true
+            ;;
+        --no-cache)
+            no_cache="--no-cache"
             ;;
         --help)
             usage

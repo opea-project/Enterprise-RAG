@@ -29,10 +29,10 @@ spec:
           serviceName: embedding-svc
           config:
             endpoint: /v1/embeddings
-            EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
-            EMBEDDING_MODEL_NAME: "sentence-transformers/distiluse-base-multilingual-cased-v1"
-            EMBEDDING_MODEL_SERVER: "torchserve"
-            EMBEDDING_CONNECTOR: "langchain"
+            EMBEDDING_MODEL_SERVER_ENDPOINT: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_MODEL_NAME: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_MODEL_SERVER: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_CONNECTOR: fetch_from:embedding-svc-deployment/chatqa
       - name: TorchserveEmbedding
         internalService:
           serviceName: torchserve-embedding-svc

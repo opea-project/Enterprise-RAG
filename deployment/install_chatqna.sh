@@ -105,6 +105,25 @@ function print_log() {
     echo "-->$1"
 }
 
+function validate_deployment_settings() {
+    local values_file="${gmc_path}/values.yaml"
+
+    if [[ -z $(grep -E "^  hugToken: " "$values_file" | awk '{print $2}' | xargs) ]]; then
+        print_log "Error: The hugToken value is required and must be set in $values_file"
+        exit 1
+    fi
+
+    for proxy in "httpProxy" "httpsProxy" "noProxy"; do
+        proxy_name=$(echo "$proxy" | sed 's/P/_p/')
+        uppercase_proxy_name=${proxy_name^^}
+
+        if [[ -z $(grep -E "^  $proxy: " "$values_file" | awk '{print $2}' | xargs) && \
+              (-n "${!proxy_name}" || -n "${!uppercase_proxy_name}") ]]; then
+            print_log "Warning: $proxy is empty in $values_file but set in the environment. Consider updating the values file."
+        fi
+    done
+}
+
 function helm_install() {
     local path namespace name args
 
@@ -307,8 +326,6 @@ function start_fingerprint() {
     helm dependency build "$fingerprint_path" > /dev/null
 
     helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS"
-
-    wait_for_condition check_pods "$FINGERPRINT_NS"
 }
 
 function create_secret() {
@@ -373,8 +390,9 @@ function start_deployment() {
     bash set_values.sh -r "$REGISTRY" -t "$TAG"
 
     # create namespaces
-    kubectl get namespace $GMC_NS > /dev/null 2>&1 || kubectl create namespace $GMC_NS
-    kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
+    for ns in $GMC_NS $DEPLOYMENT_NS $DATAPREP_NS; do
+        kubectl get namespace $ns > /dev/null 2>&1 || kubectl create namespace $ns
+    done
 
     # Update redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
@@ -387,15 +405,13 @@ function start_deployment() {
 
     helm_install $GMC_NS gmc "$gmc_path"
 
-    print_log "waiting for pods in $GMC_NS are ready"
-    wait_for_condition check_pods "$GMC_NS"
-
     # Fingerprint deployment
     local deployment_manifest="$manifests_path/chatQnA_$pipeline.yaml"
     if grep -q "Fingerprint" $deployment_manifest; then
         start_fingerprint
     fi
 
+    wait_for_condition check_pods "$GMC_NS"
     # Apply deployment manifest
     kubectl apply -f $deployment_manifest
     wait_for_condition check_pods "$DEPLOYMENT_NS"
@@ -890,6 +906,10 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+if $deploy_flag; then
+    validate_deployment_settings
+fi
 
 # additional logic for-default settings
 # - if mesh not given explicitly:

@@ -270,12 +270,49 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 					if name == "endpoint" || name == "nodes" {
 						continue
 					}
-					if isDownStreamEndpointKey(name) {
-						ds := findDownStreamService(value, stepCfg, nodeCfg)
-						value, err = getDownstreamSvcEndpoint(graphNs, value, ds)
-						// value = getDsEndpoint(platform, name, graphNs, ds)
+
+					var endpoint, ns string
+					var fetch bool
+
+					parts := strings.SplitN(value, ":", 2)
+					if len(parts) == 2 {
+						if parts[0] == "fetch_from" {
+							fetch = true
+							value = parts[1]
+						} else {
+							return nil, fmt.Errorf("Invalid syntax: expected 'fetch_from:service/namespace', got '%s'", value)
+						}
+					}
+
+					parts = strings.Split(value, "/")
+					if len(parts) != 1 && len(parts) != 2 {
+						return nil, fmt.Errorf("Invalid syntax: expected 'service/namespace', got '%s'", value)
+					}
+
+					if len(parts) == 2 {
+						endpoint = parts[0]
+						ns = parts[1]
+					} else {
+						endpoint = value
+						ns = graphNs
+					}
+
+					var err error
+					if fetch {
+						value, err = r.fetchEnvVarFromService(ctx, ns, endpoint, name)
 						if err != nil {
-							return nil, fmt.Errorf("failed to find downstream service endpoint %s-%s: %v", name, value, err)
+							return nil, fmt.Errorf("failed to fetch environment variable %s from service %s in namespace %s: %v", name, endpoint, ns, err)
+						}
+					} else if isDownStreamEndpointKey(name) {
+						if ns == graphNs {
+							ds := findDownStreamService(endpoint, stepCfg, nodeCfg)
+							value, err = getDownstreamSvcEndpoint(ns, endpoint, ds)
+						} else {
+							value, err = r.getDownstreamSvcEndpointInNs(ctx, ns, endpoint)
+						}
+
+						if err != nil {
+							return nil, fmt.Errorf("failed to find downstream service endpoint %s-%s: %v", name, endpoint, err)
 						}
 					}
 					itemEnvVar := corev1.EnvVar{
@@ -327,6 +364,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
+		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT"
@@ -344,6 +382,45 @@ func findDownStreamService(dsName string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv
 		}
 	}
 	return nil
+}
+
+func (r *GMConnectorReconciler) getDownstreamSvcEndpointInNs(ctx context.Context, namespace string, dsName string) (string, error) {
+	_log.Info("Find downstream service in namespace", "namespace", namespace, "downstream", dsName)
+
+	svc := &corev1.Service{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: dsName}, svc)
+	if err != nil {
+		return "", fmt.Errorf("failed to get service %s in namespace %s: %v", dsName, namespace, err)
+	}
+
+	_log.Info("Found downstream service in provided namespace", "name", dsName, "namespace", namespace)
+
+	port := svc.Spec.Ports[0].Port
+	return fmt.Sprintf("http://%s.%s.svc:%d", svc.Name, svc.Namespace, port), nil
+}
+
+func (r *GMConnectorReconciler) fetchEnvVarFromService(ctx context.Context, namespace string, serviceName string, envVarName string) (string, error) {
+    _log.Info("Fetch environment variable from service", "namespace", namespace, "service", serviceName, "envVar", envVarName)
+
+    // Query the Kubernetes API for the specific deployment in the specified namespace
+    deployment := &appsv1.Deployment{}
+    err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
+    if err != nil {
+        return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
+    }
+
+    _log.Info("Found deployment in provided namespace", "name", serviceName, "namespace", namespace)
+
+    // Iterate through the containers in the deployment to find the environment variable
+    for _, container := range deployment.Spec.Template.Spec.Containers {
+        for _, env := range container.Env {
+            if env.Name == envVarName {
+                return env.Value, nil
+            }
+        }
+    }
+
+    return "", fmt.Errorf("environment variable %s not found in deployment %s in namespace %s", envVarName, serviceName, namespace)
 }
 
 func getDownstreamSvcEndpoint(graphNs string, dsName string, stepCfg *mcv1alpha3.Step) (string, error) {

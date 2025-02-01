@@ -36,6 +36,8 @@ services:
                            --device hpu \
                            --tensor-parallel-size $VLLM_TP_SIZE \
                            --pipeline-parallel-size 1 \
+                           --multi-step true \
+                           --num-scheduler-steps 64 \
                            --dtype $VLLM_DTYPE --max-num-seqs $VLLM_MAX_NUM_SEQS \
                            --host 0.0.0.0 --port 80"
 

@@ -40,7 +40,7 @@ done
 
 # Change values if RAG
 if [ -n "$RAG_HUG_TOKEN" ]; then update_helm_value ".*hugToken:" "$RAG_HUG_TOKEN" ;fi
-if [ -n "$RAG_REPOSITORY" ]; then update_helm_value "^common_repository: &repo" "$RAG_REPOSITORY" ;fi
+if [ -n "$RAG_REPOSITORY" ]; then update_helm_value "^common_registry: &repo" "$RAG_REPOSITORY" ;fi
 if [ -n "$RAG_TAG" ]; then update_helm_value "^common_tag: &tag" "$RAG_TAG" ;fi
 if [ -n "$RAG_HTTP_PROXY" ]; then update_helm_value "httpProxy:" "$RAG_HTTP_PROXY" ;fi
 if [ -n "$RAG_HTTPS_PROXY" ]; then update_helm_value "httpsProxy:" "$RAG_HTTPS_PROXY" ;fi

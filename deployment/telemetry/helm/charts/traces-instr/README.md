@@ -9,6 +9,7 @@ Traces instrumentation chart allows to deploy "OpenTelemetry collector" and inst
 | **WARNING**   | 
 | ------------- |
 |  Enabling tracing from all services is experimental **preview feature**, please check overhead of tracing under high load in testing controlled environment before enabling full tracing in production. |
+|  Tracing instrumentation is not working with Istio enabled. Please, disable this feature before using patches.|
 
 
 Collecting traces and spans (and optionally pushing logs/metrics, through OpenTelemetry collector) has high overheard so it is disabled by default for all services (excluding router-service).
@@ -64,10 +65,8 @@ Here are examples of how to modify TGI/TEI/torchserver services to enable traces
 ```
 # auto zero-code instrumentation
 kubectl patch -n chatqa deploy torchserve-embedding-svc-deployment --patch-file patches/patch-deploy-inject-chatqa-torchserve.yaml
-kubectl patch -n dataprep deploy torchserve-embedding-svc-deployment --patch-file patches/patch-deploy-inject-dataprep-torchserve.yaml
 # enabling options specific for TGI/TEI
 kubectl patch -n chatqa deploy tei-reranking-svc-deployment --patch-file patches/patch-deploy-inject-chatqa-teirerank.yaml
-kubectl patch -n chatqa deploy tei-svc-deployment --patch-file patches/patch-deploy-inject-chatqa-tei.yaml
 kubectl patch -n chatqa deploy tgi-service-m-deployment --patch-file patches/patch-deploy-inject-chatqa-tgi.yaml
 ```
 

@@ -8,16 +8,31 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
-image:
-  - ui:
-      repository: "205130860845.dkr.ecr.us-west-2.amazonaws.com/opea/chatqna-conversation-ui"
-      pullPolicy: Always
-      tag: "latest"
+domainName: &dname "erag.com"
+tlsSecret: &tsecret "tls-secret"
 
-imagePullSecrets:
-  - name: regcred
-nameOverride: "ui-app"
-fullnameOverride: "ui-chart"
+chatqaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+
+dataprepClientMaxBodySize: "64m"
+
+image:
+  ui:
+    repository: "localhost:5000/erag/chatqna-conversation-ui"
+    pullPolicy: Always
+    tag: "latest"
+
+imagePullSecrets: []
+
+nameOverride: "erag-chatqna-ui"
+fullnameOverride: "erag-chatqna-ui"
+
+service:
+  type: ClusterIP
+  name: &svcName "erag-chatqna-ui-svc"
+  port: &svcPort 4173
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -31,22 +46,20 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
-
-service:
-  type: ClusterIP
-  port: 4173
-
-aliasIP: localhost
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
 
 ingress:
   enabled: true
@@ -56,18 +69,18 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   tls:
     - hosts:
-      - erag.com
-      secretName: tls-secret
+      - *dname
+      secretName: *tsecret
   hosts:
-    - host: erag.com
+    - host: *dname
       paths:
         - pathType: Prefix
           path: /
           backend:
             service:
-              name: ui-chart
+              name: *svcName
               port:
-                number: 4173
+                number: *svcPort
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

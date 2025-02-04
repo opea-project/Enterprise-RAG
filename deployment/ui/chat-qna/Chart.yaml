@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v2
-name: helm-ui
-description: Helm chart of UI deployment
+name: erag-chatqna-ui
+description: Helm chart for UI component of eRAG Chat QnA
 
 type: application
 
-version: 0.1.0
+version: 1.0.0
 
-appVersion: "1.16.0"
+appVersion: "1.0.0"

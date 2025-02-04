@@ -18,8 +18,10 @@ RUN rm -f /bin/dmesg \
           /usr/bin/wget \
           /usr/bin/curl
 
-COPY --from=build /rag-ui/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /rag-ui/dist /usr/share/nginx/html
 
 EXPOSE 4173
+
+USER nginx
+
 CMD ["nginx", "-g", "daemon off;"]

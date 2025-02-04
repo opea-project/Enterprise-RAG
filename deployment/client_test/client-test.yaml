@@ -19,10 +19,24 @@ spec:
         app: client-test
     spec:
       serviceAccountName: client-test
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - image: curlimages/curl
         name: curl
         command: ["sleep", "infinity"]
+        securityContext:
+          capabilities:
+            drop:
+              - ALL
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
 ---
 apiVersion: v1
 kind: ServiceAccount

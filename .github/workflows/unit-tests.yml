@@ -50,7 +50,7 @@ jobs:
         python-version: "3.11"
 
     - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
+      run: sudo apt-get update && sudo apt-get -y install libgl1 libglx-mesa0 tox
 
     - name: Checkout code to folder
       uses: actions/checkout@v4

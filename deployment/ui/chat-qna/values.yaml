@@ -26,12 +26,12 @@ image:
 
 imagePullSecrets: []
 
-nameOverride: "erag-chatqna-ui"
-fullnameOverride: "erag-chatqna-ui"
+nameOverride: "ui-app"
+fullnameOverride: "ui-chart"
 
 service:
   type: ClusterIP
-  name: &svcName "erag-chatqna-ui-svc"
+  name: &svcName "ui-chart"
   port: &svcPort 4173
 
 serviceAccount:

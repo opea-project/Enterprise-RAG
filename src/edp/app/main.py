@@ -54,76 +54,75 @@ def health_check():
 
 @app.get("/metrics")
 async def metrics():
-    db = next(get_db())
+    with get_db() as db:
+        registry = CollectorRegistry()
 
-    registry = CollectorRegistry()
+        files = db.query(FileStatus).filter(FileStatus.marked_for_deletion == False).count() # noqa: E712
+        files_for_deletion = db.query(FileStatus).filter(FileStatus.marked_for_deletion == True).count() # noqa: E712
+        links = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == False).count() # noqa: E712
+        links_for_deletion = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == True).count() # noqa: E712
+        files_chunks = db.query(
+            functions.sum(FileStatus.chunks_total).label('chunks_total_sum'),
+            functions.sum(FileStatus.chunks_processed).label('chunks_processed_sum')
+        ).filter(FileStatus.marked_for_deletion == False).one() # noqa: E712
+        links_chunks = db.query(
+            functions.sum(LinkStatus.chunks_total).label('chunks_total_sum'),
+            functions.sum(LinkStatus.chunks_processed).label('chunks_processed_sum')
+        ).filter(LinkStatus.marked_for_deletion == False).one() # noqa: E712
+        files_statuses = db.query(
+            FileStatus.status,
+            functions.count(FileStatus.status).label('status_count')
+        ).group_by(FileStatus.status).all()
+        files_statuses = dict(files_statuses)
+        links_statuses = db.query(
+            LinkStatus.status,
+            functions.count(LinkStatus.status).label('status_count')
+        ).group_by(LinkStatus.status).all()
+        links_statuses = dict(links_statuses)
 
-    files = db.query(FileStatus).filter(FileStatus.marked_for_deletion == False).count() # noqa: E712
-    files_for_deletion = db.query(FileStatus).filter(FileStatus.marked_for_deletion == True).count() # noqa: E712
-    links = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == False).count() # noqa: E712
-    links_for_deletion = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == True).count() # noqa: E712
-    files_chunks = db.query(
-        functions.sum(FileStatus.chunks_total).label('chunks_total_sum'),
-        functions.sum(FileStatus.chunks_processed).label('chunks_processed_sum')
-    ).filter(FileStatus.marked_for_deletion == False).one() # noqa: E712
-    links_chunks = db.query(
-        functions.sum(LinkStatus.chunks_total).label('chunks_total_sum'),
-        functions.sum(LinkStatus.chunks_processed).label('chunks_processed_sum')
-    ).filter(LinkStatus.marked_for_deletion == False).one() # noqa: E712
-    files_statuses = db.query(
-        FileStatus.status,
-        functions.count(FileStatus.status).label('status_count')
-    ).group_by(FileStatus.status).all()
-    files_statuses = dict(files_statuses)
-    links_statuses = db.query(
-        LinkStatus.status,
-        functions.count(LinkStatus.status).label('status_count')
-    ).group_by(LinkStatus.status).all()
-    links_statuses = dict(links_statuses)
+        gauge_files = Gauge(name='edp_files_total', documentation='Total number of files in the database', registry=registry)
+        gauge_files.set(files or 0)
 
-    gauge_files = Gauge(name='edp_files_total', documentation='Total number of files in the database', registry=registry)
-    gauge_files.set(files or 0)
+        gauge_links = Gauge(name='edp_links_total', documentation='Total number of links in the database', registry=registry)
+        gauge_links.set(links or 0)
 
-    gauge_links = Gauge(name='edp_links_total', documentation='Total number of links in the database', registry=registry)
-    gauge_links.set(links or 0)
+        gauge_files_for_deletion = Gauge(name='edp_files_for_deletion_total', documentation='Total number of files marked for deletion', registry=registry)
+        gauge_files_for_deletion.set(files_for_deletion or 0)
 
-    gauge_files_for_deletion = Gauge(name='edp_files_for_deletion_total', documentation='Total number of files marked for deletion', registry=registry)
-    gauge_files_for_deletion.set(files_for_deletion or 0)
+        gauge_links_for_deletion = Gauge(name='edp_links_for_deletion_total', documentation='Total number of links marked for deletion', registry=registry)
+        gauge_links_for_deletion.set(links_for_deletion or 0)
 
-    gauge_links_for_deletion = Gauge(name='edp_links_for_deletion_total', documentation='Total number of links marked for deletion', registry=registry)
-    gauge_links_for_deletion.set(links_for_deletion or 0)
+        gauge_files_chunks = Gauge(name='edp_files_chunks_total', documentation='Total number of chunks for files', registry=registry)
+        gauge_files_chunks.set(files_chunks.chunks_processed_sum or 0)
 
-    gauge_files_chunks = Gauge(name='edp_files_chunks_total', documentation='Total number of chunks for files', registry=registry)
-    gauge_files_chunks.set(files_chunks.chunks_processed_sum or 0)
+        gauge_links_chunks = Gauge(name='edp_links_chunks_total', documentation='Total number of chunks for links', registry=registry)
+        gauge_links_chunks.set(links_chunks.chunks_processed_sum or 0)
 
-    gauge_links_chunks = Gauge(name='edp_links_chunks_total', documentation='Total number of chunks for links', registry=registry)
-    gauge_links_chunks.set(links_chunks.chunks_processed_sum or 0)
+        gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
+        gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
 
-    gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
-    gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
+        for obj_status in 'uploaded, error, processing, dataprep, embedding, ingested, deleting, canceled'.split(', '):
+            file_count = files_statuses.get(obj_status, 0)
+            file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
+            file_gauge.set(file_count)
+            link_count = links_statuses.get(obj_status, 0)
+            link_gauge = Gauge(name=f'edp_links_{obj_status}_total', documentation=f'Total number of links with status {obj_status}', registry=registry)
+            link_gauge.set(link_count)
 
-    for obj_status in 'uploaded, error, processing, dataprep, embedding, ingested, deleting, canceled'.split(', '):
-        file_count = files_statuses.get(obj_status, 0)
-        file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
-        file_gauge.set(file_count)
-        link_count = links_statuses.get(obj_status, 0)
-        link_gauge = Gauge(name=f'edp_links_{obj_status}_total', documentation=f'Total number of links with status {obj_status}', registry=registry)
-        link_gauge.set(link_count)
+        celery_inspector = celery.control.inspect()
+        reserved = celery_inspector.reserved()
+        scheduled = celery_inspector.scheduled()
+        active = celery_inspector.active()
 
-    celery_inspector = celery.control.inspect()
-    reserved = celery_inspector.reserved()
-    scheduled = celery_inspector.scheduled()
-    active = celery_inspector.active()
+        gauge_reserved = Gauge(name='edp_celery_reserved_tasks_total', documentation='Total number of reserved tasks', registry=registry)
+        gauge_reserved.set(sum(len(v) for v in reserved.values()) if reserved else 0)
+        gauge_scheduled = Gauge(name='edp_celery_scheduled_tasks_total', documentation='Total number of scheduled tasks', registry=registry)
+        gauge_scheduled.set(sum(len(v) for v in scheduled.values()) if scheduled else 0)
+        gauge_active = Gauge(name='edp_celery_active_tasks_total', documentation='Total number of active tasks', registry=registry)
+        gauge_active.set(sum(len(v) for v in active.values()) if active else 0)
 
-    gauge_reserved = Gauge(name='edp_celery_reserved_tasks_total', documentation='Total number of reserved tasks', registry=registry)
-    gauge_reserved.set(sum(len(v) for v in reserved.values()) if reserved else 0)
-    gauge_scheduled = Gauge(name='edp_celery_scheduled_tasks_total', documentation='Total number of scheduled tasks', registry=registry)
-    gauge_scheduled.set(sum(len(v) for v in scheduled.values()) if scheduled else 0)
-    gauge_active = Gauge(name='edp_celery_active_tasks_total', documentation='Total number of active tasks', registry=registry)
-    gauge_active.set(sum(len(v) for v in active.values()) if active else 0)
-
-    data = generate_latest(registry)
-    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+        data = generate_latest(registry)
+        return Response(content=data, media_type=CONTENT_TYPE_LATEST)
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -218,41 +217,41 @@ def add_new_file(bucket_name, object_name, etag, content_type, size):
     Raises:
         Exception: If there is an error deleting existing files or committing to the database.
     """
-    db = next(get_db())
-    try:
-        old_files = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name).all()
-        for old_file in old_files:
-            delete_existing_file(old_file.bucket_name, old_file.object_name)
-    except Exception as e:
-        logger.error(f"Error deleting existing file: {e}")
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Error deleting existing file")
+    with get_db() as db:
+        try:
+            old_files = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name).all()
+            for old_file in old_files:
+                delete_existing_file(old_file.bucket_name, old_file.object_name)
+        except Exception as e:
+            logger.error(f"Error deleting existing file: {e}")
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Error deleting existing file")
 
-    file_status = FileStatus(
-        bucket_name=bucket_name,
-        object_name=object_name,
-        etag=etag,
-        content_type=content_type,
-        size=size,
-        status='uploaded',
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(file_status)
-    db.commit()
-
-    logger.debug(f"Added file {bucket_name}/{object_name} to database with id {file_status.id}")
-
-    try:    
-        # Save DB and enqueue file processing job
-        task = process_file_task.delay(file_id=file_status.id)
-        file_status.task_id = task.id
-        file_status.job_name = 'file_processing_job'
+        file_status = FileStatus(
+            bucket_name=bucket_name,
+            object_name=object_name,
+            etag=etag,
+            content_type=content_type,
+            size=size,
+            status='uploaded',
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(file_status)
         db.commit()
-        logger.debug(f"File processing task enqueued with id {task.id}")
-    except Exception as e:
-        logger.error(f"Error committing to database: {e}")
-        db.rollback() # rollback only the delay job
-    return file_status
+
+        logger.debug(f"Added file {bucket_name}/{object_name} to database with id {file_status.id}")
+
+        try:
+            # Save DB and enqueue file processing job
+            task = process_file_task.delay(file_id=file_status.id)
+            file_status.task_id = task.id
+            file_status.job_name = 'file_processing_job'
+            db.commit()
+            logger.debug(f"File processing task enqueued with id {task.id}")
+        except Exception as e:
+            logger.error(f"Error committing to database: {e}")
+            db.rollback() # rollback only the delay job
+        return file_status
 
 
 def delete_existing_file(bucket_name, object_name):
@@ -266,19 +265,19 @@ def delete_existing_file(bucket_name, object_name):
     Returns:
         None
     """
-    db = next(get_db())
-    file_statuses = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name, FileStatus.marked_for_deletion == False).all() # noqa: E712
-    if file_statuses:
-        for file_status in file_statuses:
-            file_status.marked_for_deletion = True
-            file_status.status = 'deleting'
-            db.commit()
-            task = delete_file_task.delay(file_id=file_status.id, countdown=3) # delay by 3 seconds
-            file_status.job_name = 'file_deleting_job'
-            file_status.job_message = ''
-            file_status.task_id = task.id
-            db.commit()
-            logger.debug(f"File processing task enqueued with id {task.id}")
+    with get_db() as db:
+        file_statuses = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name, FileStatus.marked_for_deletion == False).all() # noqa: E712
+        if file_statuses:
+            for file_status in file_statuses:
+                file_status.marked_for_deletion = True
+                file_status.status = 'deleting'
+                db.commit()
+                task = delete_file_task.delay(file_id=file_status.id, countdown=3) # delay by 3 seconds
+                file_status.job_name = 'file_deleting_job'
+                file_status.job_message = ''
+                file_status.task_id = task.id
+                db.commit()
+                logger.debug(f"File processing task enqueued with id {task.id}")
 
 
 def add_new_link(uri):
@@ -299,36 +298,36 @@ def add_new_link(uri):
     Raises:
         HTTPException: If there is an error deleting existing links or committing to the database.
     """
-    db = next(get_db())
-    try:
-        old_links = db.query(LinkStatus).filter(LinkStatus.uri == uri).all()
-        for old_link in old_links:
-            delete_existing_link(old_link.uri)
-    except Exception as e:
-        logger.error(f"Error deleting existing link: {e}")
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Error deleting existing link")
+    with get_db() as db:
+        try:
+            old_links = db.query(LinkStatus).filter(LinkStatus.uri == uri).all()
+            for old_link in old_links:
+                delete_existing_link(old_link.uri)
+        except Exception as e:
+            logger.error(f"Error deleting existing link: {e}")
+            db.rollback()
+            raise HTTPException(status_code=400, detail="Error deleting existing link")
 
-    link_status = LinkStatus(
-        uri=uri,
-        status='uploaded',
-        created_at=datetime.now(timezone.utc)
-    )
-    db.add(link_status)
-    db.commit()
-
-    logger.debug(f"Link {uri} saved in database with id {link_status.id}.")
-
-    try:
-        task = process_link_task.delay(link_id=link_status.id)
-        link_status.job_name = 'link_processing_job'
-        link_status.task_id = task.id
+        link_status = LinkStatus(
+            uri=uri,
+            status='uploaded',
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(link_status)
         db.commit()
-        logger.debug(f"Link {link_status.id} processing task enqueued with id {task.id}")
-    except Exception as e:
-        logger.error(f"Error committing to database: {e}")
-        db.rollback() # rollback only the delay job
-    return link_status
+
+        logger.debug(f"Link {uri} saved in database with id {link_status.id}.")
+
+        try:
+            task = process_link_task.delay(link_id=link_status.id)
+            link_status.job_name = 'link_processing_job'
+            link_status.task_id = task.id
+            db.commit()
+            logger.debug(f"Link {link_status.id} processing task enqueued with id {task.id}")
+        except Exception as e:
+            logger.error(f"Error committing to database: {e}")
+            db.rollback() # rollback only the delay job
+        return link_status
 
 def delete_existing_link(uri):
     """
@@ -345,20 +344,20 @@ def delete_existing_link(uri):
     Returns:
         None
     """
-    db = next(get_db())
-    link_statuses = db.query(LinkStatus).filter(LinkStatus.uri == uri, LinkStatus.marked_for_deletion == False).all()  # noqa: E712
+    with get_db() as db:
+        link_statuses = db.query(LinkStatus).filter(LinkStatus.uri == uri, LinkStatus.marked_for_deletion == False).all()  # noqa: E712
 
-    if link_statuses:
-        for link_status in link_statuses:
-            link_status.marked_for_deletion = True
-            link_status.status = 'deleting'
-            db.commit()
-            task = delete_link_task.delay(link_id=link_status.id)
-            link_status.job_name = 'link_deleting_job'
-            link_status.job_message = ''
-            link_status.task_id = task.id
-            db.commit()
-            logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
+        if link_statuses:
+            for link_status in link_statuses:
+                link_status.marked_for_deletion = True
+                link_status.status = 'deleting'
+                db.commit()
+                task = delete_link_task.delay(link_id=link_status.id)
+                link_status.job_name = 'link_deleting_job'
+                link_status.job_message = ''
+                link_status.task_id = task.id
+                db.commit()
+                logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
 
 @app.post('/minio_event')
 def process_minio_event(event: MinioEventData, request: Request):
@@ -415,11 +414,9 @@ def api_links(request: Request) -> List[LinkResponse]:
         200: A list of links with their metadata and status information.
     """
 
-    db = next(get_db())
-    links = db.query(LinkStatus).order_by(LinkStatus.created_at).filter(LinkStatus.marked_for_deletion == False).all() # noqa: E712
-    db.close()
-
-    return [link.to_response() for link in links]
+    with get_db() as db:
+        links = db.query(LinkStatus).order_by(LinkStatus.created_at).filter(LinkStatus.marked_for_deletion == False).all() # noqa: E712
+        return [link.to_response() for link in links]
 
 
 @app.post('/api/links')
@@ -481,17 +478,17 @@ def api_delete_link(link_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid link_id passed: #{link_uuid}")
 
-    db = next(get_db())
-    try:
-        link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
-        if link:
-            delete_existing_link(link.uri)
-            return JSONResponse(content={'message': 'Link deleted successfully'})
-        else:
-            raise HTTPException(status_code=404, detail="Link not found")
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        raise HTTPException(status_code=400, detail="Error deleting link")
+    with get_db() as db:
+        try:
+            link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
+            if link:
+                delete_existing_link(link.uri)
+                return JSONResponse(content={'message': 'Link deleted successfully'})
+            else:
+                raise HTTPException(status_code=404, detail="Link not found")
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            raise HTTPException(status_code=400, detail="Error deleting link")
 
 
 @app.post("/api/link/{link_uuid}/retry")
@@ -517,22 +514,22 @@ def api_link_task_retry(link_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid link_id passed: {link_uuid}")
 
-    db = next(get_db())
-    link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
+    with get_db() as db:
+        link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
 
-    if link:
-        link.chunks_total = 0
-        link.chunks_processed = 0
-        link.job_message = ''
-        link.status = 'uploaded'
-        db.commit()
-        task = process_link_task.delay(link_id=link.id)
-        link.job_name = 'link_processing_job'
-        link.task_id = task.id
-        db.commit()
-        return JSONResponse(content={'message': 'Task enqueued successfully'})
-    else:
-        raise HTTPException(status_code=404, detail="Link not found")
+        if link:
+            link.chunks_total = 0
+            link.chunks_processed = 0
+            link.job_message = ''
+            link.status = 'uploaded'
+            db.commit()
+            task = process_link_task.delay(link_id=link.id)
+            link.job_name = 'link_processing_job'
+            link.task_id = task.id
+            db.commit()
+            return JSONResponse(content={'message': 'Task enqueued successfully'})
+        else:
+            raise HTTPException(status_code=404, detail="Link not found")
 
 
 @app.delete("/api/link/{link_uuid}/task")
@@ -555,23 +552,23 @@ def api_link_task_cancel(link_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid link_id passed: {link_uuid}")
 
-    db = next(get_db())
-    link = db.query(FileStatus).filter(FileStatus.id == link_id).first()
+    with get_db() as db:
+        link = db.query(FileStatus).filter(FileStatus.id == link_id).first()
 
-    if link and link.task_id:
-        try:
-            task = AsyncResult(link.task_id)
-            task.revoke(terminate=True)
-            link.status = 'canceled'
-            link.task_id = ''
-            link.job_name = ''
-            link.job_message = 'Processing task canceled'
-            db.commit()
-            return JSONResponse(content={'message': 'LinkStatus processing task canceled'})
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error canceling task: {e}")
-    else:
-        raise HTTPException(status_code=404, detail="Link not found")
+        if link and link.task_id:
+            try:
+                task = AsyncResult(link.task_id)
+                task.revoke(terminate=True)
+                link.status = 'canceled'
+                link.task_id = ''
+                link.job_name = ''
+                link.job_message = 'Processing task canceled'
+                db.commit()
+                return JSONResponse(content={'message': 'LinkStatus processing task canceled'})
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error canceling task: {e}")
+        else:
+            raise HTTPException(status_code=404, detail="Link not found")
 
 
 # ------------- API file management ------------
@@ -584,12 +581,9 @@ def api_files(request: Request) -> List[FileResponse]:
         list: A list of files with their metadata and status information.
     """
 
-    db = next(get_db())
-    files = db.query(FileStatus).order_by(FileStatus.created_at).filter(FileStatus.marked_for_deletion == False).all() # noqa: E712
-    db.close()
-
-
-    return [file.to_response() for file in files]
+    with get_db() as db:
+        files = db.query(FileStatus).order_by(FileStatus.created_at).filter(FileStatus.marked_for_deletion == False).all() # noqa: E712
+        return [file.to_response() for file in files]
 
 
 @app.post("/api/file/{file_uuid}/retry")
@@ -615,22 +609,22 @@ def api_file_task_retry(file_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid file_id passed: {file_uuid}")
 
-    db = next(get_db())
-    file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
+    with get_db() as db:
+        file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
 
-    if file:
-        file.chunks_total = 0
-        file.chunks_processed = 0
-        file.job_message = ''
-        file.status = 'uploaded'
-        db.commit()
-        task = process_file_task.delay(file_id=file.id)
-        file.job_name = 'file_processing_job'
-        file.task_id = task.id
-        db.commit()
-        return JSONResponse(content={'message': 'Task enqueued successfully'})
-    else:
-        raise HTTPException(status_code=404, detail="File not found")
+        if file:
+            file.chunks_total = 0
+            file.chunks_processed = 0
+            file.job_message = ''
+            file.status = 'uploaded'
+            db.commit()
+            task = process_file_task.delay(file_id=file.id)
+            file.job_name = 'file_processing_job'
+            file.task_id = task.id
+            db.commit()
+            return JSONResponse(content={'message': 'Task enqueued successfully'})
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.delete("/api/file/{file_uuid}/task")
@@ -653,23 +647,23 @@ def api_file_task_cancel(file_uuid: str, request: Request):
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid file_id passed: {file_uuid}")
 
-    db = next(get_db())
-    file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
+    with get_db() as db:
+        file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
 
-    if file and file.task_id:
-        try:
-            task = AsyncResult(file.task_id)
-            task.revoke(terminate=True)
-            file.status = 'canceled'
-            file.task_id = ''
-            file.job_name = ''
-            file.job_message = 'Processing task canceled'
-            db.commit()
-            return JSONResponse(content={'message': 'FileStatus processing task canceled'})
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error canceling task: {e}")
-    else:
-        raise HTTPException(status_code=404, detail="File not found")
+        if file and file.task_id:
+            try:
+                task = AsyncResult(file.task_id)
+                task.revoke(terminate=True)
+                file.status = 'canceled'
+                file.task_id = ''
+                file.job_name = ''
+                file.job_message = 'Processing task canceled'
+                db.commit()
+                return JSONResponse(content={'message': 'FileStatus processing task canceled'})
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error canceling task: {e}")
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
 
 
 @app.post('/api/files/sync')
@@ -688,43 +682,42 @@ def api_sync(request: Request):
         Response: A JSON response with a message indicating the result of the synchronization process.
     """
 
-    try:
-        db = next(get_db())
-        bucket = os.getenv('MINIO_BUCKET')
-        buckets = []
+    with get_db() as db:
+        try:
+            bucket = os.getenv('MINIO_BUCKET')
+            buckets = []
 
-        if bucket:
-            buckets = [minio.get_bucket(bucket)]
-        else:
-            buckets = minio.list_buckets()
-            
-        for bucket in buckets:
-            minio_files = minio.list_objects(bucket.name)
-            for obj in minio_files:
-                file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name == obj.object_name).first()
-                if file_status:
-                    if file_status.etag != obj.etag or file_status.size != obj.size:
-                        # File exists and seems to be changed, delete it and add a new one
-                        add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
-                        logger.info(f"File {obj.object_name} in bucket {bucket.name} has changed. Processing.")
+            if bucket:
+                buckets = [minio.get_bucket(bucket)]
+            else:
+                buckets = minio.list_buckets()
+
+            for bucket in buckets:
+                minio_files = minio.list_objects(bucket.name)
+                for obj in minio_files:
+                    file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name == obj.object_name).first()
+                    if file_status:
+                        if file_status.etag != obj.etag or file_status.size != obj.size:
+                            # File exists and seems to be changed, delete it and add a new one
+                            add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
+                            logger.info(f"File {obj.object_name} in bucket {bucket.name} has changed. Processing.")
+                        else:
+                            # File exactly the same, skip
+                            logger.info(f"File {obj.object_name} in bucket {bucket.name} has the same size and etag. Skipping.")
                     else:
-                        # File exactly the same, skip
-                        logger.info(f"File {obj.object_name} in bucket {bucket.name} has the same size and etag. Skipping.")
-                else:
-                    # File is a new file without any data in vector database
-                    add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
-                    logger.info(f"File {obj.object_name} in bucket {bucket.name} is a new file. Processing.")
+                        # File is a new file without any data in vector database
+                        add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
+                        logger.info(f"File {obj.object_name} in bucket {bucket.name} is a new file. Processing.")
 
-            minio_objects = [obj.object_name for obj in minio_files]
-            files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name.notin_(minio_objects)).all()
-            for obj in files_in_db_but_not_in_minio:
-                    delete_existing_file(obj.bucket_name, obj.object_name)
-                    logger.info(f"File {obj.object_name} in bucket {obj.bucket_name} does not exist in storage but is in DB. Deleting.")
+                minio_objects = [obj.object_name for obj in minio_files]
+                files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name.notin_(minio_objects)).all()
+                for obj in files_in_db_but_not_in_minio:
+                        delete_existing_file(obj.bucket_name, obj.object_name)
+                        logger.info(f"File {obj.object_name} in bucket {obj.bucket_name} does not exist in storage but is in DB. Deleting.")
 
-        return JSONResponse(content={'message': 'Files synced successfully'})
-    except S3Error as e:
-        db.close()
-        raise HTTPException(status_code=400, detail=f"An error occurred: {e}")
+            return JSONResponse(content={'message': 'Files synced successfully'})
+        except S3Error as e:
+            raise HTTPException(status_code=400, detail=f"An error occurred: {e}")
 
 
 if __name__ == '__main__':

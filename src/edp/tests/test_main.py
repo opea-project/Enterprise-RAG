@@ -18,7 +18,7 @@ def test_metrics(mock_get_db):
     mock_inspect.stats.return_value = {'worker1': {'status': 'ok'}}
     with patch('app.main.celery.control.inspect', return_value=mock_inspect):
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         response = client.get('/metrics')
         assert response.status_code == 200
         assert 'edp_files_total' in response.text
@@ -50,7 +50,7 @@ def test_metrics(mock_get_db):
 @patch('app.main.delete_existing_file')
 def test_add_new_file(mock_delete_existing_file, mock_process_file_task, mock_get_db):
     mock_db = MagicMock()
-    mock_get_db.return_value = iter([mock_db])
+    mock_get_db.return_value.__enter__.return_value = mock_db
     mock_process_file_task.delay.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
     mock_delete_existing_file.return_value = MagicMock()
     
@@ -87,7 +87,7 @@ def test_add_new_file(mock_delete_existing_file, mock_process_file_task, mock_ge
 @patch('app.main.delete_file_task')
 def test_delete_existing_file(mock_delete_file_task, mock_get_db):
     mock_db = MagicMock()
-    mock_get_db.return_value = iter([mock_db])
+    mock_get_db.return_value.__enter__.return_value = mock_db
     mock_delete_file_task.delay.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
 
     bucket_name = "test-bucket"
@@ -113,7 +113,7 @@ def test_delete_existing_file(mock_delete_file_task, mock_get_db):
 @patch('app.main.get_db')
 def test_delete_existing_file_no_files(mock_get_db):
     mock_db = MagicMock()
-    mock_get_db.return_value = iter([mock_db])
+    mock_get_db.return_value.__enter__.return_value = mock_db
 
     bucket_name = "test-bucket"
     object_name = "test-object"
@@ -192,7 +192,7 @@ def test_presigned_url_wrong_method():
 def test_api_links():
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.order_by.return_value.all.return_value = []
         response = client.get('/api/links')
         assert response.status_code == 200
@@ -204,7 +204,7 @@ def test_api_add_link():
     }
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         with patch('app.main.process_link_task') as mock_task:
             mock_task.return_value = MagicMock(job_name="link_processing_job", id="123e4567-e89b-12d3-a456-426614174000")
@@ -227,7 +227,7 @@ def test_api_add_existing_link():
     with patch('app.main.get_db') as mock_get_db, \
          patch('app.main.delete_existing_link') as mock_delete_existing_link:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.all.return_value = [
             MagicMock(uri="http://example.com")
         ]
@@ -242,7 +242,7 @@ def test_api_add_link_exception():
     }
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         mock_db.commit.side_effect = Exception("Database commit failed")
         response = client.post('/api/links', json=payload)
@@ -254,7 +254,7 @@ def test_api_delete_link(mock_delete_existing_link):
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
         mock_delete_existing_link.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
         response = client.delete(f'/api/link/{link_uuid}')
@@ -273,7 +273,7 @@ def test_api_delete_link_exception(mock_delete_existing_link):
     mock_delete_existing_link.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.side_effect = Exception("Database query failed")
         response = client.delete(f'/api/link/{link_uuid}')
         assert response.status_code == 400
@@ -283,7 +283,7 @@ def test_api_delete_link_not_found():
     link_uuid = "123e4567-e89b-12d3-a456-426614174001"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         response = client.delete(f'/api/link/{link_uuid}')
         assert response.status_code == 400
@@ -292,7 +292,7 @@ def test_api_delete_link_not_found():
 def test_api_files():
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.order_by.return_value.all.return_value = []
         response = client.get('/api/files')
         assert response.status_code == 200
@@ -302,7 +302,7 @@ def test_api_file_task_retry():
     file_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
         with patch('app.main.process_file_task') as mock_task:
             mock_task.return_value = MagicMock(job_name="link_processing_job", id="123e4567-e89b-12d3-a456-426614174000")
@@ -320,7 +320,7 @@ def test_api_file_task_retry_not_found():
     file_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         response = client.post(f'/api/file/{file_uuid}/retry')
         assert response.status_code == 404
@@ -330,7 +330,7 @@ def test_api_file_task_cancel():
     file_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_file = MagicMock()
         mock_file.task_id = "task_id"
         mock_db.query.return_value.filter.return_value.first.return_value = mock_file
@@ -351,7 +351,7 @@ def test_api_file_task_cancel_not_found():
     file_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         response = client.delete(f'/api/file/{file_uuid}/task')
         assert response.status_code == 404
@@ -361,7 +361,7 @@ def test_api_file_task_cancel_exception():
     file_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_file = MagicMock()
         mock_file.file_id = file_uuid
         mock_file.task_id = file_uuid
@@ -555,7 +555,7 @@ def test_api_sync():
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
         mock_bucket = MagicMock(name="test-bucket")
@@ -585,7 +585,7 @@ def test_api_sync_new_file():
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
         mock_bucket = MagicMock(name="test-bucket")
@@ -614,7 +614,7 @@ def test_api_sync_deleted_file():
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
         mock_bucket = MagicMock(name="test-bucket")
@@ -643,7 +643,7 @@ def test_api_sync_changed_file():
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
         mock_bucket = MagicMock(name="test-bucket")
@@ -685,7 +685,7 @@ def test_api_link_task_retry():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = MagicMock()
         with patch('app.main.process_link_task') as mock_task:
             mock_task.return_value = MagicMock(job_name="link_processing_job", id="123e4567-e89b-12d3-a456-426614174000")
@@ -703,7 +703,7 @@ def test_api_link_task_retry_not_found():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         response = client.post(f'/api/link/{link_uuid}/retry')
         assert response.status_code == 404
@@ -713,7 +713,7 @@ def test_api_link_task_cancel():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_link = MagicMock()
         mock_link.task_id = "task_id"
         mock_db.query.return_value.filter.return_value.first.return_value = mock_link
@@ -734,7 +734,7 @@ def test_api_link_task_cancel_not_found():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_db.query.return_value.filter.return_value.first.return_value = None
         response = client.delete(f'/api/link/{link_uuid}/task')
         assert response.status_code == 404
@@ -744,7 +744,7 @@ def test_api_link_task_cancel_exception():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"
     with patch('app.main.get_db') as mock_get_db:
         mock_db = MagicMock()
-        mock_get_db.return_value = iter([mock_db])
+        mock_get_db.return_value.__enter__.return_value = mock_db
         mock_link = MagicMock()
         mock_link.link_id = link_uuid
         mock_link.task_id = link_uuid

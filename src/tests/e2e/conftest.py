@@ -9,6 +9,7 @@ import urllib3
 from helpers.api_request_helper import ApiRequestHelper
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
+from helpers.istio_helper import IstioHelper
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -37,6 +38,11 @@ def edp_helper():
 @pytest.fixture
 def fingerprint_api_helper():
     return FingerprintApiHelper("fingerprint", {"app.kubernetes.io/name": "fingerprint"}, 6012)
+
+
+@pytest.fixture(scope="module")
+def istio_helper():
+    return IstioHelper()
 
 
 @pytest.fixture

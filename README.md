@@ -64,7 +64,7 @@ To get the right instances to run Intel® AI for Enterprise RAG, follow these st
 
 Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instructions to install the components mentioned below:
 
--   **Kubernetes Cluster**: Access to a Kubernetes v1.29 cluster
+-   **Kubernetes Cluster**: Access to a Kubernetes v1.29-v1.31 cluster
 -   **CSI Driver**: The K8s cluster must have the CSI driver installed. Users can define their own CSI driver that will be used during EnterpriseRAG install; however StorageClass provided by CSI driver should support ReadWriteMany(RWX) in case of using a multi-node cluster.
 - Current solution was tested on a single node using the CSI driver [local-path-provisioner](https://github.com/rancher/local-path-provisioner), with  `local_path_provisioner_claim_root`  set to  `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the prerequisites guide:  [CSI Driver](./docs/prerequisites.md#csi-driver).
 -   **Operating System**: Ubuntu 22.04
@@ -76,9 +76,8 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 # Installation
 
 ```
-git clone https://github.com/opea-project/Enterprise-RAG
 cd Enterprise-RAG/deployment
-./one_click_chatqna.sh -g HUGGINGFACEHUB_API_TOKEN -i IP [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+./one_click_chatqna.sh  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
 
 Proxy variables are optional.

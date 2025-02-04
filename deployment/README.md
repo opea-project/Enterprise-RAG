@@ -60,9 +60,19 @@ kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":
 ```
 Also make sure the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your storageClass capabilities.
 
+### Skipping Warm-up for vLLM Deployment
+The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in: 
+ - For vLLM running on Gaudi: [vllm/docker/.env.hpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.hpu)
+  - For vLLM running on CPU: [vllm/docker/.env.cpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu)
+
+> [!NOTE]
+By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
+
+
 ### Running solution on CPU
 
 In case we want to deploy the solution on CPUs instead of using Gaudi nodes, we need to make sure we have sufficient resources for running the LLM model server such as VLLM or TGI. The default resources used for deploying system are defined in [pod_resources_allocation](./../docs/pod_resource_allocation.md/)
+
 
 #### Running solution on reduced model server pod resources
 > [!NOTE]

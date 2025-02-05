@@ -45,8 +45,8 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 |--------------------|--------------------------------------------------------------------------------------------------------------------|
 | Operating System   | Ubuntu 22.04                                                               |
 | Hardware Platforms | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator |
-| Kubernetes Version   | 1.29
-| Gaudi Firmware Version   | 1.19.1
+| Kubernetes Version | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4 |
+| Gaudi Firmware Version | 1.19.1 |
 
 ## Hardware Prerequisites
 To get the right instances to run Intel® AI for Enterprise RAG, follow these steps:

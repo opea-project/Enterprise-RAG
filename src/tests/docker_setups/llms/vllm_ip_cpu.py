@@ -4,16 +4,19 @@ from enum import Enum
 from typing import Type
 
 from python_on_whales import Container, Image
+
 from src.tests.docker_setups.base import LLMsDockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class LLMs_VllmIP_CPU_EnvKeys(Enum):
     """This struct declares all env variables from .env file.
 
     It is created to ensure env variables for testing are in sync with design by devs.
     """
+
     LLM_VLLM_MODEL_NAME = "LLM_VLLM_MODEL_NAME"
     LLM_VLLM_PORT = "LLM_VLLM_PORT"
     VLLM_CPU_KVCACHE_SPACE = "VLLM_CPU_KVCACHE_SPACE"
@@ -60,7 +63,9 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
             self._ENV_KEYS.VLLM_PP_SIZE,
         ]
 
-        env_vars = {env_key.value : self.get_docker_env(env_key) for env_key in envs_keys}
+        env_vars = {
+            env_key.value: self.get_docker_env(env_key) for env_key in envs_keys
+        }
         env_vars["VLLM_OPENVINO_DEVICE"] = "CPU"
         return env_vars
 
@@ -87,26 +92,26 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
             },
             volumes=[("./data", "/data")],
             command=[
-                '--model',
-                f'{self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)}',
-                '--device',
-                'cpu',
-                '--tensor-parallel-size',
-                f'{self.get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)}',
-                '--pipeline-parallel-size',
-                f'{self.get_docker_env(self._ENV_KEYS.VLLM_PP_SIZE)}',
-                '--dtype',
-                f'{self.get_docker_env(self._ENV_KEYS.VLLM_DTYPE)}',
-                '--max-num-seqs',
-                f'{self.get_docker_env(self._ENV_KEYS.VLLM_MAX_NUM_SEQS)}',
-                '--max-model-len',
-                f'{self.get_docker_env(self._ENV_KEYS.VLLM_MAX_MODEL_LEN)}',
+                "--model",
+                f"{self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)}",
+                "--device",
+                "cpu",
+                "--tensor-parallel-size",
+                f"{self.get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)}",
+                "--pipeline-parallel-size",
+                f"{self.get_docker_env(self._ENV_KEYS.VLLM_PP_SIZE)}",
+                "--dtype",
+                f"{self.get_docker_env(self._ENV_KEYS.VLLM_DTYPE)}",
+                "--max-num-seqs",
+                f"{self.get_docker_env(self._ENV_KEYS.VLLM_MAX_NUM_SEQS)}",
+                "--max-model-len",
+                f"{self.get_docker_env(self._ENV_KEYS.VLLM_MAX_MODEL_LEN)}",
                 "--download_dir",
                 "/data",
                 "--host",
                 "0.0.0.0",
                 "--port",
-                f"{self.MODELSERVER_PORT}"
+                f"{self.MODELSERVER_PORT}",
             ],
             wait_after=60,
             **self._model_server_docker_extras,

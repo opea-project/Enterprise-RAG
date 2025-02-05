@@ -221,7 +221,7 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
         logger.debug(f"Running readiness check for container {container.name}")
         while elapsed < timeout:
             elapsed = int(time.time() - start_time)
-            str_logs = container.logs(tail=25)
+            str_logs = container.logs(tail=100)
             self._check_container(container)
             if str_to_find in str_logs:
                 logger.info(f"Readiness string \"{str_to_find}\" found in {container.name} in {elapsed}s")
@@ -268,19 +268,25 @@ class LLMsDockerSetup(LanguageUsvcDockerSetup):
             self,
             golden_configuration_src: str,
             config_override: dict = None,
+            custom_microservice_envs: dict = None,
+            custom_microservice_docker_params: dict = None,
             custom_model_server_envs: dict = None,
             custom_model_server_docker_params: dict = None
     ):
         """
         :param str golden_configuration_src: Path to .env, with respect to src root
         :param dict config_override: Overrides of golden configuration
-        :param dict custom_model_server_envs: Add your own ENV variables (aside from .env file)
-        :param dict custom_model_server_docker_params: Add your own docker flags
+        :param dict custom_microservice_envs: Add your own ENV variables (aside from .env file) for microservice
+        :param dict custom_microservice_docker_params: Add your own docker flags for microservice
+        :param dict custom_model_server_envs: Add your own ENV variables (aside from .env file) for model server
+        :param dict custom_model_server_docker_params: Add your own docker flags for model server
         """
         super().__init__(config_override)
         self._docker_conf = None  # TODO: Generalize to base classes.
 
         self._load_golden_configuration(golden_configuration_src)
+        self._microservice_extra_envs = custom_microservice_envs if custom_microservice_envs else dict()
+        self._microservice_docker_extras = custom_microservice_docker_params if custom_microservice_docker_params else dict()
         self._model_server_extra_envs = custom_model_server_envs if custom_model_server_envs else dict()
         self._model_server_docker_extras = custom_model_server_docker_params if custom_model_server_docker_params else dict()
 
@@ -344,9 +350,11 @@ class LLMsDockerSetup(LanguageUsvcDockerSetup):
             ],
             envs={
                 **self._microservice_envs,
+                **self._microservice_extra_envs,
                 **self.COMMON_PROXY_SETTINGS,
             },
             wait_after=30,
+            **self._microservice_docker_extras,
             **self.COMMON_RUN_OPTIONS,
         )
         return container

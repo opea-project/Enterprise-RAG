@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 from abc import abstractmethod
@@ -13,16 +14,21 @@ from src.tests.benchmark.common.structures import (
     BenchmarkBase,
     BenchmarkParams,
     StreamRequestTimings,
-    context_size_add,
-    context_size_mul,
     generate_combinations,
+)
+from src.tests.benchmark.common.targets import (
+    VllmBenchTarget,
+    LlmMicroserviceBenchTarget,
 )
 from src.tests.docker_setups.llms.vllm_ip_cpu import (
     LLMs_VllmIP_CPU_EnvKeys,
     LLMsVllmIP_CPU_DockerSetup,
 )
 
+from os.path import dirname, abspath
+
 logger = logging.getLogger(__name__)
+os.chdir(dirname(dirname(dirname(dirname(dirname(abspath(__file__)))))))
 
 
 class VllmIpexCpuBenchmark(BenchmarkBase):
@@ -32,8 +38,9 @@ class VllmIpexCpuBenchmark(BenchmarkBase):
             dockers = self._DOCKER_SETUP_CLASS(
                 "comps/llms/impl/model_server/vllm/docker/.env.cpu",
                 setup["config_override"],
-                setup["config_extra"],
-                setup["docker_extra"],
+                custom_microservice_envs=setup["config_microservice_extra"],
+                custom_model_server_envs=setup["config_model_server_extra"],
+                custom_model_server_docker_params=setup["docker_model_server_extra"],
             )
             dockers.deploy()
 
@@ -41,7 +48,7 @@ class VllmIpexCpuBenchmark(BenchmarkBase):
                 LLMs_VllmIP_CPU_EnvKeys.LLM_VLLM_MODEL_NAME
             )
             config = AutoConfig.from_pretrained(model_name)
-            context_window = config.sliding_window
+            context_window = config.max_position_embeddings
 
             parameters_combinations = self._extended_combinations(context_window)
             parameters_combinations = [
@@ -58,58 +65,71 @@ class VllmIpexCpuBenchmark(BenchmarkBase):
                     model_name, input_params
                 )  # add model-related  params
 
-                for k, v in setup["config_override"].items():
-                    results[k] = v
+                if setup["config_override"]:
+                    for k, v in setup["config_override"].items():
+                        results[k] = v
 
-                for k, v in setup["config_extra"].items():
-                    results[k] = v
+                if setup["config_microservice_extra"]:
+                    for k, v in setup["config_microservice_extra"].items():
+                        results[k] = v
 
-                for k, v in setup["docker_extra"].items():
-                    results[k] = v
+                if setup["config_model_server_extra"]:
+                    for k, v in setup["config_model_server_extra"].items():
+                        results[k] = v
+
+                if setup["docker_model_server_extra"]:
+                    for k, v in setup["docker_model_server_extra"].items():
+                        results[k] = v
 
                 self._results.append(results)
 
     async def run_multiple_requests(
-        self,
-        service: str,
-        model: str,
-        text: str,
-        streaming: bool,
-        max_new_tokens: int,
-        times: int,
+        self, model: str, question: str, params: BenchmarkParams
     ) -> list[StreamRequestTimings]:
-        functable = {
-            "model_server": {
-                "func": self.call_modelserver,
-                "url": f"localhost:{self._DOCKER_SETUP_CLASS.INTERNAL_COMMUNICATION_PORT}",
-            },
-            "microservice": {
-                "func": call_microservice,
-                "url": f"localhost:{self._DOCKER_SETUP_CLASS.MICROSERVICE_API_PORT}",
-            },
-        }
-        tasks = [
-            functable[service]["func"](
-                functable[service]["url"], model, text, max_new_tokens, streaming, n
+        if params.service == "model_server":
+            url = f"http://localhost:{self._DOCKER_SETUP_CLASS.INTERNAL_COMMUNICATION_PORT}/v1/completions"
+            target = VllmBenchTarget(model, question, params)
+
+        elif params.service == "microservice":
+            url = f"http://localhost:{self._DOCKER_SETUP_CLASS.MICROSERVICE_API_PORT}/v1/chat/completions"
+            target = LlmMicroserviceBenchTarget(model, question, params)
+        else:
+            raise ValueError(
+                "Incorrect `service` parameter. Valid values are `model_server` and `microservice`"
             )
-            for n in range(times)
-        ]
+
+        request_body = target.request_body()
+
+        if params.streaming:
+            tasks = [
+                target.call_service_streaming(url, request_body)
+                for _ in range(params.num_burst_requests)
+            ]
+        else:
+            tasks = [
+                target.call_service(url, request_body)
+                for _ in range(params.num_burst_requests)
+            ]
+
         objs = await asyncio.gather(*tasks, return_exceptions=True)
         return objs
 
     @property
     def _fields_names(self) -> list[str]:
-        fields_names = self.RESULTS_FIELDS_NAMES_BASE.copy()
 
-        fields_names = [
-            key for key in SETUP_CONFIGURATIONS["config_override"]
-        ] + fields_names
-        fields_names = [
-            key for key in SETUP_CONFIGURATIONS["config_extra"]
-        ] + fields_names
-        fields_names = [
-            key for key in SETUP_CONFIGURATIONS["docker_extra"]
-        ] + fields_names
+        # Combinations are list of dicts, therefore pick keys from 1st of kind
+        fields_names = [key for key in self._setup_combinations[0]["config_override"]]
+        fields_names += [
+            key for key in self._setup_combinations[0]["config_microservice_extra"]
+        ]
+        fields_names += [
+            key for key in self._setup_combinations[0]["config_model_server_extra"]
+        ]
+        fields_names += [
+            key for key in self._setup_combinations[0]["docker_model_server_extra"]
+        ]
+
+        fields_names += self.RESULTS_FIELDS_NAMES_BASE.copy()
 
         return fields_names
 
@@ -169,40 +189,15 @@ async def call_microservice(
     return timings
 
 
-SETUP_CONFIGURATIONS = {
-    "config_override": {
-        LLMs_VllmIP_CPU_EnvKeys.VLLM_TP_SIZE.value: 1,
-    },
-    "config_extra": {
-        "VLLM_CPU_OMP_THREADS_BIND": ["0-15"],
-    },
-    "docker_extra": {
-        "cpuset_mems": [[0]],
-        "privileged": True,
-    },
-}
-
-GENERAL_BENCHMARK_PARAMETERS = {
-    "service": ["model_server"],
-    "streaming": [True],
-    "num_burst_requests": [1],
-    "input_token_num": [1024],
-    "max_new_tokens": [1024],
-}
-
-MODEL_RELATED_TOKEN_NUMS = [
-    context_size_add(-1),
-    context_size_mul(0.5),
-]
-
-
-def test_pytest_stream():
-    setup_combinations = generate_combinations(SETUP_CONFIGURATIONS)
-    parameters_combinations = generate_combinations(GENERAL_BENCHMARK_PARAMETERS)
+def test_pytest():
+    yaml_conf = VllmIpexCpuBenchmark.parse_yaml_config('src/tests/benchmark/config_defaults/vllm_ip_cpu.yaml')
+    setup_combinations = generate_combinations(yaml_conf["setup_configurations"])
+    parameters_combinations = generate_combinations(yaml_conf["benchmark_parameters"])
+    model_related_token_nums = yaml_conf["model_related_token_nums"]
 
     benchmark = VllmIpexCpuBenchmark(
-        setup_combinations, parameters_combinations, MODEL_RELATED_TOKEN_NUMS
+        setup_combinations, parameters_combinations, model_related_token_nums
     )
 
     benchmark.run()
-    benchmark.save_results_as_csv("benchmark_results_stream.csv")
+    benchmark.save_results_as_csv("benchmark_results.csv")

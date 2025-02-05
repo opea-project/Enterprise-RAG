@@ -9,8 +9,11 @@ from src.tests.benchmark.common.structures import (
     BenchmarkBase,
     BenchmarkParams,
     StreamRequestTimings,
-    context_size_mul,
     generate_combinations,
+)
+from src.tests.benchmark.common.targets import (
+    LlmMicroserviceBenchTarget,
+    VllmBenchTarget,
 )
 from src.tests.docker_setups.llms.vllm_hpu import (
     LLMs_VLLM_HPU_EnvKeys,
@@ -28,8 +31,11 @@ class VllmHpuBenchmark(BenchmarkBase):
                 dockers = self._DOCKER_SETUP_CLASS(
                     "comps/llms/impl/model_server/vllm/docker/.env.hpu",
                     setup["config_override"],
-                    setup["config_extra"],
-                    setup["docker_extra"],
+                    custom_microservice_envs=setup["config_microservice_extra"],
+                    custom_model_server_envs=setup["config_model_server_extra"],
+                    custom_model_server_docker_params=setup[
+                        "docker_model_server_extra"
+                    ],
                 )
                 dockers.deploy()
 
@@ -37,7 +43,7 @@ class VllmHpuBenchmark(BenchmarkBase):
                     LLMs_VLLM_HPU_EnvKeys.LLM_VLLM_MODEL_NAME
                 )
                 config = AutoConfig.from_pretrained(model_name)
-                context_window = config.sliding_window
+                context_window = config.max_position_embeddings
 
                 parameters_combinations = self._extended_combinations(context_window)
                 parameters_combinations = [
@@ -54,14 +60,21 @@ class VllmHpuBenchmark(BenchmarkBase):
                         model_name, input_params
                     )  # add model-related  params
 
-                    for k, v in setup["config_override"].items():
-                        results[k] = v
+                    if setup["config_override"]:
+                        for k, v in setup["config_override"].items():
+                            results[k] = v
 
-                    for k, v in setup["config_extra"].items():
-                        results[k] = v
+                    if setup["config_microservice_extra"]:
+                        for k, v in setup["config_microservice_extra"].items():
+                            results[k] = v
 
-                    for k, v in setup["docker_extra"].items():
-                        results[k] = v
+                    if setup["config_model_server_extra"]:
+                        for k, v in setup["config_model_server_extra"].items():
+                            results[k] = v
+
+                    if setup["docker_model_server_extra"]:
+                        for k, v in setup["docker_model_server_extra"].items():
+                            results[k] = v
 
                     self._results.append(results)
 
@@ -70,26 +83,33 @@ class VllmHpuBenchmark(BenchmarkBase):
                 continue
 
     async def run_multiple_requests(
-        self,
-        service: str,
-        model: str,
-        text: str,
-        streaming: bool,
-        max_new_tokens: int,
-        times: int,
+        self, model: str, question: str, params: BenchmarkParams
     ) -> list[StreamRequestTimings]:
-        functable = {
-            "model_server": {
-                "func": self.call_modelserver,
-                "url": f"localhost:{self._DOCKER_SETUP_CLASS.INTERNAL_COMMUNICATION_PORT}",
-            },
-        }
-        tasks = [
-            functable[service]["func"](
-                functable[service]["url"], model, text, max_new_tokens, streaming, n
+        if params.service == "model_server":
+            url = f"http://localhost:{self._DOCKER_SETUP_CLASS.INTERNAL_COMMUNICATION_PORT}/v1/completions"
+            target = VllmBenchTarget(model, question, params)
+
+        elif params.service == "microservice":
+            url = f"http://localhost:{self._DOCKER_SETUP_CLASS.MICROSERVICE_API_PORT}/v1/chat/completions"
+            target = LlmMicroserviceBenchTarget(model, question, params)
+        else:
+            raise ValueError(
+                "Incorrect `service` parameter. Valid values are `model_server` and `microservice`"
             )
-            for n in range(times)
-        ]
+
+        request_body = target.request_body()
+
+        if params.streaming:
+            tasks = [
+                target.call_service_streaming(url, request_body)
+                for _ in range(params.num_burst_requests)
+            ]
+        else:
+            tasks = [
+                target.call_service(url, request_body)
+                for _ in range(params.num_burst_requests)
+            ]
+
         objs = await asyncio.gather(*tasks, return_exceptions=True)
         return objs
 
@@ -231,19 +251,73 @@ GENERAL_BENCHMARK_PARAMETERS = {
     "max_new_tokens": [512, 1024],
 }
 
-MODEL_RELATED_TOKEN_NUMS = [
-    context_size_mul(0.5),
-]
+
+def custom_setups_filter(input_setups: list[dict]) -> list[dict]:
+    """Filters setups with contradictory settings.
+
+    Enforced rules are:
+    - NUM_SHARD == VLLM_TP_SIZE
+    - len(HABANA_VISIBLE_DEVICES) == NUM_SHARD
+    - HABANA_VISIBLE_DEVICES == "all" --> NUM_SHARD == 8
+    - HABANA_VISIBLE_DEVICES == 1 --> SHARDED == false
+    - HABANA_VISIBLE_DEVICES > 1 --> SHARDED == true
+    """
+
+    valid_setups = []
+    for setup in input_setups:
+        config_override = setup["config_override"]
+        if config_override["NUM_SHARD"] != config_override["VLLM_TP_SIZE"]:
+            logger.debug("Skip following setup, because NUM_SHARD != VLLM_TP_SIZE:")
+            logger.debug(setup)
+            continue
+        num_habana_devices = parse_habana_devices(
+            config_override["HABANA_VISIBLE_DEVICES"]
+        )
+        if num_habana_devices != config_override["NUM_SHARD"]:
+            logger.debug("Skip following setup, because #HABANA_DEVICES != NUM_SHARD:")
+            logger.debug(setup)
+            continue
+        if (num_habana_devices == 1) and config_override["SHARDED"]:
+            logger.debug(
+                "Skip following setup, because sharded is set for single habana device:"
+            )
+            logger.debug(setup)
+            continue
+        if (num_habana_devices > 1) and not config_override["SHARDED"]:
+            logger.debug(
+                "Skip following setup, because sharded is not set for multiple habana devices:"
+            )
+            logger.debug(setup)
+            continue
+
+        valid_setups.append(setup)
+
+    logger.info(
+        f"Filtered out {len(input_setups) - len(valid_setups)}, leaving {len(valid_setups)} valid ones."
+    )
+    return valid_setups
+
+
+def parse_habana_devices(value: str) -> int:
+    if value == "all":
+        return 8
+    devices = value.split(",")
+    return len(devices)
 
 
 def test_pytest_stream():
-    parameters_combinations = generate_combinations(GENERAL_BENCHMARK_PARAMETERS)
+    yaml_conf = VllmHpuBenchmark.parse_yaml_config(
+        "src/tests/benchmark/config_defaults/vllm_hpu.yaml"
+    )
+
+    setup_combinations = generate_combinations(yaml_conf["setup_configurations"])
+    setup_combinations = custom_setups_filter(setup_combinations)
+    parameters_combinations = generate_combinations(yaml_conf["benchmark_parameters"])
+    model_related_token_nums = yaml_conf["model_related_token_nums"]
 
     benchmark = VllmHpuBenchmark(
-        HARDCODED_SETUP_CONFIGURATIONS,
-        parameters_combinations,
-        MODEL_RELATED_TOKEN_NUMS,
+        setup_combinations, parameters_combinations, model_related_token_nums
     )
 
     benchmark.run()
-    benchmark.save_results_as_csv("benchmark_results_stream.csv")
+    benchmark.save_results_as_csv("benchmark_results.csv")

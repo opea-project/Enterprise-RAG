@@ -2,17 +2,15 @@ import asyncio
 import csv
 import datetime
 import itertools
-import json
 import logging
 import operator
 import re
-import time
 from abc import abstractmethod
 from functools import partial
 from typing import NamedTuple, Type
 
-import aiohttp
 import numpy as np
+import yaml
 from transformers import AutoTokenizer
 
 from src.tests.docker_setups.base import LLMsDockerSetup
@@ -104,6 +102,14 @@ class BenchmarkRecordResults:
         total_time_timings = [res.overall for res in self._requests_results_set]
         return float(np.percentile(total_time_timings, 99))
 
+    def as_dict(self) -> dict:
+        return {
+            "total_time_avg": self.total_time_avg,
+            "total_time_p50": self.total_time_p50,
+            "total_time_p90": self.total_time_p90,
+            "total_time_p99": self.total_time_p99,
+        }
+
 
 class StreamBenchmarkRecordResults(BenchmarkRecordResults):
     @property
@@ -159,6 +165,24 @@ class StreamBenchmarkRecordResults(BenchmarkRecordResults):
     def second_plus_p99(self) -> float:
         """P99 percentile processing time of a 2nd+ token."""
         return float(np.percentile(self.all_second_to_last_timings, 99))
+
+    def as_dict(self) -> dict:
+        total_times = super().as_dict()
+        return {
+            **total_times,
+            "received_tokens_avg": self.received_tokens_avg,
+            "first_token_avg": self.first_token_avg,
+            "prefill_throughput_avg": self.prefill_throughput_avg,
+            "decode_throughput_avg": self.decode_throughput_avg,
+            "total_time_avg": self.total_time_avg,
+            "total_time_p50": self.total_time_p50,
+            "total_time_p90": self.total_time_p90,
+            "total_time_p99": self.total_time_p99,
+            "second+_avg": self.second_plus_avg,
+            "second+_p50": self.second_plus_p50,
+            "second+_p90": self.second_plus_p90,
+            "second+_p99": self.second_plus_p99,
+        }
 
 
 def format_float(value, precision) -> str:
@@ -217,26 +241,10 @@ class BenchmarkBase:
 
     @abstractmethod
     async def run_multiple_requests(
-        self,
-        service: str,
-        model: str,
-        text: str,
-        streaming: bool,
-        max_new_tokens: int,
-        times: int,
+        self, model: str, question: str, params: BenchmarkParams
     ) -> list[StreamRequestTimings]:
         """Executes burst requests to given service"""
         pass
-
-    def vllm_request_body(self, max_new_tokens, model, question, streaming) -> dict:
-        return {
-            "model": model,
-            "prompt": question,
-            "max_tokens": max_new_tokens,
-            "min_tokens": max_new_tokens,  # enforce same tokens num
-            "temperature": 0,
-            "stream": streaming,
-        }
 
     def save_results_as_csv(self, file_name):
         now = datetime.datetime.now()
@@ -268,6 +276,8 @@ class BenchmarkBase:
         ]
 
         parameters_combinations = self._parameters_combinations.copy()
+        if not extra_input_token_sizes:
+            return parameters_combinations
 
         new_combinations = []
         for comb in parameters_combinations:
@@ -288,45 +298,29 @@ class BenchmarkBase:
 
         This function executes benchmark with given parameters, running on already prepared docker deployment.
         """
-        streaming = input_params.streaming
-        service = input_params.service
-        max_new_tokens = input_params.max_new_tokens
-        input_token_num = input_params.input_token_num
-        num_burst_requests = input_params.num_burst_requests
         notes = ""
 
         logger.debug(
-            f"Collect benchmark record with: {service=} {max_new_tokens=} {input_token_num=} {num_burst_requests=}"
+            f"Collect benchmark record with: \n"
+            f" - service : {input_params.service}\n"
+            f" - input tokens num : {input_params.input_token_num}\n"
+            f" - max new tokens : {input_params.max_new_tokens}\n"
+            f" - num burst requests : {input_params.num_burst_requests}\n"
+            f" - streaming : {input_params.streaming}\n"
         )
 
-        # config = AutoConfig.from_pretrained(model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        text = ""
-        with open("src/tests/benchmark/llms/tokenizer_input.txt", "r") as input_file:
-            text = input_file.read()
-
-        input_tokens = tokenizer.encode(text)[:input_token_num]
-        assert len(input_tokens) == input_token_num
-
-        prompt = tokenizer.decode(input_tokens)
+        prompt = self.generate_prompt(model_name, input_params.input_token_num)
 
         requests_timings = asyncio.run(
-            self.run_multiple_requests(
-                service,
-                model_name,
-                prompt,
-                streaming,
-                max_new_tokens,
-                num_burst_requests,
-            )
+            self.run_multiple_requests(model_name, prompt, input_params)
         )
 
         benchmark_results = {
-            "service": service,
-            "streaming": streaming,
-            "input_token_num": input_token_num,
-            "max_new_tokens": max_new_tokens,
-            "num_burst_requests": num_burst_requests,
+            "service": input_params.service,
+            "streaming": input_params.streaming,
+            "input_token_num": input_params.input_token_num,
+            "max_new_tokens": input_params.max_new_tokens,
+            "num_burst_requests": input_params.num_burst_requests,
             "received_tokens_avg": 0,
             "first_token_avg": 0,
             "prefill_throughput_avg": 0,
@@ -367,77 +361,56 @@ class BenchmarkBase:
 
         return results
 
-    async def call_modelserver(
-        self, server, model, question, max_new_tokens, streaming, wid
-    ) -> StreamRequestTimings:
-        headers = {"Content-Type": "application/json"}
-        request_body = self.vllm_request_body(
-            max_new_tokens, model, question, streaming
-        )
-        data = json.dumps(request_body)
+    @staticmethod
+    def generate_prompt(model_name: str, input_token_num: int) -> str:
+        """Generates input of given size in tokens"""
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-        url = f"http://{server}/v1/completions"
+        with open("src/tests/benchmark/llms/tokenizer_input.txt", "r") as input_file:
+            text = input_file.read()
 
-        if streaming is True:
-            timings = StreamRequestTimings()
-        else:
-            timings = RequestTimings()
+        input_tokens = tokenizer.encode(text)[:input_token_num]
+        assert len(input_tokens) == input_token_num
 
-        # TODO: Refactor it so as to collect additional timings for streaming
-        timings.start = time.perf_counter()
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, data=data, headers=headers
-            ) as response_handler:
-                if streaming is True:
-                    timings = await self._streaming_collector(
-                        response_handler, timings, wid
-                    )
-                else:
-                    timings = await self._nonstreaming_collector(
-                        response_handler, timings, wid
-                    )
-        timings.end = time.perf_counter()
+        prompt = tokenizer.decode(input_tokens)
+        return prompt
 
-        return timings
+    @staticmethod
+    def parse_yaml_config(file_path: str) -> dict:
+        with open(file_path, "r") as file:
+            data = yaml.safe_load(file)
 
-    async def _streaming_collector(
-        self, response_handler, timings, wid
-    ) -> StreamRequestTimings:
-        reg = re.compile(r"({.+})")
-        answer = ""
+        if data["model_related_token_nums"]:
+            data["model_related_token_nums"] = BenchmarkBase.parse_model_related_token_nums(
+                data["model_related_token_nums"]
+            )
 
-        time_this = timings.start
-        counter = 1
-        async for chunk in response_handler.content:
-            line = chunk.decode("unicode_escape")
-            match = reg.search(line)
+        return data
+
+    @staticmethod
+    def parse_model_related_token_nums(funclist: list) -> list:
+        """Parse yaml functions that evaluate to number related to model context size.
+
+        Examples:
+            - add -1 : will evaluate to partial(operator.add, -1) which would generate value of `context_size-1`
+            - mul 0.5 : will evaluate to partial(operator.mul, 0.5) which would generate value of `context_size*0.5`
+        """
+        func_regex = re.compile(r"(mul|add) (-?\d+\.?\d*)")
+        funcs = []
+        for entry in funclist:
+            match = func_regex.match(entry)
             if match:
-                try:
-                    chunk = json.loads(match.group(1))
-                    word = chunk["choices"][0]["text"]
-                    time_last = time_this
-                    time_this = time.perf_counter()
-                    timings.token_timings.append(time_this - time_last)
-                    if counter < 4:
-                        logger.debug(
-                            f"[#{wid}] extracted {counter}. {word=} ({time_this - time_last:3.2f} s)"
-                        )
-                    answer += word
-                    counter += 1
-                except ValueError:
-                    logging.info(f"[#{wid}] A: {line}")
-                    if line == "data: [DONE]":
-                        logging.info(f"[#{wid}] Found [DONE]")
-                        break
-        return timings
-
-    async def _nonstreaming_collector(
-        self, response_handler, timings, wid
-    ) -> RequestTimings:
-        data = await response_handler.read()
-        logger.debug(f"[#{wid}] extracted  {data=}")
-        return timings
+                name = match.group(1)
+                if name == "add":
+                    arg = int(match.group(2))
+                    func = partial(operator.add, arg)
+                else:  # == mul
+                    arg = float(match.group(2))
+                    func = partial(operator.mul, arg)
+                funcs.append(func)
+            else:
+                logger.error(f"Unrecognized partial function: {entry}")
+        return funcs
 
 
 def fill_results_streaming(input_params, benchmark_results, correct_timings) -> dict:
@@ -453,19 +426,7 @@ def fill_results_streaming(input_params, benchmark_results, correct_timings) -> 
                 logger.error("Num tokens received exceeds max_new_tokens!")
 
     results.add_request_results(correct_timings)
-
-    benchmark_results["received_tokens_avg"] = results.received_tokens_avg
-    benchmark_results["first_token_avg"] = results.first_token_avg
-    benchmark_results["prefill_throughput_avg"] = results.prefill_throughput_avg
-    benchmark_results["decode_throughput_avg"] = results.decode_throughput_avg
-    benchmark_results["total_time_avg"] = results.total_time_avg
-    benchmark_results["total_time_p50"] = results.total_time_p50
-    benchmark_results["total_time_p90"] = results.total_time_p90
-    benchmark_results["total_time_p99"] = results.total_time_p99
-    benchmark_results["second+_avg"] = results.second_plus_avg
-    benchmark_results["second+_p50"] = results.second_plus_p50
-    benchmark_results["second+_p90"] = results.second_plus_p90
-    benchmark_results["second+_p99"] = results.second_plus_p99
+    benchmark_results.update(results.as_dict())
 
     logger.info("| reqs | tokens avg | total time avg | first avg | 2nd to last avg |")
     logger.info(
@@ -482,11 +443,7 @@ def fill_results_streaming(input_params, benchmark_results, correct_timings) -> 
 def fill_results_nonstreaming(input_params, benchmark_results, correct_timings) -> dict:
     results = BenchmarkRecordResults(input_params)
     results.add_request_results(correct_timings)
-
-    benchmark_results["total_time_avg"] = results.total_time_avg
-    benchmark_results["total_time_p50"] = results.total_time_p50
-    benchmark_results["total_time_p90"] = results.total_time_p90
-    benchmark_results["total_time_p99"] = results.total_time_p99
+    benchmark_results.update(results.as_dict())
 
     logger.info("Non-stream requests stats")
     logger.info("|   avg  |   p50  |   p90  |   p99  |")
@@ -498,14 +455,6 @@ def fill_results_nonstreaming(input_params, benchmark_results, correct_timings) 
     )
 
     return benchmark_results
-
-
-def context_size_add(value) -> partial:
-    return partial(operator.add, value)
-
-
-def context_size_mul(value) -> partial:
-    return partial(operator.mul, value)
 
 
 def generate_combinations(d) -> list[dict]:

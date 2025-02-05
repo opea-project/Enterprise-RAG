@@ -127,7 +127,7 @@ if you are behing a corporate VPN, setup proxy by editing the `all.yml` file:
 
 ```bash
 # Edit proxy settings and save file
-vi inventory/mycluster/group_vars/all/all.yaml
+vi inventory/mycluster/group_vars/all/all.yml
 ```
 
 >**WARNING:** Don't change the `no_proxy` variable.

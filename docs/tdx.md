@@ -36,16 +36,31 @@ This guide assumes that:
 Follow the below steps on the server node with Intel Xeon Processor to deploy the example application:
 
 1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/blob/noble-24.04/README.md#setup-host-os)
-2. [Setup Remote Attestation](https://github.com/canonical/tdx?tab=readme-ov-file#setup-remote-attestation)
-3. [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
-4. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
-5. Make sure that you have exported the KBS_ADDRESS:
+2. Check, if Intel TDX is enabled:
+
+   ```bash
+   sudo dmesg | grep -i tdx
+   ```
+   
+   The output should show the Intel TDX module version and initialization status: 
+   ```text
+   virt/tdx: TDX module: attributes 0x0, vendor_id 0x8086, major_version 1, minor_version 5, build_date 20240129, build_num 698
+   (...)
+   virt/tdx: module initialized
+   ```
+   
+   In case the module version or `build_num` is lower than shown above, please refer to the [Intel TDX documentation](https://cc-enabling.trustedservices.intel.com/intel-tdx-enabling-guide/04/hardware_setup/#deploy-specific-intel-tdx-module-version) for update instructions.
+
+3. [Setup Remote Attestation](https://github.com/canonical/tdx?tab=readme-ov-file#setup-remote-attestation)
+4. [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
+5. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
+6. Make sure that you have exported the KBS_ADDRESS:
 
    ```bash
    export KBS_ADDRESS=<YOUR_KBS_ADDRESS>
    ```
 
-6. Increase the kubelet timeout and wait until the node is `Ready`:
+7. Increase the kubelet timeout and wait until the node is `Ready`:
 
    ```bash
    echo "runtimeRequestTimeout: 30m" | sudo tee -a /etc/kubernetes/kubelet-config.yaml > /dev/null 2>&1
@@ -53,11 +68,10 @@ Follow the below steps on the server node with Intel Xeon Processor to deploy th
    kubectl wait --for=condition=Ready node --all --timeout=2m
    ```
 
-7. Deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes:
+8. Deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
 
    ```bash
-   git clone https://github.com/opea-project/Enterprise-RAG
-   cd Enterprise-RAG/deployment
+   cd Enterprise-RAG/deployment                               
    ./one_click_chatqna.sh --features tdx -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
    ```
 
@@ -88,7 +102,7 @@ If you want to store your images encrypted on a public registry, follow the step
 
 ### Deployment customization
 
-Edit the [tdx.yaml](../deployment/microservices-connector/helm/tdx.yaml) file to customize the Intel TDX-specific configuration.
+Edit the [tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.
@@ -98,4 +112,4 @@ It overrides resources requests and limits only if increasing the resources.
 
 1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
 2. Only `*xeon*` pipelines are supported with Intel TDX (e.g.: `chatQnA_xeon_torch_llm_guard`)
-3. Some microservices defined in [tdx.yaml](../deployment/microservices-connector/helm/tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.
+3. Some microservices defined in [tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.

@@ -19,15 +19,17 @@ This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.1
 A detailed description of each scanner is available on [LLM Guard](https://llm-guard.com/).
 
 ## Configuration Options
-The scanners can be configured in two places: via UI and via environmental variables. There are five scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
+The scanners can be configured in two places: via UI and via environmental variables. There are seven scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
 
 ### Configuration via UI
 Scanners currently configurable from UI, from Admin Panel:
- - [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
+ - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
  - [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
+ - [Code](https://llm-guard.com/input_scanners/code/)
+ - [Regex](https://llm-guard.com/input_scanners/regex/)
  - [Gibberish](https://llm-guard.com/input_scanners/gibberish/)
  - [Language](https://llm-guard.com/input_scanners/language/)
- - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
+ - [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
 
 ### Configuration via environmental variables
 The LLM Guard Input Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.

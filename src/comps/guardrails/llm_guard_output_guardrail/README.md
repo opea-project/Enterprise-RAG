@@ -26,16 +26,17 @@ This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.1
 A detailed description of each scanner is available on [LLM Guard](https://llm-guard.com/).
 
 ## Configuration Options
-The scanners can be configured in two places: via UI and via environmental variables. There are five scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
+The scanners can be configured in two places: via UI and via environmental variables. There are seven scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
 
 ### Configuration via UI
 Scanners currently configurable from UI, from Admin Panel:
- - [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
  - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
+ - [Code](https://llm-guard.com/output_scanners/code/)
  - [Bias](https://llm-guard.com/output_scanners/bias/)
  - [Relevance](https://llm-guard.com/output_scanners/relevance/)
-
- Important: when LLM Guard Output Guardrail is enabled in Enterprise pipeline, LLM streaming option is not available, since LLM Guard Output Guardrail becomes reponsible for streaming. LLM Guard Output Guardrail waits for whole reponse from LLM to scan it.
+ - [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
+ - [Language](https://llm-guard.com/output_scanners/language/)
+ - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
 
 ### Configuration via environmental variables
 The LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.

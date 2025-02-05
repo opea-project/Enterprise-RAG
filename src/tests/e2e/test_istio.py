@@ -104,12 +104,12 @@ class TestIstioInMesh:
         connections_not_blocked = check_if_connections_blocked(istio_helper, redis_endpoints, ConnectionType.REDIS)
         assert connections_not_blocked == []
 
-    @allure.testcase("IEASG-T")
+    @allure.testcase("IEASG-T144")
     def test_mongo_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, mongodb_endpoints, ConnectionType.MONGODB)
         assert connections_not_blocked == []
 
-    @allure.testcase("IEASG-T")
+    @allure.testcase("IEASG-T145")
     def test_postgres_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, postgres_endpoints, ConnectionType.POSTGRESQL)
         assert connections_not_blocked == []
@@ -124,22 +124,22 @@ class TestIstioOutOfMesh:
         yield
         istio_helper.delete_namespace()
 
-    @allure.testcase("IEASG-T144")
+    @allure.testcase("IEASG-T146")
     def test_http_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, http_endpoints, ConnectionType.HTTP)
         assert connections_not_blocked == []
 
-    @allure.testcase("IEASG-T145")
+    @allure.testcase("IEASG-T149")
     def test_redis_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, redis_endpoints, ConnectionType.REDIS)
         assert connections_not_blocked == []
 
-    @allure.testcase("IEASG-T")
+    @allure.testcase("IEASG-T147")
     def test_mongo_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, mongodb_endpoints, ConnectionType.MONGODB)
         assert connections_not_blocked == []
 
-    @allure.testcase("IEASG-T")
+    @allure.testcase("IEASG-T148")
     def test_postgres_connections_blocked(self, istio_helper):
         connections_not_blocked = check_if_connections_blocked(istio_helper, postgres_endpoints, ConnectionType.POSTGRESQL)
         assert connections_not_blocked == []

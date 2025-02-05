@@ -68,6 +68,9 @@ The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up p
 > [!NOTE]
 By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
+### Enabling Pod Security Admission (PSA)
+Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
+We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSS use option `--enable-pss` when running the `install_chatqa.sh` script. To find more information please refer to the [deploy](#deploy) section in [Step-by-Step Approach](#build-step-by-step)
 
 ### Running solution on CPU
 
@@ -179,8 +182,9 @@ simplifying customization. Use the following to set your HF token to for service
 
 The HF access token can be created [here](https://huggingface.co/settings/tokens).
 
-Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
+##### Deploy
 
+Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 ```bash
 ./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui
 ```

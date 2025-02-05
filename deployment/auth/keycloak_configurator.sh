@@ -209,7 +209,7 @@ function create_realm() {
         "enabled": true,
         "displayName": "",
         "sslRequired": "none",
-        "registrationAllowed": true,
+        "registrationAllowed": false,
         "passwordPolicy": "'$password_policy'"
     }'
 

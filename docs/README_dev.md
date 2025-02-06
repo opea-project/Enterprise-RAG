@@ -1,42 +1,41 @@
-### Deploy local environment using Kind based cluster for development purposes.
+# Deploy Intel&reg; AI for Enterprise RAG using Kind based cluster for development purposes
+To deploy Intel&reg; AI for Enterprise RAG locally on Intel&reg; Xeon without kubespray, use kind. Note that this setup is less optimal than kubespray and incompatible with Intel&reg; Gaudi.
 
-#### Prerequisites
+## Prerequisites
 
 - **kind**: https://kind.sigs.k8s.io/docs/user/quick-start/#installing-from-release-binaries
-- **make** (required to build GMC operator images)
 - **kubectl**: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 - **docker** service running
-- optionally **reg** tool to check pushed images (https://github.com/genuinetools/reg)
-- assumes environment with proxy (variants for no proxy included)
+- *optionally:* **reg** tool to check pushed images (https://github.com/genuinetools/reg)
 - disk space ~150GB (for models, images x 3 copies each)
-- if you running own (on 5000 port) must be replaced with one script below (otherwise containerd inside kind will not connect because of port conflict)
+- if you are running your own (on 5000 port) must be replaced with one script below (otherwise containerd inside kind will not connect because of port conflict)
 - check `cat /proc/sys/fs/inotify/max_user_instances` and set `sysctl -w fs.inotify.max_user_instances=8192` to handle journald collector
-- time and patience 1h only for initial build/push and pulling (only once, because unmodified layers will be cached in /var/lib/docker (local registry) and /kind-containerd-images (containerd storage))
 
-Run from *root folder* + deployment directory:
+Run from root folder + deployment directory:
 ```
 cd deployment
 ```
 
-#### 1) Create kind cluster and local registry
+## 1. Create kind cluster and local registry
 
-```sh
+From the root folder of Intel&reg; AI for Enterprise RAG:
+
+```bash
 # Create Local registry and kind-control-plane containers:
-bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh 
+bash ./deployment/telemetry/helm/example/kind-with-registry-opea-models-mount.sh
 kind export kubeconfig
 docker ps
 kubectl get pods -A
 ```
 
-#### 2) Build images and deploy everything
+## 2. Build images and deploy everything
 
-First:
+Set the configuration parameters. Skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`. For proxy related environments, follow `proxy version`.
 
-**export HF_TOKEN=your-hf-token-here**
+Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
-Then run from *root folder* of project:
-
-```sh
+```bash
+export HF_TOKEN=your-hf-token-here
 cd deployment/
 
 TAG=ts`date +%s`
@@ -47,30 +46,41 @@ echo $TAG
 
 # proxy version
 ./set_values.sh -p $http_proxy -u $https_proxy -n $no_proxy -g $HF_TOKEN -t $TAG
+```
 
+Check your changes with following command:
+
+```bash
 # check yaml values
 git --no-pager diff microservices-connector/helm/values.yaml
+```
 
+Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
+
+```bash
 ### a) Build images (~1h once, ~50GB)
-no_proxy=localhost ./update_images.sh --tag $TAG --build -j 100
+no_proxy=localhost ./update_images.sh --build -j 100 --tag $TAG
 
 # check build progress (output logs in another terminal)
 tail -n 0 -f logs/build_*
 pgrep -laf 'docker build'
-# check build images
+# check built images
 docker image ls | grep $TAG
 
 ### b) Push images (~2h once, ~20GB)
-no_proxy=localhost ./update_images.sh --tag $TAG --push -j 100
+no_proxy=localhost ./update_images.sh --push -j 100 --tag $TAG
 
-# check pushing processes
+# check pushing processes (output logs in another terminal)
 pgrep -laf 'docker push'
 # check pushed images
 reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
+```
 
-### c) Deploy everything (~30 once, 70GB)
-# Please modify grafana_password for your own
-./install_chatqna.sh --tag $TAG --auth --kind --deploy xeon_torch --ui --telemetry
+Deploy the pipeline. Choose a command that suits your needs. More information on install_chatqna.sh parameters can be found [here](../deployment/README.md).
+
+```bash
+### c) Deploy everything
+./install_chatqna.sh --auth --kind --deploy xeon_torch_llm_guard --ui --telemetry --tag $TAG
 
 # Install or reinstall(upgrade) individual components
 ./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
@@ -78,15 +88,16 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 ./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade              # namespaces: system, chatqa, dataprep
 ./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-namespace
 ./install_chatqna.sh --tag $TAG --kind --ui --upgrade                                       # namespaces: erag-ui
+```
 
-# check ChatQnA response
-kubectl proxy
-pgrep -laf 'kubectl proxy'
-curl -sL -N http://127.0.0.1:8001/api/v1/namespaces/chatqa/services/router-service:8080/proxy/ -H "Content-Type: application/json" -d '{"text":"what is the day today?","parameters":{"max_new_tokens":5, "streaming": true}}'
+To verify that the deployment was successful, run the following command:
+```bash
+./test_connection.sh
+```
 
-# check DataPrep pipeline
-SIZE=100 ; curl -v -N -s -H 'Content-Type: application/json' -o /dev/null http://127.0.0.1:8001/api/v1/namespaces/dataprep/services/router-service:8080/proxy/ -X POST -d '{"files":[{"filename":"file.txt", "data64":"'`head -c $SIZE </dev/random | base64 -w 0 | base64 -w 0`'"}],"links":[]}'
+Check out following commands for any additional needs.
 
+```bash
 ### d) Access Grafana/Prometheus
 pgrep -laf 'port-forward'
 # or port forwards processes manually
@@ -104,7 +115,7 @@ kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:
 # Minio API: https://s3.erag.com/
 
 # Passwords for Grafana/Keycloak is given above in command line for installation.
-# Passwords for users: 
+# Passwords for users:
 cat default_credentials.txt
 
 ### Optionally install metrics-server (for resource usage metrics)
@@ -112,18 +123,21 @@ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace
 ```
 
-#### 3) Clean up
-```
+## 3. Clean up
+For clean up, check out following commands.
+
+```bash
 kind delete cluster
 docker rm -f kind-registry
 
-# Warning: first time initialize will take a lot time when following steps are executed:
-rm -rf /kind-containerd-images      # removes all pulled images by containerd inside kind (~70GB)
-rm -rf /kind-registry               # removes all images stored in registry (~20GB)
-rm -rf /kind-local-path-provisioner # removes all images stored in registry (~20GB)
-# Warning: Below commands can remove not Enterprise RAG related data
+# Warning: first time initialization will take a lot time when following steps are executed:
+rm -rf /kind-containerd-images      # removes all pulled images by containerd inside kind
+rm -rf /kind-registry               # removes all images stored in registry
+rm -rf /kind-local-path-provisioner # removes all images stored in registry
+
+# Warning: Below commands can also remove not only Enterprise RAG related data
 docker system df
-docker image prune -a -f            # removed build images local registry (~90GB)
-docker system prune -a -f           # removes all containers images inside docker cache (~20GB)
-docker volume prune -f              # removes volumes used by local registry (~1GB)
+docker image prune -a -f            # removed built images local registry
+docker system prune -a -f           # removes all containers images inside docker cache
+docker volume prune -f              # removes volumes used by local registry
 ```

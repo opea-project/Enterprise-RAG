@@ -2,13 +2,14 @@
 
 This comprehensive guide outlines the essential prerequisites for deploying and using the Enterprise RAG solution. The goal of this guide is to ensure that users have a solid foundation in place before proceeding with the installation and configuration of their Enterprise RAG solution.
 
-## Support matrix
-|         |                                                                                                           |
-|--------------------|--------------------------------------------------------------------------------------------------------------------|
-| Operating System   | Ubuntu 22.04                                                               |
-| Hardware Platforms | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator |
-| Kubernetes Version | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4 |
-| Gaudi Firmware Version | 1.19.1 |
+# System Requirements
+
+| Category            | Details                                                                                                           |
+|---------------------|-------------------------------------------------------------------------------------------------------------------|
+| Operating System    | Ubuntu 20.04/22.04                                                                                                      |
+| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator |
+| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
+| Gaudi Firmware Version | 1.19.1        
 
 ## Kubernetes Cluster
 Deploy Kubernetes using Kubespray `(v2.27.0)` on a remote machine, followed by configuration and installation steps for the master node. The following steps show how this can be done using `Kubespray`.

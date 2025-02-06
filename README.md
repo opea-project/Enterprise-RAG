@@ -48,7 +48,7 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 | Kubernetes Version | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4 |
 | Gaudi Firmware Version | 1.19.1 |
 
-## Hardware Prerequisites
+## Hardware Prerequisites for Deployment using Gaudi® AI Accelerator
 To get the right instances to run Intel® AI for Enterprise RAG, follow these steps:
 
 - visit Intel® Tiber™ AI Cloud using this [link](https://console.cloud.intel.com/home).
@@ -57,8 +57,13 @@ To get the right instances to run Intel® AI for Enterprise RAG, follow these st
 - Select the Machine image - `ubuntu-22.04-gaudi2-v1.19.1-metal-cloudimg-amd64-v<version>` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
 - Upload your public key and launch the instance
 - Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
-  
-## Requirements for Building from Source
+
+## Hardware Prerequisites for Deployment using Xeon only
+To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:
+- access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
+-  **logical cores**: A minimum of `80` logical cores
+-  **RAM memory**: A minimum of `250GB` of RAM 
+-  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 ### Software Prerequisites
 
@@ -68,10 +73,11 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 -   **CSI Driver**: The K8s cluster must have the CSI driver installed. Users can define their own CSI driver that will be used during EnterpriseRAG install; however StorageClass provided by CSI driver should support ReadWriteMany(RWX) in case of using a multi-node cluster.
 - Current solution was tested on a single node using the CSI driver [local-path-provisioner](https://github.com/rancher/local-path-provisioner), with  `local_path_provisioner_claim_root`  set to  `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the prerequisites guide:  [CSI Driver](./docs/prerequisites.md#csi-driver).
 -   **Operating System**: Ubuntu 22.04
+-   **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. This default model used is `Mixtral-8x7B` for which access needs to be requested. Visit  [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) to apply for access.
+
+#### Additional Software Prerequisites when using Gaudi® AI Accelerator
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
 -   **Prepared Gaudi Node**: Please refer to the [Gaudi Software Stack](./docs/prerequisites.md#gaudi-software-stack) section of the prerequisites section.
--   **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. This default model used is `Mixtral-8x7B` for which access needs to be requested. Visit  [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) to apply for access.
-- **Disk Space**: `1TB` of disk space is generally recommended. It is highly dependent on the model size. The model used in the default examples(`Mixtral-8x7B`) takes up a disk space of `~260GB`
 
 # Installation
 
@@ -79,6 +85,8 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 cd Enterprise-RAG/deployment
 ./one_click_chatqna.sh  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
+> [!NOTE]
+> In case we are deploying the solution on `Xeon`, please change the `PIPELINE` parameter to the pipeline dedicated for Xeon, for example, `xeon_torch_llm_guard`. For more information, refer to [Configure Pipeline](docs/configure_pipeline.md).
 
 Proxy variables are optional.
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.

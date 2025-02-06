@@ -4,14 +4,19 @@ Enterprise RAG pipeline is being configured based on [manifests](../deployment/m
 
 `Manifests` show the default component configuration, while `flow configuration files` define how those components are connected together.
 
-When building the pipeline we are passing the `flow configuration files` as an argument to [one_click_chatqa](../deployment/README.md#quickstart-with-oneclick-script)
+When building the pipeline we are passing the `flow configuration files` as `PIPELINE` argument to [one_click_chatqa](../deployment/README.md#quickstart-with-oneclick-script)
 
 **Example one_click command:**
-./one_click_chatqna.sh -g "<HF Token>" -p $http_proxy -u $https_proxy -n $no_proxy -d gaudi_torch_guard
 
-Based on this configuration K8s knows which POD should be deployed.
+```
+./one_click_chatqna.sh -g <your HF token> -d gaudi_torch_guard -t mytag -y myregistry
+```
+
+Where `gaudi_torch_guard` points to [chatqa_gaudi_torch.yaml](../deployment/microservices-connector/config/samples/chatQnA_gaudi_torch.yaml)
 
 The PODs settings are primarily managed by appropriate `.env` files for each microservice. The model name can be set in the Helm [`values.yaml`](../deployment/microservices-connector/helm/values.yaml) file and will be propagated further.
+
+Based on this configuration K8s knows which POD should be deployed.
 
 ### Example: 
 We want to modify our pipeline and change the LLM `MODEL_ID` from `mistralai/Mixtral-8x22B-Instruct-v0.1` to `meta-llama/Meta-Llama-3-70B`. All we need to do is to update the Helm values file:

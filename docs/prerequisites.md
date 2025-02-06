@@ -1,6 +1,11 @@
 # Prerequisites for Enterprise RAG
 
-This comprehensive guide outlines the essential prerequisites for deploying and using the Enterprise RAG solution. The goal of this guide is to ensure that users have a solid foundation in place before proceeding with the installation and configuration of their Enterprise RAG solution.
+This document outlines the essential prerequisites for deploying and using the Enterprise RAG solution on Xeon-only or Xeon + Gaudi hardware. This guide ensures you're ready to install and configure Enterprise RAG.
+
+- **For Xeon-only deployments**: Follow the instructions in the Common Prerequisites section and stop at the end of the [Install Cluster](#install-cluster) section. You do **not** need to proceed to the `Gaudi Software Stack` and later sections.
+- **For Xeon + Gaudi deployments**: In addition to the common prerequisites, continue to the [Gaudi Software Stack](#gaudi-software-stack) section and beyond.
+
+## Common Prerequisites (For Xeon & Xeon + Gaudi Deployments)
 
 # System Requirements
 
@@ -19,7 +24,7 @@ Deploy Kubernetes using Kubespray `(v2.27.0)` on a remote machine, followed by c
 
 To be executed on a remote machine that has network access to the Gaudi cluster, meaning you should be able to SSH into a machine within the GPU cluster:
 
-### Kubespray Setup
+#### Kubespray Setup
 
 To run the Kubespray Ansible scripts, a virtual environment must be set up on your system. This involves creating a new Python virtual environment and installing the required dependencies.
 
@@ -52,7 +57,7 @@ Copy the inventory/sample folder and create your custom inventory:
 cp -r inventory/sample/ inventory/mycluster
 ```
 
-#### Single Node Example Configuration
+##### Single Node Example Configuration
 Next step is to create a `hosts.yaml` file in directory  `inventory/mycluster`. `hosts.yaml` defines the structure and roles of nodes within a Kubernetes cluster
 
 ```bash
@@ -118,7 +123,13 @@ all:
       hosts: {}
 ```
 
-#### Network Settings
+>[!NOTE]
+>Ensure passwordless SSH for Ansible host nodes (from `hosts.yaml`):
+> - Generate keys (ssh-keygen) and copy the public key (ssh-copy-id user@node-ip).
+> - Verify permissions: Ensure the ~/.ssh directory is set to `700` and the authorized_keys file to `600` on the remote host to maintain secure access.
+> - Test with ssh user@node-ip (should not prompt for a password).
+
+##### Network Settings
 
 Install `sshpass` to be able to send machine credentials via Ansible scripts:
 ```bash
@@ -133,7 +144,7 @@ vi inventory/mycluster/group_vars/all/all.yml
 
 >**WARNING:** Don't change the `no_proxy` variable.
 
-## CSI Driver
+### CSI Driver
 
 A Container Storage Interface (CSI) driver is a standardized plugin that allows Kubernetes to manage storage solutions. These drivers abstract storage operations, ensuring consistent handling across different container environments.
 
@@ -154,7 +165,10 @@ local_path_provisioner_claim_root: /mnt
 ```
 Note that `local_path_provisioner_namespace`, `local_path_provisioner_storage_class` and `local_path_provisioner_reclaim_policy` must remain commented out in the file.
 
-## Reset Cluster
+### Reset Cluster
+
+>[!NOTE]
+> Make sure that you can do a passwordless SSH into the ansible host node added in the `hosts.yaml` file above.
 
 `reset.yml` is the name of the playbook file used to clean up a Kubernetes cluster installation. It will remove Kubernetes components, dependencies, and configurations from the nodes listed in the `mycluster` inventory.
 
@@ -194,7 +208,7 @@ kubernetes/preinstall : Disable fapolicyd service ------------------------------
 kubernetes/preinstall : Remove swapfile from /etc/fstab ---------------------------------------------------------------------- 0.39s
 ```
 
-## Install Cluster
+### Install Cluster
 
 `cluster.yml` is the playbook file that will be executed. It contains the tasks that will configure the nodes as per the roles and settings defined within `mycluster`, for setting up or managing the cluster.
 
@@ -231,7 +245,7 @@ etcdctl_etcdutl : Download_file | Download item --------------------------------
 container-engine/containerd : Download_file | Download item ------------------------------------------------------------------ 2.78s
 ```
 
-## Setting Up and Verifying Kubernetes Cluster Access
+### Setting Up and Verifying Kubernetes Cluster Access
 
 
 ```bash
@@ -257,7 +271,13 @@ kube-system          kube-scheduler-node1                       1/1     Running 
 kube-system          nodelocaldns-nltqf                         1/1     Running   0          4m43s
 local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running   0          4m52s
 ```
-## Gaudi Software Stack
+## Gaudi-Specific Prerequisites (Additional for Xeon + Gaudi Deployments)
+
+### Gaudi Software Stack
+
+> **Note for Xeon Users:**  
+> If you are deploying on Xeon hardware only, you can safely **skip this section and all subsequent steps** related to Gaudi setup.
+
 To fully utilize the Enterprise RAG solution, LLMs must be run on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps must be performed after successful installation and testing of the K8s cluster.
 
 Install Habana Container Runtime:
@@ -304,7 +324,7 @@ Uncomment the following lines in `/etc/habana-container-runtime/config.toml` and
 ```
 For more details, refer to the [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) guide.
 
-## Install K8s Plugin
+### Install K8s Plugin
 
 Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Kubernetes_Installation/index.html#intel-gaudi-device-plugin-for-kubernetes ) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
 

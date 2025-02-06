@@ -1,16 +1,25 @@
 # Deploy Intel&reg; AI for Enterprise RAG
 
+This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon + Gaudi deployment. If you are deploying on Xeon-only hardware, please follow the Xeon-only instructions marked throughout this guide.
+
+---
+
 ## Verify System Status
 
-Before proceeding with this guide, verify that the following output is displayed when running `kubectl get pods -A`. This output indicates that all necessary Kubernetes components are running and ready to use. If not, refer to the [prerequisites](../docs/prerequisites.md) guide to set up your system to run the example in this document.
+Before proceeding, run the following command:
+```bash
+kubectl get pods -A
+```
+This command verifies that all necessary Kubernetes components are running.
 
-The output should show a list of pods from various namespaces, including:
+### Xeon + Gaudi (Default)
+The expected output should include pods in the following namespaces:
 
         - `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
         - `habana-system`: Habana device plugin
         - `local-path-storage`: Local path provisioner
 
-Run `kubectl get pods -A` to verify that the output looks similar to the one below:
+For example, your output might look similar to:
 ```
 NAMESPACE            NAME                                       READY   STATUS    RESTARTS   AGE
 habana-system        habanalabs-device-plugin-daemonset-hbkwp   1/1     Running   0          5d8h
@@ -25,6 +34,18 @@ kube-system          kube-scheduler-node1                       1/1     Running 
 kube-system          nodelocaldns-82kgx                         1/1     Running   0          5d9h
 local-path-storage   local-path-provisioner-f78b6cbbc-cqw9m     1/1     Running   0          5d9h
 ```
+
+### Xeon-Only
+
+For Xeon-only deployments, the `habana-system` namespace will not be present. In this case, the expected output should include only:
+
+        - `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
+        - `local-path-storage`: Local path provisioner
+
+If your output does not match these expectations, please refer to the [prerequisites](../docs/prerequisites.md) guide.
+
+> [!NOTE]
+> The example above uses the [Local Path Provisioner CSI driver](https://github.com/rancher/local-path-provisioner). Any CSI driver supporting **`ReadWriteOnce`** (single-node clusters) or **`ReadWriteMany`** (multi-node clusters) may be used. See [Storage Class](#storage-class) for details.
 
 ## Configure the Environment
 To prepare your environment for development and deployment, run the following command (Proxy commands are optional):
@@ -46,19 +67,20 @@ If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is de
 
 We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
 
-### Seting default storageClass
-Prior to running EnterpriseRAG solution, make sure you have set the correct StorageClass as the default one. Storage classes can be listed as in the below command:
+### Setting Default Storage Class
+Before running the EnterpriseRAG solution, ensure that you have set the correct StorageClass as the default one. You can list storage classes using the following command:
 
 ```bash
 ubuntu@node1:~/applications.ai.enterprise-rag.enterprise-ai-solution/deployment$ kubectl get sc -A
 NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  12d
 ```
-We can use the following command to set defined storageClass as default one:
+
+To set a specific storage class as the default, use the following command:
 ```bash
 kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 ```
-Also make sure the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your storageClass capabilities.
+Additionally, ensure that the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
 
 ### Skipping Warm-up for vLLM Deployment
 The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in: 
@@ -72,22 +94,6 @@ By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
 We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSS use option `--enable-pss` when running the `install_chatqa.sh` script. To find more information please refer to the [deploy](#deploy) section in [Step-by-Step Approach](#build-step-by-step)
 
-### Running solution on CPU
-
-In case we want to deploy the solution on CPUs instead of using Gaudi nodes, we need to make sure we have sufficient resources for running the LLM model server such as VLLM or TGI. The default resources used for deploying system are defined in [pod_resources_allocation](./../docs/pod_resource_allocation.md/)
-
-
-#### Running solution on reduced model server pod resources
-> [!NOTE]
-It is possible to reduce resources for model server if having issues with node capacity, however performance drop is expected in such case. Always make sure value of `OMP_NUM_THREADS` is equal to number of CPU-s assigned to the container.
-
-##### Setting variables for vllm as a model server
-Please reduce value of `OMP_NUM_THREADS` in  [vllm variables](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu) and reduce resources in [vllm_deployment](./microservices-connector/config/manifests/vllm.yaml)
-
-#### Setting variables for tgi as a model server
-
-Please reduce value of `OMP_NUM_THREADS` in [tgi variables](./../src/comps/llms/impl/model_server/tgi/docker/.env.cpu) and reduce resources in [tgi_deployment](./microservices-connector/config/manifests/vllm.yaml).
-
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
 1.  Quick start with a one click script
@@ -100,11 +106,20 @@ With the `one_click_chatqna.sh` script,  you can automate all the steps performe
 ####  Install ChatQnA via `one_click_chatqna.sh`
 Use the command below to install via the one click script:
 
+##### Xeon + Gaudi (Default)
 ```bash
 ./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
+
+##### Xeon-Only
+```bash
+./one_click_chatqna.sh -g HUG_TOKEN -d xeon_torch_llm_guard [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY] [--features FEATURES]
+```
+
 > [!NOTE]
-> Using the `one_click_chatqna.sh` is an alternatve option to the Step-by-Step Installation described in the next section.
+> For Xeon-only setups, pass a Xeon-specific pipeline to the One Click script, for example `xeon_torch_llm_guard` as shown above.
+> 
+> Using the `one_click_chatqna.sh` is an alternative option to the Step-by-Step Installation described in the next section.
 
 You can run `one_click_chatqna.sh --help` to get detailed information.
 
@@ -182,7 +197,7 @@ simplifying customization. Use the following to set your HF token to for service
 
 The HF access token can be created [here](https://huggingface.co/settings/tokens).
 
-##### Deploy
+##### Xeon + Gaudi (Default):
 
 Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
 ```bash
@@ -191,81 +206,106 @@ Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, al
 
 You can run `./install_chatqna.sh --help` to get detailed information.
 
+##### Xeon-Only:
+This command is intended for Xeon-only deployments, deploying the `xeon_torch_in_out_guards` pipeline along with telemetry and UI services:
+
+```bash
+./install_chatqna.sh --deploy xeon_torch_llm_guard --auth --telemetry --ui
+```
+
+You can run `./install_chatqna.sh --help` to get detailed information.
+
 Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
+
+### Running solution on CPUs (Xeon-Only)
+
+If you plan to deploy the solution on CPUs instead of using Gaudi nodes, it is essential to have sufficient resources for running LLM model servers like vLLM or TGI. The default resource allocations are defined in [`resources-cpu.yaml`](./microservices-connector/helm/resources-cpu.yaml/).
+
+> [!NOTE]
+It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. 
+
 
 ## Verify Services
 
-Run `kubectl get pods -A` to verify that the output looks as below:
-```
-NAMESPACE            NAME                                                       READY   STATUS    RESTARTS      AGE
-auth-apisix          auth-apisix-54ffcf8d66-x6bx5                               1/1     Running   0             36m
-auth-apisix          auth-apisix-etcd-0                                         1/1     Running   0             36m
-auth-apisix          auth-apisix-ingress-controller-6b9c4bffbb-ndb6f            1/1     Running   0             36m
-auth                 keycloak-0                                                 1/1     Running   0             38m
-auth                 keycloak-postgresql-0                                      1/1     Running   0             38m
-chatqa               client-test-87d6c7d7b-rgqfb                                1/1     Running   0             16m
-chatqa               embedding-svc-deployment-7d4f577884-rbq6h                  1/1     Running   0             34m
-chatqa               input-scan-svc-deployment-54c55d57d4-4wgrb                 1/1     Running   0             34m
-chatqa               llm-svc-deployment-6988978796-kt2bl                        1/1     Running   0             34m
-chatqa               redis-vector-db-deployment-57484464cc-tbslv                1/1     Running   0             34m
-chatqa               reranking-svc-deployment-bb66bccbd-ww7lf                   1/1     Running   0             34m
-chatqa               retriever-svc-deployment-b6455474f-wqbbd                   1/1     Running   0             34m
-chatqa               router-service-deployment-5b9fcd6d94-grjln                 1/1     Running   0             34m
-chatqa               tei-reranking-svc-deployment-db55fbbc7-v5hfj               1/1     Running   0             34m
-chatqa               vllm-gaudi-svc-deployment-7f8c68d8d4-nqnsm                 1/1     Running   0             34m
-chatqa               torchserve-embedding-svc-deployment-5d66d585fd-bnkz6       1/1     Running   0             34m
-dataprep             dataprep-svc-deployment-6bcdcbcbff-7cbp5                   1/1     Running   0             34m
-dataprep             embedding-svc-deployment-f4f4d46cb-x6mbn                   1/1     Running   0             34m
-dataprep             ingestion-svc-deployment-7c5567dc66-tlrpk                  1/1     Running   0             34m
-dataprep             router-service-deployment-94b874cc8-8qb52                  1/1     Running   0             34m
-dataprep             torchserve-embedding-svc-deployment-5d66d585fd-dxtqj       1/1     Running   0             34m
-habana-system        habanalabs-device-plugin-daemonset-gjs67                   1/1     Running   0             43h
-ingress-nginx        ingress-nginx-controller-548874d566-m6g2k                  1/1     Running   0             17m
-kube-system          calico-kube-controllers-68485cbf9c-dr9vd                   1/1     Running   0             44h
-kube-system          calico-node-gnxk9                                          1/1     Running   0             44h
-kube-system          coredns-69db55dd76-4zq74                                   1/1     Running   0             44h
-kube-system          dns-autoscaler-6d5984c657-b7724                            1/1     Running   0             44h
-kube-system          kube-apiserver-node1                                       1/1     Running   1             44h
-kube-system          kube-controller-manager-node1                              1/1     Running   2             44h
-kube-system          kube-proxy-qt4c4                                           1/1     Running   0             44h
-kube-system          kube-scheduler-node1                                       1/1     Running   1             44h
-kube-system          nodelocaldns-nltqf                                         1/1     Running   0             44h
-local-path-storage   local-path-provisioner-f78b6cbbc-4hfs9                     1/1     Running   0             95m
-monitoring-traces    otelcol-traces-collector-7f85cbcdfd-5w5q8                  1/1     Running   0             17m
-monitoring-traces    telemetry-traces-minio-9c6df94cb-s6fdr                     1/1     Running   0             18m
-monitoring-traces    telemetry-traces-otel-operator-bb746c85f-z9dsr             2/2     Running   0             18m
-monitoring-traces    telemetry-traces-tempo-compactor-5454fbb6b7-sn98c          1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-distributor-7cb5fbf47c-98rjp        1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-gateway-75c6965c96-nfrz2            1/1     Running   0             18m
-monitoring-traces    telemetry-traces-tempo-ingester-0                          1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-ingester-1                          1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-ingester-2                          1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-memcached-0                         1/1     Running   0             18m
-monitoring-traces    telemetry-traces-tempo-metrics-generator-66d7d94c7-q9pt7   1/1     Running   3 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-querier-668bbcf578-smx96            1/1     Running   2 (18m ago)   18m
-monitoring-traces    telemetry-traces-tempo-query-frontend-5cf5f78678-lqkpg     1/1     Running   3 (18m ago)   18m
-monitoring           alertmanager-telemetry-kube-prometheus-alertmanager-0      2/2     Running   0             20m
-monitoring           habana-metric-exporter-ds-hxhx4                            1/1     Running   0             21m
-monitoring           loki-backend-0                                             2/2     Running   0             20m
-monitoring           loki-canary-jxj57                                          1/1     Running   0             20m
-monitoring           loki-read-675bd78669-c4rmq                                 1/1     Running   0             20m
-monitoring           loki-write-0                                               1/1     Running   0             20m
-monitoring           prometheus-telemetry-kube-prometheus-prometheus-0          2/2     Running   0             20m
-monitoring           telemetry-grafana-574d7c8946-976pl                         3/3     Running   0             21m
-monitoring           telemetry-kube-prometheus-operator-74644bf687-ndh87        1/1     Running   0             21m
-monitoring           telemetry-kube-state-metrics-7486fd66d6-px9mg              1/1     Running   0             21m
-monitoring           telemetry-logs-loki-chunks-cache-0                         2/2     Running   0             20m
-monitoring           telemetry-logs-loki-results-cache-0                        2/2     Running   0             20m
-monitoring           telemetry-logs-minio-0                                     1/1     Running   0             20m
-monitoring           telemetry-logs-otelcol-logs-agent-8t5zl                    1/1     Running   0             20m
-monitoring           telemetry-prometheus-node-exporter-kc624                   1/1     Running   0             21m
-monitoring           telemetry-prometheus-redis-exporter-6c8448f67b-g9f5t       1/1     Running   0             21m
-rag-ui               fingerprint-usvc-686c599cbf-qc567                          1/1     Running   0             16m
-rag-ui               mongodb-8474b8bc56-5nsnl                                   1/1     Running   0             16m
-rag-ui               ui-chart-79685cc99f-wb9nd                                  1/1     Running   0             16m
-system               gmc-contoller-7fd7cf64-tcq9p                               1/1     Running   0             34m
+Run `kubectl get pods -A` to verify that the expected pods are running.
+
+<details>
+<summary>
+Click here to verify that the output looks as below:
+</summary>
+<pre>
+NAMESPACE            NAME                                                    READY   STATUS      RESTARTS       AGE
+auth-apisix          auth-apisix-6b99bbb7d7-xwrm6                            1/1     Running     0              24m
+auth-apisix          auth-apisix-etcd-0                                      1/1     Running     0              24m
+auth-apisix          auth-apisix-ingress-controller-6b9c4bffbb-kp2zp         1/1     Running     0              24m
+auth                 keycloak-0                                              1/1     Running     0              26m
+auth                 keycloak-postgresql-0                                   1/1     Running     0              26m
+chatqa               embedding-svc-deployment-5986c5b57f-wmx48               1/1     Running     0              21m
+chatqa               fgp-svc-deployment-6988d6d6d7-ph8vq                     1/1     Running     0              21m
+chatqa               input-scan-svc-deployment-56dcc86576-2xtjs              1/1     Running     0              21m
+chatqa               llm-svc-deployment-5d7c4784c9-cxl6f                     1/1     Running     0              21m
+chatqa               output-scan-svc-deployment-96b855b76-94lpk              1/1     Running     0              21m
+chatqa               prompt-template-svc-deployment-fc864d889-dfxfh          1/1     Running     0              21m
+chatqa               redis-vector-db-deployment-8557855f6f-9kpsq             1/1     Running     0              21m
+chatqa               reranking-svc-deployment-746c8fbb4d-vdhzl               1/1     Running     0              21m
+chatqa               retriever-svc-deployment-7b59f867c4-xv22r               1/1     Running     0              21m
+chatqa               router-service-deployment-849f64848d-6vbsq              1/1     Running     0              21m
+chatqa               tei-reranking-svc-deployment-7f85654f8b-bvj9j           1/1     Running     0              21m
+chatqa               torchserve-embedding-svc-deployment-54d498dd6f-78mtv    1/1     Running     0              21m
+chatqa               torchserve-embedding-svc-deployment-54d498dd6f-btg2l    1/1     Running     0              21m
+chatqa               torchserve-embedding-svc-deployment-54d498dd6f-hwfz4    1/1     Running     0              21m
+chatqa               torchserve-embedding-svc-deployment-54d498dd6f-jqcfh    1/1     Running     0              21m
+chatqa               vllm-service-m-deployment-6d86b69fb-6xxr2               1/1     Running     0              21m
+dataprep             dataprep-svc-deployment-6c745cfb56-qphf2                1/1     Running     0              14m
+dataprep             embedding-svc-deployment-66fc547b67-fc7z2               1/1     Running     0              14m
+dataprep             ingestion-svc-deployment-8f96f77d-2526q                 1/1     Running     0              14m
+dataprep             router-service-deployment-6f46d49c7d-2smtb              1/1     Running     0              14m
+edp                  edp-backend-559948896d-f9xkq                            1/1     Running     0              13m
+edp                  edp-celery-7b999df6fb-p7j84                             1/1     Running     1 (7m4s ago)   13m
+edp                  edp-flower-554594dd4d-6z666                             1/1     Running     0              13m
+edp                  edp-minio-5948fbc87f-6d8lq                              1/1     Running     0              13m
+edp                  edp-minio-provisioning-7rx98                            0/1     Completed   0              12m
+edp                  edp-postgresql-0                                        1/1     Running     0              13m
+edp                  edp-redis-master-0                                      1/1     Running     0              13m
+fingerprint          fingerprint-mongodb-7657456488-vg9qj                    1/1     Running     0              22m
+fingerprint          fingerprint-svc-7447b8b6df-w4q75                        1/1     Running     0              22m
+ingress-nginx        ingress-nginx-controller-5f54f7f779-sfnlv               1/1     Running     0              15m
+istio-system         istio-cni-node-sjp55                                    1/1     Running     0              26m
+istio-system         istiod-5bcbd9f7bc-fmtwx                                 1/1     Running     0              26m
+istio-system         ztunnel-k275b                                           1/1     Running     0              26m
+kube-system          calico-kube-controllers-68485cbf9c-vq94k                1/1     Running     16 (68d ago)   74d
+kube-system          calico-node-sfjbk                                       1/1     Running     0              75d
+kube-system          coredns-69db55dd76-gbtzm                                1/1     Running     0              74d
+kube-system          dns-autoscaler-6d5984c657-zqvn8                         1/1     Running     0              74d
+kube-system          kube-apiserver-node1                                    1/1     Running     1              75d
+kube-system          kube-controller-manager-node1                           1/1     Running     2              75d
+kube-system          kube-proxy-pfc7m                                        1/1     Running     0              75d
+kube-system          kube-scheduler-node1                                    1/1     Running     1              75d
+kube-system          nodelocaldns-wgvhm                                      1/1     Running     1 (21d ago)    75d
+local-path-storage   local-path-provisioner-f78b6cbbc-5rcc5                  1/1     Running     0              74d
+monitoring-traces    otelcol-traces-collector-66dd5648b6-wvs6f               1/1     Running     0              8m
+monitoring-traces    telemetry-traces-otel-operator-8665c5f949-7754t         2/2     Running     0              9m5s
+monitoring-traces    telemetry-traces-tempo-0                                1/1     Running     0              9m4s
+monitoring           alertmanager-telemetry-kube-prometheus-alertmanager-0   2/2     Running     0              11m
+monitoring           habana-metric-exporter-ds-9tqr9                         1/1     Running     0              11m
+monitoring           loki-canary-cgj4k                                       1/1     Running     0              10m
+monitoring           prometheus-telemetry-kube-prometheus-prometheus-0       2/2     Running     0              11m
+monitoring           telemetry-grafana-7644d9d67d-qwnp9                      3/3     Running     0              11m
+monitoring           telemetry-kube-prometheus-operator-b55bd6df6-7649p      1/1     Running     0              11m
+monitoring           telemetry-kube-state-metrics-79c9bf5669-f2k7r           1/1     Running     0              11m
+monitoring           telemetry-logs-loki-0                                   2/2     Running     0              10m
+monitoring           telemetry-logs-loki-chunks-cache-0                      2/2     Running     0              10m
+monitoring           telemetry-logs-loki-gateway-6767655445-vpft9            1/1     Running     0              10m
+monitoring           telemetry-logs-loki-results-cache-0                     2/2     Running     0              10m
+monitoring           telemetry-logs-minio-0                                  1/1     Running     0              10m
+monitoring           telemetry-logs-otelcol-logs-agent-p9kpj                 1/1     Running     0              10m
+monitoring           telemetry-prometheus-node-exporter-99k2t                1/1     Running     0              11m
+monitoring           telemetry-prometheus-redis-exporter-64d9d6f989-d4w64    1/1     Running     0              11m
+rag-ui               ui-chart-5b98cb4c54-k58ck                               1/1     Running     0              14m
+system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1     Running     0              22m
 ------------------------------------------------------------
-```
+</pre>
+</details>
 
 ## Available Pipelines
 
@@ -278,6 +318,8 @@ Explore a diverse set of easily deployable sample pipeline configurations. Examp
 
 - `Input and Output Guard Pipeline`: Adds layers of protection by scanning both incoming queries and outgoing responses to ensure security and compliance.
 
+> [!NOTE]
+For Xeon + Gaudi deployments, pipeline names include the term `gaudi` (e.g., `gaudi_torch_in_out_guards`), while for Xeon-only deployments, pipeline names include `xeon` (e.g., `xeon_torch_in_out_guards`).
 
 ## Interact with ChatQnA
 

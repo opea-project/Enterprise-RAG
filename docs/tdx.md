@@ -68,11 +68,27 @@ Follow the below steps on the server node with Intel Xeon Processor to deploy th
    kubectl wait --for=condition=Ready node --all --timeout=2m
    ```
 
-8. Deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
+8. Set the environment variables:
 
    ```bash
-   cd Enterprise-RAG/deployment                               
-   ./one_click_chatqna.sh --features tdx -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY]
+   export HUGGINGFACEHUB_API_TOKEN="your_hf_token"
+   export REGISTRY="your_public_registry"
+   export TAG="your_tag"
+   export PIPELINE="xeon_torch_llm_guard"
+   ```
+
+9. Login to your registry:
+
+   ```bash
+   docker login your_public_registry
+   ```
+
+10. Push the images to public registry and deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
+
+   ```bash
+   ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
+   ./set_values.sh -g "${HUGGINGFACEHUB_API_TOKEN}" -r "${REGISTRY}" -t "${TAG}"
+   ./install_chatqna.sh --deploy "${PIPELINE}" --registry "${REGISTRY}" --tag "${TAG}" --features tdx
    ```
 
 

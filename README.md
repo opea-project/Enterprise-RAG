@@ -81,7 +81,7 @@ cd Enterprise-RAG/deployment
 ```
 
 Proxy variables are optional.
-Refer [Deployment](deployment/README.md#prerequisites) if you prefer to install with multiple options.
+Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
 
 # Support
 

@@ -39,6 +39,7 @@ VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
 VITE_GRAFANA_DASHBOARD_URL=<grafana-dashboard-url>
 VITE_APISIX_DASHBOARD_URL=<apisix-dashboard-url>
 VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
+VITE_S3_URL=<s3-service-url>
 ```
 
 ### Install dependencies
@@ -50,7 +51,7 @@ npm install
 ## Start UI Development Server
 
 Run `npm run dev` command to start UI development server.
-By default, it will run on `http://localhost:5147`.
+By default, it will run on `http://localhost:7777`.
 
 The port and IP address can be changed by setting `--port` and `--host` options
 for npm `dev` script inside `package.json` file.
@@ -120,6 +121,7 @@ VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
 VITE_GRAFANA_DASHBOARD_URL=<grafana-dashboard-url>
 VITE_APISIX_DASHBOARD_URL=<apisix-dashboard-url>
 VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
+VITE_S3_URL=<s3-service-url>
 ```
 
 ### Docker image

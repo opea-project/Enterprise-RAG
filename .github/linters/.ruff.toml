@@ -1,0 +1,6 @@
+[lint]
+# Skip unused variable rules (`F841`).
+ignore = ["E402"]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]

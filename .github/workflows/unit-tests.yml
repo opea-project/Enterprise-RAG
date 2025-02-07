@@ -1,0 +1,130 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+name: Unit tests
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+    - 'src/comps/**'
+    - 'src/tests/unit/**'
+    - '.github/workflows/unit-tests.yml'
+    - '**.ini'
+    - '!**.md'
+
+  push:
+    branches: [ main ]
+    paths:
+    - 'src/comps/**'
+    - 'src/tests/unit/**'
+    - '.github/workflows/unit-tests.yml'
+    - '**.ini'
+    - '!**.md'
+
+jobs:
+  unit-tests:
+    if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
+    name: Unit tests
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Clean up disk space
+      run: |
+        sudo rm -rf \
+          /usr/local/lib/android \
+          /usr/share/dotnet \
+          "$AGENT_TOOLSDIRECTORY"
+        df -h /
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install test prerequisites
+      run: sudo apt-get update && sudo apt-get -y install libgl1 libglx-mesa0 tox
+
+    - name: Checkout code to folder
+      uses: actions/checkout@v4
+      with:
+        path: repo
+
+    - name: Ingestion unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: ingestion_unit_tests
+
+    - name: Prompt registry unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: prompt_registry_unit_tests
+
+    - name: Retrievers unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: retrievers_unit_tests
+
+    - name: Vectorstores unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: vectorstores_unit_tests
+
+    - name: Reranks unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: reranks_unit_tests
+
+    - name: Embeddings unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: embeddings_unit_tests
+
+    - name: Dataprep unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: dataprep_unit_tests
+
+    - name: LLMs unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: llms_unit_tests
+
+    - name: Guardrails input unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: llm_guard_input_guardrail_unit_tests
+
+    - name: Guardrails output unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: llm_guard_output_guardrail_unit_tests
+
+    - name: Language detection unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: language_detection_unit_tests
+
+    - name: EDP unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: edp_unit_tests

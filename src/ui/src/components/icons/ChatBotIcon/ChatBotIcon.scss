@@ -1,0 +1,11 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-bot-icon {
+  @apply mb-3 text-[4.375rem];
+  @apply text-light-text-accent dark:text-dark-text-accent;
+
+  &.chat-bot-icon--conversation {
+    @apply mb-0 text-[2rem];
+  }
+}

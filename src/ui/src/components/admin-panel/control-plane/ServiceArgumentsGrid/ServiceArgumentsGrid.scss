@@ -1,0 +1,11 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.service-arguments-grid-header {
+  @apply mb-2 mt-3 text-sm font-medium;
+}
+
+.service-arguments-grid {
+  @apply mb-4 grid auto-cols-auto;
+  row-gap: 0.75rem;
+}

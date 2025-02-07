@@ -1,0 +1,44 @@
+---
+setup_configurations:
+  config_override:
+    HABANA_VISIBLE_DEVICES:
+      - "0"
+      - "0,1"
+      - "0,1,2,3"
+      - "all"
+    NUM_SHARD:
+      - 1
+      - 2
+      - 4
+      - 8
+    VLLM_TP_SIZE:
+      - 1
+      - 2
+      - 4
+      - 8
+    SHARDED:
+      - true
+      - false
+    LLM_VLLM_MODEL_NAME:
+      - mistralai/Mixtral-8x22B-Instruct-v0.1
+      - mistralai/Mixtral-8x7B-Instruct-v0.1
+  config_microservice_extra:
+  config_model_server_extra:
+  docker_model_server_extra:
+
+benchmark_parameters:
+  service:
+    - microservice
+  streaming:
+    - true
+  num_burst_requests:
+    - 1
+    - 4
+  input_token_num:
+    - 1024
+  max_new_tokens:
+    - 128
+
+model_related_token_nums:
+  - add -1024
+  - mul 0.5

@@ -1,0 +1,315 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-grafana
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-alertmanager-telemetry-kube-prometheus-alertmanager
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-habana-metric-exporter-ds
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: habana-metric-exporter-ds
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-loki-canary
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: canary
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/loki-canary
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-prometheus-telemetry-kube-prometheus-prometheus
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+        - cluster.local/ns/monitoring-traces/sa/telemetry-traces-tempo
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-kube-prometheus-operator
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-prometheus-stack-prometheus-operator
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-kube-state-metrics
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-loki
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: single-binary
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-logs-otelcol-logs
+        - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/loki-canary # loki-canary-
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus # prometheus-telemetry-kube-prometheus-prometheus-
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-loki-chunks-cache
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: memcached-chunks-cache
+      # OR
+      # name: memcached-chunks-cache
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-loki-gateway
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: gateway
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+        - cluster.local/ns/monitoring/sa/loki-canary
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-loki-results-cache-0
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+      app.kubernetes.io/component: memcached-results-cache
+      # OR
+      #  name: memcached-results-cache
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-minio
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/loki
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-logs-otelcol-logs-agent
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otelcol-logs
+      component: agent-collector
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-prometheus-node-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-node-exporter
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-telemetry-prometheus-redis-exporter
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-redis-exporter
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-traces-otelcol-traces-collector
+  namespace: monitoring-traces
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otelcol-traces-collector
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/dataprep/sa/default
+        - cluster.local/ns/chatqa/sa/default
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-traces-otel-operator
+  namespace: monitoring-traces
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-operator
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: monitoring-tempo
+  namespace: monitoring-traces
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/monitoring/sa/telemetry-grafana
+        - cluster.local/ns/monitoring-traces/sa/otelcol-traces-collector
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus

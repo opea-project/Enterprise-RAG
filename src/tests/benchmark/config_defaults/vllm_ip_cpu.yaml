@@ -1,0 +1,31 @@
+---
+setup_configurations:
+  config_override:
+    VLLM_TP_SIZE: 1
+  config_microservice_extra:
+    LLM_CONNECTOR:
+      - langchain
+  config_model_server_extra:
+    VLLM_CPU_OMP_THREADS_BIND:
+      - 0-31
+  docker_model_server_extra:
+    cpuset_mems:   # each real setting is a list itself
+      - - 0
+    privileged: true
+
+benchmark_parameters:
+  service:
+    - microservice
+  streaming:
+    - true
+  num_burst_requests:
+    - 1
+    - 4
+  input_token_num:
+    - 1024
+  max_new_tokens:
+    - 128
+
+model_related_token_nums:
+  - add -1024
+  - mul 0.5

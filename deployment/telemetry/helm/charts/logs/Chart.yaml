@@ -1,0 +1,20 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: v2
+name: logs
+type: application
+version: 1.0.0
+
+dependencies:
+
+# enabled by default
+- name: loki
+  condition: loki.enabled
+  repository: https://grafana.github.io/helm-charts
+  version: "*"
+
+- name: opentelemetry-collector
+  version: "*"
+  alias: otelcol-logs
+  condition: otelcol-logs.enabled
+  repository: https://open-telemetry.github.io/opentelemetry-helm-charts

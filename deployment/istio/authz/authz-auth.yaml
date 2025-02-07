@@ -1,0 +1,36 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: auth-keycloak
+  namespace: auth
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/edp/sa/edp-minio
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: keycloak-postgresql
+  namespace: auth
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth/sa/keycloak

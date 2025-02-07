@@ -1,0 +1,16 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: fingerprint
+description: System fingerprint Helm chart
+
+type: application
+
+version: 0.1.0
+appVersion: "1.16.0"
+
+dependencies:
+  - name: mongodb
+    version: 16.4.0
+    repository: https://charts.bitnami.com/bitnami

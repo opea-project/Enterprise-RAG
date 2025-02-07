@@ -1,0 +1,128 @@
+---
+# Source: vllm-gaudi/templates/configmap.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-gaudi-config
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  LLM_DEVICE: "hpu"
+  PORT: "2080"
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
+---
+# Source: vllm/templates/service.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 2080
+      protocol: TCP
+      name: vllm-gaudi
+  selector:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+# Source: vllm-gaudi/templates/deployment.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gaudi
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
+  selector:
+    matchLabels:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
+      containers:
+        - name: vllm-gaudi
+          envFrom:
+            - configMapRef:
+                name: vllm-gaudi-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          env:
+            - name: HF_HOME
+              value: /data
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
+            {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
+            {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
+            - name: VLLM_TP_SIZE
+              value: {{ index $resourceLimits.limits "habana.ai/gaudi" | quote }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --multi-step true --num-scheduler-steps 64 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data" ]
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /.cache
+              name: cache
+            - mountPath: /home/user/.config
+              name: config
+            - mountPath: /var/log
+              name: var-log
+          ports:
+            - name: http
+              containerPort: 2080
+              protocol: TCP
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          startupProbe:
+            failureThreshold: 120
+            initialDelaySeconds: 5
+            periodSeconds: 60
+            tcpSocket:
+              port: http
+          resources:
+            {{- toYaml $resourceLimits | nindent 12 }}
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-llm
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+        - name: var-log
+          emptyDir: {}

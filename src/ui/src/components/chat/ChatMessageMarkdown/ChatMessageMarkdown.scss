@@ -1,0 +1,26 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-message-markdown {
+  & ol {
+    @apply list-decimal;
+  }
+
+  & ul {
+    @apply list-item;
+  }
+
+  & ol,
+  & ul {
+    @apply pl-8 text-sm;
+  }
+
+  & .custom-pre-markdown,
+  & .custom-code-markdown {
+    @apply relative whitespace-pre-wrap text-sm;
+  }
+
+  & .custom-paragraph-markdown {
+    @apply text-sm;
+  }
+}

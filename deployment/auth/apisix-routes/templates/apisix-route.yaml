@@ -1,0 +1,52 @@
+{{- range .Values.endpoints }}
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: {{ printf "%s-route" .name }}
+  namespace: {{ .namespace }}
+spec:
+  http:
+  - name: {{ printf "%s-route" .name }}
+    match:
+      hosts:
+      - {{ .hostname }}
+      paths:
+      - {{ .path }}
+    backends:
+      - serviceName: {{ .backend_service }}
+        servicePort: {{ .service_port }}
+    plugins:
+    - name: proxy-rewrite
+      enable: true
+      config:
+        {{- if .service_path }}
+        uri: {{ .service_path }}
+        {{- else if .service_regex }}
+        regex_uri:
+          {{- range .service_regex }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
+    - name: limit-count
+      enable: true
+      config:
+        count: {{ .rate_limit_count }}
+        time_window: 60
+        key_type: var
+        key: http_authorization
+        rejected_code: 429
+    - name: authz-keycloak
+      enable: true
+      config:
+        resource_registration_endpoint: {{ $.Values.auth.resource_registration_endpoint }}
+        token_endpoint: {{ $.Values.auth.token_endpoint }}
+        client_id: {{ $.Values.auth.client_id }}
+        client_secret: "$ENV://CLIENT_SECRET"
+        policy_enforcement_mode: "ENFORCING"
+        ssl_verify: false
+        permissions:
+          {{- range .permissions }}
+          - {{ . }}
+          {{- end }}
+---
+{{- end }}

@@ -1,0 +1,12 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: erag-chatqna-ui
+description: Helm chart for UI component of eRAG Chat QnA
+
+type: application
+
+version: 1.0.0
+
+appVersion: "1.0.0"

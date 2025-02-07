@@ -1,0 +1,49 @@
+# APISIX Namespace
+namespace: auth-apisix
+
+# APISIX Helm chart configs
+apisix:
+  enabled: true
+  serviceAccount:
+    create: true
+  ingress-controller:
+    enabled: true
+    config:
+      apisix:
+        serviceName: auth-apisix-admin
+        serviceNamespace: auth-apisix
+  etcd:
+    replicaCount: 1
+    persistence:
+      enabled: true
+  dashboard:
+    enabled: false
+    ingress:
+      enabled: true
+      className: "nginx"
+      hosts:
+        - host: apisix.erag.com
+          paths:
+            - /
+      tls:
+        - hosts:
+            - apisix.erag.com
+          secretName: tls-secret
+    config:
+      conf:
+        etcd:
+          endpoints:
+            - auth-apisix-etcd:2379
+          prefix: "/apisix"
+  apisix:
+    nginx:
+      configurationSnippet:
+        httpStart: |
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;
+  extraEnvVars:
+    - name: CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: apisix-secret
+          key: CLIENT_SECRET

@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.nameOverride | default (include "helm-edp.fullname" .) }}
+  labels:
+    {{- include "helm-edp.selectorLabels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "helm-edp.backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm-edp.backend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-postgresql
+          securityContext:
+             {{- toYaml .Values.securityContext | nindent 12 }}
+          image: bitnami/postgresql:16.3.0
+          env:
+            - name: DATABASE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: edp-postgresql-secret
+                  key: DATABASE_HOST
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: edp-postgresql-secret
+                  key: DATABASE_PORT
+            - name: DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: edp-postgresql-secret
+                  key: DATABASE_USER
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$DATABASE_HOST" ] || [ -z "$DATABASE_PORT" ] || [ -z "$DATABASE_USERNAME" ]; then
+                  echo "Environment variables DATABASE_HOST, DATABASE_PORT, and DATABASE_USERNAME must be set. Skipping wait-for-postgresql init container.";
+                  exit 1
+                else
+                  until pg_isready -h $DATABASE_HOST -p $DATABASE_PORT -U $DATABASE_USERNAME; do
+                    echo "Waiting for PostgreSQL server $DATABASE_HOST:$DATABASE_PORT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+        - name: wait-for-redis
+          securityContext:
+             {{- toYaml .Values.securityContext | nindent 12 }}
+          image: redis:alpine
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: edp-celery-secrets
+                  key: CELERY_BACKEND_URL
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$REDIS_URL" ]; then
+                  echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
+                  exit 1
+                else
+                  REDIS_URL_OBFUSCATED=$(echo $REDIS_URL | sed -e 's|//.*:.*@|//********:********@|')
+                  until redis-cli -u $REDIS_URL ping | grep -q PONG; do
+                    echo "waiting for redis server $REDIS_URL_OBFUSCATED to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+      containers:
+        - name: {{ .Values.backend.nameOverride }}
+          securityContext:
+            {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
+          image: "{{ .Values.backend.repository }}:{{ .Values.backend.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.backend.pullPolicy }}
+          command: 
+            {{- range $index, $element := splitList " " .Values.backend.command }}
+            - {{ $element | quote }}
+            {{- end }}
+          env:
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy }}
+          {{- end }}
+          {{- toYaml .Values.backend.environment | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,19 @@
+{{- if index .Values "app-monitors" "enabled" }}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-gaudi-svc
+  labels:
+    release: {{ $.Release.Name }}
+spec:
+  namespaceSelector:
+    matchNames:
+    - chatqa
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: vllm_gaudi
+  endpoints:
+  - port: "vllm-gaudi"
+{{- end }}

@@ -1,0 +1,147 @@
+---
+# Source: vllm/templates/configmap.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  LLM_DEVICE: "cpu"
+  PORT: "8000"
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
+---
+# Source: vllm/templates/service.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: vllm
+  selector:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+# Source: vllm/templates/deployment.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
+  selector:
+    matchLabels:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
+      containers:
+        - name: vllm
+          envFrom:
+            - configMapRef:
+                name: vllm-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
+            - name: VLLM_OPENVINO_DEVICE
+              value: "CPU"
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          command:
+            - sh
+            - -c
+            - |
+                echo "Converting model to OpenVino IR"
+                optimum-cli export openvino --cache_dir "/data" --model $LLM_VLLM_MODEL_NAME $LLM_VLLM_MODEL_NAME
+                echo "Starting VLLM server"
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /dev/shm
+              name: shm
+            - mountPath: /.cache
+              name: cache
+            - mountPath: /.config
+              name: config
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 24
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            httpGet:
+              path: /health
+              port: 8000
+          readinessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            httpGet:
+              path: /health
+              port: 8000
+          startupProbe:
+            failureThreshold: 120
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            httpGet:
+              path: /health
+              port: 8000
+          resources:
+            {{- $defaultValues := "{requests: {cpu: '48', memory: '64Gi'}, limits: {cpu: '48', memory: '64Gi'}}" -}}
+            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-llm
+        - name: tmp
+          emptyDir: {}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 12Gi
+        - name: cache
+          emptyDir: {}
+        - name: config
+          emptyDir: {}

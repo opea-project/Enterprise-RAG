@@ -1,0 +1,36 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.three-state-switch {
+  @apply w-full rounded p-1;
+  @apply grid grid-cols-3 gap-1;
+  @apply bg-light-bg-1 dark:bg-dark-bg-1;
+
+  & button.three-state-switch__button {
+    @apply h-4 rounded p-0 text-xs;
+
+    @apply bg-light-bg-1 dark:bg-dark-bg-1;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+
+    &.three-state-switch__button--active {
+      @apply bg-light-primary dark:bg-dark-primary;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
+    }
+  }
+
+  &.three-state-switch--read-only {
+    & button.three-state-switch__button {
+      @apply cursor-default;
+
+      &.three-state-switch__button--active {
+        @apply p-0 text-xs;
+        @apply bg-light-bg-2 dark:bg-dark-bg-2;
+        @apply text-light-text-primary dark:text-dark-text-primary;
+      }
+    }
+  }
+}
+
+.three-state-switch__label {
+  @apply mb-2 inline-block text-sm;
+}

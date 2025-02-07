@@ -1,0 +1,93 @@
+tdx:
+  common:
+    kbsAddress: "your_kbs_address_here"
+    runtimeClassName: kata-qemu-tdx
+    annotations:
+      io.containerd.cri.runtime-handler: "{{ .Values.tdx.common.runtimeClassName }}"
+      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ .Values.tdx.common.kbsAddress }}"
+      io.katacontainers.config.runtime.create_container_timeout: "1800"
+
+  services:
+    embedding-usvc:
+      tdxEnabled: false # due to https://github.com/kata-containers/kata-containers/issues/10571
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    in-guard-usvc:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    llm-usvc:
+      tdxEnabled: true
+      startupProbe:
+        failureThreshold: 240
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    out-guard-usvc:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    redis-vector-db:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 4Gi
+        requests:
+          memory: 4Gi
+    reranking-usvc:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 4Gi
+        requests:
+          memory: 4Gi
+    retriever-usvc:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 7Gi
+        requests:
+          memory: 7Gi
+    tei:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 4Gi
+        requests:
+          memory: 4Gi
+    teirerank:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    torchserve:
+      tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: "16"
+        requests:
+          memory: 32Gi
+          cpu: "16"
+    vllm:
+      tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
+      resources:
+        limits:
+          memory: 80Gi
+          cpu: "16"
+        requests:
+          memory: 80Gi
+          cpu: "16"

@@ -1,0 +1,26 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+# TODO: these makefiles should became templates
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gmc.fullname" . }}-config
+  labels:
+    {{- include "gmc.labels" . | nindent 4 }}
+data:
+  {{- range $path, $_ := .Files.Glob "manifests_common/*.yaml" }}
+  {{ $filename := index (splitList "." ($path | base)) 0 }}
+  {{ $hugToken := required "The hugToken value is required and must be set in values.yaml" $.Values.tokens.hugToken }}
+  {{ $path | base }}: |
+    {{- $rawContent := $.Files.Get $path }}
+    {{- $newContext := dict "Values" $.Values "Release" $.Release "Chart" $.Chart "Files" $.Files "Capabilities" $.Capabilities "Template" $.Template "filename" $filename }}
+    {{- $content := tpl $rawContent $newContext }}
+    {{- /* Removing hf token from the CM to avoid storing it in plain text */ -}}
+    {{- $content = regexReplaceAll "(.*(HF_TOKEN|HUGGINGFACEHUB_API_TOKEN):\\s*.*\\n?)" $content "" }}
+    {{- $content | nindent 4 }}
+  {{- end }}
+  gmc-router.yaml: |
+    {{- $rawContent := .Files.Get "gmc-router.yaml" }}
+    {{- $routerContent := tpl $rawContent $ }}
+    {{- $routerContent | nindent 4 }}

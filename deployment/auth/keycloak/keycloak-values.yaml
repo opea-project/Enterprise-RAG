@@ -1,0 +1,39 @@
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  pathType: Prefix
+  hostname: auth.erag.com
+  hostnameStrict: true
+  path: /
+  tls: true
+  extraTls:
+    - hosts:
+        - auth.erag.com
+      secretName: tls-secret
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+networkPolicy:
+  extraIngress:
+    - ports:
+      - port: 15008
+tls:
+  enabled: true
+  existingSecret: tls-secret
+  usePem: true
+
+volumePermissions:
+  enabled: true
+
+resourcesPreset: "xlarge"
+
+extraEnvVars:
+  - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+    value: "true"
+postgresql:
+  primary:
+    networkPolicy:
+      extraIngress:
+        - ports:
+            - port: 15008
+

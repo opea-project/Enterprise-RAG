@@ -1,0 +1,36 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fingerprint-svc
+  namespace: fingerprint
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fingerprint
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fingerprint-mongodb
+  namespace: fingerprint
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/fgp-usvc
+        - cluster.local/ns/fingerprint/sa/fingerprint

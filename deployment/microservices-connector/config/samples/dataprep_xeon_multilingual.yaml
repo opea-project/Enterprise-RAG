@@ -1,0 +1,49 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: dataprep
+  namespace: dataprep
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: DataPrep
+        internalService:
+          serviceName: dataprep-svc
+          config:
+            endpoint: /v1/dataprep
+      - name: Embedding
+        data: $response
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_MODEL_NAME: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_MODEL_SERVER: fetch_from:embedding-svc-deployment/chatqa
+            EMBEDDING_CONNECTOR: fetch_from:embedding-svc-deployment/chatqa
+      - name: TorchserveEmbedding
+        internalService:
+          serviceName: torchserve-embedding-svc
+          config:
+            TORCHSERVE_MODEL_NAME: "sentence-transformers/distiluse-base-multilingual-cased-v1"
+          isDownstreamService: true
+      - name: Ingestion
+        data: $response
+        internalService:
+          serviceName: ingestion-svc
+          config:
+            VECTOR_STORE: redis
+            REDIS_URL: "redis://redis-vector-db.chatqa.svc:6379"
+            endpoint: /v1/ingestion

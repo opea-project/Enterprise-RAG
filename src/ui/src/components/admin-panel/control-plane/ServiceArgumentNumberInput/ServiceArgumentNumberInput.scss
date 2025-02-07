@@ -1,0 +1,10 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+input.service-argument-number-input {
+  @apply w-full px-2 py-1 text-xs;
+}
+
+label.service-argument-number-input__label {
+  @apply text-xs;
+}

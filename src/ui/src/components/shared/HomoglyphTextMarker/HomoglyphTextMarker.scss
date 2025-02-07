@@ -1,0 +1,8 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+mark.homoglyph-text {
+  @apply cursor-not-allowed select-none;
+  @apply bg-[inherit] text-[inherit];
+  @apply border border-solid border-light-status-error dark:border-dark-status-error;
+}

@@ -142,7 +142,8 @@ if you are behing a corporate VPN, setup proxy by editing the `all.yml` file:
 vi inventory/mycluster/group_vars/all/all.yml
 ```
 
->**WARNING:** Don't change the `no_proxy` variable.
+>[!WARNING]
+>Don't change the `no_proxy` variable.
 
 ### CSI Driver
 
@@ -177,7 +178,8 @@ Reset K8s cluster to make sure we are making install on a clean environment:
 ```bash
 ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root -e override_system_hostname=false -kK reset.yml
 ```
->**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
+>[!NOTE]
+> If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
 
 A similar output can be seen after a successful reset:
 ```bash
@@ -215,7 +217,8 @@ kubernetes/preinstall : Remove swapfile from /etc/fstab ------------------------
 ```bash
 ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root -e override_system_hostname=false -kK cluster.yml
 ```
->**Note:**  If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
+>[!NOTE]
+> If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
 
 After a successful execution of the Ansible playbook, a similar output is observed:
 ```bash
@@ -275,7 +278,8 @@ local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running 
 
 ### Gaudi Software Stack
 
-> **Note for Xeon Users:**  
+>[!NOTE]
+> **For Xeon Users:**  
 > If you are deploying on Xeon hardware only, you can safely **skip this section and all subsequent steps** related to Gaudi setup.
 
 To fully utilize the Enterprise RAG solution, LLMs must be run on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps must be performed after successful installation and testing of the K8s cluster.
@@ -286,7 +290,8 @@ sudo apt install -y habanalabs-container-runtime
 ```
 
 Setup `/etc/containerd/config.toml` to point to habana-container-runtime:
->**Important:** Execute the following command directly in the terminal. Do not manually edit the `/etc/containerd/config.toml` file. This ensures that the configuration is set correctly without formatting issues.
+>[!IMPORTANT]
+> Execute the following command directly in the terminal. Do not manually edit the `/etc/containerd/config.toml` file. This ensures that the configuration is set correctly without formatting issues.
 
 ```
 sudo tee /etc/containerd/config.toml <<EOF

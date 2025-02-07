@@ -24,7 +24,8 @@ kubectl patch -n chatqa deploy router-service-deployment --patch-file patches/pa
 kubectl patch -n dataprep deploy router-service-deployment --patch-file patches/patch-deploy-inject-dataprep-router.yaml
 ```
 
-**Warning** with above "structured logs" pushed by traces OpenTelemetry collector, there will not be logs in stdout/Loki collected by "logs" pipeline.
+> [!WARNING]
+> With above "structured logs" pushed by traces OpenTelemetry collector, there will not be logs in stdout/Loki collected by "logs" pipeline.
 
 "Structured logs" from router-service are controlled by `OTEL_LOGS_GRPC_ENDPOINT` (empty or unset disables logs)
 

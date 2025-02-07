@@ -29,18 +29,19 @@ helm install telemetry -n monitoring --create-namespace .
 Base chart deploys:
 
 - Grafana with configured data sources and dashboards
-- Prometheus operator, Prometehus and AlertManager instances and Prometheus monitors (for Enterprise RAG components)
+- Prometheus operator, Prometheus and AlertManager instances and Prometheus monitors (for Enterprise RAG components)
 - Extra exporters: Habana, Redis, node-exporter, kube-state-metrics
 
-Please check "Extra additions" (not yet merged into helm chart) for **pcm** and **metrics-server**.
+Please check the "Extra additions" section for information on **pcm** and **metrics-server** (not yet merged into the Helm chart).
 
 #### II) Install **logs pipeline** telemetry.
 
 This uses "logs" subchart from helm **charts/logs** chart directory:
 
-The **metrics** telemetry requires "a) metric pipeline" to be deployed first.
+The **metrics** telemetry requires the "metrics pipeline" to be deployed first.
 
-**WARNING**: Before deploying, make sure that prerequisites/requirements described [logs/README.md](charts/logs/README.md#prerequisites-imagesvolumes) are met (persistent volumes and images).
+> [!WARNING]
+> Before deploying, make sure that prerequisites/requirements described [logs/README.md](charts/logs/README.md#prerequisites-imagesvolumes) are met (persistent volumes and images).
 
 ##### II a) Install loki and OpenTelemetry collector for logs (with journalctl support) 
 
@@ -50,7 +51,8 @@ This is **recommended** method but requires custom image.
 helm install telemetry-logs -n monitoring -f charts/logs/values-journalctl.yaml charts/logs
 ```
 
-**Note** This step is explicit, because of helm [bug](https://github.com/helm/helm/pull/12879), causing that "logs" subchart cannot be deployed together with "telemetry" chart on single node setup (as subchart it cannot nullify required log-writer pod anti affinity and two replicas at least).
+> [!NOTE]
+> This step is explicit because of a helm [bug](https://github.com/helm/helm/pull/12879). The "logs" subchart cannot be deployed together with the "telemetry" chart on a single node setup, as the subchart cannot nullify the required log-writer pod anti-affinity and two replicas at least.
 
 ##### II b) [Alternatively to IIa] Install loki and OpenTelemetry collector for logs (default image, without journalctl support):
 ```
@@ -116,7 +118,7 @@ Telemetry including following components:
 - infra Prometheus monitors to scrape date from: habana and redis exporter in [templates/infra-monitors](templates/infra-monitors).
 - Grafana dashboards for application and infrastructure in [files/dashboards](files/dashboards).
 - Habana exporter based on [this](https://docs.habana.ai/en/latest/Orchestration/Prometheus_Metric_Exporter.html)
-- subcharts (depedency):
+- subcharts (dependency):
   - logs (subchart):
     - loki
     - opentelemetry-collector
@@ -155,11 +157,10 @@ helm uninstall metrics-server --namespace monitoring
 
 #### b) pcm-sensor-server - XEON telemetry
 
-| **WARNING**   | 
-| ------------- |
-|  PCM-sensor-server is opt-in **experimental** preview feature. Please consider testing in controlled environment, before enabling on production systems. |
+> [!WARNING]
+> PCM-sensor-server is opt-in **experimental** preview feature. Please consider testing in controlled environment, before enabling on production systems.
 
-It is work in progress by ppalucki, so it requires deployemt from source:
+It is work in progress by ppalucki, so it requires deployment from source:
 
 https://github.com/intel/pcm/pull/727 (images are published but not helm charts).
 
@@ -174,7 +175,7 @@ cd deployment/pcm
 # check README for further details
 cat README.md
 
-# WARN: we are using privilged mode (TODO: consider less unsecure version later access through perf-subsystem)
+# WARNING: We are using privileged mode. (TODO: Consider a more secure version later, accessing through the perf subsystem.)
 requires: msr module
 ssh TARGET_NODE
 sudo modprobe msr
@@ -265,7 +266,7 @@ metadata:
 
 ##### telemetry-kube-prometheus-kube-scheduler and kube-scheduler-kind-control-plane
 
-Monitoring the `kube-scheduler` service, as well as the `kube-scheduler-kind-control-plane` if you are using kind, requires meeting certain pre-requisites when using `kubeadm`. These pre-requisites are outlined in the [kube-prometheus documentation](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/kube-prometheus-on-kubeadm.md#kubeadm-pre-requisites)
-.
+Monitoring the `kube-scheduler` service, as well as the `kube-scheduler-kind-control-plane` if you are using kind, requires meeting certain pre-requisites when using `kubeadm`. These pre-requisites are outlined in the [kube-prometheus documentation](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/kube-prometheus-on-kubeadm.md#kubeadm-pre-requisites).
+
 Ensure that your cluster configuration adheres to these requirements to enable successful monitoring of these components with Prometheus.
 By following these steps, you can configure the `kube-prometheus-stack` Helm chart to monitor key Kubernetes services effectively.

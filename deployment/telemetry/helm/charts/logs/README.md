@@ -21,7 +21,7 @@ journald        -> otelcol-logs-daemonset/journalctl   -> loki
 
 #### Install metrics and logs telemetry
 
-Please follow instruciton from "base telemetry" [README Installation instruciton section](../../README.md).
+Please follow instruction from "base telemetry" [README Installation instruction section](../../README.md).
 
 ### Prerequisites (images/volumes)
 

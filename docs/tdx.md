@@ -15,13 +15,13 @@ This document outlines the deployment process of ChatQnA components on Intel® X
 
 ## Prerequisites
 
-### Support matrix
+### System Requirements
 
-|                    |                                                                                      |
-|--------------------|--------------------------------------------------------------------------------------|
-| Operating System   | Ubuntu 24.04                                                                         |
-| Hardware Platforms | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors |
-| Kubernetes Version | 1.29                                                                                 |
+| Category            | Details                                                                               |
+|---------------------|---------------------------------------------------------------------------------------|
+| Operating System    | Ubuntu 24.04                                                                          |
+| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors  |
+| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                           |
 
 This guide assumes that:
 

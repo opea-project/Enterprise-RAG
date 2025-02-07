@@ -22,7 +22,8 @@ http_endpoints = [
     "router-service.chatqa.svc.cluster.local:8080",
     "tei-reranking-svc.chatqa.svc.cluster.local:80",
     "torchserve-embedding-svc.chatqa.svc.cluster.local:8090",
-    "vllm-service-m.chatqa.svc.cluster.local:8000",
+    # vllm endpoint name is different depending on the platform
+    # "vllm-service-m.chatqa.svc.cluster.local:8000",
     # Dataprep endpoints
     "dataprep-svc.dataprep.svc.cluster.local:9399",
     "embedding-svc.dataprep.svc.cluster.local:6000",

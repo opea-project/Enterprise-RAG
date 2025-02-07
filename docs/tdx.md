@@ -33,7 +33,9 @@ This guide assumes that:
 
 ## Getting Started
 
-Follow the below steps on the server node with Intel Xeon Processor to deploy the example application:
+### Prepare Intel Xeon node
+
+Follow the below steps on the server node with Intel Xeon Processor:
 
 1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/blob/noble-24.04/README.md#setup-host-os)
 2. Check, if Intel TDX is enabled:
@@ -52,15 +54,8 @@ Follow the below steps on the server node with Intel Xeon Processor to deploy th
    In case the module version or `build_num` is lower than shown above, please refer to the [Intel TDX documentation](https://cc-enabling.trustedservices.intel.com/intel-tdx-enabling-guide/04/hardware_setup/#deploy-specific-intel-tdx-module-version) for update instructions.
 
 3. [Setup Remote Attestation](https://github.com/canonical/tdx?tab=readme-ov-file#setup-remote-attestation)
-4. [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
-5. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
-6. Make sure that you have exported the KBS_ADDRESS:
 
-   ```bash
-   export KBS_ADDRESS=<YOUR_KBS_ADDRESS>
-   ```
-
-7. Increase the kubelet timeout and wait until the node is `Ready`:
+4. Increase the kubelet timeout and wait until the node is `Ready`:
 
    ```bash
    echo "runtimeRequestTimeout: 30m" | sudo tee -a /etc/kubernetes/kubelet-config.yaml > /dev/null 2>&1
@@ -68,22 +63,41 @@ Follow the below steps on the server node with Intel Xeon Processor to deploy th
    kubectl wait --for=condition=Ready node --all --timeout=2m
    ```
 
-8. Set the environment variables:
+
+### Prepare the cluster
+
+Follow the steps below on the Kubernetes cluster:
+
+1. [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
+2. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
+
+
+### Deploy the ChatQnA
+
+Follow the steps below to deploy ChatQnA:
+
+1. Make sure that you have exported the KBS_ADDRESS:
+
+   ```bash
+   export KBS_ADDRESS=<YOUR_KBS_ADDRESS>
+   ```
+
+2. Set the environment variables:
 
    ```bash
    export HUGGINGFACEHUB_API_TOKEN="your_hf_token"
-   export REGISTRY="your_public_registry"
+   export REGISTRY="your_container_registry"
    export TAG="your_tag"
    export PIPELINE="xeon_torch_llm_guard"
    ```
 
-9. Login to your registry:
+3. Login to your registry:
 
    ```bash
-   docker login your_public_registry
+   docker login your_container_registry
    ```
 
-10. Push the images to public registry and deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
+4. Push the images to your container registry and deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
 
    ```bash
    ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
@@ -113,12 +127,12 @@ By default, the microservices protected with Intel TDX are:
 
 If your images are stored in a private registry and are available only after authentication, follow the steps described in [authenticated registries guide](https://confidentialcontainers.org/docs/features/authenticated-registries/).
 
-If you want to store your images encrypted on a public registry, follow the steps described in [encrypted images guide](https://confidentialcontainers.org/docs/features/encrypted-images/).
+If you want to store your images encrypted in your container registry, follow the steps described in [encrypted images guide](https://confidentialcontainers.org/docs/features/encrypted-images/).
 
 
 ### Deployment customization
 
-Edit the [tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
+Edit the [resources-tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.
@@ -128,4 +142,4 @@ It overrides resources requests and limits only if increasing the resources.
 
 1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
 2. Only `*xeon*` pipelines are supported with Intel TDX (e.g.: `chatQnA_xeon_torch_llm_guard`)
-3. Some microservices defined in [tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.
+3. Some microservices defined in [resources-tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.

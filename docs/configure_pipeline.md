@@ -67,5 +67,5 @@ services:
         habana.ai/gaudi: 8
 ```
 
-> **Note:**
-> From all the resources defined, only those mentioned in the specific `config/samples` file that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.
+> [!NOTE]
+From all the resources defined, only those mentioned in the specific `config/samples` file that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.

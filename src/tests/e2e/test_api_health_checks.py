@@ -4,9 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import logging
 import kr8s
 import pytest
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.smoke
@@ -41,7 +44,7 @@ def test_api_health_checks(generic_api_helper):
                 f"Got unexpected status code for {service['selector']} health check API call"
             response.json()
         except (AssertionError, requests.exceptions.RequestException) as e:
-            print(e)
+            logger.warning(e)
             failed_microservices.append(service)
 
     assert failed_microservices == [], "/v1/health_check API call didn't succeed for some microservices"

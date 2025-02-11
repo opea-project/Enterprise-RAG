@@ -3,9 +3,12 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import requests
 import time
 from helpers.api_request_helper import ApiResponse, CustomPortForward, ApiRequestHelper
+
+logger = logging.getLogger(__name__)
 
 
 class FingerprintApiHelper(ApiRequestHelper):
@@ -25,7 +28,7 @@ class FingerprintApiHelper(ApiRequestHelper):
                 json=json_data
             )
             duration = round(time.time() - start_time, 2)
-            print(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
+            logger.info(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
             return ApiResponse(response, duration)
 
     def append_arguments(self, text):
@@ -49,7 +52,7 @@ class FingerprintApiHelper(ApiRequestHelper):
                 json=json_data
             )
             duration = round(time.time() - start_time, 2)
-            print(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
+            logger.info(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
             return ApiResponse(response, duration)
 
     def set_streaming(self, streaming=True):

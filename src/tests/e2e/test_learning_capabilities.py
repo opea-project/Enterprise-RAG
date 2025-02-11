@@ -4,11 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import constants
+import logging
+import os
 import pytest
 
-import constants
-import os
-
+logger = logging.getLogger(__name__)
 
 UNRELATED_RESPONSE_MSG = "Chatbot should return answer that is strictly related to the previously uploaded file"
 
@@ -185,7 +186,7 @@ def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question):
     response = chatqa_api_helper.call_chatqa(question)
     assert response.status_code == 200, "Unexpected status code returned"
     response_text = chatqa_api_helper.format_response(response)
-    print(f"ChatQA response: {response_text}")
+    logger.info(f"ChatQA response: {response_text}")
     return response_text
 
 

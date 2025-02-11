@@ -6,11 +6,14 @@
 import allure
 from copy import deepcopy
 import json
+import logging
 import pytest
 import requests
 import statistics
 import time
 from helpers.api_request_helper import InvalidChatqaResponseBody
+
+logger = logging.getLogger(__name__)
 
 
 @allure.testcase("IEASG-T32")
@@ -27,7 +30,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     except requests.exceptions.ChunkedEncodingError:
         duration = time.time() - start_time
         pytest.fail(f"Request has been closed on the server side after {duration} seconds")
-    print(f"Response: {chatqa_api_helper.format_response(response)}")
+    logger.info(f"Response: {chatqa_api_helper.format_response(response)}")
 
 
 @allure.testcase("IEASG-T29")
@@ -51,7 +54,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
     question = "Jaki jest najwyższy wieżowiec na świecie?"
     response = chatqa_api_helper.call_chatqa(question)
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -84,7 +87,7 @@ def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
     assert "text/event-stream" in response.headers.get("Content-Type"), \
         f"Unexpected Content-Type in the response. Headers: {response.headers}"
     try:
-        print(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -103,12 +106,12 @@ def test_chatqa_change_max_new_tokens(chatqa_api_helper, fingerprint_api_helper)
         assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
         try:
             response_text = chatqa_api_helper.format_response(response)
-            print(f"ChatQA response: {response_text}")
+            logger.info(f"ChatQA response: {response_text}")
         except InvalidChatqaResponseBody as e:
             pytest.fail(str(e))
         assert len(response_text.split()) <= 5
     finally:
-        print("Reverting max_new_tokens value to 1024")
+        logger.info("Reverting max_new_tokens value to 1024")
         fingerprint_api_helper.set_llm_parameters(max_new_tokens=1024)
 
 
@@ -130,7 +133,7 @@ def test_chatqa_api_call_with_additional_parameters(chatqa_api_helper, fingerpri
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
         response_text = chatqa_api_helper.format_response(response)
-        print(f"ChatQA response: {response_text}")
+        logger.info(f"ChatQA response: {response_text}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
     assert len(response_text.split()) > 5, \
@@ -159,10 +162,10 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
     results = chatqa_api_helper.call_chatqa_in_parallel(questions)
     for result in results:
         if result.exception is not None:
-            print(result.exception)
+            logger.info(result.exception)
             failed_requests_counter = + 1
         elif result.status_code != 200:
-            print(f"Request failed with status code {result.status_code}. Response body: {result.text}")
+            logger.info(f"Request failed with status code {result.status_code}. Response body: {result.text}")
             failed_requests_counter += 1
         else:
             execution_times.append(result.response_time)
@@ -171,9 +174,9 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
     max_time = max(execution_times)
     min_time = min(execution_times)
 
-    print(f'Total requests: {len(questions)}')
-    print(f'Failed requests: {failed_requests_counter}')
-    print(f'Mean Execution Time: {mean_time:.4f} seconds')
-    print(f'Longest Execution Time: {max_time:.4f} seconds')
-    print(f'Shortest Execution Time: {min_time:.4f} seconds')
+    logger.info(f'Total requests: {len(questions)}')
+    logger.info(f'Failed requests: {failed_requests_counter}')
+    logger.info(f'Mean Execution Time: {mean_time:.4f} seconds')
+    logger.info(f'Longest Execution Time: {max_time:.4f} seconds')
+    logger.info(f'Shortest Execution Time: {min_time:.4f} seconds')
     assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"

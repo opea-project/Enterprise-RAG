@@ -17,7 +17,6 @@ class FingerprintApiHelper(ApiRequestHelper):
         """
         /v1/system_fingerprint/change_arguments API call
         """
-        print(f"Changing fingerprint arguments to: {json_data}")
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             start_time = time.time()
             response = requests.post(

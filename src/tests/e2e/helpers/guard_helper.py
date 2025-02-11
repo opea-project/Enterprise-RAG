@@ -308,6 +308,7 @@ class GuardHelper:
 
     def disable_all_guards(self):
         """Disable all input and output guards"""
+        print("\nDisabling all guards")
         system_args = self.fingerprint_api_helper.append_arguments("")
         system_args = system_args.json().get("parameters")
         input_guard_types = system_args["input_guardrail_params"].keys()

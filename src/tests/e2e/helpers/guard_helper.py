@@ -3,9 +3,12 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from enum import Enum
 import os
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class GuardQuestions:
@@ -250,7 +253,7 @@ class GuardHelper:
     def call_chatqa(self, question):
         response = self.chatqa_api_helper.call_chatqa(question)
         response_text = self.chatqa_api_helper.format_response(response)
-        print(f"ChatQA response: {response_text}; status code: {response.status_code}")
+        logger.info(f"ChatQA response: {response_text}; status code: {response.status_code}")
         return response.status_code, response_text
 
     def assert_blocked(self, question, reason=None):
@@ -308,6 +311,7 @@ class GuardHelper:
 
     def disable_all_guards(self):
         """Disable all input and output guards"""
+        logger.info("Disabling all guards")
         system_args = self.fingerprint_api_helper.append_arguments("")
         system_args = system_args.json().get("parameters")
         input_guard_types = system_args["input_guardrail_params"].keys()

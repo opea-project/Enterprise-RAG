@@ -6,36 +6,37 @@
 import allure
 import constants
 import inspect
+import logging
 import pytest
 import requests
 import os
 import time
 import uuid
 
-
+logger = logging.getLogger(__name__)
 IN_PROGRESS_STATUSES = ["uploaded", "processing", "dataprep", "embedding"]
 
 
 @pytest.fixture(autouse=True)
 def cleanup(edp_helper):
     yield
-    print("\nAttempting to clean up all items created during the test")
+    logger.info("\nAttempting to clean up all items created during the test")
     files = edp_helper.list_files()
     for file in files.json():
         file_name = file["object_name"]
         if file_name.startswith("test_edp_"):
             if file["status"] in IN_PROGRESS_STATUSES:
-                print(f"Canceling in progress task: {file_name}")
+                logger.info(f"Canceling in progress task: {file_name}")
                 edp_helper.cancel_processing_task(file["id"])
             elif file["status"] == "ingested":
-                print(f"Removing file: {file_name}")
+                logger.info(f"Removing file: {file_name}")
                 response = edp_helper.generate_presigned_url(file["object_name"], "DELETE")
                 edp_helper.delete_from_minio(response.json().get("url"))
 
     links = edp_helper.list_links()
     for link in links.json():
         if "test_edp_" in link["uri"]:
-            print(f"Removing link: {link['uri']}")
+            logger.info(f"Removing link: {link['uri']}")
             edp_helper.delete_link(link["id"])
 
 
@@ -44,7 +45,7 @@ def test_edp_list_files(edp_helper):
     """Check whether the list of files is returned correctly"""
     response = edp_helper.list_files()
     assert response.status_code == 200, f"Failed to list files. Response: {response.text}"
-    print(f"Files: {response.json()}")
+    logger.info(f"Files: {response.json()}")
 
 
 @allure.testcase("IEASG-T121")
@@ -181,7 +182,7 @@ def test_edp_list_links(edp_helper):
     response = edp_helper.list_links()
     assert response.status_code == 200, f"Failed to list links. Response: {response.text}"
     try:
-        print(f"Links: {response.json()}")
+        logger.info(f"Links: {response.json()}")
     except requests.exceptions.JSONDecodeError:
         pytest.fail(f"Failed to decode JSON response. Response: {response.text}")
 
@@ -291,7 +292,7 @@ def test_edp_responsiveness_while_uploading_file(edp_helper):
     threshold = 120
     file = edp_helper.upload_test_file(size=10, prefix=method_name(), status="dataprep", timeout=300)
 
-    print("Starting to periodically call dataprep /v1/health_check API and edp /health API")
+    logger.info("Starting to periodically call dataprep /v1/health_check API and edp /health API")
     counter = 0
     start_time = time.time()
     while time.time() < start_time + threshold:
@@ -307,7 +308,7 @@ def test_edp_responsiveness_while_uploading_file(edp_helper):
         except requests.exceptions.ReadTimeout:
             pytest.fail("Edp API is not responsive while the file is being uploaded")
 
-        print(f"Response #{counter} after: {time.time() - start_time} seconds")
+        logger.info(f"Response #{counter} after: {time.time() - start_time} seconds")
         time.sleep(1)
         counter += 1
     # Cancel task if not finished

@@ -5,7 +5,10 @@
 
 import allure
 import json
+import logging
 import pytest
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.smoke
@@ -24,7 +27,7 @@ def test_fingerprint_append_arguments(fingerprint_api_helper):
     assert response.headers.get("Content-Type") == "application/json"
     try:
         response_json = response.json()
-        print(f"Fingerprint response: {response_json}")
+        logger.info(f"Fingerprint response: {response_json}")
     except json.decoder.JSONDecodeError:
         pytest.fail("Response is not a valid JSON")
     assert response_json.get("text") == text

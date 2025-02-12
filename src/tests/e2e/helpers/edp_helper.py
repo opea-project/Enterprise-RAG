@@ -3,12 +3,15 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 import os
 import requests
 import time
 from helpers.api_request_helper import ApiRequestHelper, CustomPortForward
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+
+logger = logging.getLogger(__name__)
 
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
@@ -39,7 +42,7 @@ class EdpHelper(ApiRequestHelper):
 
     def upload_links(self, payload):
         """Make post call to /api/links endpoint with the given payload"""
-        print(f"Attempting to upload links using the following payload: {payload}")
+        logger.info(f"Attempting to upload links using the following payload: {payload}")
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             response = requests.post(
                 f"http://localhost:{pf.local_port}/api/links",
@@ -50,7 +53,7 @@ class EdpHelper(ApiRequestHelper):
 
     def delete_link(self, link_uuid):
         """Delete a link by its id"""
-        print(f"Deleting link with id: {link_uuid}")
+        logger.info(f"Deleting link with id: {link_uuid}")
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             response = requests.delete(
                 f"http://localhost:{pf.local_port}/api/link/{link_uuid}",
@@ -70,11 +73,11 @@ class EdpHelper(ApiRequestHelper):
                 raise UploadTimeoutException(f"Link {link_uri} not found in the list of links")
 
             if self._status_reached(link.get("status"), desired_status):
-                print(f"Link {link_uri} has status {desired_status}. "
+                logger.info(f"Link {link_uri} has status {desired_status}. "
                       f"Elapsed time: {round(time.time() - start_time, 1)}s")
                 return link_uri
             else:
-                print(f"Waiting {sleep_interval}s for link {link_uri} to have status '{desired_status}'. "
+                logger.info(f"Waiting {sleep_interval}s for link {link_uri} to have status '{desired_status}'. "
                       f"Current status: {link.get('status')}")
                 time.sleep(sleep_interval)
 
@@ -92,7 +95,7 @@ class EdpHelper(ApiRequestHelper):
 
     def generate_presigned_url(self, object_name, method="PUT"):
         """Generate a presigned URL for the given object name"""
-        print(f"Generating presigned URL for object: {object_name}")
+        logger.info(f"Generating presigned URL for object: {object_name}")
         payload = {
             "bucket_name": "default",
             "object_name": object_name,
@@ -108,7 +111,7 @@ class EdpHelper(ApiRequestHelper):
 
     def cancel_processing_task(self, file_uuid):
         """Cancel the processing task for the given file UUID"""
-        print(f"Cancelling task for file with id: {file_uuid}")
+        logger.info(f"Cancelling task for file with id: {file_uuid}")
         with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
             response = requests.delete(
                 f"http://localhost:{pf.local_port}/api/file/{file_uuid}/task",
@@ -120,7 +123,7 @@ class EdpHelper(ApiRequestHelper):
         """Upload a file to MinIO using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
                                self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
-            print(f"Attempting to upload file {file_path} to MinIO using presigned URL")
+            logger.info(f"Attempting to upload file {file_path} to MinIO using presigned URL")
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False)
             return response
@@ -137,16 +140,16 @@ class EdpHelper(ApiRequestHelper):
                     file_found = True
                     file_status = file.get("status")
                     if self._status_reached(file_status, desired_status):
-                        print(f"File {filename} has status {desired_status}. "
+                        logger.info(f"File {filename} has status {desired_status}. "
                               f"Elapsed time: {round(time.time() - start_time, 1)}s")
                         return file
                     else:
-                        print(f"Waiting {sleep_interval}s for file {filename} to have status '{desired_status}'. "
+                        logger.info(f"Waiting {sleep_interval}s for file {filename} to have status '{desired_status}'. "
                               f"Current status: {file_status}")
                         time.sleep(sleep_interval)
                         break
             if not file_found:
-                print(f"File {filename} is not present in the list of files")
+                logger.warning(f"File {filename} is not present in the list of files")
 
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
@@ -155,7 +158,7 @@ class EdpHelper(ApiRequestHelper):
         """Delete a file from MinIO using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
                                self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
-            print("Attempting to delete file from MinIO using presigned URL")
+            logger.info("Attempting to delete file from MinIO using presigned URL")
             return requests.delete(presigned_url, verify=False)
 
     def _status_reached(self, status, desired_status):
@@ -170,7 +173,7 @@ class EdpHelper(ApiRequestHelper):
     @contextmanager
     def temp_txt_file(self, size, prefix):
         """Create a temporary *.txt file of a given size"""
-        print(f"Creating a temporary *.txt file of size {size}MB")
+        logger.info(f"Creating a temporary *.txt file of size {size}MB")
         with NamedTemporaryFile(delete=True, mode='w+', prefix=prefix, suffix=".txt") as temp_file:
             size_mb = size * 1024 * 1024
             self.fill_in_file(temp_file, size_mb)
@@ -193,7 +196,7 @@ class EdpHelper(ApiRequestHelper):
             temp_file.write(chunk)
             current_size += chunk_size
             temp_file.flush()
-        print(f"Temporary file created at: {temp_file.name}")
+        logger.info(f"Temporary file created at: {temp_file.name}")
 
 
 class DeleteTimeoutException(Exception):

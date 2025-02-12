@@ -4,8 +4,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import logging
 import pytest
 from helpers.istio_helper import ConnectionType
+
+logger = logging.getLogger(__name__)
 
 # List of endpoints to test
 http_endpoints = [
@@ -90,7 +93,7 @@ class TestIstioInMesh:
 
     @pytest.fixture(autouse=True, scope="class")
     def cleanup(self, istio_helper):
-        print("============= TestIstioInMesh setup =====================")
+        logger.info("============= TestIstioInMesh setup =====================")
         istio_helper.create_namespace(inmesh=True)
         yield
         istio_helper.delete_namespace()
@@ -120,7 +123,7 @@ class TestIstioOutOfMesh:
 
     @pytest.fixture(autouse=True, scope="class")
     def cleanup(self, istio_helper):
-        print("============= TestIstioOutOfMesh setup =====================")
+        logger.info("============= TestIstioOutOfMesh setup =====================")
         istio_helper.create_namespace(inmesh=False)
         yield
         istio_helper.delete_namespace()

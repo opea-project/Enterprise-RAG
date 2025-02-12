@@ -7,19 +7,13 @@ import allure
 import json
 import pytest
 
-from helpers.guard_helper import GuardHelper, GuardType, GuardQuestions as questions
-
-
-@pytest.fixture
-def guard_helper(chatqa_api_helper, fingerprint_api_helper):
-    return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
+from helpers.guard_helper import GuardType, GuardQuestions as questions
 
 
 @pytest.fixture(autouse=True)
 def cleanup(guard_helper):
-    print("\nDisabling all guards")
-    guard_helper.disable_all_guards()
     yield
+    guard_helper.disable_all_guards()
 
 
 @allure.testcase("IEASG-T72")

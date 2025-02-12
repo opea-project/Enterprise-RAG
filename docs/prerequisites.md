@@ -3,28 +3,37 @@
 This document outlines the essential prerequisites for deploying and using the Enterprise RAG solution on Xeon-only or Xeon + Gaudi hardware. This guide ensures you're ready to install and configure Enterprise RAG.
 
 - **For Xeon-only deployments**: Follow the instructions in the Common Prerequisites section and stop at the end of the [Install Cluster](#install-cluster) section. You do **not** need to proceed to the `Gaudi Software Stack` and later sections.
-- **For Xeon + Gaudi deployments**: In addition to the common prerequisites, continue to the [Gaudi Software Stack](#gaudi-software-stack) section and beyond.
+- **For Xeon + Gaudi deployments**: Go through the whole document.
 
-## Common Prerequisites (For Xeon & Xeon + Gaudi Deployments)
+## Table of Contents
 
-# System Requirements
+ 1. [Common Prerequisites (For Xeon & Xeon + Gaudi Deployments)](#common-prerequisites-for-xeon--xeon--gaudi-deployments)
+    1. [System Requirements](#system-requirements)
+    2. [Deploy Kubernetes using Kubespray](#deploy-kubernetes-using-kubespray)
+ 2. [Gaudi-Specific Prerequisites (Required for Xeon + Gaudi Deployments)](#gaudi-specific-prerequisites-required-for-xeon--gaudi-deployments)
+ 3. [Helpful Tools](#helpful-tools)
+
+# Common Prerequisites (For Xeon & Xeon + Gaudi Deployments)
+
+## System Requirements
 
 | Category            | Details                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
 | Operating System    | Ubuntu 20.04/22.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
-| Gaudi Firmware Version | 1.19.1    
+| Gaudi Firmware Version | 1.19.1
 
-## Kubernetes Cluster
+## Deploy Kubernetes using Kubespray
 Deploy Kubernetes using Kubespray `(v2.27.0)` on a remote machine, followed by configuration and installation steps for the master node. The following steps show how this can be done using `Kubespray`.
 
--   The following instructions must be executed on a host machine that has network access to the Kubernetes cluster.
--   It is assumed that Kubespray will not be run directly on the machines where Kubernetes is intended to be installed.
+>[!WARNING]
+> The following instructions must be executed on a host machine that has network access to the Kubernetes cluster.
+> It is adviced that Kubespray will not be run directly on the machines where Kubernetes is intended to be installed. Deploying the Kubernetes locally may generate some unexpected errors.
 
-To be executed on a remote machine that has network access to the Gaudi cluster, meaning you should be able to SSH into a machine within the GPU cluster:
+To be executed on a remote machine that has network access to the Gaudi cluster, meaning you should be able to SSH into a machine within the GPU cluster.
 
-#### Kubespray Setup
+### Kubespray Setup
 
 To run the Kubespray Ansible scripts, a virtual environment must be set up on your system. This involves creating a new Python virtual environment and installing the required dependencies.
 
@@ -57,7 +66,7 @@ Copy the inventory/sample folder and create your custom inventory:
 cp -r inventory/sample/ inventory/mycluster
 ```
 
-##### Single Node Example Configuration
+#### Single Node Example Configuration
 Next step is to create a `hosts.yaml` file in directory  `inventory/mycluster`. `hosts.yaml` defines the structure and roles of nodes within a Kubernetes cluster
 
 ```bash
@@ -91,9 +100,9 @@ all:
       hosts: {}
 ```
   -   `ansible_host`: Specifies the IP address of the node. This is the address Ansible uses to communicate with the node.
-    -   `ip`: Typically the same as `ansible_host`, used by Kubernetes components to communicate with the node.
-    -   `access_ip`: Also the IP used for accessing the node, can be different in complex network configurations where internal and external IPs differ.
-    -   `ansible_user`: The username is the Linux user account name that Ansible will use when it connects to the node, here set to `sdp`.
+  -   `ip`: Typically the same as `ansible_host`, used by Kubernetes components to communicate with the node.
+  -   `access_ip`: Also the IP used for accessing the node, can be different in complex network configurations where internal and external IPs differ.
+  -   `ansible_user`: The username is the Linux user account name that Ansible will use when it connects to the node, here set to `sdp`.
 
 Suppose the IP address of your node is `100.51.110.245`, which you can verify by inspecting the output of `ifconfig` within the Ethernet interface section. Assuming there is a Linux user named `user` with a home directory set up, your `hosts.yaml` file for a Kubespray configuration would be structured as follows:
 
@@ -101,7 +110,7 @@ Suppose the IP address of your node is `100.51.110.245`, which you can verify by
 all:
   hosts:
     node1:
-      ansible_host: localhost
+      ansible_host: 100.51.110.245
       ip: 100.51.110.245
       access_ip: 100.51.110.245
       ansible_user: user
@@ -123,13 +132,26 @@ all:
       hosts: {}
 ```
 
->[!NOTE]
+>[!WARNING]
 >Ensure passwordless SSH for Ansible host nodes (from `hosts.yaml`):
 > - Generate keys (ssh-keygen) and copy the public key (ssh-copy-id user@node-ip).
 > - Verify permissions: Ensure the ~/.ssh directory is set to `700` and the authorized_keys file to `600` on the remote host to maintain secure access.
-> - Test with ssh user@node-ip (should not prompt for a password).
+> - Create a ~/.ssh/config file (if doesn't exist) and add a field for the remote machine. Example field might look as follows:
+>
+> ```bash
+>   Host 111.22.333.444
+>     ProxyCommand nc -X 5 -x <proxy_address> %h %p
+>     IdentityFile "/home/user/.ssh/id_rsa"
+>     User guest
+>
+>   Host 100.51.110.245
+>     IdentityFile "/home/user/.ssh/id_rsa"
+>     User user
+>     ProxyJump 111.22.333.444
+> ```
+> - Test with **ssh user@node-ip** (should not prompt for a password).
 
-##### Network Settings
+#### Network Settings
 
 Install `sshpass` to be able to send machine credentials via Ansible scripts:
 ```bash
@@ -184,7 +206,7 @@ ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root 
 A similar output can be seen after a successful reset:
 ```bash
 PLAY RECAP *****************************************************************************************************
-node1                      : ok=135  changed=30   unreachable=0    failed=0    skipped=118  rescued=0    ignored=0   
+node1                      : ok=135  changed=30   unreachable=0    failed=0    skipped=118  rescued=0    ignored=0
 
 Monday 28 October 2024  21:50:29 +0000 (0:00:00.375)       0:00:47.908 ********
 ===============================================================================
@@ -223,7 +245,7 @@ ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root -
 After a successful execution of the Ansible playbook, a similar output is observed:
 ```bash
 PLAY RECAP *****************************************************************************************************
-node1                      : ok=672  changed=137  unreachable=0    failed=0    skipped=1133 rescued=0    ignored=6 
+node1                      : ok=672  changed=137  unreachable=0    failed=0    skipped=1133 rescued=0    ignored=6
 Monday 28 October 2024  22:00:03 +0000 (0:00:00.334)       0:07:21.153 ********
 ===============================================================================
 container-engine/docker : Docker | Remove docker configuration files -------------------------------------------------------- 29.49s
@@ -250,12 +272,13 @@ container-engine/containerd : Download_file | Download item --------------------
 
 ### Setting Up and Verifying Kubernetes Cluster Access
 
+Once ansible scripts ended, connect via SSH to the remote machine to check if Kubernetes has deployed correctly. Inside the remote machine you can execute following commands to be able to manage k8s as non-root user.
 
 ```bash
 # create the `.kube` folder
 mkdir ~/.kube
 sudo cp /etc/kubernetes/admin.conf ~/.kube/config
-# change owner to user 
+# change owner to user
 sudo chown -R <username>:<groupname> ~/.kube
 ```
 To verify that the K8s cluster is working and all pods are in running state, run `kubectl get pods -A` .
@@ -274,13 +297,13 @@ kube-system          kube-scheduler-node1                       1/1     Running 
 kube-system          nodelocaldns-nltqf                         1/1     Running   0          4m43s
 local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running   0          4m52s
 ```
-## Gaudi-Specific Prerequisites (Additional for Xeon + Gaudi Deployments)
-
-### Gaudi Software Stack
+# Gaudi-Specific Prerequisites (Required for Xeon + Gaudi Deployments)
 
 >[!NOTE]
-> **For Xeon Users:**  
+> **For Xeon Users:**
 > If you are deploying on Xeon hardware only, you can safely **skip this section and all subsequent steps** related to Gaudi setup.
+
+## Gaudi Software Stack
 
 To fully utilize the Enterprise RAG solution, LLMs must be run on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps must be performed after successful installation and testing of the K8s cluster.
 
@@ -327,9 +350,8 @@ Uncomment the following lines in `/etc/habana-container-runtime/config.toml` and
 #visible_devices_all_as_default = false
 
 ```
-For more details, refer to the [Gaudi Firmware installation](https://docs.habana.ai/en/latest/Installation_Guide/Bare_Metal_Fresh_OS.html#driver-fw-install-bare) guide.
 
-### Install K8s Plugin
+## Install K8s Plugin
 
 Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Kubernetes_Installation/index.html#intel-gaudi-device-plugin-for-kubernetes ) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
 
@@ -354,11 +376,17 @@ To check is to verify if Gaudi resources are available on the node, run:
 ```bash
 kubectl describe node node1 | grep habana.ai/gaudi
 ```
-You should see the following output:
+You should see the following output. The first value shows the capacity of gaudi devices on your machine. The second one describes allocatable Gaudi devices and the third one shows allocated ones.
 ```
 habana.ai/gaudi: 8
 habana.ai/gaudi: 8
-habana.ai/gaudi 8 8
+habana.ai/gaudi 0 0
 ```
 
- You have successfully installed and verified the prerequisites on your system. Proceed to the [Deployment Guide](../deployment/README.md) to learn how to deploy and configure the Enterprise RAG Solution.
+You have successfully installed and verified the prerequisites on your system. Proceed to the [Deployment Guide](../deployment/README.md) to learn how to deploy and configure the Enterprise RAG Solution.
+
+## Helpful tools
+
+**K9s**
+
+ If you want to easier navigate through K8s cluster, you can install [K9s](https://github.com/derailed/k9s) that offers a terminal UI for Kubernetes related tasks.

@@ -16,7 +16,7 @@ The video provided above showcases the beta release of our project. As we transi
 
 **ChatQnA**
 
-The ChatQnA solution uses retrieval augmented generation (RAG) architecture, quickly becoming the industry standard for chatbot development. It combines the benefits of a knowledge base (via a vector store) and generative models to reduce hallucinations, maintain up-to-date information, and leverage domain-specific knowledge. 
+The ChatQnA solution uses retrieval augmented generation (RAG) architecture, quickly becoming the industry standard for chatbot development. It combines the benefits of a knowledge base (via a vector store) and generative models to reduce hallucinations, maintain up-to-date information, and leverage domain-specific knowledge.
 
 ![arch](./images/architecture.png)
 
@@ -48,13 +48,13 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 | Operating System    | Ubuntu 20.04/22.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
-| Gaudi Firmware Version | 1.19.1    
+| Gaudi Firmware Version | 1.19.1
 
 ## Hardware Prerequisites for Deployment using Gaudi® AI Accelerator
 
-To get the right instances to run Intel® AI for Enterprise RAG, follow these steps:
+If you don't have a Gaudi® AI Accelerator, you can request these instances in [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) to run Intel® AI for Enterprise RAG.
 
-- visit Intel® Tiber™ AI Cloud using this [link](https://console.cloud.intel.com/home).
+- visit [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home).
 - In the left pane select `Catalog > Hardware`.
 - Select `Gaudi® 2 Deep Learning Server` or `Gaudi® 2 Deep Learning Server - Dell`.
 - Select the Machine image - `ubuntu-22.04-gaudi2-v1.19.1-metal-cloudimg-amd64-v<version>` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
@@ -65,7 +65,7 @@ To get the right instances to run Intel® AI for Enterprise RAG, follow these st
 To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:
 - access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
 -  **logical cores**: A minimum of `80` logical cores
--  **RAM memory**: A minimum of `250GB` of RAM 
+-  **RAM memory**: A minimum of `250GB` of RAM
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 ### Software Prerequisites

@@ -136,7 +136,7 @@ build_component() {
 do_build_flag=false
 do_push_flag=false
 setup_registry_flag=false
-if_gaudi_flag=true
+if_gaudi_flag=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -182,7 +182,6 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if_gaudi_flag=
 __pcidev=$(grep PCI_ID /sys/bus/pci/devices/*/uevent | grep -i 1da3: || echo "")
 if echo $__pcidev | grep -qE '1000|1001|1010|1011|1020|1030|1060'; then
     if_gaudi_flag=true

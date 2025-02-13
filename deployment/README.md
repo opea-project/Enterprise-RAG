@@ -117,6 +117,10 @@ The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up p
 > [!NOTE]
 By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
+### additional settings for running telemetry
+
+Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
+
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
 1.  [Quick start with a one click script](#quick-start-with-one-click-script)
@@ -440,7 +444,7 @@ To change the LLM model in the pipeline, follow the instructions [here](../docs/
 
 It is also possible to configure the input and output guardrails for the LLM service. Follow instructions [here](../src/comps/guardrails/llm_guard_input_guardrail/README.md) for input guardrails and [here](../src/comps/guardrails/llm_guard_output_guardrail/README.md) for output guardrails.
 
-## Clear Deployment
+## Clear All
 Run this command to delete all namespaces, custom resource definitions, releases, and services associated with the ChatQNA pipeline:
 ```bash
 ./install_chatqna.sh -ca

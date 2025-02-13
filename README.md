@@ -52,6 +52,13 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 
 ## Hardware Prerequisites for Deployment using Gaudi® AI Accelerator
 
+To deploy the solution on a platform with Gaudi® AI Accelerator we need to have access to instance with minimal requirements:
+
+-  **logical cores**: A minimum of `48` logical cores
+-  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
+-  **Disk Space**: `1TB` of disk space is generally recommended, though this is highly dependent on the model size and database size
+-  **Gaudi cards**: `8`
+
 If you don't have a Gaudi® AI Accelerator, you can request these instances in [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) to run Intel® AI for Enterprise RAG.
 
 - visit [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home).
@@ -94,6 +101,13 @@ cd deployment
 
 Proxy variables are optional.
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
+
+# Remove installation
+
+```sh
+cd deployment
+./install_chatqna.sh -ca
+```
 
 # Support
 

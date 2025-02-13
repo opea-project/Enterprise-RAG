@@ -9,7 +9,7 @@ When building the pipeline we are passing the `flow configuration files` as `PIP
 **Example one_click command:**
 
 ```
-./one_click_chatqna.sh -g <your HF token> -d gaudi_torch_guard -t mytag -y myregistry
+./one_click_chatqna.sh -g <your HF token> -d gaudi_torch_guard 
 ```
 
 Where `gaudi_torch_guard` points to [chatqa_gaudi_torch.yaml](../deployment/microservices-connector/config/samples/chatQnA_gaudi_torch.yaml)

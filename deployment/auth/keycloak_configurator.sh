@@ -16,6 +16,7 @@ HTTP_CODE=""
 
 SSO_SESSION_MAX_LIFESPAN=10800
 SSO_SESSION_IDLE_TIMEOUT=1800
+REALM_DEFAULT_SIGNATURE_ALGORITHM='"RS384"'
 
 source $repo_path/deployment/credentials_utils.sh
 
@@ -380,6 +381,22 @@ function set_realm_timeouts() {
     fi
 }
 
+function set_realm_signature_algorithms() {
+    local realm_name=$1
+    local url="${KEYCLOAK_URL}/admin/realms/${realm_name}"
+
+    SIGNATURE_REALM_JSON='{
+    "defaultSignatureAlgorithm": '"$REALM_DEFAULT_SIGNATURE_ALGORITHM"'
+    }'
+    if curl_keycloak "$url" "$SIGNATURE_REALM_JSON" "PUT"; then
+        print_log "Signature algorithms on '$realm_name' set"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "Signature algorithms already set on '$realm_name'"
+    else
+        print_log "Failed to set realm signature algorithms with '$HTTP_CODE'"
+    fi
+}
+
 function map_role_to_group() {
     local realm_name=$1
     local group_name=$2
@@ -709,6 +726,8 @@ assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "ERAG-user" "EnterpriseRAG
 
 set_realm_timeouts "$KEYCLOAK_REALM"
 set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
+set_realm_signature_algorithms "$KEYCLOAK_REALM"
+set_realm_signature_algorithms "$KEYCLOAK_DEFAULT_REALM"
 
 # Minio
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://minio.erag.com' baseUrl='https://minio.erag.com' redirectUris='https://minio.erag.com/oauth_callback'"

@@ -372,17 +372,17 @@ function start_mesh() {
     # 1) base: crds
     helm_install $ISTIO_NS istio-base istio/base "--set defaultRevision=default --version $ISTIO_VERSION"
     # 2) control plane: istiod
-    helm_install $ISTIO_NS istiod istio/istiod "--wait --version $ISTIO_VERSION --set profile=ambient"
+    helm_install $ISTIO_NS istiod istio/istiod '--wait --version '$ISTIO_VERSION' --set profile=ambient -f '$istio_path'/meshconfig-values.yaml --set extraContainerArgs={--tls-cipher-suites=TLS_AES_128_GCM_SHA256\,TLS_AES_256_GCM_SHA384\,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384\,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256\,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}'
     print_log "waiting until istiod ready" ; wait_for_condition check_pods "$ISTIO_NS"
 
     # 3) control-plane: CNI
-    helm_install $ISTIO_NS istio-cni istio/cni "--set profile=ambient"
+    helm_install $ISTIO_NS istio-cni istio/cni "--set profile=ambient --version $ISTIO_VERSION"
     # Fix for https://github.com/istio/istio/issues/53849
     kubectl patch -n $ISTIO_NS ds/istio-cni-node --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/securityContext/capabilities/add/-", "value": "DAC_OVERRIDE"}]'
     print_log "waiting until istio-cni ready" ; wait_for_condition check_istio "$ISTIO_NS" "app.kubernetes.io/instance=istio-cni"
 
     # 4) data-plane: ztunnel
-    helm_install $ISTIO_NS ztunnel istio/ztunnel "--wait"
+    helm_install $ISTIO_NS ztunnel istio/ztunnel "--version $ISTIO_VERSION --wait"
 
     print_log "waiting until pods in $ISTIO_NS are ready"
     wait_for_condition check_pods "$ISTIO_NS"

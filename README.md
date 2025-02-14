@@ -58,13 +58,15 @@ To deploy the solution on a platform with Gaudi® AI Accelerator we need to have
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `1TB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
+-  **Latest Gaudi driver**: To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
+
 
 If you don't have a Gaudi® AI Accelerator, you can request these instances in [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) to run Intel® AI for Enterprise RAG.
 
 - visit [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home).
 - In the left pane select `Catalog > Hardware`.
 - Select `Gaudi® 2 Deep Learning Server` or `Gaudi® 2 Deep Learning Server - Dell`.
-- Select the Machine image - `ubuntu-22.04-gaudi2-v1.19.1-metal-cloudimg-amd64-v<version>` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
+- Select the Machine image - for example: `ubuntu-2204-gaudi2-1.17.0-vm-v4` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
 - Upload your public key and launch the instance
 - Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
 

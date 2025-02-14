@@ -303,9 +303,12 @@ local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running 
 > **For Xeon Users:**
 > If you are deploying on Xeon hardware only, you can safely **skip this section and all subsequent steps** related to Gaudi setup.
 
+>[!IMPORTANT]
+> Make sure that supported Gaudi driver is installed. To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
+
 ## Gaudi Software Stack
 
-To fully utilize the Enterprise RAG solution, LLMs must be run on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps must be performed after successful installation and testing of the K8s cluster.
+To fully utilize the Enterprise RAG solution, it is recommended to run LLMs on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps should be performed after successful installation and testing of the K8s cluster.
 
 Install Habana Container Runtime:
 ```bash

@@ -96,7 +96,7 @@ class TestNamespace():
         }
         if self.inmesh:
             namespace_manifest["metadata"]["labels"]["istio.io/dataplane-mode"] = "ambient"
-        print(f"Creating namespace: {self.namespace_name}, inmesh: {self.inmesh}")
+        logger.info(f"Creating namespace: {self.namespace_name}, inmesh: {self.inmesh}")
         namespace = Namespace(namespace_manifest)
         namespace.create()
         if self.inmesh:
@@ -108,24 +108,24 @@ class TestNamespace():
         for resource in resources:
             resource.metadata.namespace = self.namespace_name
             resource.create()
-        print(f"Applied '{yaml_file_path}' to namespace '{self.namespace_name}'.")
+        logger.info(f"Applied '{yaml_file_path}' to namespace '{self.namespace_name}'.")
 
     def delete(self):
         try:
             namespace = Namespace.get(self.namespace_name)
-            print(f"Deleting namespace: {self.namespace_name}")
+            logger.info(f"Deleting namespace: {self.namespace_name}")
             namespace.delete()
 
-            print(f"Waiting for namespace {self.namespace_name} to be deleted...")
+            logger.info(f"Waiting for namespace {self.namespace_name} to be deleted...")
             while True:
                 try:
                     Namespace.get(self.namespace_name)
                     time.sleep(2)
                 except Exception:
-                    print(f"Namespace {self.namespace_name} deleted successfully!")
+                    logger.info(f"Namespace {self.namespace_name} deleted successfully!")
                     break
         except Exception as e:
-            print(f"Error while deleting namespace {self.namespace_name}: {e}")
+            logger.info(f"Error while deleting namespace {self.namespace_name}: {e}")
 
 
 class TestPod():
@@ -143,7 +143,7 @@ class TestPod():
         elif connection_type == ConnectionType.HTTP:
             self.image = "curlimages/curl:8.11.1"
         else:
-            print(f"unset connection type defaults to {ConnectionType.HTTP}")
+            logger.info(f"unset connection type defaults to {ConnectionType.HTTP}")
             self.image = "curlimages/curl:8.11.1"
         self.pod_name = f"test-{connection_type.value}-inst-{str(uuid.uuid4())[-8:]}"
         self.pod = None
@@ -262,7 +262,7 @@ class IstioHelper:
         pod = self.query_pods[query.query_key]
         logger.debug(f"Executing query {query.query_key} using pod {pod}")
         if not self.run_query_test(query.query_key, pod):
-            print(f"Couldn't execute command for query {query.query_key}")
+            logger.info(f"Couldn't execute command for query {query.query_key}")
             query.set_state(QueryState.ERROR)
 
     def verify_query_blocked(self, query: ServiceQuery):
@@ -289,7 +289,7 @@ class IstioHelper:
     def retire_query(self, query: ServiceQuery):
         # release resources related to query
         query_key = query.query_key
-        print(f"Query at {query_key.connection_type.value} endpoint {query_key.endpoint} result: {query.state.name}")
+        logger.info(f"Query at {query_key.connection_type.value} endpoint {query_key.endpoint} result: {query.state.name}")
         test_pod = self.query_pods.pop(query_key)
         test_pod.delete()
 
@@ -312,7 +312,7 @@ class IstioHelper:
             case QueryState.PREPARING:
                 pod = self.query_pods[query.query_key]
                 if pod.get_ready():
-                    print(f"Pod is ready for query {query.query_key}; pod_ip is {pod.pod_ip}")
+                    logger.info(f"Pod is ready for query {query.query_key}; pod_ip is {pod.pod_ip}")
                     query.set_state(QueryState.READY)
             case QueryState.READY:
                 self.execute_query(query)
@@ -324,7 +324,7 @@ class IstioHelper:
                 # handled in query loop
                 return
             case _:
-                print(f"Unhandled query state: {query.state}")
+                logger.info(f"Unhandled query state: {query.state}")
 
     def query_endpoints(self, connection_type: ConnectionType, endpoints: list[str]):
         connections_not_blocked : list[str] = []
@@ -380,12 +380,12 @@ class IstioHelper:
                 port = query_key.endpoint.split(":")[-1]
                 command = f"mongo --host {host} --port {port} --eval 'db.runCommand({{connectionStatus: 1}})'"
             case _:
-                print(f"Error: unsupported connection type {query_key.connection_type} to {query_key.endpoint}")
+                logger.info(f"Error: unsupported connection type {query_key.connection_type} to {query_key.endpoint}")
                 return None
         return command
 
     def run_query_test(self, query_key: ServiceQueryKey, pod: TestPod):
-        print(f"Making {query_key.connection_type} request to endpoint: {query_key.endpoint} from pod {pod}")
+        logger.info(f"Making {query_key.connection_type} request to endpoint: {query_key.endpoint} from pod {pod}")
         command = self.build_test_command(query_key)
         if command is not None:
             pod.pod_exec(command)

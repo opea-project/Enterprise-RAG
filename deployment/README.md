@@ -2,6 +2,23 @@
 
 This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon + Gaudi deployment. If you are deploying on Xeon-only hardware, please follow the Xeon-only instructions marked throughout this guide.
 
+## Table of Contents
+
+ 1. [Verify System Status](#verify-system-status)
+ 2. [Configure the Environment](#configure-the-environment)
+ 3. [Storage Class](#storage-class)
+ 4. [Defining Resource for you machine](#defining-resource-for-you-machine)
+ 5. [Deployment Options](#deployment-options)
+    1.  [Quick start with a one click script](#quick-start-with-one-click-script)
+    2.  [Step-by-Step Installation](#build-step-by-step)
+ 6. [Verify Services](#verify-services)
+ 7. [Available Pipelines](#available-pipelines)
+ 8. [Interact with ChatQnA](#interact-with-chatqna)
+ 9. [Configure ChatQnA](#configure-chatqna)
+ 10. [Clear Deployment](#clear-deployment)
+ 11. [Additional features](#additional-features)
+     1. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
+     2. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
 ---
 
 ## Verify System Status
@@ -57,6 +74,9 @@ This command will configure various tools in your environment, including `Docker
 > [!NOTE]
 > Before running the script, please be aware that it uses `sudo` privileges to install the mentioned packages and configure settings. Please use with caution, as this may overwrite existing configurations.
 
+> [!NOTE]
+> ./configure.sh installs Docker. It might not start the docker process. If it is your case, run `systemctl start docker`. To check if docker is running, run `systemctl status docker`.
+
 The script completes successfully with the confirmation: `All installations and configurations are complete`.
 
 ## Storage Class
@@ -82,22 +102,29 @@ kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":
 ```
 Additionally, ensure that the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
 
+## Defining Resource for you machine
+
+The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./microservices-connector/helm/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./microservices-connector/helm/resources-gaudi.yaml).
+
+> [!NOTE]
+It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
+
 ### Skipping Warm-up for vLLM Deployment
-The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in: 
+The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in:
  - For vLLM running on Gaudi: [vllm/docker/.env.hpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.hpu)
   - For vLLM running on CPU: [vllm/docker/.env.cpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu)
 
 > [!NOTE]
 By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
-### Enabling Pod Security Admission (PSA)
-Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
-We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSS use option `--enable-pss` when running the `install_chatqa.sh` script. To find more information please refer to the [deploy](#deploy) section in [Step-by-Step Approach](#build-step-by-step)
+### additional settings for running telemetry
+
+Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
 
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
-1.  Quick start with a one click script
-2.  Step-by-Step Installation
+1.  [Quick start with a one click script](#quick-start-with-one-click-script)
+2.  [Step-by-Step Installation](#build-step-by-step)
 
 ### Quick Start with One Click Script
 
@@ -118,7 +145,7 @@ Use the command below to install via the one click script:
 
 > [!NOTE]
 > For Xeon-only setups, pass a Xeon-specific pipeline to the One Click script, for example `xeon_torch_llm_guard` as shown above.
-> 
+>
 > Using the `one_click_chatqna.sh` is an alternative option to the Step-by-Step Installation described in the next section.
 
 You can run `one_click_chatqna.sh --help` to get detailed information.
@@ -143,7 +170,9 @@ compiling the code, packaging it into Docker images, and performing any necessar
 ```
 
 > [!NOTE]
-> You can build individual images, for example `./update_images.sh --build  embedding-usvc reranking-usvc` which only builds the embedding and reranking images.
+> - You can build individual images, for example `./update_images.sh --build  embedding-usvc reranking-usvc` which only builds the embedding and reranking images.
+> - You can use `-j <number of concurrent tasks>` parameter to increase number of concurrent tasks.
+> - List of available images is available, when running `./update_images.sh --help`.
 
 ##### Step 2: Setup Registry
 
@@ -180,7 +209,7 @@ deployment, telemetry integration, and UI authentication.
 
 You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
 
-If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage. 
+If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
 
 Similarly, for the selected Vector Store (for example `deployment/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
 
@@ -189,7 +218,7 @@ Similarly, for the selected Vector Store (for example `deployment/microservices-
 
 ##### Configure
 The `set_values.sh` script automates Helm value configuration for the `microservices-connector` chart,
-simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking:
+simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
 ```bash
 ./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN] -r [REPOSITORY] -t [TAG]
@@ -216,13 +245,6 @@ This command is intended for Xeon-only deployments, deploying the `xeon_torch_in
 You can run `./install_chatqna.sh --help` to get detailed information.
 
 Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
-
-### Running solution on CPUs (Xeon-Only)
-
-If you plan to deploy the solution on CPUs instead of using Gaudi nodes, it is essential to have sufficient resources for running LLM model servers like vLLM or TGI. The default resource allocations are defined in [`resources-cpu.yaml`](./microservices-connector/helm/resources-cpu.yaml/).
-
-> [!NOTE]
-It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. 
 
 
 ## Verify Services
@@ -309,7 +331,7 @@ system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1
 
 ## Available Pipelines
 
-This [page](./microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the 
+This [page](./microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the
 `install_chatqna.sh` script.
 
 Explore a diverse set of easily deployable sample pipeline configurations. Examples include:
@@ -422,13 +444,18 @@ To change the LLM model in the pipeline, follow the instructions [here](../docs/
 
 It is also possible to configure the input and output guardrails for the LLM service. Follow instructions [here](../src/comps/guardrails/llm_guard_input_guardrail/README.md) for input guardrails and [here](../src/comps/guardrails/llm_guard_output_guardrail/README.md) for output guardrails.
 
-## Clear Deployment
+## Clear All
 Run this command to delete all namespaces, custom resource definitions, releases, and services associated with the ChatQNA pipeline:
 ```bash
 ./install_chatqna.sh -ca
 ```
 
 ## Additional features
+
+### Enabling Pod Security Admission (PSA)
+Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
+
+We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSS use option `--enable-pss` when running the `install_chatqa.sh` script. To find more information please refer to the [deploy](#install-chatqna-via-install_chatqnash) section in [Step-by-Step Approach](#build-step-by-step)
 
 ### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 

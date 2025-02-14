@@ -5,10 +5,13 @@
 
 import concurrent
 import kr8s
+import logging
 import requests
 import secrets
 import socket
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class CustomPortForward(object):
@@ -119,7 +122,7 @@ class ApiRequestHelper:
         return results
 
     def _call_chatqa(self, request_body, port_forward):
-        print(f"Asking the following question: {request_body.get('text')}")
+        logger.info(f"Asking the following question: {request_body.get('text')}")
         start_time = time.time()
         response = requests.post(
             f"http://127.0.0.1:{port_forward.local_port}/v1/chatqa",
@@ -127,7 +130,7 @@ class ApiRequestHelper:
             json=request_body
         )
         duration = round(time.time() - start_time, 2)
-        print(f"ChatQA API call duration: {duration}")
+        logger.info(f"ChatQA API call duration: {duration}")
         return ApiResponse(response, duration)
 
     def format_response(self, response):
@@ -149,7 +152,7 @@ class ApiRequestHelper:
                 if line == "":
                     continue
                 if not line.startswith("data:"):
-                    print(f"Unexpected line in the response: {line}")
+                    logger.warning(f"Unexpected line in the response: {line}")
                     raise InvalidChatqaResponseBody(
                         "Chatqa API response body does not follow 'Server-Sent Events' structure. "
                         f"Response: {response.text}.\n\nHeaders: {response.headers}"
@@ -177,7 +180,7 @@ class ApiRequestHelper:
         which handles health_check call.
         """
         with CustomPortForward(port, namespace, selector) as pf:
-            print(f"Attempting to make a request to {namespace}/{selector}...")
+            logger.info(f"Attempting to make a request to {namespace}/{selector}...")
             response = requests.get(
                 f"http://127.0.0.1:{pf.local_port}/{health_path}",
                 headers=self.default_headers,

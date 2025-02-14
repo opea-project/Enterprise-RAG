@@ -1,5 +1,5 @@
 [ req ]
-default_bits       = 2048
+default_bits       = 4096
 distinguished_name = req_distinguished_name
 req_extensions     = req_ext
 x509_extensions    = v3_ca

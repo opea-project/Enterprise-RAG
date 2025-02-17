@@ -19,9 +19,13 @@ The configuration for the Prompt Template Microservice is specified in the [impl
 To start the Prompt Template Microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 #### 1.2. Start Microservice

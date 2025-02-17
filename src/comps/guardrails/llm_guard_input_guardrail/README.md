@@ -202,9 +202,13 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 To start the LLM Guard Intput Guardrail microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 #### 1.2. Start Microservice
@@ -265,7 +269,7 @@ curl http://localhost:8050/v1/llmguardinput \
 ```bash
 curl http://localhost:8050/v1/llmguardinput \
   -X POST \
-  -d '{"query":"What are virus and backdoor?", 
+  -d '{"query":"What are virus and backdoor?",
         "max_new_tokens":17,
         "top_k":10,"top_p":0.95,
         "typical_p":0.95,
@@ -310,7 +314,8 @@ The tree view of the main directories and files:
 │   └── microservice
 │       ├── .env
 │       ├── Dockerfile
-│       └── requirements.txt
+│       ├── pyproject.toml
+│       └── uv.lock
 ├── opea_llm_guard_input_guardrail_microservice.py
 └── utils
     ├── llm_guard_input_guardrail.py

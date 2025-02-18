@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
 
@@ -15,12 +16,15 @@ USER user
 ENV PATH="$PATH:/home/user/.local/bin"
 ENV PYTHONPATH="/home/user"
 
-COPY ./comps/ingestion/impl/microservice/requirements.txt /tmp/ingestion-requirements.txt
-COPY ./comps/vectorstores/impl/requirements.txt /tmp/vectorstores-requirements.txt
+WORKDIR /home/user/comps/ingestion/impl/microservice
+COPY ./comps/ingestion/impl/microservice/pyproject.toml pyproject.toml
+COPY ./comps/ingestion/impl/microservice/uv.lock uv.lock
+COPY ./comps/vectorstores/impl/requirements/pyproject.toml ../../../vectorstores/impl/requirements/pyproject.toml
 
-RUN pip install --no-cache-dir --upgrade pip setuptools && \
-    pip install --no-cache-dir -r /tmp/ingestion-requirements.txt && \
-    pip install --no-cache-dir -r /tmp/vectorstores-requirements.txt
+# --locked will fail when any changes in pyproject.toml were introduced
+# Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
+RUN uv sync --locked --no-cache
+ENV PATH="/home/user/comps/ingestion/impl/microservice/.venv/bin:$PATH"
 
 WORKDIR /home/user
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py

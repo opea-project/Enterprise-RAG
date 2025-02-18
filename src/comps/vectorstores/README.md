@@ -111,10 +111,11 @@ The tree view of the main directories and files:
 ```bash
 .
 ├── impl
-│   ├── redis
-│   │   ├── docker-compose.yml
-│   │   ├── opea_redis.py
-│   └── requirements.txt
+│   ├── redis
+│   │   ├── docker-compose.yml
+│   │   └── opea_redis.py
+│   └── requirements
+│       └── pyproject.toml
 ├── README.md
 └── utils
     ├── opea_vectorstore.py

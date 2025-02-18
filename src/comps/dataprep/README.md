@@ -54,17 +54,20 @@ By default, files are saved to a directory under this container. Save path can b
 
 This microservice requires access to external network services for example for downloading models for parsing specific file formats for text extraction.
 
-We offer 2 ways to run this microservice: 
+We offer 2 ways to run this microservice:
   - [via Python](#running-the-microservice-via-python-option-1)
   - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
 
 
 ### Running the microservice via Python (Option 1)
 
-If running locally, install python requirements:
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 Then start the microservice:
@@ -156,7 +159,6 @@ For both files and links the output has the same format, containg the extracted 
 ```
 
 ## Additional Information
-   
 ### Project Structure
 
 The project is organized into several directories:
@@ -170,10 +172,11 @@ The tree view of the main directories and files:
 ```bash
   .
   ├── impl
-  │   └── microservice
-  │       ├── Dockerfile
-  │       └── requirements.txt
-  |       └── .env
+  │   ├── microservice
+  │   │   ├── Dockerfile
+  │   │   ├── pyproject.toml
+  │   │   ├── uv.lock
+  │   │   └── .env
   ├── opea_dataprep_microservice.py
   ├── README.md
   ├── test

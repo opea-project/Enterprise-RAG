@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
 
@@ -20,12 +21,15 @@ USER user
 ENV PATH="$PATH:/home/user/.local/bin"
 ENV PYTHONPATH="/home/user"
 
-COPY ./comps/system_fingerprint/impl/microservice/requirements.txt /tmp/requirements.txt
-
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
-
 WORKDIR /home/user
+COPY ./comps/system_fingerprint/impl/microservice/pyproject.toml pyproject.toml
+COPY ./comps/system_fingerprint/impl/microservice/uv.lock uv.lock
+
+# --locked will fail when any changes in pyproject.toml were introduced
+# Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
+RUN uv sync --locked --no-cache
+ENV PATH="/home/user/.venv/bin:$PATH"
+
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/system_fingerprint/utils ./comps/system_fingerprint/utils

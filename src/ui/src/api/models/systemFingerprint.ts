@@ -1,32 +1,62 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
+import { LLMInputGuardArgs } from "@/config/control-plane/guards/llmInputGuard";
+import { LLMOutputGuardArgs } from "@/config/control-plane/guards/llmOutputGuard";
+import { LLMArgs } from "@/config/control-plane/llm";
+import { RerankerArgs } from "@/config/control-plane/reranker";
+import { RetrieverArgs } from "@/config/control-plane/retriever";
+import {
+  ServiceArgumentInputValue,
+  ServiceStatus,
+} from "@/types/admin-panel/control-plane";
 
 export interface AppendArgumentsRequestBody {
   text: string;
 }
 
-export interface ScannerArguments {
-  [argName: string]: null | number | string | boolean | string[];
-}
-
-export class GuardrailParams {
-  [scannerName: string]: ScannerArguments;
+export interface AppendArgumentsParameters {
+  max_new_tokens: number;
+  top_k: number;
+  top_p: number;
+  typical_p: number;
+  temperature: number;
+  repetition_penalty: number;
+  streaming: boolean;
+  search_type: string;
+  k: number;
+  distance_threshold: number | null;
+  fetch_k: number;
+  lambda_mult: number;
+  score_threshold: number;
+  top_n: number;
+  prompt_template: string;
+  input_guardrail_params: {
+    [key: string]: {
+      [key: string]: string | number | boolean | string[] | undefined | null;
+    };
+  };
+  output_guardrail_params: {
+    [key: string]: {
+      [key: string]: string | number | boolean | string[] | undefined | null;
+    };
+  };
 }
 
 export interface ServicesParameters {
-  input_guardrail_params?: GuardrailParams;
-  output_guardrail_params?: GuardrailParams;
-  [key: string]: null | number | string | boolean | GuardrailParams | undefined;
+  llmArgs?: LLMArgs;
+  retrieverArgs?: RetrieverArgs;
+  rerankerArgs?: RerankerArgs;
+  inputGuardArgs?: LLMInputGuardArgs;
+  outputGuardArgs?: LLMOutputGuardArgs;
 }
 
 export type ChangeArgumentsRequestData =
   | {
       [argumentName: string]: ServiceArgumentInputValue;
     }
-  | GuardrailParams;
+  | LLMInputGuardArgs
+  | LLMOutputGuardArgs;
 
 interface ServiceArgumentsToChange {
   name: string;

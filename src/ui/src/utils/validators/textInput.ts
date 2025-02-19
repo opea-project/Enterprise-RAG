@@ -3,6 +3,9 @@
 
 import { containsNullCharacters, isPunycodeSafe } from "@/utils/validators";
 
+export const isValidNumber = (value: string | undefined) =>
+  !isNaN(Number(value));
+
 export const isInRange =
   (nullable: boolean, range: { min: number; max: number }) =>
   (value: string | undefined) => {
@@ -19,8 +22,7 @@ export const isInRange =
         if (!nullable && value && value.trim() === "") {
           return false;
         } else {
-          const isValidNumber = !isNaN(parseFloat(value));
-          if (isValidNumber) {
+          if (isValidNumber(value)) {
             const { min, max } = range;
             const numericValue = parseFloat(value);
             return numericValue >= min && numericValue <= max;

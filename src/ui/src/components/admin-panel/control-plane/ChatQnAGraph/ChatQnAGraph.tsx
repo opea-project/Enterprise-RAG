@@ -15,7 +15,6 @@ import { NodeChange } from "@xyflow/system";
 import { useCallback } from "react";
 
 import ServiceNode from "@/components/admin-panel/control-plane/ServiceNode/ServiceNode";
-import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
 import {
   chatQnAGraphEdgesSelector,
   chatQnAGraphNodesSelector,
@@ -25,6 +24,7 @@ import {
   setChatQnAGraphSelectedServiceNode,
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { ServiceData } from "@/types/admin-panel/control-plane";
 import useColorScheme from "@/utils/hooks/useColorScheme";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
@@ -54,10 +54,8 @@ const ChatQnAGraph = () => {
     [dispatch],
   );
 
-  const handleNodesChange = (changes: NodeChange<Node>[]) => {
-    dispatch(
-      onChatQnAGraphNodesChange(changes as NodeChange<Node<ServiceData>>[]),
-    );
+  const handleNodesChange = (changes: NodeChange<Node<ServiceData>>[]) => {
+    dispatch(onChatQnAGraphNodesChange(changes));
   };
 
   const fitViewOptions: FitViewOptions = {
@@ -89,6 +87,7 @@ const ChatQnAGraph = () => {
       zoomOnScroll={false}
       zoomOnPinch={false}
       zoomOnDoubleClick={false}
+      deleteKeyCode={null}
     >
       <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
     </ReactFlow>

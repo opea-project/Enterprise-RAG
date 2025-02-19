@@ -6,10 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import ChunksProgressBar from "@/components/admin-panel/data-ingestion/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/components/admin-panel/data-ingestion/DataItemStatus/DataItemStatus";
 import Button from "@/components/shared/Button/Button";
-import {
-  FileDataItem,
-  LinkDataItem,
-} from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { FileDataItem, LinkDataItem } from "@/types/admin-panel/data-ingestion";
 import {
   formatFileSize,
   formatProcessingTimePeriod,

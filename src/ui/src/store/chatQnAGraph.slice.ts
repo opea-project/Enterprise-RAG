@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   addEdge,
   applyEdgeChanges,
@@ -13,24 +13,24 @@ import {
 import { Connection, NodeChange } from "@xyflow/system";
 
 import {
+  ChangeArgumentsRequestData,
   FetchedServiceDetails,
-  GuardrailParams,
   ServicesParameters,
 } from "@/api/models/systemFingerprint";
-import ServiceArgument from "@/models/admin-panel/control-plane/serviceArgument";
-import {
-  GuardrailArguments,
-  ServiceData,
-  ServiceDetails,
-  ServiceStatus,
-} from "@/models/admin-panel/control-plane/serviceData";
-import { RootState } from "@/store/index";
 import {
   graphEdges,
   graphNodes,
   LLM_NODE_POSITION_NO_GUARDS,
   VLLM_NODE_POSITION_NO_GUARDS,
-} from "@/utils/chatQnAGraph";
+} from "@/config/control-plane/chatQnAGraph";
+import SystemFingerprintService from "@/services/systemFingerprintService";
+import { RootState } from "@/store/index";
+import { addNotification } from "@/store/notifications.slice";
+import {
+  ServiceData,
+  ServiceDetails,
+  ServiceStatus,
+} from "@/types/admin-panel/control-plane";
 
 interface ChatQnAGraphState {
   editModeEnabled: boolean;
@@ -54,40 +54,63 @@ const initialState: ChatQnAGraphState = {
   canBeRendered: false,
 };
 
-const updateServiceArgs = (
-  args: ServiceArgument[],
-  parameters: ServicesParameters,
-): ServiceArgument[] =>
-  args.map((arg) => {
-    const fetchedArgValue = parameters[arg.displayName];
-    return fetchedArgValue !== undefined &&
-      !(fetchedArgValue instanceof GuardrailParams)
-      ? { ...arg, value: fetchedArgValue }
-      : arg;
-  });
+export const fetchGraphData = createAsyncThunk(
+  "chatQnAGraph/fetchGraph",
+  async (_, { dispatch }) => {
+    dispatch(setChatQnAGraphEditMode(false));
+    dispatch(setChatQnAGraphSelectedServiceNode([]));
+    dispatch(setChatQnAGraphLoading(true));
 
-const updateGuardArgs = (
-  guardArgs: GuardrailArguments,
-  fetchedGuardArgs: GuardrailParams,
-): GuardrailArguments => {
-  const updatedGuardArgs: GuardrailArguments = { ...guardArgs };
-  for (const scannerName in updatedGuardArgs) {
-    updatedGuardArgs[scannerName] = updatedGuardArgs[scannerName].map(
-      (scannerArg) => {
-        const fetchedScannerArgValue =
-          fetchedGuardArgs[scannerName][scannerArg.displayName];
+    try {
+      const [fetchedDetails, parameters] = await Promise.all([
+        SystemFingerprintService.getChatQnAServiceDetails(),
+        SystemFingerprintService.appendArguments(),
+      ]);
 
-        return {
-          ...scannerArg,
-          value: Array.isArray(fetchedScannerArgValue)
-            ? fetchedScannerArgValue.join(",")
-            : fetchedScannerArgValue,
-        };
-      },
-    );
-  }
-  return updatedGuardArgs;
-};
+      if (fetchedDetails && parameters) {
+        dispatch(
+          setChatQnAGraphNodes({
+            parameters,
+            fetchedDetails: fetchedDetails ?? {},
+          }),
+        );
+        dispatch(setChatQnAGraphEdges());
+        dispatch(setCanBeRendered(true));
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
+      dispatch(setCanBeRendered(false));
+    } finally {
+      dispatch(setChatQnAGraphLoading(false));
+    }
+  },
+);
+
+export const changeServiceArguments = createAsyncThunk(
+  "chatQnAGraph/changeServiceArguments",
+  async (
+    { name, data }: { name: string; data: ChangeArgumentsRequestData },
+    { dispatch },
+  ) => {
+    dispatch(setChatQnAGraphEditMode(false));
+    dispatch(setChatQnAGraphSelectedServiceNode([]));
+    dispatch(setChatQnAGraphLoading(true));
+
+    try {
+      const changeArgumentsRequestBody = [{ name, data }];
+      await SystemFingerprintService.changeArguments(
+        changeArgumentsRequestBody,
+      );
+      dispatch(fetchGraphData());
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to change arguments";
+      dispatch(addNotification({ severity: "error", text: errorMessage }));
+    }
+  },
+);
 
 const updateNodeDetails = (
   node: Node<ServiceData>,
@@ -104,34 +127,59 @@ const updateNodeDetails = (
     nodeStatus = status as ServiceStatus;
   }
 
-  if (node.data.args) {
-    const serviceArgs = updateServiceArgs(node.data.args, parameters);
+  if (node.data.llmArgs) {
+    const { llmArgs } = parameters;
     return {
       ...node,
       data: {
         ...node.data,
         details: nodeDetails,
         status: nodeStatus,
-        args: serviceArgs,
+        llmArgs,
       },
     };
-  } else if (node.data.guardArgs) {
-    const fetchedGuardArgs =
-      nodeId === "input_guard"
-        ? parameters.input_guardrail_params
-        : parameters.output_guardrail_params;
-
-    const guardArgs = fetchedGuardArgs
-      ? updateGuardArgs({ ...node.data.guardArgs }, fetchedGuardArgs)
-      : { ...node.data.guardArgs };
-
+  } else if (node.data.rerankerArgs) {
+    const { rerankerArgs } = parameters;
     return {
       ...node,
       data: {
         ...node.data,
         details: nodeDetails,
         status: nodeStatus,
-        guardArgs,
+        rerankerArgs,
+      },
+    };
+  } else if (node.data.retrieverArgs) {
+    const { retrieverArgs } = parameters;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        retrieverArgs,
+      },
+    };
+  } else if (node.data.inputGuardArgs) {
+    const { inputGuardArgs } = parameters;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        inputGuardArgs,
+      },
+    };
+  } else if (node.data.outputGuardArgs) {
+    const { outputGuardArgs } = parameters;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        outputGuardArgs,
       },
     };
   } else {

@@ -41,3 +41,6 @@ super-linter-output/
 
 # credentials
 /deployment/default_credentials.txt
+
+# .venv files
+.venv/

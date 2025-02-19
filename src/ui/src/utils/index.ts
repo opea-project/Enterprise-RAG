@@ -5,7 +5,14 @@ import DOMPurify from "dompurify";
 import { toASCII } from "punycode";
 
 import { ServiceDetailsResponse } from "@/api/models/serviceDetailsResponse";
-import { FetchedServiceDetails } from "@/api/models/systemFingerprint";
+import {
+  AppendArgumentsParameters,
+  FetchedServiceDetails,
+  ServicesParameters,
+} from "@/api/models/systemFingerprint";
+import { LLMInputGuardArgs } from "@/config/control-plane/guards/llmInputGuard";
+import { LLMOutputGuardArgs } from "@/config/control-plane/guards/llmOutputGuard";
+import { RetrieverSearchType } from "@/config/control-plane/retriever";
 
 const getPunycodeHref = (href: string | undefined) => {
   if (!href) {
@@ -123,6 +130,52 @@ const parseServiceDetailsResponseData = (
   return serviceDetails;
 };
 
+const parseServicesParameters = (
+  parameters: AppendArgumentsParameters,
+): ServicesParameters => {
+  const {
+    max_new_tokens,
+    top_k,
+    top_p,
+    typical_p,
+    temperature,
+    repetition_penalty,
+    streaming,
+    search_type,
+    k,
+    distance_threshold,
+    fetch_k,
+    lambda_mult,
+    score_threshold,
+    top_n,
+    input_guardrail_params,
+    output_guardrail_params,
+  } = parameters;
+
+  return {
+    llmArgs: {
+      max_new_tokens,
+      top_k,
+      top_p,
+      typical_p,
+      temperature,
+      repetition_penalty,
+      streaming,
+    },
+    retrieverArgs: {
+      search_type: search_type as RetrieverSearchType,
+      k,
+      distance_threshold,
+      fetch_k,
+      lambda_mult,
+      score_threshold,
+    },
+    rerankerArgs: { top_n },
+    inputGuardArgs: input_guardrail_params as LLMInputGuardArgs,
+    outputGuardArgs: output_guardrail_params as LLMOutputGuardArgs,
+  };
+};
+
 const sanitizeString = (value: string) => {
   const decodedValue = decodeURIComponent(value);
   return DOMPurify.sanitize(decodedValue);
@@ -132,5 +185,6 @@ export {
   getPunycodeHref,
   isHrefSafe,
   parseServiceDetailsResponseData,
+  parseServicesParameters,
   sanitizeString,
 };

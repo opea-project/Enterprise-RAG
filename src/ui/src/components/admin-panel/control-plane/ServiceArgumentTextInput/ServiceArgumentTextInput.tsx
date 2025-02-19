@@ -8,35 +8,41 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { object, string, ValidationError } from "yup";
 
-import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
+import Tooltip from "@/components/shared/Tooltip/Tooltip";
+import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
+import { useAppSelector } from "@/store/hooks";
+import {
+  OnArgumentValidityChangeHandler,
+  OnArgumentValueChangeHandler,
+} from "@/types/admin-panel/control-plane";
 import { sanitizeString } from "@/utils";
 import { noEmpty } from "@/utils/validators/textInput";
 
+export type ServiceArgumentTextInputValue = string | string[] | null;
+
 interface ServiceArgumentTextInputProps {
   name: string;
-  initialValue: string | null;
-  emptyValueAllowed?: boolean;
+  initialValue: ServiceArgumentTextInputValue;
+  tooltipText?: string;
+  nullable?: boolean;
   commaSeparated?: boolean;
-  readOnly?: boolean;
-  onArgumentValueChange: (
-    argumentName: string,
-    argumentValue: ServiceArgumentInputValue,
-  ) => void;
-  onArgumentValidityChange: (
-    argumentName: string,
-    isArgumentInvalid: boolean,
-  ) => void;
+  onArgumentValueChange: OnArgumentValueChangeHandler;
+  onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
 
 const ServiceArgumentTextInput = ({
   name,
   initialValue,
-  emptyValueAllowed = false,
+  tooltipText,
+  nullable = false,
   commaSeparated = false,
-  readOnly = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentTextInputProps) => {
+  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
+  const readOnly = !isEditModeEnabled;
+
   const [value, setValue] = useState(initialValue ?? "");
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +58,7 @@ const ServiceArgumentTextInput = ({
     textInput: string().test(
       "no-empty",
       "This value cannot be empty",
-      noEmpty(emptyValueAllowed),
+      noEmpty(nullable),
     ),
   });
 
@@ -78,8 +84,7 @@ const ServiceArgumentTextInput = ({
     onArgumentValidityChange(name, !isValid);
     if (isValid) {
       const isValueEmpty = newValue.trim() === "";
-      const argumentValue =
-        isValueEmpty && emptyValueAllowed ? null : sanitizedValue;
+      const argumentValue = isValueEmpty && nullable ? null : sanitizedValue;
       onArgumentValueChange(name, argumentValue);
     }
   };
@@ -93,9 +98,14 @@ const ServiceArgumentTextInput = ({
   const placeholder = commaSeparated ? "Enter values separated by comma" : "";
 
   return (
-    <>
+    <div className="service-argument-text-input__wrapper">
       <label htmlFor={inputId} className="service-argument-text-input__label">
-        {name}
+        {tooltipText && (
+          <Tooltip text={tooltipText} position="right">
+            <InfoIcon />
+          </Tooltip>
+        )}
+        <span>{name}</span>
       </label>
       <input
         className={inputClassNames}
@@ -107,8 +117,8 @@ const ServiceArgumentTextInput = ({
         readOnly={readOnly}
         onChange={handleChange}
       />
-      {isInvalid && <p className="error my-1 pl-2 text-xs italic">{error}</p>}
-    </>
+      {isInvalid && <p className="error mt-1 pl-2 text-xs italic">{error}</p>}
+    </div>
   );
 };
 

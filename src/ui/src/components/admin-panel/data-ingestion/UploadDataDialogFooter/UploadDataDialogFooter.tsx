@@ -6,7 +6,7 @@ import "./UploadDataDialogFooter.scss";
 import UploadErrorsDialog from "@/components/admin-panel/data-ingestion/UploadErrorsDialog/UploadErrorsDialog";
 import { IconName } from "@/components/icons";
 import Button from "@/components/shared/Button/Button";
-import { UploadErrors } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { UploadErrors } from "@/types/admin-panel/data-ingestion";
 
 interface UploadDataDialogFooterProps {
   uploadErrors: UploadErrors;

@@ -8,7 +8,7 @@ import classNames from "classnames";
 import { memo } from "react";
 
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
-import { ServiceData } from "@/models/admin-panel/control-plane/serviceData";
+import { ServiceData } from "@/types/admin-panel/control-plane";
 
 interface ServiceNodeProps {
   data: ServiceData;
@@ -29,7 +29,7 @@ const ServiceNode = ({
 }: ServiceNodeProps) => {
   const serviceNodeClassNames = classNames({
     "service-node": true,
-    "service-node-selected": selected,
+    "service-node--selected": selected,
   });
 
   return (
@@ -38,7 +38,7 @@ const ServiceNode = ({
         <Handle
           type="target"
           position={targetPosition}
-          className="service-node-handle"
+          className="service-node__handle"
         />
       )}
       <div className={serviceNodeClassNames}>
@@ -51,7 +51,7 @@ const ServiceNode = ({
         <Handle
           type="source"
           position={sourcePosition}
-          className="service-node-handle"
+          className="service-node__handle"
         />
       )}
       {additionalTargetPosition && additionalTargetId && (
@@ -59,7 +59,7 @@ const ServiceNode = ({
           id={additionalTargetId}
           type="target"
           position={additionalTargetPosition}
-          className="service-node-handle"
+          className="service-node__handle"
         />
       )}
       {additionalSourcePosition && additionalSourceId && (
@@ -67,7 +67,7 @@ const ServiceNode = ({
           id={additionalSourceId}
           type="source"
           position={additionalSourcePosition}
-          className="service-node-handle"
+          className="service-node__handle"
         />
       )}
     </>

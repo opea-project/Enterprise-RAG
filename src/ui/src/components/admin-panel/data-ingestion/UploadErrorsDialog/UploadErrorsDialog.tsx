@@ -8,7 +8,7 @@ import { useRef } from "react";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import Anchor from "@/components/shared/Anchor/Anchor";
 import Dialog from "@/components/shared/Dialog/Dialog";
-import { UploadErrors } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { UploadErrors } from "@/types/admin-panel/data-ingestion";
 
 const s3Url = import.meta.env.VITE_S3_URL;
 

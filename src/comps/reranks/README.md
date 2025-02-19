@@ -34,9 +34,13 @@ Depending on the model server you want to use, follow the approppriate instructi
 To start the Reranking microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 #### 1.2. Start Microservice
@@ -131,18 +135,21 @@ The tree view of the main directories and files:
 
 ```bash
   .
-  ├── impl/
-  │   ├── microservice/
+  ├── impl
+  │   ├── microservice
   │   │   ├── .env
   │   │   ├── Dockerfile
-  │   │   └── requirements.txt
+  │   │   ├── pyproject.toml
+  │   │   └── uv.lock
   │   │
   │   ├── model_server/
   │   │   ├── tei/
   │   │   │   ├── README.md
   │   │   │   └── docker/
-  │   │   │       ├── docker-compose.yml
-  │   │   │       └── .env
+  │   │   │       ├── .env.cpu
+  │   │   │       ├── .env.hpu
+  │   │   │       ├── docker-compose-hpu.yaml
+  │   │   │       └── docker-compose.yaml
   │   │   │
   │   │   └── ...
   │   └── ...

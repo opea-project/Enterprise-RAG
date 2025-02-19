@@ -54,8 +54,13 @@ If you want to utilize all functionality, depeding on the application server you
 
 ### Install dependencies
 
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
+
 ```bash
-pip install -r requirements.txt
+pip install uv
+uv sync --locked --no-cache --project app/pyproject.toml
+source app/.venv/bin/activate
 ```
 
 ### Docker images
@@ -64,8 +69,8 @@ There is a Dockerfile attached that is used to build the application server. One
 
 To build the application, run:
 ```bash
-cd src/edp
-docker build -f Dockerfile -t opea/enhanced_dataprep 
+cd ../.. # src/ directory
+docker build -f edp/Dockerfile -t opea/enhanced_dataprep .
 ```
 
 ## Running on localhost via python
@@ -113,7 +118,7 @@ And proceed to the following url `http://localhost:1234/docs`
 
 ## Testing
 
-This application has unit tests written in `pytest`. Install it using `pip` since this is not a requirement for production. 
+This application has unit tests written in `pytest`. Install it using `pip` since this is not a requirement for production.
 
 ```bash
 pip install -i pytest coverage

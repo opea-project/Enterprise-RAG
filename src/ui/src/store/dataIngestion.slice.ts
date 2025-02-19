@@ -7,13 +7,10 @@ import {
   SerializedError,
 } from "@reduxjs/toolkit";
 
-import {
-  FileDataItem,
-  LinkDataItem,
-} from "@/models/admin-panel/data-ingestion/dataIngestion";
 import DataIngestionService from "@/services/dataIngestionService";
 import { RootState } from "@/store/index";
 import { addNotification } from "@/store/notifications.slice";
+import { FileDataItem, LinkDataItem } from "@/types/admin-panel/data-ingestion";
 
 interface DataIngestionState {
   files: {

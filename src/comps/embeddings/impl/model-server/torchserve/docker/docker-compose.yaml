@@ -35,7 +35,6 @@ services:
     build:
       context: ../../../../../../
       dockerfile: ./comps/embeddings/impl/microservice/Dockerfile
-      target: ${EMBEDDING_CONNECTOR}
     container_name: embedding-torchserve-microservice
     environment:
       NO_PROXY: ${NO_PROXY}

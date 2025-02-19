@@ -6,7 +6,7 @@ import "./ServiceStatusIndicator.scss";
 import classNames from "classnames";
 
 import Tooltip from "@/components/shared/Tooltip/Tooltip";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
+import { ServiceStatus } from "@/types/admin-panel/control-plane";
 
 interface ServiceStatusIndicatorProps {
   status?: ServiceStatus;
@@ -21,8 +21,11 @@ const ServiceStatusIndicator = ({
 }: ServiceStatusIndicatorProps) => {
   const serviceStatusIndicatorClassNames = classNames({
     "service-status-indicator": true,
-    [status.split(" ").join("-").toLowerCase()]: true,
-    "service-status-indicator--node": forNode,
+    "service-status-indicator--ready": status === ServiceStatus.Ready,
+    "service-status-indicator--not-ready": status === ServiceStatus.NotReady,
+    "service-status-indicator--not-available":
+      status === ServiceStatus.NotAvailable,
+    "service-status-indicator__node": forNode,
   });
 
   if (noTooltip) {

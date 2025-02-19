@@ -9,6 +9,6 @@
   }
 
   & label.service-argument-checkbox__label {
-    @apply mb-0 text-xs;
+    @apply mb-0 flex flex-row items-center gap-1 text-xs;
   }
 }

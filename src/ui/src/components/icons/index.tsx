@@ -12,6 +12,7 @@ import DeleteIcon from "./DeleteIcon/DeleteIcon";
 import EmbeddingIcon from "./EmbeddingIcon/EmbeddingIcon";
 import FileInputIcon from "./FileInputIcon/FileInputIcon";
 import IdentityProviderIcon from "./IdentityProviderIcon/IdentityProviderIcon";
+import InfoIcon from "./InfoIcon/InfoIcon";
 import LightModeIcon from "./LightModeIcon/LightModeIcon";
 import LoadingIcon from "./LoadingIcon/LoadingIcon";
 import LogoutIcon from "./LogoutIcon/LogoutIcon";
@@ -36,6 +37,7 @@ export const icons = {
   embedding: EmbeddingIcon,
   "file-input": FileInputIcon,
   "identity-provider": IdentityProviderIcon,
+  info: InfoIcon,
   "light-mode": LightModeIcon,
   loading: LoadingIcon,
   logout: LogoutIcon,

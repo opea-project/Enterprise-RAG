@@ -40,13 +40,14 @@ body {
   @apply dark:bg-dark-primary dark:text-dark-text-inverse;
 }
 
-*:focus-visible:not(input):not(textarea) {
+*:focus-visible:not(input):not(textarea):not(select) {
   @apply transition-all focus-visible:outline focus-visible:outline-2;
   @apply focus-visible:outline-light-focus dark:focus-visible:outline-dark-focus;
 }
 
 input,
 input:is(:-webkit-autofill, :autofill),
+select,
 textarea {
   @apply min-h-6 rounded border border-light-border bg-white px-4 py-2 text-black caret-black disabled:border-transparent disabled:bg-light-bg-disabled disabled:text-light-text-disabled dark:border-dark-border dark:disabled:border-transparent dark:disabled:bg-dark-bg-disabled dark:disabled:text-dark-text-disabled;
   @apply focus-visible:outline focus-visible:outline-2;
@@ -58,6 +59,7 @@ textarea {
 }
 
 input.input--invalid {
+  @apply caret-light-status-error dark:caret-dark-status-error;
   @apply border-light-status-error dark:border-dark-status-error;
   @apply focus-visible:outline-light-status-error dark:focus-visible:outline-dark-status-error;
   @apply text-light-text-primary dark:text-dark-text-primary;
@@ -68,7 +70,8 @@ input[type="checkbox"] {
   @apply cursor-pointer accent-light-primary disabled:cursor-default dark:accent-dark-primary;
 }
 
-input:read-only:not(input[type="checkbox"]) {
+input:read-only:not(input[type="checkbox"]),
+.input--read-only {
   @apply text-light-text-primary dark:text-dark-text-primary;
   @apply pointer-events-none cursor-default bg-transparent;
 }

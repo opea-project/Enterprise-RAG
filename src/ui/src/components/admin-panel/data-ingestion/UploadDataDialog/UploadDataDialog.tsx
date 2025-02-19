@@ -10,14 +10,14 @@ import LinksIngestionPanel from "@/components/admin-panel/data-ingestion/LinksIn
 import UploadDataDialogFooter from "@/components/admin-panel/data-ingestion/UploadDataDialogFooter/UploadDataDialogFooter";
 import Button from "@/components/shared/Button/Button";
 import Dialog from "@/components/shared/Dialog/Dialog";
-import {
-  LinkForIngestion,
-  UploadErrors,
-} from "@/models/admin-panel/data-ingestion/dataIngestion";
 import DataIngestionService from "@/services/dataIngestionService";
 import { getFiles, getLinks } from "@/store/dataIngestion.slice";
 import { useAppDispatch } from "@/store/hooks";
 import { addNotification } from "@/store/notifications.slice";
+import {
+  LinkForIngestion,
+  UploadErrors,
+} from "@/types/admin-panel/data-ingestion";
 import {
   createToBeUploadedMessage,
   isUploadDisabled,

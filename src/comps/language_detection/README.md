@@ -31,8 +31,13 @@ To start the Language Detection microservice, you need to install python package
 
 #### 1.1. Install Requirements
 
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
+
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 #### 1.2. Start Microservice
@@ -117,7 +122,7 @@ The output contains the prompt that is sent to the second llm microservice which
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains the implementation of the service. 
+- `impl/`: This directory contains the implementation of the service.
 
 - `utils/`: This directory contains utility scripts and modules that are used by the Language Detection Microservice.
 
@@ -126,10 +131,11 @@ The tree view of the main directories and files:
 ```bash
   .
   ├── impl/
-  │   ├── microservice/
-  │   │   ├── .env
+  │   ├── microservice
   │   │   ├── Dockerfile
-  │   │   └── requirements.txt
+  │   │   ├── pyproject.toml
+  │   │   ├── uv.lock
+  │   │   └── .env
   │   │
   │   │
   │   └── ...

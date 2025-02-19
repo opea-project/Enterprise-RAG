@@ -35,10 +35,13 @@ We offer 2 ways to run this microservice:
 
 ### Running the microservice via Python (Option 1)
 
-If running locally, install python requirements:
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 Then start the microservice:
@@ -137,13 +140,15 @@ The tree view of the main directories and files:
 ```bash
 .
 ├── impl
-│   └── microservice
-│       ├── Dockerfile
-│       └── requirements.txt
-|       └── .env
+│   └── microservice
+│       ├── .env
+│       ├── Dockerfile
+│       ├── pyproject.toml
+│       ├── redis-constants-override.py
+│       └── uv.lock
 ├── opea_retriever_microservice.py
 ├── README.md
 └── utils
-    ├── opea_retriever.py
+    └── opea_retriever.py
 
 ```

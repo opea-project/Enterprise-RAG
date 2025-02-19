@@ -10,9 +10,9 @@ Overall, this microservice offers a streamlined way to integrate large language 
 
 Support for specific model servers with Dockerfiles or build instruction.
 
-| Model server name                 |  Status   | 
-| ----------------------------------| --------- | 
-| [TGI](./impl/model_server/tgi/)   | &#x2713;  | 
+| Model server name                 |  Status   |
+| ----------------------------------| --------- |
+| [TGI](./impl/model_server/tgi/)   | &#x2713;  |
 | [VLLM](./impl/model_server/vllm/) | &#x2713;  |
 | RAY                               | &#x2717;  |
 
@@ -43,19 +43,23 @@ Set below environment variables only for VLLM if remote model server is enabled 
 
 The LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible at the the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
 
-Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
+Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service.
 
 ### 🚀1. Start LLM Microservice with Python (Option 1)
 
 To start the LLM microservice, you need to install python packages first.
 
 #### 1.1. Install Requirements
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-pip install -r impl/microservice/requirements.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice 
+#### 1.2. Start Microservice
 
 ```bash
 python opea_llm_microservice.py
@@ -186,16 +190,18 @@ The tree view of the main directories and files:
   │   ├── microservice/
   │   │   ├── .env
   │   │   ├── Dockerfile
-  │   │   └── requirements.txt
+  │   │   ├── pyproject.toml
+  │   │   └── uv.lock
   │   │
   │   ├── model_server/
   │   │   ├── tgi/
   │   │   │   ├── README.md
   │   │   │   └── docker/
-  │   │   │       ├── .env
+  │       │       ├── .env.cpu
+  │       │       ├── .env.hpu
   │   │   │       ├── docker-compose-cpu.yml
   │   │   │       └── docker-compose-hpu.yml
-  │   │   │  
+  │   │   │
   │   │   └── ...
   │   └── ...
   │
@@ -203,9 +209,8 @@ The tree view of the main directories and files:
   │   ├── opea_llm.py
   │   └── connectors/
   │       ├── connector.py
-  │       ├── generic.py
-  │       └── wrappers/
-  │           └── wrapper_langchain.py
+  │       ├── generic_connector.py
+  │       └── langchain_connector.py
   │
   ├── README.md
   └── opea_llm_microservice.py

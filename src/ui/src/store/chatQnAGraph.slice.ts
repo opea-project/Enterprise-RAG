@@ -182,6 +182,17 @@ const updateNodeDetails = (
         outputGuardArgs,
       },
     };
+  } else if (node.data.promptTemplate !== undefined) {
+    const { promptTemplate } = parameters;
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        details: nodeDetails,
+        status: nodeStatus,
+        promptTemplate,
+      },
+    };
   } else {
     return {
       ...node,
@@ -224,7 +235,7 @@ export const chatQnAGraphSlice = createSlice({
     },
     setChatQnAGraphEdges: (state) => {
       state.edges = state.hasInputGuard
-        ? graphEdges.filter((edge) => edge.id !== "reranker-llm")
+        ? graphEdges.filter((edge) => edge.id !== "prompt_template-llm")
         : graphEdges;
     },
     setChatQnAGraphNodes: (

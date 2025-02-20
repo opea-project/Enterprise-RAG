@@ -47,6 +47,7 @@ export interface ServicesParameters {
   llmArgs?: LLMArgs;
   retrieverArgs?: RetrieverArgs;
   rerankerArgs?: RerankerArgs;
+  promptTemplate?: string;
   inputGuardArgs?: LLMInputGuardArgs;
   outputGuardArgs?: LLMOutputGuardArgs;
 }

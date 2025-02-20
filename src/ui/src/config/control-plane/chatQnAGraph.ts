@@ -10,8 +10,8 @@ import { rerankerArgumentsDefault } from "@/config/control-plane/reranker";
 import { retrieverArgumentsDefault } from "@/config/control-plane/retriever";
 import { ServiceData } from "@/types/admin-panel/control-plane";
 
-export const LLM_NODE_POSITION_NO_GUARDS = { x: 640, y: 144 };
-export const VLLM_NODE_POSITION_NO_GUARDS = { x: 640, y: 288 };
+export const LLM_NODE_POSITION_NO_GUARDS = { x: 840, y: 144 };
+export const VLLM_NODE_POSITION_NO_GUARDS = { x: 840, y: 288 };
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -97,8 +97,22 @@ const graphNodes: Node<ServiceData>[] = [
     focusable: true,
   },
   {
-    id: "input_guard",
+    id: "prompt_template",
     position: { x: 640, y: 144 },
+    data: {
+      id: "prompt_template",
+      displayName: "Prompt Template",
+      promptTemplate: "",
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      selected: false,
+    },
+    type: "serviceNode",
+    focusable: true,
+  },
+  {
+    id: "input_guard",
+    position: { x: 840, y: 144 },
     data: {
       id: "input_guard",
       displayName: "LLM Input Guard",
@@ -112,7 +126,7 @@ const graphNodes: Node<ServiceData>[] = [
   },
   {
     id: "llm",
-    position: { x: 840, y: 144 },
+    position: { x: 1040, y: 144 },
     data: {
       id: "llm",
       displayName: "LLM",
@@ -128,7 +142,7 @@ const graphNodes: Node<ServiceData>[] = [
   },
   {
     id: "vllm",
-    position: { x: 840, y: 288 },
+    position: { x: 1040, y: 288 },
     data: {
       id: "vllm",
       displayName: "vLLM Model Server",
@@ -140,7 +154,7 @@ const graphNodes: Node<ServiceData>[] = [
   },
   {
     id: "output_guard",
-    position: { x: 1040, y: 144 },
+    position: { x: 1240, y: 144 },
     data: {
       id: "output_guard",
       displayName: "LLM Output Guard",
@@ -188,15 +202,21 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "reranker-llm",
+    id: "reranker-prompt_template",
     source: "reranker",
-    target: "llm",
+    target: "prompt_template",
     selectable: false,
   },
   {
-    id: "reranker-input_guard",
-    source: "reranker",
+    id: "prompt_template-input_guard",
+    source: "prompt_template",
     target: "input_guard",
+    selectable: false,
+  },
+  {
+    id: "prompt_template-llm",
+    source: "prompt_template",
+    target: "llm",
     selectable: false,
   },
   {

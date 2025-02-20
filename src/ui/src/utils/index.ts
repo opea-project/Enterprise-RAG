@@ -143,6 +143,7 @@ const parseServicesParameters = (
     streaming,
     search_type,
     k,
+    prompt_template,
     distance_threshold,
     fetch_k,
     lambda_mult,
@@ -171,6 +172,7 @@ const parseServicesParameters = (
       score_threshold,
     },
     rerankerArgs: { top_n },
+    promptTemplate: prompt_template,
     inputGuardArgs: input_guardrail_params as LLMInputGuardArgs,
     outputGuardArgs: output_guardrail_params as LLMOutputGuardArgs,
   };

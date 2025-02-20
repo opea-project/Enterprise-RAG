@@ -47,6 +47,7 @@ export interface ServiceData extends Record<string, unknown> {
   llmArgs?: LLMArgs;
   retrieverArgs?: RetrieverArgs;
   rerankerArgs?: RerankerArgs;
+  promptTemplate?: string;
   inputGuardArgs?: LLMInputGuardArgs;
   outputGuardArgs?: LLMOutputGuardArgs;
   details?: ServiceDetails;

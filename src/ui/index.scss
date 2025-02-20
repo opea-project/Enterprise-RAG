@@ -58,7 +58,8 @@ textarea {
   resize: none;
 }
 
-input.input--invalid {
+input.input--invalid,
+textarea.input--invalid {
   @apply caret-light-status-error dark:caret-dark-status-error;
   @apply border-light-status-error dark:border-dark-status-error;
   @apply focus-visible:outline-light-status-error dark:focus-visible:outline-dark-status-error;
@@ -76,7 +77,8 @@ input:read-only:not(input[type="checkbox"]),
   @apply pointer-events-none cursor-default bg-transparent;
 }
 
-input::placeholder {
+input::placeholder,
+textarea::placeholder {
   @apply italic;
   @apply text-light-text-placeholder dark:text-dark-text-placeholder;
 }

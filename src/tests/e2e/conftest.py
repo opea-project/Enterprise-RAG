@@ -3,14 +3,24 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import allure
+from datetime import datetime, timezone
+import kr8s
+import os
 import logging
 import pytest
+import tarfile
 import urllib3
 from helpers.api_request_helper import ApiRequestHelper
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
 from helpers.istio_helper import IstioHelper
+
+NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
+TEST_LOGS_DIR = "test_logs"
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -35,6 +45,42 @@ def disable_guards_at_startup(guard_helper, suppress_logging):
     """
     guard_helper.disable_all_guards()
     yield
+
+
+@pytest.fixture(scope="function", autouse=True)
+def collect_k8s_logs(request):
+    """
+    Collect logs from all pods in the specified namespaces after each test function.
+    Attach the archived logs to the allure report.
+    """
+    test_start_time = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec='seconds').replace("+00:00", "Z")
+    yield
+
+    test_name = request.node.name
+    log_dir = f"{TEST_LOGS_DIR}/{test_name}"
+    os.makedirs(log_dir, exist_ok=True)
+
+    api = kr8s.api()
+    for namespace in NAMESPACES:
+        pods = api.get("pods", namespace=namespace)
+
+        for pod in pods:
+            pod_name = pod.metadata.name
+            log_file = os.path.join(log_dir, f"{namespace}_{pod_name}.log")
+
+            logs = "\n".join(pod.logs(since_time=test_start_time))
+            with open(log_file, "w") as f:
+                f.write(logs)
+    logger.info(f"Logs collected in {log_dir}")
+
+    # Archive all logs into a tar.gz file
+    tar_path = f"{TEST_LOGS_DIR}/logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{test_name}.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+        tar.add(log_dir, arcname=test_name)
+    logger.info(f"Logs archived: {tar_path}")
+
+    # Attach in allure report
+    allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
 
 
 @pytest.fixture(scope="session")

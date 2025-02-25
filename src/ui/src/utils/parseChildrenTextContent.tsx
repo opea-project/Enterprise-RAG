@@ -34,10 +34,10 @@ const highlightPotentialHomoglyphs = (textContent: string) => {
   for (const char of textContent) {
     if (isPotentialHomoglyph(char)) {
       flushTextBuffer();
-      homoglyphBuffer.concat(char);
+      homoglyphBuffer = homoglyphBuffer.concat(char);
     } else {
       flushHomoglyphBuffer();
-      textBuffer.concat(char);
+      textBuffer = textBuffer.concat(char);
     }
   }
 

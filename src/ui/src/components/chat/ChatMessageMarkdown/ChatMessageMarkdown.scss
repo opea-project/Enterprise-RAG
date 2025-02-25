@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .chat-message-markdown {
+  @apply whitespace-pre-wrap;
+
   & ol {
     @apply list-decimal;
   }

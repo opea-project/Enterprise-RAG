@@ -31,6 +31,6 @@
   }
 
   &::placeholder {
-    @apply text-light-text-placeholder dark:text-dark-text-placeholder;
+    @apply not-italic text-light-text-placeholder dark:text-dark-text-placeholder;
   }
 }

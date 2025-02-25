@@ -6,6 +6,7 @@ import EmbeddingModelServerCard from "@/components/admin-panel/control-plane/car
 import LLMCard from "@/components/admin-panel/control-plane/cards/LLMCard";
 import LLMInputGuardCard from "@/components/admin-panel/control-plane/cards/LLMInputGuardCard";
 import LLMOutputGuardCard from "@/components/admin-panel/control-plane/cards/LLMOutputGuardCard";
+import PromptTemplateCard from "@/components/admin-panel/control-plane/cards/PromptTemplateCard";
 import RerankerCard from "@/components/admin-panel/control-plane/cards/RerankerCard";
 import RerankerModelServerCard from "@/components/admin-panel/control-plane/cards/RerankerModelServerCard";
 import RetrieverCard from "@/components/admin-panel/control-plane/cards/RetrieverCard";
@@ -19,6 +20,7 @@ export const cards = {
   retriever: RetrieverCard,
   vectordb: VectorDBCard,
   reranker: RerankerCard,
+  prompt_template: PromptTemplateCard,
   reranker_model_server: RerankerModelServerCard,
   input_guard: LLMInputGuardCard,
   llm: LLMCard,

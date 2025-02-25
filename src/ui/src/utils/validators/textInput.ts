@@ -55,3 +55,14 @@ export const noEmpty =
 export const noInvalidCharacters =
   (): ((value: string) => boolean) => (value: string) =>
     !containsNullCharacters(value) && isPunycodeSafe(value);
+
+export const containsRequiredValues =
+  (requiredValues: string[]) => (value: string | undefined) => {
+    if (value !== undefined && requiredValues.length > 0) {
+      return !requiredValues.some(
+        (requiredValue) => !value.includes(requiredValue),
+      );
+    } else {
+      return false;
+    }
+  };

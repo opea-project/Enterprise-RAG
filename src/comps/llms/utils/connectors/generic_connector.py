@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import httpx
 import time
 from typing import Optional, Dict, Union
 
@@ -79,9 +80,23 @@ class TGIConnector:
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug("[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"
+                except httpx.ReadTimeout as e:
+                    error_message = f"Failed to stream from the Generic TGI Connector. Connection established with '{e.request.url}' but " \
+                        "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                    logger.error(error_message)
+                    raise httpx.ReadTimeout(error_message)
+                except httpx.ConnectError as e:
+                    error_message = f"Failed to stream from the Generic TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                    logger.error(error_message)
+                    raise httpx.ConnectError(error_message)
+                except RequestException as e:
+                    error_code = e.response.status_code if e.response else 'No response'
+                    error_message = f"Failed to stream from the Generic TGI Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
+                    logger.error(error_message)
+                    raise RequestException(error_message)
                 except Exception as e:
                     logger.error(f"Error streaming from TGI: {e}")
-                    yield "data: [ERROR]\n\n"
+                    raise Exception(f"Error streaming from TGI: {e}")
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
             return GeneratedDoc(text=generator, prompt=input.query, streaming=input.streaming,
@@ -112,22 +127,22 @@ class VLLMConnector:
                 stream=input.streaming and not self._disable_streaming,
             )
         except ReadTimeout as e:
-            error_message = f"Failed to invoke the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
+            error_message = f"Failed to stream from the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
                 "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
             logger.error(error_message)
             raise ReadTimeout(error_message)
         except ConnectionError as e:
-            error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+            error_message = f"Failed to stream from the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
             logger.error(error_message)
             raise ConnectionError(error_message)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
-            error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
+            error_message = f"Failed to stream from the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
             logger.error(error_message)
             raise RequestException(error_message)
         except Exception as e:
-            logger.error(f"Error invoking VLLM: {e}")
-            raise Exception(f"Error invoking VLLM: {e}")
+            logger.error(f"Error streaming from VLLM: {e}")
+            raise Exception(f"Error streaming from VLLM: {e}")
 
         if input.streaming and not self._disable_streaming:
             if self._llm_output_guard_exists:
@@ -153,9 +168,23 @@ class VLLMConnector:
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"
+                except httpx.ReadTimeout as e:
+                    error_message = f"Failed to invoke the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
+                        "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
+                    logger.error(error_message)
+                    raise httpx.ReadTimeout(error_message)
+                except httpx.ConnectError as e:
+                    error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                    logger.error(error_message)
+                    raise httpx.ConnectError(error_message)
+                except RequestException as e:
+                    error_code = e.response.status_code if e.response else 'No response'
+                    error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
+                    logger.error(error_message)
+                    raise RequestException(error_message)
                 except Exception as e:
                     logger.error(f"Error streaming from VLLM: {e}")
-                    yield "data: [ERROR]\n\n"
+                    raise Exception(f"Error streaming from VLLM: {e}")
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:

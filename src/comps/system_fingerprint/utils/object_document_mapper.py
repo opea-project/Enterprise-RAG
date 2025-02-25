@@ -250,11 +250,10 @@ class LLMGuardOutputGuardrailParams(Document):
     url_reachability: URLReachabilityModel = None
 
 class PromptTemplateParams(Document):
-    prompt_template: str = """
-### You are a helpful, respectful, and honest assistant to help the user with questions. \
+    prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
 But be careful to not incorporate information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
+If you don't know the answer to a question, please don't share false information. \n
 ### Search results: {reranked_docs} \n
 ### Question: {initial_query} \n
 ### Answer:

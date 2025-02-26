@@ -83,12 +83,12 @@ class VectorStoreConnector(ABC):
             logger.exception("Error occured while adding texts to vector store")
             raise e
 
-    def search_and_delete_documents(self, index_name, field_name, field_value, prefix_name):
+    def search_and_delete_by_metadata(self, index_name, field_name, field_value, prefix_name):
         """
         Search and delete documents from the vector store based on filed name and value.
         """
         try:
-            return self.client.search_and_delete_documents(index_name, field_name, field_value, prefix_name)
+            return self.client.search_and_delete(field_name, field_value)
         except Exception as e:
             logger.exception("Error occured while deleting documents.")
             raise e

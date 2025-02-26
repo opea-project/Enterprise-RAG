@@ -26,13 +26,13 @@ To run an instance of this database, run the following code:
 cd impl/redis
 docker compose up -d
 ```
-To configure VectorStore to use Redis, please refer to [RedisVectorStore](#redisvectorstore).
+To configure VectorStore to use Redis, please refer to [ConnectorRedis](#ConnectorRedis).
 
 ### VectorStore implementations
 
 To use VectorStore with a specific database, you should not only select it as shown in the [example usage](#example-usage). Based on available endpoints defined in the [support matrix](#support-matrix) each database endpoint requires some minimum configuration. Configuration parameters for individual databases are shown below.
 
-#### RedisVectorStore
+#### ConnectorRedis
 
 Configure the full endpoint URL:
 
@@ -84,14 +84,10 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
-| `mmr`                            | `max_marginal_relevance_search`           | `k`, `fetch_k`, `lambda_mult` |
 
 Additional search parameters that can be added to the query to configure the search:
 - `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
 - `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)
-- `score_threshold`: The minimum relevance score required for a document to be considered a match in similarity search with relevance scores (default: `None`)
-- `fetch_k`: The number of additional documents to fetch for each retrieved document in max marginal relevance search (default: `20`)
-- `lambda_mult`: A parameter that controls the trade-off between relevance and diversity in max marginal relevance search (default: `0.5`)
 
 ### add_texts()
 This method inserts data directly into the selected vector store database. The input is a list of `EmbedDoc` elements. It returns the list of texts saved into a database. 
@@ -105,21 +101,3 @@ The project is organized into several directories:
 - `impl/`: This directory contains the implementation of clients for different databases along with example docker compose files for running the database services.
 
 - `utils/`: This directory contains utility scripts and modules that are used by the Vector Store. This also included a common connector class and connectors for each supported vector store database.
-
-The tree view of the main directories and files:
-
-```bash
-.
-├── impl
-│   ├── redis
-│   │   ├── docker-compose.yml
-│   │   └── opea_redis.py
-│   └── requirements
-│       └── pyproject.toml
-├── README.md
-└── utils
-    ├── opea_vectorstore.py
-    └── connectors
-        ├── connector.py
-        └── connector_redis.py
-```

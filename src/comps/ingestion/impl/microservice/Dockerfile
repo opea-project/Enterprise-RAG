@@ -33,7 +33,6 @@ COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/ingestion/utils ./comps/ingestion/utils
 COPY --chown=user:user ./comps/ingestion/impl/microservice/.env ./comps/ingestion/impl/microservice/.env
 COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
-COPY --chown=user:user ./comps/retrievers/impl/microservice/redis-constants-override.py ./.local/lib/python3.11/site-packages/langchain_community/vectorstores/redis/constants.py
 
 WORKDIR /home/user/comps/ingestion
 CMD ["python", "opea_ingestion_microservice.py"]

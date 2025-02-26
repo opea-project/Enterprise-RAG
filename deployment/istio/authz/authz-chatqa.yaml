@@ -70,6 +70,8 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/embedding-usvc
+        - cluster.local/ns/dataprep/sa/embedding-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

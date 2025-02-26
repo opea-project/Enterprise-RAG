@@ -35,7 +35,6 @@ COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/retrievers/utils ./comps/retrievers/utils
 COPY --chown=user:user ./comps/retrievers/impl/microservice/.env ./comps/retrievers/impl/microservice/.env
 COPY --chown=user:user ./comps/retrievers/opea_retriever_microservice.py ./comps/retrievers/opea_retriever_microservice.py
-COPY --chown=user:user ./comps/retrievers/impl/microservice/redis-constants-override.py ./.local/lib/python3.11/site-packages/langchain_community/vectorstores/redis/constants.py
 
 WORKDIR /home/user/comps/retrievers
 CMD ["python", "opea_retriever_microservice.py"]

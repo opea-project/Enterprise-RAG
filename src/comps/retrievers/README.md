@@ -88,15 +88,9 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
-| `similarity_score_threshold`     | `similarity_search_with_relevance_scores` | `k`, `score_threshold`        |
-| `mmr`                            | `max_marginal_relevance_search`           | `k`, `fetch_k`, `lambda_mult` |
-
 Additional search parameters that can be added to the query to configure the search:
 - `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
 - `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)
-- `score_threshold`: The minimum relevance score required for a document to be considered a match in similarity search with relevance scores (default: `None`)
-- `fetch_k`: The number of additional documents to fetch for each retrieved document in max marginal relevance search (default: `20`)
-- `lambda_mult`: A parameter that controls the trade-off between relevance and diversity in max marginal relevance search (default: `0.5`)
 
 An example request can look as follows:
 
@@ -136,19 +130,3 @@ The project is organized into several directories:
 - `utils/`: This directory contains scripts that are used by the Retriever Microservice.
 
 The tree view of the main directories and files:
-
-```bash
-.
-├── impl
-│   └── microservice
-│       ├── .env
-│       ├── Dockerfile
-│       ├── pyproject.toml
-│       ├── redis-constants-override.py
-│       └── uv.lock
-├── opea_retriever_microservice.py
-├── README.md
-└── utils
-    └── opea_retriever.py
-
-```

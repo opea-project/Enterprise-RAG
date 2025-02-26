@@ -26,10 +26,10 @@ def mock_vectorstore():
             return True
         def _create_index_if_not_exist(**kwargs):
             return True
-    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore._client', return_value=MockDbClient):
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.ConnectorRedis', return_value=MockDbClient):
         yield
 
-def test_retrieve_docs(mock_vectorstore):
+async def test_retrieve_docs(mock_vectorstore):
     input = EmbedDoc(text="test", embedding=[1,2,3])
     retriever = OPEARetriever("redis")
     result = retriever.retrieve(input=input)

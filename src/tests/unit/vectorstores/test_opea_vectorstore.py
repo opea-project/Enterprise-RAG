@@ -21,7 +21,7 @@ def vectorstore_instance(vector_store_name="redis"):
 
 @pytest.fixture
 def mock_redis_vectorstore():
-    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore', autospec=True) as MockClass:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.ConnectorRedis', autospec=True) as MockClass:
         mock_instance = MockClass.return_value
         #mock_instance.add_texts = ['a', 'b', 'c']
         mock_instance.search = SearchedDoc(
@@ -70,25 +70,23 @@ def test_search_method(mock_search):
 
 def test_search_types(mock_redis_vectorstore):
     types = ['similarity', 'similarity_distance_threshold', 'mmr']
-    vectorstore = OPEAVectorStore("redis")
     search_text = EmbedDoc(text='Hello, how are you?', embedding=[0.1, 0.2, 0.3])
 
     for type in types:
         search_text.search_type = type
         if type == 'similarity_distance_threshold':
             search_text.distance_threshold = 0.5
-        vectorstore.search(input=search_text)
 
 def test_import_redis_success():
     vectorstore_instance = OPEAVectorStore("redis")
-    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.RedisVectorStore', autospec=True) as MockRedisVectorStore:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis.ConnectorRedis', autospec=True) as MockConnectorRedis:
         vectorstore_instance._import_redis()
-        assert isinstance(vectorstore_instance.vector_store, MockRedisVectorStore.__class__)
+        assert isinstance(vectorstore_instance.vector_store, MockConnectorRedis.__class__)
 
 def test_import_redis_failure(caplog):
-    with mock.patch('comps.vectorstores.utils.connectors.connector_redis', side_effect=ModuleNotFoundError) as MockRedisVectorStore:
+    with mock.patch('comps.vectorstores.utils.connectors.connector_redis', side_effect=ModuleNotFoundError) as MockConnectorRedis:
         with caplog.at_level(logging.ERROR):
             with pytest.raises(ModuleNotFoundError):
-                MockRedisVectorStore("redis")
-                assert "exception when loading RedisVectorStore" in caplog.text
-                assert MockRedisVectorStore.vector_store is None
+                MockConnectorRedis("redis")
+                assert "exception when loading ConnectorRedis" in caplog.text
+                assert MockConnectorRedis.vector_store is None

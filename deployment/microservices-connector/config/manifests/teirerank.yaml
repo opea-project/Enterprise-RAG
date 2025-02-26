@@ -86,6 +86,8 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"
+            - "--max-client-batch-size"
+            - "64"
           volumeMounts:
             - mountPath: /data
               name: model-volume

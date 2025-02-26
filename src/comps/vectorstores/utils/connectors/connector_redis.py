@@ -2,60 +2,298 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import redis
-from typing import List, Optional
-from comps.vectorstores.impl.redis.opea_redis import OPEARedis
-from comps.cores.proto.docarray import SearchedDoc
+from redis import exceptions
+from typing import Iterable, List, Optional, Union
+from comps.cores.proto.docarray import SearchedDoc, TextDoc
 from comps.cores.utils.utils import sanitize_env
-from comps.vectorstores.utils.connectors.connector import VectorStoreConnector
 from comps.cores.utils.utils import get_boolean_env_var
-from comps.cores.mega.logger import get_opea_logger
+from comps.cores.mega.logger import get_opea_logger, change_opea_logger_level
+from comps.vectorstores.utils.connectors.connector import VectorStoreConnector
+from redisvl.redis.connection import RedisConnectionFactory
+from redisvl.schema import IndexSchema
+from redisvl.index import AsyncSearchIndex
+from redisvl.query import VectorQuery, VectorRangeQuery, FilterQuery
+from redisvl.redis.utils import array_to_buffer
+from redisvl.query.filter import FilterExpression, Text
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
+change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
-class RedisVectorStore(VectorStoreConnector):
-    """
-    A connector class for Redis vector store.
-    Args:
-        batch_size (int): The batch size for vector operations. Defaults to 32.
-    Attributes:
-        batch_size (int): The batch size for vector operations.
-        client (OPEARedis): The Redis client for vector operations.
-    Methods:
-        format_url_from_env(): Formats the Redis URL based on environment variables.
-    """
+class ConnectorRedis(VectorStoreConnector):
+    CONTENT_FIELD_NAME = "text"
+    EMBEDDING_FIELD_NAME = "embedding"
+
     def __init__(self, batch_size: int = 32):
-        """
-        Initializes a RedisVectorStore object.
-        Args:
-            batch_size (int): The batch size for vector operations. Defaults to 32.
-        """
+        self.batch_size = batch_size
+        self.index_dict = {}
 
-        # https://redis.io/docs/latest/develop/interact/search-and-query/advanced-concepts/vectors/#create-a-vector-index
-        # name field ommited, created by default. passing only setting fields
+    def _dims(self):
+        return self._vector_schema_from_env()['dims']
+
+    def _dtype(self):
+        return self._vector_schema_from_env()['datatype']
+
+    def _vector_schema_from_env(self):
         vector_schema = {
-            "algorithm": str(os.getenv("VECTOR_ALGORITHM", "FLAT")), # "FLAT", "HNSW"
-            "dims": 1536, # Not used, overriden when creating the index
-            "datatype": str(os.getenv("VECTOR_DATATYPE", "FLOAT32")), # FLOAT16, FLOAT32, FLOAT64
-            "distance_metric": str(os.getenv("VECTOR_DISTANCE_METRIC", "COSINE")) # L2, IP, COSINE
+            "algorithm": str(sanitize_env(os.getenv("VECTOR_ALGORITHM", "FLAT"))), # "FLAT", "HNSW"
+            "dims": int(sanitize_env(os.getenv("VECTOR_DIMS", 768))),
+            "datatype": str(sanitize_env(os.getenv("VECTOR_DATATYPE", "FLOAT32"))), # BFLOAT16, FLOAT16, FLOAT32, FLOAT64
+            "distance_metric": str(sanitize_env(os.getenv("VECTOR_DISTANCE_METRIC", "COSINE"))) # L2, IP, COSINE
         }
         if vector_schema["algorithm"] == "HNSW":
             vector_schema.update(
                 {
-                    "m": int(os.getenv("VECTOR_HNSW_M", 16)),
-                    "ef_construction": int(os.getenv("VECTOR_HNSW_EF_CONSTRUCTION", 200)),
-                    "ef_runtime": int(os.getenv("VECTOR_HNSW_EF_RUNTIME", 10)),
-                    "epsilon": float(os.getenv("VECTOR_HNSW_EPSILON", 0.01))
+                    "m": int(sanitize_env(os.getenv("VECTOR_HNSW_M", 16))),
+                    "ef_construction": int(sanitize_env(os.getenv("VECTOR_HNSW_EF_CONSTRUCTION", 200))),
+                    "ef_runtime": int(sanitize_env(os.getenv("VECTOR_HNSW_EF_RUNTIME", 10))),
+                    "epsilon": float(sanitize_env(os.getenv("VECTOR_HNSW_EPSILON", 0.01)))
+                }
+            )
+        return vector_schema
+
+    def _metadata_schema(self):
+        return [
+            {
+                "name": "bucket_name",
+                "type": "text",
+            },
+            {
+                "name": "object_name",
+                "type": "text",
+            },
+            {
+                "name": "file_id",
+                "type": "text",
+            },
+            {
+                "name": "link_id",
+                "type": "text",
+            },
+            {
+                "name": "timestamp",
+                "type": "text",
+            }
+        ]
+
+    def _vector_schema(self, schema: dict, metadata_schema: Optional[dict]=None) -> IndexSchema:
+        index_name = f"{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_index"
+
+        data = {
+            "index": {
+                "name": index_name,
+                "prefix": "erag",
+                "storage_type": "hash"
+            },
+            "fields": [
+                {
+                    "name": ConnectorRedis.CONTENT_FIELD_NAME,
+                    "type": "text"
+                },
+                {
+                    "name": ConnectorRedis.EMBEDDING_FIELD_NAME,
+                    "type": "vector",
+                    "attrs": {
+                        "datatype": schema['datatype'],
+                        "algorithm": schema['algorithm'],
+                        "dims": schema['dims'],
+                        "distance_metric": schema['distance_metric'],
+                    },
+                }
+            ]
+        }
+
+        if metadata_schema:
+            data["fields"].extend(metadata_schema)
+
+        if schema['algorithm'].lower() == "hnsw":
+            data['fields'][1]['attrs'].update(
+                {
+                    "m": schema['m'],
+                    "ef_construction": schema['ef_construction'],
+                    "ef_runtime": schema['ef_runtime'],
+                    "epsilon": schema['epsilon']
                 }
             )
 
-        url = RedisVectorStore.format_url_from_env()
-        self.index_name = f"{vector_schema['algorithm'].lower()}_{vector_schema['datatype'].lower()}_{vector_schema['distance_metric'].lower()}_index"
-        self.client = self._client(url=url, index_name=self.index_name, vector_schema=vector_schema, key_prefix="doc:default_index")
-        self.batch_size = batch_size
+        return IndexSchema.from_dict(data)
 
-    def _client(self, url: str, index_name: str, vector_schema: Optional[dict] = None, key_prefix: Optional[str] = None) -> OPEARedis:
-        return OPEARedis(url=url, index_name=index_name, vector_schema=vector_schema, key_prefix=key_prefix)
+    async def _create_index(self, schema: IndexSchema, overwrite: bool=False) -> AsyncSearchIndex:
+        logger.info(f"Creating index: {schema.index.name}")
+        index = AsyncSearchIndex(schema)
+        await index.connect(redis_url=ConnectorRedis.format_url_from_env())
+        await index.create(overwrite=overwrite)
+        return index
+
+    async def vector_index(self) -> AsyncSearchIndex:
+        schema = self._vector_schema(self._vector_schema_from_env(), self._metadata_schema())
+        index_name = schema.index.name
+
+        if self.index_dict.get(index_name, None) is not None:
+            index = self.index_dict[index_name]
+            exists = await index.exists()
+            if exists:
+                return index
+            else:
+                logger.info(f"Index {index_name} memoized but not available in redis.")
+
+        index = await self._create_index(schema)
+        self.index_dict[index_name]=index
+        return index
+
+    def _process_data(self, texts: List[str], embeddings: List[List[float]], metadatas: List[dict]=None):
+        datas = [
+            {
+                "text": text,
+                "embedding": array_to_buffer(embedding, dtype=self._dtype()),
+                **(metadata if metadata is not None else {})
+            }
+            for text, embedding, metadata in zip(
+                texts, embeddings, metadatas or [None] * len(texts)
+            )
+        ]
+        return datas
+
+    async def add_texts(self, texts: List[str], embeddings: List[List[float]], metadatas: List[dict]=None):
+        try:
+            data = self._process_data(texts, embeddings, metadatas)
+            index = await self.vector_index()
+            result = await index.load(data)
+            return list(result) if result is not None else []
+        except Exception as e:
+            logger.exception("Error occured while adding texts")
+            raise e
+
+    def _search_schema(self, field_name: str) -> IndexSchema:
+        data = {
+            "index": {
+                "name": f"search_{field_name}",
+                "prefix": "erag",
+                "storage_type": "hash"
+            },
+            "fields": [
+                {
+                    "name": field_name,
+                    "type": "text"
+                }
+            ]
+        }
+        return IndexSchema.from_dict(data)
+
+    async def search_index(self, field_name: str) -> AsyncSearchIndex:
+        schema = self._search_schema(field_name)
+        index_name = schema.index.name
+
+        if self.index_dict.get(index_name, None) is not None:
+            index = self.index_dict[index_name]
+            exists = await index.exists()
+            if exists:
+                logger.info(f"Using index {index_name} exists.")
+                return index
+            else:
+                logger.info(f"Index {index_name} memoized but not available in redis.")
+
+        index = await self._create_index(schema)
+        self.index_dict[index_name]=index
+        return index
+
+    async def search_by_metadata(self, field_name: str, field_value: str):
+        filter = Text(field_name) == field_value
+        query = FilterQuery(num_results=10000, filter_expression=filter)
+        index = await self.search_index(field_name)
+        return await index.search(query)
+
+    async def search_and_delete_by_metadata(self, field_name: str, field_value: str):
+        results = await self.search_by_metadata(field_name, field_value)
+        client = RedisConnectionFactory.connect(
+            redis_url=ConnectorRedis.format_url_from_env(),
+            use_async=True
+        )
+        for r in results.docs:
+            await client.delete(r.id)
+
+    def _build_vector_query(
+        self,
+        vector: List[float],
+        k: int,
+        distance_threshold: float=None,
+        dtype: str="float32",
+        filter_expression: Optional[Union[str, FilterExpression]] = None,
+        return_fields: Optional[List[str]]=None
+    ):
+        if distance_threshold is not None:
+            return VectorRangeQuery(
+                vector=vector,
+                vector_field_name="embedding",
+                num_results=k,
+                filter_expression=filter_expression,
+                distance_threshold=distance_threshold,
+                dtype=dtype,
+                return_fields=return_fields
+            )
+        else:
+            return VectorQuery(
+                vector=vector,
+                vector_field_name="embedding",
+                num_results=k,
+                filter_expression=filter_expression,
+                dtype=dtype,
+                return_fields=return_fields
+            )
+
+    def _parse_search_results(self, input_text: str, results: Iterable[any]) -> SearchedDoc:
+        searched_docs = []
+
+        metadata_fields = [VectorQuery.DISTANCE_ID]
+        if self._metadata_schema():
+            metadata_fields.extend([field['name'] for field in self._metadata_schema()])
+
+        for r in results:
+            metadata = {}
+            for field in metadata_fields:
+                try:
+                    metadata[field] = r[field]
+                except AttributeError:
+                    continue
+                except KeyError:
+                    continue
+
+            searched_docs.append(
+                TextDoc(
+                    text=r[ConnectorRedis.CONTENT_FIELD_NAME],
+                    metadata=metadata
+                )
+            )
+        return SearchedDoc(retrieved_docs=searched_docs, initial_query=input_text)
+
+    async def similarity_search_by_vector(self, input_text: str, embedding: List[float], k: int, distance_threshold: float = None, filter_expression: Optional[Union[str, FilterExpression]] = None, parse_result: bool = True) -> SearchedDoc:
+        try:
+            fields = [ConnectorRedis.CONTENT_FIELD_NAME, VectorQuery.DISTANCE_ID]
+            if self._metadata_schema():
+                fields.extend([field['name'] for field in self._metadata_schema()])
+
+            v = self._build_vector_query(
+                vector=embedding,
+                k=k,
+                dtype=self._dtype(),
+                return_fields=fields,
+                distance_threshold=distance_threshold,
+                filter_expression=filter_expression
+            )
+            index = await self.vector_index()
+            result = await index.search(v.query, query_params=v.params)
+
+            if parse_result:
+                return self._parse_search_results(input_text=input_text, results=result.docs)
+            else:
+                return result
+        except exceptions.ResponseError as e:
+            if "no such index" in str(e):
+                logger.warning("No such index found in vector store. Import data first.")
+                return SearchedDoc(retrieved_docs=[], initial_query=input_text)
+            raise e
+        except Exception as e:
+            logger.exception("Error occured while searching by vector")
+            raise e
 
     @staticmethod
     def format_url_from_env():
@@ -68,102 +306,14 @@ class RedisVectorStore(VectorStoreConnector):
         if redis_url:
             return redis_url
         else:
-            host = os.getenv("REDIS_HOST", 'localhost')
-            port = int(os.getenv("REDIS_PORT", 6379))
+            host = sanitize_env(os.getenv("REDIS_HOST", 'localhost'))
+            port = int(sanitize_env(os.getenv("REDIS_PORT", 6379)))
 
             using_ssl = get_boolean_env_var("REDIS_SSL", False)
             schema = "rediss" if using_ssl else "redis"
 
-            username = os.getenv("REDIS_USERNAME", "default")
-            password = os.getenv("REDIS_PASSWORD", None)
+            username = sanitize_env(os.getenv("REDIS_USERNAME", "default"))
+            password = sanitize_env(os.getenv("REDIS_PASSWORD", None))
             credentials = "" if password is None else f"{username}:{password}@"
 
             return f"{schema}://{credentials}{host}:{port}/"
-
-    def similarity_search_by_vector(self, input_text: str, embedding: List, k: int, distance_threshold: float=None) -> SearchedDoc:
-        """
-        Perform a similarity search by vector.
-        Args:
-            input_text (str): The input text to search for.
-            embedding (List): The embedding to search for.
-            k (int): The number of results to retrieve.
-            distance_threshold (float): The distance threshold for the search.
-        Returns:
-            SearchedDoc: The searched document containing the search results.
-        """
-
-        try:
-            search_res = self.client.similarity_search_by_vector(
-                k=k,
-                embedding=embedding,
-                distance_threshold=distance_threshold
-            )
-            return self._parse_search_results(input_text=input_text, results=search_res)
-        except redis.exceptions.ResponseError as e:
-            if "no such index" in str(e):
-                logger.warning("No such index found in vector store. Import data first.")
-                return SearchedDoc(retrieved_docs=[], initial_query=input_text)
-            raise e
-        except Exception as e:
-            logger.exception("Error occured while searching by vector")
-            raise e
-
-    def similarity_search_with_relevance_scores(self, input_text: str, embedding: List, k: int, score_threshold: float) -> SearchedDoc:
-        """
-        Perform a similarity search with relevance scores.
-        Args:
-            embedding (List): The embedding to search for.
-            k (int): The number of results to retrieve.
-            score_threshold (float): The distance threshold for the search.
-        Returns:
-            SearchedDoc: The searched document containing the search results.
-        """
-        if score_threshold < 0 or score_threshold > 1:
-            raise ValueError(f"score_threshold must be between 0 and 1. Received: {score_threshold}")
-
-        try:
-            docs_and_similarities = self.client.similarity_search_with_relevance_scores(
-                k=k,
-                query=input_text,
-                score_threshold=score_threshold
-            )
-            search_res = [doc for doc, _ in docs_and_similarities]
-            return self._parse_search_results(input_text=input_text, results=search_res)
-        except redis.exceptions.ResponseError as e:
-            if "no such index" in str(e):
-                logger.warning("No such index found in vector store. Import data first.")
-                return SearchedDoc(retrieved_docs=[], initial_query=input_text)
-            raise e
-        except Exception as e:
-            logger.exception("Error occured while searching with relevance scores")
-            raise e
-
-    def max_marginal_relevance_search(self, input_text: str, embedding: List, k: int, fetch_k: float, lambda_mult: float) -> SearchedDoc:
-        """
-        Perform a max marginal relevance search.
-        Args:
-            embedding (List): The embedding to search for.
-            k (int): The number of results to retrieve.
-            distance_threshold (float): The distance threshold for the search.
-        Returns:
-            SearchedDoc: The searched document containing the search results.
-        """
-        if lambda_mult < 0 or lambda_mult > 1:
-            raise ValueError(f"lambda_mult must be between 0 and 1. Received: {lambda_mult}")
-
-        try:
-            search_res = self.client.max_marginal_relevance_search(
-                k=k,
-                embedding=embedding,
-                fetch_k=fetch_k,
-                lambda_mult=lambda_mult
-            )
-            return self._parse_search_results(input_text=input_text, results=search_res)
-        except redis.exceptions.ResponseError as e:
-            if "no such index" in str(e):
-                logger.warning("No such index found in vector store. Import data first.")
-                return SearchedDoc(retrieved_docs=[], initial_query=input_text)
-            raise e
-        except Exception as e:
-            logger.exception("Error occured while searching with max marginal relevance")
-            raise e

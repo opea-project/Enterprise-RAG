@@ -7,8 +7,8 @@ import { ServiceArgumentInputValue } from "@/types/admin-panel/control-plane";
 export const searchTypesArgsMap = {
   similarity: ["k"],
   similarity_distance_threshold: ["k", "distance_threshold"],
-  similarity_score_threshold: ["k", "score_threshold"],
-  mmr: ["k", "fetch_k", "lambda_mult"],
+  // similarity_score_threshold: ["k", "score_threshold"],
+  // mmr: ["k", "fetch_k", "lambda_mult"],
 };
 
 const searchTypes = Object.keys(searchTypesArgsMap);

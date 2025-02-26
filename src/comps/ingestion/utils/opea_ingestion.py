@@ -21,19 +21,19 @@ class OPEAIngestion:
     def _initialize(self, vector_store: str):
         self.vector_store = OPEAVectorStore(vector_store)
 
-    def ingest(self, input: EmbedDocList) -> EmbedDocList:
+    async def ingest(self, input: EmbedDocList) -> EmbedDocList:
         docs = input.docs
         if not isinstance(input.docs, (list, tuple)):
             docs = [input.docs] # [EmbedDoc]
 
-        self.vector_store.add_texts(input=docs)
+        await self.vector_store.add_texts(input=docs)
         return input
 
-    def delete(self, field_name: str, field_value: str) -> None:
+    async def delete(self, field_name: str, field_value: str) -> None:
         if '-' in field_value:
             field_value = field_value.replace('-', '')
     
-        return self.vector_store.delete_texts(
+        return await self.vector_store.delete_texts(
             search_field_name=field_name,
             search_field_value=field_value
         )

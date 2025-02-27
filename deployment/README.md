@@ -384,7 +384,7 @@ On a Windows machine, this file is typically located at `C:\Windows\System32\dri
 Once the update is complete, you can access the Enterprise RAG UI by typing the following URL in your web browser:
 `https://erag.com`
 
-Keyclock can be accessed via:
+Keycloak can be accessed via:
 `https://auth.erag.com`
 
 Grafana can be accessed via:

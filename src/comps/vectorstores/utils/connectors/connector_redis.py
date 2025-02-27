@@ -36,17 +36,17 @@ class ConnectorRedis(VectorStoreConnector):
     def _vector_schema_from_env(self):
         vector_schema = {
             "algorithm": str(sanitize_env(os.getenv("VECTOR_ALGORITHM", "FLAT"))), # "FLAT", "HNSW"
-            "dims": int(sanitize_env(os.getenv("VECTOR_DIMS", 768))),
+            "dims": int(sanitize_env(str(os.getenv("VECTOR_DIMS", 768)))),
             "datatype": str(sanitize_env(os.getenv("VECTOR_DATATYPE", "FLOAT32"))), # BFLOAT16, FLOAT16, FLOAT32, FLOAT64
             "distance_metric": str(sanitize_env(os.getenv("VECTOR_DISTANCE_METRIC", "COSINE"))) # L2, IP, COSINE
         }
         if vector_schema["algorithm"] == "HNSW":
             vector_schema.update(
                 {
-                    "m": int(sanitize_env(os.getenv("VECTOR_HNSW_M", 16))),
-                    "ef_construction": int(sanitize_env(os.getenv("VECTOR_HNSW_EF_CONSTRUCTION", 200))),
-                    "ef_runtime": int(sanitize_env(os.getenv("VECTOR_HNSW_EF_RUNTIME", 10))),
-                    "epsilon": float(sanitize_env(os.getenv("VECTOR_HNSW_EPSILON", 0.01)))
+                    "m": int(sanitize_env(str(os.getenv("VECTOR_HNSW_M", 16)))),
+                    "ef_construction": int(sanitize_env(str(os.getenv("VECTOR_HNSW_EF_CONSTRUCTION", 200)))),
+                    "ef_runtime": int(sanitize_env(str(os.getenv("VECTOR_HNSW_EF_RUNTIME", 10)))),
+                    "epsilon": float(sanitize_env(str(os.getenv("VECTOR_HNSW_EPSILON", 0.01))))
                 }
             )
         return vector_schema

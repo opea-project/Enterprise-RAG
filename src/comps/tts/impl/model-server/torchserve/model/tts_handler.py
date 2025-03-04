@@ -31,10 +31,11 @@ Methods:
 
 import logging
 import os
+import subprocess
 from abc import ABC
 
 import torch
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import SpeechT5ForTextToSpeech, SpeechT5Processor, SpeechT5HifiGan
 
 from ts.context import Context
 from ts.torch_handler.base_handler import BaseHandler
@@ -86,17 +87,40 @@ class TTSHandler(BaseHandler, ABC):
             pass
 
         try:
-            self.model = T5ForConditionalGeneration.from_pretrained(model_name)
-            self.tokenizer = T5Tokenizer.from_pretrained(model_name)
+            self.model = SpeechT5ForTextToSpeech.from_pretrained(model_name)
+            self.processor = SpeechT5Processor.from_pretrained(model_name)
+            self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
             self.model = self.model.to(memory_format=torch.channels_last)
             self.model.eval()
 
-            self.model = ipex.optimize(
+            self.model = ipex.llm.optimize(
                 self.model,
                 dtype=self.amp_dtype,
                 inplace=True,
                 deployment_mode=True,
             )
+
+            # Fetch default speaker embedding
+            try:
+                for spk_embed in ["spk_embed_default.pt", "spk_embed_male.pt"]:
+                    if os.path.exists(spk_embed):
+                        continue
+
+                    p = subprocess.Popen(
+                        [
+                            "curl",
+                            "-O",
+                            "https://raw.githubusercontent.com/intel/intel-extension-for-transformers/main/"
+                            "intel_extension_for_transformers/neural_chat/assets/speaker_embeddings/" + spk_embed,
+                        ]
+                    )
+
+                    p.wait()
+                self.speaker_embeddings = torch.load("spk_embed_default.pt").to(self.device_type)
+            except Exception as e:
+                logger.warning("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
+                self.speaker_embeddings = torch.zeros((1, 512)).to(self.device_type)
+
             self.initialized = True
             logger.info(f"Model '{model_name}' loaded successfully")
         except Exception as e:
@@ -107,7 +131,7 @@ class TTSHandler(BaseHandler, ABC):
     def preprocess(self, requests):
         texts = []
         logger.debug(f"Received requests: {requests}")
-
+        
         bodies = [data.get("data") or data.get("body") for data in requests]
 
         for body in bodies:
@@ -130,14 +154,22 @@ class TTSHandler(BaseHandler, ABC):
             enabled=self.amp_enabled,
             dtype=self.amp_dtype,
             ):
-            inputs = self.tokenizer(input_batch, return_tensors="pt", padding=True)
-            outputs = self.model.generate(**inputs)
+            inputs = self.processor(text=input_batch, return_tensors="pt", padding=True)
+            waveforms, waveform_lengths = self.model.generate_speech(
+                inputs["input_ids"].to(self.device_type),
+                speaker_embeddings=self.speaker_embeddings,
+                attention_mask=inputs["attention_mask"].to(self.device_type),
+                vocoder=self.vocoder,
+                return_output_lengths=True,
+            )
 
-        return [self.tokenizer.decode(output, skip_special_tokens=True) for output in outputs]
+        return [waveform[:length].cpu().numpy() for waveform, length in zip(waveforms, waveform_lengths)]
 
 
     def postprocess(self, inference_output):
+        logger.debug(f"Postprocessing inference output: {inference_output}")
+        # Convert numpy arrays to lists for JSON serialization
         if len(inference_output) > 1:
-            return inference_output
+            return [output.tolist() for output in inference_output]
 
-        return [inference_output]
+        return [inference_output[0].tolist()]

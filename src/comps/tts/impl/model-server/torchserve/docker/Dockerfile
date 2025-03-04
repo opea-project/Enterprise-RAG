@@ -31,11 +31,11 @@ ENV PYTHONPATH="/home/user"
 ENV HF_HOME="/home/user/tmp"
 
 RUN pip install --no-cache-dir -U   \
-    sentence_transformers==3.2.1    \
-    transformers==4.46              \
-    accelerate==0.34.2              \
-    torchaudio==2.0.1               \
-    librosa==0.9.2
+    sentence_transformers==3.4.1    \
+    transformers==4.49              \
+    accelerate==0.34.2
+    # torchaudio==2.0.1               \
+    # librosa==0.9.2
 
 # RUN python -m pip install oneccl_bind_pt==2.5.0 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 
@@ -45,7 +45,8 @@ RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/s
     torchserve==0.12.0              \
     torch-model-archiver==0.12.0
 
-# Add TS entrypoint
+RUN pip install sentencepiece
+    # Add TS entrypoint
 COPY --chown=user:user docker/config.properties /home/user
 COPY --chown=user:user docker/entrypoint.sh /home/user/entrypoint.sh
 COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yaml

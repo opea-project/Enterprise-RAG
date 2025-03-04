@@ -31,8 +31,8 @@ ENV PYTHONPATH="/home/user"
 ENV HF_HOME="/home/user/tmp"
 
 RUN pip install --no-cache-dir -U   \
-    sentence_transformers==3.2.1    \
-    transformers==4.46              \
+    sentence_transformers==3.4.1    \
+    transformers==4.49              \
     accelerate==0.34.2
 
 # RUN python -m pip install oneccl_bind_pt==2.5.0 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/

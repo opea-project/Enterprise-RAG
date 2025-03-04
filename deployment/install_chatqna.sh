@@ -525,11 +525,35 @@ function start_telemetry() {
 
 function clear_telemetry() {
     print_header "Clear telemetry"
+    # Timeout duration for deleting otelcol-traces
+    local OTELCOL_DELETE_TIMEOUT=60
 
+    # Delete the tls-secret if it exists
     kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
 
-    # remove CR manually to allow (helm uninstall doesn't remove it!)
-    kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1 && kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS"
+    # Delete otelcol-traces with timeout and webhook handling
+    if kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1; then
+        echo "Attempting to delete otelcol-traces (timeout: ${OTELCOL_DELETE_TIMEOUT} seconds)..."
+
+        # Set a timeout for deletion of otelcol-traces
+        if ! timeout ${OTELCOL_DELETE_TIMEOUT} kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS"; then
+            echo "Deletion of otelcol-traces is taking too long. Removing webhook and finalizer..."
+
+            # Delete the webhooks if it exists
+            kubectl get mutatingwebhookconfiguration telemetry-traces-otel-operator-mutation > /dev/null 2>&1 && \
+            kubectl delete mutatingwebhookconfiguration telemetry-traces-otel-operator-mutation
+
+            kubectl get validatingwebhookconfiguration telemetry-traces-otel-operator-validation > /dev/null 2>&1 && \
+            kubectl delete validatingwebhookconfiguration telemetry-traces-otel-operator-validation
+
+            # Remove the finalizer blocking deletion
+            kubectl patch otelcols otelcol-traces -n "$TELEMETRY_TRACES_NS" --type='merge' -p '{"metadata":{"finalizers":[]}}'
+
+            # Force delete the resource
+            kubectl delete otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" --force --grace-period=0
+        fi
+    fi
+
     helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces-instr
     helm status -n "$TELEMETRY_TRACES_NS" telemetry-traces > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_TRACES_NS" telemetry-traces
     helm status -n "$TELEMETRY_NS" telemetry-logs > /dev/null 2>&1 && helm uninstall -n "$TELEMETRY_NS" telemetry-logs

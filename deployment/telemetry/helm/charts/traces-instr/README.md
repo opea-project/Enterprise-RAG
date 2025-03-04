@@ -57,7 +57,7 @@ kubectl patch -n chatqa deploy llm-svc-deployment --patch-file patches/patch-dep
 
 Instrumentation in Python services enables:
 - tracing (auto zero-code instrumentation)
-- logs - requires that all loggers propagate log entries to root logger (set `LOGGING_PROPAGTE` to true) e.g. logs have trace_id/span_id identifiers to be easily found by tracing explorer.
+- logs - requires that all loggers propagate log entries to root logger (set `LOGGING_PROPAGATE` to true) e.g. logs have trace_id/span_id identifiers to be easily found by tracing explorer.
 
 #### 3) Enabling traces from downstream services (e.g. model servers)
 

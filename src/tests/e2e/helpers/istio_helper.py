@@ -8,6 +8,7 @@ import re
 import threading
 import time
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
@@ -21,9 +22,11 @@ state_logger = logger.getChild("state")
 
 
 ISTIO_NS_PREFIX = "istio-test-"
-ERROR_LOG_TIMEOUT = 30
-MAX_RUNNING_QUERIES = 8 # How many pods can be actively tracked at the same time
-DEF_LOOP_INTERVAL = 1
+ERROR_LOG_TIMEOUT_SEC = 20
+MAX_RUNNING_QUERIES = 8 # how many query pods can be actively tracked at the same time
+DEF_LOOP_INTERVAL_SEC = 0.5
+MAX_RETRY_COUNT = 2 # number of retries allowed for query after first TIMEOUT or ERROR state
+RETRY_BACKOFF_SEC = 2 # time before query in RETRY state is restored to NEW state
 
 
 class ConnectionType(Enum):
@@ -35,6 +38,7 @@ class ConnectionType(Enum):
 
 class QueryState(IntEnum):
     NEW = auto()
+    RETRY= auto()
     SELECTED = auto()
     PREPARING = auto()
     READY = auto()
@@ -44,6 +48,9 @@ class QueryState(IntEnum):
     BLOCKED = auto()
     UNBLOCKED = auto()
     ERROR = auto() # command execution failed
+
+    def is_selected(self):
+        return self not in (QueryState.NEW, QueryState.RETRY)
 
 
 @dataclass(frozen=True)
@@ -110,6 +117,9 @@ class TestNamespace():
             resource.create()
         logger.info(f"Applied '{yaml_file_path}' to namespace '{self.namespace_name}'.")
 
+    def count_pods(self):
+        return len(list(kr8s.get("pods", namespace=self.namespace_name)))
+
     def delete(self):
         try:
             namespace = Namespace.get(self.namespace_name)
@@ -158,7 +168,8 @@ class TestPod():
                     {
                         "name": "test-container",
                         "image": self.image,
-                        "command": ["sleep", "3600"],
+                        "command": ["/bin/sh", "-c"],
+                        "args": ['trap exit TERM; sleep 300 & wait; done']
                     }
                 ],
             },
@@ -225,7 +236,7 @@ class LogWatcher(threading.Thread):
         # Fetch all ztunnel pods
         pods = kr8s.get("pods", namespace=ztunnel_namespace, label_selector=ztunnel_label_selector)
         ztunnel_pod : Pod = pods[0]
-        for log_line in ztunnel_pod.logs(since_seconds=5, follow=True):
+        for log_line in ztunnel_pod.logs(since_seconds=None, follow=True):
             with self.lock:
                 if self.stop_flag:
                     return
@@ -241,10 +252,11 @@ class IstioHelper:
         self.connection_type = None
         self.namespace = None
         self.max_running_queries = MAX_RUNNING_QUERIES
-        self.loop_interval = DEF_LOOP_INTERVAL
+        self.loop_interval = DEF_LOOP_INTERVAL_SEC
         self.query_list: list[ServiceQuery] = []
         self.query_pods: dict[tuple[ConnectionType, str], TestPod] = {}
         self.log_snapshot: list[str] = []
+        self.endpoint_retries: dict[str, int] = defaultdict(lambda: MAX_RETRY_COUNT)
 
     def create_namespace(self, inmesh=True):
         self.namespace = TestNamespace(inmesh=inmesh)
@@ -293,7 +305,7 @@ class IstioHelper:
         test_pod = self.query_pods.pop(query_key)
         test_pod.delete()
 
-    def handle_query_state_timeout(self, query: ServiceQuery):
+    def handle_query_state_deadline(self, query: ServiceQuery):
         if query.deadline is not None and query.deadline_state is not None:
             if time.time() > query.deadline:
                 query.set_state(query.deadline_state)
@@ -303,7 +315,7 @@ class IstioHelper:
     def process_query(self, query: ServiceQuery):
         start_state = query.state
         # test if query has changed state due to timeout
-        if self.handle_query_state_timeout(query):
+        if self.handle_query_state_deadline(query):
             return
         match start_state:
             case QueryState.SELECTED:
@@ -317,29 +329,43 @@ class IstioHelper:
             case QueryState.READY:
                 self.execute_query(query)
                 if query.state == start_state: # unchanged by method
-                    query.set_state(QueryState.EXECUTED, ERROR_LOG_TIMEOUT)
+                    query.set_state(QueryState.EXECUTED, ERROR_LOG_TIMEOUT_SEC)
             case QueryState.EXECUTED:
                 self.verify_query_blocked(query)
-            case QueryState.NEW:
+            case QueryState.NEW|QueryState.RETRY:
                 # handled in query loop
                 return
             case _:
                 logger.info(f"Unhandled query state: {query.state}")
 
     def query_endpoints(self, connection_type: ConnectionType, endpoints: list[str]):
+        self.query_multiple_endpoints({e: connection_type for e in endpoints})
+
+    def query_multiple_endpoints(self, endpoints: dict[str, ConnectionType]):
         connections_not_blocked : list[str] = []
         self.query_list.clear()
         self.log_snapshot.clear()
         log_watcher: LogWatcher = LogWatcher()
         log_watcher.start()
-        for endpoint in endpoints:
+        self.endpoint_retries.clear()
+        for endpoint, connection_type in endpoints.items():
             self.query_list.append(ServiceQuery(connection_type, endpoint))
         while self.query_list:
             self.log_snapshot = log_watcher.snapshot()
             i = 0
             while i < len(self.query_list):
                 query = self.query_list[i]
+                query_key = query.query_key
                 self.process_query(query)
+                if query.state in [QueryState.ERROR, QueryState.TIMEOUT]:
+                    # retry query
+                    if self.endpoint_retries[query_key.endpoint] > 0:
+                        self.endpoint_retries[query_key.endpoint] -= 1
+                        self.retire_query(query)
+                        logger.info(f"Will retry query at {query_key.connection_type.value} endpoint {query_key.endpoint}")
+                        query.set_state(QueryState.RETRY, RETRY_BACKOFF_SEC, QueryState.NEW)
+                        self.query_list.append(self.query_list.pop(i))
+                        continue
                 if query.state in [QueryState.BLOCKED, QueryState.UNBLOCKED, QueryState.TIMEOUT, QueryState.ERROR]:
                     if query.state != QueryState.BLOCKED:
                         connections_not_blocked.append(query.query_key.endpoint)
@@ -347,11 +373,9 @@ class IstioHelper:
                     del self.query_list[i]
                 else:
                     i += 1
-            # select new queries for running
-            num_running = sum(query.state != QueryState.NEW for query in self.query_list)
-            num_to_select = len(self.query_list) - num_running
-            if self.max_running_queries > 0:
-                num_to_select = min(self.max_running_queries, num_to_select)
+            # select NEW queries for running
+            num_running = max(sum(query.state.is_selected() for query in self.query_list), self.namespace.count_pods())
+            num_to_select = (self.max_running_queries if self.max_running_queries > 0 else len(self.query_list)) - num_running
             i = 0
             while num_to_select > 0 and i < len(self.query_list):
                 query = self.query_list[i]

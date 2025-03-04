@@ -29,7 +29,8 @@ spec:
       containers:
       - image: curlimages/curl
         name: curl
-        command: ["sleep", "infinity"]
+        command: ["/bin/sh", "-c"]
+        args: ["trap exit TERM; sleep 300 & wait; done"]
         securityContext:
           capabilities:
             drop:

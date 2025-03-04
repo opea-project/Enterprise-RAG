@@ -115,17 +115,29 @@ class VllmHpuBenchmark(BenchmarkBase):
 
     @property
     def _fields_names(self) -> list[str]:
-        fields_names = self.RESULTS_FIELDS_NAMES_BASE.copy()
 
-        fields_names = [
-            key for key in HARDCODED_SETUP_CONFIGURATIONS[0]["config_override"]
-        ] + fields_names
-        fields_names = [
-            key for key in HARDCODED_SETUP_CONFIGURATIONS[0]["config_extra"]
-        ] + fields_names
-        fields_names = [
-            key for key in HARDCODED_SETUP_CONFIGURATIONS[0]["docker_extra"]
-        ] + fields_names
+        fields_names = []
+
+        # Combinations are list of dicts, therefore pick keys from 1st of kind
+        if self._setup_combinations[0]["config_override"]:
+            fields_names += [key for key in self._setup_combinations[0]["config_override"]]
+
+        if self._setup_combinations[0]["config_microservice_extra"]:
+            fields_names += [
+                key for key in self._setup_combinations[0]["config_microservice_extra"]
+            ]
+
+        if self._setup_combinations[0]["config_model_server_extra"]:
+            fields_names += [
+                key for key in self._setup_combinations[0]["config_model_server_extra"]
+            ]
+
+        if self._setup_combinations[0]["docker_model_server_extra"]:
+            fields_names += [
+                key for key in self._setup_combinations[0]["docker_model_server_extra"]
+            ]
+
+        fields_names += self.RESULTS_FIELDS_NAMES_BASE.copy()
 
         return fields_names
 

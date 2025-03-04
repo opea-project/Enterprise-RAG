@@ -42,3 +42,4 @@ class BaseLLMsTest:
         response = requests.post(url, json=request_body, headers=headers)
 
         assert response.status_code == HTTPStatus.OK, "Incorrect response status code"
+

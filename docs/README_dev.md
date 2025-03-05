@@ -56,9 +56,37 @@ git --no-pager diff microservices-connector/helm/values.yaml
 ```
 
 Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
+## 2. Build images and deploy everything
+
+Set the configuration parameters. Skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`. For proxy related environments, follow `proxy version`.
+
+Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
 ```bash
+export HF_TOKEN=your-hf-token-here
+cd deployment/
+
+TAG=ts`date +%s`
+echo $TAG
+
+# no proxy version (use only on system without proxy)
+./set_values.sh -g $HF_TOKEN -t $TAG
+
+# proxy version
+./set_values.sh -p $http_proxy -u $https_proxy -n $no_proxy -g $HF_TOKEN -t $TAG
+```
+
+Check your changes with following command:
+
+```bash
+# check yaml values
+git --no-pager diff microservices-connector/helm/values.yaml
+```
+
+Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
+
 ### a) Build images (~1h once, ~50GB)
+```bash
 no_proxy=localhost ./update_images.sh --build -j 100 --tag $TAG
 
 # check build progress (output logs in another terminal)
@@ -66,8 +94,10 @@ tail -n 0 -f logs/build_*
 pgrep -laf 'docker build'
 # check built images
 docker image ls | grep $TAG
+```
 
 ### b) Push images (~2h once, ~20GB)
+```bash
 no_proxy=localhost ./update_images.sh --push -j 100 --tag $TAG
 
 # check pushing processes (output logs in another terminal)
@@ -78,8 +108,8 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 
 Deploy the pipeline. Choose a command that suits your needs. More information on install_chatqna.sh parameters can be found [here](../deployment/README.md).
 
-```bash
 ### c) Deploy everything
+```bash
 ./install_chatqna.sh --auth --kind --deploy xeon_torch_llm_guard --ui --telemetry --tag $TAG
 
 # Install or reinstall(upgrade) individual components
@@ -97,15 +127,17 @@ To verify that the deployment was successful, run the following command:
 
 Check out following commands for any additional needs.
 
-```bash
 ### d) Access Grafana/Prometheus
+```bash
 pgrep -laf 'port-forward'
 # or port forwards processes manually
 kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
 # Grafana: http://127.0.0.1:3000
 # Prometheus: http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/graph
+```
 
 ### e) Access UI/KeyCloak and Grafana
+```bash
 # Add "127.0.0.1 auth.erag.com grafana.erag.com erag.com" line to /etc/hosts (Linux) or c:\windows\System32\drivers\etc\hosts (Windows)
 kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
 # UI: https://erag.com/
@@ -113,12 +145,15 @@ kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:
 # KeyCloak: https://auth.erag.com/
 # Minio: https://minio.erag.com/
 # Minio API: https://s3.erag.com/
+```
 
-# Passwords for Grafana/Keycloak is given above in command line for installation.
-# Passwords for users:
+Passwords for Grafana/Keycloak are given above in the command line for installation. Passwords for users:
+```bash
 cat default_credentials.txt
+```
 
 ### Optionally install metrics-server (for resource usage metrics)
+```bash
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace
 ```

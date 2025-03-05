@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import re
-import subprocess
 from datetime import datetime
 
 from elasticsearch import Elasticsearch
@@ -58,14 +57,6 @@ def access_or_set_nested_dict(d, keys, value=None):
     return d[keys[-1]]
 
 
-def get_current_commit_sha():
-    result = subprocess.run(["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE)
-    if result.returncode != 0:
-        logger.error("Failed to get commit SHA. Command output:")
-        logger.error(result.stdout.decode("utf-8").strip())
-    return result.stdout.decode("utf-8").strip()
-
-
 def validate_datetime(strdatetime: str) -> datetime.date:
     """Validates if datetime is in ISO 8601 format like 2024-08-01T14:39:28+10:00."""
     iso8601_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$"
@@ -87,26 +78,6 @@ def parse_bool(strbool) -> bool:
     raise ValueError(f"Cannot parse boolean value: {strbool}")
 
 
-def get_branch_name():
-    result = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"], stdout=subprocess.PIPE
-    )
-    if result.returncode != 0:
-        logger.error("Failed to get commit branch name. Command output:")
-        logger.error(result.stdout.decode("utf-8").strip())
-    return result.stdout.decode("utf-8").strip()
-
-
-def get_main_sha():
-    result = subprocess.run(
-        ["git", "merge-base", "HEAD", "main"], stdout=subprocess.PIPE
-    )
-    if result.returncode != 0:
-        logger.error("Failed to get main commit SHA. Command output:")
-        logger.error(result.stdout.decode("utf-8").strip())
-    return result.stdout.decode("utf-8").strip()
-
-
 def main():
     parser = argparse.ArgumentParser(description="Elastic Loader Script")
     parser.add_argument("file_path", type=str, help="Path to the CSV file")
@@ -123,14 +94,11 @@ def main():
         choices=["vllmip_cpu", "vllm_hpu"],
         help="Model server name",
     )
-    parser.add_argument(
-        "--auto-git",
-        action="store_true",
-        help="Automatically fill commit info from git",
-    )
     parser.add_argument("--commit-sha", type=str, help="Commit SHA")
     parser.add_argument("--branch-name", type=str, help="Branch name")
-    parser.add_argument("--main-commit-sha", type=str, help="Main commit SHA")
+    parser.add_argument(
+        "--main-commit-sha", type=str, help="Main commit SHA", required=True
+    )
     parser.add_argument(
         "-y",
         "--yes",
@@ -140,24 +108,11 @@ def main():
 
     args = parser.parse_args()
 
-    if args.auto_git:
-        if args.commit_sha or args.branch_name or args.main_commit_sha:
-            parser.error(
-                "--auto-git cannot be used with --commit-sha, --branch-name, or --main-commit-sha"
-            )
-        commit_info = {
-            "commit_sha": get_current_commit_sha(),
-            "branch_name": get_branch_name(),
-            "main_sha": get_main_sha(),
-        }
-    else:
-        if not args.main_commit_sha:
-            parser.error("--main-commit-sha are required if --auto-git is not used")
-        commit_info = {
-            "commit_sha": args.commit_sha,
-            "branch_name": args.branch_name,
-            "main_sha": args.main_commit_sha,
-        }
+    commit_info = {
+        "commit_sha": args.commit_sha,
+        "branch_name": args.branch_name,
+        "main_sha": args.main_commit_sha,
+    }
 
     file = args.file_path
     component = args.component

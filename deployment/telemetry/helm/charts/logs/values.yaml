@@ -149,6 +149,8 @@ otelcol-logs:
               output: python-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^llm-usvc$"'
               output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^prmpt-tmpl-usvc$"'
+              output: python-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^reranking-usvc$"'
               output: python-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^retriever-usvc$"'

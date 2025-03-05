@@ -7,5 +7,5 @@ metadata:
   name: edp-dataprep-configmap
   namespace: edp
 data:
-  CHUNK_SIZE: {{ .Values.dataprep.config.chunk_size }}
-  CHUNK_OVERLAP: {{ .Values.dataprep.config.chunk_overlap }}
+  CHUNK_SIZE: {{ .Values.dataprep.config.chunk_size | quote }}
+  CHUNK_OVERLAP: {{ .Values.dataprep.config.chunk_overlap | quote }}

@@ -28,7 +28,6 @@ KEYCLOAK_FPORT=1234
 DEPLOYMENT_NS=chatqa
 FINGERPRINT_NS=fingerprint
 GATEWAY_NS=auth-apisix
-DATAPREP_NS=dataprep
 ENHANCED_DATAPREP_NS=edp
 TELEMETRY_NS=monitoring
 TELEMETRY_TRACES_NS=monitoring-traces
@@ -407,7 +406,7 @@ function start_deployment() {
     bash set_values.sh -r "$REGISTRY" -t "$TAG"
 
     # create namespaces
-    for ns in $GMC_NS $DEPLOYMENT_NS $DATAPREP_NS; do
+    for ns in $GMC_NS $DEPLOYMENT_NS; do
         kubectl get namespace $ns > /dev/null 2>&1 || kubectl create namespace $ns
         enforce_namespace_policy $ns "restricted"
     done
@@ -515,8 +514,7 @@ function start_telemetry() {
 
     # IIIb) 'Traces-instr' deploy OpenTelemetry collector and instrumenation for ChatQnA (requires chatqa namespace)
     kubectl get namespace $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create namespace $DEPLOYMENT_NS
-    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces-instr "$telemetry_traces_instr_path" "--set instrumentation.namespaces={$DEPLOYMENT_NS,$DATAPREP_NS}"
+    helm_install "$TELEMETRY_TRACES_NS" telemetry-traces-instr "$telemetry_traces_instr_path" "--set instrumentation.namespaces={$DEPLOYMENT_NS}"
     # IIIb) telemetry/traces-instr check
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
@@ -647,7 +645,6 @@ function clear_ingress() {
 function start_gateway() {
     print_header "Start gateway"
 
-    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $DATAPREP_NS
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create ns $ENHANCED_DATAPREP_NS
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 || kubectl create ns $DEPLOYMENT_NS
     kubectl get ns $FINGERPRINT_NS > /dev/null 2>&1 || kubectl create ns $FINGERPRINT_NS
@@ -697,27 +694,15 @@ function start_edp() {
     local pipeline=$1
     print_header "Start Enhanced Dataprep"
 
-    kubectl get namespace $DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $DATAPREP_NS
-    enforce_namespace_policy $DATAPREP_NS "restricted"
-
     # Update redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
     get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
     VECTOR_DB_PASSWORD=${NEW_PASSWORD}
-
+    
     # Create or reuse secret for db configuration
     # Args: database_type, secret_namespace, username, password, namespace_with_database
-    create_database_secret "redis" $DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
+    create_database_secret "redis" $ENHANCED_DATAPREP_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
     create_database_secret "redis" $TELEMETRY_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS  # for redis exporter in telemetry namespace 
-
-    if [[ $pipeline == *"multilingual"* ]]; then
-        kubectl apply -f "$manifests_path/dataprep_xeon_multilingual.yaml"
-    else
-        kubectl apply -f "$manifests_path/dataprep_xeon.yaml"
-    fi
-
-    print_log "waiting until pods in $DATAPREP_NS are ready"
-    wait_for_condition check_pods "$DATAPREP_NS"
 
     kubectl get namespace $ENHANCED_DATAPREP_NS > /dev/null 2>&1 || kubectl create namespace $ENHANCED_DATAPREP_NS
     enforce_namespace_policy $ENHANCED_DATAPREP_NS "restricted"
@@ -743,8 +728,23 @@ function start_edp() {
     get_or_create_and_store_credentials EDP_REDIS $redis_username ""
     local redis_password=${NEW_PASSWORD}
 
+    local erag_http_proxy=$(awk '/httpProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
+    local erag_https_proxy=$(awk '/httpsProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
+    local erag_no_proxy=$(awk '/noProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
+
+    local embedding_endpoint_helm=""
+    if [[ "$pipeline" == "xeon_torch" ]]; then
+        embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=torchserve --set embedding.config.modelServerEndpoint=http://torchserve-embedding-svc.chatqa.svc:8090 "
+    elif [[ "$pipeline" == "xeon" ]]; then
+        embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=tei --set embedding.config.modelServerEndpoint=http://tei-embedding-svc.chatqa.svc:80 "
+    else
+        embedding_endpoint_helm=" --set embedding.enabled=false --set embedding.remoteEmbeddingUri=http://embedding-svc.chatqa.svc:6000/v1/embeddings " # use default embedding from chatqa
+    fi
+
+    HELM_INSTALL_EDP_CONFIGURATION_ARGS="$embedding_endpoint_helm --set proxy.httpProxy=$erag_http_proxy --set proxy.httpsProxy=$erag_https_proxy --set proxy.noProxy=$(echo "$erag_no_proxy" | sed 's/,/\\,/g') "
+
     helm dependency update "$edp_path" > /dev/null
-    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS --set minioAccessKey=$minio_access_key --set minioSecretKey=$minio_secret_key --set redisUsername=$redis_username --set redisPassword=$redis_password --set minioOidcClientSecret=$minio_client_secret"
+    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS $HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minioAccessKey=$minio_access_key --set minioSecretKey=$minio_secret_key --set redisUsername=$redis_username --set redisPassword=$redis_password --set minioOidcClientSecret=$minio_client_secret"
 
     print_log "waiting until pods in $ENHANCED_DATAPREP_NS are ready"
     wait_for_condition check_pods "$ENHANCED_DATAPREP_NS"
@@ -757,7 +757,6 @@ function clear_edp() {
 
     helm status -n $ENHANCED_DATAPREP_NS edp > /dev/null 2>&1 && helm uninstall -n $ENHANCED_DATAPREP_NS edp
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
-    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
 }
 
 function clear_ui() {
@@ -773,7 +772,6 @@ function clear_all_ns() {
     print_header "removing all EnterpriseRAG namespaces"
 
     kubectl get ns $DEPLOYMENT_NS > /dev/null 2>&1 && kubectl delete ns $DEPLOYMENT_NS
-    kubectl get ns $DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $DATAPREP_NS
     kubectl get ns $ENHANCED_DATAPREP_NS > /dev/null 2>&1 && kubectl delete ns $ENHANCED_DATAPREP_NS
     kubectl get ns $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_NS
     kubectl get ns $TELEMETRY_TRACES_NS > /dev/null 2>&1 && kubectl delete ns $TELEMETRY_TRACES_NS
@@ -1037,7 +1035,7 @@ fi
 
 if $deploy_flag; then
     start_deployment "$PIPELINE"
-    updated_ns_list+=($GMC_NS $DEPLOYMENT_NS $DATAPREP_NS $FINGERPRINT_NS)
+    updated_ns_list+=($GMC_NS $DEPLOYMENT_NS $FINGERPRINT_NS)
 fi
 
 if $ui_flag; then

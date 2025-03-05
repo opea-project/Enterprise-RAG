@@ -139,13 +139,13 @@ otelcol-logs:
           routes:
             - expr: 'resource["k8s.container.name"] matches "^embedding-usvc$"'
               output: embedding-severity-parser
-            - expr: 'resource["k8s.container.name"] matches "^ingestion-usvc$"'
+            - expr: 'resource["k8s.container.name"] matches "^edp-ingestion$"'
               output: embedding-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^torchserve$"'
               output: torchserve-severity-parser-a
             - expr: 'resource["k8s.container.name"] matches "^router-server$"'
               output: router-severity-parser
-            - expr: 'resource["k8s.container.name"] matches "^dataprep-usvc$"'
+            - expr: 'resource["k8s.container.name"] matches "^edp-dataprep$"'
               output: python-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^llm-usvc$"'
               output: python-severity-parser

@@ -26,6 +26,22 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.flower.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "helm-edp.dataprep.name" -}}
+{{- default .Chart.Name .Values.dataprep.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.embedding.name" -}}
+{{- default .Chart.Name .Values.embedding.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.ingestion.name" -}}
+{{- default .Chart.Name .Values.ingestion.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.noProxyWithContainers" -}}
+{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-embedding,edp-flower,edp-ingestion,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- end }}
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -96,6 +112,30 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+dataprep labels
+*/}}
+{{- define "helm-edp.dataprep.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.dataprep.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+embedding labels
+*/}}
+{{- define "helm-edp.embedding.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.embedding.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+ingestion labels
+*/}}
+{{- define "helm-edp.ingestion.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.ingestion.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "helm-edp.serviceAccountName" -}}
@@ -105,3 +145,25 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- /*
+  Retrieves resource values based on the provided filename and values.
+*/ -}}
+{{- define "manifest.getResource" -}}
+{{- $filename := index . 0 -}}
+{{- $defaultValues := fromYaml (index . 1) -}}
+{{- $values := index . 2 -}}
+
+{{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "resources") }}
+  {{- $defaultValues = index $values "services" $filename "resources" }}
+{{- end -}}
+
+{{- $isTDXEnabled := hasKey $values "tdx" -}}
+{{- $isGaudiService := regexMatch "(?i)gaudi" $filename -}}
+
+{{- if and $isTDXEnabled (not $isGaudiService) }}
+  {{- include "manifest.tdx.getResourceValues" (dict "defaultValues" $defaultValues "filename" $filename "values" $values) }}
+{{- else }}
+  {{- $defaultValues | toYaml }}
+{{- end -}}
+{{- end -}}

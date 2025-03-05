@@ -10,7 +10,7 @@ metadata:
 spec:
   namespaceSelector:
     matchNames:
-    - dataprep
+    - edp
     - chatqa
   selector:
     matchLabels:

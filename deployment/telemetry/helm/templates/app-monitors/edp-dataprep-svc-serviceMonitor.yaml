@@ -4,16 +4,16 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: dataprep-svc
+  name: edp-dataprep-svc
   labels:
     release: {{.Release.Name}}
 spec:
   namespaceSelector:
     matchNames:
-    - dataprep
+    - edp
   selector:
     matchLabels:
-      app.kubernetes.io/instance: dataprep-usvc
+      app.kubernetes.io/instance: edp-dataprep
   endpoints:
-  - port: "dataprep-usvc"
+  - port: "edp-dataprep"
 {{- end }}

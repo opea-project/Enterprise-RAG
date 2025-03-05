@@ -109,9 +109,11 @@ The default resource allocations are defined for Xeon only deployment in [`resou
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
 
+For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/edp/helm` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./edp/helm/values.yaml) file and edit definition for particular elements from that deployment.
+
 ### Skipping Warm-up for vLLM Deployment
 The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in:
- - For vLLM running on Gaudi: [vllm/docker/.env.hpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.hpu)
+  - For vLLM running on Gaudi: [vllm/docker/.env.hpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.hpu)
   - For vLLM running on CPU: [vllm/docker/.env.cpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu)
 
 > [!NOTE]
@@ -278,13 +280,12 @@ chatqa               torchserve-embedding-svc-deployment-54d498dd6f-btg2l    1/1
 chatqa               torchserve-embedding-svc-deployment-54d498dd6f-hwfz4    1/1     Running     0              21m
 chatqa               torchserve-embedding-svc-deployment-54d498dd6f-jqcfh    1/1     Running     0              21m
 chatqa               vllm-service-m-deployment-6d86b69fb-6xxr2               1/1     Running     0              21m
-dataprep             dataprep-svc-deployment-6c745cfb56-qphf2                1/1     Running     0              14m
-dataprep             embedding-svc-deployment-66fc547b67-fc7z2               1/1     Running     0              14m
-dataprep             ingestion-svc-deployment-8f96f77d-2526q                 1/1     Running     0              14m
-dataprep             router-service-deployment-6f46d49c7d-2smtb              1/1     Running     0              14m
 edp                  edp-backend-559948896d-f9xkq                            1/1     Running     0              13m
 edp                  edp-celery-7b999df6fb-p7j84                             1/1     Running     1 (7m4s ago)   13m
+edp                  edp-dataprep-76b895d445-wh629                           1/1     Running     0              13m
+edp                  edp-embedding-844f9c9c97-tq49m                          1/1     Running     0              13m
 edp                  edp-flower-554594dd4d-6z666                             1/1     Running     0              13m
+edp                  edp-ingestion-bc559885f-s7qsp                           1/1     Running     0              13m
 edp                  edp-minio-5948fbc87f-6d8lq                              1/1     Running     0              13m
 edp                  edp-minio-provisioning-7rx98                            0/1     Completed   0              12m
 edp                  edp-postgresql-0                                        1/1     Running     0              13m

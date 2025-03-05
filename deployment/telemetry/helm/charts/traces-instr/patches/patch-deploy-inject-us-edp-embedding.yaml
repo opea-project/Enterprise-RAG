@@ -5,9 +5,9 @@ spec:
         instrumentation.opentelemetry.io/inject-python: "true"
     spec:
       containers:
-      - name: dataprep-usvc
+      - name: edp-embedding
         env:
         - name: LOGGING_PROPAGATE
           value: "true"
         - name: OTEL_SERVICE_NAME
-          value: "dataprep/dataprep-usvc"
+          value: "edp/edp-embedding"

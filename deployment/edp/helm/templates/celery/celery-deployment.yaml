@@ -1,16 +1,17 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.backend.nameOverride | default (include "helm-edp.fullname" .) }}
+  name: {{ .Values.celery.nameOverride | default (include "helm-edp.fullname" .) }}
   labels:
     {{- include "helm-edp.selectorLabels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: {{ .Values.celery.replicas }}
   selector:
     matchLabels:
-      {{- include "helm-edp.backend.selectorLabels" . | nindent 6 }}
+      {{- include "helm-edp.celery.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "helm-edp.backend.selectorLabels" . | nindent 8 }}
+        {{- include "helm-edp.celery.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -30,7 +31,7 @@ spec:
       initContainers:
         - name: wait-for-postgresql
           securityContext:
-             {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: bitnami/postgresql:16.3.0
           env:
             - name: DATABASE_HOST
@@ -63,7 +64,7 @@ spec:
                 fi;
         - name: wait-for-redis
           securityContext:
-             {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: redis:alpine
           env:
             - name: REDIS_URL
@@ -86,13 +87,13 @@ spec:
                   done;
                 fi;
       containers:
-        - name: {{ .Values.backend.nameOverride }}
+        - name: {{ .Values.celery.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.backend.repository }}:{{ .Values.backend.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.backend.pullPolicy }}
-          command: 
-            {{- range $index, $element := splitList " " .Values.backend.command }}
+          image: "{{ .Values.celery.repository }}:{{ .Values.celery.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.celery.pullPolicy }}
+          command:
+            {{- range $index, $element := splitList " " .Values.celery.command }}
             - {{ $element | quote }}
             {{- end }}
           env:
@@ -106,23 +107,33 @@ spec:
           {{- end }}
           {{- if .Values.proxy.noProxy }}
             - name: no_proxy
-              value: {{ .Values.proxy.noProxy }}
+              value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
           {{- end }}
-          {{- toYaml .Values.backend.environment | nindent 12 }}
+          {{- toYaml .Values.celery.environment | nindent 12 }}
           ports:
             - name: http
               containerPort: 5000
               protocol: TCP
           livenessProbe:
-            httpGet:
-              path: /health
-              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            exec:
+              command:
+              - "/bin/bash"
+              - "-c"
+              - "celery inspect ping -d celery@$(hostname) | grep -q OK"
           readinessProbe:
-            httpGet:
-              path: /health
-              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            exec:
+              command:
+              - "/bin/bash"
+              - "-c"
+              - "celery inspect ping -d celery@$(hostname) | grep -q OK"
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.celery.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

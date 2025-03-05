@@ -27,12 +27,10 @@ http_endpoints = [
     "torchserve-embedding-svc.chatqa.svc.cluster.local:8090",
     # vllm endpoint name is different depending on the platform
     # "vllm-service-m.chatqa.svc.cluster.local:8000",
-    # Dataprep endpoints
-    "dataprep-svc.dataprep.svc.cluster.local:9399",
-    "embedding-svc.dataprep.svc.cluster.local:6000",
-    "ingestion-svc.dataprep.svc.cluster.local:6120",
-    "router-service.dataprep.svc.cluster.local:8080",
     # EDP endpoints
+    "edp-dataprep.edp.svc.cluster.local:9399",
+    "edp-embedding.edp.svc.cluster.local:6000",
+    "edp-ingestion.edp.svc.cluster.local:6120",
     "edp-backend.edp.svc.cluster.local:5000",
     "edp-celery.edp.svc.cluster.local:5000",
     "edp-flower.edp.svc.cluster.local:5555",

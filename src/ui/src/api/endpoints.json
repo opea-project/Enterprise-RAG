@@ -5,8 +5,7 @@
   "systemFingerprint": {
     "appendArguments": "/v1/system_fingerprint/append_arguments",
     "changeArguments": "/v1/system_fingerprint/change_arguments",
-    "chatqnaStatus": "/api/v1/chatqa/status",
-    "dataprepStatus": "/api/v1/dataprep/status"
+    "chatqnaStatus": "/api/v1/chatqa/status"
   },
   "edp": {
     "getLinks": "/api/v1/edp/links",

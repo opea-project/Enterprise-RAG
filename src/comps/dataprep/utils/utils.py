@@ -71,6 +71,7 @@ def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextDoc]:
     parsed_texts: List[TextDoc] = []
 
     for file in files:
+        saved_path = ""
         # if files have to be persisted internally
         try:
             path = save_file_to_local_disk(file)
@@ -99,6 +100,7 @@ def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
     parsed_texts: List[TextDoc] = []
 
     for link in links:
+        saved_path = ""
         try:
             paths = save_link_to_local_disk([link])
             for path in paths:

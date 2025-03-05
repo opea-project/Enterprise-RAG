@@ -1,0 +1,11 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-dataprep-configmap
+  namespace: edp
+data:
+  CHUNK_SIZE: {{ .Values.dataprep.chunk_size }}
+  CHUNK_OVERLAP: {{ .Values.dataprep.chunk_overlap }}

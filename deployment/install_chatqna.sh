@@ -397,6 +397,19 @@ function clear_mesh() {
     kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
 }
 
+# check if all pods in a namespace or specific pod by name are ready
+function check_pod_status() {
+    local namespace=$1
+    local pod_name=$2
+
+    print_log "Checking status of pod $pod_name in namespace $namespace"
+    if ! kubectl get pods -n "$namespace" | grep "$pod_name" | grep -q "Running"; then
+        print_log "Error: Pod $pod_name in namespace $namespace is not running."
+        kubectl logs -n "$namespace" "$pod_name"
+        exit 1
+    fi
+}
+
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
@@ -433,6 +446,9 @@ function start_deployment() {
     # Apply deployment manifest
     kubectl apply -f $deployment_manifest
     wait_for_condition check_pods "$DEPLOYMENT_NS"
+
+    # Check the status of the pods
+    check_pod_status "$DEPLOYMENT_NS" "chatqa"
 }
 
 function clear_deployment() {

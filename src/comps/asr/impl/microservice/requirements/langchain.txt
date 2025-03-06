@@ -1,0 +1,8 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+langchain==0.3.6
+langchain-huggingface==0.1.2
+langsmith==0.1.125
+huggingface_hub==0.23.4

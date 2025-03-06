@@ -1096,6 +1096,7 @@ fi
 
 if $clear_deployment_flag; then
     clear_deployment
+    clear_fingerprint
 fi
 
 if $clear_ui_flag; then

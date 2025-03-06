@@ -297,7 +297,7 @@ def test_edp_responsiveness_while_uploading_file(edp_helper):
     start_time = time.time()
     while time.time() < start_time + threshold:
         try:
-            response = edp_helper.call_health_check_api("dataprep", {"app": "dataprep-svc"}, 9399)
+            response = edp_helper.call_health_check_api("edp", {"app.kubernetes.io/name": "edp-dataprep"}, 9399)
             assert response.status_code == 200, "Got unexpected status code when calling dataprep health check API"
         except requests.exceptions.ReadTimeout:
             pytest.fail("Dataprep API is not responsive while the file is being uploaded")

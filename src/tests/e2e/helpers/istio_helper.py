@@ -17,7 +17,7 @@ from kr8s._exceptions import ExecError
 from kr8s.objects import Namespace, Pod, objects_from_files
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 state_logger = logger.getChild("state")
 
 
@@ -169,7 +169,7 @@ class TestPod():
                         "name": "test-container",
                         "image": self.image,
                         "command": ["/bin/sh", "-c"],
-                        "args": ['trap exit TERM; sleep 300 & wait; done']
+                        "args": ['trap exit TERM; sleep 300 & wait']
                     }
                 ],
             },

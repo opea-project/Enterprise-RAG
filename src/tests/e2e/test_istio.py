@@ -29,7 +29,6 @@ http_endpoints = [
     # "vllm-service-m.chatqa.svc.cluster.local:8000",
     # EDP endpoints
     "edp-dataprep.edp.svc.cluster.local:9399",
-    "edp-embedding.edp.svc.cluster.local:6000",
     "edp-ingestion.edp.svc.cluster.local:6120",
     "edp-backend.edp.svc.cluster.local:5000",
     "edp-celery.edp.svc.cluster.local:5000",

@@ -107,6 +107,10 @@ pvc:
     accessMode: ReadWriteOnce
     namespace: chatqa
     storage: 20Gi
+  - name: model-volume-reranker
+    accessMode: ReadWriteOnce
+    namespace: chatqa
+    storage: 10Gi
   - name: model-volume-llm
     accessMode: ReadWriteOnce
     namespace: chatqa

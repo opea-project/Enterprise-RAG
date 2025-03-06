@@ -125,7 +125,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume-llm
+            claimName: model-volume-reranker
         - name: shm
           emptyDir:
             medium: Memory

@@ -397,59 +397,87 @@ function clear_mesh() {
     kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
 }
 
-# check if all pods in a namespace or specific pod by name are ready
+# Check if all pods in namespaces where chatqa exists are ready
 function check_pod_status() {
-    local namespace=$1
-    local pod_name=$2
+    local pod_name="chatqa"
 
-    print_log "Checking status of pod $pod_name in namespace $namespace"
-    if ! kubectl get pods -n "$namespace" | grep "$pod_name" | grep -q "Running"; then
-        print_log "Error: Pod $pod_name in namespace $namespace is not running."
-        kubectl logs -n "$namespace" "$pod_name"
+    # Get all namespaces where chatqa pods exist
+    namespaces=$(kubectl get pods --all-namespaces -o custom-columns="NAMESPACE:.metadata.namespace" | grep -v "NAMESPACE" | sort -u)
+
+    local all_pods_running=true
+
+    for namespace in $namespaces; do
+        print_log "Checking status of chatqa pods in namespace $namespace"
+
+        # Get list of chatqa pods in this namespace
+        pods=$(kubectl get pods -n "$namespace" --no-headers | grep "$pod_name" | awk '{print $1}')
+
+        if [ -z "$pods" ]; then
+            continue # Skip if no chatqa pods found in this namespace
+        fi
+
+        for pod in $pods; do
+            pod_status=$(kubectl get pod "$pod" -n "$namespace" -o jsonpath='{.status.phase}')
+            if [ "$pod_status" != "Running" ]; then
+                print_log "Error: Pod $pod in namespace $namespace is not running. Status: $pod_status"
+                kubectl describe pod "$pod" -n "$namespace"
+                all_pods_running=false
+            fi
+        done
+    done
+
+    if [ "$all_pods_running" = false ]; then
+        print_log "Some chatqa pods are not running."
         exit 1
+    else
+        print_log "All chatqa pods are running successfully."
     fi
 }
 
-# deploys GMConnector, chatqna pipeline and dataprep pipeline
+# Deploys GMConnector, chatqna pipeline, and dataprep pipeline
 function start_deployment() {
     local pipeline=$1
 
     print_header "Start deployment"
 
-    # set values for helm charts
+    # Set values for Helm charts
     bash set_values.sh -r "$REGISTRY" -t "$TAG"
 
-    # create namespaces
+    # Create namespaces
     for ns in $GMC_NS $DEPLOYMENT_NS $DATAPREP_NS; do
-        kubectl get namespace $ns > /dev/null 2>&1 || kubectl create namespace $ns
-        enforce_namespace_policy $ns "restricted"
+        kubectl get namespace "$ns" > /dev/null 2>&1 || kubectl create namespace "$ns"
+        enforce_namespace_policy "$ns" "restricted"
     done
-    
-    # Update redis password in chatQnA pipeline's manifest
+
+    # Update Redis password in chatQnA pipeline's manifest
     VECTOR_DB_USERNAME=default
     get_or_create_and_store_credentials VECTOR_DB $VECTOR_DB_USERNAME ""
     VECTOR_DB_PASSWORD=${NEW_PASSWORD}
 
-    # Create or reuse secret for db configuration
-    # Args: database_type, secret_namespace, username, password, namespace_with_database
+    # Create or reuse secret for DB configuration
     create_database_secret "redis" $DEPLOYMENT_NS $VECTOR_DB_USERNAME $VECTOR_DB_PASSWORD $DEPLOYMENT_NS
 
     helm_install $GMC_NS gmc "$gmc_path"
 
     # Fingerprint deployment
     local deployment_manifest="$manifests_path/chatQnA_$pipeline.yaml"
-    if grep -q "Fingerprint" $deployment_manifest; then
+    if grep -q "Fingerprint" "$deployment_manifest"; then
         start_fingerprint
     fi
 
-    wait_for_condition check_pods "$GMC_NS"
-    # Apply deployment manifest
-    kubectl apply -f $deployment_manifest
+    # Apply deployment manifest and check for errors
+    if ! kubectl apply -f "$deployment_manifest"; then
+        print_log "Error: Failed to apply deployment manifest $deployment_manifest"
+        exit 1
+    fi
+
+    # Wait for pods to be ready
     wait_for_condition check_pods "$DEPLOYMENT_NS"
 
-    # Check the status of the pods
-    check_pod_status "$DEPLOYMENT_NS" "chatqa"
+    # Check the status of chatqa pods across all namespaces
+    check_pod_status
 }
+
 
 function clear_deployment() {
     print_header "Clear deployment"

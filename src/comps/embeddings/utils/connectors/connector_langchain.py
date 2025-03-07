@@ -18,7 +18,7 @@ def texts_to_single_line(texts: List[str]) -> List[str]:
     return [text.replace("\n", " ") for text in texts]
 
 class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
-    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
 
         input_data = texts_to_single_line(texts)
         try:
@@ -70,7 +70,7 @@ class OVMSEndpointEmbeddings(HuggingFaceEndpointEmbeddings):
                 raise
         return self.input_name
 
-    async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
 
         endpoint = f"v2/models/{self.model_name}"
         url = f"{self.model}/{endpoint}"
@@ -205,7 +205,7 @@ class LangchainEmbedding(EmbeddingConnector):
             List[List[float]]: The embedded documents.
         """
         try:
-            output = await self._embedder.aembed_documents(texts)
+            output = await self._embedder.embed_documents(texts)
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise
@@ -223,7 +223,7 @@ class LangchainEmbedding(EmbeddingConnector):
             List[float]: The embedded query.
         """
         try:
-            output = await self._embedder.aembed_query(input_text)
+            output = await self._embedder.embed_query(input_text)
         except Exception as e:
             logger.exception(f"Error embedding query: {e}")
             raise

@@ -7,11 +7,13 @@ import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-interface ThreeStateSwitchProps {
-  initialValue?: boolean | null;
+export type ThreeStateSwitchValue = boolean | null;
+
+export interface ThreeStateSwitchProps {
+  initialValue?: ThreeStateSwitchValue;
   name: string;
   readOnly?: boolean;
-  onChange?: (value: boolean | null) => void;
+  onChange?: (name: string, value: boolean | null) => void;
 }
 
 const ThreeStateSwitch = ({
@@ -20,7 +22,7 @@ const ThreeStateSwitch = ({
   readOnly,
   onChange,
 }: ThreeStateSwitchProps) => {
-  const [state, setState] = useState(initialValue);
+  const [state, setState] = useState<ThreeStateSwitchValue>(initialValue);
 
   useEffect(() => {
     if (readOnly) {
@@ -32,7 +34,7 @@ const ThreeStateSwitch = ({
     if (!readOnly) {
       setState(value);
       if (onChange) {
-        onChange(value);
+        onChange(name, value);
       }
     }
   };

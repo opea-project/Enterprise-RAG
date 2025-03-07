@@ -56,24 +56,16 @@ Refer to `README.md` of a particular library to get more information on starting
 
 ## 🚀1. Start Embedding Microservice with Python (Option 1)
 
-To start the Embedding microservice, you need to install requirements first.
+To start the Embedding microservice, you need to install all the dependencies first.
 
 #### 1.1. Install Requirements
-First, install essential requirements for the microservice:
+To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
-# common
-pip install -r impl/microservice/requirements.txt
-```
-
-Next, install specific model server requirements, depending on choosen model server:
-
-```bash
-# for langchain
-pip install -r impl/microservice/requirements/langchain.txt
-
-# for llama_index
-pip install -r impl/microservice/requirements/llama_index.txt
+pip install uv
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+source impl/microservice/.venv/bin/activate
 ```
 
 #### 1.2. Start Microservice
@@ -88,12 +80,7 @@ python opea_embedding_microservice.py
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
-
-# for langchain
-docker build --target langchain -t opea/embedding:langchain -f comps/embeddings/impl/microservice/Dockerfile .
-
-# for llama_index
-docker build --target llama_index -t opea/embedding:llama_index -f comps/embeddings/impl/microservice/Dockerfile .
+docker build -t opea/embedding:latest -f comps/embeddings/impl/microservice/Dockerfile .
 
 ```
 Please note that the building process may take a while to complete.
@@ -108,7 +95,7 @@ docker run -d --name="embedding-microservice" \
   -e EMBEDDING_CONNECTOR=langchain \
   --net=host \
   --ipc=host \
-  opea/embedding:langchain
+  opea/embedding
 ```
 
 ```bash
@@ -117,7 +104,7 @@ docker run -d --name="embedding-microservice" \
   -e EMBEDDING_CONNECTOR=llama_index \
   --net=host \
   --ipc=host \
-  opea/embedding:llama_index
+  opea/embedding
 ```
 
 If the model server is running at a different endpoint than the default, update the `EMBEDDING_MODEL_SERVER_ENDPOINT` variable accordingly. Here's an example of how to pass configuration using the docker run command:
@@ -131,7 +118,7 @@ docker run -d --name="embedding-microservice" \
   -e EMBEDDING_MODEL_SERVER="tei" \
   --net=host \
   --ipc=host \
-  opea/embedding:langchain
+  opea/embedding
 ```
 
 ```bash
@@ -143,7 +130,7 @@ docker run -d --name="embedding-microservice" \
   -e EMBEDDING_MODEL_SERVER="tei" \
   --net=host \
   --ipc=host \
-  opea/embedding:llama_index
+  opea/embedding
 ```
 
 
@@ -243,15 +230,12 @@ The tree view of the main directories and files:
 
 ```bash
   .
-  ├── impl/
-  │   ├── microservice/
-  │   │   ├── .env
+  ├── impl
+  │   ├── microservice
   │   │   ├── Dockerfile
-  │   │   └── requirements.txt
-  │   │   └── requirements/
-  │   │      ├── langchain.txt
-  │   │      └── lama_index.txt
-  │   │
+  │   │   ├── pyproject.toml
+  │   │   ├── uv.lock
+  │   │   └── .env
   │   ├── model_server/
   │   │   ├── tei/
   │   │   │   ├── README.md
@@ -259,7 +243,7 @@ The tree view of the main directories and files:
   │   │   │   └── docker/
   │   │   │       ├── .env
   │   │   │       └── docker-compose.yml
-  │   │   │  
+  │   │   │
   │   │   └── ...
   │   └── ...
   │
@@ -268,11 +252,11 @@ The tree view of the main directories and files:
   │   ├── api_config/
   │   │   └── api_config.yml
   │   │
-  │   └── wrappers/
-  │       ├── wrapper.py
-  │       ├── wrapper_langchain.py
-  │       └── wrapper_lamaindex.py
-  │   
+  │   └── connectors/
+  │       ├── connector.py
+  │       ├── connector_langchain.py
+  │       └── connector_lamaindex.py
+  │
   ├── README.md
   └── opea_embedding_microservice.py
 ```

@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { LinkForIngestion } from "@/types/admin-panel/data-ingestion";
 
 const formatFileSize = (fileSize: number) => {
   const units = ["B", "KB", "MB", "GB", "TB"];

@@ -82,3 +82,37 @@ spec:
         - cluster.local/ns/edp/sa/edp-minio
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-ingestion
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-ingestion
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-dataprep
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-dataprep
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus

@@ -277,7 +277,6 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
-        - cluster.local/ns/dataprep/sa/default
         - cluster.local/ns/chatqa/sa/default
 ---
 apiVersion: security.istio.io/v1

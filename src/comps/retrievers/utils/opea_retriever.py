@@ -20,5 +20,5 @@ class OPEARetriever:
     def _initialize(self, vector_store: str):
         self.vector_store = OPEAVectorStore(vector_store)
 
-    def retrieve(self, input: EmbedDoc) -> SearchedDoc:
-        return self.vector_store.search(input=input)
+    async def retrieve(self, input: EmbedDoc) -> SearchedDoc:
+        return await self.vector_store.search(input=input)

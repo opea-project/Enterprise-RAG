@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import LinkInput from "@/components/admin-panel/data-ingestion/LinkInput/LinkInput";
 import LinksList from "@/components/admin-panel/data-ingestion/LinksList/LinksList";
-import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { LinkForIngestion } from "@/types/admin-panel/data-ingestion";
 
 interface LinksIngestionPanelProps {
   links: LinkForIngestion[];

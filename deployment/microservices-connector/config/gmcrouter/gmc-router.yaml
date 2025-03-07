@@ -8,7 +8,9 @@ metadata:
 {{- `
   name: {{.DplymntName}}
   namespace: {{.Namespace}}
-` -}}
+` }}
+  labels:
+    {{- include "manifest.labels" (list "gmc-router" .) | nindent 4 }}
 spec:
   replicas: 1
   selector:

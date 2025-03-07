@@ -1,10 +1,8 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor
 from typing import Union
 from dotenv import load_dotenv
 from fastapi import HTTPException
@@ -28,15 +26,9 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 # Initialize an instance of the OPEARetriever class with environment variables.
 
-def run_retriever(vector):
-    retriever = opea_retriever.OPEARetriever(
-        vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
-    )
-    searcheddocs = retriever.retrieve(vector)
-    return searcheddocs
-
-workers = int(sanitize_env(os.getenv("MAX_POOL_WORKERS", 8)))
-pool = ProcessPoolExecutor(max_workers=workers)
+retriever = opea_retriever.OPEARetriever(
+    vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
+)
 
 @register_microservice(
     name=USVC_NAME,
@@ -61,9 +53,8 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         vector = input # EmbedDoc
 
     result_vectors = None
-    loop = asyncio.get_event_loop()
     try:
-        result_vectors = await loop.run_in_executor(pool, run_retriever, vector)
+        result_vectors = await retriever.retrieve(vector)
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,
@@ -80,6 +71,14 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
 
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
     logger.info(f"Retrieved {len(result_vectors.retrieved_docs)} documents in {time.time() - start} seconds.")
+
+    for doc in result_vectors.retrieved_docs:
+        if 'file_id' in doc.metadata:
+            logger.debug(f"Score: {doc.metadata['vector_distance']} - File: {doc.metadata['file_id']} - Text: {doc.text[0:32]}...")
+
+        if 'link_id' in doc.metadata:
+            logger.debug(f"Score: {doc.metadata['vector_distance']} - Link: {doc.metadata['link_id']} - Text: {doc.text[0:32]}...")
+
     return result_vectors
 
 

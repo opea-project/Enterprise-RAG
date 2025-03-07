@@ -1,0 +1,14 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-configmap
+  namespace: edp
+data:
+  DATAPREP_ENDPOINT: {{ print "http://" .Values.dataprep.nameOverride ":9399/v1/dataprep" | quote }}
+  EMBEDDING_ENDPOINT: {{ if .Values.embedding.enabled }}{{ print "http://" .Values.embedding.nameOverride ":6000/v1/embeddings" | quote }}{{ else }}{{ .Values.embedding.remoteEmbeddingUri | quote }}{{ end }}
+  INGESTION_ENDPOINT: {{ print "http://" .Values.ingestion.nameOverride ":6120/v1/ingestion" | quote }}
+  MINIO_DOMAIN: {{ .Values.minioApiDomain | quote }}
+  MINIO_BASE_URL: edp-minio:9000

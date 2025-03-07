@@ -7,7 +7,7 @@ import { Dispatch, SetStateAction } from "react";
 
 import ListHeader from "@/components/admin-panel/data-ingestion/ListHeader/ListHeader";
 import IconButton from "@/components/shared/IconButton/IconButton";
-import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { LinkForIngestion } from "@/types/admin-panel/data-ingestion";
 
 interface LinksListProps {
   links: LinkForIngestion[];

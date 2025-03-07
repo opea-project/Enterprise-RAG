@@ -7,25 +7,34 @@ import classNames from "classnames";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
+import Tooltip from "@/components/shared/Tooltip/Tooltip";
+import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
+import { useAppSelector } from "@/store/hooks";
+import { OnArgumentValueChangeHandler } from "@/types/admin-panel/control-plane";
+
+export type ServiceArgumentCheckboxValue = boolean;
 
 interface ServiceArgumentCheckboxProps {
-  initialValue: boolean;
+  initialValue: ServiceArgumentCheckboxValue;
   name: string;
-  readOnly?: boolean;
-  onArgumentValueChange: (
-    argumentName: string,
-    argumentValue: ServiceArgumentInputValue,
-  ) => void;
+  tooltipText?: string;
+  hideLabel?: boolean;
+  onArgumentValueChange: OnArgumentValueChangeHandler;
 }
 
 const ServiceArgumentCheckbox = ({
   initialValue,
   name,
-  readOnly,
+  tooltipText,
+  hideLabel,
   onArgumentValueChange,
 }: ServiceArgumentCheckboxProps) => {
-  const [checked, setChecked] = useState(initialValue);
+  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
+  const readOnly = !isEditModeEnabled;
+
+  const [checked, setChecked] =
+    useState<ServiceArgumentCheckboxValue>(initialValue);
 
   useEffect(() => {
     if (readOnly) {
@@ -45,18 +54,25 @@ const ServiceArgumentCheckbox = ({
 
   const labelClassNames = classNames([
     "service-argument-checkbox__label",
-    { "pointer-events-none": readOnly },
+    { "pointer-events-none": readOnly, "m-0": hideLabel },
   ]);
   const inputClassNames = classNames([
     "service-argument-checkbox",
-    { "pointer-events-none": readOnly },
+    { "pointer-events-none": readOnly, "m-0": hideLabel },
   ]);
 
   return (
     <div className="service-argument-checkbox__wrapper">
-      <label htmlFor={inputId} className={labelClassNames}>
-        {name}
-      </label>
+      {!hideLabel && (
+        <label htmlFor={inputId} className={labelClassNames}>
+          {tooltipText && (
+            <Tooltip text={tooltipText} position="right">
+              <InfoIcon />
+            </Tooltip>
+          )}
+          <span>{name}</span>
+        </label>
+      )}
       <input
         className={inputClassNames}
         type="checkbox"

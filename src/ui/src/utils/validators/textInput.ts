@@ -3,6 +3,9 @@
 
 import { containsNullCharacters, isPunycodeSafe } from "@/utils/validators";
 
+export const isValidNumber = (value: string | undefined) =>
+  !isNaN(Number(value));
+
 export const isInRange =
   (nullable: boolean, range: { min: number; max: number }) =>
   (value: string | undefined) => {
@@ -19,8 +22,7 @@ export const isInRange =
         if (!nullable && value && value.trim() === "") {
           return false;
         } else {
-          const isValidNumber = !isNaN(parseFloat(value));
-          if (isValidNumber) {
+          if (isValidNumber(value)) {
             const { min, max } = range;
             const numericValue = parseFloat(value);
             return numericValue >= min && numericValue <= max;
@@ -53,3 +55,14 @@ export const noEmpty =
 export const noInvalidCharacters =
   (): ((value: string) => boolean) => (value: string) =>
     !containsNullCharacters(value) && isPunycodeSafe(value);
+
+export const containsRequiredValues =
+  (requiredValues: string[]) => (value: string | undefined) => {
+    if (value !== undefined && requiredValues.length > 0) {
+      return !requiredValues.some(
+        (requiredValue) => !value.includes(requiredValue),
+      );
+    } else {
+      return false;
+    }
+  };

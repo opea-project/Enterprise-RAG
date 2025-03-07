@@ -3,6 +3,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR
 import logging
 import os
 import requests
@@ -26,8 +27,6 @@ class EdpHelper(ApiRequestHelper):
         self.default_headers = {
             "Content-Type": "application/json"
         }
-        self.ingress_nginx_controller_ns = "ingress-nginx"
-        self.ingress_nginx_controller_pod_label_selector = {"app.kubernetes.io/name": "ingress-nginx"}
         self.remote_port_fw = 443
         self.local_port_fw = 443
 
@@ -121,8 +120,8 @@ class EdpHelper(ApiRequestHelper):
 
     def upload_to_minio(self, file_path, presigned_url):
         """Upload a file to MinIO using the presigned URL"""
-        with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
-                               self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
+        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
+                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
             logger.info(f"Attempting to upload file {file_path} to MinIO using presigned URL")
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False)
@@ -156,8 +155,8 @@ class EdpHelper(ApiRequestHelper):
 
     def delete_from_minio(self, presigned_url):
         """Delete a file from MinIO using the presigned URL"""
-        with CustomPortForward(self.remote_port_fw, self.ingress_nginx_controller_ns,
-                               self.ingress_nginx_controller_pod_label_selector, self.local_port_fw):
+        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
+                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
             logger.info("Attempting to delete file from MinIO using presigned URL")
             return requests.delete(presigned_url, verify=False)
 

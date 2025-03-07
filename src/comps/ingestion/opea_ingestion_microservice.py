@@ -42,12 +42,12 @@ ingestion = opea_ingestion.OPEAIngestion(
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def ingest(input: EmbedDocList) -> EmbedDocList:
+async def ingest(input: EmbedDocList) -> EmbedDocList:
     start = time.time()
     
     embed_vector = None
     try:
-        embed_vector = ingestion.ingest(input)
+        embed_vector = await ingestion.ingest(input)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error while ingesting documents. {e}")
 
@@ -66,7 +66,7 @@ def ingest(input: EmbedDocList) -> EmbedDocList:
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle deletion of provided input.
 # Its input and output data types must comply with the registered ones above.
-def delete(input: Dict) -> None:
+async def delete(input: Dict) -> None:
     start = time.time()
     
     field_name, field_value = None, None
@@ -82,7 +82,7 @@ def delete(input: Dict) -> None:
         raise HTTPException(status_code=400, detail="Field value cannot be empty.")
 
     try:
-        deleted_docs = ingestion.delete(field_name=field_name, field_value=field_value)
+        deleted_docs = await ingestion.delete(field_name=field_name, field_value=field_value)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error while deleting documents. {e}")
 

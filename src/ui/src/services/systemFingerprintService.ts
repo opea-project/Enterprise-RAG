@@ -7,7 +7,10 @@ import {
   ChangeArgumentsRequestBody,
 } from "@/api/models/systemFingerprint";
 import keycloakService from "@/services/keycloakService";
-import { parseServiceDetailsResponseData } from "@/utils";
+import {
+  parseServiceDetailsResponseData,
+  parseServicesParameters,
+} from "@/utils";
 
 class SystemFingerprintService {
   async appendArguments() {
@@ -15,7 +18,6 @@ class SystemFingerprintService {
 
     const url = endpoints.systemFingerprint.appendArguments;
     const body: AppendArgumentsRequestBody = { text: "" };
-
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -27,7 +29,7 @@ class SystemFingerprintService {
 
     if (response.ok) {
       const { parameters } = await response.json();
-      return parameters;
+      return parseServicesParameters(parameters);
     } else {
       throw new Error("Failed to fetch service arguments");
     }

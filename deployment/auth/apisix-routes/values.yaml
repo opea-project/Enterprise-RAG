@@ -77,16 +77,6 @@ endpoints_api:
     service_path: /apis/gmc.opea.io/v1alpha3/namespaces/chatqa/gmconnectors/chatqa/status
     permissions:
       - "admin#admin-access"
-  - name: k8s-api-watcher-dataprep
-    namespace: default
-    path: /api/v1/dataprep/status
-    backend_service: kubernetes
-    rate_limit_count: 30
-    service_port: 443
-    scheme: https
-    service_path: /apis/gmc.opea.io/v1alpha3/namespaces/dataprep/gmconnectors/dataprep/status
-    permissions:
-      - "admin#admin-access"
 
 upstreams:
   - name: kubernetes

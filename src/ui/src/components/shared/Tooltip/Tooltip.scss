@@ -6,7 +6,7 @@
 }
 
 .tooltip {
-  @apply absolute left-1/2 z-50 inline-block w-max max-w-[25rem] -translate-x-1/2 px-3 py-2;
+  @apply absolute left-1/2 z-50 inline-block w-max max-w-[15rem] -translate-x-1/2 px-3 py-2;
   @apply bg-tooltip-background text-tooltip-text drop-shadow-md;
   @apply whitespace-normal break-words text-xs font-normal;
 

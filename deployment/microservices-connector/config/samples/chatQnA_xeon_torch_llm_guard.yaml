@@ -31,15 +31,12 @@ spec:
           config:
             endpoint: /v1/embeddings
             EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
-            EMBEDDING_MODEL_NAME: "BAAI/bge-base-en-v1.5"
             EMBEDDING_MODEL_SERVER: "torchserve"
             EMBEDDING_CONNECTOR: "langchain"
       - name: TorchserveEmbedding
         dependency: Hard
         internalService:
           serviceName: torchserve-embedding-svc
-          config:
-            TORCHSERVE_MODEL_NAME: "BAAI/bge-base-en-v1.5"
           isDownstreamService: true
       - name: Retriever
         data: $response
@@ -48,7 +45,6 @@ spec:
           serviceName: retriever-svc
           config:
             endpoint: /v1/retrieval
-            EMBED_MODEL: "BAAI/bge-base-en-v1.5"
       - name: VectorDB
         dependency: Hard
         internalService:

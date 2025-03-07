@@ -16,7 +16,7 @@ error_handler() {
 # Trap all error signals and runs the aboves error handler
 trap 'error_handler' ERR
 
-NAMESPACE=dataprep
+NAMESPACE=edp
 CLIENT_POD=""
 accessUrl=""
 

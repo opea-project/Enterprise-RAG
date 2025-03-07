@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import endpoints from "@/api/endpoints.json";
-import { LinkForIngestion } from "@/models/admin-panel/data-ingestion/dataIngestion";
 import keycloakService from "@/services/keycloakService";
+import { LinkForIngestion } from "@/types/admin-panel/data-ingestion";
 
 class DataIngestionService {
   async getLinks() {

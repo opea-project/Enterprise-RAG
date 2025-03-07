@@ -65,17 +65,19 @@ class OPEAVectorStore():
         Returns:
             List[str]: List of ids added to the vector store.
         """
-        return self.vector_store.add_texts(input=input)
+        texts = [doc.text for doc in input]
+        embeddings = [doc.embedding for doc in input]
+        metadatas = [doc.metadata for doc in input]
+
+        return self.vector_store.add_texts(texts, embeddings, metadatas)
 
     def delete_texts(self, search_field_name: str, search_field_value: str) -> None:
         """
         Deletes texts from the vector store based on field name and value
         """
-        return self.vector_store.search_and_delete_documents(
-            index_name=f"{search_field_name}_index",
+        return self.vector_store.search_and_delete_by_metadata(
             field_name=search_field_name,
-            field_value=search_field_value,
-            prefix_name="doc:default_index"
+            field_value=search_field_value
         )
 
     def search(self, input: EmbedDoc) -> SearchedDoc:
@@ -95,19 +97,18 @@ class OPEAVectorStore():
             search_res = self.vector_store.similarity_search_by_vector(input.text, input.embedding, input.k, input.distance_threshold)
         elif input.search_type == "similarity_score_threshold":
             raise NotImplementedError("similarity_score_threshold is not implemented")
-            # search_res = self.vector_store.similarity_search_with_relevance_scores(input.text, input.embedding, input.k, input.score_threshold)
         elif input.search_type == "mmr":
-            search_res = self.vector_store.max_marginal_relevance_search(input.text, input.embedding, input.k, input.fetch_k, input.lambda_mult)
+            raise NotImplementedError("mmr is not implemented")
         else:
             raise ValueError(f"Invalid search type: {input.search_type}")
         return search_res
 
     def _import_redis(self):
         """
-        Imports the RedisVectorStore connector.
+        Imports the ConnectorRedis connector.
         """
         try:
-            from comps.vectorstores.utils.connectors import connector_redis
-            self.vector_store = connector_redis.RedisVectorStore()
+            from comps.vectorstores.utils.connectors.connector_redis import ConnectorRedis
+            self.vector_store = ConnectorRedis()
         except ModuleNotFoundError:
-            logger.exception("exception when loading RedisVectorStore")
+            logger.exception("exception when loading ConnectorRedis")

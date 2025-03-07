@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .three-state-switch {
-  @apply w-full rounded p-1;
+  @apply w-full rounded p-1 mb-2;
   @apply grid grid-cols-3 gap-1;
   @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
@@ -32,5 +32,5 @@
 }
 
 .three-state-switch__label {
-  @apply mb-2 inline-block text-sm;
+  @apply mb-2 inline-block text-xs;
 }

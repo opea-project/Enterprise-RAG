@@ -101,11 +101,6 @@ data:
                 proxy_set_header Host $host;
             }
 
-            location /api/v1/dataprep/status {
-                proxy_pass {{ .Values.statusEndpoint }};
-                proxy_set_header Host $host;
-            }
-
             error_page   500 502 503 504  /50x.html;
             location = /50x.html {
                 root   /usr/share/nginx/html;

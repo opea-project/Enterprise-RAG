@@ -7,10 +7,9 @@ import "./ControlPlaneTab.scss";
 import { useEffect } from "react";
 
 import ChatQnAGraph from "@/components/admin-panel/control-plane/ChatQnAGraph/ChatQnAGraph";
-import ServiceDetailsModal from "@/components/admin-panel/control-plane/ServiceDetailsModal/ServiceDetailsModal";
+import ServiceCard from "@/components/admin-panel/control-plane/ServiceCard/ServiceCard";
 import ServiceStatusIndicator from "@/components/admin-panel/control-plane/ServiceStatusIndicator/ServiceStatusIndicator";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
-import { ServiceStatus } from "@/models/admin-panel/control-plane/serviceData";
 import SystemFingerprintService from "@/services/systemFingerprintService";
 import {
   chatQnAGraphCanBeRenderedSelector,
@@ -25,6 +24,7 @@ import {
 } from "@/store/chatQnAGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addNotification } from "@/store/notifications.slice";
+import { ServiceStatus } from "@/types/admin-panel/control-plane";
 
 const ServiceStatusLegend = () => (
   <div className="chatqna-graph-legend">
@@ -122,7 +122,7 @@ const ControlPlaneTab = () => {
   return (
     <div className="configure-services-panel">
       <div className="chatqna-graph-wrapper">{getControlPlaneContent()}</div>
-      <ServiceDetailsModal />
+      <ServiceCard />
     </div>
   );
 };

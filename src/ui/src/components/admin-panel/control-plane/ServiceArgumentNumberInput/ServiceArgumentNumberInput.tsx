@@ -8,36 +8,46 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { object, string, ValidationError } from "yup";
 
-import { ServiceArgumentInputValue } from "@/models/admin-panel/control-plane/serviceArgument";
+import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
+import Tooltip from "@/components/shared/Tooltip/Tooltip";
+import { chatQnAGraphEditModeEnabledSelector } from "@/store/chatQnAGraph.slice";
+import { useAppSelector } from "@/store/hooks";
+import {
+  OnArgumentValidityChangeHandler,
+  OnArgumentValueChangeHandler,
+} from "@/types/admin-panel/control-plane";
 import { sanitizeString } from "@/utils";
-import { isInRange } from "@/utils/validators/textInput";
+import { isInRange, isValidNumber } from "@/utils/validators/textInput";
+
+export type ServiceArgumentNumberInputValue =
+  | string
+  | number
+  | undefined
+  | null;
 
 interface ServiceArgumentNumberInputProps {
   name: string;
-  initialValue: number | null;
+  initialValue: ServiceArgumentNumberInputValue;
   range: { min: number; max: number };
+  tooltipText?: string;
   nullable?: boolean;
-  readOnly?: boolean;
-  onArgumentValueChange: (
-    argumentName: string,
-    argumentValue: ServiceArgumentInputValue,
-  ) => void;
-  onArgumentValidityChange: (
-    argumentName: string,
-    isArgumentInvalid: boolean,
-  ) => void;
+  onArgumentValueChange: OnArgumentValueChangeHandler;
+  onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
 
 const ServiceArgumentNumberInput = ({
   name,
   initialValue,
   range,
+  tooltipText,
   nullable = false,
-  readOnly = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
-  const [value, setValue] = useState<number | string>(initialValue || "");
+  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
+  const readOnly = !isEditModeEnabled;
+
+  const [value, setValue] = useState(initialValue || "");
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
 
@@ -49,11 +59,13 @@ const ServiceArgumentNumberInput = ({
   }, [readOnly, initialValue]);
 
   const validationSchema = object().shape({
-    numberInput: string().test(
-      "is-in-range",
-      `Enter number between ${range.min} and ${range.max}`,
-      isInRange(nullable, range),
-    ),
+    numberInput: string()
+      .test("is-valid-number", "Enter a valid number value", isValidNumber)
+      .test(
+        "is-in-range",
+        `Enter number between ${range.min} and ${range.max}`,
+        isInRange(nullable, range),
+      ),
   });
 
   const validateInput = async (value: string) => {
@@ -90,9 +102,14 @@ const ServiceArgumentNumberInput = ({
   const placeholder = `Enter number between ${range.min} and ${range.max}`;
 
   return (
-    <>
+    <div className="service-argument-number-input__wrapper">
       <label htmlFor={inputId} className="service-argument-number-input__label">
-        {name}
+        {tooltipText && (
+          <Tooltip text={tooltipText} position="right">
+            <InfoIcon />
+          </Tooltip>
+        )}
+        <span>{name}</span>
       </label>
       <input
         className={inputClassNames}
@@ -104,8 +121,8 @@ const ServiceArgumentNumberInput = ({
         readOnly={readOnly}
         onChange={handleChange}
       />
-      {isInvalid && <p className="error my-1 pl-2 text-xs italic">{error}</p>}
-    </>
+      {isInvalid && <p className="error mt-1 pl-2 text-xs italic">{error}</p>}
+    </div>
   );
 };
 

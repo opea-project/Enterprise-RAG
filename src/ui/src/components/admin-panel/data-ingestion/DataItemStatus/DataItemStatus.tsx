@@ -14,7 +14,7 @@ import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
 import Tooltip, { TooltipPosition } from "@/components/shared/Tooltip/Tooltip";
-import { DataStatus } from "@/models/admin-panel/data-ingestion/dataIngestion";
+import { DataStatus } from "@/types/admin-panel/data-ingestion";
 
 const statusIconMap: Record<DataStatus, ReactNode> = {
   uploaded: <UploadIcon className="data-item-status__icon" />,

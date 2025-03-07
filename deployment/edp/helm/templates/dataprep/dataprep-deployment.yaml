@@ -1,0 +1,101 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.dataprep.nameOverride | default (include "helm-edp.fullname" .) }}
+  labels:
+    {{- include "helm-edp.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.dataprep.replicas }}
+  selector:
+    matchLabels:
+      {{- include "helm-edp.dataprep.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm-edp.dataprep.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.dataprep.nameOverride }}
+          securityContext:
+            {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
+          image: "{{ .Values.dataprep.repository }}:{{ .Values.dataprep.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.dataprep.pullPolicy }}
+          env:
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
+          {{- end }}
+          {{- if .Values.dataprep.environment }}
+            {{- toYaml .Values.dataprep.environment | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: vector-database-config
+            - configMapRef:
+                name: edp-dataprep-configmap
+          ports:
+            - name: http
+              containerPort: 9399
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: v1/health_check
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: v1/health_check
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          startupProbe:
+            failureThreshold: 120
+            httpGet:
+              path: v1/health_check
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          resources:
+            {{- toYaml .Values.dataprep.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}

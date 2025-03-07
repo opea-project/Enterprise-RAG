@@ -6,7 +6,7 @@ import multiprocessing
 import os
 import random
 from socket import AF_INET, SOCK_STREAM, socket
-from typing import List, Optional, Union
+from typing import List, Union
 import logging
 import requests
 from .logger import get_opea_logger
@@ -127,47 +127,6 @@ def reset_ports():
     assigned_ports.clear()
     unassigned_ports.extend(_get_unassigned_ports())
     random.shuffle(unassigned_ports)
-
-
-def random_port() -> Optional[int]:
-    """Get a random available port number.
-
-    :return: A random port.
-    """
-
-    def _random_port():
-        import socket
-
-        def _check_bind(port):
-            with socket.socket() as s:
-                try:
-                    s.bind(("", port))
-                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                    return port
-                except OSError:
-                    return None
-
-        _port = None
-        if len(unassigned_ports) == 0:
-            reset_ports()
-        for idx, _port in enumerate(unassigned_ports):
-            if _check_bind(_port) is not None:
-                break
-        else:
-            raise OSError(
-                f"can not find an available port in {len(unassigned_ports)} unassigned ports, assigned already {len(assigned_ports)} ports"
-            )
-        int_port = int(_port)
-        unassigned_ports.pop(idx)
-        assigned_ports.add(int_port)
-        return int_port
-
-    try:
-        return _random_port()
-    except OSError:
-        assigned_ports.clear()
-        unassigned_ports.clear()
-        return _random_port()
 
 def get_access_token(token_url: str, client_id: str, client_secret: str) -> str:
     """Get access token using OAuth client credentials flow."""

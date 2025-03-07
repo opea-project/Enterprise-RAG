@@ -21,6 +21,6 @@ ENV PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
 RUN pip install --upgrade cmake==3.31.1 ninja==1.11.1.2 packaging==24.2 setuptools==75.6.0 setuptools-scm==8.1.0 torch==2.5.1 wheel==0.45.0 jinja2==3.1.4 numpy==1.26.4
 
 ENV VLLM_TARGET_DEVICE="cpu"
-RUN pip install -v git+https://github.com/vllm-project/vllm@v0.6.4.post1
+RUN pip install -v git+https://github.com/vllm-project/vllm@v0.7.2
 
 ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]

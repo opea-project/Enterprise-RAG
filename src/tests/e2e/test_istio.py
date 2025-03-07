@@ -27,12 +27,9 @@ http_endpoints = [
     "torchserve-embedding-svc.chatqa.svc.cluster.local:8090",
     # vllm endpoint name is different depending on the platform
     # "vllm-service-m.chatqa.svc.cluster.local:8000",
-    # Dataprep endpoints
-    "dataprep-svc.dataprep.svc.cluster.local:9399",
-    "embedding-svc.dataprep.svc.cluster.local:6000",
-    "ingestion-svc.dataprep.svc.cluster.local:6120",
-    "router-service.dataprep.svc.cluster.local:8080",
     # EDP endpoints
+    "edp-dataprep.edp.svc.cluster.local:9399",
+    "edp-ingestion.edp.svc.cluster.local:6120",
     "edp-backend.edp.svc.cluster.local:5000",
     "edp-celery.edp.svc.cluster.local:5000",
     "edp-flower.edp.svc.cluster.local:5555",
@@ -88,6 +85,13 @@ mongodb_endpoints = [
     "fingerprint-mongodb.fingerprint.svc.cluster.local:27017",
 ]
 
+istio_test_data = {
+    ConnectionType.HTTP: http_endpoints,
+    ConnectionType.REDIS: redis_endpoints,
+    ConnectionType.MONGODB: mongodb_endpoints,
+    ConnectionType.POSTGRESQL: postgres_endpoints
+}
+
 
 class TestIstioInMesh:
 
@@ -99,23 +103,9 @@ class TestIstioInMesh:
         istio_helper.delete_namespace()
 
     @allure.testcase("IEASG-T142")
-    def test_http_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, http_endpoints, ConnectionType.HTTP)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T143")
-    def test_redis_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, redis_endpoints, ConnectionType.REDIS)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T144")
-    def test_mongo_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, mongodb_endpoints, ConnectionType.MONGODB)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T145")
-    def test_postgres_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, postgres_endpoints, ConnectionType.POSTGRESQL)
+    def test_authorization_gets_connections_blocked(self, istio_helper):
+        endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}
+        connections_not_blocked = check_if_connections_blocked(istio_helper, endpoints)
         assert connections_not_blocked == []
 
 
@@ -129,25 +119,11 @@ class TestIstioOutOfMesh:
         istio_helper.delete_namespace()
 
     @allure.testcase("IEASG-T146")
-    def test_http_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, http_endpoints, ConnectionType.HTTP)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T149")
-    def test_redis_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, redis_endpoints, ConnectionType.REDIS)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T147")
-    def test_mongo_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, mongodb_endpoints, ConnectionType.MONGODB)
-        assert connections_not_blocked == []
-
-    @allure.testcase("IEASG-T148")
-    def test_postgres_connections_blocked(self, istio_helper):
-        connections_not_blocked = check_if_connections_blocked(istio_helper, postgres_endpoints, ConnectionType.POSTGRESQL)
+    def test_authorization_gets_connections_blocked(self, istio_helper):
+        endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}
+        connections_not_blocked = check_if_connections_blocked(istio_helper, endpoints)
         assert connections_not_blocked == []
 
 
-def check_if_connections_blocked(istio_helper, endpoints, connection_type):
-    return istio_helper.query_endpoints(connection_type, endpoints)
+def check_if_connections_blocked(istio_helper, endpoints: dict[str, ConnectionType]):
+    return istio_helper.query_multiple_endpoints(endpoints)

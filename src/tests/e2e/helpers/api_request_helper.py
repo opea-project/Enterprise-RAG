@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import concurrent
+from constants import ERAG_DOMAIN, INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR
 import kr8s
 import logging
 import requests
@@ -61,10 +62,11 @@ class ApiResponse:
     Wrapper class for the response from 'requests' library
     """
 
-    def __init__(self, response, response_time, exception=None):
+    def __init__(self, response, response_time, exception=None, streaming_duration=None):
         self._response = response
         self._response_time = response_time
         self._exception = exception
+        self._streaming_duration = streaming_duration
 
     def __getattr__(self, name):
         return getattr(self._response, name)
@@ -72,6 +74,10 @@ class ApiResponse:
     @property
     def response_time(self):
         return self._response_time
+
+    @property
+    def streaming_duration(self):
+        return self._streaming_duration
 
     @property
     def exception(self):
@@ -118,7 +124,7 @@ class ApiRequestHelper:
                         results.append(future.result())
                     except Exception as e:
                         results.append(ApiResponse(None, None,
-                                                   f"Request failed with exception: {e}"))
+                                                   exception=f"Request failed with exception: {e}"))
         return results
 
     def _call_chatqa(self, request_body, port_forward):
@@ -132,6 +138,43 @@ class ApiRequestHelper:
         duration = round(time.time() - start_time, 2)
         logger.info(f"ChatQA API call duration: {duration}")
         return ApiResponse(response, duration)
+
+    def call_chatqa_through_apisix(self, token, question):
+        """
+        Make /api/v1/chatqna API call through APISIX using provided token.
+
+        This method does not port-forwarding router-server. Instead, it does port-forwarding of nginx-controller
+        in order to reach it in case of Kind deployment.
+
+        Also, streaming duration is calculated and passed as an additional parameter in the response.
+        """
+        url = f"{ERAG_DOMAIN}/api/v1/chatqna"
+        payload = {"text": question}
+        headers = self.default_headers
+        headers["authorization"] = f"Bearer {token}"
+
+        logger.info(f"Asking the following question: {question}")
+        start_time = time.time()
+        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
+                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
+            response = requests.post(
+                url=url,
+                headers=headers,
+                json=payload,
+                stream=True,
+                verify=False
+            )
+            line_number = 0
+            for line in response.iter_lines(decode_unicode=True):
+                if line_number == 0:
+                    first_line_start_time = time.time()
+                line_number += 1
+                logger.debug(line)
+
+        streaming_duration = time.time() - first_line_start_time
+        duration = round(time.time() - start_time, 2)
+        logger.info(f"ChatQA API call duration: {duration}")
+        return ApiResponse(response, duration, streaming_duration=streaming_duration)
 
     def format_response(self, response):
         """

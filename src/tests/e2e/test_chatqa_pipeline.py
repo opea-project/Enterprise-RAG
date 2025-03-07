@@ -12,6 +12,7 @@ import requests
 import statistics
 import time
 from helpers.api_request_helper import InvalidChatqaResponseBody
+from helpers.keycloak_helper import CredentialsNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,28 @@ def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
         logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
+
+
+@pytest.mark.smoke
+@allure.testcase("IEASG-T150")
+def test_chatqa_through_apisix(chatqa_api_helper, fingerprint_api_helper, keycloak_helper):
+    """
+    Test the ChatQA through APISIX. Authenticate with Keycloak first.
+    Check if streaming is working properly by measuring the time between first and last line of the response.
+    """
+    question = "List 20 most popular travel destination among people in their 20s"
+    fingerprint_api_helper.set_streaming(True)
+    try:
+        token = keycloak_helper.get_access_token()
+    except CredentialsNotFound:
+        msg = ("Unable to retrieve Keycloak credentials. Please check if the credentials file (--credentials-file) "
+               "exists or default_credentials.txt is present in default directory.")
+        pytest.skip(msg)
+    response = chatqa_api_helper.call_chatqa_through_apisix(token, question)
+    assert response.streaming_duration > 0.1, \
+        ("Time between first and last line of the response is less than 0.1 second. "
+         "Looks like streaming is set but not working properly.")
+    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
 
 
 @pytest.mark.smoke

@@ -16,11 +16,18 @@ from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
 from helpers.istio_helper import IstioHelper
+from helpers.keycloak_helper import KeycloakHelper
 
 NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
 TEST_LOGS_DIR = "test_logs"
 
 logger = logging.getLogger(__name__)
+
+
+def pytest_addoption(parser):
+    parser.addoption("--credentials-file", action="store", default="",
+                     help="Path to credentials file. Required fields: "
+                          "KEYCLOAK_ERAG_ADMIN_USERNAME and KEYCLOAK_ERAG_ADMIN_PASSWORD")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -86,6 +93,11 @@ def collect_k8s_logs(request):
 @pytest.fixture(scope="session")
 def chatqa_api_helper():
     return ApiRequestHelper("chatqa", {"app": "router-service"})
+
+
+@pytest.fixture(scope="session")
+def keycloak_helper(request):
+    return KeycloakHelper(request.config.getoption("--credentials-file"))
 
 
 @pytest.fixture(scope="session")

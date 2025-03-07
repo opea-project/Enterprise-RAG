@@ -24,6 +24,9 @@ common_registry_path: &path "erag"
 llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
+embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
+# embedding_model_name: &embedding_model_name "BAAI/bge-large-en-v1.5"
+
 # imagePullSecrets:
 #   - name: regcred
 nameOverride: ""
@@ -145,6 +148,8 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
   reranking-usvc:
     image: "reranking"
     repository: *repo
@@ -156,6 +161,9 @@ images:
     repository: *repo
     tag: *tag
     envfile: "src/comps/reranks/impl/model_server/tei/docker/.env.cpu"
+  tei:
+    envs:
+      MODEL_ID: *embedding_model_name
   teirerank_gaudi:
     image: "teirerank_gaudi"
     repository: *repo
@@ -174,6 +182,8 @@ images:
     path: *path
     pullPolicy: Always
     envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
+    envs:
+      TORCHSERVE_MODEL_NAME: *embedding_model_name
   retriever-usvc:
     image: "retriever"
     repository: *repo

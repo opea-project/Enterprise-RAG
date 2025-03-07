@@ -1014,6 +1014,16 @@ HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repos
 
 # Execute given arguments
 
+# allow istio to inject during the upgrade process
+if [[ "$helm_upgrade" == "true" && ( "$mesh_installed" == "true" || "$mesh_flag" == "true" ) ]]; then
+    istio_protected_ns_list=$(kubectl get namespaces -l erag-istio-protected=true -o jsonpath='{.items[*].metadata.name}')
+
+    for ns in $istio_protected_ns_list; do
+        kubectl label namespace $ns erag-istio-protected=false --overwrite
+        kubectl label namespace $ns istio.io/dataplane-mode- --overwrite
+    done
+fi
+
 if $create_flag; then
     create_certs
 fi
@@ -1075,6 +1085,9 @@ if $mesh_flag && $create_flag; then
         if [ -f $authz_file ]; then
             authz_policies="${authz_policies}${authz_policies:+ }${authz_file}"
         fi
+
+        kubectl label namespace $ns erag-istio-protected=true --overwrite
+        kubectl label namespace $ns istio.io/dataplane-mode=ambient --overwrite
     done
     kubectl apply $(printf " -f %s" $authz_policies)
 fi

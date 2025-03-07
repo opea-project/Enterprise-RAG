@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@playwright/test": "^1.50.1",
+    "alphabin-pw": "^1.0.11",
+    "playwright": "^1.50.1"
+  }
+}

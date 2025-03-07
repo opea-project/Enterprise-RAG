@@ -41,3 +41,10 @@ super-linter-output/
 
 # credentials
 /deployment/default_credentials.txt
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

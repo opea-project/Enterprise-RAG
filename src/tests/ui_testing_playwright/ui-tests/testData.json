@@ -1,0 +1,13 @@
+
+{
+    "url": "https://erag.com/",
+    "viewport": {
+      "width": 2560,
+      "height": 1298
+    },
+    //These are the credentials for the login page created at the deployment time. 
+    //Please update them with the correct credentials corresponding to the deployment credentials.
+    "username": "erag-admin",
+    "password": "Yw#?Hyy8C8y*G3C",
+    "promptInput": "Hi"
+  }

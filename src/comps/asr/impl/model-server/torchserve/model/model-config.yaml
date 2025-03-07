@@ -1,0 +1,8 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+minWorkers: 1
+maxWorkers: 4
+maxBatchDelay: 100
+batchSize: 16
+responseTimeout: 1200

@@ -271,3 +271,29 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
+  tts-usvc:
+    image: "tts"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  torchserve-tts:
+    image: "torchserve-tts"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/tts/impl/model-server/torchserve/docker/.env"
+  asr-usvc:
+    image: "asr"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  torchserve-asr:
+    image: "torchserve-asr"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/asr/impl/model-server/torchserve/docker/.env"

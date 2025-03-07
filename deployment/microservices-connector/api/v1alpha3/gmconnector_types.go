@@ -87,6 +87,9 @@ const (
 	VLLMOpenVino StepNameType = "VLLMOpenVino"
 	// Language-Detection
 	LanguageDetection StepNameType = "LanguageDetection"
+	// TTS
+	TTS StepNameType = "Tts"
+	ASR StepNameType = "Asr"	
 )
 
 type Executor struct {

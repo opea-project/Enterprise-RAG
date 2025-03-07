@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc")
+default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc","torchserve-tts","tts-usvc","torchserve-asr","asr-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -388,6 +388,42 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/src"
             dockerfile="edp/Dockerfile"
             image_name=$REGISTRY_PATH/enhanced-dataprep
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+        tts-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/tts/impl/microservice/Dockerfile"
+            image_name=$REGISTRY_PATH/tts
+            additional_args=""
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG "$additional_args";fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+
+        torchserve-tts)
+            path="${repo_path}/src/comps/tts/impl/model-server/torchserve"
+            dockerfile="docker/Dockerfile"
+            image_name=$REGISTRY_PATH/torchserve-tts
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+        asr-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/asr/impl/microservice/Dockerfile"
+            image_name=$REGISTRY_PATH/asr
+            additional_args=""
+
+            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG "$additional_args";fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            ;;
+
+        torchserve-asr)
+            path="${repo_path}/src/comps/asr/impl/model-server/torchserve"
+            dockerfile="docker/Dockerfile"
+            image_name=$REGISTRY_PATH/torchserve-asr
 
             if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi

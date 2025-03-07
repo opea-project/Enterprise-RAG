@@ -1,0 +1,57 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  tts-torchserve-model-server:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    image: tts-torchserve:cpu
+    container_name: tts-torchserve-model-server
+    ports:
+      - "${TORCHSERVE_PORT}:8100"
+      - "${TORCHSERVE_MGMT_PORT}:8101"
+      - "${TORCHSERVE_METRICS_PORT}:8102"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      TORCHSERVE_AMP_DTYPE: ${TORCHSERVE_AMP_DTYPE}
+      TORCHSERVE_BATCH_SIZE: ${TORCHSERVE_BATCH_SIZE}
+      TORCHSERVE_DEVICE_TYPE: cpu
+      TORCHSERVE_MAX_BATCH_DELAY: ${TORCHSERVE_MAX_BATCH_DELAY}
+      TORCHSERVE_MAX_WORKERS: ${TORCHSERVE_MAX_WORKERS}
+      TORCHSERVE_MIN_WORKERS: ${TORCHSERVE_MIN_WORKERS}
+      TORCHSERVE_MODEL_NAME: ${TORCHSERVE_MODEL_NAME}
+      TORCHSERVE_VOCODER_MODEL_NAME: ${TORCHSERVE_VOCODER_MODEL_NAME}
+      TORCHSERVE_RESPONSE_TIMEOUT: ${TORCHSERVE_RESPONSE_TIMEOUT}
+    runtime: runc
+    ipc: host
+    cpuset: "0-15"
+    cap_add:
+      - SYS_NICE
+
+  tts_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/tts/impl/microservice/Dockerfile
+      # target: ${TTS_CONNECTOR}
+    container_name: tts-torchserve-microservice
+    ports:
+      - "8200:8200"
+    environment:
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      # TTS_CONNECTOR: ${TTS_CONNECTOR}
+      TTS_MODEL_NAME: ${TORCHSERVE_MODEL_NAME}
+      TTS_VOCODER_MODEL_NAME: ${TORCHSERVE_VOCODER_MODEL_NAME}
+      TTS_MODEL_SERVER: torchserve
+      TTS_MODEL_SERVER_ENDPOINT: http://localhost:${TORCHSERVE_PORT}
+    ipc: host
+    runtime: runc
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      - tts-torchserve-model-server

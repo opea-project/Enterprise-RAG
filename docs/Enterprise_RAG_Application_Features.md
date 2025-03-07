@@ -1,10 +1,30 @@
 # 🚀 Enterprise RAG Applications with Intel Hardware
 
+## 📋 Agenda
+ 
+1. **Introduction**
+ 
+2. **What is an Enterprise RAG Application?**
+ 
+3. **Important Enterprise RAG Features**
+ 
+4. **Additional Features**
+ 
+5. **Relevance of Hardware**
+    - Importance of optimized hardware for speed, scalability, and efficiency.
+    - Intel's suite of products enhances RAG performance:
+      - Intel® Xeon® Scalable Processors
+      - Intel® Gaudi® AI Accelerators
+      - Intel® Optane™ Persistent Memory
+ 
+6. **Conclusion**
+
+
 In today’s digital era, enterprises face the challenge of efficiently retrieving and utilizing relevant information. As demand for intelligent knowledge management grows, companies compete to develop advanced solutions that optimize data search, management, and utilization.
 
 One such innovation is Enterprise Retrieval-Augmented Generation (RAG) Applications—AI-powered solutions that combine retrieval-based search with generative AI models to enhance knowledge retrieval and decision-making.
 
-## 🤖 So, hat is an Enterprise RAG Application?
+## 🤖 So, What is an Enterprise RAG Application?
 
 Enterprise RAG applications leverage retrieval-augmented generation (RAG) technology to enrich large language models (LLMs) with enterprise-specific knowledge. Unlike traditional AI models that rely solely on pre-trained data, RAG applications actively fetch relevant documents from internal databases, vector stores, or external sources to generate contextually accurate and up-to-date responses. This dynamic approach significantly improves information precision and minimizes AI hallucinations.
 

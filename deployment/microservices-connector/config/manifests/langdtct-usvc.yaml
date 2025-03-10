@@ -68,7 +68,7 @@ spec:
             optional: true
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
-        image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+        image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}:{{ toYaml (index .Values "images" .filename "image") }}_{{ toYaml (index .Values "images" .filename "tag") }}
         imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
         ports:
         - name: langdtct-usvc

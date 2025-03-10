@@ -4,7 +4,7 @@
 
 REGISTRY_NAME=localhost:5000
 REGISTRY_PATH=erag
-TAG=latest
+TAG_VERSION=latest
 _max_parallel_jobs=4
 
 components_to_build=()
@@ -33,7 +33,7 @@ usage() {
     echo -e "\t--push: Push specified components to the registry."
     echo -e "\t--setup-registry: Setup local registry at port 5000."
     echo -e "\t--registry: Specify the registry (default is $REGISTRY_NAME)."
-    echo -e "\t--tag: Specify the tag (default is latest)."
+    echo -e "\t--tag-version: Specify the tag version (default is latest)."
     echo -e "\t--hpu: Build components for HPU platform."
     echo -e "\t--no-cache: Build images without using docker cache."
     echo -e "Components available (default is all):"
@@ -64,25 +64,25 @@ tag_and_push() {
     fi
 
     local registry_url=$1
-    local image_name=$2
+    local repo_name=$2
     local image_tag=$3
 
-    local full_image_name="${image_name}:${image_tag}"
+    local full_image_name="${repo_name}:${image_tag}"
 
     if [[ "$registry_url" == *"aws"* ]]; then
-        if ! aws ecr describe-repositories --repository-names "$image_name" > /dev/null 2>&1; then
+        if ! aws ecr describe-repositories --repository-names "$repo_name" > /dev/null 2>&1; then
             aws ecr create-repository \
-                --repository-name "${image_name}" > /dev/null 2>&1
+                --repository-name "${repo_name}" > /dev/null 2>&1
         fi
     fi
-
+    echo docker tag "${full_image_name}" "${registry_url}/${full_image_name}"
     docker tag "${full_image_name}" "${registry_url}/${full_image_name}"
-    docker push "${registry_url}/${full_image_name}"  &> ${logs_dir}/push_$(basename ${image_name}).log
+    docker push "${registry_url}/${full_image_name}"  &> ${logs_dir}/push_$(basename ${image_tag}).log
 
     if [ $? -eq 0 ]; then
         echo "$full_image_name pushed succesfully"
     else
-        echo "Push failed. Please check the logs at ${logs_dir}/push_$(basename ${image_name}).log for more details."
+        echo "Push failed. Please check the logs at ${logs_dir}/push_$(basename ${image_tag}).log for more details."
     fi
 }
 
@@ -116,15 +116,14 @@ build_component() {
 
     local component_path=$1
     local dockerfile_path=$2
-    local image_name=$3
+    local repo_name=$3
     local image_tag=$4
     local build_args=${5:-""}
 
-    local full_image_name="${image_name}:${image_tag}"
+    local full_image_name="${repo_name}:${image_tag}"
 
     cd "${component_path}"
-
-    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} ${no_cache} --progress=plain &> ${logs_dir}/build_$(basename ${image_name}).log
+    docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} ${no_cache} --progress=plain &> ${logs_dir}/build_$(basename ${image_tag}).log
 
     if [ $? -eq 0 ]; then
         echo "$full_image_name built successfully"
@@ -153,9 +152,9 @@ while [ $# -gt 0 ]; do
             shift
             REGISTRY_NAME=${1}
             ;;
-        --tag)
+        --tag-version)
             shift
-            TAG=${1}
+            TAG_VERSION=${1}
             ;;
         -j|--jobs)
             shift
@@ -192,7 +191,7 @@ echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build_flag"
 echo "max parallel jobs = $_max_parallel_jobs"
 echo "do_push = $do_push_flag"
-echo "TAG = $TAG"
+echo "TAG_VERSION = $TAG_VERSION"
 echo "components_to_build = ${components_to_build[*]}"
 
 if $setup_registry_flag; then
@@ -212,146 +211,146 @@ for component in "${components_to_build[@]}"; do
         gmcManager)
             path="${repo_path}/deployment/microservices-connector"
             dockerfile="Dockerfile.manager"
-            image_name=$REGISTRY_PATH/gmcmanager
+            image_tag=gmcmanager_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         gmcRouter)
             path="${repo_path}/deployment/microservices-connector"
             dockerfile="Dockerfile.router"
-            image_name=$REGISTRY_PATH/gmcrouter
+            image_tag=gmcrouter_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         embedding-usvc)
             path="${repo_path}/src"
             dockerfile="comps/embeddings/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/embedding
+            image_tag=embedding_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         torchserve)
             path="${repo_path}/src/comps/embeddings/impl/model-server/torchserve"
             dockerfile="docker/Dockerfile"
-            image_name=$REGISTRY_PATH/torchserve
+            image_tag=torchserve_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         reranking-usvc)
             path="${repo_path}/src"
             dockerfile="comps/reranks/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/reranking
+            image_tag=reranking_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         prompt-template-usvc)
             path="${repo_path}/src"
             dockerfile="comps/prompt_template/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/prompt_template
+            image_tag=prompt_template_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         dataprep-usvc)
             path="${repo_path}/src"
             dockerfile="comps/dataprep/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/dataprep
+            image_tag=dataprep_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         retriever-usvc)
             path="${repo_path}/src"
             dockerfile="comps/retrievers/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/retriever
+            image_tag=retriever_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         ingestion-usvc)
             path="${repo_path}/src"
             dockerfile="comps/ingestion/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/ingestion
+            image_tag=ingestion_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         llm-usvc)
             path="${repo_path}/src"
             dockerfile="comps/llms/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/llm
+            image_tag=llm_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         in-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/in-guard
+            image_tag=in-guard_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         out-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/out-guard
+            image_tag=out-guard_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         ui-usvc)
             path="${repo_path}/src"
             dockerfile="ui/Dockerfile"
-            image_name=$REGISTRY_PATH/chatqna-conversation-ui
+            image_tag=chatqna-conversation-ui_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         fingerprint-usvc)
             path="${repo_path}/src"
             dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/system-fingerprint
+            image_tag=system-fingerprint_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
  
         otelcol-contrib-journalctl)
             path="${repo_path}"
             dockerfile="deployment/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
-            image_name=otelcol-contrib-journalctl
+            image_tag=otelcol-contrib-journalctl_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         vllm-gaudi)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.hpu"
-            image_name=$REGISTRY_PATH/vllm-gaudi
+            image_tag=vllm-gaudi_$TAG_VERSION
 
             if $if_gaudi_flag;then
-                if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-                if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+                if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+                if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             else
                 echo "Skipping $component as it is not supported on this platform"
             fi
@@ -360,37 +359,37 @@ for component in "${components_to_build[@]}"; do
         vllm-cpu)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.cpu"
-            image_name="$REGISTRY_PATH/vllm-cpu"
+            image_tag=vllm-cpu_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         vllm-openvino)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.openvino"
-            image_name="$REGISTRY_PATH/vllm-openvino"
+            image_tag=vllm-openvino_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         langdtct-usvc)
             path="${repo_path}/src"
             dockerfile="comps/language_detection/impl/microservice/Dockerfile"
-            image_name=$REGISTRY_PATH/language-detection
+            image_tag=language-detection_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
 
         edp-usvc)
             path="${repo_path}/src"
             dockerfile="edp/Dockerfile"
-            image_name=$REGISTRY_PATH/enhanced-dataprep
+            image_tag=enhanced-dataprep_$TAG_VERSION
 
-            if $do_build_flag;then build_component $path $dockerfile $image_name $TAG;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $image_name $TAG;fi
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
             ;;
     esac
     ) &

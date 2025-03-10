@@ -129,3 +129,5 @@ services:
     resources:
       limits:
         habana.ai/gaudi: 8
+        hugepages-2Mi: 18000Mi
+        memory: 180Gi

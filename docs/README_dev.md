@@ -13,49 +13,21 @@ To deploy Intel&reg; AI for Enterprise RAG locally on Intel&reg; Xeon without ku
 
 Run from root folder + deployment directory:
 ```
-cd deployment
+cd deployment/
 ```
 
 ## 1. Create kind cluster and local registry
 
-From the root folder of Intel&reg; AI for Enterprise RAG:
+Initialize kind cluster and create a local registry.
 
 ```bash
 # Create Local registry and kind-control-plane containers:
-bash ./deployment/telemetry/helm/example/kind-with-registry-opea-models-mount.sh
+bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh
 kind export kubeconfig
 docker ps
 kubectl get pods -A
 ```
 
-## 2. Build images and deploy everything
-
-Set the configuration parameters. Skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`. For proxy related environments, follow `proxy version`.
-
-Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
-
-```bash
-export HF_TOKEN=your-hf-token-here
-cd deployment/
-
-TAG=ts`date +%s`
-echo $TAG
-
-# no proxy version (use only on system without proxy)
-./set_values.sh -g $HF_TOKEN -t $TAG
-
-# proxy version
-./set_values.sh -p $http_proxy -u $https_proxy -n $no_proxy -g $HF_TOKEN -t $TAG
-```
-
-Check your changes with following command:
-
-```bash
-# check yaml values
-git --no-pager diff microservices-connector/helm/values.yaml
-```
-
-Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
 ## 2. Build images and deploy everything
 
 Set the configuration parameters. Skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`. For proxy related environments, follow `proxy version`.
@@ -127,32 +99,16 @@ To verify that the deployment was successful, run the following command:
 
 Check out following commands for any additional needs.
 
-### d) Access Grafana/Prometheus
-```bash
-pgrep -laf 'port-forward'
-# or port forwards processes manually
-kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
-# Grafana: http://127.0.0.1:3000
-# Prometheus: http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/graph
-```
-
 ### e) Access UI/KeyCloak and Grafana
-```bash
-# Add "127.0.0.1 auth.erag.com grafana.erag.com erag.com" line to /etc/hosts (Linux) or c:\windows\System32\drivers\etc\hosts (Windows)
-kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
-# UI: https://erag.com/
-# Grafana: https://grafana.erag.com/
-# KeyCloak: https://auth.erag.com/
-# Minio: https://minio.erag.com/
-# Minio API: https://s3.erag.com/
-```
 
-Passwords for Grafana/Keycloak are given above in the command line for installation. Passwords for users:
+In order to access UI or Grafana, follow instructions available in [deployment/README.md](../deployment/README.md#access-the-uigrafana).
+
+Default passwords are available in `default_credentials.txt`. Change the passwords after first succesful login.
 ```bash
 cat default_credentials.txt
 ```
 
-### Optionally install metrics-server (for resource usage metrics)
+### (Optionally) install metrics-server (for resource usage metrics)
 ```bash
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace

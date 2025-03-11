@@ -804,10 +804,16 @@ class InputScannersConfig:
         return Sentiment(**sentiment_params)
 
     def _create_token_limit_scanner(self, scanner_config):
+        limit_threshold = 160
         enabled_encodings = ['cl100k_base'] # TODO: test more encoding from tiktoken
         token_limit_params = {}
 
-        limit = scanner_config.get('limit', None)
+        limit = int(scanner_config.get('limit', None))
+        if limit < limit_threshold:
+            err_msg = "Provided token limit is smaller than default prompt template. Define bigger limit. " \
+            f"Token limit should be above {limit_threshold}. Provided limit: {limit}."
+            logger.error(err_msg)
+            raise ValueError(err_msg)
         encoding_name = scanner_config.get('encoding', None)
 
         if limit is not None:

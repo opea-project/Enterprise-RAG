@@ -14,6 +14,8 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
  6. [Verify Services](#verify-services)
  7. [Available Pipelines](#available-pipelines)
  8. [Interact with ChatQnA](#interact-with-chatqna)
+     1. [Test Deployment](#test-deployment)
+     2. [Access UI/Grafana](#access-the-uigrafana)
  9. [Configure ChatQnA](#configure-chatqna)
  10. [Clear Deployment](#clear-deployment)
  11. [Additional features](#additional-features)
@@ -366,21 +368,27 @@ data: [DONE]
 Test finished succesfully
 ```
 
-### Access the UI
+### Access the UI/Grafana
 
-To access the cluster, please update the `/etc/hosts` file on your machine to match the domain name with the externally
-exposed IP address of the cluster.
-
-For example, the updated file content should resemble the following:
-
+To access the UI, do the following:
+1. Forward the port from the ingress pod.
+```bash
+sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
 ```
-<Ingress external IP> erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+2. If you'd like to access the UI from another machine, tunel the port from the host:
+```bash
+ssh -L 443:localhost:443 user@ip
+```
+3. Update `/etc/hosts` file on the machine where you'd like to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
+
+     For example, the updated file content should resemble the following:
+
+```bash
+127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
 ```
 
 > [!NOTE]
 > This is the IPv4 address of local machine.
-
-On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
 
 Once the update is complete, you can access the Enterprise RAG UI by typing the following URL in your web browser:
 `https://erag.com`
@@ -397,12 +405,15 @@ MinIO Console can be accessed via:
 S3 API is exposed at:
 `https://s3.erag.com`
 
+> [!CAUTION]
+> Before ingesting the data, access the `https://s3.erag.com` to agree to accessing the self-signed certificate.
+
 ### UI credentials for the first login
 
 Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passowrds for application admin and user. After one time password will be provided you will be requested to change the default password.
 
 > [!CAUTION]
-> Please remove file `default_credentials.txt` after the first succesfull login.
+> Please remove file `default_credentials.txt` after the first succesful login.
 
 ### Credentials for Grafana and Keycloak
 

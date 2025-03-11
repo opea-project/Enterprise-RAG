@@ -7,7 +7,7 @@ import classNames from "classnames";
 import { IconBaseProps } from "react-icons";
 import { GiAtom } from "react-icons/gi";
 
-interface ChatIconProps extends IconBaseProps {
+interface ChatBotIconProps extends IconBaseProps {
   forConversation?: boolean;
 }
 
@@ -15,7 +15,7 @@ const ChatBotIcon = ({
   forConversation,
   className,
   ...props
-}: ChatIconProps) => {
+}: ChatBotIconProps) => {
   const chatIconClassNames = classNames([
     "chat-bot-icon",
     {

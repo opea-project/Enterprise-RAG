@@ -1,0 +1,17 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-page--no-messages {
+  @apply relative mx-auto mb-32 h-full;
+  @apply flex flex-col items-center justify-center;
+  @apply w-full md:w-[50rem];
+
+  & .chat-page__greeting {
+    @apply mb-9 text-center text-[2.5rem] font-semibold leading-[3rem];
+    @apply text-light-text-accent-2 dark:text-dark-text-accent-2;
+  }
+}
+
+.chat-page {
+  @apply grid h-full grid-rows-[1fr_auto];
+}

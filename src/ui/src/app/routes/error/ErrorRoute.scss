@@ -1,0 +1,15 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.error-route__layout {
+  @apply h-[100vh] w-full;
+  @apply flex flex-col items-center justify-center gap-2;
+
+  & .error-message {
+    @apply text-light-text-error dark:text-dark-text-error;
+  }
+
+  & a {
+    @apply text-light-text-accent dark:text-dark-text-accent;
+  }
+}

@@ -51,7 +51,7 @@ npm install
 ## Start UI Development Server
 
 Run `npm run dev` command to start UI development server.
-By default, it will run on `http://localhost:7777`.
+By default, it will run on `http://localhost:5173`.
 
 The port and IP address can be changed by setting `--port` and `--host` options
 for npm `dev` script inside `package.json` file.

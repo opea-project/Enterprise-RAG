@@ -3,11 +3,11 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
-import chatQnAGraphReducer from "@/store/chatQnAGraph.slice";
-import colorSchemeReducer from "@/store/colorScheme.slice";
-import conversationFeedReducer from "@/store/conversationFeed.slice";
-import dataIngestionReducer from "@/store/dataIngestion.slice";
-import notificationsReducer from "@/store/notifications.slice";
+import colorSchemeReducer from "@/components/ui/ColorSchemeSwitch/colorScheme.slice";
+import notificationsReducer from "@/components/ui/Notifications/notifications.slice";
+import chatQnAGraphReducer from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
+import dataIngestionReducer from "@/features/admin-panel/data-ingestion/store/dataIngestion.slice";
+import conversationFeedReducer from "@/features/chat/store/conversationFeed.slice";
 
 export const store = configureStore({
   reducer: {

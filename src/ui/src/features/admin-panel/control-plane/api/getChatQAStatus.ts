@@ -17,6 +17,8 @@ export const getChatQAStatus = async () => {
     if (response.ok) {
       const servicesData = await response.json();
       return parseServiceDetailsResponseData(servicesData);
+    } else {
+      throw new Error("Failed to fetch services statuses");
     }
   } catch (error) {
     if (error instanceof Error) {

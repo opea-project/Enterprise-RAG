@@ -78,7 +78,7 @@ export const fetchGraphData = createAsyncThunk(
         dispatch(
           setChatQnAGraphNodes({
             parameters,
-            fetchedDetails: fetchedDetails ?? {},
+            fetchedDetails,
           }),
         );
         dispatch(setChatQnAGraphEdges());

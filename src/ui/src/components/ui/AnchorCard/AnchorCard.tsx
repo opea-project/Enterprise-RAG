@@ -3,11 +3,12 @@
 
 import "./AnchorCard.scss";
 
+import classNames from "classnames";
 import { AnchorHTMLAttributes, MouseEventHandler } from "react";
 
 import { IconName, icons } from "@/components/icons";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon/ExternalLinkIcon";
-import { getPunycodeHref, isHrefSafe } from "@/utils";
+import { isSafeHref, sanitizeHref } from "@/utils";
 
 interface AnchorCardProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   text: string;
@@ -15,40 +16,52 @@ interface AnchorCardProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   isExternal?: boolean;
 }
 
-const AnchorCard = ({ text, href, icon, isExternal }: AnchorCardProps) => {
-  const safeHref = isHrefSafe(href) ? getPunycodeHref(href) : undefined;
+const AnchorCard = ({
+  text,
+  icon,
+  isExternal,
+  href,
+  target = "_blank",
+  className,
+  onClick,
+  ...attrs
+}: AnchorCardProps) => {
+  const isSafe = isSafeHref(href);
+  const safeHref = isSafe ? sanitizeHref(href) : undefined;
+  const rel = target === "_blank" ? "noopener noreferrer" : undefined;
+  const anchorCardClassNames = classNames([
+    "anchor-card",
+    { invalid: !isSafe },
+    className,
+  ]);
 
   const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (!isHrefSafe(href)) {
+    if (!isSafe) {
       event.preventDefault();
+    } else if (onClick) {
+      onClick(event);
     }
   };
 
-  let content = (
-    <>
-      {text}
-      {isExternal && <ExternalLinkIcon fontSize={12} />}
-    </>
-  );
-  if (icon) {
-    const IconComponent = icons[icon];
-    content = (
-      <>
-        <IconComponent />
-        {text}
-        {isExternal && <ExternalLinkIcon fontSize={12} />}
-      </>
-    );
-  }
+  const IconComponent = icon ? icons[icon] : null;
 
   return (
     <a
       href={safeHref}
-      target="_blank"
-      className="anchor-card"
+      target={target}
+      rel={rel}
+      className={anchorCardClassNames}
       onClick={handleClick}
+      {...attrs}
     >
-      <span className="anchor-card__content">{content}</span>
+      <span className="anchor-card__content">
+        {IconComponent ? <IconComponent /> : null}
+        <p className="anchor-card__text">
+          {!isSafe && "Caution: Malicious link - "}
+          {text}
+        </p>
+        {isExternal && <ExternalLinkIcon fontSize={12} />}
+      </span>
     </a>
   );
 };

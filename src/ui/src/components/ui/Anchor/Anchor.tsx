@@ -7,7 +7,7 @@ import classNames from "classnames";
 import { AnchorHTMLAttributes, MouseEventHandler } from "react";
 
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon/ExternalLinkIcon";
-import { getPunycodeHref, isHrefSafe } from "@/utils";
+import { isSafeHref, sanitizeHref } from "@/utils";
 
 interface AnchorProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   isExternal?: boolean;
@@ -19,26 +19,32 @@ const Anchor = ({
   className,
   children,
   isExternal,
-  ...props
+  onClick,
+  ...attrs
 }: AnchorProps) => {
-  const linkClassNames = classNames({ className, invalid: !isHrefSafe(href) });
-  const safeHref = isHrefSafe(href) ? getPunycodeHref(href) : undefined;
+  const isSafe = isSafeHref(href);
+  const safeHref = isSafe ? sanitizeHref(href) : undefined;
+  const rel = target === "_blank" ? "noopener noreferrer" : undefined;
+  const anchorClassNames = classNames([{ invalid: !isSafe }, className]);
 
   const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (!isHrefSafe(href)) {
+    if (!isSafe) {
       event.preventDefault();
+    } else if (onClick) {
+      onClick(event);
     }
   };
 
   return (
     <a
-      {...props}
       href={safeHref}
       target={target}
-      className={linkClassNames}
+      rel={rel}
+      className={anchorClassNames}
       onClick={handleClick}
+      {...attrs}
     >
-      {!isHrefSafe && "Caution: Malicious link - "}
+      {!isSafe && "Caution: Malicious link - "}
       {children}
       {isExternal && <ExternalLinkIcon size={12} />}
     </a>

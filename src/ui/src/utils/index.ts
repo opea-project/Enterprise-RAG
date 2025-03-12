@@ -3,21 +3,25 @@
 
 import DOMPurify from "dompurify";
 import { toASCII } from "punycode";
+import { validate as isUuidValid } from "uuid";
 
-const getPunycodeHref = (href: string | undefined) => {
-  if (!href) {
-    return href;
-  }
-
-  const decodedHref = decodeURIComponent(href);
-  return toASCII(decodedHref);
+const isSafeHref = (href: string | undefined) => {
+  const sanitizedHref = sanitizeHref(href);
+  return href === sanitizedHref;
 };
-
-const isHrefSafe = (href: string | undefined) => getPunycodeHref(href) === href;
 
 const isPunycodeSafe = (input: string) => {
   const punycodeInput = toASCII(input);
   return input === punycodeInput;
+};
+
+const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
+  if (!isUuidValid(uuid)) {
+    throw new Error(`Invalid UUID format: ${uuid}`);
+  }
+
+  const encodedUuid = encodeURIComponent(uuid);
+  return baseUrl.replace("{uuid}", encodedUuid);
 };
 
 const sanitizeString = (value: string) => {
@@ -25,4 +29,28 @@ const sanitizeString = (value: string) => {
   return DOMPurify.sanitize(decodedValue);
 };
 
-export { getPunycodeHref, isHrefSafe, isPunycodeSafe, sanitizeString };
+const sanitizeHref = (href: string | undefined) => {
+  if (!href) {
+    return undefined;
+  }
+
+  try {
+    const decodedHref = decodeURIComponent(href);
+    const asciiHref = toASCII(decodedHref);
+    const sanitizedHref = DOMPurify.sanitize(asciiHref, {
+      ALLOWED_TAGS: [],
+      ALLOWED_ATTR: [],
+    });
+    return sanitizedHref;
+  } catch {
+    return undefined;
+  }
+};
+
+export {
+  constructUrlWithUuid,
+  isPunycodeSafe,
+  isSafeHref,
+  sanitizeHref,
+  sanitizeString,
+};

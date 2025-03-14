@@ -24,8 +24,20 @@ const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
   return baseUrl.replace("{uuid}", encodedUuid);
 };
 
+const tryDecode = (value: string) => {
+  let decodedValue = value;
+  try {
+    decodedValue = decodeURIComponent(value);
+  } catch (error) {
+    if (!(error instanceof URIError)) {
+      throw error;
+    }
+  }
+  return decodedValue;
+};
+
 const sanitizeString = (value: string) => {
-  const decodedValue = decodeURIComponent(value);
+  const decodedValue = tryDecode(value);
   return DOMPurify.sanitize(decodedValue);
 };
 
@@ -35,7 +47,7 @@ const sanitizeHref = (href: string | undefined) => {
   }
 
   try {
-    const decodedHref = decodeURIComponent(href);
+    const decodedHref = tryDecode(href);
     const asciiHref = toASCII(decodedHref);
     const sanitizedHref = DOMPurify.sanitize(asciiHref, {
       ALLOWED_TAGS: [],

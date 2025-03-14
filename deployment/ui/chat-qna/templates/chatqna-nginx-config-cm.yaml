@@ -1,6 +1,6 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
+{{- if eq .Values.type "chatqa" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -70,17 +70,17 @@ data:
             }
 
             location /v1/system_fingerprint/append_arguments {
-                proxy_pass {{ .Values.systemFingerprintEndpoint }};
+                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
                 proxy_set_header Host $host;
             }
 
             location /v1/system_fingerprint/change_arguments {
-                proxy_pass {{ .Values.systemFingerprintEndpoint }};
+                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
                 proxy_set_header Host $host;
             }
 
             location /api/v1/chatqna {
-                proxy_pass {{ .Values.chatqaEndpoint }};
+                proxy_pass {{ .Values.extraNginxVars.chatqaEndpoint }};
                 proxy_set_header Host $host;
                 proxy_send_timeout 10m;
                 proxy_read_timeout 10m;
@@ -89,15 +89,15 @@ data:
             }
 
             location /api/v1/edp {
-                proxy_pass {{ .Values.edpEndpoint }};
+                proxy_pass {{ .Values.extraNginxVars.edpEndpoint }};
                 proxy_set_header Host $host;
-                client_max_body_size {{ .Values.dataprepClientMaxBodySize }};
+                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
                 proxy_read_timeout 60m;
                 proxy_send_timeout 60m;
             }
 
             location /api/v1/chatqa/status {
-                proxy_pass {{ .Values.statusEndpoint }};
+                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
                 proxy_set_header Host $host;
             }
 
@@ -107,3 +107,4 @@ data:
             }
         }
     }
+{{- end }}

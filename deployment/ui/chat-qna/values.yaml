@@ -11,12 +11,14 @@ proxy:
 domainName: &dname "erag.com"
 tlsSecret: &tsecret "tls-secret"
 
-chatqaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
-systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
-edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
-statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+type: chatqa
 
-dataprepClientMaxBodySize: "64m"
+extraNginxVars:
+  chatqaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  dataprepClientMaxBodySize: "64m"
 
 image:
   ui:

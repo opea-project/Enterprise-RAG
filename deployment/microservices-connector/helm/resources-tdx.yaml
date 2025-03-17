@@ -73,7 +73,7 @@ tdx:
           memory: 16Gi
         requests:
           memory: 16Gi
-    torchserve:
+    torchserve_embedding:
       tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
       resources:
         limits:

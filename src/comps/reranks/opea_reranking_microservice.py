@@ -40,6 +40,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 # Initialize an instance of the OPEALlm class with environment variables.
 opea_reranker = OPEAReranker(
     service_endpoint=sanitize_env(os.getenv('RERANKING_SERVICE_ENDPOINT')),
+    model_server=sanitize_env(os.getenv('RERANKING_MODEL_SERVER')),
 )
 
 # Register the microservice with the specified configuration.

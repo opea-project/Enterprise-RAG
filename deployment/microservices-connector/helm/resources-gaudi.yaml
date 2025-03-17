@@ -115,8 +115,17 @@ services:
     resources:
       limits:
         habana.ai/gaudi: 8
-  torchserve:
+  torchserve_embedding:
     replicas: 4
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+  torchserve_reranking:
+    replicas: 1
     resources:
       requests:
         cpu: 4

@@ -13,7 +13,7 @@ spec:
     - chatqa
   selector:
     matchLabels:
-      app.kubernetes.io/instance: torchserve
+      app.kubernetes.io/instance: torchserve-embedding
   endpoints:
   - port: "metrics"
 {{- end }}

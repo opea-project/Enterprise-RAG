@@ -32,7 +32,7 @@ def mock_cores_mega_microservice():
 
 @pytest.fixture
 def mock_call_reranker():
-    with patch.object(OPEAReranker, '_call_reranker', return_value='Mocked Method') as mock:
+    with patch.object(OPEAReranker, '_async_call_reranker', return_value='Mocked Method') as mock:
         yield mock
 
 
@@ -49,6 +49,12 @@ def clean_env_vars():
 def mock_OPEAReranker():
    with patch('comps.reranks.utils.opea_reranking.OPEAReranker.__init__', autospec=True) as MockClass:
       MockClass.return_value = None
+      yield MockClass
+
+@pytest.fixture
+def mock_OPEAReranker_torchserve():
+   with patch('comps.reranks.utils.opea_reranking.OPEAReranker._retrieve_torchserve_model_name', autospec=True) as MockClass:
+      MockClass.return_value = "test_name"
       yield MockClass
 
 
@@ -76,7 +82,7 @@ def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, moc
    assert hasattr(test_module, 'process'), "process is not declared"
 
 
-def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, mock_call_reranker):
+def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, mock_call_reranker, mock_OPEAReranker_torchserve):
    # The configuration in the dotenv file shall satisfy all parameters specified as required
    try:
       import comps.reranks.opea_reranking_microservice as test_module
@@ -88,7 +94,7 @@ def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, moc
    assert isinstance(test_module.opea_reranker._service_endpoint, str) and test_module.opea_reranker._service_endpoint, "The service_endpoint is expected to be a non-empty string"
 
 
-def test_initialization_succeeds_with_env_vars_present(clean_env_vars, mock_call_reranker):
+def test_initialization_succeeds_with_env_vars_present(clean_env_vars, mock_call_reranker, mock_OPEAReranker_torchserve):
    with patch.dict("os.environ",
       {
          "RERANKING_SERVICE_ENDPOINT": "http://testhost:1234",
@@ -102,7 +108,7 @@ def test_initialization_succeeds_with_env_vars_present(clean_env_vars, mock_call
          pytest.fail(f"OPEA Reranking Microservice init raised {type(e)} unexpectedly!")
 
       # Assertions to check the initialized values
-      assert test_module.opea_reranker._service_endpoint == "http://testhost:1234", "service url does not match"
+      assert "http://testhost:1234" in test_module.opea_reranker._service_endpoint, "service url does not match"
 
 
 def test_initialization_raises_exception_when_config_params_are_missing(clean_env_vars):

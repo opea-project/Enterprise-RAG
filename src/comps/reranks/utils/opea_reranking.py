@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import heapq
 import json
 import requests
@@ -25,21 +26,30 @@ RerankScoreResponse = List[RerankScoreItem]
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
+SUPPORTED_MODEL_SERVERS = ["torchserve", "tei"]
+
 class OPEAReranker:
-    def __init__(self, service_endpoint: str):
+    def __init__(self, service_endpoint: str, model_server: str):
         """
          Initialize the OPEAReranker instance with the given parameter
         Sets up the reranker.
 
         Args:
-            :param service_endpoint: the URL of the reranking service (e.g. TEI Ranker)
+            :param service_endpoint: the URL of the reranking service (e.g. TEI)
 
         Raises:
             ValueError: If the required param is missing or empty.
         """
 
         self._service_endpoint = service_endpoint
+        self._model_server = model_server.lower()
         self._validate_config()
+
+        if self._model_server == "torchserve":
+            model_name = self._retrieve_torchserve_model_name()
+            self._service_endpoint = self._service_endpoint + f"/predictions/{model_name}"
+        elif self._model_server == "tei":
+            self._service_endpoint = self._service_endpoint + "/rerank"
 
         self._validate()
 
@@ -49,18 +59,34 @@ class OPEAReranker:
 
     def _validate_config(self):
         """Validate the configuration values."""
-        try:
-            if not self._service_endpoint:
-                raise ValueError("The 'RERANKING_SERVICE_ENDPOINT' cannot be empty.")
-        except Exception as err:
-            logger.error(f"Configuration validation error: {err}")
-            raise
+        if not self._service_endpoint:
+            raise ValueError("The 'RERANKING_SERVICE_ENDPOINT' cannot be empty.")
+
+        if self._model_server not in SUPPORTED_MODEL_SERVERS:
+            raise ValueError(f"Unsupported model server: {self._model_server}. Supported model servers: {SUPPORTED_MODEL_SERVERS}")
 
     def _validate(self):
         initial_query = "What is DL?"
         retrieved_docs = ["DL is not...", "DL is..."]
-        _ = self._call_reranker(initial_query, retrieved_docs)
+        asyncio.run(self._async_call_reranker(initial_query, retrieved_docs))
         logger.info("Reranker service is reachable and working.")
+
+    def _retrieve_torchserve_model_name(self):
+        try:
+            mgnt_port = int(self._service_endpoint.split(":")[-1]) + 1
+            mgnt_service_endpoint = ":".join(self._service_endpoint.split(":")[:-1]) + ":" + str(mgnt_port) + "/models"
+
+            response = requests.get(mgnt_service_endpoint, timeout=20)
+            response.raise_for_status()
+
+            # FIXME: Attention! The code assumes only 1 model is registered in Torchserve.
+            # Should be changed if Torchserve implementation would be modified.
+            return response.json()["models"][0]["modelName"]
+        except Exception as e:
+            err_msg = f"An error occurred while retrieving the model name from the Torchserve: {e}. " \
+                f"Check if management port is correct. Assumed management endpoint: {mgnt_service_endpoint}"
+            logger.error(err_msg)
+            raise Exception(err_msg)
 
     async def run(self, input: SearchedDoc) -> PromptTemplateInput:
         """
@@ -75,16 +101,11 @@ class OPEAReranker:
             Exception: If there is any other error during the request to the reranking service.
         """
 
-
         # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
 
         if not input.initial_query.strip():
             logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
-
-        if input.top_n < 1:
-            logger.error(f"Top N value must be greater than 0, but it is {input.top_n}")
-            raise ValueError(f"Top N value must be greater than 0, but it is {input.top_n}")
 
         # Check if retrieved_docs is not empty and all documents have non-empty 'text' fields
         if input.retrieved_docs and all(doc.text for doc in input.retrieved_docs):
@@ -94,6 +115,7 @@ class OPEAReranker:
                 response_data = await self._async_call_reranker(
                     input.initial_query, retrieved_docs
                 )
+                logger.info(f"Received response from reranking service: {response_data}")
                 best_response_list = self._filter_top_n(input.top_n, response_data)
             except TimeoutError as e:
                 raise TimeoutError(e)
@@ -144,12 +166,12 @@ class OPEAReranker:
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    self._service_endpoint + "/rerank",
+                    self._service_endpoint,
                     data=json.dumps(data),
                     headers={"Content-Type": "application/json"},
                     timeout=180
                 ) as response:
-                    response_data = await response.json()
+                    response_data = await response.json(content_type=None)
                     response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
                     return response_data
 
@@ -165,49 +187,6 @@ class OPEAReranker:
         except ClientResponseError as e:
             logger.error(f"A ClientResponseError error occurred while sending a request to the reranking service: {e}")
             raise
-        except Exception as e:
-            logger.error(f"An error occurred while requesting to the reranking service: {e}")
-            raise Exception(f"An error occurred while requesting to the reranking service: {e}")
-
-    def _call_reranker(
-        self,
-        initial_query: str,
-        retrieved_docs: List[str],
-    ) -> RerankScoreResponse:
-        """
-        Calls the reranker service to rerank the retrieved documents based on the initial query.
-        Args:
-            initial_query (str): The initial query string.
-            retrieved_docs (List[str]): The list of retrieved documents.
-        Returns:
-            RerankScoreResponse: The response from the reranker service.
-        Raises:
-            Timeout: If the request to the reranking service times out.
-            RequestException: If there is an issue with the request to the reranking service.
-            Exception: For any other exceptions that occur during the request.
-        """
-
-        data = {"query": initial_query, "texts": retrieved_docs}
-
-        try:
-            response = requests.post(self._service_endpoint + "/rerank",
-                                     data=json.dumps(data),
-                                     headers={"Content-Type": "application/json"},
-                                     timeout=180)
-            response.raise_for_status()  # Raises a HTTPError if the response status is 4xx, 5xx
-            return response.json()
-        except Timeout:
-            error_message = f"Request to reranking service timed out. Check if the service is running and reachable at '{self._service_endpoint}'."
-            logger.error(error_message)
-            raise Timeout(error_message)
-        except HTTPError as e:
-            logger.error(f"A HTTPError error occurred while requesting to the reranking service: {e}")
-            raise HTTPError(e)
-        except RequestException as e:
-            error_code = e.response.status_code if e.response else 'No response'
-            error_message = f"Failed to send request to reranking service. Unable to connect to '{self._service_endpoint}', status_code: {error_code}. Check if the service url is reachable."
-            logger.error(error_message)
-            raise RequestException(error_message)
         except Exception as e:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")

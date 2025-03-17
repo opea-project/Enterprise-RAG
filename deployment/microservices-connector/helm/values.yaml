@@ -175,8 +175,8 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
-  torchserve:
-    image: "torchserve"
+  torchserve_embedding:
+    image: "torchserve_embedding"
     repository: *repo
     tag: *tag
     path: *path
@@ -184,6 +184,13 @@ images:
     envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
+  torchserve_reranking:
+    image: "torchserve_reranking"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/reranks/impl/model_server/torchserve/docker/.env"
   retriever-usvc:
     image: "retriever"
     repository: *repo

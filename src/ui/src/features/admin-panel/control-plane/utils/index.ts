@@ -83,9 +83,11 @@ export const parseServiceDetailsResponseData = (
       "prompt_template",
     "Deployment:apps/v1:retriever-svc-deployment:chatqa": "retriever",
     "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa":
-      "reranker_model_server",
+      "tei_reranker_model_server",
     "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa":
       "embedding_model_server",
+    "Deployment:apps/v1:torchserve-reranking-svc-deployment:chatqa":
+      "torchserve_reranker_model_server"
   };
 
   const nodesStepsMap: { [key: string]: string } = {
@@ -94,7 +96,8 @@ export const parseServiceDetailsResponseData = (
     retriever: "retriever",
     vectordb: "vectordb",
     reranking: "reranker",
-    teireranking: "reranker_model_server",
+    tei_reranker_model_server: "tei_reranker_model_server",
+    torchserve_reranker_model_server: "torchserve_reranker_model_server",
     prompttemplate: "prompt_template",
     llm: "llm",
     vllm: "vllm",

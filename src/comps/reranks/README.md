@@ -9,6 +9,7 @@ Support for specific model servers with Dockerfiles or build instruction.
 | Model server name               |  Status   |
 | ---------------------------     | --------- |
 | [TEI](./impl/model_server/tei/) | &#x2713;  |
+| [Torchserve](./impl/model_server/torchserve/) | &#x2713;  |
 | OVMS                            | &#x2717;  |
 
 
@@ -20,6 +21,7 @@ The configuration for the Reranking Microservice is specified in the [impl/micro
 |-----------------------------|----------------------------------------------------------------------------|
 | `RERANKING_USVC_PORT`       | The port of the microservice, by default 8000                              |
 | `RERANKING_SERVICE_ENDPOINT`     | The endpoint of the reranking service, e.g., "http://localhost:6060" |
+| `RERANKING_MODEL_SERVER`     | The name of model server chose, e.g. "torchserve" |
 
 
 ## Getting started
@@ -130,36 +132,6 @@ The project is organized into several directories:
 - `impl/`: This directory contains the implementation of the supported reranking service. It includes the `model_server` directory, which contains instructions for setting up and running different model servers, for example TEI.
 
 - `utils/`: This directory contains utility scripts and modules that are used by the Reranking Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl
-  │   ├── microservice
-  │   │   ├── .env
-  │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   └── uv.lock
-  │   │
-  │   ├── model_server/
-  │   │   ├── tei/
-  │   │   │   ├── README.md
-  │   │   │   └── docker/
-  │   │   │       ├── .env.cpu
-  │   │   │       ├── .env.hpu
-  │   │   │       ├── docker-compose-hpu.yaml
-  │   │   │       └── docker-compose.yaml
-  │   │   │
-  │   │   └── ...
-  │   └── ...
-  │
-  ├── utils/
-  │   ├── opea_reranking.py
-  │
-  ├── README.md
-  └── opea_reranking_microservice.py
-```
 
 #### Tests
 - `src/tests/unit/rerankers/`: Contains unit tests for the Reranking Microservice components

@@ -4,7 +4,7 @@
 from unittest.mock import patch  #, AsyncMock
 
 import pytest
-# import requests
+import requests
 from comps import (
     SearchedDoc,
     TextDoc,
@@ -23,7 +23,7 @@ Alternatively, to run all tests for the 'reranks' module, execute the following 
 def test_class():
     """Fixture to create OPEAReranker instance."""
     with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
-        return OPEAReranker(service_endpoint="http:/test:1234")
+        return OPEAReranker(service_endpoint="http:/test:1234", model_server="tei")
 
 @pytest.fixture
 def mock_input_data():
@@ -50,7 +50,7 @@ def mock_response_data():
 def test_initialization_succeeds_with_valid_params():
     # Assert that the instance is created successfully
     with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
-        assert isinstance(OPEAReranker(service_endpoint="http:/test:1234/reranks"), OPEAReranker), "Instance was not created successfully."
+        assert isinstance(OPEAReranker(service_endpoint="http:/test:1234/reranks", model_server="tei"), OPEAReranker), "Instance was not created successfully."
 
 
 def test_initializaction_raises_exception_when_missing_required_arg():
@@ -58,14 +58,47 @@ def test_initializaction_raises_exception_when_missing_required_arg():
     with pytest.raises(Exception) as context:
         OPEAReranker()
 
-    assert str(context.value).endswith("missing 1 required positional argument: 'service_endpoint'")
+    assert str(context.value).endswith("missing 2 required positional arguments: 'service_endpoint' and 'model_server'")
 
     # empty string is passed
     with pytest.raises(Exception) as context:
-        OPEAReranker(service_endpoint="")
+        OPEAReranker(service_endpoint="",  model_server="tei")
 
     assert str(context.value) == "The 'RERANKING_SERVICE_ENDPOINT' cannot be empty."
 
+def test_initializaction_raises_exception_when_incorrect_model_server():
+    # wrong model server is passed
+    with pytest.raises(ValueError) as context:
+        OPEAReranker(service_endpoint="http://127.0.0.1:8090",  model_server="te")
+
+    assert "Unsupported model server" in str(context.value)
+
+def test_reranker_filter_top_n(test_class):
+    scores = [{"index": 1, "score": 0.9988041}, {"index": 0, "score": 0.02294873}, {"index": 2, "score": 0.5294873}]
+    top_n = 1
+    output = test_class._filter_top_n(top_n, scores)
+
+    assert len(output) == 1, "The output should contain only 1 element"
+    assert output[0]["index"] == 1, "The output should contain the element with the highest score"
+    assert output[0]["score"] == 0.9988041, "The output should contain the element with the highest score"
+
+def test_torchserve_retrieve_torchserve_model_name():
+    with patch('comps.reranks.utils.opea_reranking.requests.get', autospec=True) as MockClass:
+        with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
+            MockClass.return_value.raise_for_status.return_value = None
+            MockClass.return_value.json.return_value = {"models": [{"modelName": "bge-reranker-base", "modelUrl": "bge-reranker-base.tar.gz"}]}
+            r = OPEAReranker(service_endpoint="http:/test:1234", model_server="torchserve")
+
+        assert r._service_endpoint == "http:/test:1234/predictions/bge-reranker-base", "The Torchserve service endpoint should be set to the correct value"
+
+def test_torchserve_retrieve_torchserve_model_name_fails():
+    with patch('comps.reranks.utils.opea_reranking.requests.get', autospec=True) as MockClass:
+        with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
+            MockClass.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
+            with pytest.raises(Exception) as context:
+                OPEAReranker(service_endpoint="http:/test:1234", model_server="torchserve")
+
+                assert "An error occurred while retrieving the model name from the Torchserve model server" in str(context.value)
 
 # TODO: Investigate and fix the test.
 # Current issue: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
@@ -230,7 +263,7 @@ async def test_run_raises_exception_on_top_N_below_one(mock_post, test_class):
                 TextDoc(text="Document 2"),
                 TextDoc(text="Document 3"),
             ],
-            top_n=0,
+            top_n=-1,
         )
 
         await test_class.run(input_data)
@@ -238,4 +271,4 @@ async def test_run_raises_exception_on_top_N_below_one(mock_post, test_class):
     # Invalid query shouldn't be sent to the reranking service, so `post` shouldn't be called."
     mock_post.assert_not_called()
 
-    assert "Input should be greater than 0 [type=greater_than, input_value=0, input_type=int]" in str(context.value)
+    assert "Input should be greater than 0 [type=greater_than, input_value=-1, input_type=int]" in str(context.value)

@@ -59,6 +59,7 @@ spec:
           config:
             endpoint: /v1/reranking
             RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
+            RERANKING_MODEL_SERVER: "tei"
       - name: TeiReranking
         dependency: Hard
         internalService:

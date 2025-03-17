@@ -45,7 +45,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: torchserve
+      app.kubernetes.io/name: torchserve-embedding
   action: DENY
   rules:
   - from:
@@ -82,6 +82,23 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: teirerank
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/reranking-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-torchserve-reranking-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: torchserve-reranking
   action: DENY
   rules:
   - from:

@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	Fingerprint				 = "Fingerprint"
+	Fingerprint              = "Fingerprint"
 	Configmap                = "Configmap"
 	ConfigmapGaudi           = "ConfigmapGaudi"
 	Embedding                = "Embedding"
@@ -48,6 +48,7 @@ const (
 	TeiEmbeddingGaudi        = "TeiEmbeddingGaudi"
 	TorchserveEmbedding      = "TorchserveEmbedding"
 	TorchserveEmbeddingGaudi = "TorchserveEmbeddingGaudi"
+	TorchserveReranking      = "TorchserveReranking"
 	VectorDB                 = "VectorDB"
 	Retriever                = "Retriever"
 	PromptTemplate           = "PromptTemplate"
@@ -89,10 +90,11 @@ const (
 )
 
 var yamlDict = map[string]string{
-	Fingerprint:		 yaml_dir + "fingerprint-usvc.yaml",
+	Fingerprint:         yaml_dir + "fingerprint-usvc.yaml",
 	TeiEmbedding:        yaml_dir + "tei.yaml",
 	TeiEmbeddingGaudi:   yaml_dir + "tei_gaudi.yaml",
-	TorchserveEmbedding: yaml_dir + "torchserve.yaml",
+	TorchserveEmbedding: yaml_dir + "torchserve_embedding.yaml",
+	TorchserveReranking: yaml_dir + "torchserve_reranking.yaml",
 	Embedding:           yaml_dir + "embedding-usvc.yaml",
 	VectorDB:            yaml_dir + "redis-vector-db.yaml",
 	Retriever:           yaml_dir + "retriever-usvc.yaml",
@@ -180,7 +182,6 @@ func (r *GMConnectorReconciler) getLLMModelNameFromVLLMConfigMap(ctx context.Con
 	_log.Info("No VLLM ConfigMap found")
 	return ""
 }
-
 
 func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv1alpha3.Router, graph *mcv1alpha3.GMConnector) ([]*unstructured.Unstructured, error) {
 	if stepCfg == nil || nodeCfg == nil {
@@ -419,27 +420,27 @@ func (r *GMConnectorReconciler) getDownstreamSvcEndpointInNs(ctx context.Context
 }
 
 func (r *GMConnectorReconciler) fetchEnvVarFromService(ctx context.Context, namespace string, serviceName string, envVarName string) (string, error) {
-    _log.Info("Fetch environment variable from service", "namespace", namespace, "service", serviceName, "envVar", envVarName)
+	_log.Info("Fetch environment variable from service", "namespace", namespace, "service", serviceName, "envVar", envVarName)
 
-    // Query the Kubernetes API for the specific deployment in the specified namespace
-    deployment := &appsv1.Deployment{}
-    err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
-    if err != nil {
-        return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
-    }
+	// Query the Kubernetes API for the specific deployment in the specified namespace
+	deployment := &appsv1.Deployment{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
+	if err != nil {
+		return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
+	}
 
-    _log.Info("Found deployment in provided namespace", "name", serviceName, "namespace", namespace)
+	_log.Info("Found deployment in provided namespace", "name", serviceName, "namespace", namespace)
 
-    // Iterate through the containers in the deployment to find the environment variable
-    for _, container := range deployment.Spec.Template.Spec.Containers {
-        for _, env := range container.Env {
-            if env.Name == envVarName {
-                return env.Value, nil
-            }
-        }
-    }
+	// Iterate through the containers in the deployment to find the environment variable
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		for _, env := range container.Env {
+			if env.Name == envVarName {
+				return env.Value, nil
+			}
+		}
+	}
 
-    return "", fmt.Errorf("environment variable %s not found in deployment %s in namespace %s", envVarName, serviceName, namespace)
+	return "", fmt.Errorf("environment variable %s not found in deployment %s in namespace %s", envVarName, serviceName, namespace)
 }
 
 func getDownstreamSvcEndpoint(graphNs string, dsName string, stepCfg *mcv1alpha3.Step) (string, error) {

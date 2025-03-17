@@ -6,7 +6,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: torchserve-config
+  name: torchserve-reranking-config
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
@@ -22,7 +22,7 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: torchserve
+  name: torchserve-reranking
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
@@ -32,6 +32,10 @@ spec:
       targetPort: 8090
       protocol: TCP
       name: torchserve
+    - port: 8091
+      targetPort: 8091
+      protocol: TCP
+      name: management
     - port: 8092
       targetPort: 8092
       protocol: TCP
@@ -46,7 +50,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: torchserve
+  name: torchserve-reranking
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
@@ -65,10 +69,10 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
-        - name: torchserve
+        - name: torchserve-reranking
           envFrom:
             - configMapRef:
-                name: torchserve-config
+                name: torchserve-reranking-config
             - configMapRef:
                 name: extra-env-config
                 optional: true
@@ -106,6 +110,9 @@ spec:
             - name: http
               containerPort: 8090
               protocol: TCP
+            - name: management
+              containerPort: 8091
+              protocol: TCP
             - name: metrics
               containerPort: 8092
               protocol: TCP
@@ -132,7 +139,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume-embedding
+            claimName: model-volume-reranker
         - name: shm
           emptyDir:
             medium: Memory

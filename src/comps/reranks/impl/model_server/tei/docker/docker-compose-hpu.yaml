@@ -35,6 +35,7 @@ services:
       HTTP_PROXY: ${HTTP_PROXY}
       HTTPS_PROXY: ${HTTPS_PROXY}
       RERANKING_SERVICE_ENDPOINT: http://127.0.0.1:${RERANKER_TEI_PORT}
+      RERANKING_MODEL_SERVER: "tei"
     restart: unless-stopped
     depends_on:
       - reranking-tei-model-server

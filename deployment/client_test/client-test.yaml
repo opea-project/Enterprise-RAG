@@ -30,7 +30,7 @@ spec:
       - image: curlimages/curl
         name: curl
         command: ["/bin/sh", "-c"]
-        args: ["trap exit TERM; sleep 300 & wait; done"]
+        args: ["trap exit TERM; sleep 300 & wait"]
         securityContext:
           capabilities:
             drop:

@@ -7,9 +7,10 @@ from langchain_text_splitters import HTMLHeaderTextSplitter, RecursiveCharacterT
 
 
 class Splitter:
-    def __init__(self, chunk_size: int = 100, chunk_overlap: int = 10, table_strategy: str = "fast"):
+    def __init__(self, chunk_size: int = 100, chunk_overlap: int = 10, process_table: bool = False, table_strategy: str = "fast"):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.process_table = process_table
         self.table_strategy = table_strategy
         self.separators = self.get_separators()
         self.split_headers = self.get_split_headers()

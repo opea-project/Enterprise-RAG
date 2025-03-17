@@ -738,6 +738,97 @@ def api_sync(request: Request):
         except S3Error as e:
             raise HTTPException(status_code=400, detail=f"An error occurred: {e}")
 
+# -------------- Debugging Features ---------------
+
+@app.post("/api/file/{file_uuid}/extract")
+def api_file_text_extract(file_uuid: str, request: Request):
+    try:
+        file_id = uuid.UUID(file_uuid, version=4)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid file_id passed: {file_uuid}")
+
+    with get_db() as db:
+        file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
+
+        try:
+            import base64
+            import requests
+
+            minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
+            file_data = minio_response.read()
+            file_base64 = base64.b64encode(file_data).decode('ascii')
+            logger.debug(f"[{file.id}] Retrievied file from S3 storage.")
+
+            DATAPREP_ENDPOINT  = os.environ.get('DATAPREP_ENDPOINT')
+            response = requests.post(DATAPREP_ENDPOINT, json={
+                'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                'chunk_size': request.query_params.get('chunk_size', 512),
+                'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                'process_table': request.query_params.get('process_table', 'false'),
+                'table_strategy': request.query_params.get('table_strategy', 'fast'),
+            })
+
+            if response.status_code != 200:
+                return JSONResponse(content={'details': f"Something went wrong: {response.text}"})
+            else:
+                return JSONResponse(content={'docs': response.json()})
+        except S3Error as e:
+            raise HTTPException(status_code=500, detail=f"Error downloading file. {e}")
+        finally:
+            minio_response.close()
+            minio_response.release_conn()
+
+@app.post("/api/retrieve")
+async def api_retrieve(request: Request):
+    try:
+        import requests
+        EMBEDDING_ENDPOINT  = os.environ.get('EMBEDDING_ENDPOINT')
+        RETRIEVER_ENDPOINT  = os.environ.get('RETRIEVER_ENDPOINT')
+        RERANKER_ENDPOINT  = os.environ.get('RERANKER_ENDPOINT')
+
+        d = await request.json()
+        logger.debug(d)
+
+        def get_f(data, field, default=None):
+            return data.get(field, default)
+
+        embedding_request = { 'text': get_f(d, 'query') }
+        logger.debug(f"Request to embedding: {embedding_request}")
+        response = requests.post(EMBEDDING_ENDPOINT, json=embedding_request)
+
+        if response.status_code != 200:
+            return JSONResponse(content={'details': f"Embedding went wrong: {response.text}"})
+
+        retriever_request = response.json()
+        retriever_request['search_type'] = get_f(d, 'search_type', 'similarity')
+        retriever_request['k'] =  get_f(d, 'k', '32')
+        retriever_request['distance_threshold'] =  get_f(d, 'distance_threshold', None)
+        retriever_request['fetch_k'] =  get_f(d, 'fetch_k', '20')
+        retriever_request['lambda_mult'] =  get_f(d, 'lambda_mult', '0.5')
+        retriever_request['score_threshold'] =  get_f(d, 'score_threshold', '0.2')
+
+        logger.debug(f"Request to retriever: {retriever_request}")
+        response = requests.post(RETRIEVER_ENDPOINT, json=retriever_request)
+
+        if str(get_f(d, 'reranker', 'false')).lower() == 'true':
+            reranker_request = response.json()
+            reranker_request['top_n'] =  get_f(d, 'top_n', '5')
+
+            logger.debug(f"Request to reranker: {reranker_request}")
+            request = requests.post(RERANKER_ENDPOINT, json=reranker_request)
+            if request.status_code != 200:
+                return JSONResponse(content={'details': f"Reranker went wrong: {request.text}"})
+            else:
+                return JSONResponse(content={'docs': request.json()})
+
+        if response.status_code != 200:
+            return JSONResponse(content={'details': f"Retriever went wrong: {response.text}"})
+        else:
+            return JSONResponse(content={'docs': response.json()})
+    except Exception as e:
+        return JSONResponse(content={'details': f"Something went wrong: {e}"})
+
+# ---------------------------------------
 
 if __name__ == '__main__':
     init_db()

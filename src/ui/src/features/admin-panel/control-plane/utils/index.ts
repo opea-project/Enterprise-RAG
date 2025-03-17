@@ -3,7 +3,15 @@
 
 import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/guards/llmInputGuard";
 import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/guards/llmOutputGuard";
-import { RetrieverSearchType } from "@/features/admin-panel/control-plane/config/retriever";
+import {
+  RetrieverArgs,
+  RetrieverSearchType,
+  searchTypesArgsMap,
+} from "@/features/admin-panel/control-plane/config/retriever";
+import {
+  FilterFormDataFunction,
+  FilterInvalidArgumentsFunction,
+} from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 import { ServiceDetailsResponse } from "@/features/admin-panel/control-plane/types/serviceDetailsResponse";
 import {
   AppendArgumentsParameters,
@@ -166,4 +174,32 @@ export const parseServiceDetailsResponseData = (
     serviceDetails[service] = { status, details };
   }
   return serviceDetails;
+};
+
+export const filterRetrieverFormData: FilterFormDataFunction<RetrieverArgs> = (
+  data,
+) => {
+  if (data?.search_type) {
+    const visibleInputs = searchTypesArgsMap[data.search_type];
+    const copyData: Partial<RetrieverArgs> = { search_type: data.search_type };
+    for (const argumentName in data) {
+      if (visibleInputs.includes(argumentName)) {
+        copyData[argumentName] = data[argumentName];
+      }
+    }
+    return copyData;
+  } else {
+    return data;
+  }
+};
+
+export const filterInvalidRetrieverArguments: FilterInvalidArgumentsFunction<
+  RetrieverArgs
+> = (invalidArguments, data) => {
+  if (data?.search_type) {
+    const visibleInputs = searchTypesArgsMap[data.search_type];
+    return invalidArguments.filter((arg) => visibleInputs.includes(arg));
+  } else {
+    return invalidArguments;
+  }
 };

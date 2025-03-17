@@ -11,26 +11,26 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
 } from "react";
 
-import PromptInputButton from "@/features/chat/components/PromptInputButton/PromptInputButton";
-import { promptMaxLength } from "@/features/chat/config/promptInput";
+import PromptInputButton from "@/components/ui/PromptInputButton/PromptInputButton";
+import { promptMaxLength } from "@/config/promptInput";
 import {
-  addNewBotMessage,
-  addNewUserMessage,
   selectAbortController,
   selectIsStreaming,
-  sendPrompt,
 } from "@/features/chat/store/conversationFeed.slice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import { sanitizeString } from "@/utils";
 
-const PromptInput = () => {
-  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [prompt, setPrompt] = useState("");
+interface PromptInputProps {
+  prompt: string;
+  onChange: ChangeEventHandler<HTMLTextAreaElement>;
+  onSubmit: (prompt: string) => void;
+}
 
-  const dispatch = useAppDispatch();
+const PromptInput = ({ prompt, onChange, onSubmit }: PromptInputProps) => {
+  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
+
   const isStreaming = useAppSelector(selectIsStreaming);
   const abortController = useAppSelector(selectAbortController);
 
@@ -62,23 +62,16 @@ const PromptInput = () => {
     return isPromptEmpty || isPromptMaxLengthExceeded;
   }, [prompt]);
 
-  const submitPrompt = async () => {
-    const sanitizedPrompt = sanitizeString(prompt);
-    dispatch(addNewUserMessage(sanitizedPrompt));
-    dispatch(addNewBotMessage());
-    dispatch(sendPrompt(sanitizedPrompt));
+  const submitPrompt = () => {
+    const sanitizedPrompt = sanitizeString(prompt).trim();
+    onSubmit(sanitizedPrompt);
 
-    setPrompt("");
     focusPromptInput();
   };
 
-  const handleSubmit: FormEventHandler<HTMLFormElement> = async (event) => {
+  const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
     submitPrompt();
-  };
-
-  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
-    setPrompt(event.target.value);
   };
 
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
@@ -132,7 +125,7 @@ const PromptInput = () => {
         placeholder="Enter your prompt..."
         className="prompt-input"
         rows={1}
-        onChange={handleChange}
+        onChange={onChange}
         onKeyDown={handleKeyDown}
       />
       {promptInputButton}

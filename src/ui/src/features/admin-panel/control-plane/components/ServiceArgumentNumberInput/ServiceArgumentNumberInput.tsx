@@ -32,6 +32,7 @@ interface ServiceArgumentNumberInputProps {
   range: NumberInputRange;
   tooltipText?: string;
   nullable?: boolean;
+  readOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
@@ -42,10 +43,16 @@ const ServiceArgumentNumberInput = ({
   range,
   tooltipText,
   nullable = false,
+  readOnlyDisabled = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
-  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
+  const isGraphEditModeEnabled = useAppSelector(
+    chatQnAGraphEditModeEnabledSelector,
+  );
+  const isEditModeEnabled = readOnlyDisabled
+    ? readOnlyDisabled
+    : isGraphEditModeEnabled;
   const readOnly = !isEditModeEnabled;
 
   const [value, setValue] = useState(initialValue || "");

@@ -30,9 +30,7 @@ interface UploadErrorsDialogProps {
 
 const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
-
   const handleClose = () => ref.current?.close();
-
   const showDialog = () => ref.current?.showModal();
 
   const trigger = (

@@ -438,6 +438,26 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: BUCKET_NAME_REGEX_FILTER
+    - name: "DATAPREP_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: DATAPREP_ENDPOINT
+    - name: "EMBEDDING_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: EMBEDDING_ENDPOINT
+    - name: "RETRIEVER_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: RETRIEVER_ENDPOINT
+    - name: "RERANKER_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: RERANKER_ENDPOINT
   nameOverride: "edp-backend"
   repository: "localhost:5000/erag/enhanced-dataprep"
   tag: latest

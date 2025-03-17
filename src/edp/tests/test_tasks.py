@@ -22,7 +22,7 @@ def test_response_error_json_reply():
 
 def test_process_file_task_success():
     with patch('app.tasks.requests.post') as mock_post, \
-         patch('app.tasks.Minio.get_object') as mock_get_object, \
+         patch('app.tasks.WithEDPTask.minio') as minio, \
          patch('app.tasks.WithEDPTask.db') as mock_db:
         
         mock_file_db = MagicMock()
@@ -32,7 +32,7 @@ def test_process_file_task_success():
         mock_file_db.etag = 'test_etag'
         mock_db.query().filter().first.return_value = mock_file_db
         
-        mock_get_object.return_value.read.return_value = b'test_data'
+        minio.get_object.return_value.read.return_value = b'test_data'
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {'docs': [{'metadata': {}}]}
         

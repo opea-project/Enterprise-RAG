@@ -5,15 +5,12 @@ import "./BotMessage.scss";
 
 import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
-import ChatMessageMarkdown from "@/features/chat/components/ChatMessageMarkdown/ChatMessageMarkdown";
-import PulsingDot from "@/features/chat/components/PulsingDot/PulsingDot";
+import ChatMessageMarkdown from "@/components/ui/ChatMessageMarkdown/ChatMessageMarkdown";
+import PulsingDot from "@/components/ui/PulsingDot/PulsingDot";
+import { ChatMessage } from "@/types";
 import { sanitizeString } from "@/utils";
 
-interface BotMessageProps {
-  text: string;
-  isStreaming?: boolean;
-  isError?: boolean;
-}
+type BotMessageProps = Pick<ChatMessage, "text" | "isStreaming" | "isError">;
 
 const BotMessage = ({ text, isStreaming, isError }: BotMessageProps) => {
   const isWaitingForMessage = isStreaming && text === "";

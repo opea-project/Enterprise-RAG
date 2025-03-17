@@ -10,6 +10,8 @@ data:
   DATAPREP_ENDPOINT: {{ print "http://" .Values.dataprep.nameOverride ":9399/v1/dataprep" | quote }}
   EMBEDDING_ENDPOINT: {{ if .Values.embedding.enabled }}{{ print "http://" .Values.embedding.nameOverride ":6000/v1/embeddings" | quote }}{{ else }}{{ .Values.embedding.remoteEmbeddingUri | quote }}{{ end }}
   INGESTION_ENDPOINT: {{ print "http://" .Values.ingestion.nameOverride ":6120/v1/ingestion" | quote }}
+  RETRIEVER_ENDPOINT: http://retriever-svc.chatqa.svc:6620/v1/retrieval
+  RERANKER_ENDPOINT: http://reranking-svc.chatqa.svc:8000/v1/reranking
   BUCKET_NAME_REGEX_FILTER: {{ .Values.bucketNameRegexFilter | quote }}
   DPGUARD_ENDPOINT: {{ if .Values.dpguard.enabled }}{{ print "http://" .Values.dpguard.nameOverride ":8070/v1/llmguarddataprep" | quote }}{{ end }}
   DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}

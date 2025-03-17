@@ -3,7 +3,7 @@
 
 button {
   @apply h-9 rounded;
-  @apply cursor-pointer select-none px-4 py-1.5 text-base;
+  @apply cursor-pointer select-none whitespace-nowrap text-nowrap px-4 py-1.5 text-base;
   @apply bg-light-primary dark:bg-dark-primary;
   @apply text-white dark:text-white;
 

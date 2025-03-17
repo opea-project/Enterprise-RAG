@@ -52,6 +52,8 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
     else:
         vector = input # EmbedDoc
 
+    logger.info(f"Retrieving documents for input: {vector.text}. K={vector.k}, Search Type={vector.search_type}")
+
     result_vectors = None
     try:
         result_vectors = await retriever.retrieve(vector)

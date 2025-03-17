@@ -25,11 +25,16 @@ def get_minio_client(endpoint=None, url_secure=None, region=None):
     is_secure = str(url_secure).lower() not in ['false', '0', 'f', 'n', 'no']
 
     http_client = None
+    proxy = None
+
     if is_secure:
-        if endpoint.startswith('https://'):
-            proxy = os.getenv('https_proxy', None)
-        else:
-            proxy = os.getenv('http_proxy', None)
+        proxy = os.getenv('https_proxy', None)
+    else:
+        proxy = os.getenv('http_proxy', None)
+
+    if is_secure and proxy is not None and proxy != '':
+        if not proxy.startswith('http://', 'https://'):
+            proxy = ('https://' if is_secure else 'http://') + proxy
         cert_check = True
         timeout = timedelta(minutes=1).seconds
         http_client=urllib3.ProxyManager(

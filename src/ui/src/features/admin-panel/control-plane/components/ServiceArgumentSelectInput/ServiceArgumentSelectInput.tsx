@@ -20,6 +20,7 @@ interface ServiceArgumentSelectInputProps {
   initialValue: ServiceArgumentSelectInputValue;
   options: string[];
   tooltipText?: string;
+  readOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
 }
 
@@ -28,9 +29,15 @@ const ServiceArgumentSelectInput = ({
   initialValue,
   options,
   tooltipText,
+  readOnlyDisabled = false,
   onArgumentValueChange,
 }: ServiceArgumentSelectInputProps) => {
-  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
+  const isGraphEditModeEnabled = useAppSelector(
+    chatQnAGraphEditModeEnabledSelector,
+  );
+  const isEditModeEnabled = readOnlyDisabled
+    ? readOnlyDisabled
+    : isGraphEditModeEnabled;
   const readOnly = !isEditModeEnabled;
 
   const [value, setValue] =

@@ -4,7 +4,7 @@
 import { Children, cloneElement, isValidElement, ReactNode } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import HomoglyphTextMarker from "@/features/chat/components/HomoglyphTextMarker/HomoglyphTextMarker";
+import HomoglyphTextMarker from "@/components/ui/HomoglyphTextMarker/HomoglyphTextMarker";
 import { isPunycodeSafe } from "@/utils";
 
 const isPotentialHomoglyph = (originalText: string) =>

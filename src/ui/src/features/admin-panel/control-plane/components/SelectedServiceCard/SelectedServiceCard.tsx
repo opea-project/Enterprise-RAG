@@ -20,6 +20,7 @@ interface SelectedServiceCardProps extends PropsWithChildren {
   serviceName: string;
   serviceDetails?: ServiceDetails;
   footerProps?: SelectedServiceCardFooterProps;
+  DebugDialog?: JSX.Element;
 }
 
 const SelectedServiceCard = ({
@@ -27,6 +28,7 @@ const SelectedServiceCard = ({
   serviceName,
   serviceDetails,
   footerProps,
+  DebugDialog,
   children,
 }: SelectedServiceCardProps) => {
   const contentClassNames = classNames([
@@ -46,6 +48,7 @@ const SelectedServiceCard = ({
             <p className="selected-service-card__header__service-name">
               {serviceName}
             </p>
+            {DebugDialog}
           </header>
           <div className={contentClassNames}>
             {serviceDetails && (

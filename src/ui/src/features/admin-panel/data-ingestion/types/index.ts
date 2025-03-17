@@ -54,3 +54,11 @@ export interface UploadErrors {
   files: string;
   links: string;
 }
+
+export interface ExtractTextQueryParamsFormData
+  extends Record<string, number | boolean | undefined | string> {
+  chunk_size?: number;
+  chunk_overlap?: number;
+  process_table?: boolean;
+  table_strategy?: boolean;
+}

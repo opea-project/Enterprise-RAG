@@ -8,7 +8,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import Anchor from "@/components/ui/Anchor/Anchor";
-import parseChildrenTextContent from "@/features/chat/utils/parseChildrenTextContent";
+import parseChildrenTextContent from "@/components/utils/parseChildrenTextContent";
 
 const CustomPre = ({ children }: PropsWithChildren) => (
   <pre className="custom-pre-markdown">{children}</pre>

@@ -6,15 +6,17 @@ import "./ConversationFeed.scss";
 import debounce from "lodash.debounce";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import BotMessage from "@/features/chat/components/BotMessage/BotMessage";
-import ScrollToBottomButton from "@/features/chat/components/ScrollToBottomButton/ScrollToBottomButton";
-import UserMessage from "@/features/chat/components/UserMessage/UserMessage";
-import { bottomMargin } from "@/features/chat/config/conversationFeed";
-import { selectMessages } from "@/features/chat/store/conversationFeed.slice";
-import { useAppSelector } from "@/store/hooks";
+import BotMessage from "@/components/ui/BotMessage/BotMessage";
+import ScrollToBottomButton from "@/components/ui/ScrollToBottomButton/ScrollToBottomButton";
+import UserMessage from "@/components/ui/UserMessage/UserMessage";
+import { bottomMargin } from "@/config/conversationFeed";
+import { ChatMessage } from "@/types";
 
-const ConversationFeed = () => {
-  const messages = useAppSelector(selectMessages);
+interface ConversationFeedProps {
+  messages: ChatMessage[];
+}
+
+const ConversationFeed = ({ messages }: ConversationFeedProps) => {
   const conversationFeedRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);

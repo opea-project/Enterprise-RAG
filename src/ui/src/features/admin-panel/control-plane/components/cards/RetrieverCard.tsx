@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
+import RetrieverDebugDialog from "@/features/admin-panel/control-plane/components/cards/debug/RetrieverDebugDialog";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
@@ -10,37 +11,12 @@ import {
   retrieverFormConfig,
   searchTypesArgsMap,
 } from "@/features/admin-panel/control-plane/config/retriever";
-import useServiceCard, {
-  FilterFormDataFunction,
-  FilterInvalidArgumentsFunction,
-} from "@/features/admin-panel/control-plane/hooks/useServiceCard";
-
-const filterFormData: FilterFormDataFunction<RetrieverArgs> = (data) => {
-  if (data?.search_type) {
-    const visibleInputs = searchTypesArgsMap[data.search_type];
-    const copyData: Partial<RetrieverArgs> = { search_type: data.search_type };
-    for (const argumentName in data) {
-      if (visibleInputs.includes(argumentName)) {
-        copyData[argumentName] = data[argumentName];
-      }
-    }
-    return copyData;
-  } else {
-    return data;
-  }
-};
-
-const filterInvalidArguments: FilterInvalidArgumentsFunction<RetrieverArgs> = (
-  invalidArguments,
-  data,
-) => {
-  if (data?.search_type) {
-    const visibleInputs = searchTypesArgsMap[data.search_type];
-    return invalidArguments.filter((arg) => visibleInputs.includes(arg));
-  } else {
-    return invalidArguments;
-  }
-};
+import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
+import {
+  filterInvalidRetrieverArguments,
+  filterRetrieverFormData,
+} from "@/features/admin-panel/control-plane/utils";
+import useDebug from "@/hooks/useDebug";
 
 const RetrieverCard = ({
   data: { id, status, displayName, retrieverArgs, details },
@@ -52,9 +28,12 @@ const RetrieverCard = ({
     onArgumentValidityChange,
     footerProps,
   } = useServiceCard<RetrieverArgs>(id, retrieverArgs, {
-    filterFormData,
-    filterInvalidArguments,
+    filterFormData: filterRetrieverFormData,
+    filterInvalidArguments: filterInvalidRetrieverArguments,
   });
+
+  const { isDebugEnabled } = useDebug();
+  const DebugDialog = isDebugEnabled ? <RetrieverDebugDialog /> : undefined;
 
   const visibleArgumentInputs = argumentsForm?.search_type
     ? searchTypesArgsMap[argumentsForm.search_type]
@@ -66,6 +45,7 @@ const RetrieverCard = ({
       serviceName={displayName}
       serviceDetails={details}
       footerProps={footerProps}
+      DebugDialog={DebugDialog}
     >
       <p className="mb-1 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentSelectInput

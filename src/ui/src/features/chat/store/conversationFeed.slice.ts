@@ -8,16 +8,10 @@ import { postPrompt } from "@/features/chat/api/postPrompt";
 import { UpdatedChatMessage } from "@/features/chat/types";
 import { handleError } from "@/features/chat/utils/conversationFeed";
 import { RootState } from "@/store/index";
-
-interface ChatMessage {
-  text: string;
-  id: string;
-  isUserMessage: boolean;
-  isStreaming?: boolean;
-  isError?: boolean;
-}
+import { ChatMessage } from "@/types";
 
 interface ConversationFeedState {
+  prompt: string;
   messages: ChatMessage[];
   isStreaming: boolean;
   currentChatBotMessageId: string | null;
@@ -25,6 +19,7 @@ interface ConversationFeedState {
 }
 
 const initialState: ConversationFeedState = {
+  prompt: "",
   messages: [],
   isStreaming: false,
   currentChatBotMessageId: null,
@@ -53,6 +48,9 @@ export const conversationFeedSlice = createSlice({
   name: "conversationFeed",
   initialState,
   reducers: {
+    setPrompt: (state, action: PayloadAction<string>) => {
+      state.prompt = action.payload;
+    },
     addNewUserMessage: (state, action: PayloadAction<string>) => {
       const prompt = action.payload;
       const newUserMessage = {
@@ -128,12 +126,14 @@ export const conversationFeedSlice = createSlice({
 });
 
 export const {
+  setPrompt,
   addNewUserMessage,
   addNewBotMessage,
   setAbortController,
   updateBotMessageText,
   updateMessageIsStreamed,
 } = conversationFeedSlice.actions;
+export const selectPrompt = (state: RootState) => state.conversationFeed.prompt;
 export const selectMessages = (state: RootState) =>
   state.conversationFeed.messages;
 export const selectIsStreaming = (state: RootState) =>

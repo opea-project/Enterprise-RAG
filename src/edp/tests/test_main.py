@@ -679,8 +679,8 @@ def test_s3_unknown_event():
 
 def test_api_sync():
     with patch('app.main.get_db') as mock_get_db, \
-            patch('app.main.minio.list_buckets') as mock_list_buckets, \
-            patch('app.main.minio.list_objects') as mock_list_objects, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects, \
             patch('app.main.add_new_file') as mock_add_new_file, \
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
@@ -709,8 +709,8 @@ def test_api_sync():
 
 def test_api_sync_new_file():
     with patch('app.main.get_db') as mock_get_db, \
-            patch('app.main.minio.list_buckets') as mock_list_buckets, \
-            patch('app.main.minio.list_objects') as mock_list_objects, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects, \
             patch('app.main.add_new_file') as mock_add_new_file, \
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
@@ -738,8 +738,8 @@ def test_api_sync_new_file():
 
 def test_api_sync_deleted_file():
     with patch('app.main.get_db') as mock_get_db, \
-            patch('app.main.minio.list_buckets') as mock_list_buckets, \
-            patch('app.main.minio.list_objects') as mock_list_objects, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects, \
             patch('app.main.add_new_file') as mock_add_new_file, \
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
@@ -767,8 +767,8 @@ def test_api_sync_deleted_file():
 
 def test_api_sync_changed_file():
     with patch('app.main.get_db') as mock_get_db, \
-            patch('app.main.minio.list_buckets') as mock_list_buckets, \
-            patch('app.main.minio.list_objects') as mock_list_objects, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects, \
             patch('app.main.add_new_file') as mock_add_new_file, \
             patch('app.main.delete_existing_file') as mock_delete_existing_file:
 
@@ -796,7 +796,7 @@ def test_api_sync_changed_file():
         mock_delete_existing_file.assert_called_once_with("test-bucket", "test-object")
 
 def test_api_sync_s3_error():
-    with patch('app.main.minio.list_buckets') as mock_list_buckets:
+    with patch('app.main.minio_internal.list_buckets') as mock_list_buckets:
         mock_list_buckets.side_effect = S3Error(
             code='NoSuchBucket',
             resource='my-bucket/my-object',

@@ -31,14 +31,23 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEADataprep class with environment variables.
-def run_dataprep(files, links):
+# OPEADataprep is a singleton so we initialize it with the environment variables.
+# Next, dataprep calls can be overriden with the input parameters if passed.
+def run_dataprep(files, links, chunk_size, chunk_overlap, process_table, table_strategy):
     dataprep = opea_dataprep.OPEADataprep(
-        chunk_size=int(sanitize_env(os.getenv("CHUNK_SIZE"))),
-        chunk_overlap=int(sanitize_env(os.getenv("CHUNK_OVERLAP"))),
-        process_table=sanitize_env(os.getenv("PROCESS_TABLE")),
-        table_strategy=sanitize_env(os.getenv("PROCESS_TABLE_STRATEGY"))
+        chunk_size=int(sanitize_env(str(os.getenv("CHUNK_SIZE")))),
+        chunk_overlap=int(sanitize_env(str(os.getenv("CHUNK_OVERLAP")))),
+        process_table=sanitize_env(str(os.getenv("PROCESS_TABLE"))),
+        table_strategy=sanitize_env(str(os.getenv("PROCESS_TABLE_STRATEGY")))
     )
-    textdocs = dataprep.dataprep(files=files, link_list=links)
+    textdocs = dataprep.dataprep(
+        files=files,
+        link_list=links,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        process_table=process_table,
+        table_strategy=table_strategy
+    )
     return textdocs
 
 # Process Pool Executor was introduced due to API being unresponsive while computing non-io tasks.
@@ -73,6 +82,16 @@ async def process(input: DataPrepInput) -> TextDocList:
     files = input.files
     link_list = input.links
 
+    chunk_size = int(sanitize_env(str(input.chunk_size) if input.chunk_size else os.getenv("CHUNK_SIZE")))
+    chunk_overlap = int(sanitize_env(str(input.chunk_overlap) if input.chunk_overlap else os.getenv("CHUNK_OVERLAP")))
+    process_table = sanitize_env(str(input.process_table) if input.process_table else os.getenv("PROCESS_TABLE"))
+    table_strategy = sanitize_env(str(input.table_strategy) if input.table_strategy else os.getenv("PROCESS_TABLE_STRATEGY"))
+
+    logger.debug(f"Chunk size: {chunk_size}")
+    logger.debug(f"Chunk overlap: {chunk_overlap}")
+    logger.debug(f"Process table: {process_table}")
+    logger.debug(f"Table strategy: {table_strategy}")
+
     logger.debug(f"Dataprep files: {files}")
     logger.debug(f"Dataprep link list: {link_list}")
 
@@ -102,7 +121,7 @@ async def process(input: DataPrepInput) -> TextDocList:
     textdocs = None
     loop = asyncio.get_event_loop()
     try:
-        textdocs = await loop.run_in_executor(pool, run_dataprep, decoded_files, link_list)
+        textdocs = await loop.run_in_executor(pool, run_dataprep, decoded_files, link_list, chunk_size, chunk_overlap, process_table, table_strategy)
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"An internal error occurred while processing: {str(e)}")

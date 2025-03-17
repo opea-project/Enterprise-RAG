@@ -74,6 +74,10 @@ class DataPrepFile(BaseDoc):
 class DataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
     links: List[str] = []
+    chunk_size: Optional[Any] = None
+    chunk_overlap: Optional[Any] = None
+    process_table: Optional[Any] = None
+    table_strategy: Optional[Any] = None
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]

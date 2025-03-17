@@ -34,7 +34,7 @@ class OPEADataprep:
         self.process_table = process_table
         self.table_strategy = table_strategy
 
-    def dataprep(self, files: any, link_list: list) -> List[TextDoc]:
+    def dataprep(self, files: any, link_list: list, chunk_size: int = None, chunk_overlap: int = None, process_table: bool = False, table_strategy: str = None) -> List[TextDoc]:
 
         if not files and not link_list:
             raise ValueError("No links and/or files passed for data preparation.")
@@ -42,9 +42,10 @@ class OPEADataprep:
         text_docs: List[TextDoc] = []
 
         splitter = Splitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            table_strategy=self.table_strategy
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            process_table=process_table,
+            table_strategy=table_strategy
         )
 
         # Save files

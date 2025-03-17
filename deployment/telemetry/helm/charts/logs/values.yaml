@@ -141,7 +141,9 @@ otelcol-logs:
               output: embedding-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^edp-ingestion$"'
               output: embedding-severity-parser
-            - expr: 'resource["k8s.container.name"] matches "^torchserve$"'
+            - expr: 'resource["k8s.container.name"] matches "^torchserve-embedding$"'
+              output: torchserve-severity-parser-a
+            - expr: 'resource["k8s.container.name"] matches "^torchserve-reranking$"'
               output: torchserve-severity-parser-a
             - expr: 'resource["k8s.container.name"] matches "^router-server$"'
               output: router-severity-parser

@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 your_ip="localhost"
-default_model="Intel/neural-chat-7b-v3-3"
+model_name="${model_name:-Intel/neural-chat-7b-v3-3}"
 
 curl http://${your_ip}:8008/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-  "model": "Intel/neural-chat-7b-v3-3",
+  "model": "'${model_name}'",
   "prompt": "What is Deep Learning?",
   "max_tokens": 32,
   "temperature": 0

@@ -68,4 +68,14 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
 fi
 
 mkdir -p docker/data/
-docker compose -f docker/docker-compose-${LLM_DEVICE}.yaml up --build -d llm-vllm-model-server
+
+if [ "${LLM_DEVICE}" = "hpu" ]; then
+    if [ "${IF_FP8_QUANTIZATION}" = "true" ]; then
+        export QUANT_CONFIG=${QUANT_CONFIG:-/data/inc/$(basename $LLM_VLLM_MODEL_NAME)/maxabs_quant_g2.json}
+        docker compose -f docker/docker-compose-hpu-fp8.yaml up --build -d llm-vllm-fp8-model-server
+    else
+        docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-vllm-model-server
+    fi
+else
+    docker compose -f docker/docker-compose-cpu.yaml up --build -d llm-vllm-model-server
+fi

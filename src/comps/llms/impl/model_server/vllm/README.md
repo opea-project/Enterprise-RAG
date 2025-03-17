@@ -170,3 +170,57 @@ cd docker
 # for HPU device (Gaudi)
 docker compose -f docker-compose-hpu.yaml down
 ```
+
+### 3. Run FP8 Quantization with vLLM on HPU device
+
+In order to work with a fp8 quantized model, you need to do the following:
+* Perform model quantization with provided utility. Only needed if model isn't quantized.
+* Run vLLM with FP8 quantized model.
+
+> **Note:** It's a known issue that `mistralai/Mixtral-8x7B-Instruct-v0.1` does not run after quantization with standard parameters.
+>
+> Currently the FP8 quantization was verified for model `Intel/neural-chat-7b-v3-3`. Other models need verification and may require some work to be fully supported.
+
+
+#### 3.1. Perform model quantization
+
+1. Download dataset for calibration of model in `pkl` file format, e.g. open-orca dataset.
+1. Modify `docker/.env.hpu` file - add `HF_TOKEN` and modify HABANA related envs to suit your needs.
+
+   Minimal list of updated settings includes these:
+    ```ini
+    ## Provide your Hugging Face API key to enable access to Hugging Face models.
+    HF_TOKEN=<your-hf-api-key>
+
+    ## VLLM Model Server Settings ##
+    LLM_VLLM_MODEL_NAME="Intel/neural-chat-7b-v3-3"
+
+    #LLM_CONNECTOR="langchain" # Defaults to "generic" if not set. Options: "langchain", "generic".
+
+    ## FP8 Quantization settings
+    FP8_DATASET_PATH=<path to calibration dataset in pkl format>
+    ```
+
+1. Define variable pointing to host directory containing models downloaded from Hugging Face:
+    ```bash
+    export HUGGINGFACE_HUB_CACHE=<path to HF cache directory>
+    ```
+1. Run the provided docker container to quantize the model.
+
+    ```bash
+    cd model_server/vllm/fp8_vllm
+    docker compose -f docker-compose.yaml --env-file ../docker/.env.hpu up --build
+    ```
+
+   After the quantization command concludes the hots model data directory will include subdirectory with quantization outcome, e.g.:
+   `${HUGGINGFACE_HUB_CACHE}/inc/<name_of_the_model>`.
+
+#### 3.2. Run vLLM with quantized model
+
+1. Modify `docker/.env.hpu` file - add `HF_TOKEN` and modify HABANA related envs to suit your needs.
+2. Ensure model and measurements will be reachable for vLLM under Hugging Face model directory, e.g.: `${HUGGINGFACE_HUB_CACHE}/inc/<name_of_the_model>` or override the variable `QUANT_CONFIG`.
+3. Run vLLM model server in FP8-enabled mode.
+   ```bash
+   cd model_server/vllm
+   IF_FP8_QUANTIZATION=true ./run_vllm.sh
+   ```

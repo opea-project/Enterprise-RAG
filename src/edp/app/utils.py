@@ -33,7 +33,7 @@ def get_minio_client(endpoint=None, url_secure=None, region=None):
         proxy = os.getenv('http_proxy', None)
 
     if is_secure and proxy is not None and proxy != '':
-        if not proxy.startswith('http://', 'https://'):
+        if not proxy.startswith(('http://', 'https://')):
             proxy = ('https://' if is_secure else 'http://') + proxy
         cert_check = True
         timeout = timedelta(minutes=1).seconds

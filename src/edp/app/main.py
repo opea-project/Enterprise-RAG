@@ -2,23 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from typing import List
+import re
+from typing import List, Union
 import uuid
 import validators
 import uvicorn
+from datetime import timedelta
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
-from minio import Minio
 from minio.error import S3Error
-from minio.credentials import EnvMinioProvider
-from datetime import timedelta
 from urllib.parse import unquote_plus
-from app.utils import generate_presigned_url
+from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client
 from app.database import get_db, init_db
-from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, PresignedResponse
+from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
 from celery.result import AsyncResult
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
@@ -37,11 +36,8 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "./.env"))
 logger = get_opea_logger("edp_microservice")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
-minio = Minio(
-    os.getenv('MINIO_BASE_URL', 'localhost'),
-    credentials=EnvMinioProvider(),
-    secure=False
-)
+minio_external = get_remote_minio_client()
+minio_internal = get_local_minio_client()
 
 @app.get('/health')
 def health_check():
@@ -184,14 +180,30 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
     if method == 'DELETE':
         expiry = timedelta(seconds=60)
 
+    region = os.getenv('EDP_BASE_REGION', None)
     try:
-        url = generate_presigned_url(method, bucket_name, object_name, expiry)
+        url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region)
         logger.debug(f"Generated presigned url for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
     except S3Error as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=400, detail="An error occurred while generating a presigned URL.")
 
+@app.get('/api/list_buckets')
+def list_buckets():
+    """
+    List all buckets in the MinIO storage.
+    Returns:
+        Response: A JSON response containing a list of buckets.
+    """
+    buckets = minio_internal.list_buckets()
+    bucket_names = [bucket.name for bucket in buckets]
+    regex_filter = str(os.getenv('BUCKET_NAME_REGEX_FILTER', ''))
+    if len(regex_filter) > 0:
+        bucket_names = [name for name in bucket_names if re.match(regex_filter, name)]
+        logger.debug(f"Displaying {len(bucket_names)}/{len(buckets)} buckets after applying regex filter: {regex_filter}")
+
+    return JSONResponse(content={'buckets': bucket_names})
 
 # -------------- Event processing ------------
 
@@ -360,7 +372,7 @@ def delete_existing_link(uri):
                 logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
 
 @app.post('/minio_event')
-def process_minio_event(event: MinioEventData, request: Request):
+def process_minio_event(event: Union[S3EventData, MinioEventData], request: Request):
     """
     Processes events from MinIO.
     This function handles events related to object creation and deletion in a MinIO bucket.
@@ -372,29 +384,36 @@ def process_minio_event(event: MinioEventData, request: Request):
     Returns:
         Response: A JSON response indicating the result of the event processing.
     """
-
-    if event.EventName in ['s3:ObjectCreated:Put', 's3:ObjectCreated:CompleteMultipartUpload']:
-        for record in event.Records:
+    files_added = 0
+    files_deleted = 0
+    for record in event.Records:
+        if record.eventName in ['s3:ObjectCreated:Put', 's3:ObjectCreated:CompleteMultipartUpload', 'ObjectCreated:Put', 'ObjectCreated:CompleteMultipartUpload']:
             bucket_name = unquote_plus(record.s3.bucket.name)
             object_name = unquote_plus(record.s3.object.key)
             etag = record.s3.object.eTag
             content_type = record.s3.object.contentType
             size = record.s3.object.size or 0
-
             try:
                 add_new_file(bucket_name, object_name, etag, content_type, size)
             except Exception as e:
                 logger.error(f"Error adding file to database: {e}")
-        return JSONResponse(content={'message': 'File(s) uploaded successfully'})
-    
-    if event.EventName in ['s3:ObjectRemoved:Delete', 's3:ObjectRemoved:NoOP', 's3:ObjectRemoved:DeleteMarkerCreated']:
-        for record in event.Records:
+            files_added += 1
+            return JSONResponse(content={'message': 'File(s) uploaded successfully'})
+
+        if record.eventName in ['s3:ObjectRemoved:Delete', 's3:ObjectRemoved:NoOP', 's3:ObjectRemoved:DeleteMarkerCreated', 'ObjectRemoved:Delete', 'ObjectRemoved:DeleteMarkerCreated']:
             bucket_name = unquote_plus(record.s3.bucket.name)
             object_name = unquote_plus(record.s3.object.key)
             try:
                 delete_existing_file(bucket_name, object_name)
             except Exception as e:
                 logger.error(f"Error deleting existing file: {e}")
+            files_deleted += 1
+
+    if files_added > 0 and files_deleted > 0:
+        return JSONResponse(content={'message': 'File(s) uploaded and deleted successfully'})
+    if files_added > 0:
+        return JSONResponse(content={'message': 'File(s) uploaded successfully'})
+    if files_deleted > 0:
         return JSONResponse(content={'message': 'File(s) deleted successfully'})
 
     raise HTTPException(status_code=501, detail="Event not implemented")
@@ -496,7 +515,7 @@ def api_link_task_retry(link_uuid: str, request: Request):
     """
     Retry processing a link by its UUID.
 
-    This endpoint validates the provided link UUID, and 
+    This endpoint validates the provided link UUID, and
     attempts to reset and reprocess the link if it exists in the database.
 
     Args:
@@ -688,12 +707,12 @@ def api_sync(request: Request):
             buckets = []
 
             if bucket:
-                buckets = [minio.get_bucket(bucket)]
+                buckets = [minio_internal.get_bucket(bucket)]
             else:
-                buckets = minio.list_buckets()
+                buckets = minio_internal.list_buckets()
 
             for bucket in buckets:
-                minio_files = minio.list_objects(bucket.name)
+                minio_files = minio_internal.list_objects(bucket.name)
                 for obj in minio_files:
                     file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name == obj.object_name).first()
                     if file_status:

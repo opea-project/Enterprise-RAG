@@ -1,11 +1,69 @@
 import os
+
+import urllib3
+from urllib3 import Retry
+from urllib3.util import Timeout
 from minio import Minio
 from minio.credentials import EnvMinioProvider
 from minio.signer import presign_v4
 from datetime import datetime, timedelta
 from urllib.parse import urlunsplit
 
-def generate_presigned_url(method, bucket_name, object_name, expires = timedelta(days=7), region = 'us-east-1'):
+def get_local_minio_client():
+    endpoint = os.getenv('EDP_INTERNAL_URL', 'minio:9000')
+    url_secure = str(os.getenv('EDP_INTERNAL_SECURE', True))
+    region = os.getenv('EDP_BASE_REGION', 'us-east-1')
+    return get_minio_client(endpoint, url_secure, region)
+
+def get_remote_minio_client():
+    endpoint = os.getenv('EDP_EXTERNAL_URL', 'minio:9000')
+    url_secure = str(os.getenv('EDP_EXTERNAL_SECURE', True))
+    region = os.getenv('EDP_BASE_REGION', 'us-east-1')
+    return get_minio_client(endpoint, url_secure, region)
+
+def get_minio_client(endpoint=None, url_secure=None, region=None):
+    is_secure = str(url_secure).lower() not in ['false', '0', 'f', 'n', 'no']
+
+    http_client = None
+    if is_secure:
+        if endpoint.startswith('https://'):
+            proxy = os.getenv('https_proxy', None)
+        else:
+            proxy = os.getenv('http_proxy', None)
+        cert_check = True
+        timeout = timedelta(minutes=1).seconds
+        http_client=urllib3.ProxyManager(
+            proxy,
+            timeout=Timeout(connect=timeout, read=timeout),
+            cert_reqs='CERT_REQUIRED' if cert_check else 'CERT_NONE',
+            retries=Retry(
+                total=5,
+                backoff_factor=0.2,
+                status_forcelist=[500, 502, 503, 504]
+            )
+        )
+
+    # pass only host and port to minio
+    http_prefix='http://'
+    https_prefix='https://'
+    endpoint = endpoint.rstrip('/')
+    if endpoint.startswith(http_prefix):
+        endpoint = endpoint[len(http_prefix):]
+    if endpoint.startswith(https_prefix):
+        endpoint = endpoint[len(https_prefix):]
+
+    minio = Minio(
+        endpoint,
+        credentials=EnvMinioProvider(),
+        secure=is_secure,
+        region=region,
+        http_client=http_client
+    )
+
+    return minio
+
+
+def generate_presigned_url(client, method, bucket_name, object_name, expires = timedelta(days=7), region = 'us-east-1'):
     """
     Generate a presigned URL for accessing an object in an S3 bucket.
     Parameters:
@@ -18,13 +76,7 @@ def generate_presigned_url(method, bucket_name, object_name, expires = timedelta
     str: A presigned URL that can be used to access the specified object in the S3 bucket.
     """
 
-    minio = Minio(
-        os.getenv('MINIO_EXTERNAL_URL', 's3.erag.com'),
-        credentials=EnvMinioProvider(),
-        secure=True
-    )
-
-    base_url = minio._base_url.build(
+    base_url = client._base_url.build(
         method,
         region,
         bucket_name=bucket_name,
@@ -36,7 +88,7 @@ def generate_presigned_url(method, bucket_name, object_name, expires = timedelta
         method,
         base_url,
         region,
-        minio._provider.retrieve(),
+        client._provider.retrieve(),
         datetime.now(),
         int(expires.total_seconds())
     )

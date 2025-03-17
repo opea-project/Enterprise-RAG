@@ -20,6 +20,7 @@ dependencies = [
     "validators==0.34.0",
     "requests==2.32.3",
     "prometheus-client==0.21.1",
+    "boto3==1.36.26",
 ]
 
 [project.optional-dependencies]

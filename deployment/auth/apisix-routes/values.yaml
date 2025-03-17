@@ -61,6 +61,8 @@ endpoints:
       - /api/file/$1/retry
       - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/task$
       - /api/file/$1/task
+      - ^/api/v1/edp/list_buckets$
+      - /api/list_buckets
       - ^/api/v1/edp/presignedUrl$
       - /api/presignedUrl
     permissions:

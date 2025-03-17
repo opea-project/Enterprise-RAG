@@ -1,0 +1,90 @@
+{{- if .Values.awsSqs.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.awsSqs.nameOverride | default (include "helm-edp.fullname" .) }}
+  labels:
+    {{- include "helm-edp.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.awsSqs.replicas }}
+  selector:
+    matchLabels:
+      {{- include "helm-edp.awsSqs.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "helm-edp.awsSqs.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-backend
+          securityContext:
+             {{- toYaml .Values.securityContext | nindent 12 }}
+          image: alpine/curl
+          env:
+            - name: BACKEND_ENDPOINT
+              value: "edp-backend:5000"
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$BACKEND_ENDPOINT" ]; then
+                  echo "Environment variable BACKEND_ENDPOINT is not set. Skipping the init container.";
+                  exit 1;
+                else
+                  until curl -s $BACKEND_ENDPOINT; do
+                    echo "waiting for edp-backend $BACKEND_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+      containers:
+        - name: {{ .Values.awsSqs.nameOverride }}
+          securityContext:
+            {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
+          image: "{{ .Values.awsSqs.repository }}:{{ .Values.awsSqs.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.awsSqs.pullPolicy }}
+          command:
+            {{- range $index, $element := splitList " " .Values.awsSqs.command }}
+            - {{ $element | quote }}
+            {{- end }}
+          env:
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
+          {{- end }}
+            - name: OPEA_LOGGER_LEVEL
+              value: "DEBUG"
+          {{- toYaml .Values.awsSqs.environment | nindent 12 }}
+          resources:
+            {{- toYaml .Values.awsSqs.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

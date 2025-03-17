@@ -25,9 +25,9 @@ const FilesDataTable = () => {
     dispatch(fetchFiles());
   }, []);
 
-  const downloadFile = async (name: string) => {
+  const downloadHandler = async (name: string, bucketName: string) => {
     try {
-      const downloadUrl = await getFilePresignedUrl(name, "GET");
+      const downloadUrl = await getFilePresignedUrl(name, "GET", bucketName);
 
       const response = await fetch(downloadUrl);
 
@@ -63,9 +63,9 @@ const FilesDataTable = () => {
     }
   };
 
-  const deleteHandler = async (name: string) => {
+  const deleteHandler = async (name: string, bucketName: string) => {
     try {
-      await deleteFile(name);
+      await deleteFile(name, bucketName);
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -78,7 +78,7 @@ const FilesDataTable = () => {
   };
 
   const filesTableColumns = getFilesTableColumns({
-    downloadHandler: downloadFile,
+    downloadHandler,
     retryHandler,
     deleteHandler,
   });

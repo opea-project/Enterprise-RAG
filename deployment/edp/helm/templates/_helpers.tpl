@@ -42,6 +42,10 @@ Expand the name of the chart.
 {{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-embedding,edp-flower,edp-ingestion,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
+{{- define "helm-edp.awsSqs.name" -}}
+{{- default .Chart.Name .Values.awsSqs.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -112,14 +116,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-dataprep labels
-*/}}
-{{- define "helm-edp.dataprep.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm-edp.dataprep.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
-{{/*
 embedding labels
 */}}
 {{- define "helm-edp.embedding.selectorLabels" -}}
@@ -134,6 +130,23 @@ ingestion labels
 app.kubernetes.io/name: {{ include "helm-edp.ingestion.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+dataprep labels
+*/}}
+{{- define "helm-edp.dataprep.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.dataprep.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+awsSqs labels
+*/}}
+{{- define "helm-edp.awsSqs.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.awsSqs.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
 
 {{/*
 Create the name of the service account to use

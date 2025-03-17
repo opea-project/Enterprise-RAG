@@ -7,10 +7,18 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
-minioAccessKey: ""
-minioSecretKey: ""
-minioOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
-minioOidcClientSecret: ""
+edpExternalUrl: "https://s3.erag.com"
+edpExternalSecure: "true"
+edpInternalUrl: "edp-minio:9000"
+edpInternalSecure: "true"
+edpBaseRegion: 'us-east-1'
+edpSqsEventQueueUrl: ""
+edpAccessKey: ""
+edpSecretKey: ""
+edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcClientSecret: ""
+bucketNameRegexFilter: '.*'
+
 minioApiDomain: &minioApiDomain "s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "minio.erag.com"
 
@@ -19,6 +27,7 @@ redisUsername: "default"
 redisPassword: ""
 
 postgresDatabasePassword: "" # generated if not set via helm install
+
 
 minio:
   persistence:
@@ -126,11 +135,16 @@ minio:
       - name: 'default'
         policy: 'none'
         purge: 'false'
+      - name: 'secondary'
+        policy: 'none'
+        purge: 'false'
     extraCommands:
         - mc admin accesskey rm provisioning $EDP_ACCESS_KEY || true
         - mc admin accesskey create provisioning --access-key "${EDP_ACCESS_KEY}" --secret-key "${EDP_SECRET_KEY}" --name "${EDP_NAME_KEY}" --description "Credentials for EDP Backend Service"
         - mc event rm --event "put,delete" provisioning/default arn:minio:sqs::EDP:webhook || true
         - mc event add --event "put,delete" provisioning/default arn:minio:sqs::EDP:webhook
+        - mc event rm --event "put,delete" provisioning/secondary arn:minio:sqs::EDP:webhook || true
+        - mc event add --event "put,delete" provisioning/secondary arn:minio:sqs::EDP:webhook
 
 redis:
   networkPolicy:
@@ -183,13 +197,35 @@ celery:
   repository: "localhost:5000/erag/enhanced-dataprep"
   tag: latest
   pullPolicy: Always
-  command: "celery -A app.tasks.celery worker --loglevel=debug --concurrency=2"
+  config:
+    concurrency: "2"
+    logLevel: "debug"
   environment:
-    - name: MINIO_BASE_URL
+    - name: EDP_EXTERNAL_URL
       valueFrom:
-        configMapKeyRef:
-          name: edp-configmap
-          key: MINIO_BASE_URL
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_EXTERNAL_URL
+    - name: EDP_INTERNAL_URL
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_INTERNAL_URL
+    - name: EDP_EXTERNAL_SECURE
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_EXTERNAL_SECURE
+    - name: EDP_INTERNAL_SECURE
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_INTERNAL_SECURE
+    - name: EDP_BASE_REGION
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_BASE_REGION
     - name: MINIO_ACCESS_KEY
       valueFrom:
         secretKeyRef:
@@ -352,13 +388,31 @@ backend:
         secretKeyRef:
           name: edp-postgresql-secret
           key: DATABASE_PASSWORD
-    - name: MINIO_BASE_URL
+    - name: EDP_EXTERNAL_URL
       valueFrom:
-        configMapKeyRef:
-          name: edp-configmap
-          key: MINIO_BASE_URL
-    - name: MINIO_EXTERNAL_URL
-      value: *minioApiDomain
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_EXTERNAL_URL
+    - name: EDP_INTERNAL_URL
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_INTERNAL_URL
+    - name: EDP_EXTERNAL_SECURE
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_EXTERNAL_SECURE
+    - name: EDP_INTERNAL_SECURE
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_INTERNAL_SECURE
+    - name: EDP_BASE_REGION
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_BASE_REGION
     - name: MINIO_ACCESS_KEY
       valueFrom:
         secretKeyRef:
@@ -369,6 +423,11 @@ backend:
         secretKeyRef:
           name: edp-minio-secrets
           key: EDP_SECRET_KEY
+    - name: BUCKET_NAME_REGEX_FILTER
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: BUCKET_NAME_REGEX_FILTER
   nameOverride: "edp-backend"
   repository: "localhost:5000/erag/enhanced-dataprep"
   tag: latest
@@ -436,6 +495,48 @@ ingestion:
     limits:
       cpu: "4"
       memory: "4Gi"
+
+awsSqs:
+  environment:
+    - name: AWS_SQS_EVENT_QUEUE_URL
+      valueFrom:
+        secretKeyRef:
+          name: edp-aws-access-secrets
+          key: AWS_SQS_EVENT_QUEUE_URL
+    - name: EDP_BACKEND_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          name: edp-aws-access-secrets
+          key: EDP_BACKEND_ENDPOINT
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: edp-aws-access-secrets
+          key: AWS_DEFAULT_REGION
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: edp-aws-access-secrets
+          key: AWS_ACCESS_KEY_ID
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: edp-aws-access-secrets
+          key: AWS_SECRET_ACCESS_KEY
+  enabled: false
+  nameOverride: "edp-aws"
+  repository: "localhost:5000/erag/enhanced-dataprep"
+  tag: latest
+  pullPolicy: Always
+  command: "python sqs.py"
+  replicas: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
 
 # This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

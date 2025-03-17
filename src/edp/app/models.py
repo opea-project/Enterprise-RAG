@@ -7,7 +7,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from app.database import Base
 from datetime import datetime, timezone
 from sqlalchemy.dialects.postgresql import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class UserIdentity(BaseModel):
   principalId: Optional[str] = None
@@ -46,9 +46,54 @@ class Record(BaseModel):
   s3: S3
   source: Source
 
+class S3UserIdentity(BaseModel):
+  principalId: str
+
+class S3RequestParameters(BaseModel):
+  sourceIPAddress: str
+
+class S3ResponseElements(BaseModel):
+  x_amz_request_id: str = Field(alias="x-amz-request-id")
+  x_amz_id_2: str = Field(alias="x-amz-request-id")
+
+class S3OwnerIdentity(BaseModel):
+  principalId: str
+
+class S3Bucket(BaseModel):
+  name: str
+  ownerIdentity: S3OwnerIdentity
+  arn: str
+
+class S3Object(BaseModel):
+  key: str
+  size: Optional[int] = ""
+  eTag: Optional[str] = ""
+  sequencer: str
+  contentType: Optional[str] = ""
+
+class S3(BaseModel):
+  s3SchemaVersion: str
+  configurationId: str
+  bucket: S3Bucket
+  object: S3Object
+
+class S3Record(BaseModel):
+  eventVersion: str
+  eventSource: str
+  awsRegion: str
+  eventTime: str
+  eventName: str
+  userIdentity: S3UserIdentity
+  requestParameters: Optional[S3RequestParameters] = None
+  responseElements: Optional[S3ResponseElements] = None
+  s3: S3
+
+class S3EventData(BaseModel):
+  Records: List[S3Record]
+
 class MinioEventData(BaseModel):
-  EventName: str
-  Key: str
+  EventName: Optional[str] = None
+  Key: Optional[str] = None
   Records: List[Record]
 
 class PresignedRequest(BaseModel):

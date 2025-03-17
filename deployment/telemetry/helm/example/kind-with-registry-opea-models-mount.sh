@@ -1,5 +1,48 @@
-#!/bin/sh
+#!/bin/bash
 set -o errexit
+
+# Prompt the user
+echo "Due to recent docker hub rate-limit changes for unauthenticated users you may experience issues with pulling images from docker hub."
+echo "To avoid this issue, you can use docker credentials in kind cluster."
+echo ""
+prompt="Do you want to use docker credentials in kind cluster? (y/n): "
+
+registry_auth_config=""
+
+# Check the user input
+while true; do
+    read -p "$prompt" -n 1 -s -t 5 reply || (( $? > 128 ))
+    case $reply in
+        Y|y)
+          echo ""
+          read -p "Enter Docker username: " docker_login
+          read -s -p "Enter Docker password: " docker_password
+          echo ""
+
+          docker logout
+          echo "$docker_password" | docker login --username $docker_login --password-stdin
+
+          success=$?
+
+          if [ $success -ne 0 ]; then
+            echo "Failed to login to docker hub. Possibly wrong credentials. Exiting..."
+            exit 1
+          fi
+
+          registry_auth_config=$(cat <<EOF
+  [plugins."io.containerd.grpc.v1.cri".registry.configs."docker.io".auth]
+    username = "$docker_login"
+    password = "$docker_password"
+EOF
+)
+        break;;
+        ""|N|n)
+          echo ""
+          echo "Skipping docker credentials in kind cluster."
+          break;;
+        *) ;;
+    esac
+done
 
 # Add kind-registry to env no_proxy. It will be used in kind container.
 if ! echo "$no_proxy" | grep -q "kind-registry"; then
@@ -53,6 +96,7 @@ containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry]
     config_path = "/etc/containerd/certs.d"
+$registry_auth_config
 EOF
 
 # 3. Add the registry config to the nodes
@@ -92,7 +136,7 @@ data:
 EOF
 
 # Wait for ready
-kubectl wait --for=condition=Ready pod -n kube-system  --all
+kubectl wait --for=condition=Ready pod -n kube-system --all
 
 # Update kube-proxy cm with proper value of metricsBindAddress
 kubectl get cm kube-proxy -n kube-system -o yaml | sed 's/metricsBindAddress: ""/metricsBindAddress: 0.0.0.0:10249/' | kubectl apply -f -
@@ -101,12 +145,12 @@ kubectl get cm kube-proxy -n kube-system -o yaml | sed 's/metricsBindAddress: ""
 # 1) Install new version of local-path-provisioner that support "parameters"
 # not needed after kind issue with old version of local-path-provisioner (overwrite with never version) until https://github.com/kubernetes-sigs/kind/issues/3810 is resolved
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.30/deploy/local-path-storage.yaml
-kubectl wait --for=condition=Ready pod -n kube-system  --all
+kubectl wait --for=condition=Ready pod -n kube-system --all
 # 2) keycloak: we cannot reuse data from previous PVC for keycloak so lets clear its contents
 rm -rf /kind-local-path-provisioner/auth/data-keycloak-postgresql-0/
 # 3) reconfigure 
 kubectl delete sc standard      # delete original
 kubectl delete sc local-path    # delete one provided by local-path-install
-kubectl apply -f telemetry/helm/example/sc.yaml # create our own dataclass that will reuse directories on hosts based on PVC name
 
-
+script_dir=$(dirname "$(realpath "$0")")
+kubectl apply -f $script_dir/sc.yaml      # create our own dataclass that will reuse directories on hosts based on PVC name

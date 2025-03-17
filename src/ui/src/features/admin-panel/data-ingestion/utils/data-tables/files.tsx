@@ -13,9 +13,9 @@ import {
 } from "@/features/admin-panel/data-ingestion/utils";
 
 interface FileActionsHandlers {
-  downloadHandler: (name: string) => void;
+  downloadHandler: (name: string, bucketName: string) => void;
   retryHandler: (id: string) => void;
-  deleteHandler: (name: string) => void;
+  deleteHandler: (name: string, bucketName: string) => void;
 }
 
 export const getFilesTableColumns = ({
@@ -31,6 +31,10 @@ export const getFilesTableColumns = ({
         original: { status, job_message: statusMessage },
       },
     }) => <DataItemStatus status={status} statusMessage={statusMessage} />,
+  },
+  {
+    accessorKey: "bucket_name",
+    header: "Bucket",
   },
   {
     accessorKey: "object_name",
@@ -71,11 +75,14 @@ export const getFilesTableColumns = ({
     header: () => <p className="text-center">Actions</p>,
     cell: ({
       row: {
-        original: { object_name, status, id },
+        original: { object_name, status, id, bucket_name },
       },
     }) => (
       <div className="flex items-center justify-center gap-2">
-        <Button size="sm" onClick={() => downloadHandler(object_name)}>
+        <Button
+          size="sm"
+          onClick={() => downloadHandler(object_name, bucket_name)}
+        >
           Download
         </Button>
         {status === "error" && (
@@ -86,7 +93,7 @@ export const getFilesTableColumns = ({
         <Button
           size="sm"
           color="error"
-          onClick={() => deleteHandler(object_name)}
+          onClick={() => deleteHandler(object_name, bucket_name)}
         >
           Delete
         </Button>

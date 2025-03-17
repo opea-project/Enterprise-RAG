@@ -62,7 +62,10 @@ const isUploadDisabled = (
   files: File[],
   links: LinkForIngestion[],
   isUploading: boolean,
-) => isUploading || (files.length === 0 && links.length === 0);
+  selectedBucket: string,
+) =>
+  isUploading ||
+  ((files.length === 0 || selectedBucket === "") && links.length === 0);
 
 const sanitizeFileName = (filename: string) => {
   const normalizedFileName = filename.normalize("NFKC");

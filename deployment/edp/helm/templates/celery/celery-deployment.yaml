@@ -93,9 +93,12 @@ spec:
           image: "{{ .Values.celery.repository }}:{{ .Values.celery.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.celery.pullPolicy }}
           command:
-            {{- range $index, $element := splitList " " .Values.celery.command }}
-            - {{ $element | quote }}
-            {{- end }}
+            - "celery"
+            - "-A"
+            - "app.tasks.celery"
+            - "worker"
+            - "--loglevel={{ .Values.celery.config.logLevel }}"
+            - "--concurrency={{ .Values.celery.config.concurrency }}"
           env:
           {{- if .Values.proxy.httpProxy }}
             - name: http_proxy

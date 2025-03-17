@@ -10,6 +10,7 @@ import Dialog from "@/components/ui/Dialog/Dialog";
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
 import { postFiles } from "@/features/admin-panel/data-ingestion/api/postFiles";
 import { postLinks } from "@/features/admin-panel/data-ingestion/api/postLinks";
+import BucketsDropdown from "@/features/admin-panel/data-ingestion/components/BucketsDropdown/BucketsDropdown";
 import FilesIngestionPanel from "@/features/admin-panel/data-ingestion/components/FilesIngestionPanel/FilesIngestionPanel";
 import LinksIngestionPanel from "@/features/admin-panel/data-ingestion/components/LinksIngestionPanel/LinksIngestionPanel";
 import UploadDataDialogFooter from "@/features/admin-panel/data-ingestion/components/UploadDataDialogFooter/UploadDataDialogFooter";
@@ -36,11 +37,16 @@ const UploadDataDialog = () => {
   const ref = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<LinkForIngestion[]>([]);
+  const [selectedBucket, setSelectedBucket] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] =
     useState<UploadErrors>(initialUploadErrors);
 
   const dispatch = useAppDispatch();
+
+  const onBucketChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedBucket(event.target.value);
+  };
 
   const resetUploadErrors = () => {
     setUploadErrors(initialUploadErrors);
@@ -55,8 +61,9 @@ const UploadDataDialog = () => {
 
     try {
       if (files.length) {
-        await postFiles(files);
+        await postFiles(files, selectedBucket);
         setFiles([]);
+        setSelectedBucket("");
       }
     } catch (error) {
       filesUploadError =
@@ -101,6 +108,7 @@ const UploadDataDialog = () => {
     if (ref.current) {
       setFiles([]);
       setLinks([]);
+      setSelectedBucket("");
       resetUploadErrors();
       ref.current.close();
     }
@@ -119,7 +127,12 @@ const UploadDataDialog = () => {
   );
 
   const toBeUploadedMessage = createToBeUploadedMessage(files, links);
-  const uploadDisabled = isUploadDisabled(files, links, isUploading);
+  const uploadDisabled = isUploadDisabled(
+    files,
+    links,
+    isUploading,
+    selectedBucket,
+  );
 
   return (
     <Dialog
@@ -137,9 +150,15 @@ const UploadDataDialog = () => {
       title="Upload Data"
       onClose={closeDialog}
     >
-      <div className="upload-dialog__ingestion-panels-grid">
-        <FilesIngestionPanel files={files} setFiles={setFiles} />
-        <LinksIngestionPanel links={links} setLinks={setLinks} />
+      <div className="upload-dialog__content">
+        <BucketsDropdown
+          selectedBucket={selectedBucket}
+          onBucketChange={onBucketChange}
+        />
+        <div className="upload-dialog__ingestion-panels-grid">
+          <FilesIngestionPanel files={files} setFiles={setFiles} />
+          <LinksIngestionPanel links={links} setLinks={setLinks} />
+        </div>
         {isUploading && <div className="upload-dialog__blur-overlay"></div>}
       </div>
     </Dialog>

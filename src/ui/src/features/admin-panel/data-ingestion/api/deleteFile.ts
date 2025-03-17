@@ -4,11 +4,14 @@
 import { getFilePresignedUrl } from "@/features/admin-panel/data-ingestion/api/getFilePresignedUrl";
 import { refreshToken } from "@/lib/auth";
 
-export const deleteFile = async (fileName: string) => {
+export const deleteFile = async (
+  fileName: string,
+  bucketName: string = "default",
+) => {
   await refreshToken();
 
   const method = "DELETE";
-  const url = await getFilePresignedUrl(fileName, method);
+  const url = await getFilePresignedUrl(fileName, method, bucketName);
 
   const response = await fetch(url, {
     method,

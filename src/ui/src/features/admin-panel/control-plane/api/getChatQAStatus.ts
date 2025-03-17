@@ -9,7 +9,7 @@ export const getChatQAStatus = async () => {
 
   try {
     const headers = new Headers();
-    headers.append("Authorization", `Bearer ${getToken()}`);
+    headers.append("Authorization", getToken());
     const response = await fetch("/api/v1/chatqa/status", {
       headers,
     });

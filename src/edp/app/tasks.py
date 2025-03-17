@@ -7,14 +7,13 @@ import requests
 import base64
 import datetime
 from dotenv import load_dotenv
-from minio import Minio
 from minio.error import S3Error
-from minio.credentials import EnvMinioProvider
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from celery import Celery, Task, shared_task
 from app.models import FileStatus, LinkStatus
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
+from app.utils import get_local_minio_client
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), "./.env"))
@@ -43,7 +42,7 @@ class WithEDPTask(Task):
     def after_return(self, *args, **kwargs):
         if self._db is not None:
             self._db.close()
-    
+
     @property
     def db(self):
         if self._db is None:
@@ -59,17 +58,11 @@ class WithEDPTask(Task):
             self._db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
 
         return self._db
-    
+
     @property
     def minio(self):
         if self._minio is None:
-            MINIO_ENDPOINT = os.getenv('MINIO_BASE_URL', 'minio:9000')
-
-            self._minio = Minio(
-                MINIO_ENDPOINT,
-                credentials=EnvMinioProvider(),
-                secure=False
-            )
+            self._minio = get_local_minio_client()
         return self._minio
 
 def response_err(response):
@@ -80,11 +73,11 @@ def response_err(response):
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def process_file_task(self, file_id: Any, *args, **kwargs):
-    
+
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
         raise Exception(f"File with id {file_id} not found")
-    
+
     logger.debug(f"[{file_db.id}] Started processing file.")
 
     file_db.status = 'processing'
@@ -138,7 +131,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         if len(dataprep_docs) == 0:
             logger.debug(f"[{file_db.id}] Data preparation returned 0 chunks.")
             raise Exception('No text extracted from the file.')
-        
+
         file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
         file_db.chunks_total = len(dataprep_docs) # Update chunks count
         file_db.dataprep_end = datetime.datetime.now()
@@ -184,7 +177,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.embedding_end = datetime.datetime.now()
             self.db.commit()
             raise Exception(f"Error encountered while embedding. {response_err(response)}")
-        
+
         # Update the pipeline progress
         file_db.chunks_processed = i + len(docs_batch)
         self.db.commit()
@@ -228,7 +221,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db = self.db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
     if link_db is None:
         raise Exception(f"Link with id {link_db} not found")
-    
+
     logger.debug(f"[{link_db.id}] Started processing link.")
 
     link_db.status = 'processing'
@@ -266,7 +259,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         if len(dataprep_docs) == 0:
             logger.debug(f"[{link_db.id}] Data preparation returned 0 chunks.")
             raise Exception('No text extracted from the file.')
-        
+
         link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
         link_db.chunks_total = len(dataprep_docs) # Update chunks count
         link_db.dataprep_end = datetime.datetime.now()
@@ -309,7 +302,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.embedding_end = datetime.datetime.now()
             self.db.commit()
             raise Exception(f"Error encountered while embedding. {response_err(response)}")
-        
+
         # Update the pipeline progress
         link_db.chunks_processed = i + len(docs_batch)
         self.db.commit()
@@ -340,7 +333,7 @@ def delete_link_task(self, link_id: Any, *args, **kwargs):
         link_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
         self.db.commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
-    
+
     # Step 2 - Delete the file from database
     id = link_db.id
     self.db.delete(link_db)

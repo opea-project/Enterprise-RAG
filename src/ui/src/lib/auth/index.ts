@@ -38,7 +38,7 @@ export const refreshToken = async () => {
   }
 };
 
-export const getToken = () => keycloak.token;
+export const getToken = () => keycloak.token ?? "";
 export const getUsername = () => keycloak.tokenParsed?.name;
 
 export const isAdminUser = () => keycloak.hasResourceRole(adminResourceRole);

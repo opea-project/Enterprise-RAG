@@ -9,7 +9,7 @@
   }
 
   & .upload-errors-dialog__trigger--text {
-    @apply cursor-pointer underline;
+    @apply cursor-pointer font-semibold underline;
     @apply text-light-text-error dark:text-dark-text-error;
   }
 }

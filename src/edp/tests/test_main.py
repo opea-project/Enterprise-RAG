@@ -374,6 +374,51 @@ def test_api_file_task_cancel_exception():
             assert response.status_code == 400
             assert response.json()['detail'].startswith('Error canceling task')
 
+def test_s3_put_event():
+    payload = {
+        "Records": [
+            {
+                "eventVersion": "2.1",
+                "eventSource": "aws:s3",
+                "awsRegion": "us-west-2",
+                "eventTime": "2025-02-24T13:07:08.792Z",
+                "eventName": "ObjectCreated:Put",
+                "userIdentity": {
+                    "principalId": "AWS:secret"
+                },
+                "requestParameters": {
+                    "sourceIPAddress": "134.191.197.184"
+                },
+                "responseElements": {
+                    "x-amz-request-id": "random2",
+                    "x-amz-id-2": "random3"
+                },
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "tf-s3-queue-20250224125707326300000001",
+                    "bucket": {
+                        "name": "edp-s3-default-bucket",
+                        "ownerIdentity": {
+                            "principalId": "AS7IWF4R36R0T"
+                        },
+                        "arn": "arn:aws:s3:::edp-s3-default-bucket"
+                    },
+                    "object": {
+                        "key": "test.txt",
+                        "size": 18,
+                        "eTag": "bdeca7cd9b893ac3dc3fea2dd24da5a6",
+                        "sequencer": "0067BC6EFCBE1A1EE8"
+                    }
+                }
+            }
+        ]
+    }
+    with patch('app.main.process_file_task') as mock_task:
+        mock_task.return_value = MagicMock(job_name="file_processing_job", id="123e4567-e89b-12d3-a456-426614174000")
+        response = client.post('/minio_event', json=payload)
+        assert response.json() == {'message': 'File(s) uploaded successfully'}
+        assert response.status_code == 200
+
 def test_minio_put_event():
     payload = {
         "EventName": "s3:ObjectCreated:Put",
@@ -434,6 +479,49 @@ def test_minio_put_event():
         assert response.json() == {'message': 'File(s) uploaded successfully'}
         assert response.status_code == 200
 
+def test_s3_delete_event():
+    payload = {
+        "Records": [
+            {
+                "eventVersion": "2.1",
+                "eventSource": "aws:s3",
+                "awsRegion": "us-west-2",
+                "eventTime": "2025-02-26T12:52:57.395Z",
+                "eventName": "ObjectRemoved:Delete",
+                "userIdentity": {
+                    "principalId": "random2"
+                },
+                "requestParameters": {
+                    "sourceIPAddress": "134.191.197.182"
+                },
+                "responseElements": {
+                    "x-amz-request-id": "CVG4V03RT0PWY5FS",
+                    "x-amz-id-2": "random3"
+                },
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "tf-s3-queue-20250224125707326300000001",
+                    "bucket": {
+                        "name": "edp-s3-default-bucket",
+                        "ownerIdentity": {
+                            "principalId": "AS7IWF4R36R0T"
+                        },
+                        "arn": "arn:aws:s3:::edp-s3-default-bucket"
+                    },
+                    "object": {
+                        "key": "sdfsdfsdf.txt",
+                        "sequencer": "0067BF0EA96062684C"
+                    }
+                }
+            }
+        ]
+    }
+    with patch('app.main.delete_existing_file') as mock_task:
+        mock_task.return_value = MagicMock(job_name="file_deleting_job", id="123e4567-e89b-12d3-a456-426614174000")
+        response = client.post('/minio_event', json=payload)
+        assert response.json() == {'message': 'File(s) deleted successfully'}
+        assert response.status_code == 200
+
 def test_minio_delete_event():
     payload = {
         "EventName": "s3:ObjectRemoved:Delete",
@@ -444,7 +532,7 @@ def test_minio_delete_event():
                 "eventSource": "minio:s3",
                 "awsRegion": "",
                 "eventTime": "2024-11-18T09:42:12.709Z",
-                "eventName": "s3:ObjectCreated:Put",
+                "eventName": "s3:ObjectRemoved:Delete",
                 "userIdentity": {
                     "principalId": "V2MQZp28DJILe0g-dMApWT35GA9GmYxvzJCMHGBPkDk"
                 },
@@ -498,7 +586,7 @@ def test_minio_unknown_event():
                 "eventSource": "minio:s3",
                 "awsRegion": "",
                 "eventTime": "2024-11-18T09:42:12.709Z",
-                "eventName": "s3:ObjectCreated:Put",
+                "eventName": "unknown",
                 "userIdentity": {
                     "principalId": "V2MQZp28DJILe0g-dMApWT35GA9GmYxvzJCMHGBPkDk"
                 },
@@ -543,6 +631,48 @@ def test_minio_unknown_event():
         ]
     }
     
+    response = client.post('/minio_event', json=payload)
+    assert response.json() == {'detail': 'Event not implemented'}
+    assert response.status_code == 501
+
+def test_s3_unknown_event():
+    payload = {
+        "Records": [
+            {
+                "eventVersion": "2.0",
+                "eventSource": "minio:s3",
+                "awsRegion": "",
+                "eventTime": "2024-11-18T09:42:12.709Z",
+                "eventName": "unknown",
+                "userIdentity": {
+                    "principalId": "V2MQZp28DJILe0g-dMApWT35GA9GmYxvzJCMHGBPkDk"
+                },
+                "requestParameters": {
+                    "sourceIPAddress": "172.19.0.6"
+                },
+                "responseElements": {
+                    "x-amz-id-2": "dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8",
+                    "x-amz-request-id": "180906BB2E581534"
+                },
+                "s3": {
+                    "s3SchemaVersion": "1.0",
+                    "configurationId": "Config",
+                    "bucket": {
+                    "name": "test",
+                    "ownerIdentity": {
+                        "principalId": "V2MQZp28DJILe0g-dMApWT35GA9GmYxvzJCMHGBPkDk"
+                    },
+                    "arn": "arn:aws:s3:::test"
+                    },
+                    "object": {
+                        "key": "photo.png",
+                        "sequencer": "180906BB2E6792A7"
+                    }
+                }
+            }
+        ]
+    }
+
     response = client.post('/minio_event', json=payload)
     assert response.json() == {'detail': 'Event not implemented'}
     assert response.status_code == 501

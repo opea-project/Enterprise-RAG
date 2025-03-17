@@ -4,12 +4,15 @@
 import { getFilePresignedUrl } from "@/features/admin-panel/data-ingestion/api/getFilePresignedUrl";
 import { refreshToken } from "@/lib/auth";
 
-export const postFiles = async (files: File[]) => {
+export const postFiles = async (
+  files: File[],
+  bucketName: string = "default",
+) => {
   await refreshToken();
 
   for (const file of files) {
     const method = "PUT";
-    const url = await getFilePresignedUrl(file.name, method);
+    const url = await getFilePresignedUrl(file.name, method, bucketName);
 
     const response = await fetch(url, {
       method,

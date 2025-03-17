@@ -30,6 +30,10 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.dataprep.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "helm-edp.dpguard.name" -}}
+{{- default .Chart.Name .Values.dpguard.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "helm-edp.embedding.name" -}}
 {{- default .Chart.Name .Values.embedding.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -39,7 +43,7 @@ Expand the name of the chart.
 {{- end }}
 
 {{- define "helm-edp.noProxyWithContainers" -}}
-{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-embedding,edp-flower,edp-ingestion,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
 {{- define "helm-edp.awsSqs.name" -}}
@@ -112,6 +116,14 @@ backend labels
 */}}
 {{- define "helm-edp.backend.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "helm-edp.backend.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+dpguard labels
+*/}}
+{{- define "helm-edp.dpguard.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.dpguard.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 

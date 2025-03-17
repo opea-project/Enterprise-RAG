@@ -83,6 +83,7 @@ function usage() {
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
+    echo -e "\t--dpguard: Create Dataprep Guardrail."
     echo -e "\t-ep|--enforce-pss: Enforce strict pod security policies."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
@@ -740,6 +741,11 @@ function start_edp() {
 
     HELM_INSTALL_EDP_CONFIGURATION_ARGS="$embedding_endpoint_helm --set proxy.httpProxy=$erag_http_proxy --set proxy.httpsProxy=$erag_https_proxy --set proxy.noProxy=$(echo "$erag_no_proxy" | sed 's/,/\\,/g') "
 
+    if $dpguard; then
+        print_log "Enabling Dataprep Guardrail"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true "
+    fi
+
     helm dependency update "$edp_path" > /dev/null
 
     STORAGE_TYPE="${edp_storage_type:-""}"
@@ -816,6 +822,7 @@ mesh_installed=false
 auth_flag=false
 helm_upgrade=false
 edp_flag=true
+dpguard=false
 strict_policy_flag=false
 clear_any_flag=false
 clear_deployment_flag=false
@@ -898,6 +905,9 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --no-edp)
             edp_flag=false
+            ;;
+        --dpguard)
+            dpguard=true
             ;;
         --no-mesh)
             mesh_flag=false
@@ -1028,7 +1038,7 @@ HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repo
 HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/ingress-values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
-HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=enhanced-dataprep_$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=enhanced-dataprep_$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=enhanced-dataprep_$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=dataprep_$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=embedding_$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=ingestion_$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=enhanced-dataprep_$TAG"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=enhanced-dataprep_$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=enhanced-dataprep_$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=enhanced-dataprep_$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=dataprep_$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=embedding_$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=ingestion_$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=enhanced-dataprep_$TAG --set dpguard.repository=$REGISTRY/erag --set dpguard.tag=dpguard_$TAG"
 
 # Execute given arguments
 

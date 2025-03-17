@@ -11,3 +11,5 @@ data:
   EMBEDDING_ENDPOINT: {{ if .Values.embedding.enabled }}{{ print "http://" .Values.embedding.nameOverride ":6000/v1/embeddings" | quote }}{{ else }}{{ .Values.embedding.remoteEmbeddingUri | quote }}{{ end }}
   INGESTION_ENDPOINT: {{ print "http://" .Values.ingestion.nameOverride ":6120/v1/ingestion" | quote }}
   BUCKET_NAME_REGEX_FILTER: {{ .Values.bucketNameRegexFilter | quote }}
+  DPGUARD_ENDPOINT: {{ if .Values.dpguard.enabled }}{{ print "http://" .Values.dpguard.nameOverride ":8070/v1/llmguarddataprep" | quote }}{{ end }}
+  DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}

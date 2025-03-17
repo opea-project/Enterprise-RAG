@@ -121,6 +121,7 @@ class FileResponse(BaseModel):
     job_name: str
     job_message: str
     dataprep_duration: int
+    dpguard_duration: int
     embedding_duration: int
     processing_duration: int
 
@@ -135,6 +136,7 @@ class LinkResponse(BaseModel):
     job_name: str
     job_message: str
     dataprep_duration: int
+    dpguard_duration: int
     embedding_duration: int
     processing_duration: int
 
@@ -149,7 +151,7 @@ class FileStatus(Base):
     content_type = Column(String, index=False)
     size = Column(Integer, index=False)
 
-    status = Column(String, index=False) # uploaded, error, processing, dataprep, embedding, ingested, deleting, canceled
+    status = Column(String, index=False) # uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, canceled, blocked
     job_name = Column(String, index=False) # file_processing_job, file_deleting_job
     job_message = Column(String, index=False)
     
@@ -159,6 +161,8 @@ class FileStatus(Base):
     
     dataprep_start = Column(DateTime, index=False)
     dataprep_end = Column(DateTime, index=False)
+    dpguard_start = Column(DateTime, index=False)
+    dpguard_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
     embedding_end = Column(DateTime, index=False)
 
@@ -167,6 +171,7 @@ class FileStatus(Base):
 
     def to_response(self):
         dataprep_duration = int((self.dataprep_end - self.dataprep_start).total_seconds()) if self.dataprep_end and self.dataprep_start else 0
+        dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
         embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
         return FileResponse(
             id=str(self.id),
@@ -182,6 +187,7 @@ class FileStatus(Base):
             job_name=self.job_name or "",
             job_message=self.job_message or "",
             dataprep_duration=dataprep_duration,
+            dpguard_duration=dpguard_duration,
             embedding_duration=embedding_duration,
             processing_duration=dataprep_duration+embedding_duration
         )
@@ -193,7 +199,7 @@ class LinkStatus(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     uri = Column(String, index=True)
 
-    status = Column(String, index=False) # uploaded, error, processing, dataprep, embedding, ingested, deleting
+    status = Column(String, index=False) # uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, blocked
     job_name = Column(String, index=False) # link_processing_job, link_deleting_job
     job_message = Column(String, index=False)
 
@@ -203,6 +209,8 @@ class LinkStatus(Base):
 
     dataprep_start = Column(DateTime, index=False)
     dataprep_end = Column(DateTime, index=False)
+    dpguard_start = Column(DateTime, index=False)
+    dpguard_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
     embedding_end = Column(DateTime, index=False)
 
@@ -211,6 +219,7 @@ class LinkStatus(Base):
 
     def to_response(self):
       dataprep_duration = int((self.dataprep_end - self.dataprep_start).total_seconds()) if self.dataprep_end and self.dataprep_start else 0
+      dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
       embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
 
       return LinkResponse(
@@ -224,6 +233,7 @@ class LinkStatus(Base):
             job_name=self.job_name or "",
             job_message=self.job_message or "",
             dataprep_duration=dataprep_duration,
+            dpguard_duration=dpguard_duration,
             embedding_duration=embedding_duration,
             processing_duration=dataprep_duration+embedding_duration
         )

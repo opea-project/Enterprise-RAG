@@ -34,6 +34,7 @@ class ServiceType(Enum):
     INGESTION = 17
     LANGUAGE_DETECTION = 18
     PROMPT_TEMPLATE = 19
+    LLM_GUARD_DATAPREP_SCANNER = 20
 
 
 class MegaServiceEndpoint(Enum):
@@ -67,6 +68,7 @@ class MegaServiceEndpoint(Enum):
     DATAPREP = '/v1/dataprep'
     PROMPT_REGISTRY = '/v1/prompt_registry'
     SYSTEM_FINGERPRINT = '/v1/system_fingerprint'
+    LLM_GUARD_DATAPREP_SCANNER = "/v1/llmguarddataprep"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

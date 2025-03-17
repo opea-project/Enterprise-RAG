@@ -261,6 +261,11 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: INGESTION_ENDPOINT
+    - name: DPGUARD_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: DPGUARD_ENDPOINT
     - name: DATABASE_HOST
       valueFrom:
         secretKeyRef:
@@ -286,6 +291,11 @@ celery:
         secretKeyRef:
           name: edp-postgresql-secret
           key: DATABASE_PASSWORD
+    - name: DPGUARD_ENABLED
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: DPGUARD_ENABLED
   replicas: 1
   resources:
     requests:
@@ -458,6 +468,23 @@ dataprep:
     limits:
       cpu: "8"
       memory: "16Gi"
+
+dpguard:
+  enabled: false
+  nameOverride: "edp-dpguard"
+  repository: "localhost:5000/erag/dpguard"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  config:
+    dpguard_port: "8070"
+  resources:
+    requests:
+      cpu: "4"
+      memory: "8Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
 
 # Embedding is an optional element that allows to run a separate embedding server
 # if not enabled, a remote embedding is used based on remoteEmbeddingUri endpoint

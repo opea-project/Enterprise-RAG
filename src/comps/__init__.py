@@ -49,7 +49,8 @@ from comps.cores.proto.docarray import (
     PromptCreate,
     PromptGet,
     PromptId,
-    PromptOutput
+    PromptOutput,
+    TextDocList
 )
 
 # Telemetry

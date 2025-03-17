@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc")
+default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "vllm-openvino" "langdtct-usvc" "edp-usvc" "dpguard-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -321,6 +321,15 @@ for component in "${components_to_build[@]}"; do
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
             image_tag=out-guard_$TAG_VERSION
+
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi
+            ;;
+
+        dpguard-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile"
+            image_tag=dpguard_$TAG_VERSION
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image_tag;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image_tag;fi

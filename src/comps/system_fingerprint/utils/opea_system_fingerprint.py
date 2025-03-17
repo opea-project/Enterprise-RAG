@@ -499,7 +499,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                         self.current_arguments.parameters.output_guard.ban_substrings = BanSubstringsModel(
                             **v)
                     elif k == "ban_topics":
-                        self.current_arguments.parameters.output_guard.ban_substrings = BanTopicsModel(
+                        self.current_arguments.parameters.output_guard.ban_topics = BanTopicsModel(
                             **v)
                     elif k == "bias":
                         self.current_arguments.parameters.output_guard.bias = BiasModel(

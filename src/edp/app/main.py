@@ -97,7 +97,7 @@ async def metrics():
         gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
         gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
 
-        for obj_status in 'uploaded, error, processing, dataprep, embedding, ingested, deleting, canceled'.split(', '):
+        for obj_status in 'uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
             file_count = files_statuses.get(obj_status, 0)
             file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
             file_gauge.set(file_count)

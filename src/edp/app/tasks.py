@@ -150,6 +150,38 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         doc['metadata']['object_name'] = file_db.object_name
         doc['metadata']['file_id'] = str(file_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
 
+    # Step 2.5 (Optional) - scan datapreped documents with Dataprep Guardrail
+    dpguard_msg = ""
+    dpguard_status = ""
+    try:
+        dpguard_enabled = os.getenv('DPGUARD_ENABLED', "false")
+        logger.info(f"dpguard_enabled: {dpguard_enabled}")
+        if dpguard_enabled == "true":
+            file_db.dpguard_start = datetime.datetime.now()
+            file_db.status = 'dpguard'
+            file_db.job_message = 'Data Preparation Guardrail in progress.'
+            self.db.commit()
+            dpguard_endpoint   = os.environ.get('DPGUARD_ENDPOINT')
+            logger.info(f"dpguard_endpoint: {dpguard_endpoint}")
+            logger.info("Dataprep Guardrail enabled. Scanning the documents.")
+            response = requests.post(dpguard_endpoint, json={ 'docs': dataprep_docs })
+            if response.status_code != 200:
+                dpguard_msg = 'Dataprep Guardrail failed.'
+                dpguard_status = 'error'
+                if response.status_code == 466:
+                    dpguard_msg = "Dataprep Guardrail blocked embedding this document"
+                    dpguard_status = 'blocked'
+                raise Exception(f"{dpguard_msg} {response_err(response)}")
+            file_db.dpguard_end = datetime.datetime.now()
+            self.db.commit()
+            logger.info("Dataprep Guardrail completed.")
+    except Exception as e:
+        file_db.job_message = dpguard_msg if dpguard_msg else 'Error while executing dataprep guardrail.'
+        file_db.status = dpguard_status if dpguard_status else 'error'
+        file_db.dpguard_end = datetime.datetime.now()
+        self.db.commit()
+        raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
+
     # Step 3 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)
     file_db.embedding_start = datetime.datetime.now()
@@ -274,6 +306,38 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     # 2.1 Update the metadata info from database
     for doc in dataprep_docs:
         doc['metadata']['link_id'] = str(link_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
+
+    # Step 2.5 (Optional) - scan datapreped documents with Dataprep Guardrail
+    dpguard_msg = ""
+    dpguard_status = ""
+    try:
+        dpguard_enabled = os.getenv('DPGUARD_ENABLED', "false")
+        logger.info(f"dpguard_enabled: {dpguard_enabled}")
+        if dpguard_enabled == "true":
+            link_db.dpguard_start = datetime.datetime.now()
+            link_db.status = 'dpguard'
+            link_db.job_message = 'Data Preparation Guardrail in progress.'
+            self.db.commit()
+            dpguard_endpoint   = os.environ.get('DPGUARD_ENDPOINT')
+            logger.info(f"dpguard_endpoint: {dpguard_endpoint}")
+            logger.info("Dataprep Guardrail enabled. Scanning the documents.")
+            response = requests.post(dpguard_endpoint, json={ 'docs': dataprep_docs })
+            if response.status_code != 200:
+                dpguard_msg = 'Dataprep Guardrail failed.'
+                dpguard_status = 'error'
+                if response.status_code == 466:
+                    dpguard_msg = "Dataprep Guardrail blocked embedding this document"
+                    dpguard_status = 'blocked'
+                raise Exception(f"{dpguard_msg} {response_err(response)}")
+            link_db.dpguard_end = datetime.datetime.now()
+            self.db.commit()
+            logger.info("Dataprep Guardrail completed.")
+    except Exception as e:
+        link_db.job_message = dpguard_msg if dpguard_msg else 'Error while executing dataprep guardrail.'
+        link_db.status = dpguard_status if dpguard_status else 'error'
+        link_db.dpguard_end = datetime.datetime.now()
+        self.db.commit()
+        raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
     # Step 3 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)

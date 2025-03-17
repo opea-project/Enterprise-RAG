@@ -11,9 +11,11 @@ export type DataStatus =
   | "error"
   | "processing"
   | "dataprep"
+  | "dpguard"
   | "embedding"
   | "ingested"
-  | "deleting";
+  | "deleting"
+  | "blocked";
 
 export interface FileDataItem {
   id: string;

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Dockerfile for the RAG LLM Guard Output Guardrail microservice
-# This Dockerfile is used to build the container image for the RAG LMM Guard Output Guardrail microservice.
 
 FROM python:3.11-slim
 COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/

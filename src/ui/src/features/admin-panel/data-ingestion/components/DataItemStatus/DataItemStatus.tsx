@@ -7,12 +7,14 @@ import classNames from "classnames";
 import { ReactNode } from "react";
 
 import DataPrepIcon from "@/components/icons/DataPrepIcon/DataPrepIcon";
+import DPGuardIcon from "@/components/icons/DPGuardIcon/DPGuardIcon";
 import DeleteIcon from "@/components/icons/DeleteIcon/DeleteIcon";
 import EmbeddingIcon from "@/components/icons/EmbeddingIcon/EmbeddingIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
+import BlockedIcon from "@/components/icons/BlockedIcon/BlockedIcon";
 import Tooltip, { TooltipPosition } from "@/components/ui/Tooltip/Tooltip";
 import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
 
@@ -21,9 +23,11 @@ const statusIconMap: Record<DataStatus, ReactNode> = {
   error: <ErrorIcon className="data-item-status__icon" />,
   processing: <LoadingIcon className="data-item-status__icon" />,
   dataprep: <DataPrepIcon className="data-item-status__icon" />,
+  dpguard: <DPGuardIcon className="data-item-status__icon" />,
   embedding: <EmbeddingIcon className="data-item-status__icon" />,
   ingested: <SuccessIcon className="data-item-status__icon" />,
   deleting: <DeleteIcon className="data-item-status__icon" />,
+  blocked: <BlockedIcon className="data-item-status__icon" />,
 };
 
 interface DataItemStatusProps {

@@ -52,11 +52,13 @@ spec:
           serviceName: reranking-svc
           config:
             endpoint: /v1/reranking
-            RERANKING_SERVICE_ENDPOINT: torchserve-reranking-svc
+            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
             RERANKING_MODEL_SERVER: "tei"
       - name: TeiReranking
         internalService:
           serviceName: tei-reranking-svc
+          config:
+            endpoint: /rerank
           isDownstreamService: true
       - name: PromptTemplate
         dependency: Hard

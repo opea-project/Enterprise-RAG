@@ -1,6 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -10,11 +11,13 @@ import { useAppDispatch } from "@/store/hooks";
 
 interface BucketsDropdownProps {
   selectedBucket: string;
+  files: File[];
   onBucketChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 const BucketsDropdown = ({
   selectedBucket,
+  files,
   onBucketChange,
 }: BucketsDropdownProps) => {
   const [bucketsList, setBucketsList] = useState<string[]>(["default"]);
@@ -42,8 +45,15 @@ const BucketsDropdown = ({
     }
   }, [dispatch]);
 
+  const selectClassNames = classNames([
+    "mb-2",
+    {
+      "input--invalid": files.length > 0 && selectedBucket === "",
+    },
+  ]);
+
   return (
-    <>
+    <div className="px-4 pt-3">
       <label htmlFor="buckets-select" className="w-full">
         S3 Bucket
       </label>
@@ -52,17 +62,17 @@ const BucketsDropdown = ({
         name="buckets-select"
         value={selectedBucket}
         disabled={isDropdownDisabled}
-        className="mb-2"
+        className={selectClassNames}
         onChange={onBucketChange}
       >
-        <option value=""> Please select bucket </option>
+        <option value=""> Please select bucket to upload files </option>
         {bucketsList.map((bucket) => (
           <option key={uuidv4()} value={bucket}>
             {bucket}
           </option>
         ))}
       </select>
-    </>
+    </div>
   );
 };
 

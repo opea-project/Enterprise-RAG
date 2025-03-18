@@ -40,19 +40,20 @@ const formatProcessingTimePeriod = (processingDuration: number) => {
 
 const createToBeUploadedMessage = (
   files: File[],
+  selectedBucket: string,
   links: LinkForIngestion[],
 ) => {
   let message = "";
-  if (files.length > 0) {
+  if (files.length > 0 && selectedBucket !== "") {
     message += `${files.length} file${files.length > 1 ? "s" : ""} `;
   }
-  if (files.length > 0 && links.length > 0) {
+  if (files.length > 0 && selectedBucket !== "" && links.length > 0) {
     message += "and ";
   }
   if (links.length > 0) {
     message += `${links.length} link${links.length > 1 ? "s" : ""}`;
   }
-  if (files.length > 0 || links.length > 0) {
+  if ((files.length > 0 && selectedBucket !== "") || links.length > 0) {
     message += " to be uploaded";
   }
   return message;
@@ -60,12 +61,19 @@ const createToBeUploadedMessage = (
 
 const isUploadDisabled = (
   files: File[],
+  selectedBucket: string,
   links: LinkForIngestion[],
   isUploading: boolean,
-  selectedBucket: string,
-) =>
-  isUploading ||
-  ((files.length === 0 || selectedBucket === "") && links.length === 0);
+) => {
+  if (isUploading) {
+    return true;
+  }
+
+  const areFilesReadyToUpload = files.length > 0 && selectedBucket !== "";
+  const areLinksReadyToUpload = links.length > 0;
+
+  return !areFilesReadyToUpload && !areLinksReadyToUpload;
+};
 
 const sanitizeFileName = (filename: string) => {
   const normalizedFileName = filename.normalize("NFKC");

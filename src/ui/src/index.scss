@@ -66,12 +66,17 @@ textarea {
 }
 
 input.input--invalid,
+select.input--invalid,
 textarea.input--invalid {
   @apply caret-light-status-error dark:caret-dark-status-error;
   @apply border-light-status-error dark:border-dark-status-error;
   @apply focus-visible:outline-light-status-error dark:focus-visible:outline-dark-status-error;
   @apply text-light-text-primary dark:text-dark-text-primary;
   @apply bg-light-status-error/10 dark:bg-dark-status-error/10;
+}
+
+select.input--invalid {
+  @apply text-light-text-error dark:text-dark-text-error;
 }
 
 input[type="checkbox"] {

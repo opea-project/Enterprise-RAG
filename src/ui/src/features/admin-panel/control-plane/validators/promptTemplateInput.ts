@@ -73,4 +73,4 @@ const validationSchema = object().shape({
 });
 
 export const validatePromptTemplateInput = async (value: string) =>
-  await validationSchema.validate(value);
+  await validationSchema.validate({ promptTemplateInput: value });

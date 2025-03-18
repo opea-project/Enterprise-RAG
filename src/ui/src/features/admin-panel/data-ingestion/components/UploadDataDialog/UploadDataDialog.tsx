@@ -60,7 +60,7 @@ const UploadDataDialog = () => {
     let linksUploadError = "";
 
     try {
-      if (files.length) {
+      if (files.length && selectedBucket !== "") {
         await postFiles(files, selectedBucket);
         setFiles([]);
         setSelectedBucket("");
@@ -126,12 +126,16 @@ const UploadDataDialog = () => {
     </Button>
   );
 
-  const toBeUploadedMessage = createToBeUploadedMessage(files, links);
+  const toBeUploadedMessage = createToBeUploadedMessage(
+    files,
+    selectedBucket,
+    links,
+  );
   const uploadDisabled = isUploadDisabled(
     files,
+    selectedBucket,
     links,
     isUploading,
-    selectedBucket,
   );
 
   return (
@@ -152,6 +156,7 @@ const UploadDataDialog = () => {
     >
       <div className="upload-dialog__content">
         <BucketsDropdown
+          files={files}
           selectedBucket={selectedBucket}
           onBucketChange={onBucketChange}
         />

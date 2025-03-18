@@ -82,7 +82,7 @@ spec:
               value: {{ index $resourceLimits.limits "habana.ai/gaudi" | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}:{{ toYaml (index .Values "images" .filename "image") }}_{{ toYaml (index .Values "images" .filename "tag") }}
+          image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --multi-step true --num-scheduler-steps 64 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data" ]
           imagePullPolicy: Always

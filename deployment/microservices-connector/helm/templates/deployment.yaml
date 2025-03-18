@@ -35,7 +35,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.images.gmcManager.repository }}/{{ .Values.images.gmcManager.path }}:{{ .Values.images.gmcManager.image }}_{{ .Values.images.gmcManager.tag | default .Chart.AppVersion }}"
+          image: {{ include "manifest.image" (list "gmcManager" .Values) | quote }}
           imagePullPolicy: {{ .Values.images.gmcManager.pullPolicy }}
           env:
           - name: NAMESPACE

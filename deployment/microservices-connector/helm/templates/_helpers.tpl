@@ -157,3 +157,15 @@ Helper for adding environment variables and env files
   {{- index $values "services" $filename "replicas" }}
 {{- end -}}
 {{- end -}}
+
+
+{{- define "manifest.image" -}}
+{{- $filename := index . 0 -}}
+{{- $values := index . 1 -}}
+{{- $alternateTagging := index $values "alternateTagging" -}}
+{{- if $alternateTagging -}}
+{{- printf "%s/%s:%s_%s" (index $values "images" $filename "repository") (index $values "images" $filename "path") (index $values "images" $filename "image") (index $values "images" $filename "tag") -}}
+{{- else -}}
+{{- printf "%s/%s/%s:%s" (index $values "images" $filename "repository") (index $values "images" $filename "path") (index $values "images" $filename "image") (index $values "images" $filename "tag") -}}
+{{- end -}}
+{{- end -}}

@@ -92,7 +92,7 @@ spec:
                   resource: limits.cpu
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}:{{ toYaml (index .Values "images" .filename "image") }}_{{ toYaml (index .Values "images" .filename "tag") }}
+          image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           resources:
             {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}

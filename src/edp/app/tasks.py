@@ -99,9 +99,11 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     file_db.job_message = 'Data preparation in progress.'
     self.db.commit()
 
+    minio_response = None
+    file_base64= None
     try:
-        response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
-        file_data = response.read()
+        minio_response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
+        file_data = minio_response.read()
         file_base64 = base64.b64encode(file_data).decode('ascii')
         logger.debug(f"[{file_db.id}] Retrievied file from S3 storage.")
     except S3Error as e:
@@ -111,8 +113,9 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         self.db.commit()
         raise Exception(f"Error downloading file. {e}")
     finally:
-        response.close()
-        response.release_conn()
+        if minio_response is not None:
+            minio_response.close()
+            minio_response.release_conn()
 
     # Step 2 - Call the data preparation service
     filename = file_db.object_name.split('/')[-1]
@@ -244,6 +247,7 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
     # Step 2 - Delete the file from database
     id = file_db.id
     self.db.delete(file_db)
+    self.db.commit()
     logger.debug(f"[{id}] File deleted successfully from database.")
     return True
 
@@ -401,5 +405,6 @@ def delete_link_task(self, link_id: Any, *args, **kwargs):
     # Step 2 - Delete the file from database
     id = link_db.id
     self.db.delete(link_db)
+    self.db.commit()
     logger.debug(f"[{id}] File deleted successfully from database.")
     return True

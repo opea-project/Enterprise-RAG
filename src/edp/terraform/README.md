@@ -26,7 +26,7 @@ export edp_storage_type="s3"
 export s3_access_key=$(terraform output -raw access_key)
 export s3_secret_key=$(terraform output -raw secret_key)
 export s3_sqs_queue=$(terraform output -raw queue_url)
-export s3_region="us-east-1" # optional
+export s3_region=$(terraform output -raw region)
 
 cd deployment
 ./install_chatqna.sh --auth --deploy xeon_torch --ui --upgrade --kind

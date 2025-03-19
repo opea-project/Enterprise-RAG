@@ -8,6 +8,7 @@ resource "aws_s3_bucket" "edp_buckets" {
 
 resource "aws_sqs_queue" "edp_queue_1" {
   name = var.queue_name
+  sqs_managed_sse_enabled = true
 }
 
 resource "aws_iam_user" "edp_user" {
@@ -28,6 +29,16 @@ resource "aws_iam_policy" "list_all_buckets" {
         Action   = ["s3:ListAllMyBuckets"]
         Effect   = "Allow"
         Resource = "*"
+      },
+      {
+        Action = ["s3:*"],
+        Effect = "Deny",
+        Resource = "*",
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
       }
     ]
   })
@@ -68,6 +79,16 @@ resource "aws_iam_policy" "read_only_bucket" {
         Action   = ["s3:GetObject"]
         Effect   = "Allow"
         Resource = "${aws_s3_bucket.edp_buckets[0].arn}/*"
+      },
+      {
+        Action = ["s3:*"],
+        Effect = "Deny",
+        Resource = ["${aws_s3_bucket.edp_buckets[0].arn}/*"],
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
       }
     ]
   })
@@ -83,6 +104,16 @@ resource "aws_iam_policy" "read_write_bucket_1" {
         Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
         Effect   = "Allow"
         Resource = "${aws_s3_bucket.edp_buckets[1].arn}/*"
+      },
+      {
+        Action = ["s3:*"],
+        Effect = "Deny",
+        Resource = ["${aws_s3_bucket.edp_buckets[1].arn}/*"],
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
       }
     ]
   })
@@ -98,6 +129,16 @@ resource "aws_iam_policy" "read_write_bucket_2" {
         Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
         Effect   = "Allow"
         Resource = "${aws_s3_bucket.edp_buckets[2].arn}/*"
+      },
+      {
+        Action = ["s3:*"],
+        Effect = "Deny",
+        Resource = ["${aws_s3_bucket.edp_buckets[1].arn}/*"],
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
       }
     ]
   })
@@ -177,4 +218,8 @@ output "access_key" {
 output "secret_key" {
   value = aws_iam_access_key.edp_access_key.secret
   sensitive = true
+}
+
+output "region" {
+  value = var.region
 }

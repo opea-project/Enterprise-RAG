@@ -306,6 +306,9 @@ local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running 
 >[!IMPORTANT]
 > Make sure that supported Gaudi driver is installed. To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
 
+>[!IMPORTANT]
+> Sometimes a Gaudi firmware might not upgrade together with the driver. To check if Firmware's version matches driver's version and to upgrade the firmware, check [following page](https://docs.habana.ai/en/latest/Installation_Guide/Firmware_Upgrade.html)
+
 ## Gaudi Software Stack
 
 To fully utilize the Enterprise RAG solution, it is recommended to run LLMs on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps should be performed after successful installation and testing of the K8s cluster.

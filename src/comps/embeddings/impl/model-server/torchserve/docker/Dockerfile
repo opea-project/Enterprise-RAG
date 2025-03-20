@@ -42,6 +42,7 @@ RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/s
  && pip install --no-cache-dir -U   \
     torchserve==0.12.0              \
     torch-model-archiver==0.12.0
+RUN pip install --no-cache-dir -U packaging==24.2
 
 # Add TS entrypoint
 COPY --chown=user:user docker/config.properties /home/user

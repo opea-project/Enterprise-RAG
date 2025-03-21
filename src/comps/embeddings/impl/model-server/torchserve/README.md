@@ -63,8 +63,8 @@ To make a prediction using the loaded model, you can send a request to the predi
 
 ```bash
 curl http://localhost:8090/predictions/bge-large-en-v1.5 \
-    -H "Content-Type: text/plain" \
-    --data "What is machine learning?"
+    -H "Content-Type: application/json" \
+    -d '{"inputs": ["What is machine learning?"]}'
 ```
 Expected output:
 
@@ -108,18 +108,18 @@ docker compose --env-file=.env up --build -d
 
     # inference; replace bge-large-en-v1.5 with the desired model identifier from the loaded models
     curl http://localhost:8090/predictions/bge-large-en-v1.5 \
-        -H "Content-Type: text/plain" \
-        --data "What is machine learning?"
+      -H "Content-Type: application/json" \
+      -d '{"inputs": ["What is machine learning?"]}'
     ```
 
-- Check the `embedding-tei-microservice` status:
+- Check the `embedding-torchserve-microservice` status:
     ```bash
     curl http://localhost:6000/v1/health_check \
         -X GET \
         -H 'Content-Type: application/json'
     ```
 
-- Test the `embedding-tei-microservice` using the following command:
+- Test the `embedding-torchserve-microservice` using the following command:
     ```bash
     curl localhost:6000/v1/embeddings \
         -X POST \

@@ -2,9 +2,7 @@
 
 ## Login
 
-Upon visiting https://erag.com, the following page will be displayed. By clicking **Login** button you will be redirected to Keycloak login page where you will be asked to enter your credentials.
-
-![Login page screenshot](../images/ui/login.png)
+Upon visiting https://erag.com, you will be redirected to Keycloak login page where you will be asked to enter your credentials.
 
 > [!NOTE]
 > To access **Intel® AI for Enterprise RAG UI**, you have to use one time credentials for admin (`KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`) or user (`KEYCLOAK_ERAG_USER_USERNAME` and `KEYCLOAK_ERAG_USER_PASSWORD`) generated in `default_credentials.txt` file inside `deployment` folder.
@@ -27,7 +25,7 @@ In the top right corner of the page, if you logged in as an admin, you will see 
 
 ## Admin Panel
 
-In the Admin Panel you can access three views using the following tabs: [Control Plane](#control-plane), [Data Ingestion](#data-ingestion) and [Telemetry & Authentication](#telemetry--authentication).
+In the **Admin Panel** you can access three views using the following tabs: [Control Plane](#control-plane), [Data Ingestion](#data-ingestion) and [Telemetry & Authentication](#telemetry--authentication).
 
 ### Control Plane
 
@@ -41,6 +39,14 @@ For example, when you click on the LLM service, as shown in the screenshot below
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. LLM max_new_tokens parameter value changed to 2048, waiting to be confirmed.](../images/ui/control_plane_confirm.png)
 
+From **Control Plane** view you are also able to change currently used prompt template by selecting Prompt Template service node from the graph. Edit current template and click "Confirm Changes" to update it.
+
+![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template service selected.](../images/ui/control_plane_prompt_template.png)
+
+> [!NOTE]
+> Prompt Template cannot be empty and it requires to contain two placeholders: **{reranked_docs}** and **{initial_query}** that can be placed anywhere inside the template text. In case any of these requirements is not met, an error message will be displayed on the screen under Prompt Template text input as shown below.
+
+![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template textarea input in invalid state with error messages displayed below.](../images/ui/control_plane_prompt_template_invalid.png)
 
 ### Data Ingestion
 
@@ -52,7 +58,7 @@ To upload new data, click on **Upload** button. The following dialog will be dis
 
 ![Screenshot of Data Ingestion view presenting upload dialog](../images/ui/data_ingestion_upload.png)
 
-Any file belonging to the supported file format shown in the screenshot or a link to a website can be added to the knowledge base via this interface.
+Any file belonging to the supported file format shown in the screenshot or a link to a website can be added to the knowledge base via this interface. Uploading files requires selecting S3 bucket from the select dropdown placed above file input. For links S3 bucket does not have to be selected.
 
 ### Telemetry & Authentication
 

@@ -4,6 +4,7 @@
 .user-message {
   @apply mx-auto flex flex-row-reverse;
   @apply w-full md:w-[50rem];
+  overflow-wrap: anywhere;
 
   & .user-message__text {
     @apply ml-16 min-h-[2.5rem] self-end rounded-[2rem] px-5 py-3;

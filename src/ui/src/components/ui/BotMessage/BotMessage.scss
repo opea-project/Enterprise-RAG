@@ -5,6 +5,7 @@
   @apply mx-auto p-5;
   @apply grid grid-cols-[auto_1fr] items-start gap-6 self-start;
   @apply w-full md:w-[800px];
+  overflow-wrap: anywhere;
 
   & .bot-message__text {
     @apply mt-1 w-full;

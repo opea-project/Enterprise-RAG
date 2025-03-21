@@ -67,73 +67,52 @@ cp -r inventory/sample/ inventory/mycluster
 ```
 
 #### Single Node Example Configuration
-Next step is to create a `hosts.yaml` file in directory  `inventory/mycluster`. `hosts.yaml` defines the structure and roles of nodes within a Kubernetes cluster
+Next step is to create a `hosts.ini` file in directory `inventory/mycluster`. `hosts.ini` defines the structure and roles of nodes within a Kubernetes cluster
 
 ```bash
-# use any text editor to create and edit the  hosts.yaml file
-vi inventory/mycluster/hosts.yaml
+# use any text editor to create and edit the hosts.ini file
+vi inventory/mycluster/hosts.ini
 ```
-An example of `hosts.yaml` for a single-node cluster is shown below:
-```yaml
-all:
-  hosts:
-    node1:
-      ansible_host: <K8s host ip>
-      ip: <K8s host ip>
-      access_ip: <K8s host ip>
-      ansible_user: sdp
-  children:
-    kube_control_plane:
-      hosts:
-        node1:
-    kube_node:
-      hosts:
-        node1:
-    etcd:
-      hosts:
-        node1:
-    k8s_cluster:
-      children:
-        kube_control_plane:
-        kube_node:
-    calico_rr:
-      hosts: {}
-```
-  -   `ansible_host`: Specifies the IP address of the node. This is the address Ansible uses to communicate with the node.
-  -   `ip`: Typically the same as `ansible_host`, used by Kubernetes components to communicate with the node.
-  -   `access_ip`: Also the IP used for accessing the node, can be different in complex network configurations where internal and external IPs differ.
-  -   `ansible_user`: The username is the Linux user account name that Ansible will use when it connects to the node, here set to `sdp`.
+An example of `hosts.ini` for a single-node cluster is shown below:
+```ini
+# This inventory describe a HA typology with stacked etcd (== same nodes as control plane)
+# and 3 worker nodes
+# See https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
+# for tips on building your inventory
+node1 ansible_host=<K8s host ip> # ip=10.3.0.1 etcd_member_name=etcd1
 
-Suppose the IP address of your node is `100.51.110.245`, which you can verify by inspecting the output of `ifconfig` within the Ethernet interface section. Assuming there is a Linux user named `user` with a home directory set up, your `hosts.yaml` file for a Kubespray configuration would be structured as follows:
+# Configure 'ip' variable to bind kubernetes services on a different ip than the default iface
+# We should set etcd_member_name for etcd cluster. The node that are not etcd members do not need to set the value,
+# or can set the empty string value.
+[kube_control_plane]
+node1
 
-```yaml
-all:
-  hosts:
-    node1:
-      ansible_host: 100.51.110.245
-      ip: 100.51.110.245
-      access_ip: 100.51.110.245
-      ansible_user: user
-  children:
-    kube_control_plane:
-      hosts:
-        node1:
-    kube_node:
-      hosts:
-        node1:
-    etcd:
-      hosts:
-        node1:
-    k8s_cluster:
-      children:
-        kube_control_plane:
-        kube_node:
-    calico_rr:
-      hosts: {}
+[etcd]
+node1
+
+[kube_node]
+node1
 ```
+
+Suppose the IP address of your node is `100.51.110.245`, which you can verify by inspecting the output of `ifconfig` within the Ethernet interface section. Then, your `hosts.ini` file for a Kubespray configuration would be structured as follows:
+
+```ini
+node1 ansible_host=100.51.110.245
+
+[kube_control_plane]
+node1
+
+[etcd]
+node1
+
+[kube_node]
+node1
+```
+
+For more detailed info on cluster setup you can check [kubespray/getting-started](https://github.com/kubernetes-sigs/kubespray/blob/master/docs/getting_started/getting-started.md) and [inventory](https://github.com/kubernetes-sigs/kubespray/blob/release-2.27/docs/ansible/inventory.md) guides.
 
 >[!WARNING]
->Ensure passwordless SSH for Ansible host nodes (from `hosts.yaml`):
+>Ensure passwordless SSH for Ansible host nodes (from `hosts.ini`):
 > - Generate keys (ssh-keygen) and copy the public key (ssh-copy-id user@node-ip).
 > - Verify permissions: Ensure the ~/.ssh directory is set to `700` and the authorized_keys file to `600` on the remote host to maintain secure access.
 > - Create a ~/.ssh/config file (if doesn't exist) and add a field for the remote machine. Example field might look as follows:
@@ -191,14 +170,14 @@ Note that `local_path_provisioner_namespace`, `local_path_provisioner_storage_cl
 ### Reset Cluster
 
 >[!NOTE]
-> Make sure that you can do a passwordless SSH into the ansible host node added in the `hosts.yaml` file above.
+> Make sure that you can do a passwordless SSH into the ansible host node added in the `hosts.ini` file above.
 
 `reset.yml` is the name of the playbook file used to clean up a Kubernetes cluster installation. It will remove Kubernetes components, dependencies, and configurations from the nodes listed in the `mycluster` inventory.
 
 Reset K8s cluster to make sure we are making install on a clean environment:
 
 ```bash
-ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root -e override_system_hostname=false -kK reset.yml
+ansible-playbook -i inventory/mycluster/hosts.ini --become --become-user=root -e override_system_hostname=false -kK reset.yml
 ```
 >[!NOTE]
 > If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
@@ -237,7 +216,7 @@ kubernetes/preinstall : Remove swapfile from /etc/fstab ------------------------
 `cluster.yml` is the playbook file that will be executed. It contains the tasks that will configure the nodes as per the roles and settings defined within `mycluster`, for setting up or managing the cluster.
 
 ```bash
-ansible-playbook -i inventory/mycluster/hosts.yaml --become --become-user=root -e override_system_hostname=false -kK cluster.yml
+ansible-playbook -i inventory/mycluster/hosts.ini --become --become-user=root -e override_system_hostname=false -kK cluster.yml
 ```
 >[!NOTE]
 > If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.

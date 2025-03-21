@@ -1,5 +1,5 @@
 # LLM Guard Dataprep Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. LLM Guard Dataprep Guardrail Microservice enables all scanners provided by LLM Guard:
+This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. Theese guardrails can be enabled by passing --dpguard parameter, while using [install_chatqna.sh](../../../../deployment/README.md) script. LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
  - [BanCode](https://llm-guard.com/input_scanners/ban_code/)
  - [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
  - [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
@@ -239,7 +239,6 @@ The output of an dataprep guardrail microservice is a JSON object that includes 
     },
     {
       "text": "content chunk 2",
-
     },
     {
       "text": "content chunk 3",

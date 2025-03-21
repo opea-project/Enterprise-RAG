@@ -746,6 +746,14 @@ function start_edp() {
     get_or_create_and_store_credentials EDP_REDIS $redis_username ""
     local redis_password=${NEW_PASSWORD}
 
+    local postgresql_edp_username="edp"
+    get_or_create_and_store_credentials EDP_POSTGRESQL $postgresql_edp_username ""
+    local postgresql_edp_password=${NEW_PASSWORD}
+
+    local postgresql_admin_username="admin"
+    get_or_create_and_store_credentials EDP_POSTGRESQL_ADMIN $postgresql_admin_username ""
+    local postgresql_admin_password=${NEW_PASSWORD}
+
     local erag_http_proxy=$(awk '/httpProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
     local erag_https_proxy=$(awk '/httpsProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
     local erag_no_proxy=$(awk '/noProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
@@ -759,7 +767,7 @@ function start_edp() {
         embedding_endpoint_helm=" --set embedding.enabled=false --set embedding.remoteEmbeddingUri=http://embedding-svc.chatqa.svc:6000/v1/embeddings " # use default embedding from chatqa
     fi
 
-    HELM_INSTALL_EDP_CONFIGURATION_ARGS="$embedding_endpoint_helm --set proxy.httpProxy=$erag_http_proxy --set proxy.httpsProxy=$erag_https_proxy --set proxy.noProxy=$(echo "$erag_no_proxy" | sed 's/,/\\,/g') "
+    HELM_INSTALL_EDP_CONFIGURATION_ARGS="$embedding_endpoint_helm --set postgresAdminPassword=$postgresql_admin_password --set postgresDatabasePassword=$postgresql_edp_password --set proxy.httpProxy=$erag_http_proxy --set proxy.httpsProxy=$erag_https_proxy --set proxy.noProxy=$(echo "$erag_no_proxy" | sed 's/,/\\,/g') "
 
     if $dpguard; then
         print_log "Enabling Dataprep Guardrail"

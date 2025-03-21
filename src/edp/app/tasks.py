@@ -100,7 +100,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     self.db.commit()
 
     minio_response = None
-    file_base64= None
+    file_base64 = None
     try:
         minio_response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
         file_data = minio_response.read()

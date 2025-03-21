@@ -26,8 +26,8 @@ redisUrl: "edp-redis-master:6379"
 redisUsername: "default"
 redisPassword: ""
 
-postgresDatabasePassword: "" # generated if not set via helm install
-
+postgresDatabasePassword: "" # set by install_chatqna.sh
+postgresAdminPassword: "" # set by install_chatqna.sh
 
 minio:
   persistence:
@@ -478,6 +478,11 @@ dataprep:
   tag: latest
   pullPolicy: Always
   replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
   config:
     chunk_size: "512"
     chunk_overlap: "64"

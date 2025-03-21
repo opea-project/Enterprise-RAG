@@ -21,6 +21,7 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
  11. [Additional features](#additional-features)
      1. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
      2. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
+     3. [Single Sign On Integration using Microsoft Entra ID (formerly Azure Active Directory)](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
 ---
 
 ## Verify System Status
@@ -475,3 +476,51 @@ For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® T
 
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.
+
+### Single Sign On Integration using Microsoft Entra ID (formerly Azure Active Directory)
+
+#### Prerequisites
+
+1. Configured and working Microsoft Entra ID 
+     - preconfigured and working SSO for other applications
+     - two new groups - one for `erag-admins`, one for `erag-users` - save `Object ID` for those entitites
+     - defined some user accounts that can be later added to either `erag-admins` or `erag-users` groups 
+2. Registered a new Azure `App registration`
+     - configured with Redirect URI `https://auth.erag.com/realms/EnterpriseRAG/broker/oidc/endpoint`
+     - in App registration -> Overview - save the `Application (client) ID` value
+     - in App registration -> Overview -> Endpoints - save `OpenID Connect metadata document` value
+     - in App registration -> Manage -> Cerficiates & secrets -> New client secret - create and save `Client secret` value
+3. Add users to newly created groups, either `erag-admins` or `erag-users` in Microsoft Entra ID
+
+#### Keycloak configuration
+
+To configure Enterprise RAG SSO using Azure Single Sign On use the following steps:
+
+1. Log in as `admin` user into Keycloak and select `EnterpriseRAG` realm.
+2. Choose `Identity providers` from the left menu.
+3. Add a new `OpenID Connect Identity Provider` and configure:
+     - Field `Alias` - enter your SSO alias, for example `enterprise-sso`
+     - Field `Display name` - enter your link display name to redirect to external SSO, for example `Enterprise SSO`
+     - Field `Discovery endpoint` - enter your `OpenID Connect metadata document`. Configuration fields should autopopulate
+4. Choose `Groups` in left menu. Then create the following groups:
+     1. `erag-admin-group` should consist of following groups from keycloak:
+          - `(EnterpriseRAG-oidc) ERAG-admin`
+          - `(EnterpriseRAG-oidc-backend) ERAG-admin`
+          - `(EnterpriseRAG-oidc-minio) consoleAdmin` # if using internal MinIO
+     2. `erag-user-group` should consist of following groups from keycloak:
+          - `(EnterpriseRAG-oidc) ERAG-user`
+          - `(EnterpriseRAG-oidc-backend) ERAG-user`
+          - `(EnterpriseRAG-oidc-minio) readonly` # if using internal MinIO
+5. Configure two `Identity mappers` in `Mappers` under created `Identity provider`
+     1. Add Identity Provider Mapper - for group `erag-admin-group`
+          - Field `Name` - this is the `Object ID` from `erag-admins` from Microsoft Entra ID
+          - Field `Mapper type` - enter `Hardcoded Group`
+          - Field `Group` - select `erag-admin-group`
+     2. Add Identity Provider Mapper - for group `erag-user-group`
+          - Field `Name` - this is the `Object ID` from `erag-users` from Microsoft Entra ID
+          - Field `Mapper type` - enter `Hardcoded Group`
+          - Field `Group` - select `erag-user-group`
+
+After this configuration, Keycloak log-in page should have an additional link on the bottom of the log-in form - named `Enterprise SSO`. This should redirect you to Azure log-in page.
+
+Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`) users will have apropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.

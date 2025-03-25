@@ -79,99 +79,93 @@ export const parseServiceDetailsResponseData = (
     status: { annotations },
   } = response;
 
-  const deploymentAnnotationsMap: { [key: string]: string } = {
-    "Deployment:apps/v1:embedding-svc-deployment:chatqa": "embedding",
-    "Deployment:apps/v1:input-scan-svc-deployment:chatqa": "input_guard",
-    "Deployment:apps/v1:llm-svc-deployment:chatqa": "llm",
-    "Deployment:apps/v1:vllm-service-m-deployment:chatqa": "vllm",
-    "Deployment:apps/v1:output-scan-svc-deployment:chatqa": "output_guard",
-    "Deployment:apps/v1:redis-vector-db-deployment:chatqa": "vectordb",
-    "Deployment:apps/v1:reranking-svc-deployment:chatqa": "reranker",
-    "Deployment:apps/v1:prompt-template-svc-deployment:chatqa":
-      "prompt_template",
-    "Deployment:apps/v1:retriever-svc-deployment:chatqa": "retriever",
-    "Deployment:apps/v1:tei-reranking-svc-deployment:chatqa":
-      "tei_reranker_model_server",
-    "Deployment:apps/v1:torchserve-embedding-svc-deployment:chatqa":
-      "embedding_model_server",
-    "Deployment:apps/v1:torchserve-reranking-svc-deployment:chatqa":
-      "torchserve_reranker_model_server"
-  };
-
-  const nodesStepsMap: { [key: string]: string } = {
-    embedding: "embedding",
-    torchserveembedding: "embedding_model_server",
-    retriever: "retriever",
-    vectordb: "vectordb",
-    reranking: "reranker",
-    tei_reranker_model_server: "tei_reranker_model_server",
-    torchserve_reranker_model_server: "torchserve_reranker_model_server",
-    prompttemplate: "prompt_template",
-    llm: "llm",
-    vllm: "vllm",
-    tgi: "tgi",
+  // Map of service names from deployment/microservices-connector/config/samples to chatqa graph node IDs
+  const serviceNameNodeIdMap: { [service: string]: string } = {
+    "v1:tei-embedding-svc": "embedding_model_server",
+    "v1:torchserve-embedding-svc": "embedding_model_server",
+    "v1:embedding-svc": "embedding",
+    "v1:retriever-svc": "retriever",
+    "v1:redis-vector-db": "vectordb",
+    "v1:reranking-svc": "reranker",
+    "v1:tei-reranking-svc": "reranker_model_server",
+    "v1:prompt-template-svc": "prompt_template",
+    "v1:input-scan-svc": "input_guard",
+    "v1:llm-svc": "llm",
+    "v1:vllm-gaudi-svc": "vllm",
+    "v1:vllm-service-m": "vllm",
+    "v1:output-scan-svc": "output_guard",
   };
 
   let usedVectorDb = "";
   const statusEntries = Object.entries(annotations)
     .filter(
       ([key]) =>
-        key.startsWith("Deployment:apps/v1:") && !key.includes("router"),
+        key.startsWith("Deployment:apps/v1:") &&
+        !["fgp", "router"].includes(key), // Filter out fingerprint and router services
     )
     .map(([key, value]) => {
-      let name = "";
-      if (deploymentAnnotationsMap[key]) {
-        name = deploymentAnnotationsMap[key];
-        const dbRegex = new RegExp(/(?<=:)[^:-]+(?=-)/);
-        const dbNameMatch = key.match(dbRegex);
-        if (key.includes("vector-db") && dbNameMatch) {
-          usedVectorDb = dbNameMatch[0];
-        }
+      // Extract the database name from the vector-db key
+      const dbRegex = new RegExp(/(?<=:)[^:-]+(?=-)/);
+      const dbNameMatch = key.match(dbRegex);
+      if (key.includes("vector-db") && dbNameMatch) {
+        usedVectorDb = dbNameMatch[0];
       }
+
+      const serviceName =
+        Object.keys(serviceNameNodeIdMap).find((serviceName) =>
+          key.includes(serviceName),
+        ) ?? "";
+      const serviceNodeId = serviceNameNodeIdMap[serviceName];
 
       const status = value.split(";")[0];
 
-      return [name, status];
-    });
+      return [serviceNodeId, status];
+    })
+    .filter(([serviceNodeId]) => serviceNodeId !== undefined);
   const statuses = Object.fromEntries(statusEntries);
 
-  const metadataEntries = steps.map((step) => {
-    const stepName = step.name.toLowerCase();
-    const name = nodesStepsMap[stepName];
+  const metadataEntries = steps
+    .map((step): [string, { [key: string]: string }] => {
+      const serviceName = step.internalService.serviceName;
+      const serviceNodeId = serviceNameNodeIdMap[serviceName];
 
-    const config = step.internalService.config ?? {};
-    const configEntries = Object.entries(config).filter(
-      ([key]) =>
-        key !== "endpoint" &&
-        !key.toLowerCase().includes("endpoint") &&
-        !key.toLowerCase().includes("url"),
-    );
-    const metadata = Object.fromEntries(configEntries);
-    if (name === "vectordb") {
-      metadata.USED_VECTOR_DB = usedVectorDb;
-    }
-    return [name, metadata];
-  });
-  const metadata = Object.fromEntries(metadataEntries);
+      const config = step.internalService.config ?? {};
+      const configEntries = Object.entries(config).filter(
+        ([key]) =>
+          key !== "endpoint" &&
+          !key.toLowerCase().includes("endpoint") &&
+          !key.toLowerCase().includes("url"),
+      );
+
+      const metadata = Object.fromEntries(configEntries);
+      if (serviceNodeId === "vectordb") {
+        metadata.USED_VECTOR_DB = usedVectorDb;
+      }
+
+      return [serviceNodeId, metadata];
+    })
+    .filter(([serviceNodeId]) => serviceNodeId !== undefined);
+  const metadata: { [key: string]: { [key: string]: string } } =
+    Object.fromEntries(metadataEntries);
 
   const serviceDetails: FetchedServiceDetails = {
-    embedding: {},
     embedding_model_server: {},
+    embedding: {},
+    retriever: {},
+    vectordb: {},
+    reranker: {},
+    reranker_model_server: {},
+    prompt_template: {},
     input_guard: {},
     llm: {},
     vllm: {},
     output_guard: {},
-    reranker: {},
-    reranker_model_server: {},
-    prompt_template: {},
-    retriever: {},
-    vectordb: {},
   };
 
-  for (const service in serviceDetails) {
-    const details = metadata[service];
-    const status = statuses[service];
-    serviceDetails[service] = { status, details };
+  for (const serviceNodeId in serviceDetails) {
+    const details = metadata[serviceNodeId];
+    const status = statuses[serviceNodeId];
+    serviceDetails[serviceNodeId] = { status, details };
   }
   return serviceDetails;
 };

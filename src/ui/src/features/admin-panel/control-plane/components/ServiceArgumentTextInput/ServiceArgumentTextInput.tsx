@@ -76,7 +76,12 @@ const ServiceArgumentTextInput = ({
     onArgumentValidityChange(name, !isValid);
     if (isValid) {
       const isValueEmpty = newValue.trim() === "";
-      const argumentValue = isValueEmpty && nullable ? null : sanitizedValue;
+      let argumentValue = null;
+      if (!isValueEmpty) {
+        argumentValue = commaSeparated
+          ? sanitizedValue.split(",").map((value) => value.trim())
+          : sanitizedValue;
+      }
       onArgumentValueChange(name, argumentValue);
     }
   };

@@ -63,7 +63,7 @@ interface ServiceArgumentsToChange {
 export type ChangeArgumentsRequestBody = ServiceArgumentsToChange[];
 
 export interface FetchedServiceDetails {
-  [serviceName: string]: {
+  [serviceNodeId: string]: {
     status?: ServiceStatus;
     details?: { [key: string]: string };
   };

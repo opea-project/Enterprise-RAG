@@ -6,7 +6,7 @@ HELM_VALUES_PATH=microservices-connector/helm/values.yaml
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN ] -r [REPOSITORY] -t [TAG]"
+    echo "Usage: $0 -f [HELM_VALUES_PATH] -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN ] -r [REPOSITORY] -t [TAG]"
 }
 
 if [ $# -eq 0 ]; then
@@ -26,7 +26,7 @@ fi
 
 # Parse command-line arguments; using RAG_* to prevent from pre exported variables
 # !TODO this should be changed to use non-positional parameters
-while getopts "p:u:n:g:r:t:" opt; do
+while getopts "p:u:n:g:r:f:t:" opt; do
     case $opt in
         p) RAG_HTTP_PROXY="$OPTARG" ;;
         u) RAG_HTTPS_PROXY="$OPTARG" ;;
@@ -34,6 +34,7 @@ while getopts "p:u:n:g:r:t:" opt; do
         g) RAG_HUG_TOKEN="$OPTARG" ;;
         r) RAG_REPOSITORY="$OPTARG" ;;
         t) RAG_TAG="$OPTARG" ;;
+        f) HELM_VALUES_PATH="$OPTARG" ;;
         *) usage; exit 1 ;;
     esac
 done

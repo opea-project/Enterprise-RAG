@@ -382,3 +382,7 @@ class PromptGet(BaseDoc):
 
 class PromptOutput(BaseDoc):
     prompts: List[PromptGet]
+
+class TranslationInput(BaseDoc):
+    text: str
+    target_language: str

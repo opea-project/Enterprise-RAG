@@ -1,24 +1,20 @@
 # Language Detection microservice
 
-The Language Detection microservice makes sure that the response of the pipeline is in the same language as that of the query to gurantee seamless, accurate communication across different languages in real time.
+The Language Detection microservice can be run in 2 modes:
 
-# Design Proposal
+1. Pipeline: This mode adds multilingual support to ChatQnA pipelines. The microservice detects the language of the user's query as well as the LLM generated response to set up a prompt for translation.
 
-![Multilingual support microservice](../language_detection/impl/microservice/multilingual-support-diagram.png)
+2. Standalone: This mode supports standalone translation. The microservice detects the language of the provided text. It then sets up a prompt for translating the provided text from the source language (detected language) to the provided target language.
 
-The Language Detection microservice performs the following actions -
-1. It receives the original query as well as the response returned by LLM-1.
-2. It detects the language of the user's query (L1) and of the answer from the first llm microservice (L2).
-3. It then configures a translation prompt to convert the answer from the response language (L2) to the query language (L1).
-4.  This prompt is sent to the second llm microservice (LLM-2) to generate the final answer in language of the user's query (L1).
 
 ## Configuration Options
 
 The configuration for the Language Detection Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
-| Environment Variable        | Description                                                                |
-|-----------------------------|----------------------------------------------------------------------------|
+| Environment Variable                 | Description                                                                |
+|--------------------------------------|----------------------------------------------------------------------------|
 | `LANGUAGE_DETECTION_USVC_PORT`       | The port of the microservice, by default 8001                              |
+| `LANG_DETECT_STANDALONE`             | Set this to `True` for Standalone mode                                     |
 
 
 
@@ -31,13 +27,8 @@ To start the Language Detection microservice, you need to install python package
 
 #### 1.1. Install Requirements
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
-Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
-
 ```bash
-pip install uv
-uv sync --locked --no-cache --project impl/microservice/pyproject.toml
-source impl/microservice/.venv/bin/activate
+pip install -r impl/microservice/requirements.txt
 ```
 
 #### 1.2. Start Microservice
@@ -76,7 +67,9 @@ curl http://localhost:8001/v1/health_check \
 
 ####  3.2. Sending a Request
 
-The input request consists of the text that has to be translated as well as the first prompt.
+##### 3.2.1 Pipeline Mode
+
+The input request consists of the answer that has to be translated and a prompt containing the user's query.
 
 **Example Input**
 
@@ -97,24 +90,42 @@ JSON_DATA
 
 **Example Output**
 
-The output contains the prompt that is sent to the second llm microservice which incorporates the detected languages of the response and query.
+The output contains the answer, prompt template, source language and target language.
 
 ```json
 {
   "id":"1b16e065a1fcbdb4d999fd3d09a619cb",
-  "model":null,
-  "query":"\n Translate this from English to Chinese:\n   English:\n   Hi. I am doing fine.\n\n  Chinese: \n ",
-  "max_new_tokens":1024,
-  "top_k":10,"top_p":0.95,
-  "typical_p":0.95,
-  "temperature":0.01,
-  "repetition_penalty":1.03,
-  "streaming":false,
-  "input_guardrail_params":null,
-  "output_guardrail_params":null
+  "data": {"text":"Hi. I am doing fine.","source_lang":"English","target_lang":"Chinese"},
+  "prompt_template":"\n Translate this from {source_lang} to {target_lang}:\n   {source_lang}:\n   {text}\n\n  {target_lang}: \n "
 }
 ```
 
+##### 3.2.2 Standalone Mode
+
+The input request consists of the text that has to be translated and the target language.
+
+**Example Input**
+
+```bash
+curl -X POST -H "Content-Type: application/json" -d @- http://localhost:8001/v1/language_detection <<JSON_DATA
+{
+  "text": "Hi. I am doing fine.",
+  "target_language": "Chinese"
+}
+JSON_DATA
+```
+
+**Example Output**
+
+The output contains the original text, prompt template, source language and target language.
+
+```json
+{
+  "id":"1b16e065a1fcbdb4d999fd3d09a619cb",
+  "data": {"text":"Hi. I am doing fine.","source_lang":"English","target_lang":"Chinese"},
+  "prompt_template":"\n Translate this from {source_lang} to {target_lang}:\n   {source_lang}:\n   {text}\n\n  {target_lang}: \n "
+}
+```
 
 ## Additional Information
 ### Project Structure
@@ -122,7 +133,7 @@ The output contains the prompt that is sent to the second llm microservice which
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains the implementation of the service.
+- `impl/`: This directory contains the implementation of the service. 
 
 - `utils/`: This directory contains utility scripts and modules that are used by the Language Detection Microservice.
 
@@ -131,11 +142,10 @@ The tree view of the main directories and files:
 ```bash
   .
   ├── impl/
-  │   ├── microservice
+  │   ├── microservice/
+  │   │   ├── .env
   │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   ├── uv.lock
-  │   │   └── .env
+  │   │   └── requirements.txt
   │   │
   │   │
   │   └── ...
@@ -148,4 +158,3 @@ The tree view of the main directories and files:
   ├── README.md
   └── opea_language_detection_microservice.py
 ```
-

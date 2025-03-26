@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,7 +10,8 @@ from fastapi import HTTPException
 
 from comps import (
    GeneratedDoc,
-   LLMParamsDoc,
+   PromptTemplateInput,
+   TranslationInput,
 )
 
 """
@@ -25,6 +27,15 @@ def mock_cores_mega_microservice():
    with patch('comps.cores.mega.micro_service', autospec=True) as MockClass:
       MockClass.return_value = MagicMock()
       yield MockClass
+
+@pytest.fixture
+def clean_env_vars():
+   yield "clean_env_vars"
+   # Clean up env variables after tests
+   try:
+      del os.environ['LANG_DETECT_STANDALONE']
+   except Exception:
+      pass
 
 @pytest.fixture
 def mock_OPEALanguageDetector():
@@ -56,10 +67,38 @@ def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, moc
    assert hasattr(test_module, 'statistics_dict'), "statistics_dict is not declared"
    assert hasattr(test_module, 'process'), "process is not declared"
 
+
+def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice):
+   try:
+      import comps.language_detection.opea_language_detection_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA Language Detection Microservice init raised {type(e).__name__} unexpectedly!")
+   
+   # Assert that _is_standalone is False
+   assert not test_module.opea_language_detector._is_standalone, "This attribute should be False by default"
+
+
+def test_initialization_succeeds_with_env_vars_present(mock_cores_mega_microservice, clean_env_vars):
+   with patch.dict("os.environ",
+      {
+         "LANG_DETECT_STANDALONE": "True",
+      },
+   ):
+      try:
+         import comps.language_detection.opea_language_detection_microservice as test_module
+         importlib.reload(test_module)
+      except Exception as e:
+         pytest.fail(f"OPEA Language Detection Microservice init raised {type(e).__name__} unexpectedly!")
+   
+      # Assert that _is_standalone is False
+      assert test_module.opea_language_detector._is_standalone, "Attribute value does not match env variable"
+
+
 @patch('comps.language_detection.utils.opea_language_detection.OPEALanguageDetector.run')
 def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice):
    mock_input = MagicMock(spec=GeneratedDoc)
-   mock_response = MagicMock(spec=LLMParamsDoc)
+   mock_response = MagicMock(spec=PromptTemplateInput)
    mock_run.return_value = mock_response
 
    try:
@@ -75,6 +114,33 @@ def test_microservice_process_succeeds(mock_run, mock_cores_mega_microservice):
 
    # Check if statistics_dict has an entry for the mock_input
    assert test_module.USVC_NAME in test_module.statistics_dict.keys(), f"statistics_dict does not have an entry for the microservice {test_module.USVC_NAME}"
+
+
+@patch('comps.language_detection.utils.opea_language_detection.OPEALanguageDetector.run')
+def test_microservice_process_succeeds_standalone(mock_run, mock_cores_mega_microservice, clean_env_vars):
+   with patch.dict("os.environ",
+      {
+         "LANG_DETECT_STANDALONE": "True",
+      },
+   ):
+      mock_input = MagicMock(spec=TranslationInput)
+      mock_response = MagicMock(spec=PromptTemplateInput)
+      mock_run.return_value = mock_response
+
+      try:
+         import comps.language_detection.opea_language_detection_microservice as test_module
+         importlib.reload(test_module)
+      except Exception as e:
+         pytest.fail(f"OPEA Language Detection Microservice init raised {type(e).__name__} unexpectedly!")
+
+      # Call the process function
+      response = test_module.process(mock_input)
+      mock_run.assert_called_once_with(mock_input)
+      assert response == mock_response
+
+      # Check if statistics_dict has an entry for the mock_input
+      assert test_module.USVC_NAME in test_module.statistics_dict.keys(), f"statistics_dict does not have an entry for the microservice {test_module.USVC_NAME}"
+
 
 @patch('comps.language_detection.utils.opea_language_detection.OPEALanguageDetector.run')
 def test_microservice_process_failure(mock_run, mock_cores_mega_microservice):
@@ -95,3 +161,29 @@ def test_microservice_process_failure(mock_run, mock_cores_mega_microservice):
    assert context.value.status_code == 500
    assert "An error occurred while processing: Test Exception" in context.value.detail
    mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.language_detection.utils.opea_language_detection.OPEALanguageDetector.run')
+def test_microservice_process_failure_standalone(mock_run, mock_cores_mega_microservice):
+   with patch.dict("os.environ",
+      {
+         "LANG_DETECT_STANDALONE": "True",
+      },
+   ):
+      mock_input = MagicMock(spec=TranslationInput)
+      mock_run.side_effect = Exception("Test Exception")
+
+      try:
+         import comps.language_detection.opea_language_detection_microservice as test_module
+         importlib.reload(test_module)
+      except Exception as e:
+         pytest.fail(f"OPEA Language Detection Microservice init raised {type(e).__name__} unexpectedly!")
+
+      # Call the process function and assert exception
+      with pytest.raises(HTTPException) as context:
+         test_module.process(mock_input)
+
+      # Assertions
+      assert context.value.status_code == 500
+      assert "An error occurred while processing: Test Exception" in context.value.detail
+      mock_run.assert_called_once_with(mock_input)

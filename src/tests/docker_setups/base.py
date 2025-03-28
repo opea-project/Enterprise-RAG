@@ -174,17 +174,54 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
     _model_server_container: Container
     _microservice_container: Container
 
-    def __init__(self, config_override: dict = None):
+    def __init__(
+        self,
+        golden_configuration_src: str,
+        config_override: dict = None,
+        custom_microservice_envs: dict = None,
+        custom_microservice_docker_params: dict = None,
+        custom_model_server_envs: dict = None,
+        custom_model_server_docker_params: dict = None
+    ):
+        """
+        :param str golden_configuration_src: Path to .env, with respect to src root
+        :param dict config_override: Overrides of golden configuration
+        :param dict custom_microservice_envs: Add your own ENV variables (aside from .env file) for microservice
+        :param dict custom_microservice_docker_params: Add your own docker flags for microservice
+        :param dict custom_model_server_envs: Add your own ENV variables (aside from .env file) for model server
+        :param dict custom_model_server_docker_params: Add your own docker flags for model server
+        """
         super().__init__(config_override)
         self._model_server_img = None
         self._microservice_img = None
         self._model_server_container = None
         self._microservice_container = None
 
+        self._docker_conf = None
+
+        self._load_golden_configuration(golden_configuration_src)
+        self._microservice_extra_envs = custom_microservice_envs if custom_microservice_envs else dict()
+        self._microservice_docker_extras = custom_microservice_docker_params if custom_microservice_docker_params else dict()
+        self._model_server_extra_envs = custom_model_server_envs if custom_model_server_envs else dict()
+        self._model_server_docker_extras = custom_model_server_docker_params if custom_model_server_docker_params else dict()
+
+    @property
+    @abstractmethod
+    def _microservice_envs(self) -> dict:
+        """ Microservice itself is same for all microservices,
+         of same Language Components (LLMs, Embeddings), but differently configured. """
+        pass
+
     @property
     @abstractmethod
     def _MODEL_SERVER_READINESS_MSG(self) -> str:
         """ String to search for in readiness checks. Implement this in child classes. """
+        pass
+
+    @property
+    @abstractmethod
+    def _ENV_KEYS(self) -> Type[Enum]:
+        """Links the object of env keys for concrete model server configuration."""
         pass
 
     def build_images(self):
@@ -212,6 +249,17 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
             logger.error(e.stderr)
             raise
 
+    def get_docker_env(self, key_member) -> str:
+        """Get value from golden configuration or it's overrider value"""
+        key = key_member.value
+        try:
+            value = self._config_override[key]
+            logger.debug(f"Found {key} in config overrides. {key}={value}")
+        except (TypeError, KeyError):   # When override is None or key does not exist
+            value = self._docker_conf[key]
+            logger.debug(f"Using {key} from golden configuration. {key}={value}")
+        return value
+
     def _wait_for(self, container: Container, str_to_find: str, timeout: int = 300, check_every: int = 15):
         """Polls container logs until finds a string or reach timeout"""
 
@@ -233,6 +281,24 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
         logger.error("Timeout reached. String not found. Raising exception")
         raise TimeoutError
 
+    def _load_golden_configuration(self, golden_configuration_src: str):
+        """Loads default env variables provided by developers.
+
+        :param str golden_configuration_src: Path to .env, with respect to src root
+        """
+
+        file_path = os.path.join(self._main_src_path, golden_configuration_src)
+        self._docker_conf = dotenv_values(file_path)
+        self._validate_golden_configuration()
+        logger.info("Loaded .env golden configuration:")
+        logger.info(self._docker_conf)
+
+    def _validate_golden_configuration(self):
+        """Verify if all required env vars has been loaded."""
+        for member in self._ENV_KEYS:
+            key_name = member.value
+            assert key_name in self._docker_conf, f"{key_name} not found in configuration"
+
     @abstractmethod
     def _build_model_server(self):
         pass
@@ -251,7 +317,41 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
 
 
 class EmbeddingsDockerSetup(LanguageUsvcDockerSetup):
-    pass
+
+    CONTAINER_NAME_BASE = "test-comps-embeddings"
+
+    MICROSERVICE_CONTAINER_NAME = f"{CONTAINER_NAME_BASE}-microservice"
+    MICROSERVICE_IMAGE_NAME = f"opea/{MICROSERVICE_CONTAINER_NAME}:comps"
+    MICROSERVICE_API_PORT = 5002
+    MICROSERVICE_API_ENDPOINT = "/v1/embeddings"
+
+    INTERNAL_COMMUNICATION_PORT = 5001
+
+    def _build_microservice(self) -> Image:
+        return self._build_image(
+            self.MICROSERVICE_IMAGE_NAME,
+            file=f"{self._main_src_path}/comps/embeddings/impl/microservice/Dockerfile",
+            context_path=f"{self._main_src_path}",
+            **self.COMMON_BUILD_OPTIONS,
+        )
+
+    def _run_microservice(self) -> Container:
+        container = self._run_container(
+            self.MICROSERVICE_IMAGE_NAME,
+            name=self.MICROSERVICE_CONTAINER_NAME,
+            ipc="host",  # We should get rid of it as it weakens isolation
+            runtime="runc",
+            publish=[
+                (self.MICROSERVICE_API_PORT, 6000),
+            ],
+            envs={
+                **self._microservice_envs,
+                **self.COMMON_PROXY_SETTINGS,
+            },
+            wait_after=15,
+            **self.COMMON_RUN_OPTIONS,
+        )
+        return container
 
 class LLMsDockerSetup(LanguageUsvcDockerSetup):
 
@@ -264,72 +364,7 @@ class LLMsDockerSetup(LanguageUsvcDockerSetup):
 
     INTERNAL_COMMUNICATION_PORT = 5001
 
-    def __init__(
-            self,
-            golden_configuration_src: str,
-            config_override: dict = None,
-            custom_microservice_envs: dict = None,
-            custom_microservice_docker_params: dict = None,
-            custom_model_server_envs: dict = None,
-            custom_model_server_docker_params: dict = None
-    ):
-        """
-        :param str golden_configuration_src: Path to .env, with respect to src root
-        :param dict config_override: Overrides of golden configuration
-        :param dict custom_microservice_envs: Add your own ENV variables (aside from .env file) for microservice
-        :param dict custom_microservice_docker_params: Add your own docker flags for microservice
-        :param dict custom_model_server_envs: Add your own ENV variables (aside from .env file) for model server
-        :param dict custom_model_server_docker_params: Add your own docker flags for model server
-        """
-        super().__init__(config_override)
-        self._docker_conf = None  # TODO: Generalize to base classes.
 
-        self._load_golden_configuration(golden_configuration_src)
-        self._microservice_extra_envs = custom_microservice_envs if custom_microservice_envs else dict()
-        self._microservice_docker_extras = custom_microservice_docker_params if custom_microservice_docker_params else dict()
-        self._model_server_extra_envs = custom_model_server_envs if custom_model_server_envs else dict()
-        self._model_server_docker_extras = custom_model_server_docker_params if custom_model_server_docker_params else dict()
-
-    def get_docker_env(self, key_member) -> str:
-        """Get value from golden configuration or it's overrider value"""
-        key = key_member.value
-        try:
-            value = self._config_override[key]
-            logger.debug(f"Found {key} in config overrides. {key}={value}")
-        except (TypeError, KeyError):   # When override is None or key does not exist
-            value = self._docker_conf[key]
-            logger.debug(f"Using {key} from golden configuration. {key}={value}")
-        return value
-
-    @property
-    @abstractmethod
-    def _microservice_envs(self) -> dict:
-        """ Microservice itself is same for all LLMs, but differently configured. """
-        pass
-
-    @property
-    @abstractmethod
-    def _ENV_KEYS(self) -> Type[Enum]:
-        """Links the object of env keys for concrete model server configuration."""
-        pass
-
-    def _load_golden_configuration(self, golden_configuration_src: str):
-        """Loads default env variables provided by developers.
-
-        :param str golden_configuration_src: Path to .env, with respect to src root
-        """
-
-        file_path = os.path.join(self._main_src_path, golden_configuration_src)
-        self._docker_conf = dotenv_values(file_path)
-        self._validate_golden_configuration()
-        logger.info("Loaded .env golden configuration:")
-        logger.info(self._docker_conf)
-
-    def _validate_golden_configuration(self):
-        """Verify if all required env vars has been loaded."""
-        for member in self._ENV_KEYS:
-            key_name = member.value
-            assert key_name in self._docker_conf, f"{key_name} not found in configuration"
 
     def _build_microservice(self):
         return self._build_image(

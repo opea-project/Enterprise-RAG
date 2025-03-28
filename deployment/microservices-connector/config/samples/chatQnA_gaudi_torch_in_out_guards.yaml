@@ -58,7 +58,6 @@ spec:
           config:
             endpoint: /v1/reranking
             RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
-            RERANKING_MODEL_SERVER: "tei"
       - name: TeiReranking
         dependency: Hard
         internalService:
@@ -104,3 +103,41 @@ spec:
           serviceName: output-scan-svc
           config:
             endpoint: /v1/llmguardoutput
+      - name: Tts
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: tts-svc
+          config:
+            endpoint: /v1/tts
+            TTS_MODEL_SERVER_ENDPOINT: torchserve-tts-svc
+            TTS_MODEL_NAME: "microsoft/speecht5_tts"
+            TTS_MODEL_SERVER: "torchserve"
+            TTS_VOCODER_MODEL_NAME: "microsoft/speecht5_hifigan"
+      - name: TorchserveTTS
+        dependency: Hard
+        internalService:
+          serviceName: torchserve-tts-svc
+          config:
+            TORCHSERVE_MODEL_NAME: "microsoft/speecht5_tts"
+            TORCHSERVE_VOCODER_MODEL_NAME: "microsoft/speecht5_hifigan"
+          isDownstreamService: true
+      - name: Asr
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: asr-svc
+          config:
+            endpoint: /v1/asr
+            ASR_MODEL_SERVER_ENDPOINT: torchserve-asr-svc
+            ASR_MODEL_NAME: "openai/whisper-small"
+            ASR_MODEL_SERVER: "torchserve"
+            # ASR_VOCODER_MODEL_NAME: "microsoft/speecht5_hifigan"
+      - name: TorchserveASR
+        dependency: Hard
+        internalService:
+          serviceName: torchserve-asr-svc
+          config:
+            TORCHSERVE_MODEL_NAME: "openai/whisper-small"
+            # TORCHSERVE_VOCODER_MODEL_NAME: "microsoft/speecht5_hifigan"
+          isDownstreamService: true

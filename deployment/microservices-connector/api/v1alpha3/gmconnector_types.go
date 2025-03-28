@@ -69,8 +69,6 @@ const (
 	TeiReranking StepNameType = "TeiReranking"
 	// Tei-Reranking-Gaudi
 	TeiRerankingGaudi StepNameType = "TeiRerankingGaudi"
-	//Torchserve-Reranking
-	TorchserveReranking StepNameType = "TorchserveReranking"
 	// PromptTemplate
 	PromptTemplate StepNameType = "PromptTemplate"
 	// Tgi
@@ -89,6 +87,9 @@ const (
 	VLLMOpenVino StepNameType = "VLLMOpenVino"
 	// Language-Detection
 	LanguageDetection StepNameType = "LanguageDetection"
+	// TTS
+	TTS StepNameType = "Tts"
+	ASR StepNameType = "Asr"	
 )
 
 type Executor struct {

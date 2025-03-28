@@ -175,8 +175,8 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
-  torchserve_embedding:
-    image: "torchserve_embedding"
+  torchserve:
+    image: "torchserve"
     repository: *repo
     tag: *tag
     path: *path
@@ -184,13 +184,6 @@ images:
     envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
-  torchserve_reranking:
-    image: "torchserve_reranking"
-    repository: *repo
-    tag: *tag
-    path: *path
-    pullPolicy: Always
-    envfile: "src/comps/reranks/impl/model_server/torchserve/docker/.env"
   retriever-usvc:
     image: "retriever"
     repository: *repo
@@ -278,3 +271,29 @@ images:
     tag: *tag
     path: *path
     pullPolicy: Always
+  tts-usvc:
+    image: "tts"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  torchserve-tts:
+    image: "torchserve-tts"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/tts/impl/model-server/torchserve/docker/.env"
+  asr-usvc:
+    image: "asr"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+  torchserve-asr:
+    image: "torchserve-asr"
+    repository: *repo
+    tag: *tag
+    path: *path
+    pullPolicy: Always
+    envfile: "src/comps/asr/impl/model-server/torchserve/docker/.env"

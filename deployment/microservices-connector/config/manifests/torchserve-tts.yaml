@@ -1,0 +1,145 @@
+---
+# Source: torchserve/templates/configmap.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: torchserve-tts-config
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
+---
+# Source: torchserve/templates/service.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: torchserve-tts
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8100
+      targetPort: 8100
+      protocol: TCP
+      name: torchserve-tts
+    - port: 8102
+      targetPort: 8102
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+# Source: torchserve/templates/deployment.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: torchserve-tts
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 4 }}
+  selector:
+    matchLabels:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
+    spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" . }}
+      containers:
+        - name: torchserve-tts
+          envFrom:
+            - configMapRef:
+                name: torchserve-tts-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          env:
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
+            - name: TS_ENABLE_METRICS_API
+              value: "true"
+            - name: TS_METRICS_MODE
+              value: prometheus
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          resources:
+            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+          volumeMounts:
+            - mountPath: /opt/ml/model
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /home/user/tmp
+              name: torchserve-tts-tmp
+            - mountPath: /home/user/logs
+              name: torchserve-tts-logs
+          ports:
+            - name: http
+              containerPort: 8100
+              protocol: TCP
+            - name: metrics
+              containerPort: 8102
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          startupProbe:
+            failureThreshold: 120
+            httpGet:
+              path: ping
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 60
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: model-volume-tts
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: tmp
+          emptyDir: {}
+        - name: torchserve-tts-tmp
+          emptyDir: {}
+        - name: torchserve-tts-logs
+          emptyDir: {}

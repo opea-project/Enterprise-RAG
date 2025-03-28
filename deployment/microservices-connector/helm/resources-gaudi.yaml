@@ -115,17 +115,8 @@ services:
     resources:
       limits:
         habana.ai/gaudi: 8
-  torchserve_embedding:
+  torchserve:
     replicas: 4
-    resources:
-      requests:
-        cpu: 4
-        memory: 4Gi
-      limits:
-        cpu: 4
-        memory: 16Gi
-  torchserve_reranking:
-    replicas: 1
     resources:
       requests:
         cpu: 4
@@ -138,3 +129,39 @@ services:
     resources:
       limits:
         habana.ai/gaudi: 8
+  tts-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 4Gi
+  torchserve-tts:
+    replicas: 4
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+  asr-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 4Gi
+  torchserve-asr:
+    replicas: 4
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi

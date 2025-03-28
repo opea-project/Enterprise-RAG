@@ -1,0 +1,140 @@
+---
+# Source: tts-usvc/templates/configmap.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tts-usvc-config
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  http_proxy: {{ .Values.proxy.httpProxy | quote }}
+  https_proxy: {{ .Values.proxy.httpsProxy | quote }}
+  no_proxy: {{ .Values.proxy.noProxy | quote }}
+  TTS_MODEL_NAME: "microsoft/speecht5_tts"
+  TTS_MODEL_SERVER: "torchserve"
+  TTS_VOCODER_MODEL_NAME: "microsoft/speecht5_hifigan"
+---
+# Source: tts-usvc/templates/service.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tts-usvc
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8200
+      targetPort: 8200
+      protocol: TCP
+      name: tts-usvc
+  selector:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: tts-usvc
+    app.kubernetes.io/instance: tts-usvc
+  name: tts-usvc
+---
+# Source: tts-usvc/templates/deployment.yaml
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tts-usvc
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
+  selector:
+    matchLabels:
+    {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
+    spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: tts-usvc
+      initContainers:
+        - name: wait-for-tts
+          image: alpine/curl
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$TTS_MODEL_SERVER_ENDPOINT" ]; then
+                  echo "Environment variable TTS_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $TTS_MODEL_SERVER_ENDPOINT; do
+                    echo "waiting for tts model server $TTS_MODEL_SERVER_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+      {{- include "gmc.imagePullSecrets" . }}
+      containers:
+        - name: tts-usvc
+          envFrom:
+            - configMapRef:
+                name: tts-usvc-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ toYaml (index .Values "images" .filename "repository") }}/{{ toYaml (index .Values "images" .filename "path") }}/{{ toYaml (index .Values "images" .filename "image") }}:{{ toYaml (index .Values "images" .filename "tag") }}
+          imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          ports:
+            - name: tts-usvc
+              containerPort: 8200
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: v1/health_check
+              port: tts-usvc
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: v1/health_check
+              port: tts-usvc
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          startupProbe:
+            failureThreshold: 120
+            httpGet:
+              path: v1/health_check
+              port: tts-usvc
+            initialDelaySeconds: 5
+            periodSeconds: 60
+          resources:
+            {{- $defaultValues := "{requests: {cpu: '1', memory: '2Gi'}, limits: {cpu: '4', memory: '4Gi'}}" -}}
+            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}

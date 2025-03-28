@@ -55,13 +55,16 @@ var (
 		"Ingestion",
 		"TorchserveEmbedding",
 		"TorchserveEmbeddingGaudi",
-		"TorchserveReranking",
 		"LLMGuardInput",
 		"LLMGuardOutput",
 		"VLLMGaudi",
 		"VLLM",
 		"VLLMOpenVino",
 		"LanguageDetection",
+		"TorchserveTTS",
+		"TorchserveTTSGaudi",
+		"TorchserveASR",
+		"TorchserveASRGaudi"
 	}
 )
 

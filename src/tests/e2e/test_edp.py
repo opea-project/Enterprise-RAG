@@ -28,9 +28,9 @@ def cleanup(edp_helper):
             if file["status"] in IN_PROGRESS_STATUSES:
                 logger.info(f"Canceling in progress task: {file_name}")
                 edp_helper.cancel_processing_task(file["id"])
-            elif file["status"] == "ingested":
+            elif file["status"] in ["ingested", "error"]:
                 logger.info(f"Removing file: {file_name}")
-                response = edp_helper.generate_presigned_url(file["object_name"], "DELETE")
+                response = edp_helper.generate_presigned_url(file["object_name"], "DELETE", file["bucket_name"])
                 edp_helper.delete_from_minio(response.json().get("url"))
 
     links = edp_helper.list_links()
@@ -313,6 +313,30 @@ def test_edp_responsiveness_while_uploading_file(edp_helper):
         counter += 1
     # Cancel task if not finished
     edp_helper.cancel_processing_task(file["id"])
+
+
+@allure.testcase("IEASG-T153")
+def test_edp_upload_to_secondary_bucket(edp_helper):
+    """"""
+    with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
+        file_basename = os.path.basename(temp_file.name)
+        response = edp_helper.generate_presigned_url(file_basename, bucket="secondary")
+        assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
+        response = edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        assert response.status_code == 200, f"Failed to upload file to MinIO. Response: {response.text}"
+        edp_helper.wait_for_file_upload(file_basename, "ingested", timeout=60)
+
+
+@allure.testcase("IEASG-T54")
+def test_edp_upload_to_nonexistent_bucket(edp_helper):
+    """"""
+    with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
+        file_basename = os.path.basename(temp_file.name)
+        response = edp_helper.generate_presigned_url(file_basename, bucket="nonexistent")
+        assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
+        response = edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        assert response.status_code == 404, (f"Unexpected status code returned while trying to upload file "
+                                             f"to nonexistent bucket. Response: {response.text}")
 
 
 def method_name():

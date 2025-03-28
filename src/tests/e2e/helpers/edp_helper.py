@@ -92,11 +92,11 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
-    def generate_presigned_url(self, object_name, method="PUT"):
+    def generate_presigned_url(self, object_name, method="PUT", bucket="default"):
         """Generate a presigned URL for the given object name"""
         logger.info(f"Generating presigned URL for object: {object_name}")
         payload = {
-            "bucket_name": "default",
+            "bucket_name": bucket,
             "object_name": object_name,
             "method": method
         }

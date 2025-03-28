@@ -195,7 +195,7 @@ python opea_llm_guard_dataprep_guardrail_microservice.py
 #### 2.1. Build the Docker image:
 ```sh
 cd ../../.. # src/ directory
-docker build -t opea/in-guard:latest -f comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile .
+docker build -t opea/dpguard:latest -f comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile .
 ```
 
 #### 2.2. Run the Docker container, for example:

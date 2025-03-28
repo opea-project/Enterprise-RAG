@@ -45,14 +45,6 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
         return "Application startup complete"
 
     @property
-    def _microservice_envs(self) -> dict:
-        return {
-            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
-            "LLM_MODEL_SERVER": "vllm",
-            "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
-        }
-
-    @property
     def _model_server_envs(self) -> dict:
         envs_keys = [
             self._ENV_KEYS.VLLM_CPU_KVCACHE_SPACE,
@@ -68,6 +60,14 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
         }
         env_vars["VLLM_OPENVINO_DEVICE"] = "CPU"
         return env_vars
+
+    @property
+    def _microservice_envs(self) -> dict:
+        return {
+            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
+            "LLM_MODEL_SERVER": "vllm",
+            "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
+        }
 
     def _build_model_server(self) -> Image:
         return self._build_image(

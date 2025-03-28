@@ -50,6 +50,7 @@ from comps.cores.proto.docarray import (
     PromptGet,
     PromptId,
     PromptOutput,
+    TranslationInput,
     TextDocList
 )
 

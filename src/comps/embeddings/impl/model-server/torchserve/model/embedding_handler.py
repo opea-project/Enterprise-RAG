@@ -29,17 +29,16 @@ Methods:
         Postprocesses the inference output to return the final result.
 """
 
+from abc import ABC
+import intel_extension_for_pytorch as ipex
 import logging
 import os
-from abc import ABC
-
 import sentence_transformers
+import torch
 
+from contextlib import nullcontext
 from ts.context import Context
 from ts.torch_handler.base_handler import BaseHandler
-
-import intel_extension_for_pytorch as ipex
-import torch
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +64,11 @@ class EmbeddingHandler(BaseHandler, ABC):
         if self.amp_dtype == "BF16":
             self.amp_enabled = True
             self.amp_dtype = torch.bfloat16
+            self.additional_context = torch.autocast(device_type=self.device_type, enabled=self.amp_enabled, dtype=self.amp_dtype,)
         elif self.amp_dtype == "FP32":
             self.amp_enabled = False
             self.amp_dtype = torch.float32
+            self.additional_context = nullcontext()
         else:
             error_message = f"Invalid AMP_DTYPE value '{self.amp_dtype}'. Expected 'BF16' or 'FP32'."
             logger.error(error_message)
@@ -111,31 +112,46 @@ class EmbeddingHandler(BaseHandler, ABC):
 
         for body in bodies:
             input_text = body['inputs']
-            logger.debug(f"Received input_text: {input_text}")
-            if isinstance(input_text, dict):
-                input_text = body['inputs'][0]
 
-            text = list(map(lambda x: x.replace("\n", " "), input_text))
-            texts.append(text[0])
+            t_b = [t.strip().replace("\n", " ") for t in input_text]
+            texts.append(t_b)
 
         logger.debug(f"Received texts: {texts}")
         return texts
 
+    def _run_embedding_model(self, input_batch):
+        with torch.inference_mode(), torch.no_grad(), self.additional_context:
+            embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
+        
+        return embeddings.tolist()
 
     def inference(self, input_batch):
         logger.debug(f"Received input_batch: {input_batch}")
-        with torch.inference_mode(), torch.no_grad(), torch.autocast(
-            device_type=self.device_type,
-            enabled=self.amp_enabled,
-            dtype=self.amp_dtype,
-            ):
-            embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
 
-        return embeddings.tolist()
+        if len(input_batch) > 1:
+            # Batching detected
+            texts = []
+            num_texts_in_batch = []
+            
+            for text_pair in input_batch:
+                num_texts_in_batch.append(len(text_pair))
+                texts.extend(text_pair)
+    
+            embeddings = self._run_embedding_model(texts)
+            
+            og_embeddings = []
+            index = 0
+            for count in num_texts_in_batch:
+                og_embeddings.append(embeddings[index:index + count])
+                index += count
+            return og_embeddings
+            
+        else:
+            # No Batching detected
+            input_batch = input_batch[0]
+            embeddings = self._run_embedding_model(input_batch)
+            return [embeddings]
 
 
     def postprocess(self, inference_output):
-        if len(inference_output) > 1:
-            return inference_output
-
-        return [inference_output]
+        return inference_output

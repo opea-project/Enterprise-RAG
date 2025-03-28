@@ -27,12 +27,25 @@ language_dict = {
     'zh': 'Chinese',
 }
 
-def set_prompt(query_lang: str, answer_lang: str, answer: str) -> str:
+
+def get_prompt_template() -> str:
+    """Returns a tuple containing prompt template, source and target language."""
     prompt_template = """
             Translate this from {source_lang} to {target_lang}:
             {source_lang}:
-            {answer}
+            {text}
 
             {target_lang}:            
         """
-    return prompt_template.format(source_lang=language_dict[answer_lang], target_lang=language_dict[query_lang], answer=answer)
+    
+    return prompt_template
+
+
+def get_language_name(lang_code: str) -> str:
+    """Return the language name for a language code. Returns empty string for unsupported language code."""
+    return language_dict.get(lang_code, "")
+
+
+def validate_language_name(lang_name: str) -> bool:
+    """Returns True only if provided language name is a valid language."""
+    return lang_name in language_dict.values()

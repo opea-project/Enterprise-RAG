@@ -9,6 +9,8 @@ ENV LANG=C.UTF-8
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
+RUN rm -rf /usr/local/lib/python3.11/site-packages/*
 
 RUN useradd -m -s /bin/bash user
 

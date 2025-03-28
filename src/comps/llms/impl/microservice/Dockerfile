@@ -14,6 +14,8 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missin
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
+RUN rm -rf /usr/local/lib/python3.11/site-packages/*
 
 RUN useradd -m -s /bin/bash user && \
     mkdir -p /home/user && \

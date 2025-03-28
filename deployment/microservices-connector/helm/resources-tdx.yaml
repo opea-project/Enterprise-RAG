@@ -73,7 +73,7 @@ tdx:
           memory: 16Gi
         requests:
           memory: 16Gi
-    torchserve_embedding:
+    torchserve:
       tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
       resources:
         limits:
@@ -90,4 +90,36 @@ tdx:
           cpu: "16"
         requests:
           memory: 80Gi
+          cpu: "16"
+    tts-usvc:
+      tdxEnabled: false # due to https://github.com/kata-containers/kata-containers/issues/10571
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    torchserve-tts:
+      tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: "16"
+        requests:
+          memory: 32Gi
+          cpu: "16"
+    asr-usvc:
+      tdxEnabled: false # due to https://github.com/kata-containers/kata-containers/issues/10571
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 16Gi
+    torchserve-asr:
+      tdxEnabled: false # due to https://github.com/confidential-containers/guest-components/issues/876
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: "16"
+        requests:
+          memory: 32Gi
           cpu: "16"

@@ -3,7 +3,7 @@
 ## 📋 Agenda
 
 1. **[Introduction](#introduction)**
-2. **[What is an Enterprise RAG Application?](#-so-what-is-an-enterprise-rag-application)**
+2. **[So, What is an Enterprise RAG Application?](#-so-what-is-an-enterprise-rag-application)**
 3. **[Important Enterprise RAG Features](#-important-enterprise-rag-features)**
 4. **[Additional Features](#-additional-features)**
 5. **[Relevance of Hardware](#-relevance-of-hardware)**
@@ -36,6 +36,12 @@ The information/vectors drawn out on query are ranked to rank the most contextua
 ### 3. 🗣️ Leverage of Advanced Natural Language Processing Enabling Intuitive Conversations
 
 Enterprise RAG applications utilize advanced LLMs in combination with specialized embedding models to provide intelligent, context-aware interactions. They can understand deep searches with human-style comprehension, dialoguing naturally with users, and generating answers applicable to the customized vocabulary and surrounding context of the business.
+
+### 4. 🔧 Flexible and Customizable Pipeline Orchestration
+
+One of the most compelling advantages of Enterprise RAG, is its highly modular pipeline architecture. This feature additionally complements on further enhancing the above mentioned advantages, to be catered to a specific user/use-case by the administrator. Depending on the Enterprise RAG configuration parameters and features available, administrators can seamlessly connect various components—such as scanners, retrievers, and language models—in any desired sequence. This flexibility allows for the creation of bespoke pipelines that are finely tuned to the specific challenges of the enterprise environment. 
+
+Further enhancing this capability, the E-RAG system includes a robust control panel interface, which enables admins to adjust key parameters in real time. For instance, they can select which Guardrails scanner to activate, choose from multiple retriever strategies, experiment with different chunking methods, or even swap out LLM configurations based on performance feedback, which improves upon the data retrieve capability of E-RAG, and making it more fine-tuned and relevant accotding to the use-case. This iterative tuning process is crucial when dealing with extensive document repositories, where a single abbreviation might trigger hundreds of thousands of vector chunks. By allowing granular control over every component, Enterprise RAG empowers organizations to optimize accuracy and relevance, ensuring that only the most pertinent information informs the final output.
 
 ## 📋 Additional Features
 

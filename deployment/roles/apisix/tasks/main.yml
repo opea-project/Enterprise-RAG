@@ -1,0 +1,169 @@
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix_helm_chart_name }}-override-values.yml"
+  tags:
+    - install
+    - update
+    - uninstall
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ apisix_helm_repo_name }}"
+    repo_url: "{{ apisix_helm_repo_url }}"
+    state: present
+  tags:
+    - install
+    - update
+
+# Check if module can be used
+- name: Update Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency update
+    chdir: "{{ apisix_helm_chart_directory }}"
+  tags:
+    - install
+    - update
+
+- name: Check if override values file should be generated
+  ansible.builtin.set_fact:
+    generate_override: "{{ apisix.additional_values is defined and apisix.additional_values | dict2items | length > 0 }}"
+  tags:
+    - install
+    - update
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ apisix_helm_override_values_path }}"
+    mode: '0644'
+  when: generate_override
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    apisix_values_files: >
+      {{
+        [apisix_helm_default_values_file] +
+        ([apisix_helm_override_values_path] if generate_override else [])
+      }}
+  tags:
+    - install
+    - update
+
+- name: Retrieve keycloak password from secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ apisix_password_secret_name }}"
+    namespace: "{{ keycloak_helm_namespace }}"
+  register: client_secret_raw
+  no_log: true
+  tags:
+    - install
+
+- name: Decode keycloak password from the secret
+  ansible.builtin.set_fact:
+    keycloak_password: "{{ client_secret_raw.resources[0].data['admin-password'] | b64decode }}"
+  no_log: true
+  tags:
+    - install
+
+- name: Run the script from the role's files directory
+  ansible.builtin.command: >
+    bash {{ role_path }}/files/get_secret.sh {{ keycloak_password }}
+  register: client_secret_id
+  tags:
+    - install
+
+- name: Unset the keycloak password
+  ansible.builtin.set_fact:
+    keycloak_password: null
+  tags:
+    - install
+
+- name: Assure that namespace is present
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ apisix_helm_namespace }}"
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ apisix_helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Create generic secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ apisix_secret_name }}"
+        namespace: "{{ apisix_helm_namespace }}"
+      data:
+        CLIENT_SECRET: "{{ client_secret_id.stdout | b64encode }}"
+  no_log: true
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ apisix_helm_release_name }}"
+    chart_ref: "{{ apisix_helm_chart_directory }}"
+    namespace: "{{ apisix_helm_namespace }}"
+    values_files: "{{ apisix_values_files }}"
+    state: present
+    create_namespace: true
+  tags:
+    - install
+    - update
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ apisix_helm_release_name }}"
+    namespace: "{{ apisix_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete apisix secret
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ apisix_secret_name }}"
+        namespace: "{{ apisix_helm_namespace }}"
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ apisix_helm_namespace }}"
+  tags:
+    - uninstall

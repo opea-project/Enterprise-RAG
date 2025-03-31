@@ -226,7 +226,7 @@ for component in "${components_to_build[@]}"; do
     (
     case $component in
         gmcManager)
-            path="${repo_path}/deployment/microservices-connector"
+            path="${repo_path}/deployment/components/gmc/microservices-connector"
             dockerfile="Dockerfile.manager"
             image=gmcmanager
 
@@ -235,7 +235,7 @@ for component in "${components_to_build[@]}"; do
             ;;
 
         gmcRouter)
-            path="${repo_path}/deployment/microservices-connector"
+            path="${repo_path}/deployment/components/gmc/microservices-connector"
             dockerfile="Dockerfile.router"
             image=gmcrouter
 
@@ -372,7 +372,7 @@ for component in "${components_to_build[@]}"; do
  
         otelcol-contrib-journalctl)
             path="${repo_path}"
-            dockerfile="deployment/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
+            dockerfile="deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
             image=otelcol-contrib-journalctl
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi

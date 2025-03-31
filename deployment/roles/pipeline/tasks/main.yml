@@ -1,0 +1,185 @@
+---
+# did not change vars name to pipeline
+- name: Set roles facts
+  ansible.builtin.set_fact:
+    helm_override_values_path: "{{ log_dir }}/{{ helm_chart_name }}-override-values.yml"
+    helm_override_resources_path: "{{ playbook_dir }}/{{ item.resourcesPath }}"
+  tags:
+    - always
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ helm_override_values_path }}"
+  tags:
+    - install
+    - update
+
+# handle better directory for resources /.. is hacky
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [helm_default_values_file] +
+        [helm_default_resources_file] +
+        [helm_override_values_path] +
+        ([playbook_dir + '/..' + item.resourcesPath] if item.resourcesPath is defined else [])
+      }}
+  tags:
+    - install
+    - update
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ item.namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+# this w/a for the fact that gmc should not create pvc in moment of helm install, but pvc should be included inside the manifest of given microservice
+# although it needs to be verified wheter it is possible to share pvc between different microservices, because I think that they will be multiplied
+# wait skipped due to the fact of pvc being in pending state until picked up by microservice therefore wait is looped
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ helm_release_name }}"
+    chart_ref: "{{ helm_chart_directory }}"
+    namespace: "{{ helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    # wait: true
+  register: helm_result
+  tags:
+    - install
+    - update
+
+# mitigation due to wait is being skipped
+- name: sleep
+  ansible.builtin.pause:
+    seconds: 30
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    password_file_path: "{{ log_dir }}/vectordb-{{ item.namespace }}.txt"
+  tags:
+    - install
+    - uninstall
+
+- name: Generate password or load from file
+  ansible.builtin.include_role:
+    name: generate_password
+  with_items:
+    - { generate_password_path: "{{ password_file_path }}" }
+  tags:
+    - install
+
+# hardcoded chatqa needs @ URL ; with_items don't work with encode?
+- name: Create VectorDB secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item.namespace }}"
+      data:
+        VECTOR_STORE: "{{ 'redis' | b64encode }}"
+        REDIS_URL: "{{ ('redis://default:' + password + '@redis-vector-db.chatqa.svc') | b64encode }}"
+        REDIS_HOST: "{{ 'redis-vector-db.chatqa.svc' | b64encode }}"
+        REDIS_PORT: "{{ '6379' | b64encode }}"
+        REDIS_USERNAME: "{{ 'default' | b64encode }}"
+        REDIS_PASSWORD: "{{ password | b64encode }}"
+        VECTOR_DB_REDIS_ARGS: "{{ ('--save 60 1000 --appendonly yes --requirepass ' + password) | b64encode }}"
+  no_log: true
+  when: item.type=='chatqa'
+  tags:
+    - install
+    - update
+
+
+- name: Apply pipeline
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', playbook_dir + '/../' + item.samplePath) }}"
+    namespace: "{{ item.namespace }}"
+  tags:
+    - install
+    - update
+
+# Instead of removing pipeline ; rm whole ns although that should be checked
+- name: Remove namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - uninstall
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ helm_release_name }}"
+    namespace: "{{ helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete password secret
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item.namespace }}"
+  when: item.type=='chatqa'
+  tags:
+    - uninstall
+
+- name: Remove password file
+  ansible.builtin.file:
+    state: absent
+    path: "{{ password_file_path }}"
+  when: item.type=='chatqa'
+  tags:
+    - uninstall

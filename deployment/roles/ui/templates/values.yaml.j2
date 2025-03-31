@@ -1,0 +1,15 @@
+domainName: &dname {{ ui.domainName }}
+tlsSecret: &tlssecret {{ ui_tls_secret_name }}
+{% if (ui.repository is defined and ui.repository != "") or (tag is defined and tag != "") %}
+image:
+  ui:
+    {% if ui.repository is defined and ui.repository != "" %}
+      repository: {{ ui.repository }}
+    {% endif %}
+    {% if tag is defined and tag != "" %}
+      tag: {{ tag }}
+    {% endif %}
+{% endif %}
+{% if ui.additional_values is defined %}
+{{ ui.additional_values | to_nice_yaml }}
+{% endif %}

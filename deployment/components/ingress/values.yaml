@@ -1,0 +1,22 @@
+#https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
+
+controller:
+  hostPort:
+    enabled: true
+  ingressClass: "nginx"
+  config:
+    proxy-read-timeout: "3600"
+    proxy-send-timeout: "3600"
+    proxy-connect-timeout: "3600"
+    proxy-body-size: "64m"
+    ssl-ciphers: "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+  securityContext:
+    runAsUser: 101
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+    seccompProfile:
+      type: RuntimeDefault

@@ -1,0 +1,58 @@
+---
+- name: Install application
+  hosts: localhost
+  vars:
+    playbook_dir_fallback: "{{ lookup('env', 'PWD') }}"
+    playbook_dir: "{{ playbook_dir | default(playbook_dir_fallback) }}"
+    components_dir: "{{ playbook_dir }}/../components"
+    log_dir: "{{ playbook_dir }}/../ansible-logs" # this could be moved to inventory_dir, but variable is not working as expected on localhost
+  pre_tasks:
+    - name: Create log directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ log_dir }}"
+        state: directory
+        mode: '755'
+      tags:
+        - always
+    - name: Run pipeline role with items
+      include_role:
+        name: pipeline
+      with_items: "{{ pipelines }}"
+      tags:
+        - always
+  roles:
+    - role: certs
+    - { role: ingress, when: ingress.enabled }
+    - { role: istio, when: istio.enabled }
+    - { role: keycloak, when: keycloak.enabled }
+    - { role: apisix, when: apisix.enabled }
+    - { role: ui, when: ui.enabled }
+    - { role: fingerprint, when: fingerprint.enabled }
+    - { role: edp, when: edp.enabled }
+    - { role: telemetry, when: telemetry.enabled }
+  # temp solution before splitting routes
+  post_tasks:
+    - name: Install apisix routes
+      kubernetes.core.helm:
+        name: "apisix-routes"
+        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
+        namespace: "auth-apisix"
+        state: present
+        force: true
+      tags:
+        - install
+        - update
+    - name: Delete apisix routes
+      kubernetes.core.helm:
+        name: "apisix-routes"
+        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
+        namespace: "auth-apisix"
+        state: absent
+      tags:
+        - uninstall
+    - name: Remove log directory
+      ansible.builtin.file:
+        path: "{{ log_dir }}"
+        state: absent
+      tags:
+        - uninstall

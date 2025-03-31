@@ -1,0 +1,301 @@
+---
+# check if chatqa is being deployed and fetch namespace
+- name: Set roles facts
+  ansible.builtin.set_fact:
+    edp_helm_override_values_path: "{{ log_dir }}/{{ edp_helm_chart_name }}-override-values.yml"
+  tags:
+    - install
+    - update
+    - uninstall
+
+- name: Add Helm repository
+  kubernetes.core.helm_repository:
+    name: "{{ edp_helm_repo_name }}"
+    repo_url: "{{ edp_helm_repo_url }}"
+  tags:
+    - install
+    - update
+
+- name: Update Helm repositories
+  kubernetes.core.helm_repository:
+    name: "{{ edp_helm_repo_name }}"
+    repo_url: "{{ edp_helm_repo_url }}"
+    state: present
+  tags:
+    - install
+    - update
+
+# Check if module can be used
+- name: Update Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency update
+    chdir: "{{ edp_helm_chart_directory }}"
+  tags:
+    - install
+    - update
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ edp_helm_namespace }}"
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ edp_helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ edp_tls_secret_name }}"
+        namespace: "{{ edp_helm_namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+    - update
+
+- name: Get the secret from the source namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: vector-database-config
+    namespace: chatqa
+  register: secret_info
+  no_log: true
+  tags:
+    - install
+    - update
+
+- name: Create the secret in the target namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Secret
+    name: vector-database-config
+    namespace: "{{ edp_helm_namespace }}"
+    state: present
+    definition:
+      metadata:
+        name: "{{ secret_info.resources[0].metadata.name }}"
+        namespace: "{{ edp_helm_namespace }}"
+      data: "{{ secret_info.resources[0].data }}"
+      type: "{{ secret_info.resources[0].type }}"
+  no_log: true
+  tags:
+    - install
+    - update
+
+# This role is hacky until moved to keycloak plugin
+- name: Set up port forwarding for Keycloak service
+  ansible.builtin.command: >
+    kubectl port-forward svc/keycloak -n auth 1234:80
+  async: 30
+  poll: 0
+  register: port_forward_job
+  tags:
+    - install
+
+- name: Wait for port forwarding to be established
+  ansible.builtin.wait_for:
+    port: 1234
+    host: localhost
+    delay: 5
+    timeout: 30
+  tags:
+    - install
+
+- name: Retrieve keycloak password from secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: keycloak-password
+    namespace: auth
+  register: client_secret_raw
+  no_log: true
+  tags:
+    - install
+
+- name: Decode keycloak password from the secret
+  ansible.builtin.set_fact:
+    keycloak_password: "{{ client_secret_raw.resources[0].data['admin-password'] | b64decode }}"
+  no_log: true
+  tags:
+    - install
+
+- name: Run the script from the role's files directory
+  ansible.builtin.command: >
+    bash {{ role_path }}/files/get_secret.sh {{ keycloak_password }} EnterpriseRAG-oidc-minio
+  register: client_secret_id_raw
+  tags:
+    - install
+
+- name: Stop port forwarding
+  ansible.builtin.command: >
+    pkill -f "kubectl port-forward svc/keycloak -n auth 1234:80"
+  tags:
+    - install
+
+- name: Set secret client_secret_id
+  ansible.builtin.set_fact:
+    edp_client_secret_id: "{{ client_secret_id_raw.stdout }}"
+  tags:
+    - install
+
+- name: Generate random string for access key
+  ansible.builtin.set_fact:
+    edp_minio_acess_key: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits,special') }}"
+  tags:
+    - install
+
+- name: Generate random string for secret key
+  ansible.builtin.set_fact:
+    edp_minio_secret_key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,special') }}"
+  tags:
+    - install
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    edp_redis_password_file_path: "{{ log_dir }}/{{ edp_redis_password_file_name }}.txt"
+    edp_postgresql_admin_password_file_path: "{{ log_dir }}/{{ edp_postgresql_admin_password_file_name }}.txt"
+    edp_postgresql_user_password_file_path: "{{ log_dir }}/{{ edp_postgresql_user_password_file_name }}.txt"
+  tags:
+    - install
+    - uninstall
+
+- name: Generate password or load from file
+  ansible.builtin.include_role:
+    name: generate_password
+  with_items:
+    - { generate_password_path: "{{ edp_redis_password_file_path }}" }
+  tags:
+    - install
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    edp_redis_password: "{{ password }}"
+  tags:
+    - install
+
+- name: Generate password or load from file
+  ansible.builtin.include_role:
+    name: generate_password
+  with_items:
+    - { generate_password_path: "{{ edp_postgresql_admin_password_file_path }}" }
+  tags:
+    - install
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    edp_postgresql_admin_password: "{{ password }}"
+  tags:
+    - install
+
+- name: Generate password or load from file
+  ansible.builtin.include_role:
+    name: generate_password
+  with_items:
+    - { generate_password_path: "{{ edp_postgresql_user_password_file_path }}" }
+  tags:
+    - install
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    edp_postgresql_user_password: "{{ password }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ edp_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [edp_helm_default_values_file] +
+        [edp_helm_override_values_path]
+      }}
+  tags:
+    - install
+    - update
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ edp_helm_release_name }}"
+    chart_ref: "{{ edp_helm_chart_directory }}"
+    namespace: "{{ edp_helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    dependency_update: true
+    create_namespace: true
+    wait: true
+  tags:
+    - install
+    - update
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ edp_helm_release_name }}"
+    namespace: "{{ edp_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete vectordb secret
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: vector-database-config
+        namespace: "{{ edp_helm_namespace }}"
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ edp_helm_namespace }}"
+  tags:
+    - uninstall
+
+- name: Remove password file
+  ansible.builtin.file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - "{{ edp_redis_password_file_path }}"
+  tags:
+    - uninstall

@@ -1,0 +1,26 @@
+kube-prometheus-stack:
+    grafana:
+{% if telemetry.additional_values.ingress is not defined %}
+        ingress:
+            enabled: true
+            ingressClassName: "nginx"
+            pathType: Prefix
+            hosts:
+                - {{ telemetry.domainName }}
+            path: /
+            tls:
+                - hosts:
+                    - {{ telemetry.domainName }}
+                  secretName: {{ telemetry_grafana_tls_secret_name }}
+{% endif %}
+        admin:
+            existingSecret: "{{ telemetry_password_secret_name }}"
+            userKey: user
+            passwordKey: password
+        env:
+            https_proxy: "{{ httpsProxy }}"
+            http_proxy: "{{ httpProxy }}"
+            no_proxy: "{{ noProxy }}"
+{% if telemetry.additional_values is defined %}
+{{ telemetry.additional_values | to_nice_yaml }}
+{% endif %}

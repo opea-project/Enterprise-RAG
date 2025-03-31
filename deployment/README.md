@@ -86,7 +86,7 @@ The script completes successfully with the confirmation: `All installations and 
 Users can define their own CSI driver that will be used during deployment. StorageClass should support accessMode ReadWriteMany(RWX).
 
 > [!WARNING]
-If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is deployed on a multi-node cluster, we can expect pods to hang in `container creating` state for `tei-reranking` or `vllm`. The root cause is that those pods would be using the same PVC `model-volume-llm` and only one of the pods will be able to access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./microservices-connector/helm/values.yaml) and use it in reranking manifest: [teirerank.yaml](./microservices-connector/config/manifests/teirerank.yaml) in volumes section. However we strongly recommend using a storageClass that supports ReadWriteMany accessMode.
+If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is deployed on a multi-node cluster, we can expect pods to hang in `container creating` state for `tei-reranking` or `vllm`. The root cause is that those pods would be using the same PVC `model-volume-llm` and only one of the pods will be able to access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) and use it in reranking manifest: [teirerank.yaml](./components/gmc/microservices-connector/config/manifests/teirerank.yaml) in volumes section. However we strongly recommend using a storageClass that supports ReadWriteMany accessMode.
 
 We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
 
@@ -103,16 +103,16 @@ To set a specific storage class as the default, use the following command:
 ```bash
 kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 ```
-Additionally, ensure that the `pvc` section in [values.yaml](./microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
+Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
 
 ## Defining Resource for you machine
 
-The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./microservices-connector/helm/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./microservices-connector/helm/resources-gaudi.yaml).
+The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./components/gmc/microservices-connector/helm/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./components/gmc/microservices-connector/helm/resources-gaudi.yaml).
 
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
 
-For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/edp/helm` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./edp/helm/values.yaml) file and edit definition for particular elements from that deployment.
+For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/components/edp` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./components/edp/values.yaml) file and edit definition for particular elements from that deployment.
 
 ### Skipping Warm-up for vLLM Deployment
 The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in:
@@ -124,7 +124,7 @@ By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
 ### additional settings for running telemetry
 
-Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
+Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./components/telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
 
 ## Deployment Options
 There are two ways to install ChatQnA using the Enterprise RAG solution:
@@ -216,13 +216,13 @@ You can expand the storage configuration for both the Vector Store and MinIO dep
 
 If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
 
-Similarly, for the selected Vector Store (for example `deployment/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
 
 > [!NOTE]
 > The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
 
 ##### Configure
-The `set_values.sh` script automates Helm value configuration for the `microservices-connector` chart,
+The `set_values.sh` script automates Helm value configuration for the `components/gmc/microservices-connector` chart,
 simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
 ```bash
@@ -335,7 +335,7 @@ system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1
 
 ## Available Pipelines
 
-This [page](./microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the
+This [page](./components/gmc/microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the
 `install_chatqna.sh` script.
 
 Explore a diverse set of easily deployable sample pipeline configurations. Examples include:
@@ -351,7 +351,7 @@ For Xeon + Gaudi deployments, pipeline names include the term `gaudi` (e.g., `ga
 
 To verify that the deployment was successful, run the following command:
 ```bash
-./test_connection.sh
+./scripts/test_connection.sh
 ```
 If the deployment is complete, you should observe the following output:
 ```

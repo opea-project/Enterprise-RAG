@@ -1,0 +1,173 @@
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak_helm_chart_name }}-override-values.yml"
+  tags:
+    - install
+    - update
+    - uninstall
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ keycloak_helm_repo_name }}"
+    repo_url: "{{ keycloak_helm_repo_url }}"
+    state: present
+  tags:
+    - install
+    - update
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yml.j2"
+    dest: "{{ keycloak_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [keycloak_helm_default_values_file] +
+        [keycloak_helm_override_values_path]
+      }}
+  tags:
+    - install
+    - update
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak_helm_namespace }}"
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ keycloak_helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak_tls_secret_name }}"
+        namespace: "{{ keycloak_helm_namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+    - update
+
+- name: Set facts for password generation
+  ansible.builtin.set_fact:
+    keycloak_password_file_path: "{{ log_dir }}/{{ keycloak_password_file_name }}.txt"
+  tags:
+    - install
+    - uninstall
+
+- name: Generate password or load from file
+  ansible.builtin.include_role:
+    name: generate_password
+  with_items:
+    - { generate_password_path: "{{ keycloak_password_file_path }}" }
+  tags:
+    - install
+
+- name: Create password secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak_password_secret_name }}"
+        namespace: "{{ keycloak_helm_namespace }}"
+      data:
+        admin-password: "{{ password | b64encode }}"
+  no_log: true
+  tags:
+    - install
+
+- name: Install Helm chart
+  kubernetes.core.helm:
+    name: "{{ keycloak_helm_release_name }}"
+    chart_ref: "{{ keycloak_helm_repo_name }}/{{ keycloak_helm_chart_name }}"
+    chart_version: "{{ keycloak_helm_chart_version }}"
+    namespace: "{{ keycloak_helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    wait: true
+  tags:
+    - install
+    - update
+
+- name: Initial keycloak configuration
+  ansible.builtin.include_role:
+    name: configure_keycloak
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ keycloak_helm_release_name }}"
+    namespace: "{{ keycloak_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete password secret
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ item }}"
+        namespace: "{{ keycloak_helm_namespace }}"
+  with_items:
+    - "{{ keycloak_password_secret_name }}"
+    - "{{ keycloak_tls_secret_name }}"
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak_helm_namespace }}"
+  tags:
+    - uninstall
+
+- name: Remove password file
+  ansible.builtin.file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - "{{ keycloak_password_file_path }}"
+  tags:
+    - uninstall

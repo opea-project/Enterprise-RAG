@@ -1,0 +1,13 @@
+---
+fingerprint_helm_version: "v3.16.1"
+fingerprint_helm_chart_name: "erag-fingerprint"
+fingerprint_helm_chart_version: "1.1.0"
+fingerprint_helm_release_name: "erag-fingerprint"
+fingerprint_helm_namespace: "fingerprint"
+fingerprint_helm_chart_directory: "{{ playbook_dir }}/../components/fingerprint"
+fingerprint_helm_default_values_file: "{{ playbook_dir }}/../components/fingerprint/values.yaml"
+fingerprint_password_secret_name: "mongo-database-secret"
+fingerprint_admin_password_file_name: "fingerprint-admin-password"
+fingerprint_password_file_name: "fingerprint-password"
+fingerprint_mongo_db_name: "SYSTEM_FINGERPRINT"
+fingerprint_mongo_user: "usr"

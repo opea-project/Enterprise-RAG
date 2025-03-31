@@ -1,0 +1,2 @@
+ansible==10.7.0
+kubernetes==32.0.1

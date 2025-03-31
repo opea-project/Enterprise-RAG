@@ -1,0 +1,3 @@
+plugin: kubernetes.core.k8s
+connections:
+  - kubeconfig: ~/.kube/config

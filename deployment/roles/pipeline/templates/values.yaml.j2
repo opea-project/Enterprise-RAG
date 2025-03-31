@@ -1,0 +1,94 @@
+proxy:
+  httpProxy: {{ httpProxy }}
+  httpsProxy: {{ httpsProxy }}
+  noProxy: {{ noProxy }}
+tokens:
+  hugToken: {{ huggingToken }}
+common_tag: &tag {{ tag }}
+common_registry: &repo {{ registry }}
+
+images:
+  gmcManager:
+    image: "gmcmanager"
+    repository: *repo
+    tag: *tag
+  gmcRouter:
+    image: "gmcrouter"
+    repository: *repo
+    tag: *tag
+  dataprep-usvc:
+    image: "dataprep"
+    repository: *repo
+    tag: *tag
+  embedding-usvc:
+    image: "embedding"
+    repository: *repo
+    tag: *tag
+  reranking-usvc:
+    image: "reranking"
+    repository: *repo
+    tag: *tag
+  teirerank:
+    image: "teirerank"
+    repository: *repo
+    tag: *tag
+  teirerank_gaudi:
+    image: "teirerank_gaudi"
+    repository: *repo
+    tag: *tag
+  prompt-template-usvc:
+    image: "prompt_template"
+    repository: *repo
+    tag: *tag
+  torchserve_embedding:
+    image: "torchserve_embedding"
+    repository: *repo
+    tag: *tag
+  torchserve_reranking:
+    image: "torchserve_reranking"
+    repository: *repo
+    tag: *tag
+  retriever-usvc:
+    image: "retriever"
+    repository: *repo
+    tag: *tag
+  ingestion-usvc:
+    image: "ingestion"
+    repository: *repo
+    tag: *tag
+  llm-usvc:
+    image: "llm"
+    repository: *repo
+    tag: *tag
+  in-guard-usvc:
+    image: "in-guard"
+    repository: *repo
+    tag: *tag
+  out-guard-usvc:
+    image: "out-guard"
+    repository: *repo
+    tag: *tag
+  ui-usvc:
+    image: "chatqna-conversation-ui"
+    repository: *repo
+    tag: *tag
+  vllm_gaudi:
+    image: "vllm-gaudi"
+    repository: *repo
+    tag: *tag
+  vllm:
+    image: "vllm-cpu"
+    repository: *repo
+    tag: *tag
+  vllm_openvino:
+    image: "vllm-openvino"
+    repository: *repo
+    tag: *tag
+  langdtct-usvc:
+    image: "language_detection"
+    repository: *repo
+    tag: *tag
+  fingerprint-usvc:
+    image: "system-fingerprint"
+    repository: *repo
+    tag: *tag

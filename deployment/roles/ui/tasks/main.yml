@@ -1,0 +1,73 @@
+---
+# reminder to check if in already built image i can create entrypoint script that would sed the static pages from auth.erag.com
+# to something that I'd specify in helm values.yml to be able to dynamic linking stuff instead of having to rebuilt images ...
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    ui_helm_override_values_path: "{{ log_dir }}/{{ ui_helm_chart_name }}-override-values.yml"
+  tags:
+    - always
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ ui_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [ui_helm_default_values_file] +
+        [ui_helm_override_values_path]
+      }}
+  tags:
+    - install
+    - update
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ ui_helm_release_name }}"
+    chart_ref: "{{ ui_helm_chart_directory }}"
+    namespace: "{{ ui_helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ ui_helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ ui_helm_release_name }}"
+    namespace: "{{ ui_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ui_helm_namespace }}"
+  tags:
+    - uninstall

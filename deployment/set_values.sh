@@ -2,7 +2,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-HELM_VALUES_PATH=microservices-connector/helm/values.yaml
+HELM_VALUES_PATH=components/gmc/microservices-connector/helm/values.yaml
 
 # Function to display usage information
 usage() {

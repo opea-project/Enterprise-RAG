@@ -1,0 +1,91 @@
+---
+- name:
+  ansible.builtin.set_fact:
+    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress_helm_chart_name }}-override-values.yml"
+  tags:
+    - install
+    - update
+    - uninstall
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ ingress_helm_repo_name }}"
+    repo_url: "{{ ingress_helm_repo_url }}"
+  tags:
+    - install
+    - update
+
+- name: Check if override values file should be generated
+  ansible.builtin.set_fact:
+    generate_override: "{{ ingress.additional_values is defined and ingress.additional_values | dict2items | length > 0 }}"
+  tags:
+    - install
+    - update
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yml.j2"
+    dest: "{{ ingress_helm_override_values_path }}"
+    mode: '0644'
+  when: generate_override
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [ingress_helm_default_values_file] +
+        ([ingress_helm_override_values_path] if generate_override else [])
+      }}
+  tags:
+    - install
+    - update
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ ingress_helm_release_name }}"
+    chart_ref: "{{ ingress_helm_repo_name }}/{{ ingress_helm_chart_name }}"
+    chart_version: "{{ ingress_helm_chart_version }}"
+    namespace: "{{ ingress_helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+  register: helm_result
+  tags:
+    - install
+    - update
+
+# - name: Add istio label to namespace
+#   kubernetes.core.k8s:
+#     api_version: v1
+#     kind: Namespace
+#     name: "{{ ingress_helm_namespace }}"
+#     definition:
+#       metadata:
+#         labels:
+#           istio.io/dataplane-mode: ambient
+#     force: true
+#   tags:
+#     - install
+#     - update
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ ingress_helm_release_name }}"
+    namespace: "{{ ingress_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Remove namespace
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress_helm_namespace }}"
+    state: absent
+  tags:
+    - uninstall

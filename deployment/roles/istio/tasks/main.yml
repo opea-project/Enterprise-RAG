@@ -1,0 +1,102 @@
+---
+# check before update dependencises
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    istio_helm_override_values_path: "{{ log_dir }}/{{ istio_helm_chart_name }}-override-values.yml"
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ istio_helm_repo_name }}"
+    repo_url: "{{ istio_helm_repo_url }}"
+    state: present
+  tags:
+    - install
+    - update
+
+# Check if module can be used
+- name: Update Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency update
+    chdir: "{{ istio_helm_chart_directory }}"
+  tags:
+    - install
+    - update
+
+
+- name: Check if override values file should be generated
+  ansible.builtin.set_fact:
+    generate_override: "{{ istio.additional_values is defined and ingress.additional_values | dict2items | length > 0 }}"
+  tags:
+    - install
+    - update
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yml.j2"
+    dest: "{{ istio_helm_override_values_path }}"
+    mode: '0644'
+  when: generate_override
+  tags:
+    - install
+    - update
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [istio_helm_default_values_file] +
+        ([istio_helm_override_values_path] if generate_override else [])
+      }}
+  tags:
+    - install
+    - update
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ istio_helm_release_name }}"
+    chart_ref: "{{ istio_helm_chart_directory }}"
+    namespace: "{{ istio_helm_namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+  tags:
+    - install
+    - update
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ istio_helm_release_name }}"
+    namespace: "{{ istio_helm_namespace }}"
+    state: absent
+    purge: true
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ istio_helm_namespace }}"
+  tags:
+    - uninstall
+
+- name: Get crds
+  kubernetes.core.k8s_info:
+    kind: CustomResourceDefinition
+  register: istio_crds
+  tags:
+    - uninstall
+
+- name: Remove Istio CRDs
+  kubernetes.core.k8s:
+    state: absent
+    definition: "{{ item }}"
+  loop: "{{ istio_crds.resources | selectattr('metadata.name', 'search', 'istio.io') | list }}"
+  when: istio_crds.resources | length > 0
+  no_log: true # due to enormous output.
+  tags:
+    - uninstall
+

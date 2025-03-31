@@ -1,6 +1,6 @@
 ## This document explains how to configure the Enterprise RAG pipeline
 
-Enterprise RAG pipeline is being configured based on [manifests](../deployment/microservices-connector/config/manifests) and [flow configuration files](../deployment/microservices-connector/config/samples)
+Enterprise RAG pipeline is being configured based on [manifests](../deployment/components/gmc/microservices-connector/config/manifests) and [flow configuration files](../deployment/components/gmc/microservices-connector/config/samples)
 
 `Manifests` show the default component configuration, while `flow configuration files` define how those components are connected together.
 
@@ -12,9 +12,9 @@ When building the pipeline we are passing the `flow configuration files` as `PIP
 ./one_click_chatqna.sh -g <your HF token> -d gaudi_torch_guard 
 ```
 
-Where `gaudi_torch_guard` points to [chatqa_gaudi_torch.yaml](../deployment/microservices-connector/config/samples/chatQnA_gaudi_torch.yaml)
+Where `gaudi_torch_guard` points to [chatqa_gaudi_torch.yaml](../deployment/components/gmc/microservices-connector/config/samples/chatQnA_gaudi_torch.yaml)
 
-The PODs settings are primarily managed by appropriate `.env` files for each microservice. The model name can be set in the Helm [`values.yaml`](../deployment/microservices-connector/helm/values.yaml) file and will be propagated further.
+The PODs settings are primarily managed by appropriate `.env` files for each microservice. The model name can be set in the Helm [`values.yaml`](../deployment/components/gmc/microservices-connector/helm/values.yaml) file and will be propagated further.
 
 Based on this configuration K8s knows which POD should be deployed.
 
@@ -40,9 +40,9 @@ It's possible to update the resource requests and limits in the appropriate YAML
 ### Resource Files
 
 The resource configurations are defined in separate YAML files:
-- [`resources-cpu.yaml`](../deployment/microservices-connector/helm/resources-cpu.yaml)
-- [`resources-gaudi.yaml`](../deployment/microservices-connector/helm/resources-gaudi.yaml)
-- [`resources-tdx.yaml`](../deployment/microservices-connector/helm/resources-tdx.yaml)
+- [`resources-cpu.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-cpu.yaml)
+- [`resources-gaudi.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-gaudi.yaml)
+- [`resources-tdx.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml)
 
 These files contain the resource requests and limits for each microservice.
 
@@ -68,4 +68,4 @@ services:
 ```
 
 > [!NOTE]
-From all the resources defined, only those mentioned in the specific `config/samples` file that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.
+From all the resources defined, only those mentioned in the specific [config/samples](../deployment/components/gmc/microservices-connector/config/samples) file that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.

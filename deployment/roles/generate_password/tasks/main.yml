@@ -1,0 +1,66 @@
+---
+# when running role should be executed with_items: ; also needs rework of mechanics , but works for now. there should be better way to handle ansible-vault pw's
+
+- name: Check if the password file exists
+  ansible.builtin.stat:
+    path: "{{ item.generate_password_path }}"
+  register: password_file_stat
+  # no_log: true
+  tags:
+    - always
+
+- name: Set fact already_generated if password exists
+  ansible.builtin.set_fact:
+    already_generated: "{{ password_file_stat.stat.exists }}"
+  # no_log: true
+  tags:
+    - always
+
+### Generate a password if it doesn't exist
+- name: Generate a secure password
+  ansible.builtin.set_fact:
+    password: "{{ lookup('community.general.random_string', min_lower=4, min_upper=4, min_special=0, min_numeric=4, length=12) }}"
+  when: not already_generated
+  # no_log: true
+  tags:
+    - always
+
+- name: Save the password to a file
+  ansible.builtin.copy:
+    content: "password: {{ password }}"
+    dest: "{{ item.generate_password_path }}"
+    mode: '0600'
+  when: not already_generated
+  # no_log: true
+  tags:
+    - always
+
+- name: Encrypt the password file
+  ansible.builtin.command: "ansible-vault encrypt {{ item.generate_password_path }} --vault-password-file {{ vault_password_file }}"
+  # no_log: true
+  when: not already_generated
+  tags:
+    - always
+
+- name: Decrypt the password file
+  ansible.builtin.command: >
+    ansible-vault decrypt {{ item.generate_password_path }} --vault-password-file {{ vault_password_file }}
+  when: already_generated
+  # no_log: true
+  tags:
+    - always
+
+- name: Load the password from the file
+  ansible.builtin.include_vars:
+    file: "{{ item.generate_password_path }}"
+  when: already_generated
+  # no_log: true
+  tags:
+    - always
+
+- name: Encrypt the password file
+  ansible.builtin.command: "ansible-vault encrypt {{ item.generate_password_path }} --vault-password-file {{ vault_password_file }}"
+  # no_log: true
+  when: already_generated
+  tags:
+    - always

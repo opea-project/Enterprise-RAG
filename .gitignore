@@ -5,9 +5,12 @@ deployment/*.out
 deployment/*.key
 deployment/*.crt
 deployment/logs
+deployment/ansible-logs
+deployment/inventory/*
+!deployment/inventory/sample
 
 # Telemetry
-/deployment/telemetry/helm/example/pcm/
+/deployment/components/telemetry/helm/example/pcm/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -39,8 +42,11 @@ super-linter-output/
 # Tox filex
 .tox
 
+
 # credentials
-/deployment/default_credentials.txt
+deployment/default_credentials.txt
+ 
 
 # .venv files
+*venv*/
 .venv/

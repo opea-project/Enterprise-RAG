@@ -1,0 +1,28 @@
+{% if keycloak.additional_values.ingress is not defined %}
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  pathType: Prefix
+  hostname: {{ keycloak.domainName }}
+  hostnameStrict: true
+  path: /
+  tls: true
+  extraTls:
+    - hosts:
+        - {{ keycloak.domainName }}
+      secretName: {{ keycloak_tls_secret_name }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+tls:
+  enabled: true
+  existingSecret: {{ keycloak_tls_secret_name }}
+  usePem: true
+{% endif %}
+auth:
+  adminUser: {{ keycloak_admin_user }}
+  existingSecret: {{ keycloak_password_secret_name }}
+  passwordSecretKey: admin-password
+{% if keycloak.additional_values is defined %}
+{{ keycloak.additional_values | to_nice_yaml }}
+{% endif %}

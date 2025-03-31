@@ -1,0 +1,32 @@
+---
+# This role is hacky until moved to keycloak plugin
+- name: Set up port forwarding for Keycloak service
+  ansible.builtin.command: >
+    kubectl port-forward svc/keycloak -n {{ helm_namespace }} 1234:80
+  async: 30
+  poll: 0
+  register: port_forward_job
+  tags:
+    - install
+
+- name: Wait for port forwarding to be established
+  ansible.builtin.wait_for:
+    port: 1234
+    host: localhost
+    delay: 5
+    timeout: 30
+  tags:
+    - install
+
+# This should have argument passed with log_dir
+- name: Run the script from the role's files directory
+  ansible.builtin.command: >
+    bash {{ role_path }}/files/keycloak_configurator.sh {{ password }}
+  tags:
+    - install
+
+- name: Stop port forwarding
+  ansible.builtin.command: >
+    pkill -f "kubectl port-forward svc/keycloak -n {{ helm_namespace }} 1234:80"
+  tags:
+    - install

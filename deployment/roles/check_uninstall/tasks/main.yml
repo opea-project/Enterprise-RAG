@@ -1,0 +1,1 @@
+# verify if all ns & crds are absent ; we do not wait on deletion therefore it may not finish successfully

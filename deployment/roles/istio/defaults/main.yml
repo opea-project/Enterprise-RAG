@@ -1,0 +1,10 @@
+---
+istio_helm_version: "v3.16.1"
+istio_helm_repo_name: "istio"
+istio_helm_repo_url: "https://istio-release.storage.googleapis.com/charts"
+istio_helm_chart_name: "istio"
+istio_helm_chart_directory: "{{ playbook_dir }}/../components/istio"
+istio_helm_release_name: "istio"
+istio_helm_chart_version: "1.1.0"
+istio_helm_namespace: "istio-system"
+istio_helm_default_values_file: "{{ playbook_dir }}/../components/istio/values.yml"

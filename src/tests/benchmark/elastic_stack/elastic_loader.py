@@ -96,9 +96,8 @@ def main():
     )
     parser.add_argument("--commit-sha", type=str, help="Commit SHA")
     parser.add_argument("--branch-name", type=str, help="Branch name")
-    parser.add_argument(
-        "--main-commit-sha", type=str, help="Main commit SHA", required=True
-    )
+    parser.add_argument("--main-commit-sha", type=str, help="Main commit SHA", required=True)
+    parser.add_argument("--server-url", type=str, help="Uploading to server url", required=True)
     parser.add_argument(
         "-y",
         "--yes",
@@ -117,9 +116,10 @@ def main():
     file = args.file_path
     component = args.component
     model_server = args.model_server
+    server_url = args.server_url
 
     client = Elasticsearch(
-        "https://localhost:9200", ca_certs="ca.crt", basic_auth=("elastic", "changeme")
+        f"https://{server_url}:9200", verify_certs=False, basic_auth=("elastic", "changeme")
     )
 
     results_doc_base = {
@@ -136,12 +136,22 @@ def main():
     }
 
     documents = []
+    filename = os.path.basename(file)
 
-    with open(file, mode="r") as file:
+    with open(file, mode="r+") as file:
         csvFile = csv.DictReader(file)
+        datetime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2})', filename)
+
+        if datetime_match:
+            upload_datetime = datetime_match.group(1)
+        else:
+            current_time = datetime.datetime.now()
+            upload_datetime = current_time.strftime("%Y-%m-%d %H-%M-%S")
+            logger.info(f"Datetime not found in filename: {filename}. Using current time: {upload_datetime}")
 
         for csv_record in csvFile:
             db_record = copy.deepcopy(results_doc_base)
+            db_record['datetime'] = convert_to_iso8601(upload_datetime)
 
             for key, value in csv_record.items():
                 try:
@@ -182,6 +192,9 @@ def main():
         client.index(index="benchmarks", document=doc)
     print("Uploaded.")
 
+def convert_to_iso8601(date_str):
+    dt = datetime.strptime(date_str, "%Y-%m-%d %H-%M-%S")
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")  # Appends 'Z' for UTC time
 
 if __name__ == "__main__":
     main()

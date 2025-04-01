@@ -249,7 +249,8 @@ class BenchmarkBase:
     def save_results_as_csv(self, file_name):
         now = datetime.datetime.now()
         formatted_datetime = now.strftime("%Y-%m-%d %H-%M-%S")
-        with open(f"/tmp/{formatted_datetime} {file_name}", "w") as csvfile:
+        result_file_path = f"/tmp/{formatted_datetime}_{file_name}"
+        with open(result_file_path, "w") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=self._fields_names)
             writer.writeheader()
             for row in self._results:
@@ -257,6 +258,9 @@ class BenchmarkBase:
                     key: format_float(value, 3) for key, value in row.items()
                 }
                 writer.writerow(formatted_row)
+            logger.info(f"Results successfully written to: {result_file_path}")
+        with open(result_file_path, "r") as csvfile:
+            logger.info(csvfile.read())
 
     def _extended_combinations(self, model_context_window: int) -> list[dict]:
         """Extended benchmark parameters based on model context window.

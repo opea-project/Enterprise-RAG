@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.utils.utils import sanitize_env
-from utils import opea_retriever
+from comps.retrievers.utils.opea_retriever import OPEARetriever
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, SearchedDoc
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
@@ -26,7 +26,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 # Initialize an instance of the OPEARetriever class with environment variables.
 
-retriever = opea_retriever.OPEARetriever(
+retriever = OPEARetriever(
     vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
 )
 
@@ -51,8 +51,6 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         vector = input.docs[0] # EmbedDocList[0]
     else:
         vector = input # EmbedDoc
-
-    logger.info(f"Retrieving documents for input: {vector.text}. K={vector.k}, Search Type={vector.search_type}")
 
     result_vectors = None
     try:

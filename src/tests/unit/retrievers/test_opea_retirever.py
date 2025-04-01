@@ -5,6 +5,9 @@ import pytest
 from unittest import mock
 from comps.cores.proto.docarray import EmbedDoc
 from comps.retrievers.utils.opea_retriever import OPEARetriever
+from typing import List, Union, Optional
+from redisvl.query.filter import FilterExpression, Text
+from comps.cores.proto.docarray import EmbedDoc, SearchedDoc, TextDoc
 
 @pytest.fixture
 def mock_vectorstore():
@@ -16,9 +19,16 @@ def mock_vectorstore():
             pass
         def add_texts(texts, **kwargs):
             return texts
-        def similarity_search_by_vector(**kwargs):
-            return [SearchRes('a'), SearchRes('b')]
-        def similarity_search_with_relevance_scores(self,  **kwargs):
+        async def similarity_search_by_vector(input_text: str, embedding: List[float], k: int, distance_threshold: float = None, filter_expression: Optional[Union[str, FilterExpression]] = None, parse_result: bool = True):
+            return SearchedDoc(
+        initial_query="This is my sample query?",
+        retrieved_docs=[
+            TextDoc(text=""),
+            TextDoc(text="  "),  
+        ],
+        top_n=1,
+    )
+        def similarity_search_with_relevance_scores(self,  input_text: str, embedding: List, k: int, score_threshold: float):
             return []
         def max_marginal_relevance_search(self, **kwargs):
             return []
@@ -29,9 +39,18 @@ def mock_vectorstore():
     with mock.patch('comps.vectorstores.utils.connectors.connector_redis.ConnectorRedis', return_value=MockDbClient):
         yield
 
+@pytest.mark.asyncio
 async def test_retrieve_docs(mock_vectorstore):
     input = EmbedDoc(text="test", embedding=[1,2,3])
     retriever = OPEARetriever("redis")
-    result = retriever.retrieve(input=input)
-    print(result)
+    result = await retriever.retrieve(input=input)
     assert len(result.retrieved_docs) == 2
+
+def test_singleton_instance():
+    retriever1 = OPEARetriever("redis")
+    retriever2 = OPEARetriever("redis")
+    assert retriever1 is retriever2
+
+def test_initialize_method():
+    retriever = OPEARetriever("redis")
+    assert retriever.vector_store is not None

@@ -32,7 +32,7 @@ spec:
       containers:
       - name: router-server
         {{- $image := "gmcRouter" }}
-        image: {{ include "manifest.image" (list $image .Values) }}
+        image: {{ toYaml (index .Values "images" $image "repository") }}/{{ toYaml (index .Values "images" $image "path") }}/{{ toYaml (index .Values "images" $image "image") }}:{{ toYaml (index .Values "images" $image "tag") }}
         imagePullPolicy: {{ toYaml (index .Values "images" $image "pullPolicy" | default "Always") }}
         securityContext:
             {{- toYaml .Values.securityContext | nindent 10 }}

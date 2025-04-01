@@ -34,5 +34,5 @@ export OUTPUT_DIR=/model/1
 
 python combine_models.py
 
-# Start OVMS
-exec /ovms/bin/ovms --model_name $NAME --model_path /model --cpu_extension /ovms/lib/libopenvino_tokenizers.so --rest_port 9000 --log_level INFO
+# Start OVMS 
+exec /ovms/bin/ovms --model_name $NAME --model_path /model --cpu_extension /ovms/lib/libopenvino_tokenizers.so --rest_port 9000 --log_level DEBUG

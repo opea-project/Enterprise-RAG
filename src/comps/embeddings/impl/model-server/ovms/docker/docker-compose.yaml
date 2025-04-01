@@ -10,8 +10,6 @@ services:
     container_name: embedding-ovms-model-server
     ports:
       - "${OVMS_PORT}:9000"
-    volumes:
-      - ./data/:/data
     environment:
       HF_TOKEN: ${HF_TOKEN}
       HTTP_PROXY: ${HTTP_PROXY}

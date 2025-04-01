@@ -1,40 +1,56 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:22.04
-ARG DEBIAN_FRONTEND=noninteractive
+FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
+
+ENV LANG=C.UTF-8
+
+ENV TEMP=/home/user/tmp
+ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
- && apt-get -y upgrade                          \
- && apt-get install -y --no-install-recommends  \
-    build-essential                             \
-    ca-certificates                             \
-    cmake                                       \
-    curl                                        \
-    git                                         \
+ && apt-get install -y                          \
+    openjdk-17-jdk                              \
+    numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \
-    libsm6                                      \
-    libssl-dev                                  \
-    libxext6                                    \
-    libxrender-dev                              \
-    numactl                                     \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean
 
+RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
+RUN rm -rf /usr/local/lib/python3.11/site-packages/*
+
 ENV GLIBC_TUNABLES glibc.cpu.x86_shstk=permissive
 
-RUN apt update && apt install -y python3 python3-pip
-RUN pip3 install torch==2.3.1 torchvision --index-url https://download.pytorch.org/whl/cpu
-RUN pip3 install intel-extension-for-pytorch==2.3.100 intel-openmp
-RUN pip3 install transformers
-RUN pip3 install llmspec mosec
+# Create user and folders
+RUN useradd -u 1000 -m -s /bin/bash user        \
+ && mkdir -p /home/user/tmp /opt/ml/model       \
+ && chown -R user /home/user /opt/ml/model
 
-COPY server-ipex.py server-ipex.py
+USER user
+ENV PATH="$PATH:/home/user/.local/bin"
+ENV PYTHONPATH="/home/user"
+ENV HF_HOME="/home/user/tmp"
 
-# INTEL specific ENVs
-RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:/usr/local/lib/libiomp5.so:${LD_PRELOAD}"
+# Install UV requirements
+WORKDIR /home/user/
+COPY ./docker/pyproject.toml pyproject.toml
+COPY ./docker/uv.lock uv.lock
+RUN uv sync --locked --no-cache
+ENV PATH="/home/user/.venv/bin:$PATH"
+
+# Add ipex server
+COPY --chown=user:user docker/server-ipex.py /home/user
+COPY --chown=user:user docker/server-ipex.py server-ipex.py
+
+# Intel specific environment variables
+ENV KMP_SETTINGS=1
+ENV KMP_AFFINITY=granularity=fine,compact,1,0
+ENV KMP_BLOCKTIME=1
+# jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
 
 CMD ["ipexrun", "cpu", "--nodes-list", "0", "--memory-allocator", "tcmalloc", "server-ipex.py"]

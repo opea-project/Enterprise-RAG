@@ -7,20 +7,16 @@
 
 # Check if LLM_DEVICE is set and valid
 if [ -z "${LLM_DEVICE}" ]; then
-    echo "Error: LLM_DEVICE is not set. Please set it to 'hpu' or 'cpu' or 'openvino'."
+    echo "Error: LLM_DEVICE is not set. Please set it to 'hpu' or 'cpu'."
     exit 1
-elif [ "${LLM_DEVICE}" != "hpu" ] && [ "${LLM_DEVICE}" != "cpu" ] && [ "${LLM_DEVICE}" != "openvino" ]; then
-    echo "Error: LLM_DEVICE must be set to 'hpu' or 'cpu' or 'openvino'. Provided value: ${LLM_DEVICE}."
+elif [ "${LLM_DEVICE}" != "hpu" ] && [ "${LLM_DEVICE}" != "cpu" ]; then
+    echo "Error: LLM_DEVICE must be set to 'hpu' or 'cpu'. Provided value: ${LLM_DEVICE}."
     exit 1
 fi
 
 echo "Info: LLM_DEVICE is set to: $LLM_DEVICE"
 
-if [ "${LLM_DEVICE}" == "openvino" ]; then
-    ENV_FILE=docker/.env.cpu
-else
-    ENV_FILE=docker/.env.${LLM_DEVICE}
-fi
+ENV_FILE=docker/.env.${LLM_DEVICE}
 echo "Reading configuration from $ENV_FILE..."
 
 # Check if docker compose is available (prerequisite)
@@ -68,6 +64,7 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
 fi
 
 mkdir -p docker/data/
+sudo chown -R 1000:1000 ./docker/data
 
 if [ "${LLM_DEVICE}" = "hpu" ]; then
     if [ "${IF_FP8_QUANTIZATION}" = "true" ]; then
@@ -77,5 +74,5 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
         docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-vllm-model-server
     fi
 else
-    docker compose -f docker/docker-compose-cpu.yaml up --build -d llm-vllm-model-server
+    docker compose -f docker/docker-compose-cpu.yaml up --build llm-vllm-model-server
 fi

@@ -60,7 +60,6 @@ var (
 		"LLMGuardOutput",
 		"VLLMGaudi",
 		"VLLM",
-		"VLLMOpenVino",
 		"LanguageDetection",
 	}
 )

@@ -110,9 +110,9 @@ spec:
               name: tmp
             - mountPath: /dev/shm
               name: shm
-            - mountPath: /.cache
+            - mountPath: /home/user/.cache
               name: cache
-            - mountPath: /.config
+            - mountPath: /home/user/.config
               name: config
           ports:
             - name: http

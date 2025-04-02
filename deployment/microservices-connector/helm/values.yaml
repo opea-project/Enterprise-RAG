@@ -256,15 +256,6 @@ images:
     envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
-  vllm_openvino:
-    image: "vllm-openvino"
-    repository: *repo
-    tag: *tag
-    path: *path
-    pullPolicy: Always
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
-    envs:
-      LLM_VLLM_MODEL_NAME: *cpu_model
   langdtct-usvc:
     image: "language_detection"
     repository: *repo

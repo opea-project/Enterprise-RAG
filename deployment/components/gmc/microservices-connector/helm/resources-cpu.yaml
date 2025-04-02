@@ -127,15 +127,6 @@ services:
       limits:
         cpu: 4
         memory: 16Gi
-  vllm_openvino:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 48
-        memory: 64Gi
-      limits:
-        cpu: 48
-        memory: 64Gi
   vllm:
     replicas: 1
     resources:

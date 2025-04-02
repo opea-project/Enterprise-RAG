@@ -29,7 +29,7 @@ class LLMs_VllmIP_CPU_EnvKeys(Enum):
 
 
 class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
-    """Implements VLLM with OpenVino Docker setup"""
+    """Implements VLLM with IPEX Docker setup"""
 
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
     MODELSERVER_IMAGE_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-vllm"

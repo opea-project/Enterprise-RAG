@@ -85,8 +85,6 @@ const (
 	VLLMGaudi StepNameType = "VLLMGaudi"
 	// VLLM
 	VLLM StepNameType = "VLLM"
-	// VLLMOpenVino
-	VLLMOpenVino StepNameType = "VLLMOpenVino"
 	// Language-Detection
 	LanguageDetection StepNameType = "LanguageDetection"
 )

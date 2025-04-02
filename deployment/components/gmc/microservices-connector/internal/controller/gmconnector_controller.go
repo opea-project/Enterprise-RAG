@@ -85,7 +85,6 @@ const (
 	Ingestion                = "Ingestion"
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
-	VLLMOpenVino             = "VLLMOpenVino"
 	LanguageDetection        = "LanguageDetection"
 )
 
@@ -120,7 +119,6 @@ var yamlDict = map[string]string{
 	Ingestion:           yaml_dir + "ingestion-usvc.yaml",
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 	VLLM:                yaml_dir + "vllm.yaml",
-	VLLMOpenVino:        yaml_dir + "vllm_openvino.yaml",
 	LanguageDetection:   yaml_dir + "langdtct-usvc.yaml",
 }
 

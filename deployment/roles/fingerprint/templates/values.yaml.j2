@@ -1,0 +1,17 @@
+{% if tag is defined %}
+image:
+  fingerprint:
+    tag: "{{ tag }}"
+{% endif %}
+mongodb:
+  auth:
+    usernames:
+      - {{ fingerprint_mongo_user }}
+    passwords:
+      - {{ fingerprint_db_password }}
+    databases:
+      - {{ fingerprint_mongo_db_name }}
+    rootPassword: {{ fingerprint_db_root_password }}
+{% if fingerprint.additional_values is defined %}
+{{ fingerprint.additional_values | to_nice_yaml }}
+{% endif %}

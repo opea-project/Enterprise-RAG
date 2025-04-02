@@ -79,7 +79,7 @@ export const parseServiceDetailsResponseData = (
     status: { annotations },
   } = response;
 
-  // Map of service names from deployment/microservices-connector/config/samples to chatqa graph node IDs
+  // Map of service names from deployment/components/gmc/microservices-connector/config/samples to chatqa graph node IDs
   const serviceNameNodeIdMap: { [service: string]: string } = {
     "v1:tei-embedding-svc": "embedding_model_server",
     "v1:torchserve-embedding-svc": "embedding_model_server",

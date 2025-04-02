@@ -12,6 +12,7 @@ services:
       - "${LLM_VLLM_PORT}:80"
     volumes:
       - "./data:/data"
+    user: "1000:1000"
     environment:
       HF_TOKEN: ${HF_TOKEN}
       HTTP_PROXY: ${HTTP_PROXY}

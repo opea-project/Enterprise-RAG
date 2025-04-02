@@ -12,9 +12,10 @@ Provide your Hugging Face API key to enable access to Hugging Face models. Alter
 export HF_TOKEN=${your_hf_api_token}
 ```
 
-Also, create a folder to preserve model data on host:
+Also, create a folder to preserve model data on host and change the ownership to the id that would match user in the image:
 ```bash
 mkdir -p docker/data/
+sudo chown -R 1000:1000 ./docker/data
 ```
 
 ### 🚀 Start the vLLM Service via script (Option 1)
@@ -33,7 +34,7 @@ chmod +x run_vllm.sh
 The script initiates a Docker container with the vLLM model server running on port `LLM_VLLM_PORT` (default: **8008**). Configuration settings are specified in the environment configuration files [docker/.env.hpu](docker/.env.hpu) and [docker/.env.cpu](docker/.env.cpu) files. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
 
 #### 1.2. Verify the vLLM Service
-Below examples are presented for hpu device. 
+Below examples are presented for hpu device.
 
 First, check the logs to confirm the service is operational:
 ```bash

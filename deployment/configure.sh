@@ -58,7 +58,7 @@ if [[ -n "$RAG_HTTP_PROXY" || "$RAG_HTTPS_PROXY" || "$RAG_NO_PROXY" ]]; then
     export RAG_HTTP_PROXY
     export RAG_HTTPS_PROXY
     export RAG_NO_PROXY
-    envsubst < tpl/config.json.tpl > tmp.config.json
+    envsubst < configs/config.json.tpl > tmp.config.json
     if [ -e ~/.docker/config.json ]; then
         echo "Warning! Docker config.json exists; continues using the existing file"
     else

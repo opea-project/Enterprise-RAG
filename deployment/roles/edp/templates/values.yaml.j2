@@ -1,0 +1,33 @@
+proxy:
+  httpProxy: {{ httpProxy }}
+  httpsProxy: {{ httpsProxy }}
+  noProxy: {{ noProxy }}
+
+edpAccessKey: "{{ edp_minio_acess_key }}"
+edpSecretKey: "{{ edp_minio_secret_key }}"
+edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcClientSecret: {{ edp_client_secret_id }}
+minioApiDomain: &minioApiDomain "{{ edp.apiDomainName }}"
+minioBrowserDomain: &minioBrowserDomain "{{ edp.domainName }}"
+
+edpInternalSecure: false
+
+redisUsername: {{ edp_redis_db_username }}
+redisPassword: "{{ edp_redis_password }}"
+
+postgresDatabasePassword: {{ edp_postgresql_user_password }}
+postgresAdminPassword: {{ edp_postgresql_admin_password }}
+
+celery:
+  tag: {{ tag }}
+flower:
+  tag: {{ tag }}
+backend:
+  tag: {{ tag }}
+dataprep:
+  tag: {{ tag }}
+ingestion:
+  tag: {{ tag }}
+embedding:
+  enabled: false
+  remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"

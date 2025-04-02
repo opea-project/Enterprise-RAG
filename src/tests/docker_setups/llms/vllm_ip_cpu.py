@@ -29,7 +29,7 @@ class LLMs_VllmIP_CPU_EnvKeys(Enum):
 
 
 class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
-    """Implements VLLM with OpenVino Docker setup"""
+    """Implements VLLM with IPEX Docker setup"""
 
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
     MODELSERVER_IMAGE_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-vllm"
@@ -43,14 +43,6 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
     @property
     def _MODEL_SERVER_READINESS_MSG(self) -> str:
         return "Application startup complete"
-
-    @property
-    def _microservice_envs(self) -> dict:
-        return {
-            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
-            "LLM_MODEL_SERVER": "vllm",
-            "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
-        }
 
     @property
     def _model_server_envs(self) -> dict:
@@ -68,6 +60,14 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
         }
         env_vars["VLLM_OPENVINO_DEVICE"] = "CPU"
         return env_vars
+
+    @property
+    def _microservice_envs(self) -> dict:
+        return {
+            "LLM_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME),
+            "LLM_MODEL_SERVER": "vllm",
+            "LLM_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",
+        }
 
     def _build_model_server(self) -> Image:
         return self._build_image(

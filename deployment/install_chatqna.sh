@@ -4,22 +4,22 @@
 
 # paths
 repo_path=$(realpath "$(pwd)/../")
-manifests_path="$repo_path/deployment/microservices-connector/config/samples"
-gmc_path="$repo_path/deployment/microservices-connector/helm"
-fingerprint_path="$repo_path/deployment/fingerprint"
-telemetry_path="$repo_path/deployment/telemetry/helm"
-telemetry_logs_path="$repo_path/deployment/telemetry/helm/charts/logs"
-telemetry_traces_path="$repo_path/deployment/telemetry/helm/charts/traces"
-telemetry_traces_instr_path="$repo_path/deployment/telemetry/helm/charts/traces-instr"
-ui_path="$repo_path/deployment/ui/chat-qna"
-auth_path="$repo_path/deployment/auth"
-keycloak_path="$repo_path/deployment/auth/keycloak"
-api_gateway_path="$repo_path/deployment/auth/apisix"
-api_gateway_crd_path="$repo_path/deployment/auth/apisix-routes"
-ingress_path="$repo_path/deployment/auth/ingress"
-configs_path="$repo_path/deployment/auth/configs"
-edp_path="$repo_path/deployment/edp/helm"
-istio_path="$repo_path/deployment/istio"
+manifests_path="$repo_path/deployment/components/gmc/microservices-connector/config/samples"
+gmc_path="$repo_path/deployment/components/gmc/microservices-connector/helm"
+fingerprint_path="$repo_path/deployment/components/fingerprint"
+telemetry_path="$repo_path/deployment/components/telemetry/helm"
+telemetry_logs_path="$repo_path/deployment/components/telemetry/helm/charts/logs"
+telemetry_traces_path="$repo_path/deployment/components/telemetry/helm/charts/traces"
+telemetry_traces_instr_path="$repo_path/deployment/components/telemetry/helm/charts/traces-instr"
+ui_path="$repo_path/deployment/components/ui"
+scripts_path="$repo_path/deployment/scripts"
+keycloak_path="$repo_path/deployment/components/keycloak"
+api_gateway_path="$repo_path/deployment/components/apisix"
+api_gateway_crd_path="$repo_path/deployment/components/apisix-routes"
+ingress_path="$repo_path/deployment/components/ingress"
+configs_path="$repo_path/deployment/configs"
+edp_path="$repo_path/deployment/components/edp"
+istio_path="$repo_path/deployment/components/istio"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -403,6 +403,9 @@ function clear_mesh() {
     helm status -n $ISTIO_NS istiod > /dev/null 2>&1 && helm uninstall istiod -n $ISTIO_NS
     helm status -n $ISTIO_NS istio-base > /dev/null 2>&1 && helm uninstall istio-base -n $ISTIO_NS
     kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
+    if kubectl get crd -o name | grep 'istio.io' > /dev/null 2>&1; then
+        kubectl get crd -o name | grep 'istio.io' | xargs kubectl delete
+    fi
 }
 
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
@@ -593,7 +596,7 @@ function start_authentication() {
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
-    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_CHARTS_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_CHARTS_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -615,11 +618,11 @@ function start_authentication() {
     fi
 
     # fix paths across scripts
-    cd "$auth_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
+    cd "$scripts_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
 
     # create apisix-secret with client_secret
     if ! kubectl get secret apisix-secret -n $GATEWAY_NS > /dev/null 2>&1; then
-        client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS)
+        client_secret=$(bash "$scripts_path"/get_secret.sh $KEYCLOAK_PASS)
         create_secret apisix-secret $GATEWAY_NS "CLIENT_SECRET=$client_secret"
     fi
 
@@ -737,7 +740,7 @@ function start_edp() {
     # get passwd from file
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
-    local minio_client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
+    local minio_client_secret=$(bash "$scripts_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -771,7 +774,7 @@ function start_edp() {
 
     if $dpguard; then
         print_log "Enabling Dataprep Guardrail"
-        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true "
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true --set dpguard.tag=$TAG"
     fi
 
     helm dependency update "$edp_path" > /dev/null
@@ -1074,7 +1077,7 @@ else
     HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag/enhanced-dataprep --set backend.tag=$TAG --set dataprep.repository=$REGISTRY/erag/dataprep --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY/erag/embedding --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY/erag/ingestion --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY/erag/enhanced-dataprep --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY/erag/dpguard --set dpguard.tag=$TAG "
 fi
 
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/ingress-values.yaml"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 
@@ -1164,7 +1167,7 @@ if $test_flag; then
     if $mesh_flag; then
         test_args="--mesh --istio-path $istio_path"
     fi
-    bash test_connection.sh $test_args
+    bash scripts/test_connection.sh $test_args
 fi
 
 if $clear_auth_flag; then

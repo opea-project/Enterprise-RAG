@@ -132,7 +132,7 @@ If you want to store your images encrypted in your container registry, follow th
 
 ### Deployment customization
 
-Edit the [resources-tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
+Edit the [resources-tdx.yaml](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.
@@ -142,4 +142,4 @@ It overrides resources requests and limits only if increasing the resources.
 
 1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
 2. Only `*xeon*` pipelines are supported with Intel TDX (e.g.: `chatQnA_xeon_torch_llm_guard`)
-3. Some microservices defined in [resources-tdx.yaml](../deployment/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.
+3. Some microservices defined in [resources-tdx.yaml](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.

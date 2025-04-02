@@ -1,0 +1,9 @@
+---
+helm_version: "v3.16.1"
+helm_chart_name: "gmc"
+helm_chart_directory: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm"
+helm_release_name: "gmc"
+helm_chart_version: "1.1.0"
+helm_namespace: "system"
+helm_default_values_file: "{{ helm_chart_directory }}/values.yaml"
+helm_default_resources_file: "{{ helm_chart_directory }}/resources-cpu.yaml"

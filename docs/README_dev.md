@@ -22,7 +22,7 @@ Initialize kind cluster and create a local registry.
 
 ```bash
 # Create Local registry and kind-control-plane containers:
-bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh
+bash ./components/telemetry/helm/example/kind-with-registry-opea-models-mount.sh
 kind export kubeconfig
 docker ps
 kubectl get pods -A
@@ -52,7 +52,7 @@ Check your changes with following command:
 
 ```bash
 # check yaml values
-git --no-pager diff microservices-connector/helm/values.yaml
+git --no-pager diff components/gmc/microservices-connector/helm/values.yaml
 ```
 
 Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
@@ -94,7 +94,7 @@ Deploy the pipeline. Choose a command that suits your needs. More information on
 
 To verify that the deployment was successful, run the following command:
 ```bash
-./test_connection.sh
+./scripts/test_connection.sh
 ```
 
 Check out following commands for any additional needs.

@@ -1,0 +1,20 @@
+---
+telemetry_prometheus_helm_repo: https://prometheus-community.github.io/helm-charts
+telemetry_grafana_helm_repo: https://grafana.github.io/helm-charts
+telemetry_opensearch_helm_repo: https://opensearch-project.github.io/helm-charts
+telemetry_opensearch_collector_helm_repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+telemetry_charts_path: "{{ playbook_dir }}/../components/telemetry/helm/"
+telemetry_logging_charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/"
+telemetry_traces_charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/traces"
+telemetry_traces_instr_charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/traces-instr/"
+telemetry_monitoring_helm_default_values_file: "{{ telemetry_charts_path }}/values.yaml"
+telemetry_logging_helm_default_values_file: "{{ telemetry_logging_charts_path }}/values.yaml"
+telemetry_traces_helm_default_values_file: "{{ telemetry_traces_charts_path }}/values.yaml"
+telemetry_traces_instr_helm_default_values_file: "{{ telemetry_traces_instr_charts_path }}/values.yaml"
+telemetry_monitoring_namespace: "monitoring"
+telemetry_traces_namespace: "monitoring-traces"
+telemetry_grafana_tls_secret_name: "grafana-tls"
+telemetry_grafana_password_file_name: "grafana-password"
+telemetry_password_secret_name: "grafana-password"
+telemetry_admin_user: "admin"
+telemetry_otelcol_delete_timeout: 10

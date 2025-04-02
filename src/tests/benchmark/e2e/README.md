@@ -11,7 +11,7 @@ sudo cp repo_path/deployment/tls.crt /usr/local/share/ca-certificates/ && sudo u
 ```
 * have a valid credentials inside `repo_path/deployment/default_credentials.txt`
 * export your HF token `export HF_TOKEN="my-huggingface-token"`
-* it is also advised to increase the rate limits for chatqa endpoint in `repo_path/deployment/auth/apisix-routes/values.yaml` before eRAG installation to avoid ratelimiter errors (429 error code) - this can be done by modifying `rate_limit_count` value under `endpoint -> chatqa` section of the file
+* it is also advised to increase the rate limits for chatqa endpoint in `repo_path/deployment/components/apisix-routes/values.yaml` before eRAG installation to avoid ratelimiter errors (429 error code) - this can be done by modifying `rate_limit_count` value under `endpoint -> chatqa` section of the file
 
 ### Ingesting data into RAG
 Before running the test it is advised to ingest some data into eRAG to ensure that vector database contains some real context data. In order to do so there is the script which will do that. It can take few hours to execute that part.

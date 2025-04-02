@@ -93,7 +93,7 @@ kubectl get crd -o name | grep 'istio.io' | xargs kubectl delete # removing crds
 #### Install
 To install the application, use the following Ansible command:
 ```bash
-ansible-playbook -i inventory/test-cluster/invetory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags install
+ansible-playbook -i inventory/test-cluster/inventory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags install
 ```
 Run `kubectl get pods -A` to verify that the expected pods are running. For more details, refer to the [Verify Services](README.md#verify-services)
 
@@ -103,7 +103,7 @@ Run `kubectl get pods -A` to verify that the expected pods are running. For more
 #### Uninstall
 To uninstall the application, use the following Ansible command:
 ```bash
-ansible-playbook -i inventory/test-cluster/invetory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags uninstall
+ansible-playbook -i inventory/test-cluster/inventory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags uninstall
 ```
 
 

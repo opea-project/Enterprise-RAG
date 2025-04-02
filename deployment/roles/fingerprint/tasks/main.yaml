@@ -3,7 +3,7 @@
 # check before update dependencises
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    fingerprint_helm_override_values_path: "{{ log_dir }}/{{ fingerprint_helm_chart_name }}-override-values.yml"
+    fingerprint_helm_override_values_path: "{{ log_dir }}/{{ fingerprint_helm_chart_name }}-override-values.yaml"
   tags:
     - always
 

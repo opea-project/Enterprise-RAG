@@ -2,7 +2,7 @@
 # did not change vars name to pipeline
 - name: Set roles facts
   ansible.builtin.set_fact:
-    helm_override_values_path: "{{ log_dir }}/{{ helm_chart_name }}-override-values.yml"
+    helm_override_values_path: "{{ log_dir }}/{{ helm_chart_name }}-override-values.yaml"
     helm_override_resources_path: "{{ playbook_dir }}/{{ item.resourcesPath }}"
   tags:
     - always

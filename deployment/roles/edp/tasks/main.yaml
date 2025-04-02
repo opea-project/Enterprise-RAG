@@ -2,7 +2,7 @@
 # check if chatqa is being deployed and fetch namespace
 - name: Set roles facts
   ansible.builtin.set_fact:
-    edp_helm_override_values_path: "{{ log_dir }}/{{ edp_helm_chart_name }}-override-values.yml"
+    edp_helm_override_values_path: "{{ log_dir }}/{{ edp_helm_chart_name }}-override-values.yaml"
   tags:
     - install
     - update

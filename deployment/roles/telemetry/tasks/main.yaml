@@ -2,7 +2,7 @@
 # telemetry might be moved to other playbook ; but needs to be designed how to interact with istio
 - name: Set roles facts
   ansible.builtin.set_fact:
-    telemetry_monitoring_helm_override_values_path: "{{ log_dir }}/telemetry-monitoring-override-values.yml"
+    telemetry_monitoring_helm_override_values_path: "{{ log_dir }}/telemetry-monitoring-override-values.yaml"
   tags:
     - install
     - update

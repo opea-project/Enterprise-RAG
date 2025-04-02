@@ -1,7 +1,7 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak_helm_chart_name }}-override-values.yml"
+    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak_helm_chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -18,7 +18,7 @@
 
 - name: Generate override values file from template
   ansible.builtin.template:
-    src: "values.yml.j2"
+    src: "values.yaml.j2"
     dest: "{{ keycloak_helm_override_values_path }}"
     mode: '0644'
   tags:

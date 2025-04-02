@@ -1,7 +1,7 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix_helm_chart_name }}-override-values.yml"
+    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix_helm_chart_name }}-override-values.yaml"
   tags:
     - install
     - update

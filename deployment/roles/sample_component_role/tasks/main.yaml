@@ -2,7 +2,7 @@
 # Sample content ; quite outdated. I'd like to collect here all of the tasks that may be reused with explanation
 - name: Set roles facts
   ansible.builtin.set_fact:
-    helm_override_values_filename: "{{ helm_chart_name }}-override-values.yml"
+    helm_override_values_filename: "{{ helm_chart_name }}-override-values.yaml"
     helm_override_values_path: "{{ log_dir }}/{{ helm_override_values_filename }}"
 
 - name: print values_files_dict
@@ -38,7 +38,7 @@
 
 - name: Generate override values file from template
   ansible.builtin.template:
-    src: "values.yml.j2"
+    src: "values.yaml.j2"
     dest: "{{ helm_override_values_path }}"
   when: generate_override
   tags:

@@ -1,7 +1,7 @@
 ---
 - name:
   ansible.builtin.set_fact:
-    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress_helm_chart_name }}-override-values.yml"
+    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress_helm_chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -24,7 +24,7 @@
 
 - name: Generate override values file from template
   ansible.builtin.template:
-    src: "values.yml.j2"
+    src: "values.yaml.j2"
     dest: "{{ ingress_helm_override_values_path }}"
     mode: '0644'
   when: generate_override

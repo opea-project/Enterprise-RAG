@@ -1,8 +1,8 @@
 ---
 ui_helm_version: "v3.16.1"
-ui_helm_chart_name: "erag-ui-chatqna"
+ui_helm_chart_name: "chatqa-app"
 ui_helm_chart_version: "1.1.0"
-ui_helm_release_name: "erag-ui-chatqna"
+ui_helm_release_name: "chatqa-app"
 ui_helm_namespace: "rag-ui"
 ui_helm_chart_directory: "{{ playbook_dir }}/../components/ui"
 ui_helm_default_values_file: "{{ playbook_dir }}/../components/ui/values.yaml"

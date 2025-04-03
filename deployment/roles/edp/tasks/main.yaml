@@ -26,9 +26,9 @@
     - update
 
 # Check if module can be used
-- name: Update Helm chart dependencies
+- name: Build Helm chart dependencies
   ansible.builtin.command:
-    cmd: helm dependency update
+    cmd: helm dependency build
     chdir: "{{ edp_helm_chart_directory }}"
   tags:
     - install

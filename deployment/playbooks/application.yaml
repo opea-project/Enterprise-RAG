@@ -34,7 +34,7 @@
   post_tasks:
     - name: Install apisix routes
       kubernetes.core.helm:
-        name: "apisix-routes"
+        name: "auth-apisix-crds"
         chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
         namespace: "auth-apisix"
         state: present
@@ -44,7 +44,7 @@
         - update
     - name: Delete apisix routes
       kubernetes.core.helm:
-        name: "apisix-routes"
+        name: "auth-apisix-crds"
         chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
         namespace: "auth-apisix"
         state: absent

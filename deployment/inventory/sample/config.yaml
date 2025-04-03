@@ -51,6 +51,8 @@ edp:
   domainName: minio.erag.com
   apiDomainName: s3.erag.com
   namespace: edp
+  dpGuard:
+    enabled: false
 
 fingerprint:
   enabled: true

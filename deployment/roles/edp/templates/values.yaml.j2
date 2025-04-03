@@ -31,3 +31,6 @@ ingestion:
 embedding:
   enabled: false
   remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+dpguard:
+  enabled: {{ edp.dpGuard.enabled }}
+  tag: {{ tag }}

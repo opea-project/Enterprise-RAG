@@ -11,6 +11,7 @@ import requests
 import secrets
 import socket
 import time
+from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
@@ -224,8 +225,10 @@ class ApiRequestHelper:
         """
         with CustomPortForward(port, namespace, selector) as pf:
             logger.info(f"Attempting to make a request to {namespace}/{selector}...")
+            base_url = f"http://127.0.0.1:{pf.local_port}/"
+            full_url = urljoin(base_url, health_path)
             response = requests.get(
-                f"http://127.0.0.1:{pf.local_port}/{health_path}",
+                full_url,
                 headers=self.default_headers,
                 timeout=10
             )

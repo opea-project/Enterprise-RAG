@@ -78,6 +78,7 @@ class DataPrepInput(BaseDoc):
     chunk_overlap: Optional[Any] = None
     process_table: Optional[Any] = None
     table_strategy: Optional[Any] = None
+    max_new_tokens: Optional[PositiveInt] = None
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]

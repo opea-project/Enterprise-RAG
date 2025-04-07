@@ -38,17 +38,23 @@ Dataprep uses both `libmagic` and file extension to determine the file type. Bot
 
 Configuration is currently done via environment variables.
 
-| Environment Variable    | Default Value     | Description                                                                                      |
-|-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
-| `CHUNK_SIZE`            | `1500`            | Size of chunks that the data is split into for further processing                                |
-| `CHUNK_OVERLAP`         | `100`             | Size of chunks overlapping                                                                       |
-| `PROCESS_TABLE`         | `False`            | Choose if dataprep should process tables in PDF files                                            |
-| `PROCESS_TABLE_STRATEGY`| `fast`            | Choose the table processing strategy                                                             |
-| `UPLOAD_PATH`           | `/tmp/opea_upload`| Path to where the data is saved                                                                  |
-| `DATAPREP_USVC_PORT`    | `9399`              | (Optional) Dataprep microservice port |
+| Environment Variable             | Default Value             | Description                                                                                      |
+|----------------------------------|---------------------------|--------------------------------------------------------------------------------------------------|
+| `CHUNK_SIZE`                     | `1500`                    | Size of chunks that the data is split into for further processing                                |
+| `CHUNK_OVERLAP`                  | `100`                     | Size of chunks overlapping                                                                       |
+| `PROCESS_TABLE`                  | `False`                   | Choose if dataprep should process tables in PDF files                                            |
+| `PROCESS_TABLE_STRATEGY`         | `fast`                    | Choose the table processing strategy                                                             |
+| `USE_SEMANTIC_CHUNKING`          | `False`                   | Choose if semantic chunking should be used                                                       |
+| `EMBEDDING_MODEL_NAME`           | `BAAI/bge-large-en-v1.5`  | Embedding model name for semantic chunking                                                       |
+| `EMBEDDING_MODEL_SERVER`         | `torchserve`              | Model server for embeddings used in semantic chunking                                            |
+| `EMBEDDING_MODEL_SERVER_ENDPOINT`| `http://localhost:8090`   | Model server endpoint for embeddings used in semantic chunking                                   |
+| `SEMANTIC_CHUNK_PARAMS`          | `{}`                      | Add semantic chunking parameters such as buffer_size, add_start_index, etc. Check Langchain documentation for SemanticChunker for reference.                                                         |
+| `UPLOAD_PATH`                    | `/tmp/opea_upload`        | Path to where the data is saved                                                                  |
+| `DATAPREP_USVC_PORT`             | `9399`                    | (Optional) Dataprep microservice port |
 
 By default, files are saved to a directory under this container. Save path can be changed by setting the `UPLOAD_PATH` environment variable. It is advised to mount an additional volume for the files saved by dataprep. Files are persisted as a point in time reference to the data that is embedded and ultimately ingested into the vector database. 
 
+For semantic chunking, we are using TorchServe embeddings by default, but you can set it to one of your choice. To enable this functionality, you'll need to set up a separate [Embeddings](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/tree/main/src/comps/embeddings/impl/model-server) instance and configure the following environment variables: `EMBEDDING_MODEL_NAME, EMBEDDING_MODEL_SERVER, EMBEDDING_MODEL_SERVER_ENDPOINT`. Once `use_semantic_chunking` is set to `True`, the dataprep microservice will automatically connect to this instance using the configured endpoint to generate embeddings for semantic chunking operations.
 
 ## Getting started
 

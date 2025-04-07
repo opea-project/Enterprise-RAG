@@ -115,8 +115,8 @@ class OPEAReranker:
                 response_data = await self._async_call_reranker(
                     input.initial_query, retrieved_docs
                 )
-                logger.info(f"Received response from reranking service: {response_data}")
-                best_response_list = self._filter_top_n(input.top_n, response_data)
+                logger.debug(f"Received response from reranking service: {response_data}")
+                best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
             except TimeoutError as e:
                 raise TimeoutError(e)
             except Timeout as e:
@@ -131,7 +131,7 @@ class OPEAReranker:
                 logger.error(f"Error during request to reranking service: {e}")
                 raise Exception(f"Error during request to reranking service: {e}")
 
-            if not best_response_list:
+            if not response_data:
                 logger.warning("No best responses found. Using all retrieved documents.")
                 reranked_docs = input.retrieved_docs
             else:
@@ -191,7 +191,7 @@ class OPEAReranker:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")
 
-    def _filter_top_n(self, top_n: int, data: RerankScoreResponse) -> RerankScoreResponse:
+    def _filter_top_n(self, top_n: int, data: RerankScoreResponse, score_threshold: float=None) -> RerankScoreResponse:
         """
         Filter and return the top N responses based on their scores.
 
@@ -203,4 +203,8 @@ class OPEAReranker:
             List[Dict[str, float]]: The filtered list of top responses.
 
         """
-        return heapq.nlargest(top_n, data, key=lambda x: x["score"])
+        top_n_outputs = heapq.nlargest(top_n, data, key=lambda x: x["score"])
+        if score_threshold is not None:
+            out = [s for s in top_n_outputs if s["score"] > score_threshold]
+            return out
+        return top_n_outputs

@@ -90,6 +90,7 @@ const RetrieverDebugDialog = () => {
         query,
         ...retrieverArgumentsForm,
         top_n: rerankerArgumentsForm.top_n,
+        rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
         reranker: isRerankerEnabled,
       },
       null,
@@ -108,6 +109,7 @@ const RetrieverDebugDialog = () => {
         query,
         retrieverArgumentsForm,
         rerankerArgumentsForm.top_n,
+        rerankerArgumentsForm.rerank_score_threshold,
         isRerankerEnabled,
       );
       setMessages((prevMessages) => [
@@ -286,6 +288,13 @@ const RetrieverDebugParamsForm = ({
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
         initialValue={rerankerPreviousArgumentsValues.top_n}
+        onArgumentValueChange={onRerankerArgumentValueChange}
+        onArgumentValidityChange={onRerankerArgumentValidityChange}
+        readOnlyDisabled
+      />
+      <ServiceArgumentNumberInput
+        {...rerankerFormConfig.rerank_score_threshold}
+        initialValue={rerankerPreviousArgumentsValues.rerank_score_threshold}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
         readOnlyDisabled

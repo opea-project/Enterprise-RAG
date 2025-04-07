@@ -813,6 +813,7 @@ async def api_retrieve(request: Request):
         if str(get_f(d, 'reranker', 'false')).lower() == 'true':
             reranker_request = response.json()
             reranker_request['top_n'] =  get_f(d, 'top_n', '5')
+            reranker_request['rerank_score_threshold'] =  get_f(d, 'rerank_score_threshold', '0.02')
 
             logger.debug(f"Request to reranker: {reranker_request}")
             request = requests.post(RERANKER_ENDPOINT, json=reranker_request)

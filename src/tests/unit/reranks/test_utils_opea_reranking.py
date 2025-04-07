@@ -82,6 +82,18 @@ def test_reranker_filter_top_n(test_class):
     assert output[0]["index"] == 1, "The output should contain the element with the highest score"
     assert output[0]["score"] == 0.9988041, "The output should contain the element with the highest score"
 
+def test_reranker_filter_top_n_with_score_threshold(test_class):
+    scores = [{"index": 1, "score": 0.9988041}, {"index": 0, "score": 0.02294873}, {"index": 2, "score": 0.5294873}]
+    top_n = 3
+    score_threshold = 0.1
+    output = test_class._filter_top_n(top_n, scores, score_threshold)
+
+    assert len(output) == 2, "The output should contain only 1 element"
+    assert output[0]["index"] == 1, "The output should contain the element with the highest score"
+    assert output[0]["score"] == 0.9988041, "The output should contain the element with the highest score"
+    assert output[1]["index"] == 2, "The output should contain the element with the second highest score"
+    assert output[1]["score"] == 0.5294873, "The output should contain the element with the second highest score"
+
 def test_torchserve_retrieve_torchserve_model_name():
     with patch('comps.reranks.utils.opea_reranking.requests.get', autospec=True) as MockClass:
         with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):

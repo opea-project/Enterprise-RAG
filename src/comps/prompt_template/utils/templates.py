@@ -4,7 +4,7 @@
 template_001_english = """
 ### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
-But be careful to not incorporate information that you think is not relevant to the question. \
+Ignore all information that you think is not relevant to the question. \
 If you don't know the answer to a question, please don't share false information. \
 ### Search results: {reranked_docs} \n
 ### Question: {initial_query} \n

@@ -25,6 +25,7 @@ export interface AppendArgumentsParameters {
   fetch_k: number;
   lambda_mult: number;
   score_threshold: number;
+  rerank_score_threshold: number | null;
   top_n: number;
   prompt_template: string;
   input_guardrail_params: {

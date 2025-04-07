@@ -9,12 +9,14 @@ interface PostRetrieverQueryRequestBody extends RetrieverArgs {
   query: string;
   reranker: boolean;
   top_n: ServiceArgumentNumberInputValue;
+  rerank_score_threshold: ServiceArgumentNumberInputValue;
 }
 
 export const postRetrieverQuery = async (
   query: string,
   retrieverArgs: RetrieverArgs,
   rerankerTopN: ServiceArgumentNumberInputValue,
+  rerankerScoreThreshold: ServiceArgumentNumberInputValue,
   isRerankerEnabled: boolean,
 ) => {
   await refreshToken();
@@ -27,6 +29,7 @@ export const postRetrieverQuery = async (
     ...retrieverArgs,
     query,
     top_n: rerankerTopN,
+    rerank_score_threshold: rerankerScoreThreshold,
     reranker: isRerankerEnabled,
   };
 

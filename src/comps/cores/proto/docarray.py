@@ -42,7 +42,7 @@ class EmbedDoc(BaseDoc):
     text: str
     embedding: conlist(float, min_length=0)
     search_type: str = "similarity"
-    k: PositiveInt = 4
+    k: PositiveInt = 10
     distance_threshold: Optional[float] = None
     fetch_k: PositiveInt = 20
     lambda_mult: NonNegativeFloat = 0.5
@@ -83,7 +83,8 @@ class DataPrepInput(BaseDoc):
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
     initial_query: str
-    top_n: PositiveInt = 1
+    top_n: PositiveInt = 3
+    rerank_score_threshold: Optional[float] = 0.02
 
     class Config:
         json_encoders = {np.ndarray: lambda x: x.tolist()}

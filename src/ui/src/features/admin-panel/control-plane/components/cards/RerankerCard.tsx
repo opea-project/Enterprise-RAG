@@ -33,6 +33,12 @@ const RerankerCard = ({
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
+      <ServiceArgumentNumberInput
+        {...rerankerFormConfig.rerank_score_threshold}
+        initialValue={previousArgumentsValues.rerank_score_threshold}
+        onArgumentValueChange={onArgumentValueChange}
+        onArgumentValidityChange={onArgumentValidityChange}
+      />
     </SelectedServiceCard>
   );
 };

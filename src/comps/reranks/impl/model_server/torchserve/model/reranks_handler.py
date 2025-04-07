@@ -31,6 +31,7 @@ Methods:
 import logging
 import os
 from abc import ABC
+import numpy as np
 
 from ts.context import Context
 from ts.torch_handler.base_handler import BaseHandler
@@ -114,6 +115,8 @@ class ReranksHandler(BaseHandler, ABC):
             logger.error(f"Error loading model '{model_name}': {str(e)}")
             raise
 
+    def _sigmoid(self, z):
+            return float(1/(1 + np.exp(-z)))
 
     def preprocess(self, requests):
         texts = []
@@ -156,12 +159,12 @@ class ReranksHandler(BaseHandler, ABC):
             for count in num_texts_in_batch:
                 sublist = []
                 for sub_count in range(count):
-                    sublist.append({"index": sub_count, "score": reranking_out[index]})
+                    sublist.append({"index": sub_count, "score": self._sigmoid(reranking_out[index])})
                     index += 1
                 restored_list.append(sublist)
             return restored_list
         else:
-            return [[{"index": i, "score": score} for i, score in enumerate(reranking_out)]]
+            return [[{"index": i, "score": self._sigmoid(score)} for i, score in enumerate(reranking_out)]]
 
 
     def postprocess(self, inference_output):

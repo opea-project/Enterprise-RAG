@@ -39,7 +39,7 @@ def run_dataprep(files, links, chunk_size, chunk_overlap, process_table, table_s
         chunk_overlap=int(sanitize_env(os.getenv("CHUNK_OVERLAP"))),
         process_table=sanitize_env(os.getenv("PROCESS_TABLE")),
         table_strategy=sanitize_env(os.getenv("PROCESS_TABLE_STRATEGY")),
-        use_semantic_chunking=sanitize_env(os.getenv("USE_SEMANTIC_CHUNKING"))
+        use_semantic_chunking=(sanitize_env(os.getenv("USE_SEMANTIC_CHUNKING")).lower() == "true")
     )
     textdocs = dataprep.dataprep(
         files=files,

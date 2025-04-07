@@ -45,7 +45,7 @@ class OPEADataprep:
             raise ValueError("No links and/or files passed for data preparation.")
 
         text_docs: List[TextDoc] = []
-        
+
         # Convert semantic_chunk_params to dict
         semantic_chunk_params_str = sanitize_env(os.getenv("SEMANTIC_CHUNK_PARAMS"))
         if semantic_chunk_params_str == "{}":

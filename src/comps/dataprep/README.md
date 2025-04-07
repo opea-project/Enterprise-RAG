@@ -72,7 +72,7 @@ Next, use `uv sync` to install the dependencies. This command will create a virt
 
 ```bash
 pip install uv
-uv sync --locked --no-cache --project impl/microservice/pyproject.toml
+uv sync --locked --no-cache --project impl/microservice/pyproject.toml --extra cpu
 source impl/microservice/.venv/bin/activate
 ```
 

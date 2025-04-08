@@ -1,6 +1,6 @@
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 vault_password_file: FILL_HERE # Provide the path to your vault.txt file (e.g. /home/ubuntu/path/to/vault.txt)
-
+kubeconfig: ~/.kube/config  # Provide the path to kubeconfig, update it if you're using a custom location
 httpProxy:
 httpsProxy:
 noProxy: localhost,.svc,.monitoring,.monitoring-traces

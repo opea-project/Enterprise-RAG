@@ -41,16 +41,15 @@ echo "HERE_PUT_YOUR_PASSWORD" > vault.txt
 
 If you need to manually access or view encrypted passwords later, you can use the `ansible-vault view` command. For more details about credentials, refer to the section below [Logs and credentials](#logs-and-credentials).
 
-### Create your inventory
+### Create your configuration file
 
-Copy the inventory sample directory:
+Copy the configuration file sample directory:
 ```bash
 cp -r inventory/sample inventory/test-cluster
 ```
 
 Next,
-- open `inventory/test-cluster/inventory.yaml` to ensure kubeconfig path matches your actual Kubernetes configuration.
-- edit `inventory/test-cluster/config.yaml` to configure your setup by adding the Hugging Face token, proxy settings, vault password file and defining the pipeline.
+- edit `inventory/test-cluster/config.yaml` to configure your setup by adding the Hugging Face token, proxy settings, vault password file, kubeconfig path and defining the pipeline.
 
 #### Cleaning Up Istio CRDs
 
@@ -93,7 +92,7 @@ kubectl get crd -o name | grep 'istio.io' | xargs kubectl delete # removing crds
 #### Install
 To install the application, use the following Ansible command:
 ```bash
-ansible-playbook -i inventory/test-cluster/inventory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags install
+ansible-playbook playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags install
 ```
 Run `kubectl get pods -A` to verify that the expected pods are running. For more details, refer to the [Verify Services](README.md#verify-services)
 
@@ -103,7 +102,7 @@ Run `kubectl get pods -A` to verify that the expected pods are running. For more
 #### Uninstall
 To uninstall the application, use the following Ansible command:
 ```bash
-ansible-playbook -i inventory/test-cluster/inventory.yaml playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags uninstall
+ansible-playbook playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags uninstall
 ```
 
 

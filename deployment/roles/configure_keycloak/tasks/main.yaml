@@ -6,6 +6,8 @@
   async: 30
   poll: 0
   register: port_forward_job
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
   tags:
     - install
 

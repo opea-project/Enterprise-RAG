@@ -16,6 +16,7 @@ tokens:
   hugToken: ""
 
 alternateTagging: false
+namespace: chatqa
 
 # Common tag & repository for all images. Override if needed for specific images.
 common_tag: &tag "latest"
@@ -107,21 +108,21 @@ service:
   type: ClusterIP
 
 pvc:
-  - name: model-volume-embedding
+  modelLlm:
+    name: model-volume-llm
     accessMode: ReadWriteOnce
-    namespace: chatqa
-    storage: 20Gi
-  - name: model-volume-reranker
-    accessMode: ReadWriteOnce
-    namespace: chatqa
-    storage: 10Gi
-  - name: model-volume-llm
-    accessMode: ReadWriteOnce
-    namespace: chatqa
     storage: 100Gi
-  - name: vector-store-data
+  modelEmbedding:
+    name: model-volume-embedding
     accessMode: ReadWriteOnce
-    namespace: chatqa
+    storage: 20Gi
+  modelReranker:
+    name: model-volume-reranker
+    accessMode: ReadWriteOnce
+    storage: 10Gi
+  vectorStore:
+    name: vector-store-data
+    accessMode: ReadWriteOnce
     storage: 20Gi
 
 images:

@@ -33,12 +33,20 @@ spec:
           image: redis:alpine
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: edp-ingestion-configmap
           env:
             - name: REDIS_URL
               valueFrom:
                 secretKeyRef:
                   name: vector-database-config
                   key: REDIS_URL
+            - name: VECTOR_STORE
+              valueFrom:
+                secretKeyRef:
+                  name: vector-database-config
+                  key: VECTOR_STORE
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           command:

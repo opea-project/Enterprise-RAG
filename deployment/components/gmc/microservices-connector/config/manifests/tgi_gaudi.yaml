@@ -17,6 +17,17 @@ data:
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.modelLlm.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.modelLlm.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.modelLlm.storage }}
+---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0

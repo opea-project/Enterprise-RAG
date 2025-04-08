@@ -17,6 +17,17 @@ data:
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.modelLlm.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.modelLlm.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.modelLlm.storage }}
+---
 # Source: tgi/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -36,6 +47,17 @@ spec:
       name: tgi
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.modelLlm.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.modelLlm.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.modelLlm.storage }}
 ---
 # Source: tgi/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -123,7 +145,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume-llm
+            claimName: {{ .Values.pvc.modelLlm.name }}
         - name: tmp
           emptyDir: {}
         - name: out

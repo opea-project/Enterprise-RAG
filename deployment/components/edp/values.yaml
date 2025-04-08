@@ -547,6 +547,17 @@ ingestion:
   name: "ingestion"
   repository: "localhost:5000/erag"
   tag: latest
+  config:
+    # Vector Algorithm configuration
+    vector_algorithm: "FLAT" # "FLAT", "HNSW"
+    vector_dims: "768" # Depends on model used in embedding. For example bge-large-en-v1.5=768, bge-large-en-v1.5=1024
+    vector_datatype: "FLOAT32" # FLOAT16, FLOAT32, FLOAT64
+    vector_distance_metric: "COSINE" # L2, IP, COSINE
+    # For HNSW Algorithm additional settings are available
+    vector_hnsw_m: "32"
+    vector_hnsw_ef_construction: "32"
+    vector_hnsw_ef_runtime: "32"
+    vector_hnsw_epsilon: "0.01"
   pullPolicy: Always
   replicas: 1
   resources:

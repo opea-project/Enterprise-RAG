@@ -20,6 +20,17 @@ data:
   HF_HOME: "/tmp/.cache/huggingface"
   MAX_WARMUP_SEQUENCE_LENGTH: "512"
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.modelEmbedding.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.modelEmbedding.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.modelEmbedding.storage }}
+---
 # Source: tei/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -116,7 +127,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume-embedding
+            claimName: {{ .Values.pvc.modelEmbedding.name }}
         - name: shm
           emptyDir:
             medium: Memory

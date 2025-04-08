@@ -66,16 +66,8 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
-    # wait: true
+    wait: true
   register: helm_result
-  tags:
-    - install
-    - update
-
-# mitigation due to wait is being skipped
-- name: sleep
-  ansible.builtin.pause:
-    seconds: 30
   tags:
     - install
     - update

@@ -23,6 +23,17 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.vectorStore.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.vectorStore.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.vectorStore.storage }}
+---
 # Source: redis-vector-db/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -88,7 +99,7 @@ spec:
       volumes:
         - name: data-volume
           persistentVolumeClaim:
-            claimName: vector-store-data
+            claimName: {{ .Values.pvc.vectorStore.name }}
         - name: redisinsight-volume
           emptyDir: {}
         - name: tmp

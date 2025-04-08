@@ -18,6 +18,17 @@ data:
   NUMBA_CACHE_DIR: "/tmp"
   HF_HOME: "/tmp/.cache/huggingface"
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.pvc.modelReranker.name }}
+spec:
+  accessModes:
+    - {{ .Values.pvc.modelReranker.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.modelReranker.storage }}
+---
 # Source: teirerank/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -120,7 +131,7 @@ spec:
       volumes:
         - name: model-volume
           persistentVolumeClaim:
-            claimName: model-volume-reranker
+            claimName: {{ .Values.pvc.modelReranker.name }}
         - name: shm
           emptyDir:
             medium: Memory

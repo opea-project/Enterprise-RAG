@@ -80,7 +80,11 @@ spec:
         - name: {{ include "fingerprint.fullname" . }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
-          image: {{ .Values.image.fingerprint.repository }}:{{ .Values.image.fingerprint.tag }}
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.image.fingerprint.repository }}:{{ .Values.image.fingerprint.name }}_{{ .Values.image.fingerprint.tag }}
+          {{ else }}
+          image: {{ .Values.image.fingerprint.repository }}/{{ .Values.image.fingerprint.name }}:{{ .Values.image.fingerprint.tag }}
+          {{ end }}
           imagePullPolicy: {{ .Values.image.fingerprint.pullPolicy }}
           env:
             - name: SYSTEM_FINGERPRINT_MONGODB_HOST

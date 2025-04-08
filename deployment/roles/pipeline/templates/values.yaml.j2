@@ -7,6 +7,10 @@ tokens:
 common_tag: &tag {{ tag }}
 common_registry: &repo {{ registry }}
 
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
 images:
   gmcManager:
     image: "gmcmanager"

@@ -331,10 +331,9 @@ function start_fingerprint() {
     create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME "$FINGERPRINT_DB_PASSWORD" $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
 
     local HELM_INSTALL_FINGERPRINT_REPO
+    HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag --set image.fingerprint.tag=$TAG"
     if $use_alternate_tagging; then
-        HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag --set image.fingerprint.tag=system-fingerprint_$TAG"
-    else
-        HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag/system-fingerprint --set image.fingerprint.tag=$TAG"
+        HELM_INSTALL_FINGERPRINT_REPO="$HELM_INSTALL_FINGERPRINT_REPO --set alternateTagging=true"
     fi
 
     HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_FINGERPRINT_REPO \
@@ -1060,12 +1059,12 @@ if [[ "$FEATURES" == *"tdx"* ]]; then
     fi
 fi
 
+
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag --set image.ui.tag=$TAG"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY/erag --set dpguard.tag=$TAG"
 if $use_alternate_tagging; then
-    HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag --set image.ui.tag=chatqna-conversation-ui_$TAG "
-    HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=enhanced-dataprep_$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=enhanced-dataprep_$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=enhanced-dataprep_$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=dataprep_$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=embedding_$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=ingestion_$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=enhanced-dataprep_$TAG --set dpguard.repository=$REGISTRY/erag --set dpguard.tag=dpguard_$TAG"
-else
-    HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag/chatqna-conversation-ui --set image.ui.tag=$TAG "
-    HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag/enhanced-dataprep --set backend.tag=$TAG --set dataprep.repository=$REGISTRY/erag/dataprep --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY/erag/embedding --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY/erag/ingestion --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY/erag/enhanced-dataprep --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY/erag/dpguard --set dpguard.tag=$TAG "
+    HELM_INSTALL_UI_DEFAULT_ARGS="$HELM_INSTALL_UI_DEFAULT_ARGS --set alternateTagging=true"
+    HELM_INSTALL_EDP_DEFAULT_ARGS="$HELM_INSTALL_EDP_DEFAULT_ARGS --set alternateTagging=true"
 fi
 
 HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/values.yaml"

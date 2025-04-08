@@ -8,10 +8,12 @@ fullnameOverride: "fingerprint-svc"
 mongoRootPassword: ""
 mongoPassword: ""
 
+alternateTagging: false
+
 image:
   fingerprint:
     name: "system-fingerprint"
-    repository: "localhost:5000/erag/system-fingerprint"
+    repository: "localhost:5000/erag"
     tag: "latest"
     pullPolicy: Always
 

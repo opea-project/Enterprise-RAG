@@ -8,6 +8,32 @@
     - update
     - uninstall
 
+# Important: Loki and Tempo depend on correct DNS resolution to communicate with each other (via service discovery).
+# kind clusters typically use 'kube-dns' instead of 'coredns'.
+# Checks if we're running in a kind environment to decide whether to use kube-dns or coredns
+- name: Get node list
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: node_list
+  tags:
+    - install
+    - update
+
+- name: Determine DNS service name based on environment
+  ansible.builtin.set_fact:
+    dns_service_name: "{{ 'kube-dns' if 'kind' in node_list.resources | map(attribute='metadata.name') | list | join(' ') else 'coredns' }}"
+  tags:
+    - install
+    - update
+
+- ansible.builtin.debug:
+    msg: "Kind environment detected. Using 'kube-dns' as the DNS service."
+  when: "'kube-dns' in dns_service_name"
+  tags:
+    - install
+    - update
+
 - name: Update Helm repositories
   kubernetes.core.helm_repository:
     name: "{{ item.name }}"
@@ -183,13 +209,30 @@
     - install
     - update
 
+- name: Set otelcol-logs image repository and tag based on condition
+  ansible.builtin.set_fact:
+    helm_otelcol_logs_image_repo: "{{ registry ~ '/erag' if use_alternate_tagging else registry ~ '/erag/otelcol-contrib-journalctl' }}"
+    helm_otelcol_logs_image_tag: "{{ 'otelcol-contrib-journalctl_' ~ tag if use_alternate_tagging else tag }}"
+  tags:
+    - install
+    - update
+
 - name: Install logging Helm chart
   kubernetes.core.helm:
     name: telemetry-logs
     chart_ref: "{{ telemetry_logging_charts_path }}"
     release_namespace: "{{ telemetry_monitoring_namespace }}"
     state: present
-    values_files: "{{ telemetry_logging_helm_default_values_file }}"
+    values_files:
+      - "{{ telemetry_logging_helm_default_values_file }}"
+      - "{{ telemetry_logging_helm_journalctl_values_file }}"
+    values:
+      global:
+        dnsService: "{{ dns_service_name }}"
+      otelcol-logs:
+        image:
+          repository: "{{ helm_otelcol_logs_image_repo }}"
+          tag: "{{ helm_otelcol_logs_image_tag }}"
     create_namespace: true
     wait: true
   tags:
@@ -203,6 +246,9 @@
     release_namespace: "{{ telemetry_traces_namespace }}"
     state: present
     values_files: "{{ telemetry_traces_helm_default_values_file }}"
+    values:
+      global:
+        dnsService: "{{ dns_service_name }}"
     create_namespace: true
     wait: true
   tags:

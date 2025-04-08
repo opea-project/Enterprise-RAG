@@ -56,7 +56,11 @@ spec:
         - name: {{ .Values.embedding.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.embedding.repository }}:{{ .Values.embedding.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.embedding.repository }}:{{ .Values.embedding.name }}_{{ .Values.embedding.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.embedding.repository }}/{{ .Values.embedding.name }}:{{ .Values.embedding.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.embedding.pullPolicy }}
           env:
           {{- if .Values.proxy.httpProxy }}

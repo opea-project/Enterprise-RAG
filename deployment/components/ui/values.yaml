@@ -8,6 +8,8 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
+alternateTagging: false
+
 domainName: &dname "erag.com"
 tlsSecret: &tsecret "tls-secret"
 
@@ -22,7 +24,8 @@ extraNginxVars:
 
 image:
   ui:
-    repository: "localhost:5000/erag/chatqna-conversation-ui"
+    repository: "localhost:5000/erag"
+    name: chatqna-conversation-ui
     pullPolicy: Always
     tag: "latest"
 

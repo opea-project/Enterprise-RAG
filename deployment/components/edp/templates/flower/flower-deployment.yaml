@@ -58,7 +58,11 @@ spec:
         - name: {{ .Values.flower.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.flower.repository }}:{{ .Values.flower.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.flower.repository }}:{{ .Values.flower.name }}_{{ .Values.flower.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.flower.repository }}/{{ .Values.flower.name }}:{{ .Values.flower.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.flower.pullPolicy }}
           command:
             {{- range $index, $element := splitList " " .Values.flower.command }}

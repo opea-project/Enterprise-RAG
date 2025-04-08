@@ -90,7 +90,11 @@ spec:
         - name: {{ .Values.celery.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.celery.repository }}:{{ .Values.celery.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.celery.repository }}:{{ .Values.celery.name }}_{{ .Values.celery.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.celery.repository }}/{{ .Values.celery.name }}:{{ .Values.celery.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.celery.pullPolicy }}
           command:
             - "celery"

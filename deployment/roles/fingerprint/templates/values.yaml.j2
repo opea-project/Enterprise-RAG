@@ -3,6 +3,11 @@ image:
   fingerprint:
     tag: "{{ tag }}"
 {% endif %}
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
 mongodb:
   auth:
     usernames:

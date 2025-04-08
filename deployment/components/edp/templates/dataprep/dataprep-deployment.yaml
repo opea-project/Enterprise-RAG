@@ -32,7 +32,11 @@ spec:
         - name: {{ .Values.dataprep.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.dataprep.repository }}:{{ .Values.dataprep.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.dataprep.repository }}:{{ .Values.dataprep.name }}_{{ .Values.dataprep.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.dataprep.repository }}/{{ .Values.dataprep.name }}:{{ .Values.dataprep.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.dataprep.pullPolicy }}
           env:
           {{- if .Values.proxy.httpProxy }}

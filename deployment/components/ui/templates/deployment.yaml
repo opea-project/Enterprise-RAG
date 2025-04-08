@@ -31,7 +31,11 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.ui.repository }}:{{ .Values.image.ui.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.image.ui.repository }}:{{ .Values.image.ui.name }}_{{ .Values.image.ui.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.image.ui.repository }}/{{ .Values.image.ui.name }}:{{ .Values.image.ui.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.image.ui.pullPolicy }}
           env:
           {{- if .Values.proxy.httpProxy }}

@@ -90,7 +90,11 @@ spec:
         - name: {{ .Values.backend.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.backend.repository }}:{{ .Values.backend.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.backend.repository }}:{{ .Values.backend.name }}_{{ .Values.backend.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.backend.repository }}/{{ .Values.backend.name }}:{{ .Values.backend.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.backend.pullPolicy }}
           command: 
             {{- range $index, $element := splitList " " .Values.backend.command }}

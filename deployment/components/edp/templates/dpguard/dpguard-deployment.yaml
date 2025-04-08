@@ -33,7 +33,11 @@ spec:
         - name: {{ .Values.dpguard.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.dpguard.repository }}:{{ .Values.dpguard.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.dpguard.repository }}:{{ .Values.dpguard.name }}_{{ .Values.dpguard.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.dpguard.repository }}/{{ .Values.dpguard.name }}:{{ .Values.dpguard.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.dpguard.pullPolicy }}
           env:
           {{- if .Values.proxy.httpProxy }}

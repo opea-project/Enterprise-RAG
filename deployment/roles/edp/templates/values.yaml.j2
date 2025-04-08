@@ -3,6 +3,10 @@ proxy:
   httpsProxy: {{ httpsProxy }}
   noProxy: {{ noProxy }}
 
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
 edpAccessKey: "{{ edp_minio_acess_key }}"
 edpSecretKey: "{{ edp_minio_secret_key }}"
 edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"

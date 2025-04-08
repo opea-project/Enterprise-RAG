@@ -13,6 +13,7 @@ certs:
 
 tag: "latest"
 registry: "localhost:5000"
+use_alternate_tagging: false
 
 pipelines:
   - namespace: chatqa

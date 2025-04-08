@@ -78,7 +78,11 @@ spec:
                 name: vector-database-config
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.ingestion.repository }}:{{ .Values.ingestion.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.ingestion.repository }}:{{ .Values.ingestion.name }}_{{ .Values.ingestion.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.ingestion.repository }}/{{ .Values.ingestion.name }}:{{ .Values.ingestion.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.ingestion.pullPolicy }}
           ports:
             - name: http

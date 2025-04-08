@@ -7,6 +7,8 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
+alternateTagging: false
+
 edpExternalUrl: "https://s3.erag.com"
 edpExternalSecure: "true"
 edpInternalUrl: "edp-minio:9000"
@@ -194,7 +196,8 @@ postgresql:
 
 celery:
   nameOverride: "edp-celery"
-  repository: "localhost:5000/erag/enhanced-dataprep"
+  name: "enhanced-dataprep"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   config:
@@ -308,7 +311,8 @@ celery:
 flower:
   enabled: true
   nameOverride: "edp-flower"
-  repository: "localhost:5000/erag/enhanced-dataprep"
+  name: "enhanced-dataprep"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   command: "celery -A tasks.celery flower"
@@ -459,7 +463,8 @@ backend:
           name: edp-configmap
           key: RERANKER_ENDPOINT
   nameOverride: "edp-backend"
-  repository: "localhost:5000/erag/enhanced-dataprep"
+  name: "enhanced-dataprep"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   command: "python main.py"
@@ -474,7 +479,8 @@ backend:
 
 dataprep:
   nameOverride: "edp-dataprep"
-  repository: "localhost:5000/erag/dataprep"
+  name: "dataprep"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -497,7 +503,8 @@ dataprep:
 dpguard:
   enabled: false
   nameOverride: "edp-dpguard"
-  repository: "localhost:5000/erag/dpguard"
+  name: dpguard
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -522,7 +529,8 @@ embedding:
     modelServer: "torchserve"
     modelServerEndpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
   nameOverride: "edp-embedding"
-  repository: "localhost:5000/erag/embedding"
+  name: "embedding"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -536,7 +544,8 @@ embedding:
 
 ingestion:
   nameOverride: "edp-ingestion"
-  repository: "localhost:5000/erag/ingestion"
+  name: "ingestion"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -577,7 +586,8 @@ awsSqs:
           key: AWS_SECRET_ACCESS_KEY
   enabled: false
   nameOverride: "edp-aws"
-  repository: "localhost:5000/erag/enhanced-dataprep"
+  name: "enhanced-dataprep"
+  repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
   command: "python sqs.py"

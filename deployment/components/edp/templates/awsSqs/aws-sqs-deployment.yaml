@@ -51,7 +51,11 @@ spec:
         - name: {{ .Values.awsSqs.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
-          image: "{{ .Values.awsSqs.repository }}:{{ .Values.awsSqs.tag | default .Chart.AppVersion }}"
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.awsSqs.repository }}:{{ .Values.awsSqs.name }}_{{ .Values.awsSqs.tag | default .Chart.AppVersion }}
+          {{ else }}
+          image: {{ .Values.awsSqs.repository }}/{{ .Values.awsSqs.name }}:{{ .Values.awsSqs.tag | default .Chart.AppVersion }}
+          {{ end }}
           imagePullPolicy: {{ .Values.awsSqs.pullPolicy }}
           command:
             {{- range $index, $element := splitList " " .Values.awsSqs.command }}

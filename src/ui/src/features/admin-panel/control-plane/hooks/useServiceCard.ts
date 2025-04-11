@@ -3,15 +3,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  changeServiceArguments,
-  setChatQnAGraphEditMode,
-} from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
+import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
+import { setChatQnAGraphIsEditModeEnabled } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
-import { ChangeArgumentsRequestData } from "@/features/admin-panel/control-plane/types/systemFingerprint";
+import { ChangeArgumentsRequestData } from "@/features/admin-panel/control-plane/types/api";
 import { useAppDispatch } from "@/store/hooks";
 
 export type FilterFormDataFunction<T> = (formData: T) => Partial<T>;
@@ -29,6 +27,7 @@ const useServiceCard = <T>(
   },
 ) => {
   const dispatch = useAppDispatch();
+  const [changeArguments] = useChangeArgumentsMutation();
 
   const [invalidArguments, setInvalidArguments] = useState<string[]>([]);
   const [argumentsForm, setArgumentsForm] = useState<T>({} as T);
@@ -70,7 +69,7 @@ const useServiceCard = <T>(
   );
 
   const onEditArgumentsButtonClick = () => {
-    dispatch(setChatQnAGraphEditMode(true));
+    dispatch(setChatQnAGraphIsEditModeEnabled(true));
   };
 
   const onConfirmChangesButtonClick = () => {
@@ -79,12 +78,14 @@ const useServiceCard = <T>(
       data = filterFns.filterFormData(argumentsForm);
     }
 
-    dispatch(
-      changeServiceArguments({
+    const changeArgumentsRequest = [
+      {
         name: serviceName,
         data: data as ChangeArgumentsRequestData,
-      }),
-    );
+      },
+    ];
+
+    changeArguments(changeArgumentsRequest);
   };
 
   const onCancelChangesButtonClick = () => {
@@ -96,7 +97,7 @@ const useServiceCard = <T>(
       return newForm;
     });
     setInvalidArguments([]);
-    dispatch(setChatQnAGraphEditMode(false));
+    dispatch(setChatQnAGraphIsEditModeEnabled(false));
   };
 
   const isServiceFormModified = () => {

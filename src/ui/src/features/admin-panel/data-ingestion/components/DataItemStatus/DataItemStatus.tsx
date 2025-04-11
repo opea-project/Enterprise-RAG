@@ -6,15 +6,15 @@ import "./DataItemStatus.scss";
 import classNames from "classnames";
 import { ReactNode } from "react";
 
+import BlockedIcon from "@/components/icons/BlockedIcon/BlockedIcon";
 import DataPrepIcon from "@/components/icons/DataPrepIcon/DataPrepIcon";
-import DPGuardIcon from "@/components/icons/DPGuardIcon/DPGuardIcon";
 import DeleteIcon from "@/components/icons/DeleteIcon/DeleteIcon";
+import DPGuardIcon from "@/components/icons/DPGuardIcon/DPGuardIcon";
 import EmbeddingIcon from "@/components/icons/EmbeddingIcon/EmbeddingIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
-import BlockedIcon from "@/components/icons/BlockedIcon/BlockedIcon";
 import Tooltip, { TooltipPosition } from "@/components/ui/Tooltip/Tooltip";
 import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
 

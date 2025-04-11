@@ -8,20 +8,21 @@ import Button from "@/components/ui/Button/Button";
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
-import { postRetrieverQuery } from "@/features/admin-panel/control-plane/api/postRetrieverQuery";
+import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
+import { ERROR_MESSAGES } from "@/features/admin-panel/control-plane/config/api";
 import {
   RerankerArgs,
   rerankerArgumentsDefault,
   rerankerFormConfig,
-} from "@/features/admin-panel/control-plane/config/reranker";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import {
   RetrieverArgs,
   retrieverArgumentsDefault,
   retrieverFormConfig,
   searchTypesArgsMap,
-} from "@/features/admin-panel/control-plane/config/retriever";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 import { chatQnAGraphNodesSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
@@ -34,8 +35,11 @@ import {
 } from "@/features/admin-panel/control-plane/utils";
 import { useAppSelector } from "@/store/hooks";
 import { ChatMessage } from "@/types";
+import { getErrorMessage } from "@/utils/api";
 
 const RetrieverDebugDialog = () => {
+  const [postRetrieverQuery] = usePostRetrieverQueryMutation();
+
   const ref = useRef<HTMLDialogElement>(null);
   const handleClose = () => ref.current?.close();
   const showDialog = () => ref.current?.showModal();
@@ -104,26 +108,20 @@ const RetrieverDebugDialog = () => {
         isUserMessage: true,
       },
     ]);
-    try {
-      const message = await postRetrieverQuery(
-        query,
-        retrieverArgumentsForm,
-        rerankerArgumentsForm.top_n,
-        rerankerArgumentsForm.rerank_score_threshold,
-        isRerankerEnabled,
+
+    const { data, error } = await postRetrieverQuery({
+      ...retrieverArgumentsForm,
+      query,
+      reranker: isRerankerEnabled,
+      top_n: rerankerArgumentsForm.top_n,
+      rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
+    });
+
+    if (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ERROR_MESSAGES.POST_RETRIEVER_QUERY,
       );
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuidv4(),
-          text: message,
-          isUserMessage: false,
-        },
-      ]);
-      setQuery("");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : JSON.stringify(error);
       setMessages((prevMessages) => [
         ...prevMessages,
         {
@@ -133,6 +131,17 @@ const RetrieverDebugDialog = () => {
           isError: true,
         },
       ]);
+    } else {
+      const message = data ? data : "";
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          id: uuidv4(),
+          text: message,
+          isUserMessage: false,
+        },
+      ]);
+      setQuery("");
     }
   };
 

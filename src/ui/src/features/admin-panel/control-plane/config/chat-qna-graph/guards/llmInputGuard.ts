@@ -6,41 +6,46 @@ import {
   BanCompetitorsScannerArgs,
   banSubstringsScanner,
   BanSubstringsScannerArgs,
-  biasScanner,
-  BiasScannerArgs,
   codeScanner,
   CodeScannerArgs,
+  gibberishScanner,
+  GibberishScannerArgs,
   languageScanner,
   LanguageScannerArgs,
-  maliciousUrlScanner,
-  MaliciousURLsScannerArgs,
-  relevanceScanner,
-  RelevanceScannerArgs,
-} from "@/features/admin-panel/control-plane/config/guards/scanners";
+  promptInjectionScanner,
+  PromptInjectionScannerArgs,
+  regexScanner,
+  RegexScannerArgs,
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/types";
 
-export const llmOutputGuardFormConfig = {
+export const llmInputGuardFormConfig = {
+  prompt_injection: promptInjectionScanner,
   ban_substrings: banSubstringsScanner,
   code: codeScanner,
-  bias: biasScanner,
-  relevance: relevanceScanner,
-  ban_competitors: banCompetitorsScanner,
+  regex: regexScanner,
+  gibberish: gibberishScanner,
   language: languageScanner,
-  malicious_urls: maliciousUrlScanner,
+  ban_competitors: banCompetitorsScanner,
 };
 
-export interface LLMOutputGuardArgs
+export interface LLMInputGuardArgs
   extends Record<string, Record<string, ServiceArgumentInputValue>> {
+  prompt_injection: PromptInjectionScannerArgs;
   ban_substrings: BanSubstringsScannerArgs;
   code: CodeScannerArgs;
-  bias: BiasScannerArgs;
-  relevance: RelevanceScannerArgs;
-  ban_competitors: BanCompetitorsScannerArgs;
+  regex: RegexScannerArgs;
+  gibberish: GibberishScannerArgs;
   language: LanguageScannerArgs;
-  malicious_urls: MaliciousURLsScannerArgs;
+  ban_competitors: BanCompetitorsScannerArgs;
 }
 
-export const llmOutputGuardArgumentsDefault: LLMOutputGuardArgs = {
+export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
+  prompt_injection: {
+    enabled: false,
+    threshold: null,
+    match_type: null,
+  },
   ban_substrings: {
     enabled: false,
     substrings: null,
@@ -53,20 +58,16 @@ export const llmOutputGuardArgumentsDefault: LLMOutputGuardArgs = {
     enabled: false,
     threshold: null,
   },
-  bias: {
+  regex: {
+    enabled: false,
+    patterns: null,
+    match_type: null,
+    redact: null,
+  },
+  gibberish: {
     enabled: false,
     threshold: null,
     match_type: null,
-  },
-  relevance: {
-    enabled: false,
-    threshold: null,
-  },
-  ban_competitors: {
-    enabled: false,
-    competitors: null,
-    redact: null,
-    threshold: null,
   },
   language: {
     enabled: false,
@@ -74,8 +75,10 @@ export const llmOutputGuardArgumentsDefault: LLMOutputGuardArgs = {
     match_type: null,
     threshold: null,
   },
-  malicious_urls: {
+  ban_competitors: {
     enabled: false,
+    competitors: null,
+    redact: null,
     threshold: null,
   },
 };

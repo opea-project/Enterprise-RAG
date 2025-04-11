@@ -36,5 +36,6 @@
     @apply w-full text-wrap p-3 text-sm;
     @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
     @apply text-light-text-primary dark:text-dark-text-primary;
+    overflow-wrap: anywhere;
   }
 }

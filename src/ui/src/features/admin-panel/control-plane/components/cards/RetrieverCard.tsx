@@ -10,7 +10,7 @@ import {
   RetrieverArgs,
   retrieverFormConfig,
   searchTypesArgsMap,
-} from "@/features/admin-panel/control-plane/config/retriever";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 import {
   filterInvalidRetrieverArguments,
@@ -19,7 +19,7 @@ import {
 import useDebug from "@/hooks/useDebug";
 
 const RetrieverCard = ({
-  data: { id, status, displayName, retrieverArgs, details },
+  data: { id, status, displayName, retrieverArgs },
 }: ControlPlaneCardProps) => {
   const {
     argumentsForm,
@@ -43,11 +43,10 @@ const RetrieverCard = ({
     <SelectedServiceCard
       serviceStatus={status}
       serviceName={displayName}
-      serviceDetails={details}
       footerProps={footerProps}
       DebugDialog={DebugDialog}
     >
-      <p className="mb-1 mt-3 text-sm font-medium">Service Arguments</p>
+      <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentSelectInput
         {...retrieverFormConfig.search_type}
         initialValue={previousArgumentsValues.search_type}

@@ -8,11 +8,11 @@ import { ServiceArgumentNumberInputValue } from "@/features/admin-panel/control-
 import { ServiceArgumentSelectInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import { ServiceArgumentTextInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
 import { ServiceArgumentThreeStateSwitchValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
-import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/guards/llmInputGuard";
-import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/guards/llmOutputGuard";
-import { LLMArgs } from "@/features/admin-panel/control-plane/config/llm";
-import { RerankerArgs } from "@/features/admin-panel/control-plane/config/reranker";
-import { RetrieverArgs } from "@/features/admin-panel/control-plane/config/retriever";
+import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
+import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
+import { LLMArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
+import { RerankerArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
+import { RetrieverArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 
 export type ServiceArgumentInputValue =
   | ServiceArgumentCheckboxValue

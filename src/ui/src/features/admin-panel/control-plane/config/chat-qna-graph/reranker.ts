@@ -23,4 +23,7 @@ export interface RerankerArgs
   rerank_score_threshold: ServiceArgumentNumberInputValue;
 }
 
-export const rerankerArgumentsDefault: RerankerArgs = { top_n: undefined, rerank_score_threshold: undefined };
+export const rerankerArgumentsDefault: RerankerArgs = {
+  top_n: undefined,
+  rerank_score_threshold: undefined,
+};

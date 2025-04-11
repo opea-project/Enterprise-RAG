@@ -16,7 +16,7 @@ import {
   substrings,
   threshold,
   validLanguages,
-} from "@/features/admin-panel/control-plane/config/guards/arguments";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/arguments";
 import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/types";
 
 export const banCompetitorsScanner = {

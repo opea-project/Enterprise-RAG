@@ -46,14 +46,14 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
     }
 
     const isUndeterminedNetworkError =
-      uploadErrors[dataType].includes("Failed to fetch");
+      uploadErrors[dataType].includes("Failed to upload");
 
     const sectionTitle = `${dataType[0].toUpperCase()}${dataType.slice(1)}`;
 
     return (
       <section className="upload-errors-dialog__section">
         <h4>{sectionTitle}</h4>
-        <p>{uploadErrors[dataType]}</p>
+        <p className="mb-2">{uploadErrors[dataType]}</p>
         {isUndeterminedNetworkError && UndeterminedNetworkErrorMessage}
       </section>
     );

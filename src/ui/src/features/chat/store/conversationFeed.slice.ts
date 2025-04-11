@@ -1,12 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 
-import { postPrompt } from "@/features/chat/api/postPrompt";
 import { UpdatedChatMessage } from "@/features/chat/types";
-import { handleError } from "@/features/chat/utils/conversationFeed";
 import { RootState } from "@/store/index";
 import { ChatMessage } from "@/types";
 
@@ -15,7 +13,6 @@ interface ConversationFeedState {
   messages: ChatMessage[];
   isStreaming: boolean;
   currentChatBotMessageId: string | null;
-  abortController: AbortController | null;
 }
 
 const initialState: ConversationFeedState = {
@@ -23,26 +20,7 @@ const initialState: ConversationFeedState = {
   messages: [],
   isStreaming: false,
   currentChatBotMessageId: null,
-  abortController: null,
 };
-
-export const sendPrompt = createAsyncThunk(
-  "conversationFeed/sendPrompt",
-  async (prompt: string, { dispatch }) => {
-    try {
-      const newAbortController = new AbortController();
-      dispatch(setAbortController(newAbortController));
-      const abortSignal = newAbortController.signal;
-      await postPrompt(prompt, abortSignal, dispatch);
-    } catch (error) {
-      const errorMessage = handleError(error);
-      dispatch(updateBotMessageText(errorMessage));
-    } finally {
-      dispatch(updateMessageIsStreamed(false));
-      dispatch(setAbortController(null));
-    }
-  },
-);
 
 export const conversationFeedSlice = createSlice({
   name: "conversationFeed",
@@ -71,12 +49,6 @@ export const conversationFeedSlice = createSlice({
       state.messages = [...state.messages, newBotMessage];
       state.currentChatBotMessageId = id;
       state.isStreaming = true;
-    },
-    setAbortController: (
-      state,
-      action: PayloadAction<AbortController | null>,
-    ) => {
-      state.abortController = action.payload;
     },
     updateBotMessageText: (
       state,
@@ -122,6 +94,7 @@ export const conversationFeedSlice = createSlice({
       }
       state.isStreaming = isStreaming;
     },
+    resetConversationFeedSlice: () => initialState,
   },
 });
 
@@ -129,15 +102,13 @@ export const {
   setPrompt,
   addNewUserMessage,
   addNewBotMessage,
-  setAbortController,
   updateBotMessageText,
   updateMessageIsStreamed,
+  resetConversationFeedSlice,
 } = conversationFeedSlice.actions;
 export const selectPrompt = (state: RootState) => state.conversationFeed.prompt;
 export const selectMessages = (state: RootState) =>
   state.conversationFeed.messages;
 export const selectIsStreaming = (state: RootState) =>
   state.conversationFeed.isStreaming;
-export const selectAbortController = (state: RootState) =>
-  state.conversationFeed.abortController;
 export default conversationFeedSlice.reducer;

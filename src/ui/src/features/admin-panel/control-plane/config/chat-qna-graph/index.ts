@@ -3,11 +3,11 @@
 
 import { Edge, Node, Position } from "@xyflow/react";
 
-import { llmInputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/guards/llmInputGuard";
-import { llmOutputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/guards/llmOutputGuard";
-import { llmArgumentsDefault } from "@/features/admin-panel/control-plane/config/llm";
-import { rerankerArgumentsDefault } from "@/features/admin-panel/control-plane/config/reranker";
-import { retrieverArgumentsDefault } from "@/features/admin-panel/control-plane/config/retriever";
+import { llmInputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
+import { llmOutputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
+import { llmArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
+import { rerankerArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
+import { retrieverArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import { ServiceData } from "@/features/admin-panel/control-plane/types";
 
 export const llmNodePositionNoGuards = { x: 840, y: 144 };

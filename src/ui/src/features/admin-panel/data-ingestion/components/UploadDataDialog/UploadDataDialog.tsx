@@ -8,16 +8,18 @@ import { useRef, useState } from "react";
 import Button from "@/components/ui/Button/Button";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
-import { postFiles } from "@/features/admin-panel/data-ingestion/api/postFiles";
-import { postLinks } from "@/features/admin-panel/data-ingestion/api/postLinks";
+import {
+  useGetFilePresignedUrlMutation,
+  useLazyGetFilesQuery,
+  useLazyGetLinksQuery,
+  usePostLinksMutation,
+} from "@/features/admin-panel/data-ingestion/api/edpApi";
+import { usePostFileMutation } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import BucketsDropdown from "@/features/admin-panel/data-ingestion/components/BucketsDropdown/BucketsDropdown";
 import FilesIngestionPanel from "@/features/admin-panel/data-ingestion/components/FilesIngestionPanel/FilesIngestionPanel";
 import LinksIngestionPanel from "@/features/admin-panel/data-ingestion/components/LinksIngestionPanel/LinksIngestionPanel";
 import UploadDataDialogFooter from "@/features/admin-panel/data-ingestion/components/UploadDataDialogFooter/UploadDataDialogFooter";
-import {
-  fetchFiles,
-  fetchLinks,
-} from "@/features/admin-panel/data-ingestion/store/dataIngestion.slice";
+import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import {
   LinkForIngestion,
   UploadErrors,
@@ -27,6 +29,7 @@ import {
   isUploadDisabled,
 } from "@/features/admin-panel/data-ingestion/utils";
 import { useAppDispatch } from "@/store/hooks";
+import { getErrorMessage } from "@/utils/api";
 
 const initialUploadErrors = {
   files: "",
@@ -34,6 +37,12 @@ const initialUploadErrors = {
 };
 
 const UploadDataDialog = () => {
+  const [getFiles] = useLazyGetFilesQuery();
+  const [getLinks] = useLazyGetLinksQuery();
+  const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
+  const [postFile] = usePostFileMutation();
+  const [postLinks] = usePostLinksMutation();
+
   const ref = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<LinkForIngestion[]>([]);
@@ -59,29 +68,51 @@ const UploadDataDialog = () => {
     let filesUploadError = "";
     let linksUploadError = "";
 
-    try {
-      if (files.length && selectedBucket !== "") {
-        await postFiles(files, selectedBucket);
+    if (files.length && selectedBucket !== "") {
+      let error;
+      for (const file of files) {
+        const { data: presignedUrl, error: getFilePresignedUrlError } =
+          await getFilePresignedUrl({
+            fileName: file.name,
+            method: "PUT",
+            bucketName: selectedBucket,
+          });
+
+        if (getFilePresignedUrlError) {
+          error = getFilePresignedUrlError;
+          break;
+        }
+
+        if (presignedUrl) {
+          const { error: postFileError } = await postFile({
+            url: presignedUrl,
+            file,
+          });
+
+          if (postFileError) {
+            error = postFileError;
+            break;
+          }
+        }
+      }
+
+      if (error) {
+        filesUploadError = getErrorMessage(error, ERROR_MESSAGES.POST_FILES);
+      } else {
         setFiles([]);
         setSelectedBucket("");
       }
-    } catch (error) {
-      filesUploadError =
-        error instanceof Error
-          ? error.message
-          : "Unknown error occurred during files upload";
     }
 
-    try {
-      if (links.length) {
-        await postLinks(links);
+    if (links.length) {
+      const linksUrls = links.map(({ value }) => value);
+      const { error } = await postLinks(linksUrls);
+
+      if (error) {
+        linksUploadError = getErrorMessage(error, ERROR_MESSAGES.POST_LINKS);
+      } else {
         setLinks([]);
       }
-    } catch (error) {
-      linksUploadError =
-        error instanceof Error
-          ? error.message
-          : "Unknown error occurred during links upload";
     }
 
     if (filesUploadError || linksUploadError) {
@@ -90,6 +121,7 @@ const UploadDataDialog = () => {
         files: filesUploadError,
       });
     } else {
+      setUploadErrors(initialUploadErrors);
       closeDialog();
       dispatch(
         addNotification({
@@ -97,8 +129,7 @@ const UploadDataDialog = () => {
           severity: "success",
         }),
       );
-      dispatch(fetchFiles());
-      dispatch(fetchLinks());
+      Promise.all([getFiles().refetch(), getLinks().refetch()]);
     }
 
     setIsUploading(false);

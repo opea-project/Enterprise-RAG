@@ -4,19 +4,17 @@
 import "@xyflow/react/dist/style.css";
 import "./ControlPlaneTab.scss";
 
-import { useEffect } from "react";
-
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
+import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
 import ChatQnAGraph from "@/features/admin-panel/control-plane/components/ChatQnAGraph/ChatQnAGraph";
 import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
 import {
-  chatQnAGraphCanBeRenderedSelector,
-  chatQnAGraphLoadingSelector,
-  fetchGraphData,
+  chatQnAGraphIsLoadingSelector,
+  chatQnAGraphIsRenderableSelector,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { ServiceStatus } from "@/features/admin-panel/control-plane/types";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 const ServiceStatusLegend = () => (
   <div className="chatqna-graph-legend">
@@ -36,19 +34,16 @@ const ServiceStatusLegend = () => (
 );
 
 const ControlPlaneTab = () => {
-  const dispatch = useAppDispatch();
-  const loading = useAppSelector(chatQnAGraphLoadingSelector);
-  const canBeRendered = useAppSelector(chatQnAGraphCanBeRenderedSelector);
+  useGetServicesDataQuery();
 
-  useEffect(() => {
-    dispatch(fetchGraphData());
-  }, [dispatch]);
+  const isLoading = useAppSelector(chatQnAGraphIsLoadingSelector);
+  const isRenderable = useAppSelector(chatQnAGraphIsRenderableSelector);
 
   const getControlPlaneContent = () => {
-    if (loading) {
+    if (isLoading) {
       return <LoadingFallback />;
     } else {
-      if (canBeRendered) {
+      if (isRenderable) {
         return (
           <>
             <ServiceStatusLegend />

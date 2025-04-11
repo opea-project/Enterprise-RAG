@@ -6,46 +6,41 @@ import {
   BanCompetitorsScannerArgs,
   banSubstringsScanner,
   BanSubstringsScannerArgs,
+  biasScanner,
+  BiasScannerArgs,
   codeScanner,
   CodeScannerArgs,
-  gibberishScanner,
-  GibberishScannerArgs,
   languageScanner,
   LanguageScannerArgs,
-  promptInjectionScanner,
-  PromptInjectionScannerArgs,
-  regexScanner,
-  RegexScannerArgs,
-} from "@/features/admin-panel/control-plane/config/guards/scanners";
+  maliciousUrlScanner,
+  MaliciousURLsScannerArgs,
+  relevanceScanner,
+  RelevanceScannerArgs,
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/types";
 
-export const llmInputGuardFormConfig = {
-  prompt_injection: promptInjectionScanner,
+export const llmOutputGuardFormConfig = {
   ban_substrings: banSubstringsScanner,
   code: codeScanner,
-  regex: regexScanner,
-  gibberish: gibberishScanner,
-  language: languageScanner,
+  bias: biasScanner,
+  relevance: relevanceScanner,
   ban_competitors: banCompetitorsScanner,
+  language: languageScanner,
+  malicious_urls: maliciousUrlScanner,
 };
 
-export interface LLMInputGuardArgs
+export interface LLMOutputGuardArgs
   extends Record<string, Record<string, ServiceArgumentInputValue>> {
-  prompt_injection: PromptInjectionScannerArgs;
   ban_substrings: BanSubstringsScannerArgs;
   code: CodeScannerArgs;
-  regex: RegexScannerArgs;
-  gibberish: GibberishScannerArgs;
-  language: LanguageScannerArgs;
+  bias: BiasScannerArgs;
+  relevance: RelevanceScannerArgs;
   ban_competitors: BanCompetitorsScannerArgs;
+  language: LanguageScannerArgs;
+  malicious_urls: MaliciousURLsScannerArgs;
 }
 
-export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
-  prompt_injection: {
-    enabled: false,
-    threshold: null,
-    match_type: null,
-  },
+export const llmOutputGuardArgumentsDefault: LLMOutputGuardArgs = {
   ban_substrings: {
     enabled: false,
     substrings: null,
@@ -58,16 +53,20 @@ export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
     enabled: false,
     threshold: null,
   },
-  regex: {
-    enabled: false,
-    patterns: null,
-    match_type: null,
-    redact: null,
-  },
-  gibberish: {
+  bias: {
     enabled: false,
     threshold: null,
     match_type: null,
+  },
+  relevance: {
+    enabled: false,
+    threshold: null,
+  },
+  ban_competitors: {
+    enabled: false,
+    competitors: null,
+    redact: null,
+    threshold: null,
   },
   language: {
     enabled: false,
@@ -75,10 +74,8 @@ export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
     match_type: null,
     threshold: null,
   },
-  ban_competitors: {
+  malicious_urls: {
     enabled: false,
-    competitors: null,
-    redact: null,
     threshold: null,
   },
 };

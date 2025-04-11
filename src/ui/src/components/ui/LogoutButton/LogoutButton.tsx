@@ -4,11 +4,18 @@
 import IconButton from "@/components/ui/IconButton/IconButton";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { redirectToLogout } from "@/lib/auth";
+import { resetStore } from "@/store/utils";
 
-const LogoutButton = () => (
-  <Tooltip text="Logout">
-    <IconButton icon="logout" onClick={redirectToLogout} />
-  </Tooltip>
-);
+const LogoutButton = () => {
+  const handleLogout = () => {
+    resetStore();
+    redirectToLogout();
+  };
 
+  return (
+    <Tooltip text="Logout">
+      <IconButton icon="logout" onClick={handleLogout} />
+    </Tooltip>
+  );
+};
 export default LogoutButton;

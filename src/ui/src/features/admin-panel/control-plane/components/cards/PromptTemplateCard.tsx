@@ -6,23 +6,23 @@ import { ChangeEventHandler, useState } from "react";
 import { ValidationError } from "yup";
 
 import Button from "@/components/ui/Button/Button";
+import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
-import { changeServiceArguments } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
+import { ChangeArgumentsRequest } from "@/features/admin-panel/control-plane/types/api";
 import { validatePromptTemplateInput } from "@/features/admin-panel/control-plane/validators/promptTemplateInput";
-import { useAppDispatch } from "@/store/hooks";
 import { sanitizeString } from "@/utils";
 
 const PromptTemplateCard = ({
   data: { status, displayName, promptTemplate: defaultPromptTemplate },
 }: ControlPlaneCardProps) => {
+  const [changeArguments] = useChangeArgumentsMutation();
+
   const [promptTemplate, setPromptTemplate] = useState<string>(
     defaultPromptTemplate || "",
   );
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
-
-  const dispatch = useAppDispatch();
 
   const validateInput = async (value: string) => {
     try {
@@ -48,13 +48,16 @@ const PromptTemplateCard = ({
   };
 
   const handleChangePromptTemplateBtnClick = () => {
-    const postArgumentsRequest = {
-      name: "prompt_template",
-      data: {
-        prompt_template: promptTemplate,
+    const changeArgumentsRequest: ChangeArgumentsRequest = [
+      {
+        name: "prompt_template",
+        data: {
+          prompt_template: promptTemplate,
+        },
       },
-    };
-    dispatch(changeServiceArguments(postArgumentsRequest));
+    ];
+
+    changeArguments(changeArgumentsRequest);
   };
 
   const textareaClassNames = classNames([

@@ -8,7 +8,7 @@ import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/com
 import {
   RelevanceScannerArgs,
   RelevanceScannerConfig,
-} from "@/features/admin-panel/control-plane/config/guards/scanners";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import useGuardScannerInputs from "@/features/admin-panel/control-plane/hooks/useGuardScannerInputs";
 
 const RelevanceScannerInputs = ({

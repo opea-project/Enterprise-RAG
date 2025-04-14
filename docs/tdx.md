@@ -97,12 +97,12 @@ Follow the steps below to deploy ChatQnA:
    docker login your_container_registry
    ```
 
-4. Push the images to your container registry and deploy ChatQnA by adding `--features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
+4. Push the images to your container registry and deploy ChatQnA by adding `--no-mesh --features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
 
    ```bash
    ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
    ./set_values.sh -g "${HUGGINGFACEHUB_API_TOKEN}" -r "${REGISTRY}" -t "${TAG}"
-   ./install_chatqna.sh --deploy "${PIPELINE}" --registry "${REGISTRY}" --tag "${TAG}" --features tdx
+   ./install_chatqna.sh --deploy "${PIPELINE}" --registry "${REGISTRY}" --tag "${TAG}" --no-mesh --features tdx
    ```
 
 

@@ -45,7 +45,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: torchserve-embedding
+      app.kubernetes.io/name: torchserve_embedding
   action: DENY
   rules:
   - from:

@@ -63,8 +63,7 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
     fi
 fi
 
-mkdir -p docker/data/
-sudo chown -R 1000:1000 ./docker/data
+mkdir -p ./docker/data/
 
 if [ "${LLM_DEVICE}" = "hpu" ]; then
     if [ "${IF_FP8_QUANTIZATION}" = "true" ]; then
@@ -74,5 +73,6 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
         docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-vllm-model-server
     fi
 else
+    export UID
     docker compose -f docker/docker-compose-cpu.yaml up --build llm-vllm-model-server
 fi

@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from enum import Enum
 from typing import Type
 
@@ -35,6 +36,40 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
     MODELSERVER_IMAGE_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-vllm"
 
     MODELSERVER_PORT = 80
+
+    VOLUMES = [("./data", "/data")]
+
+    def __init__(
+        self,
+        golden_configuration_src: str,
+        config_override: dict = None,
+        custom_microservice_envs: dict = None,
+        custom_microservice_docker_params: dict = None,
+        custom_model_server_envs: dict = None,
+        custom_model_server_docker_params: dict = None,
+    ):
+        super().__init__(
+            golden_configuration_src,
+            config_override,
+            custom_microservice_envs,
+            custom_microservice_docker_params,
+            custom_model_server_envs,
+            custom_model_server_docker_params,
+        )
+
+        # Also create directories for volumes.
+        logger.debug(f"Start creating volume directories (UID={os.getuid()})")
+        for volume_pair in self.VOLUMES:
+            host_dir = volume_pair[0]
+            try:
+                os.makedirs(host_dir)
+                logger.debug(f"Created {host_dir}.")
+            except FileExistsError:
+                logger.debug(f"Found existing directory {host_dir}. Will delete.")
+                shutil.rmtree(host_dir)
+                os.makedirs(host_dir)
+                logger.debug(f"Created {host_dir}.")
+        logger.info("Created volume directories.")
 
     @property
     def _ENV_KEYS(self) -> Type[LLMs_VllmIP_CPU_EnvKeys]:
@@ -74,6 +109,9 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
             self.MODELSERVER_IMAGE_NAME,
             file=f"{self._main_src_path}/comps/llms/impl/model_server/vllm/docker/Dockerfile.cpu",
             context_path=f"{self._main_src_path}/comps/llms/impl/model_server/vllm/",
+            build_args={
+                "USER_UID": os.getuid()
+            },  # Pass current user UID for docker non-priviledged user
             **self.COMMON_BUILD_OPTIONS,
         )
 
@@ -90,7 +128,7 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
                 **self._model_server_extra_envs,
                 **self.COMMON_PROXY_SETTINGS,
             },
-            volumes=[("./data", "/data")],
+            volumes=self.VOLUMES,
             command=[
                 "--model",
                 f"{self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)}",
@@ -118,3 +156,14 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
             **self.COMMON_RUN_OPTIONS,
         )
         return container
+
+    def __del__(self):
+        for volume_pair in self.VOLUMES:
+            host_dir = volume_pair[0]
+            try:
+                shutil.rmtree(host_dir)
+            except FileNotFoundError:
+                pass
+        logger.info("Docker volume directories removed")
+
+        super().__del__()

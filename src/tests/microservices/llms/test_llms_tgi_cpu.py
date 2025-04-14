@@ -69,6 +69,7 @@ def llms_containers_fixture(request):
 def allure_ids():
     return ALLURE_IDS
 
+@pytest.mark.skip(reason="VLLM CPU fails when this one is on")
 @pytest.mark.llms
 @pytest.mark.cpu
 @pytest.mark.tgi

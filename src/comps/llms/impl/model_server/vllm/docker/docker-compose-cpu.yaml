@@ -6,13 +6,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.cpu
+      args:
+        USER_UID: ${UID}
     image: vllm:cpu
     container_name: llm-vllm-model-server
     ports:
       - "${LLM_VLLM_PORT}:80"
     volumes:
       - "./data:/data"
-    user: "1000:1000"
+    user: "${UID}:${UID}"
     environment:
       HF_TOKEN: ${HF_TOKEN}
       HTTP_PROXY: ${HTTP_PROXY}

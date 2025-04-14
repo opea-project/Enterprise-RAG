@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from enum import Enum
 from typing import Type
 
@@ -26,6 +27,8 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
     MODELSERVER_CONTAINER_NAME = f"{LLMsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
 
     MODELSERVER_PORT = 80
+
+    VOLUMES = [("./data", "/data")]
 
     @property
     def _ENV_KEYS(self) -> Type[LLMs_TGI_EnvKeys]:
@@ -54,6 +57,12 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
         super().__init__(golden_configuration_src, config_override, custom_model_server_envs, custom_model_server_docker_params)
         self._modelserver_image_name = model_server_img_url
 
+        # Also create directories for volumes.
+        for volume_pair in self.VOLUMES:
+            host_dir = volume_pair[0]
+            os.makedirs(host_dir)
+        logger.debug(f"Created volume directories (UID={os.getuid()})")
+
     def _build_model_server(self):
         return self._pull_image(self._modelserver_image_name)
 
@@ -70,7 +79,7 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
                 **self._model_server_extra_envs,
                 **self.COMMON_PROXY_SETTINGS,
             },
-            volumes=[("./data", "/data")],
+            volumes=self.VOLUMES,
             command=[
                 "--model-id",
                 self.get_docker_env(self._ENV_KEYS.LLM_TGI_MODEL_NAME),
@@ -84,3 +93,10 @@ class LLMsTgiDockerSetup(LLMsDockerSetup):
             **self.COMMON_RUN_OPTIONS,
         )
         return container
+
+    def __del__(self):
+        for volume_pair in self.VOLUMES:
+            host_dir = volume_pair[0]
+            shutil.rmtree(host_dir)
+
+        super().__del__()

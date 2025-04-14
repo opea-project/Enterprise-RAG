@@ -291,7 +291,7 @@ class LanguageUsvcDockerSetup(BaseDockerSetup):
         self._docker_conf = dotenv_values(file_path)
         self._validate_golden_configuration()
         logger.info("Loaded .env golden configuration:")
-        logger.info(self._docker_conf)
+        logger.info("\n" + "\n".join((f"{k}: {v}" for k, v in self._docker_conf.items())))
 
     def _validate_golden_configuration(self):
         """Verify if all required env vars has been loaded."""

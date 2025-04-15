@@ -86,7 +86,7 @@ spec:
                 optional: true
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.6"
+          image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.7"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"

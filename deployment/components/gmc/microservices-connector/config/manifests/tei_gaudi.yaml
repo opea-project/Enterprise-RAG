@@ -85,7 +85,7 @@ spec:
                 optional: true
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "ghcr.io/huggingface/tei-gaudi:synapse_1.16"
+          image: "ghcr.io/huggingface/tei-gaudi:1.5.3"
           imagePullPolicy: IfNotPresent
           args:
             - "--auto-truncate"

@@ -3,6 +3,7 @@ image:
   fingerprint:
     tag: "{{ tag }}"
 {% endif %}
+    repository: {{ registry }}
 
 {% if use_alternate_tagging is defined %}
 alternateTagging: {{ use_alternate_tagging }}

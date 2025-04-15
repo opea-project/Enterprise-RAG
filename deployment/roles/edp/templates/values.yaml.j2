@@ -24,17 +24,26 @@ postgresAdminPassword: {{ edp_postgresql_admin_password }}
 
 celery:
   tag: {{ tag }}
+  repository: {{ registry }}
 flower:
   tag: {{ tag }}
+  repository: {{ registry }}
 backend:
   tag: {{ tag }}
+  repository: {{ registry }}
 dataprep:
   tag: {{ tag }}
+  repository: {{ registry }}
 ingestion:
   tag: {{ tag }}
+  repository: {{ registry }}
 embedding:
   enabled: false
   remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+  repository: {{ registry }}
 dpguard:
   enabled: {{ edp.dpGuard.enabled }}
   tag: {{ tag }}
+  repository: {{ registry }}
+awsSqs:
+  repository: {{ registry }}

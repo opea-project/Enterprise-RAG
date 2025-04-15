@@ -211,7 +211,7 @@
 
 - name: Set otelcol-logs image repository and tag based on condition
   ansible.builtin.set_fact:
-    helm_otelcol_logs_image_repo: "{{ registry ~ '/erag' if use_alternate_tagging else registry ~ '/erag/otelcol-contrib-journalctl' }}"
+    helm_otelcol_logs_image_repo: "{{ registry if use_alternate_tagging else registry ~ '/otelcol-contrib-journalctl' }}"
     helm_otelcol_logs_image_tag: "{{ 'otelcol-contrib-journalctl_' ~ tag if use_alternate_tagging else tag }}"
   tags:
     - install

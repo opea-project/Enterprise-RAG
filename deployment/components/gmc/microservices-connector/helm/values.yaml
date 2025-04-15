@@ -20,8 +20,7 @@ namespace: chatqa
 
 # Common tag & repository for all images. Override if needed for specific images.
 common_tag: &tag "latest"
-common_registry: &repo "localhost:5000"
-common_registry_path: &path "erag"
+common_registry: &repo "localhost:5000/erag"
 
 llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
@@ -130,25 +129,21 @@ images:
     image: "gmcmanager"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   gmcRouter:
     image: "gmcrouter"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   dataprep-usvc:
     image: "dataprep"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   embedding-usvc:
     image: "embedding"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
@@ -156,7 +151,6 @@ images:
     image: "reranking"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   teirerank:
     image: "teirerank"
@@ -175,13 +169,11 @@ images:
     image: "prompt_template"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   torchserve_embedding:
     image: "torchserve_embedding"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/embeddings/impl/model-server/torchserve/docker/.env"
     envs:
@@ -190,47 +182,40 @@ images:
     image: "torchserve_reranking"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/reranks/impl/model_server/torchserve/docker/.env"
   retriever-usvc:
     image: "retriever"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/retrievers/impl/microservice/.env"
   ingestion-usvc:
     image: "ingestion"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/ingestion/impl/microservice/.env"
   llm-usvc:
     image: "llm"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/llms/impl/microservice/.env"
   in-guard-usvc:
     image: "in-guard"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   out-guard-usvc:
     image: "out-guard"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   ui-usvc:
     image: "chatqna-conversation-ui"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
   tgi:
     envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.cpu"
@@ -244,7 +229,6 @@ images:
     image: "vllm-gaudi"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
     envs:
@@ -253,7 +237,6 @@ images:
     image: "vllm-cpu"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
     envs:
@@ -262,12 +245,10 @@ images:
     image: "language-detection"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always
     envfile: "src/comps/language_detection/impl/microservice/.env"
   fingerprint-usvc:
     image: "system-fingerprint"
     repository: *repo
     tag: *tag
-    path: *path
     pullPolicy: Always

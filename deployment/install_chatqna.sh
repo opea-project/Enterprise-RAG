@@ -56,7 +56,7 @@ KEYCLOAK_PASS=""
 
 # others
 PIPELINE=""
-REGISTRY="localhost:5000"
+REGISTRY="localhost:5000/erag"
 TAG="latest"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
@@ -331,7 +331,7 @@ function start_fingerprint() {
     create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME "$FINGERPRINT_DB_PASSWORD" $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
 
     local HELM_INSTALL_FINGERPRINT_REPO
-    HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag --set image.fingerprint.tag=$TAG"
+    HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY --set image.fingerprint.tag=$TAG"
     if $use_alternate_tagging; then
         HELM_INSTALL_FINGERPRINT_REPO="$HELM_INSTALL_FINGERPRINT_REPO --set alternateTagging=true"
     fi
@@ -474,9 +474,9 @@ function start_telemetry() {
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag --set otelcol-logs.image.tag=otelcol-contrib-journalctl_$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY --set otelcol-logs.image.tag=otelcol-contrib-journalctl_$TAG"
     else
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
 
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"
@@ -1060,8 +1060,8 @@ if [[ "$FEATURES" == *"tdx"* ]]; then
 fi
 
 
-HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag --set image.ui.tag=$TAG"
-HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY/erag --set dpguard.tag=$TAG"
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY --set image.ui.tag=$TAG"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY --set celery.tag=$TAG --set flower.repository=$REGISTRY --set flower.tag=$TAG --set backend.repository=$REGISTRY --set backend.tag=$TAG --set dataprep.repository=$REGISTRY --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY --set dpguard.tag=$TAG"
 if $use_alternate_tagging; then
     HELM_INSTALL_UI_DEFAULT_ARGS="$HELM_INSTALL_UI_DEFAULT_ARGS --set alternateTagging=true"
     HELM_INSTALL_EDP_DEFAULT_ARGS="$HELM_INSTALL_EDP_DEFAULT_ARGS --set alternateTagging=true"

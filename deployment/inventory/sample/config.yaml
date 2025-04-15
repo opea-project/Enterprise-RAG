@@ -14,7 +14,7 @@ certs:
   commonName: ".erag.com"
 
 tag: "latest"
-registry: "localhost:5000"
+registry: "localhost:5000/erag"
 use_alternate_tagging: false
 
 pipelines:

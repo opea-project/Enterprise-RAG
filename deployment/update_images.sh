@@ -39,6 +39,7 @@ usage() {
     echo -e "\t\tExample: repo/erag:gmcrouter_1.2 instead of repo/erag/gmcrouter:1.2."
     echo -e "\t--hpu: Build components for HPU platform."
     echo -e "\t--no-cache: Build images without using docker cache."
+    echo -e "\t--registry-path: Specify the registry path (default is $REGISTRY_PATH)."
     echo -e "Components available (default is all):"
     echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
@@ -187,6 +188,10 @@ while [ $# -gt 0 ]; do
         --no-cache)
             no_cache="--no-cache"
             ;;
+        --registry-path)
+            shift
+            REGISTRY_PATH=${1}
+            ;;
         --help)
             usage
             exit 0
@@ -209,6 +214,7 @@ echo "do_build = $do_build_flag"
 echo "max parallel jobs = $_max_parallel_jobs"
 echo "do_push = $do_push_flag"
 echo "TAG_VERSION = $TAG_VERSION"
+echo "REGISTRY_PATH = $REGISTRY_PATH"
 echo "components_to_build = ${components_to_build[*]}"
 
 if $setup_registry_flag; then

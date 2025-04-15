@@ -7,7 +7,7 @@ set -o pipefail
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]"
+    echo "Usage: $0  -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY_NAME] [-r REGISTRY_PATH] [--features FEATURES]"
     exit 1
 }
 
@@ -18,7 +18,8 @@ command_exists() {
 
 PIPELINE=gaudi_torch_guard
 TAG=latest
-REGISTRY=localhost:5000
+REGISTRY_NAME=localhost:5000
+REGISTRY_PATH=erag
 FEATURES=""
 
 # Parse command-line arguments
@@ -31,7 +32,8 @@ while [ $# -gt 0 ]; do
         -d) PIPELINE="$2"; shift 2 ;;
         -t) TAG="$2"; shift 2 ;;
         -a) ALTERNATE_TAGGING="--use-alternate-tagging"; shift ;;
-        -y) REGISTRY="$2"; shift 2 ;;
+        -y) REGISTRY_NAME="$2"; shift 2 ;;
+        -r) REGISTRY_PATH="$2"; shift 2 ;;
         --features) FEATURES="$2"; shift 2 ;;
         -*) echo "Unknown option: $1" >&2; usage ;;
         *) break ;;
@@ -47,7 +49,7 @@ fi
 bash configure.sh -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY"
 
 # Build images & push to local registry
-bash update_images.sh --setup-registry --build --push --registry "$REGISTRY" --tag "$TAG" $ALTERNATE_TAGGING
+bash update_images.sh --setup-registry --build --push --registry "$REGISTRY_NAME" --registry-path "$REGISTRY_PATH" --tag "$TAG" $ALTERNATE_TAGGING
 
 # Set helm values
 bash set_values.sh -p "$RAG_HTTP_PROXY" -u "$RAG_HTTPS_PROXY" -n "$RAG_NO_PROXY" -g "$HUG_TOKEN"
@@ -59,7 +61,7 @@ if ! command_exists kubectl; then
 fi
 
 if [ -n "$FEATURES" ]; then
-  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" $ALTERNATE_TAGGING --test --features "$FEATURES"
+  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY_NAME/$REGISTRY_PATH" --tag "$TAG" $ALTERNATE_TAGGING --test --features "$FEATURES"
 else
-  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY" --tag "$TAG" $ALTERNATE_TAGGING --test
+  bash ./install_chatqna.sh --deploy "$PIPELINE" --telemetry --auth --ui --registry "$REGISTRY_NAME/$REGISTRY_PATH" --tag "$TAG" $ALTERNATE_TAGGING --test
 fi

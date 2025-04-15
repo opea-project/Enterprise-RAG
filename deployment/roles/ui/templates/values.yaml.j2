@@ -8,6 +8,7 @@ image:
   ui:
     tag: {{ tag }}
 {% endif %}
+    repository: {{ registry }}
 {% if ui.additional_values is defined %}
 {{ ui.additional_values | to_nice_yaml }}
 {% endif %}

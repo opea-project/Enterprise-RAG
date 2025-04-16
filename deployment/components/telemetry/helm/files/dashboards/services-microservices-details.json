@@ -15,10 +15,10 @@
       }
     ]
   },
-  "editable": true,
+  "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 10,
+  "id": 42,
   "links": [
     {
       "asDropdown": true,
@@ -46,7 +46,7 @@
       },
       "id": 16,
       "panels": [],
-      "title": "Metrics",
+      "title": "System Resource Utilization",
       "type": "row"
     },
     {
@@ -54,6 +54,76 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Shows the sum of the last observed CPU usage values across selected container(s): $container within the namespace(s): $namespace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 0,
+        "y": 1
+      },
+      "id": 23,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": true,
+        "text": {
+          "valueSize": 40
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum(rate(process_cpu_seconds_total{container=~\"$container\", namespace=\"$namespace\"}[1m]))",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total CPU Usage ($container)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Shows how much CPU time the service's process is consuming, showing the rate of CPU usage over the past 1 minute for a given service. ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -77,6 +147,9 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -111,9 +184,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 11,
-        "x": 0,
+        "h": 7,
+        "w": 19,
+        "x": 5,
         "y": 1
       },
       "id": 9,
@@ -121,7 +194,9 @@
         "legend": {
           "calcs": [
             "lastNotNull",
-            "mean"
+            "mean",
+            "min",
+            "max"
           ],
           "displayMode": "table",
           "placement": "right",
@@ -132,7 +207,7 @@
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.4.0",
@@ -145,7 +220,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "rate(process_cpu_seconds_total{container=~\"$container_name\", namespace=\"$namespace\"}[1m])",
+          "expr": "sum by (container) (rate(process_cpu_seconds_total{container=~\"$container\", namespace=\"$namespace\"}[1m]))",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -165,6 +240,84 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Shows the sum of last observed memory usage across selected container(s): $container within the namespace(s): $namespace.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byValue",
+              "options": {
+                "op": "gte",
+                "reducer": "allIsZero",
+                "value": 0
+              }
+            },
+            "properties": []
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 0,
+        "y": 8
+      },
+      "id": 24,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": true,
+        "text": {
+          "valueSize": 40
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(process_resident_memory_bytes{container=~\"$container\", namespace=~\"$namespace\"})",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Memory Usage ($container)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Shows the amount of RAM actively used by the the service's processes, excluding swapped-out memory.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -187,7 +340,7 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
+            "lineInterpolation": "stepBefore",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -222,17 +375,19 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 13,
-        "x": 11,
-        "y": 1
+        "h": 7,
+        "w": 19,
+        "x": 5,
+        "y": 8
       },
       "id": 8,
       "options": {
         "legend": {
           "calcs": [
             "lastNotNull",
-            "mean"
+            "mean",
+            "min",
+            "max"
           ],
           "displayMode": "table",
           "placement": "right",
@@ -243,7 +398,7 @@
         "tooltip": {
           "maxHeight": 600,
           "mode": "multi",
-          "sort": "none"
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.4.0",
@@ -256,9 +411,10 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "process_resident_memory_bytes{container=~\"$container_name\", namespace=~\"$namespace\"}",
+          "expr": "sum by (container) (process_resident_memory_bytes{container=~\"$container\", namespace=~\"$namespace\"})",
           "format": "time_series",
           "fullMetaSearch": false,
+          "hide": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
@@ -272,10 +428,24 @@
       "type": "timeseries"
     },
     {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 20,
+      "panels": [],
+      "title": "External API Traffic (User-Driven)",
+      "type": "row"
+    },
+    {
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Shows the rate of incoming HTTP requests per second.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -315,6 +485,7 @@
             }
           },
           "mappings": [],
+          "noValue": "No requests detected",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -327,24 +498,23 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 7,
-        "w": 11,
+        "w": 24,
         "x": 0,
-        "y": 7
+        "y": 16
       },
       "id": 2,
       "options": {
         "legend": {
           "calcs": [
-            "mean",
             "lastNotNull",
-            "max",
-            "min"
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
@@ -352,8 +522,8 @@
         },
         "tooltip": {
           "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.4.0",
@@ -366,9 +536,10 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "sum by(container, method, handler) (rate(http_requests_total{container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))",
+          "expr": "sum by(container, method, handler) (rate(http_requests_total{container=~\"$container\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))",
           "format": "time_series",
           "fullMetaSearch": false,
+          "hide": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
@@ -378,7 +549,7 @@
           "useBackend": false
         }
       ],
-      "title": "Total requests per second",
+      "title": "Total Requests Per Second",
       "type": "timeseries"
     },
     {
@@ -386,274 +557,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "4xx"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "HTTP 500"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#bf1b00",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 13,
-        "x": 11,
-        "y": 7
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.4.0",
-      "targets": [
-        {
-          "$$hashKey": "object:140",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "sum by(container, status) (rate(http_requests_total{container=~\"$container_name\", namespace=\"$namespace\"}[$__rate_interval]))",
-          "format": "time_series",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{container}}:{{status}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Request per second",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "errors"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#c15c17",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 24,
-        "x": 0,
-        "y": 14
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "sortBy": "Mean",
-          "sortDesc": true
-        },
-        "tooltip": {
-          "maxHeight": 600,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.4.0",
-      "targets": [
-        {
-          "$$hashKey": "object:766",
-          "datasource": {
-            "type": "prometheus"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=~\"$container_name\", namespace=\"$namespace\"}[$__rate_interval])) by (container)",
-          "format": "time_series",
-          "fullMetaSearch": false,
-          "includeNullMetadata": true,
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{container}}",
-          "range": true,
-          "refId": "A",
-          "useBackend": false
-        }
-      ],
-      "title": "Errors per second",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "description": "",
+      "description": "This graph shows the estimated $Percentage-th percentile of HTTP request durations. The data is grouped by container, HTTP method, and handler, excluding internal API traffic such as /metrics and  /v1/health_check.\n\nNote: The percentile value is configurable via the `Percentage` variable on the dashboard, allowing dynamic exploration of latency at different thresholds.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -694,6 +598,7 @@
           },
           "mappings": [],
           "min": 0,
+          "noValue": "No value",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -712,19 +617,17 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 11,
+        "h": 7,
+        "w": 24,
         "x": 0,
-        "y": 19
+        "y": 23
       },
       "id": 15,
       "options": {
         "legend": {
           "calcs": [
-            "mean",
             "lastNotNull",
-            "max",
-            "min"
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
@@ -732,8 +635,8 @@
         },
         "tooltip": {
           "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.4.0",
@@ -746,19 +649,19 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "histogram_quantile(0.$Percentage, rate(http_request_duration_seconds_bucket{container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval])) ",
+          "expr": "histogram_quantile(0.$Percentage, sum by (le, container, method, handler) (rate(http_request_duration_seconds_bucket{container=~\"$container\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]))) ",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{container}}:{{handler}}",
+          "legendFormat": "{{container}}:{{ method }}{{ handler }}",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Request duration  P$Percentage",
+      "title": "Request Duration  P$Percentage",
       "type": "timeseries"
     },
     {
@@ -766,6 +669,264 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Shows the average response time for incoming HTTP requests.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "noValue": "No value",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "$$hashKey": "object:426",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "e4584a9f-5364-4b3d-a851-7abbc5250820"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum by (container, method, handler) (rate(http_request_duration_seconds_sum{handler!=\"none\",container=~\"$container\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval]) / rate(http_request_duration_seconds_count[$__rate_interval]))",
+          "format": "time_series",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{container}}:{{ method }}{{ handler }}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Average Response Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "This metric tracks the rate of HTTP requests with 5xx status codes (server errors) per second, helping identify server-side issues like failures or unavailability.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "noValue": "No errors occured",
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "semi-dark-red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "errors"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#c15c17",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "$$hashKey": "object:766",
+          "datasource": {
+            "type": "prometheus"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum(rate(http_requests_total{status=\"5xx\", container=~\"$container\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"}[$__rate_interval])) by (container)",
+          "format": "time_series",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{container}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "HTTP 5xx Error Rate",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "id": 22,
+      "panels": [],
+      "title": "Internal API Traffic (Monitoring & Health Checks)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "The total number of requests per second for monitoring endpoints `GET /metrics`",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -788,7 +949,7 @@
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "smooth",
+            "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -805,6 +966,7 @@
             }
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -818,24 +980,22 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 13,
-        "x": 11,
-        "y": 19
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 47
       },
-      "id": 6,
+      "id": 27,
       "options": {
         "legend": {
           "calcs": [
-            "mean",
             "lastNotNull",
-            "max",
-            "min"
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
@@ -843,127 +1003,248 @@
         },
         "tooltip": {
           "maxHeight": 600,
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "pluginVersion": "11.4.0",
       "targets": [
         {
-          "$$hashKey": "object:146",
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "http_request_duration_seconds_sum{handler!=\"none\",container=~\"$container_name\", namespace=\"$namespace\", handler!~\"/metrics|/v1/health_check|none\"} / http_request_duration_seconds_count",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{container}}:{{ handler }}",
+          "expr": "sum by(container, method, handler, status) (rate(http_requests_total{container=~\"$container\", namespace=\"$namespace\", handler=~\"/metrics\"}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{container}}:{{ method }}{{ handler }}:{{status}}",
           "range": true,
-          "refId": "A"
+          "refId": "B"
         }
       ],
-      "title": "Average response time",
+      "title": "Total Requests Per Second For Monitoring",
       "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "The total number of requests per second for health check endpoints `GET /v1/health_check` ",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "noValue": "No requests detected",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "reqps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "palette-classic"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 47
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum by(container, method, handler, status) (rate(http_requests_total{container=~\"$container\", namespace=\"$namespace\", handler=~\"/v1/health_check\"}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "{{container}}:{{ method }}{{ handler }}:{{status}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": " Total Requests Per Second For Health Check",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 56
       },
       "id": 17,
-      "panels": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 11,
-            "w": 24,
-            "x": 0,
-            "y": 28
-          },
-          "id": 18,
-          "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": false,
-            "showLabels": false,
-            "showTime": true,
-            "sortOrder": "Descending",
-            "wrapLogMessage": false
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "loki"
-              },
-              "editorMode": "builder",
-              "expr": "{k8s_container_name=~\"$container_name\"} |= ``",
-              "legendFormat": "{{container}}",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Logs (all levels)",
-          "type": "logs"
-        },
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 24,
-            "x": 0,
-            "y": 39
-          },
-          "id": 19,
-          "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": true,
-            "prettifyLogMessage": false,
-            "showCommonLabels": false,
-            "showLabels": false,
-            "showTime": true,
-            "sortOrder": "Descending",
-            "wrapLogMessage": false
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "loki",
-                "uid": "loki"
-              },
-              "editorMode": "builder",
-              "expr": "{k8s_container_name=~\"$container_name\"} | detected_level = `error`",
-              "legendFormat": "{{container}}",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Logs (only lines with detected error)",
-          "type": "logs"
-        }
-      ],
+      "panels": [],
       "title": "Logs",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "id": 18,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "builder",
+          "expr": "{k8s_container_name=~\"$container\"} |= ``",
+          "legendFormat": "{{container}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs (all levels)",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "id": 19,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "builder",
+          "expr": "{k8s_container_name=~\"$container\"} | detected_level = `error`",
+          "legendFormat": "{{container}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs (only lines with detected error)",
+      "type": "logs"
     }
   ],
   "preload": false,
@@ -1013,8 +1294,9 @@
         },
         "definition": "label_values(http_requests_total{namespace=~\"$namespace\"},container)",
         "includeAll": true,
+        "label": "Container",
         "multi": true,
-        "name": "container_name",
+        "name": "container",
         "options": [],
         "query": {
           "qryType": 1,

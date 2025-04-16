@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import time
 
 from dotenv import dotenv_values
+from fastapi import HTTPException
 
 from comps import (
     LLMParamsDoc,
@@ -14,6 +16,7 @@ from comps import (
     opea_microservices,
     register_microservice,
     register_statistics,
+    statistics_dict,
 )
 from comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_guardrail import (
     OPEALLMGuardInputGuardrail
@@ -51,11 +54,29 @@ def process(input_doc: LLMParamsDoc) -> LLMParamsDoc:
     Returns:
         LLMParamsDoc: The processed document with LLM parameters.
     """
-    return input_guardrail.scan_llm_input(input_doc)
+    start = time.time()
+    try:
+        res = input_guardrail.scan_llm_input(input_doc)
+    except HTTPException as e:
+        # Pass through the assistance rejection (status 466)
+        raise e
+    except ValueError as e:
+        error_msg = f"Validation Error occured while initializing LLM Guard Input Guardrail scanners: {e}"
+        logger.exception(error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        error_msg = f"An unexpected error occured during scanning prompt with LLM Guard Input Guardrail: {e}"
+        logger.exception(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+
+    statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+    return res
 
 
 if __name__ == "__main__":
     log_level = usvc_config.get("OPEA_LOGGER_LEVEL", "INFO")
     change_opea_logger_level(logger, log_level)
 
+    # Start the microservice
     opea_microservices[USVC_NAME].start()
+    logger.info(f"Started OPEA Microservice: {USVC_NAME}")

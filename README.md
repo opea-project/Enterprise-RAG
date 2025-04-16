@@ -63,18 +63,17 @@ To deploy the solution on a platform with Gaudi® AI Accelerator we need to have
 
 If you don't have a Gaudi® AI Accelerator, you can request these instances in [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) to run Intel® AI for Enterprise RAG.
 
-- visit [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home).
-- In the left pane select `Catalog > Hardware`.
-- Select `Gaudi® 2 Deep Learning Server` (recommended). `Gaudi® 2 Deep Learning VM` is also available but due to its resource limitation it is not recommended.
-- Select Instance Type - for best performance we recommend choosing a Bare Metal machine with 8 Gaudi devices.
+- Visit [ai.cloud.intel.com](https://ai.cloud.intel.com/) and register.
+- on [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) the left pane select `Preview > Preview catalog`.
+- Select `Gaudi® 2 Deep Learning Server`, we recommend choosing a Bare Metal machine with 8 Gaudi devices to be able to meet hardware requirements.
+- request instance
+- As there is a limited number of machines with Gaudi accelerators, you need to be whitelisted to be able to access them. Therefore:
+  - Send your email, Account ID, and information that you have requested an instance to [EnterpriseRAGRequest@intel.com](mailto:EnterpriseRAGRequest@intel.com) so we could add you to the whitelist.
+- on Intel® Tiber™ AI Cloud the left pane select `Catalog > Hardware`. Once you are added to the whitelist you should see Gaudi instances available.
 - Select the Machine image - for example: `ubuntu-2204-gaudi2-1.19.1-*` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
 - Upload your public key and launch the instance
 - Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
 
-> [!NOTE]
-> If you don't see any of the options above, you can either
-> - request the access to the instances by selecting `Preview > Preview Catalog`
-> - chat with Intel® Tiber™ AI Cloud agent by selecting question mark button in top right corner.
 
 ## Hardware Prerequisites for Deployment using Xeon only
 To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:

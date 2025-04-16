@@ -29,6 +29,20 @@ class EdpHelper(ApiRequestHelper):
         }
         self.remote_port_fw = 443
         self.local_port_fw = 443
+        self.available_buckets = self.list_buckets().json().get("buckets")
+        # Use the first bucket that is not read-only as the default bucket
+        self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
+        logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
+                     f"{self.available_buckets}")
+
+    def list_buckets(self):
+        """Call /api/list_buckets endpoint"""
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            response = requests.get(
+                f"http://localhost:{pf.local_port}/api/list_buckets",
+                headers=self.default_headers
+            )
+        return response
 
     def list_links(self):
         """Call /api/links endpoint"""
@@ -92,9 +106,11 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
-    def generate_presigned_url(self, object_name, method="PUT", bucket="default"):
+    def generate_presigned_url(self, object_name, method="PUT", bucket=None):
         """Generate a presigned URL for the given object name"""
-        logger.info(f"Generating presigned URL for object: {object_name}")
+        if not bucket:
+            bucket = self.default_bucket
+        logger.info(f"Generating presigned URL for object: {object_name} and bucket: {bucket}")
         payload = {
             "bucket_name": bucket,
             "object_name": object_name,
@@ -118,11 +134,11 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
-    def upload_to_minio(self, file_path, presigned_url):
-        """Upload a file to MinIO using the presigned URL"""
+    def upload_file(self, file_path, presigned_url):
+        """Upload a file using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
                                INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            logger.info(f"Attempting to upload file {file_path} to MinIO using presigned URL")
+            logger.info(f"Attempting to upload file {file_path} using presigned URL")
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False)
             return response
@@ -153,11 +169,11 @@ class EdpHelper(ApiRequestHelper):
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
 
-    def delete_from_minio(self, presigned_url):
-        """Delete a file from MinIO using the presigned URL"""
+    def delete_file(self, presigned_url):
+        """Delete a file using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
                                INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            logger.info("Attempting to delete file from MinIO using presigned URL")
+            logger.info("Attempting to delete file using presigned URL")
             return requests.delete(presigned_url, verify=False)
 
     def _status_reached(self, status, desired_status):
@@ -183,7 +199,7 @@ class EdpHelper(ApiRequestHelper):
         with self.temp_txt_file(size=size, prefix=prefix) as temp_file:
             file_basename = os.path.basename(temp_file.name)
             response = self.generate_presigned_url(file_basename)
-            self.upload_to_minio(temp_file.name, response.json().get("url"))
+            self.upload_file(temp_file.name, response.json().get("url"))
         return self.wait_for_file_upload(file_basename, status, timeout=timeout)
 
     def fill_in_file(self, temp_file, size):

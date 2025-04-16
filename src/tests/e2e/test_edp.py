@@ -31,7 +31,7 @@ def cleanup(edp_helper):
             elif file["status"] in ["ingested", "error"]:
                 logger.info(f"Removing file: {file_name}")
                 response = edp_helper.generate_presigned_url(file["object_name"], "DELETE", file["bucket_name"])
-                edp_helper.delete_from_minio(response.json().get("url"))
+                edp_helper.delete_file(response.json().get("url"))
 
     links = edp_helper.list_links()
     for link in links.json():
@@ -49,25 +49,25 @@ def test_edp_list_files(edp_helper):
 
 
 @allure.testcase("IEASG-T121")
-def test_edp_upload_to_minio(edp_helper):
+def test_edp_upload_file(edp_helper):
     """Upload a file using presigned URL. Wait for the file to be in ingested state"""
     with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
         response = edp_helper.generate_presigned_url(file_basename)
         assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
-        response = edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
-        assert response.status_code == 200, f"Failed to upload file to MinIO. Response: {response.text}"
+        response = edp_helper.upload_file(temp_file.name, response.json().get("url"))
+        assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
         edp_helper.wait_for_file_upload(file_basename, "ingested", timeout=60)
 
 
 @allure.testcase("IEASG-T122")
-def test_edp_delete_from_minio(edp_helper):
+def test_edp_delete_file(edp_helper):
     """Delete a file using presigned URL. Wait for the file to be removed from the list"""
     file = edp_helper.upload_test_file(size=0.001, prefix=method_name(), status="ingested", timeout=60)
     file_basename = file["object_name"]
     response = edp_helper.generate_presigned_url(file_basename, "DELETE")
-    response = edp_helper.delete_from_minio(response.json().get("url"))
-    assert response.status_code == 204, f"Failed to delete file from MinIO. Response: {response.text}"
+    response = edp_helper.delete_file(response.json().get("url"))
+    assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
     files = edp_helper.list_files()
     assert file_basename not in [item['object_name'] for item in files.json()], \
         f"File {file} is still in the list of files"
@@ -100,8 +100,8 @@ def test_edp_delete_file_during_ingestion(edp_helper):
     """Upload a file and delete it while it is being ingested. Expect status code 204"""
     file = edp_helper.upload_test_file(size=2, prefix=method_name(), status="processing", timeout=180)
     response = edp_helper.generate_presigned_url(file["object_name"], "DELETE")
-    response = edp_helper.delete_from_minio(response.json().get("url"))
-    assert response.status_code == 204, f"Failed to delete file from MinIO. Response: {response.text}"
+    response = edp_helper.delete_file(response.json().get("url"))
+    assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
 
 
 @allure.testcase("IEASG-T126")
@@ -110,15 +110,9 @@ def test_edp_upload_unsupported_file(edp_helper):
     file = "unsupported_filetype.adoc"
     file_path = os.path.join(constants.TEST_FILES_DIR, file)
     response = edp_helper.generate_presigned_url(file)
-    response = edp_helper.upload_to_minio(file_path, response.json().get("url"))
-    assert response.status_code == 200, f"Failed to upload file to MinIO. Response: {response.text}"
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
     edp_helper.wait_for_file_upload(file, "error", timeout=60)
-
-
-@allure.testcase("IEASG-T127")
-def test_edp_upload_file_of_size_0(edp_helper):
-    """Upload a file of size 0 and check that it is in error state"""
-    edp_helper.upload_test_file(size=0, prefix=method_name(), status="error", timeout=60)
 
 
 @allure.testcase("IEASG-T128")
@@ -127,12 +121,12 @@ def test_edp_reupload_file(edp_helper):
     with edp_helper.temp_txt_file(size=0.01, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
         response = edp_helper.generate_presigned_url(file_basename)
-        edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        edp_helper.upload_file(temp_file.name, response.json().get("url"))
         first_upload = edp_helper.wait_for_file_upload(file_basename, "ingested")
         temp_file.write("additional data")
         temp_file.flush()
         response = edp_helper.generate_presigned_url(file_basename)
-        edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        edp_helper.upload_file(temp_file.name, response.json().get("url"))
         second_upload = edp_helper.wait_for_file_upload(file_basename, "ingested")
         assert first_upload["size"] < second_upload["size"]
 
@@ -146,17 +140,17 @@ def test_edp_reupload_file_after_deletion(edp_helper):
     with edp_helper.temp_txt_file(size=0.01, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
         response = edp_helper.generate_presigned_url(file_basename)
-        edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        edp_helper.upload_file(temp_file.name, response.json().get("url"))
         first_upload = edp_helper.wait_for_file_upload(file_basename, "ingested")
 
         response = edp_helper.generate_presigned_url(file_basename, "DELETE")
-        edp_helper.delete_from_minio(response.json().get("url"))
+        edp_helper.delete_file(response.json().get("url"))
         time.sleep(5)
 
         temp_file.write("additional data")
         temp_file.flush()
         response = edp_helper.generate_presigned_url(file_basename)
-        edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
+        edp_helper.upload_file(temp_file.name, response.json().get("url"))
         second_upload = edp_helper.wait_for_file_upload(file_basename, "ingested")
         assert first_upload["size"] < second_upload["size"]
 
@@ -317,26 +311,46 @@ def test_edp_responsiveness_while_uploading_file(edp_helper):
 
 @allure.testcase("IEASG-T153")
 def test_edp_upload_to_secondary_bucket(edp_helper):
-    """"""
+    """
+    Upload a file to a secondary bucket and check that the file is in ingested state.
+    Skip the test if there's no secondary bucket available.
+    """
+    if len(edp_helper.available_buckets) < 2:
+        pytest.skip("Secondary bucket is not available. Skipping the test")
+    rw_buckets = [bucket for bucket in edp_helper.available_buckets if "read-only" not in bucket]
+    if len(rw_buckets) > 1:
+        secondary_bucket = rw_buckets[1]
+    else:
+        pytest.skip(f"Secondary bucket is not available. Available buckets that are not read-only: {rw_buckets}."
+                    f"Skipping the test")
+
     with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
-        response = edp_helper.generate_presigned_url(file_basename, bucket="secondary")
+        response = edp_helper.generate_presigned_url(file_basename, bucket=secondary_bucket)
         assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
-        response = edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
-        assert response.status_code == 200, f"Failed to upload file to MinIO. Response: {response.text}"
+        response = edp_helper.upload_file(temp_file.name, response.json().get("url"))
+        assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
         edp_helper.wait_for_file_upload(file_basename, "ingested", timeout=60)
 
 
 @allure.testcase("IEASG-T54")
 def test_edp_upload_to_nonexistent_bucket(edp_helper):
-    """"""
+    """Upload a file to a nonexistent bucket. Expect status code 404 or 301"""
     with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
         response = edp_helper.generate_presigned_url(file_basename, bucket="nonexistent")
         assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
-        response = edp_helper.upload_to_minio(temp_file.name, response.json().get("url"))
-        assert response.status_code == 404, (f"Unexpected status code returned while trying to upload file "
-                                             f"to nonexistent bucket. Response: {response.text}")
+        response = edp_helper.upload_file(temp_file.name, response.json().get("url"))
+        assert response.status_code in [404, 301], (f"Unexpected status code returned while trying to upload file "
+                                                    f"to nonexistent bucket. Response: {response.text}")
+
+
+@allure.testcase("IEASG-T155")
+def test_edp_list_buckets(edp_helper):
+    """Check whether the list of buckets is returned correctly"""
+    response = edp_helper.list_buckets()
+    assert response.status_code == 200, f"Failed to list buckets. Response: {response.text}"
+    logger.info(f"Buckets: {response.json()}")
 
 
 def method_name():

@@ -179,7 +179,7 @@ def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question):
     # Upload file and wait for it to be ingested
     file_path = os.path.join(constants.TEST_FILES_DIR, file)
     response = edp_helper.generate_presigned_url(file)
-    response = edp_helper.upload_to_minio(file_path, response.json().get("url"))
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
     assert response.status_code == 200
     edp_helper.wait_for_file_upload(file, "ingested", timeout=180)
 

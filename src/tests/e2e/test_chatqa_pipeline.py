@@ -9,7 +9,9 @@ import json
 import logging
 import pytest
 import requests
+import secrets
 import statistics
+import string
 import time
 from helpers.api_request_helper import InvalidChatqaResponseBody
 from helpers.keycloak_helper import CredentialsNotFound
@@ -203,3 +205,19 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
     logger.info(f'Longest Execution Time: {max_time:.4f} seconds')
     logger.info(f'Shortest Execution Time: {min_time:.4f} seconds')
     assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"
+
+
+@allure.testcase("IEASG-T161")
+def test_chatqa_input_over_limit(chatqa_api_helper, guard_helper):
+    """Ask a question over limit of 4096 tokens. Expect 400 Bad Request status code."""
+    words_in_message = 5000
+    word_len_min = 4
+    word_len_max = 9
+
+    def random_word(length=5):
+        return ''.join(secrets.choice(string.ascii_lowercase) for _ in range(length))
+
+    random_words = ' '.join(random_word(secrets.randbelow(word_len_max - word_len_min) + word_len_min)
+                            for _ in range(words_in_message))
+    response = chatqa_api_helper.call_chatqa(random_words)
+    assert response.status_code == 400, f"Unexpected status code returned: {response.status_code}"

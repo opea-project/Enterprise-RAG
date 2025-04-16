@@ -1002,6 +1002,13 @@ func (r *GMConnectorReconciler) applyResourceToK8s(graph *mcv1alpha3.GMConnector
 				}
 			} else {
 				// If the object does exist, update it
+
+				// Skipped for PVC that immutable after creation
+				if obj.GetKind() == "PersistentVolumeClaim" {
+					_log.Info("Skipping update for PersistentVolumeClaim", "name", obj.GetName())
+					return objectChanged, nil
+				}
+
 				obj.SetResourceVersion(latest.GetResourceVersion()) // Ensure we're updating the latest version
 				err = r.Client.Update(ctx, obj, &client.UpdateOptions{})
 				if err != nil {

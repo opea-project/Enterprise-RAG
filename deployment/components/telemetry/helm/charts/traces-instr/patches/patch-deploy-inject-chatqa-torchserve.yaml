@@ -6,11 +6,11 @@ spec:
         ### https://github.com/open-telemetry/opentelemetry-operator/blob/main/README.md#multi-container-pods-with-single-instrumentation
         # Multiple for single container doesnt nor work !?!
         # instrumentation.opentelemetry.io/inject-python: "true"
-        # instrumentation.opentelemetry.io/java-container-names: "torchserve"
-        # instrumentation.opentelemetry.io/python-container-names: "torchserve"
+        # instrumentation.opentelemetry.io/java-container-names: "torchserve-embedding"
+        # instrumentation.opentelemetry.io/python-container-names: "torchserve-embedding"
     spec:
       containers:
-      - name: torchserve
+      - name: torchserve-embedding
         env:
         - name: PYTHONPATH
           value: "/home/model-server"

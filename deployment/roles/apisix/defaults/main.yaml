@@ -1,12 +1,18 @@
 ---
-apisix_helm_version: "v3.16.1"
-apisix_helm_repo_name: "apisix"
-apisix_helm_repo_url: "https://charts.apiseven.com"
-apisix_helm_chart_directory: "{{ playbook_dir }}/../components/apisix"
-apisix_helm_chart_name: "apisix"
-apisix_helm_chart_version: "2.10.0"
-apisix_helm_release_name: "auth-apisix"
-apisix_helm_namespace: "auth-apisix"
-apisix_helm_default_values_file: "{{ playbook_dir }}/../components/apisix/values.yaml"
-apisix_password_secret_name: "keycloak-password"
-apisix_secret_name: "apisix-secret"
+apisix:
+  enabled: false
+  namespace: "auth-apisix"
+  helm:
+    version: "v3.16.1"
+    repo_name: "apisix"
+    repo_url: "https://charts.apiseven.com"
+    chart_directory: "{{ playbook_dir }}/../components/apisix"
+    chart_name: "apisix"
+    chart_version: "2.10.0"
+    release_name: "auth-apisix"
+    default_values_file: "{{ playbook_dir }}/../components/apisix/values.yaml"
+
+  secrets:
+    secret_name: "apisix-secret"
+    keycloak:
+      password_secret_name: "keycloak-password"

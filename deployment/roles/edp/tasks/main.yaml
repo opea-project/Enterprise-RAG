@@ -2,7 +2,7 @@
 # check if chatqa is being deployed and fetch namespace
 - name: Set roles facts
   ansible.builtin.set_fact:
-    edp_helm_override_values_path: "{{ log_dir }}/{{ edp_helm_chart_name }}-override-values.yaml"
+    edp_helm_override_values_path: "{{ log_dir }}/{{ edp.helm.chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -10,16 +10,16 @@
 
 - name: Add Helm repository
   kubernetes.core.helm_repository:
-    name: "{{ edp_helm_repo_name }}"
-    repo_url: "{{ edp_helm_repo_url }}"
+    name: "{{ edp.helm.repo_name }}"
+    repo_url: "{{ edp.helm.repo_url }}"
   tags:
     - install
     - update
 
 - name: Update Helm repositories
   kubernetes.core.helm_repository:
-    name: "{{ edp_helm_repo_name }}"
-    repo_url: "{{ edp_helm_repo_url }}"
+    name: "{{ edp.helm.repo_name }}"
+    repo_url: "{{ edp.helm.repo_url }}"
     state: present
   tags:
     - install
@@ -29,7 +29,7 @@
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
-    chdir: "{{ edp_helm_chart_directory }}"
+    chdir: "{{ edp.helm.chart_directory }}"
   tags:
     - install
     - update
@@ -41,7 +41,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ edp_helm_namespace }}"
+        name: "{{ edp.namespace }}"
   tags:
     - install
     - update
@@ -50,7 +50,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ edp_helm_namespace }}"
+#     name: "{{ edp.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -67,8 +67,8 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ edp_tls_secret_name }}"
-        namespace: "{{ edp_helm_namespace }}"
+        name: "{{ edp.tls.secret_name }}"
+        namespace: "{{ edp.namespace }}"
       data:
         tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
         tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
@@ -94,12 +94,12 @@
     api_version: v1
     kind: Secret
     name: vector-database-config
-    namespace: "{{ edp_helm_namespace }}"
+    namespace: "{{ edp.namespace }}"
     state: present
     definition:
       metadata:
         name: "{{ secret_info.resources[0].metadata.name }}"
-        namespace: "{{ edp_helm_namespace }}"
+        namespace: "{{ edp.namespace }}"
       data: "{{ secret_info.resources[0].data }}"
       type: "{{ secret_info.resources[0].type }}"
   no_log: true
@@ -167,7 +167,7 @@
 
 - name: Generate random string for access key
   ansible.builtin.set_fact:
-    edp_minio_acess_key: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits,special') }}"
+    edp_minio_access_key: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits,special') }}"
   tags:
     - install
 
@@ -179,9 +179,9 @@
 
 - name: Set facts for password generation
   ansible.builtin.set_fact:
-    edp_redis_password_file_path: "{{ log_dir }}/{{ edp_redis_password_file_name }}.txt"
-    edp_postgresql_admin_password_file_path: "{{ log_dir }}/{{ edp_postgresql_admin_password_file_name }}.txt"
-    edp_postgresql_user_password_file_path: "{{ log_dir }}/{{ edp_postgresql_user_password_file_name }}.txt"
+    edp_redis_password_file_path: "{{ log_dir }}/{{ edp.redis.auth.user.password_file_name }}.txt"
+    edp_postgresql_admin_password_file_path: "{{ log_dir }}/{{ edp.postgresql.auth.admin.password_file_name }}.txt"
+    edp_postgresql_user_password_file_path: "{{ log_dir }}/{{ edp.postgresql.auth.user.password_file_name }}.txt"
   tags:
     - install
     - uninstall
@@ -241,7 +241,7 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [edp_helm_default_values_file] +
+        [edp.helm.default_values_file] +
         [edp_helm_override_values_path]
       }}
   tags:
@@ -250,9 +250,9 @@
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ edp_helm_release_name }}"
-    chart_ref: "{{ edp_helm_chart_directory }}"
-    namespace: "{{ edp_helm_namespace }}"
+    name: "{{ edp.helm.release_name }}"
+    chart_ref: "{{ edp.helm.chart_directory }}"
+    namespace: "{{ edp.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     dependency_update: true
@@ -264,8 +264,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ edp_helm_release_name }}"
-    namespace: "{{ edp_helm_namespace }}"
+    name: "{{ edp.helm.release_name }}"
+    namespace: "{{ edp.namespace }}"
     state: absent
   tags:
     - uninstall
@@ -278,7 +278,7 @@
       kind: Secret
       metadata:
         name: vector-database-config
-        namespace: "{{ edp_helm_namespace }}"
+        namespace: "{{ edp.namespace }}"
   tags:
     - uninstall
 
@@ -289,7 +289,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ edp_helm_namespace }}"
+        name: "{{ edp.namespace }}"
   tags:
     - uninstall
 

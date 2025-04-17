@@ -2,12 +2,12 @@
 # check before update dependencises
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    istio_helm_override_values_path: "{{ log_dir }}/{{ istio_helm_chart_name }}-override-values.yaml"
+    istio_helm_override_values_path: "{{ log_dir }}/{{ istio.helm.chart_name }}-override-values.yaml"
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
-    name: "{{ istio_helm_repo_name }}"
-    repo_url: "{{ istio_helm_repo_url }}"
+    name: "{{ istio.helm.repo_name }}"
+    repo_url: "{{ istio.helm.repo_url }}"
     state: present
   tags:
     - install
@@ -17,7 +17,7 @@
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
-    chdir: "{{ istio_helm_chart_directory }}"
+    chdir: "{{ istio.helm.chart_directory }}"
   tags:
     - install
     - update
@@ -44,7 +44,7 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [istio_helm_default_values_file] +
+        [istio.helm.default_values_file] +
         ([istio_helm_override_values_path] if generate_override else [])
       }}
   tags:
@@ -53,9 +53,9 @@
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ istio_helm_release_name }}"
-    chart_ref: "{{ istio_helm_chart_directory }}"
-    namespace: "{{ istio_helm_namespace }}"
+    name: "{{ istio.helm.release_name }}"
+    chart_ref: "{{ istio.helm.chart_directory }}"
+    namespace: "{{ istio.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
@@ -65,8 +65,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ istio_helm_release_name }}"
-    namespace: "{{ istio_helm_namespace }}"
+    name: "{{ istio.helm.release_name }}"
+    namespace: "{{ istio.namespace }}"
     state: absent
     purge: true
   tags:
@@ -79,7 +79,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ istio_helm_namespace }}"
+        name: "{{ istio.namespace }}"
   tags:
     - uninstall
 

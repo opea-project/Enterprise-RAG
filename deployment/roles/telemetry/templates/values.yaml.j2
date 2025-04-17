@@ -11,10 +11,10 @@ kube-prometheus-stack:
             tls:
                 - hosts:
                     - {{ telemetry.domainName }}
-                  secretName: {{ telemetry_grafana_tls_secret_name }}
+                  secretName: {{ telemetry.grafana.tls_secret_name }}
 {% endif %}
         admin:
-            existingSecret: "{{ telemetry_password_secret_name }}"
+            existingSecret: "{{ telemetry.grafana.auth.admin.password_secret_name }}"
             userKey: user
             passwordKey: password
         env:

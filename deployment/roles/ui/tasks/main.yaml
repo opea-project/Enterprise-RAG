@@ -3,7 +3,7 @@
 # to something that I'd specify in helm values.yaml to be able to dynamic linking stuff instead of having to rebuilt images ...
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    ui_helm_override_values_path: "{{ log_dir }}/{{ ui_helm_chart_name }}-override-values.yaml"
+    ui_helm_override_values_path: "{{ log_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
   tags:
     - always
 
@@ -20,7 +20,7 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [ui_helm_default_values_file] +
+        [ui.helm.default_values_file] +
         [ui_helm_override_values_path]
       }}
   tags:
@@ -29,9 +29,9 @@
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ ui_helm_release_name }}"
-    chart_ref: "{{ ui_helm_chart_directory }}"
-    namespace: "{{ ui_helm_namespace }}"
+    name: "{{ ui.helm.release_name }}"
+    chart_ref: "{{ ui.helm.chart_directory }}"
+    namespace: "{{ ui.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
@@ -43,7 +43,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ ui_helm_namespace }}"
+#     name: "{{ ui.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -55,8 +55,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ ui_helm_release_name }}"
-    namespace: "{{ ui_helm_namespace }}"
+    name: "{{ ui.helm.release_name }}"
+    namespace: "{{ ui.namespace }}"
     state: absent
   tags:
     - uninstall
@@ -68,6 +68,6 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ ui_helm_namespace }}"
+        name: "{{ ui.namespace }}"
   tags:
     - uninstall

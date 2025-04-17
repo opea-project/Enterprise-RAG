@@ -1,7 +1,7 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix_helm_chart_name }}-override-values.yaml"
+    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix.helm.chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -9,8 +9,8 @@
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
-    name: "{{ apisix_helm_repo_name }}"
-    repo_url: "{{ apisix_helm_repo_url }}"
+    name: "{{ apisix.helm.repo_name }}"
+    repo_url: "{{ apisix.helm.repo_url }}"
     state: present
   tags:
     - install
@@ -20,7 +20,7 @@
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
-    chdir: "{{ apisix_helm_chart_directory }}"
+    chdir: "{{ apisix.helm.chart_directory }}"
   tags:
     - install
     - update
@@ -46,7 +46,7 @@
   ansible.builtin.set_fact:
     apisix_values_files: >
       {{
-        [apisix_helm_default_values_file] +
+        [apisix.helm.default_values_file] +
         ([apisix_helm_override_values_path] if generate_override else [])
       }}
   tags:
@@ -57,8 +57,8 @@
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Secret
-    name: "{{ apisix_password_secret_name }}"
-    namespace: "{{ keycloak_helm_namespace }}"
+    name: "{{ apisix.secrets.keycloak.password_secret_name }}"
+    namespace: "{{ keycloak.namespace }}"
   register: client_secret_raw
   no_log: true
   tags:
@@ -73,7 +73,7 @@
 
 - name: Set up port forwarding for Keycloak service
   ansible.builtin.command: >
-    kubectl port-forward svc/keycloak -n {{ keycloak_helm_namespace }} 1234:80
+    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80
   async: 30
   poll: 0
   register: port_forward_job
@@ -100,7 +100,7 @@
 
 - name: Stop port forwarding
   ansible.builtin.command: >
-    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak_helm_namespace }} 1234:80"
+    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80"
   tags:
     - install
 
@@ -117,7 +117,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ apisix_helm_namespace }}"
+        name: "{{ apisix.namespace }}"
   tags:
     - install
     - update
@@ -126,7 +126,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ apisix_helm_namespace }}"
+#     name: "{{ apisix.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -143,8 +143,8 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ apisix_secret_name }}"
-        namespace: "{{ apisix_helm_namespace }}"
+        name: "{{ apisix.secrets.secret_name }}"
+        namespace: "{{ apisix.namespace }}"
       data:
         CLIENT_SECRET: "{{ client_secret_id.stdout | b64encode }}"
   no_log: true
@@ -153,9 +153,9 @@
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ apisix_helm_release_name }}"
-    chart_ref: "{{ apisix_helm_chart_directory }}"
-    namespace: "{{ apisix_helm_namespace }}"
+    name: "{{ apisix.helm.release_name }}"
+    chart_ref: "{{ apisix.helm.chart_directory }}"
+    namespace: "{{ apisix.namespace }}"
     values_files: "{{ apisix_values_files }}"
     state: present
     create_namespace: true
@@ -165,8 +165,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ apisix_helm_release_name }}"
-    namespace: "{{ apisix_helm_namespace }}"
+    name: "{{ apisix.helm.release_name }}"
+    namespace: "{{ apisix.namespace }}"
     state: absent
   tags:
     - uninstall
@@ -178,8 +178,8 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ apisix_secret_name }}"
-        namespace: "{{ apisix_helm_namespace }}"
+        name: "{{ apisix.secrets.secret_name }}"
+        namespace: "{{ apisix.namespace }}"
   tags:
     - uninstall
 
@@ -190,6 +190,6 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ apisix_helm_namespace }}"
+        name: "{{ apisix.namespace }}"
   tags:
     - uninstall

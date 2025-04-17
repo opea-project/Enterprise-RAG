@@ -45,12 +45,12 @@ istio:
   namespace: istio-system
 
 telemetry:
+  enabled: true
+  domainName: grafana.erag.com
   monitoring:
     namespace: monitoring
   traces:
     namespace: monitoring-traces
-  enabled: false
-  domainName: grafana.erag.com
 
 ui:
   enabled: true

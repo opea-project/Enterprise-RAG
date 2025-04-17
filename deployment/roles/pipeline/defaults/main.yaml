@@ -1,9 +1,12 @@
 ---
-helm_version: "v3.16.1"
-helm_chart_name: "gmc"
-helm_chart_directory: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm"
-helm_release_name: "gmc"
-helm_chart_version: "1.1.0"
-helm_namespace: "system"
-helm_default_values_file: "{{ helm_chart_directory }}/values.yaml"
-helm_default_resources_file: "{{ helm_chart_directory }}/resources-cpu.yaml"
+gmc:
+  enabled: true
+  namespace: "system"
+  helm:
+    version: "v3.16.1"
+    chart_name: "gmc"
+    chart_directory: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm"
+    release_name: "gmc"
+    chart_version: "1.1.0"
+    default_values_file: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm/values.yaml"
+    default_resources_file: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm/resources-cpu.yaml"

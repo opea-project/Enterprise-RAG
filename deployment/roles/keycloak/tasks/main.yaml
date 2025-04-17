@@ -1,7 +1,7 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak_helm_chart_name }}-override-values.yaml"
+    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -9,8 +9,8 @@
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
-    name: "{{ keycloak_helm_repo_name }}"
-    repo_url: "{{ keycloak_helm_repo_url }}"
+    name: "{{ keycloak.helm.repo_name }}"
+    repo_url: "{{ keycloak.helm.repo_url }}"
     state: present
   tags:
     - install
@@ -29,7 +29,7 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [keycloak_helm_default_values_file] +
+        [keycloak.helm.default_values_file] +
         [keycloak_helm_override_values_path]
       }}
   tags:
@@ -43,7 +43,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ keycloak_helm_namespace }}"
+        name: "{{ keycloak.namespace }}"
   tags:
     - install
     - update
@@ -52,7 +52,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ keycloak_helm_namespace }}"
+#     name: "{{ keycloak.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -69,8 +69,8 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ keycloak_tls_secret_name }}"
-        namespace: "{{ keycloak_helm_namespace }}"
+        name: "{{ keycloak.tls.secret_name }}"
+        namespace: "{{ keycloak.namespace }}"
       data:
         tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
         tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
@@ -81,7 +81,7 @@
 
 - name: Set facts for password generation
   ansible.builtin.set_fact:
-    keycloak_password_file_path: "{{ log_dir }}/{{ keycloak_password_file_name }}.txt"
+    keycloak_password_file_path: "{{ log_dir }}/{{ keycloak.auth.admin.password_file_name }}.txt"
   tags:
     - install
     - uninstall
@@ -101,8 +101,8 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ keycloak_password_secret_name }}"
-        namespace: "{{ keycloak_helm_namespace }}"
+        name: "{{ keycloak.auth.admin.password_secret_name }}"
+        namespace: "{{ keycloak.namespace }}"
       data:
         admin-password: "{{ password | b64encode }}"
   no_log: true
@@ -111,10 +111,10 @@
 
 - name: Install Helm chart
   kubernetes.core.helm:
-    name: "{{ keycloak_helm_release_name }}"
-    chart_ref: "{{ keycloak_helm_repo_name }}/{{ keycloak_helm_chart_name }}"
-    chart_version: "{{ keycloak_helm_chart_version }}"
-    namespace: "{{ keycloak_helm_namespace }}"
+    name: "{{ keycloak.helm.release_name }}"
+    chart_ref: "{{ keycloak.helm.repo_name }}/{{ keycloak.helm.chart_name }}"
+    chart_version: "{{ keycloak.helm.chart_version }}"
+    namespace: "{{ keycloak.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
@@ -131,8 +131,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ keycloak_helm_release_name }}"
-    namespace: "{{ keycloak_helm_namespace }}"
+    name: "{{ keycloak.helm.release_name }}"
+    namespace: "{{ keycloak.namespace }}"
     state: absent
   tags:
     - uninstall
@@ -145,10 +145,10 @@
       kind: Secret
       metadata:
         name: "{{ item }}"
-        namespace: "{{ keycloak_helm_namespace }}"
+        namespace: "{{ keycloak.namespace }}"
   with_items:
-    - "{{ keycloak_password_secret_name }}"
-    - "{{ keycloak_tls_secret_name }}"
+    - "{{ keycloak.auth.admin.password_secret_name }}"
+    - "{{ keycloak.tls.secret_name }}"
   tags:
     - uninstall
 
@@ -159,7 +159,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ keycloak_helm_namespace }}"
+        name: "{{ keycloak.namespace }}"
   tags:
     - uninstall
 

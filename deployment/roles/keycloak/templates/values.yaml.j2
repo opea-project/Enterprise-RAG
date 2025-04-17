@@ -10,18 +10,18 @@ ingress:
   extraTls:
     - hosts:
         - {{ keycloak.domainName }}
-      secretName: {{ keycloak_tls_secret_name }}
+      secretName: {{ keycloak.tls.secret_name }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
     nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
 tls:
   enabled: true
-  existingSecret: {{ keycloak_tls_secret_name }}
+  existingSecret: {{ keycloak.tls.secret_name }}
   usePem: true
 {% endif %}
 auth:
-  adminUser: {{ keycloak_admin_user }}
-  existingSecret: {{ keycloak_password_secret_name }}
+  adminUser: {{ keycloak.auth.admin.username }}
+  existingSecret: {{ keycloak.auth.admin.password_secret_name }}
   passwordSecretKey: admin-password
 {% if keycloak.additional_values is defined %}
 {{ keycloak.additional_values | to_nice_yaml }}

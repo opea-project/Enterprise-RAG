@@ -1,2 +1,4 @@
 ---
-helm_namespace: "auth"
+keycloak:
+  enabled: false
+  namespace: "auth"

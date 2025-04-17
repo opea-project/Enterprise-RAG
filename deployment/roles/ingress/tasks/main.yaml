@@ -1,7 +1,7 @@
 ---
 - name:
   ansible.builtin.set_fact:
-    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress_helm_chart_name }}-override-values.yaml"
+    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
   tags:
     - install
     - update
@@ -9,8 +9,8 @@
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
-    name: "{{ ingress_helm_repo_name }}"
-    repo_url: "{{ ingress_helm_repo_url }}"
+    name: "{{ ingress.helm.repo_name }}"
+    repo_url: "{{ ingress.helm.repo_url }}"
   tags:
     - install
     - update
@@ -36,7 +36,7 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [ingress_helm_default_values_file] +
+        [ingress.helm.default_values_file] +
         ([ingress_helm_override_values_path] if generate_override else [])
       }}
   tags:
@@ -45,10 +45,10 @@
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ ingress_helm_release_name }}"
-    chart_ref: "{{ ingress_helm_repo_name }}/{{ ingress_helm_chart_name }}"
-    chart_version: "{{ ingress_helm_chart_version }}"
-    namespace: "{{ ingress_helm_namespace }}"
+    name: "{{ ingress.helm.release_name }}"
+    chart_ref: "{{ ingress.helm.repo_name }}/{{ ingress.helm.chart_name }}"
+    chart_version: "{{ ingress.helm.chart_version }}"
+    namespace: "{{ ingress.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
@@ -61,7 +61,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ ingress_helm_namespace }}"
+#     name: "{{ ingress.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -73,8 +73,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ ingress_helm_release_name }}"
-    namespace: "{{ ingress_helm_namespace }}"
+    name: "{{ ingress.helm.release_name }}"
+    namespace: "{{ ingress.namespace }}"
     state: absent
   tags:
     - uninstall
@@ -85,7 +85,7 @@
       apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{ ingress_helm_namespace }}"
+        name: "{{ ingress.namespace }}"
     state: absent
   tags:
     - uninstall

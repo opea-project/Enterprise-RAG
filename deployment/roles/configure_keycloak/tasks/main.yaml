@@ -2,7 +2,7 @@
 # This role is hacky until moved to keycloak plugin
 - name: Set up port forwarding for Keycloak service
   ansible.builtin.command: >
-    kubectl port-forward svc/keycloak -n {{ helm_namespace }} 1234:80
+    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80
   async: 30
   poll: 0
   register: port_forward_job
@@ -29,6 +29,6 @@
 
 - name: Stop port forwarding
   ansible.builtin.command: >
-    pkill -f "kubectl port-forward svc/keycloak -n {{ helm_namespace }} 1234:80"
+    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80"
   tags:
     - install

@@ -2,7 +2,7 @@
 # did not change vars name to pipeline
 - name: Set roles facts
   ansible.builtin.set_fact:
-    helm_override_values_path: "{{ log_dir }}/{{ helm_chart_name }}-override-values.yaml"
+    helm_override_values_path: "{{ log_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
     helm_override_resources_path: "{{ playbook_dir }}/{{ item.resourcesPath }}"
   tags:
     - always
@@ -20,8 +20,8 @@
   ansible.builtin.set_fact:
     values_files: >
       {{
-        [helm_default_values_file] +
-        [helm_default_resources_file] +
+        [gmc.helm.default_values_file] +
+        [gmc.helm.default_resources_file] +
         [helm_override_values_path] +
         ([playbook_dir + '/..' + item.resourcesPath] if item.resourcesPath is defined else [])
       }}
@@ -60,9 +60,9 @@
 # wait skipped due to the fact of pvc being in pending state until picked up by microservice therefore wait is looped
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
-    name: "{{ helm_release_name }}"
-    chart_ref: "{{ helm_chart_directory }}"
-    namespace: "{{ helm_namespace }}"
+    name: "{{ gmc.helm.release_name }}"
+    chart_ref: "{{ gmc.helm.chart_directory }}"
+    namespace: "{{ gmc.namespace }}"
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
@@ -76,7 +76,7 @@
 #   kubernetes.core.k8s:
 #     api_version: v1
 #     kind: Namespace
-#     name: "{{ helm_namespace }}"
+#     name: "{{ gmc.namespace }}"
 #     definition:
 #       metadata:
 #         labels:
@@ -149,8 +149,8 @@
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:
-    name: "{{ helm_release_name }}"
-    namespace: "{{ helm_namespace }}"
+    name: "{{ gmc.helm.release_name }}"
+    namespace: "{{ gmc.namespace }}"
     state: absent
   tags:
     - uninstall

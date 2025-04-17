@@ -1,14 +1,22 @@
 ---
-keycloak_helm_version: "v3.16.1"
-keycloak_helm_repo_name: "bitnami"
-keycloak_helm_repo_url: "https://charts.bitnami.com/bitnami"
-keycloak_helm_chart_url: "oci://registry-1.docker.io/bitnamicharts/keycloak"
-keycloak_helm_chart_name: "keycloak"
-keycloak_helm_chart_version: "24.3.2"
-keycloak_helm_release_name: "keycloak"
-keycloak_helm_namespace: "auth"
-keycloak_helm_default_values_file: "{{ playbook_dir }}/../components/keycloak/values.yaml"
-keycloak_tls_secret_name: "keycloak-tls"
-keycloak_admin_user: "admin"
-keycloak_password_secret_name: "keycloak-password"
-keycloak_password_file_name: "keycloak-password"
+keycloak:
+  enabled: false
+  namespace: "auth"
+  helm:
+    version: "v3.16.1"
+    repo_name: "bitnami"
+    repo_url: "https://charts.bitnami.com/bitnami"
+    chart_url: "oci://registry-1.docker.io/bitnamicharts/keycloak"
+    chart_name: "keycloak"
+    chart_version: "24.3.2"
+    release_name: "keycloak"
+    default_values_file: "{{ playbook_dir }}/../components/keycloak/values.yaml"
+
+  tls:
+    secret_name: "keycloak-tls"
+
+  auth:
+    admin:
+      username: "admin"
+      password_secret_name: "keycloak-password"
+      password_file_name: "keycloak-password"

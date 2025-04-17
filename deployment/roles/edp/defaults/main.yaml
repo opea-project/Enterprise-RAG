@@ -1,18 +1,39 @@
 ---
-edp_helm_version: "v3.16.1"
-edp_helm_repo_name: "bitnami"
-edp_helm_repo_url: "https://charts.bitnami.com/bitnami"
-edp_helm_chart_name: "edp"
-edp_vector_db_username: default
-edp_redis_db_username: default
-edp_redis_password_file_name: "edp-redis-password"
-edp_postgresql_admin_db_username: admin
-edp_postgresql_admin_password_file_name: "edp-postgresql-admin-password"
-edp_postgresql_user_db_username: edp
-edp_postgresql_user_password_file_name: "edp-postgresql-user-password"
-edp_helm_chart_version: "1.1.0"
-edp_helm_release_name: "edp"
-edp_helm_namespace: "edp"
-edp_helm_default_values_file: "{{ playbook_dir }}/../components/edp/values.yaml"
-edp_tls_secret_name: "tls-secret"
-edp_helm_chart_directory: "{{ playbook_dir }}/../components/edp"
+edp:
+  enabled: false
+  namespace: "edp"
+  helm:
+    version: "v3.16.1"
+    repo_name: "bitnami"
+    repo_url: "https://charts.bitnami.com/bitnami"
+    chart_name: "edp"
+    chart_version: "1.1.0"
+    release_name: "edp"
+    default_values_file: "{{ playbook_dir }}/../components/edp/values.yaml"
+    chart_directory: "{{ playbook_dir }}/../components/edp"
+
+  vector_db:
+    auth:
+      user:
+        db_username: default
+
+  redis:
+    auth:
+      user:
+        db_username: default
+        password_file_name: "edp-redis-password"
+
+  postgresql:
+    auth:
+      admin:
+        db_username: admin
+        password_file_name: "edp-postgresql-admin-password"
+      user:
+        db_username: edp
+        password_file_name: "edp-postgresql-user-password"
+
+  tls:
+    secret_name: "tls-secret"
+
+  dpGuard:
+    enabled: false

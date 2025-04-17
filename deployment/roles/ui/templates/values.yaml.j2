@@ -1,5 +1,5 @@
 domainName: &dname {{ ui.domainName }}
-tlsSecret: &tlssecret {{ ui_tls_secret_name }}
+tlsSecret: &tlssecret {{ ui.tls.secret_name }}
 {% if use_alternate_tagging is defined %}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}

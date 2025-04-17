@@ -7,7 +7,7 @@ proxy:
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
-edpAccessKey: "{{ edp_minio_acess_key }}"
+edpAccessKey: "{{ edp_minio_access_key }}"
 edpSecretKey: "{{ edp_minio_secret_key }}"
 edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 edpOidcClientSecret: {{ edp_client_secret_id }}
@@ -16,7 +16,7 @@ minioBrowserDomain: &minioBrowserDomain "{{ edp.domainName }}"
 
 edpInternalSecure: false
 
-redisUsername: {{ edp_redis_db_username }}
+redisUsername: {{ edp.redis.auth.user.db_username }}
 redisPassword: "{{ edp_redis_password }}"
 
 postgresDatabasePassword: {{ edp_postgresql_user_password }}

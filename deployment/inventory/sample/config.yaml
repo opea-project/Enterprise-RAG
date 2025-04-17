@@ -23,6 +23,10 @@ pipelines:
     resourcesPath: /pipelines/chatqa/cpu/resources-cpu.yaml
     type: chatqa
 
+gmc:
+  enabled: true
+  namespace: system
+
 ingress:
   enabled: true
   namespace: ingress-nginx
@@ -41,6 +45,10 @@ istio:
   namespace: istio-system
 
 telemetry:
+  monitoring:
+    namespace: monitoring
+  traces:
+    namespace: monitoring-traces
   enabled: false
   domainName: grafana.erag.com
 

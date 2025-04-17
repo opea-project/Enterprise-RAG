@@ -175,3 +175,14 @@
   when: item.type=='chatqa'
   tags:
     - uninstall
+
+- name: Delete gmc namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+  tags:
+    - uninstall

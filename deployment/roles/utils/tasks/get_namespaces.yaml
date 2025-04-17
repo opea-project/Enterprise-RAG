@@ -1,0 +1,30 @@
+---
+# mitigation due to not being able to set multiple facts if they reference eachother in one task; hacky
+- name: Get list of pipelines namespaces
+  ansible.builtin.set_fact:
+    pipeline_namespaces: "{{ pipelines | map(attribute='namespace') | list + ['system'] }}"
+  tags:
+    - install
+    - uninstall
+
+- name: Get list of component namespaces
+  ansible.builtin.set_fact:
+    enabled_namespaces: >
+      {{
+        [
+          ingress.namespace if ingress.enabled else None,
+          keycloak.namespace if keycloak.enabled else None,
+          apisix.namespace if apisix.enabled else None,
+          telemetry.monitoring.namespace if telemetry.enabled else None,
+          telemetry.traces.namespace if telemetry.enabled else None,
+          ui.namespace if ui.enabled else None,
+          edp.namespace if edp.enabled else None,
+          fingerprint.namespace if fingerprint.enabled else None
+        ]
+        | select('defined') | select('truthy') | list
+        +
+        pipeline_namespaces
+      }}
+  tags:
+    - install
+    - uninstall

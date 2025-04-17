@@ -61,3 +61,9 @@
         state: absent
       tags:
         - uninstall
+    - name: Verify if all pods are in desired state
+      include_role:
+        name: check_pods
+      tags:
+        - install
+        - uninstall

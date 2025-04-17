@@ -606,13 +606,16 @@ def test_out_guard_sensitive(guard_helper):
     """Check if sensitive data (like email, phone number) in the output is redacted or blocked"""
     guard_params = {
         "enabled": True,
-        "entity_types": ["PERSON", "EMAIL"]
+        "entity_types": ["PERSON", "EMAIL_ADDRESS"]
     }
     guard_helper.setup(GuardType.OUTPUT, "sensitive", guard_params)
     guard_helper.assert_blocked(questions.EMAIL_IN_OUTPUT)
 
     guard_params["redact"] = True
-    response = guard_helper.assert_redacted(questions.EMAIL_IN_OUTPUT)
+    guard_helper.setup(GuardType.OUTPUT, "sensitive", guard_params)
+    _, response = guard_helper.call_chatqa(questions.EMAIL_IN_OUTPUT)
+    assert "<PERSON>" in response, "Person in output should be anonymized"
+    assert "<EMAIL_ADDRESS>" in response, "Email in output should be anonymized"
     assert "gmail" not in response
 
 

@@ -12,7 +12,6 @@ from llm_guard.input_scanners import (
     InvisibleText,
     Language,
     PromptInjection,
-    Regex,
     Secrets,
     Sentiment,
     TokenLimit,
@@ -43,7 +42,7 @@ from llm_guard.input_scanners.code import (
 
 from llm_guard.input_scanners.gibberish import (
     DEFAULT_MODEL as GIBBERISH_DEFAULT_MODEL,
-) 
+)
 
 from llm_guard.input_scanners.language import (
     DEFAULT_MODEL as LANGUAGE_DEFAULT_MODEL,
@@ -77,7 +76,7 @@ ENABLED_SCANNERS = [
     'toxicity'
 ]
 
-from comps.guardrails.utils.scanners import OPEABanSubstrings
+from comps.guardrails.utils.scanners import OPEABanSubstrings, OPEARegexScanner
 from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
 
@@ -774,7 +773,7 @@ class InputScannersConfig:
             regex_params['redact'] = redact
 
         logger.info(f"Creating Regex scanner with params: {regex_params}")
-        return Regex(**regex_params)
+        return OPEARegexScanner(**regex_params)
 
     def _create_secrets_scanner(self, scanner_config):
         enabled_redact_types = ['partial', 'all', 'hash']

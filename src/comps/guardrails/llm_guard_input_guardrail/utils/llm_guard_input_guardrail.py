@@ -74,7 +74,7 @@ class OPEALLMGuardInputGuardrail:
             input_doc (LLMParamsDoc): The input document containing the prompt to be scanned.
 
         Returns:
-            tuple[str, dict[str, bool], dict[str, float]]: A tuple containing the sanitized prompt, 
+            tuple[str, dict[str, bool], dict[str, float]]: A tuple containing the sanitized prompt,
             a dictionary of validation results, and a dictionary of scores.
 
         Raises:
@@ -95,7 +95,7 @@ class OPEALLMGuardInputGuardrail:
             sanitized_prompt, results_valid, results_score = scan_prompt(self._scanners, prompt)
 
             filtered_results_valid_no_redacted = {}
-            scanners_with_redact = ["BanCompetitors", "BanSubstrings", "OPEABanSubstrings", "Regex"]
+            scanners_with_redact = ["BanCompetitors", "BanSubstrings", "OPEABanSubstrings", "Regex", "OPEARegexScanner"]
             for key, value in results_valid.items():
                 if_redacted = False
                 redacted_scanner = [item for item in self._scanners if type(item).__name__ in scanners_with_redact]

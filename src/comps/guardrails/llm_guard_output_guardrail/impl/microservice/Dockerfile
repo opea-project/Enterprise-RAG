@@ -28,6 +28,10 @@ COPY ./comps/guardrails/llm_guard_output_guardrail/impl/microservice/uv.lock uv.
 RUN uv sync --locked --no-cache
 ENV PATH="/home/user/.venv/bin:$PATH"
 
+# Install packages required for Sensitive Scanner
+RUN python -m spacy download zh_core_web_sm
+RUN python -m spacy download en_core_web_sm
+
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/guardrails/__init__.py ./comps/guardrails/__init__.py

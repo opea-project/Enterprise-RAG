@@ -25,8 +25,7 @@
       tags:
         - install
         - uninstall
-      when: (operation_mode == 'install' and (execution_counter | int) > 1) or
-            (operation_mode == 'uninstall')
+      when: (execution_counter | int) > 1
 
     - name: Include tasks to get enabled namespaces
       ansible.builtin.include_role:

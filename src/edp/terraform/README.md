@@ -28,11 +28,15 @@ export s3_secret_key=$(terraform output -raw secret_key)
 export s3_sqs_queue=$(terraform output -raw queue_url)
 export s3_region=$(terraform output -raw region)
 
-cd deployment
+# Optional: regex pattern to filter S3 bucket names, so only matching buckets will be displayed in the Web UI
+export s3_bucket_name_regex_filter="your-regex-pattern-here"
+
+cd ../../../deployment
 ./install_chatqna.sh --auth --deploy xeon_torch --ui --upgrade --kind
 ```
 
 To remove created infrastructure run
 ```
+cd src/edp/terraform
 terraform destroy
 ```

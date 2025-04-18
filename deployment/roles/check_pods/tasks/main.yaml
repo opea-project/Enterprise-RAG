@@ -8,13 +8,6 @@
         - install
         - uninstall
 
-    - name: Wait 60 seconds before verifying namespaces and pods
-      pause:
-        seconds: 60
-      tags:
-        - install
-        - uninstall
-
     - name: Define operation_mode
       set_fact:
         operation_mode: >-
@@ -25,6 +18,15 @@
       tags:
         - install
         - uninstall
+
+    - name: Wait 60 seconds before verifying namespaces and pods
+      pause:
+        seconds: 60
+      tags:
+        - install
+        - uninstall
+      when: (operation_mode == 'install' and (execution_counter | int) > 1) or
+            (operation_mode == 'uninstall')
 
     - name: Include tasks to get enabled namespaces
       ansible.builtin.include_role:
@@ -141,6 +143,14 @@
       include_role:
         name: check_pods
       when: (execution_counter | int) < 5
+      tags:
+        - install
+        - uninstall
+
+    - name: Return failed status after maximum retries
+      fail:
+        msg: "Role execution failed after 5 attempts."
+      when: (execution_counter | int) >= 5
       tags:
         - install
         - uninstall

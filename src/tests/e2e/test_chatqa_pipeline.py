@@ -210,7 +210,7 @@ def test_chatqa_concurrent_requests(chatqa_api_helper):
 @allure.testcase("IEASG-T161")
 def test_chatqa_input_over_limit(chatqa_api_helper, guard_helper):
     """Ask a question over limit of 4096 tokens. Expect 400 Bad Request status code."""
-    words_in_message = 5000
+    words_in_message = 15000
     word_len_min = 4
     word_len_max = 9
 
@@ -220,4 +220,5 @@ def test_chatqa_input_over_limit(chatqa_api_helper, guard_helper):
     random_words = ' '.join(random_word(secrets.randbelow(word_len_max - word_len_min) + word_len_min)
                             for _ in range(words_in_message))
     response = chatqa_api_helper.call_chatqa(random_words)
-    assert response.status_code == 400, f"Unexpected status code returned: {response.status_code}"
+    assert response.status_code == 400, (f"Unexpected status code returned: {response.status_code}. "
+                                         f"Answer: {response.text}")

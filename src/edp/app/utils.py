@@ -12,17 +12,20 @@ from urllib.parse import urlunsplit
 def get_local_minio_client():
     endpoint = os.getenv('EDP_INTERNAL_URL', 'minio:9000')
     url_secure = str(os.getenv('EDP_INTERNAL_SECURE', True))
+    cert_check = str(os.getenv('EDP_INTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
-    return get_minio_client(endpoint, url_secure, region)
+    return get_minio_client(endpoint, url_secure, region, cert_check)
 
 def get_remote_minio_client():
     endpoint = os.getenv('EDP_EXTERNAL_URL', 'minio:9000')
     url_secure = str(os.getenv('EDP_EXTERNAL_SECURE', True))
+    cert_check = str(os.getenv('EDP_EXTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
-    return get_minio_client(endpoint, url_secure, region)
+    return get_minio_client(endpoint, url_secure, region, cert_check)
 
-def get_minio_client(endpoint=None, url_secure=None, region=None):
+def get_minio_client(endpoint=None, url_secure=None, region=None, cert_check=True):
     is_secure = str(url_secure).lower() not in ['false', '0', 'f', 'n', 'no']
+    cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
 
     http_client = None
     proxy = None
@@ -35,7 +38,6 @@ def get_minio_client(endpoint=None, url_secure=None, region=None):
     if is_secure and proxy is not None and proxy != '':
         if not proxy.startswith(('http://', 'https://')):
             proxy = ('https://' if is_secure else 'http://') + proxy
-        cert_check = True
         timeout = timedelta(minutes=1).seconds
         http_client=urllib3.ProxyManager(
             proxy,
@@ -62,7 +64,8 @@ def get_minio_client(endpoint=None, url_secure=None, region=None):
         credentials=EnvMinioProvider(),
         secure=is_secure,
         region=region,
-        http_client=http_client
+        http_client=http_client,
+        cert_check=cert_check
     )
 
     return minio

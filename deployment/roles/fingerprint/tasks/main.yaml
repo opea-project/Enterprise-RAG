@@ -7,6 +7,23 @@
   tags:
     - always
 
+- name: Add Helm repository
+  kubernetes.core.helm_repository:
+    name: "{{ fingerprint.helm.repo_name }}"
+    repo_url: "{{ fingerprint.helm.repo_url }}"
+  tags:
+    - install
+    - update
+
+- name: Update Helm repositories
+  kubernetes.core.helm_repository:
+    name: "{{ fingerprint.helm.repo_name }}"
+    repo_url: "{{ fingerprint.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+    - update
+
 # Check if module can be used
 - name: Build Helm chart dependencies
   ansible.builtin.command:

@@ -1,0 +1,140 @@
+# recourse-cpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
+
+services:
+  embedding-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 4Gi
+  fingerprint-usvc:
+    replicas: 1
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 0.25
+      limits:
+        memory: 1Gi
+        cpu: 0.5
+  in-guard-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 4
+        memory: 8Gi
+      limits:
+        cpu: 8
+        memory: 16Gi
+  llm-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 6Gi
+  out-guard-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 4
+        memory: 8Gi
+      limits:
+        cpu: 8
+        memory: 16Gi
+  prompt-template-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 2Gi
+  redis-vector-db:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 100Gi
+  reranking-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 4
+        memory: 2Gi
+  retriever-usvc:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 8
+        memory: 8Gi
+  tei_gaudi:
+    replicas: 1
+    resources:
+      limits:
+        habana.ai/gaudi: 1
+  teirerank:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 2
+        memory: 16Gi
+      limits:
+        cpu: 8
+        memory: 32Gi
+  teirerank_gaudi:
+    replicas: 1
+    resources:
+      limits:
+        habana.ai/gaudi: 1
+  tei:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 8
+        memory: 8Gi
+      limits:
+        cpu: 16
+        memory: 16Gi
+  tgi_gaudi:
+    replicas: 1
+    resources:
+      limits:
+        habana.ai/gaudi: 8
+  torchserve_embedding:
+    replicas: 4
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+  torchserve_reranking:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+  vllm_gaudi:
+    replicas: 1
+    resources:
+      limits:
+        habana.ai/gaudi: 8

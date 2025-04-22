@@ -5,7 +5,7 @@ import "./BotMessage.scss";
 
 import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
-import ChatMessageMarkdown from "@/components/ui/ChatMessageMarkdown/ChatMessageMarkdown";
+import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
 import PulsingDot from "@/components/ui/PulsingDot/PulsingDot";
 import { ChatMessage } from "@/types";
 import { sanitizeString } from "@/utils";
@@ -23,7 +23,7 @@ const BotMessage = ({ text, isStreaming, isError }: BotMessageProps) => {
     </div>
   ) : (
     <div className="bot-message__text">
-      <ChatMessageMarkdown text={sanitizedMessage} />
+      <MarkdownRenderer content={sanitizedMessage} />
     </div>
   );
 

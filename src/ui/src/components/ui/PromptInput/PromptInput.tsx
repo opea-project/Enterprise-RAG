@@ -14,7 +14,7 @@ import {
 } from "react";
 
 import PromptInputButton from "@/components/ui/PromptInputButton/PromptInputButton";
-import { promptMaxLength } from "@/config/promptInput";
+import { promptMaxHeight, promptMaxLength } from "@/config/promptInput";
 import { sanitizeString } from "@/utils";
 
 interface PromptInputProps {
@@ -49,8 +49,19 @@ const PromptInput = ({
   const recalcuatePromptInputHeight = () => {
     const promptInput = promptInputRef.current;
     if (promptInput !== null) {
+      const currentHeight = promptInput.style.height;
       promptInput.style.height = "auto";
-      promptInput.style.height = `${promptInput.scrollHeight}px`;
+      const targetHeight = `${promptInput.scrollHeight}px`;
+      promptInput.style.height = currentHeight;
+
+      const maxHeight = promptMaxHeight;
+      const targetHeightNumber = parseInt(targetHeight, 10);
+      promptInput.style.overflowY =
+        targetHeightNumber > maxHeight ? "scroll" : "hidden";
+
+      requestAnimationFrame(() => {
+        promptInput.style.height = targetHeight;
+      });
     }
   };
 

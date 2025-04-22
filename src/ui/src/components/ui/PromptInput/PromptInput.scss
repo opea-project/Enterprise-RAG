@@ -6,7 +6,7 @@
   @apply grid grid-cols-[1fr_auto] gap-2.5;
   @apply mx-4 md:mx-auto;
   @apply py-2.5 pl-12 pr-2.5;
-  @apply w-[calc(100%_-_2rem)] md:w-[50rem];
+  @apply z-10 w-[calc(100%_-_2rem)] md:w-[46rem];
   @apply bg-light-bg-2 dark:bg-dark-bg-contrast;
   @apply shadow-light-border/40 dark:shadow-dark-border/80;
   @apply border-light-border border-opacity-0 dark:border-dark-border dark:border-opacity-100;
@@ -20,7 +20,7 @@
   @apply caret-light-text-primary dark:caret-dark-text-primary;
   min-height: 1.5rem;
   max-height: 15rem;
-  overflow-y: auto;
+  @apply transition-[height] duration-300 ease-in-out;
 
   // reset regular input styles
   @apply rounded-none border-none p-0;

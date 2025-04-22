@@ -19,11 +19,13 @@ const ScrollToBottomButton = ({
 }: ScrollToBottomButtonProps) => (
   <IconButton
     icon="scroll-to-bottom"
-    className={classNames({
-      "scroll-to-bottom-button": true,
-      visible: show,
-      invisible: !show,
-    })}
+    className={classNames([
+      {
+        visible: show,
+        invisible: !show,
+      },
+      "scroll-to-bottom-button",
+    ])}
     {...props}
   />
 );

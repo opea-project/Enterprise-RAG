@@ -3,7 +3,7 @@
 
 import "./UserMessage.scss";
 
-import ChatMessageMarkdown from "@/components/ui/ChatMessageMarkdown/ChatMessageMarkdown";
+import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
 import { ChatMessage } from "@/types";
 
 type UserMessageProps = Pick<ChatMessage, "text">;
@@ -11,7 +11,7 @@ type UserMessageProps = Pick<ChatMessage, "text">;
 const UserMessage = ({ text }: UserMessageProps) => (
   <article className="user-message">
     <div className="user-message__text">
-      <ChatMessageMarkdown text={text} />
+      <MarkdownRenderer content={text} />
     </div>
   </article>
 );

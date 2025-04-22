@@ -1,0 +1,14 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.img {
+  @apply h-64 rounded;
+}
+
+.hr {
+  @apply my-4 border border-solid border-light-accent;
+}
+
+:global(.dark) .hr {
+  @apply border-dark-accent;
+}

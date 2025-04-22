@@ -1,0 +1,131 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.h1 {
+  @apply mb-0 text-2xl font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-6;
+  }
+
+  &:not(:last-child) {
+    @apply mb-3;
+  }
+}
+
+.h2 {
+  @apply mb-0 text-xl font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-5;
+  }
+
+  &:not(:last-child) {
+    @apply mb-3;
+  }
+}
+
+.h3 {
+  @apply mb-0 text-lg font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-4;
+  }
+
+  &:not(:last-child) {
+    @apply mb-3;
+  }
+}
+
+.h4 {
+  @apply mb-0 text-base font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-3;
+  }
+
+  &:not(:last-child) {
+    @apply mb-2;
+  }
+}
+
+.h5 {
+  @apply mb-0 text-sm font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-2;
+  }
+
+  &:not(:last-child) {
+    @apply mb-2;
+  }
+}
+
+.h6 {
+  @apply mb-0 text-xs font-medium;
+
+  &:first-child {
+    @apply mt-0;
+  }
+
+  &:not(:first-child) {
+    @apply mt-2;
+  }
+
+  &:not(:last-child) {
+    @apply mb-1;
+  }
+}
+
+.p {
+  @apply whitespace-pre-wrap break-words;
+  @apply text-base;
+
+  &:not(:last-child) {
+    @apply mb-2;
+  }
+}
+
+.strong {
+  @apply font-medium;
+}
+
+.em {
+  @apply italic;
+}
+
+.del {
+  @apply line-through;
+}
+
+.blockquote {
+  @apply border-l-2 border-light-accent pl-3 italic;
+
+  & > .p {
+    @apply text-sm;
+  }
+}
+
+:global(.dark) .blockquote {
+  @apply border-dark-accent;
+}

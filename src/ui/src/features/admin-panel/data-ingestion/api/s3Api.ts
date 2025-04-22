@@ -50,7 +50,7 @@ export const s3Api = createApi({
           a.download = fileName;
           a.click();
           a.remove();
-          window.URL.revokeObjectURL(url);
+          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
         },
       }),
       transformErrorResponse: (error) =>

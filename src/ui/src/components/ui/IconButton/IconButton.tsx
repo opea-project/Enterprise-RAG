@@ -10,11 +10,11 @@ import { IconName, icons } from "@/components/icons";
 
 type IconButtonVariants = "outlined" | "contained";
 type IconButtonSizes = "sm";
-type IconButtonColors = "primary" | "error";
+export type IconButtonColor = "primary" | "error" | "success";
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: IconName;
-  color?: IconButtonColors;
+  color?: IconButtonColor;
   size?: IconButtonSizes;
   variant?: IconButtonVariants;
 }
@@ -31,6 +31,7 @@ const IconButton = ({
     "icon-button",
     {
       "icon-button--error": !variant && color === "error",
+      "icon-button--success": !variant && color === "success",
       "icon-button--sm": size === "sm",
       "icon-button--outlined": variant === "outlined",
       "icon-button--contained": variant === "contained",
@@ -38,6 +39,8 @@ const IconButton = ({
         variant === "outlined" && color === "primary",
       "icon-button--outlined-error":
         variant === "outlined" && color === "error",
+      "icon-button--outlined-success":
+        variant === "outlined" && color === "success",
     },
     className,
   ]);

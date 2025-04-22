@@ -14,6 +14,14 @@
         mode: '755'
       tags:
         - always
+    - name: Disable istio injection for all namespaces
+      vars:
+        istio_injection: false
+      include_role:
+        name: configure_istio
+        tasks_from: manage_injection.yaml
+      tags:
+        - always
     - name: Run fingerprint role
       include_role:
         name: fingerprint
@@ -47,6 +55,12 @@
       tags:
         - install
         - update
+    - name: Include configure_istio role
+      include_role:
+        name: configure_istio
+      when: istio.enabled
+      tags:
+        - always
     - name: Delete apisix routes
       kubernetes.core.helm:
         name: "auth-apisix-crds"

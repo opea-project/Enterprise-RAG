@@ -181,7 +181,8 @@ otelcol-logs:
           on_error: "send_quiet"
           parse_from: body
           output: noop
-          regex: '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<status_text_http>[^ ]+)'
+          regex: >
+            '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<status_text_http>[^ ]+)'
           severity:
             parse_from: attributes.severity_field
             overwrite_text: true
@@ -198,7 +199,8 @@ otelcol-logs:
           on_error: "send_quiet"
           parse_from: body
           output: torchserve-severity-parser-b
-          regex: '(?P<log_timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d+)\s+\[(?P<severity_field>[A-Z]+)\s*\]\s+((?P<thread>[^ ]+)\s+(?P<log_type>[^ ]+)\s+-\s+(?P<ip>[^ ]+):(?P<port>\d+)\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<response_time>\d+))$'
+          regex: >
+            '(?P<log_timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d+)\s+\[(?P<severity_field>[A-Z]+)\s*\]\s+((?P<thread>[^ ]+)\s+(?P<log_type>[^ ]+)\s+-\s+(?P<ip>[^ ]+):(?P<port>\d+)\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code_http>\d{3})\s+(?P<response_time>\d+))$'
           severity:
             parse_from: attributes.severity_field
             overwrite_text: true
@@ -242,7 +244,8 @@ otelcol-logs:
           on_error: "send_quiet"
           parse_from: body
           output: noop
-          regex: '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code>\d{3})\s+(?P<status_text>[^ ]+)'
+          regex: >
+            '^(?P<severity_field>.*):\s+(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):(?P<port>\d+)\s+-\s+"(?P<method>GET|POST|HEAD|PUT|DELETE|PATCH|OPTIONS)\s+(?P<path>[^ ]+)\s+HTTP\/(?P<http_version>\d\.\d)"\s+(?P<status_code>\d{3})\s+(?P<status_text>[^ ]+)'
           severity:
             parse_from: attributes.severity_field
             overwrite_text: true

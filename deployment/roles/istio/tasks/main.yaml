@@ -95,6 +95,8 @@
     state: absent
     definition: "{{ item }}"
   loop: "{{ istio_crds.resources | selectattr('metadata.name', 'search', 'istio.io') | list }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
   when: istio_crds.resources | length > 0
   no_log: true # due to enormous output.
   tags:

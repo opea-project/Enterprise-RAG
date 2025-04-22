@@ -299,6 +299,14 @@
   tags:
     - uninstall
 
+# temporary mitigation
+- name: Patch otelcol-traces to remove finalizers using kubectl
+  ansible.builtin.command:
+    cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
+  ignore_errors: true
+  tags:
+    - uninstall
+
 - name: Delete monitoring Helm chart
   kubernetes.core.helm:
     name: telemetry

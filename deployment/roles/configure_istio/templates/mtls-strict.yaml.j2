@@ -1,0 +1,18 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: {{ item }}
+spec:
+{% if item == "ingress-nginx" %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+{% endif %}
+  mtls:
+    mode: STRICT
+{% if item == "ingress-nginx" %}
+  portLevelMtls:
+    443:
+      mode: PERMISSIVE
+{% endif %}

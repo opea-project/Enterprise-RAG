@@ -3,43 +3,28 @@
 
 import "./Tooltip.scss";
 
-import { PropsWithChildren, ReactNode, useState } from "react";
+import { ReactNode } from "react";
+import {
+  Focusable,
+  Tooltip as ReactAriaTooltip,
+  TooltipProps as ReactAriaTooltipProps,
+  TooltipTrigger,
+} from "react-aria-components";
 
-export type TooltipPosition =
-  | "top"
-  | "bottom"
-  | "left"
-  | "right"
-  | "bottom-start"
-  | "bottom-end"
-  | "bottom-right";
-
-interface TooltipProps extends PropsWithChildren {
-  position?: TooltipPosition;
-  text: string | ReactNode;
+interface TooltipProps extends Omit<ReactAriaTooltipProps, "children"> {
+  title: string;
+  trigger: ReactNode;
 }
 
-const Tooltip = ({ children, text, position = "bottom" }: TooltipProps) => {
-  const [visible, setVisible] = useState(false);
-
-  const showTooltip = () => {
-    setVisible(true);
-  };
-
-  const hideTooltip = () => {
-    setVisible(false);
-  };
-
-  return (
-    <div
-      className="tooltip-wrapper"
-      onMouseEnter={showTooltip}
-      onMouseLeave={hideTooltip}
-    >
-      {children}
-      {visible && <div className={`tooltip ${position}`}>{text}</div>}
-    </div>
-  );
-};
+const Tooltip = ({ trigger, title, ...props }: TooltipProps) => (
+  <TooltipTrigger delay={200} closeDelay={200}>
+    <Focusable>
+      <span role="button">{trigger}</span>
+    </Focusable>
+    <ReactAriaTooltip {...props} offset={8} className="tooltip">
+      {title}
+    </ReactAriaTooltip>
+  </TooltipTrigger>
+);
 
 export default Tooltip;

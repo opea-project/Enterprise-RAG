@@ -103,9 +103,11 @@ const ServiceArgumentNumberInput = ({
     <div className="service-argument-number-input__wrapper">
       <label htmlFor={inputId} className="service-argument-number-input__label">
         {tooltipText && (
-          <Tooltip text={tooltipText} position="right">
-            <InfoIcon />
-          </Tooltip>
+          <Tooltip
+            title={tooltipText}
+            trigger={<InfoIcon />}
+            placement="right"
+          />
         )}
         <span>{name}</span>
       </label>

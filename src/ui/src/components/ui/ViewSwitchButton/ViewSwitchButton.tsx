@@ -18,9 +18,11 @@ const ViewSwitchButton = () => {
   const icon: IconName = isChatPage ? "admin-panel" : "chat";
 
   return (
-    <Tooltip text={tooltipTitle}>
-      <IconButton icon={icon} onClick={() => navigate(routeToPath)} />
-    </Tooltip>
+    <Tooltip
+      title={tooltipTitle}
+      trigger={<IconButton icon={icon} onClick={() => navigate(routeToPath)} />}
+      placement="bottom"
+    />
   );
 };
 

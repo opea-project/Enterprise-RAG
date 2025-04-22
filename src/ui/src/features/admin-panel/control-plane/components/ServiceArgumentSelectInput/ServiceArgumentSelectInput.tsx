@@ -64,9 +64,11 @@ const ServiceArgumentSelectInput = ({
     <>
       <label htmlFor={inputId} className="service-argument-select-input__label">
         {tooltipText && (
-          <Tooltip text={tooltipText} position="right">
-            <InfoIcon />
-          </Tooltip>
+          <Tooltip
+            title={tooltipText}
+            trigger={<InfoIcon />}
+            placement="right"
+          />
         )}
         <span>{name}</span>
       </label>

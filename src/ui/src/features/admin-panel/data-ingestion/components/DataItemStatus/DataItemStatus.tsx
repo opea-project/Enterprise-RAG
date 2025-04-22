@@ -15,7 +15,7 @@ import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
-import Tooltip, { TooltipPosition } from "@/components/ui/Tooltip/Tooltip";
+import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
 
 const statusIconMap: Record<DataStatus, ReactNode> = {
@@ -56,13 +56,14 @@ const DataItemStatus = ({ status, statusMessage }: DataItemStatusProps) => {
     return itemStatusIndicator;
   }
 
-  const tooltipPosition: TooltipPosition =
-    status === "error" ? "bottom-right" : "right";
+  const tooltipPosition = status === "error" ? "bottom right" : "right";
 
   return (
-    <Tooltip text={statusMessage} position={tooltipPosition}>
-      {itemStatusIndicator}
-    </Tooltip>
+    <Tooltip
+      title={statusMessage}
+      trigger={itemStatusIndicator}
+      placement={tooltipPosition}
+    />
   );
 };
 

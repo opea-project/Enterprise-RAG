@@ -13,9 +13,11 @@ const LogoutButton = () => {
   };
 
   return (
-    <Tooltip text="Logout">
-      <IconButton icon="logout" onClick={handleLogout} />
-    </Tooltip>
+    <Tooltip
+      title="Logout"
+      trigger={<IconButton icon="logout" onClick={handleLogout} />}
+      placement="bottom"
+    />
   );
 };
 export default LogoutButton;

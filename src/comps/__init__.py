@@ -44,6 +44,7 @@ from comps.cores.proto.docarray import (
     RAGASParams,
     RAGASScores,
     SearchedDoc,
+    PrevQuestionDetails,
     PromptTemplateInput,
     TextDoc,
     PromptCreate,

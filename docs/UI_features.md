@@ -44,7 +44,7 @@ From **Control Plane** view you are also able to change currently used prompt te
 ![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template service selected.](../images/ui/control_plane_prompt_template.png)
 
 > [!NOTE]
-> Prompt Template cannot be empty and it requires to contain two placeholders: **{reranked_docs}** and **{initial_query}** that can be placed anywhere inside the template text. In case any of these requirements is not met, an error message will be displayed on the screen under Prompt Template text input as shown below.
+> Prompt Template cannot be empty and it requires to contain three placeholders: **{reranked_docs}**, **{initial_query}** and **{previous_questions}** that can be placed anywhere inside the template text. In case any of these requirements is not met, an error message will be displayed on the screen under Prompt Template text input as shown below.
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template textarea input in invalid state with error messages displayed below.](../images/ui/control_plane_prompt_template_invalid.png)
 

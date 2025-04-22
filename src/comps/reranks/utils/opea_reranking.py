@@ -140,7 +140,8 @@ class OPEAReranker:
             logger.warning("No retrieved documents found")
             reranked_docs = []
 
-        return PromptTemplateInput(data={"initial_query": input.initial_query.strip(), "reranked_docs": reranked_docs})
+        cleaned_reranked_docs = [doc.text for doc in reranked_docs]
+        return PromptTemplateInput(data={"initial_query": input.initial_query.strip(), "reranked_docs": cleaned_reranked_docs})
 
 
     async def _async_call_reranker(

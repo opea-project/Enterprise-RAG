@@ -81,6 +81,7 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         if 'link_id' in doc.metadata:
             logger.debug(f"Score: {doc.metadata['vector_distance']} - Link: {doc.metadata['link_id']} - Text: {doc.text[0:32]}...")
 
+    result_vectors.conversation_history = input.conversation_history
     return result_vectors
 
 

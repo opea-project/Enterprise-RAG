@@ -9,6 +9,7 @@ import {
   PostFileRequest,
 } from "@/features/admin-panel/data-ingestion/types/api";
 import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
+import { RootState } from "@/store";
 import { transformErrorMessage } from "@/utils/api";
 
 export const s3Api = createApi({
@@ -85,3 +86,5 @@ export const {
   useLazyDownloadFileQuery,
   useDeleteFileMutation,
 } = s3Api;
+
+export const selectS3Api = (state: RootState) => state.s3Api;

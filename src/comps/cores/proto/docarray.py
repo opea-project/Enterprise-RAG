@@ -18,17 +18,21 @@ class TopologyInfo:
     # should be a pattern string
     downstream_black_list: Optional[list] = []
 
+class PrevQuestionDetails(BaseDoc):
+    question: str
+    answer: str
 
 class TextDoc(BaseDoc, TopologyInfo):
     text: str
     metadata: Optional[dict] = {}
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
 
 class TextDocList(BaseDoc):
     docs: List[TextDoc]
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
 
 class Base64ByteStrDoc(BaseDoc):
     byte_str: str
-
 
 class DocPath(BaseDoc):
     path: str
@@ -36,7 +40,6 @@ class DocPath(BaseDoc):
     chunk_overlap: int = 100
     process_table: bool = False
     table_strategy: str = "fast"
-
 
 class EmbedDoc(BaseDoc):
     text: str
@@ -48,9 +51,11 @@ class EmbedDoc(BaseDoc):
     lambda_mult: NonNegativeFloat = 0.5
     score_threshold: NonNegativeFloat = 0.2
     metadata: Optional[dict] = {}
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
 
 class EmbedDocList(BaseDoc):
     docs: List[EmbedDoc]
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
 
 class Audio2TextDoc(AudioDoc):
     url: Optional[AudioUrl] = Field(
@@ -85,12 +90,15 @@ class SearchedDoc(BaseDoc):
     initial_query: str
     top_n: PositiveInt = 3
     rerank_score_threshold: Optional[float] = 0.02
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
 
     class Config:
         json_encoders = {np.ndarray: lambda x: x.tolist()}
 
 class PromptTemplateInput(BaseDoc):
     data: Dict[str, Any]
+    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    conversation_history_parse_type: str = "naive"
     prompt_template: Optional[str] = None
 
 class AnonymizeModel(BaseDoc):

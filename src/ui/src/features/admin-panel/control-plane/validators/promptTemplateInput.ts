@@ -10,7 +10,7 @@ import {
 
 type PromptTemplateTestFunction = TestFunction<string | undefined, AnyObject>;
 
-const requiredPlaceholders = ["{initial_query}", "{reranked_docs}"];
+const requiredPlaceholders = ["{initial_query}", "{reranked_docs}", "{previous_questions}"];
 const placeholderRegex = /\{.*?\}/g;
 
 const getContainsRequiredPlaceholdersErrorMessage = ({

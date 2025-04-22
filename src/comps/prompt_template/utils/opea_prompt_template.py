@@ -12,12 +12,15 @@ from comps import (
 
 
 from comps.prompt_template.utils.templates import template_001_english as default_prompt_template
+from comps.prompt_template.utils.conversation_history_handler import ConversationHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEAPromptTemplate:
     def __init__(self):
-
+        self._if_conv_history_in_prompt = False
+        self._conversation_history_placeholder = "previous_questions"
+        self.ch_handler = ConversationHistoryHandler()
         try:
             self._validate(default_prompt_template)
             self.prompt_template = default_prompt_template
@@ -45,7 +48,6 @@ class OPEAPromptTemplate:
         if prompt_template.strip() == "":
             raise ValueError("Prompt template cannot be empty")
 
-        
         # Find all placeholders in the format {placeholder}
         placeholders_in_template = extract_placeholders_from_template(prompt_template)
         if not placeholders_in_template:
@@ -60,10 +62,18 @@ class OPEAPromptTemplate:
             raise ValueError(f"The prompt template is missing the following required placeholders: {missing_placeholders}")
 
         # Ensure no placeholders in the template are not in the provided placeholders set
-        extra_placeholders = set(placeholders_in_template) - placeholders
-        if extra_placeholders:
-            raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders}")
 
+        extra_placeholders = set(placeholders_in_template) - placeholders
+        extra_placeholders_no_ch = extra_placeholders - set([self._conversation_history_placeholder])
+        if extra_placeholders_no_ch:
+            raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders_no_ch}")
+
+        if self._conversation_history_placeholder not in extra_placeholders:
+            logger.warning("A placeholder for conversation history is missing. LLM will not remember previous answers. " +
+                           "Add {previous_questions} placeholder if you want to add the conversation to LLM.")
+            self._if_conv_history_in_prompt = False
+        else:
+            self._if_conv_history_in_prompt = True
 
 
     def _changed(self, new_prompt_template: str, placeholders: list) -> bool:
@@ -78,16 +88,16 @@ class OPEAPromptTemplate:
             Exception: If the new prompt template fails validation.
         """
 
-        # These checks are redundant since the _changed method is called only when new_prompt_template is not empty, 
+        # These checks are redundant since the _changed method is called only when new_prompt_template is not empty,
         # but they are retained for the sake of atomicity.
         if new_prompt_template.strip() is None or new_prompt_template.strip() == "":
-            logger.info("No changes made to the prompt template")
+            logger.debug("No changes made to the prompt template")
             return False
-        
+
         if new_prompt_template == self.prompt_template:
-            logger.info("No changes made to the prompt template; it is already set")
+            logger.debug("No changes made to the prompt template; it is already set")
             return False
-        
+
         try:
             self._validate(new_prompt_template, placeholders)
             self.prompt_template = new_prompt_template
@@ -137,9 +147,10 @@ class OPEAPromptTemplate:
                 # Ensure the input data keys match the expected placeholders
                 # even if the prompt template has not changed
                 expected_placeholders = extract_placeholders_from_template(self.prompt_template)
-                if keys != expected_placeholders:
-                    logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
-                    raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
+                expected_no_prev_questions = expected_placeholders - set(["previous_questions"])
+                if keys != expected_no_prev_questions:
+                    logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_no_prev_questions}")
+                    raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_no_prev_questions}")
 
 
         # Build the prompt data based on the input data by extracting text from nested dictionaries if needed
@@ -149,6 +160,14 @@ class OPEAPromptTemplate:
         for key, value in input.data.items():
             prompt_data[key] = extract_text_from_nested_dict(value)
             logger.debug(f"Extracted text for key {key}: {prompt_data[key]}")
+
+        # Get conversation history
+        if self._if_conv_history_in_prompt:
+            if input.conversation_history is None:
+                prompt_data[self._conversation_history_placeholder] = ""
+            else:
+                prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
+                                                                                                                 input.conversation_history_parse_type)
 
         # Generate the final prompt
         try:
@@ -190,6 +209,8 @@ def extract_text_from_nested_dict(data: any) -> str:
         """
         if isinstance(data, str):
             return data
+        elif data is None:
+            return ""
         elif isinstance(data, TextDoc):
             return data.text
         elif isinstance(data, list):

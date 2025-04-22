@@ -7,6 +7,7 @@ import pytest
 from docarray import DocList
 
 from comps import (
+    PrevQuestionDetails,
     PromptTemplateInput,
     TextDoc,
 )
@@ -28,7 +29,7 @@ def test_class():
 @pytest.fixture
 def mock_default_input_data():
     """Fixture to provide mock input data."""
-    return PromptTemplateInput(prompt_template=None, 
+    return PromptTemplateInput(prompt_template=None,
         data={
             "initial_query":"This is my sample query?",
             "reranked_docs": DocList([
@@ -46,9 +47,47 @@ def mock_default_response_data():
     return """
 ### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
-But be careful to not incorporate information that you think is not relevant to the question. \
+Refer also to the conversation history if you think it is relevant to the current question. \
+Ignore all information that you think is not relevant to the question. \
 If you don't know the answer to a question, please don't share false information. \
 ### Search results: Document1 Document2 Document3 \n
+### Conversation history:  \n
+### Question: This is my sample query? \n
+### Answer:
+""".strip()
+
+
+@pytest.fixture
+def mock_default_input_data_with_conversation_history():
+    """Fixture to provide mock input data."""
+    return PromptTemplateInput(prompt_template=None,
+        data={
+            "initial_query":"This is my sample query?",
+            "reranked_docs": DocList([
+                TextDoc(text="Document1"),
+                TextDoc(text="Document2"),
+                TextDoc(text="Document3"),
+            ])
+        },
+        conversation_history=[
+            PrevQuestionDetails(question="Previous question 1", answer="Previous answer 1"),
+            PrevQuestionDetails(question="Previous question 2", answer="Previous answer 2"),
+            PrevQuestionDetails(question="Previous question 3", answer="Previous answer 3"),
+            PrevQuestionDetails(question="Previous question 4", answer="Previous answer 4"),]
+    )
+
+
+@pytest.fixture
+def mock_default_response_data_with_conversation_history():
+    """Fixture to provide mock response data."""
+    return """
+### You are a helpful, respectful, and honest assistant to help the user with questions. \
+Please refer to the search results obtained from the local knowledge base. \
+Refer also to the conversation history if you think it is relevant to the current question. \
+Ignore all information that you think is not relevant to the question. \
+If you don't know the answer to a question, please don't share false information. \
+### Search results: Document1 Document2 Document3 \n
+### Conversation history: previous_question: Previous question 2 previous_answer: Previous answer 2 previous_question: Previous question 3 previous_answer: Previous answer 3 previous_question: Previous question 4 previous_answer: Previous answer 4 \n
 ### Question: This is my sample query? \n
 ### Answer:
 """.strip()
@@ -108,6 +147,20 @@ async def test_opea_prompt_run_suceeds_with_defaults(test_class, mock_default_in
 
 
 @pytest.mark.asyncio
+async def test_opea_prompt_run_suceeds_with_conversation_history(test_class, mock_default_input_data_with_conversation_history, mock_default_response_data_with_conversation_history):
+    try:
+        result = await test_class.run(mock_default_input_data_with_conversation_history)
+    except Exception as e:
+        pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
+
+    assert result is not None, "Result is None"
+    assert hasattr(result, 'query'), "Result does not contain field 'query'"
+    print(result.query)
+    assert result.query != "", "Query is empty"
+    assert result.query == mock_default_response_data_with_conversation_history, "Query does not match the expected response"
+
+
+@pytest.mark.asyncio
 async def test_opea_prompt_run_suceeds_with_custom_prompt_template(test_class):
     mock_input = PromptTemplateInput(
         prompt_template="This is a custom prompt template with {custom_placeholder}.",
@@ -117,7 +170,7 @@ async def test_opea_prompt_run_suceeds_with_custom_prompt_template(test_class):
     )
 
     mock_response = "This is a custom prompt template with the custom value."
-                                          
+
     try:
         result = await test_class.run(mock_input)
     except Exception as e:
@@ -175,7 +228,7 @@ async def test_opea_prompt_run_raises_exception_when_template_lacks_placeholders
 @pytest.mark.asyncio
 async def test_opea_prompt_run_raises_exception_when_data_key_is_missing(test_class):
     # missing initial_query
-    mock_invalid_input_data = PromptTemplateInput( 
+    mock_invalid_input_data = PromptTemplateInput(
             data={
                 "reranked_docs": [
                     TextDoc(text="Document1"),
@@ -222,7 +275,7 @@ async def test_opea_prompt_run_raises_exception_when_data_is_invalid(test_class)
             "placeholder1":"What is DL?",
             }
         )
-    
+
     mock_response_data = "Answer the question 'What is DL?'"
 
     try:
@@ -253,7 +306,7 @@ async def test_prompt_run_raises_exception_with_additional_fields_in_data_when_p
             "placeholder2": [ "Source1", "Source2"]
             }
         )
-    
+
     mock_response_data = "Answer the question 'What is DL?' based on the information from Source1 Source2"
 
     try:
@@ -287,7 +340,7 @@ async def test_operator_prompt_run_raises_exception_on_unexpected_placeholder_in
             "placeholder2": [ "Source1", "Source2"]
             }
         )
-    
+
     mock_response_data = "Answer the question 'What is DL?' based on the information from Source1 Source2"
 
     try:
@@ -305,6 +358,6 @@ async def test_operator_prompt_run_raises_exception_on_unexpected_placeholder_in
             "placeholder2": [ "Source1", "Source2"],
             }
         )
-    
+
     with pytest.raises(ValueError, match="The prompt template contains unexpected placeholders: {'placeholder3'}"):
         await test_class.run(mock_invalid_input_data)

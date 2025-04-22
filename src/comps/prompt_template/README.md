@@ -78,7 +78,7 @@ Example Request:
 # use the default prompt template
 curl http://localhost:7900/v1/prompt_template \
   -X POST \
-  -d '{"data": {"initial_query":"What is Deep Learning?", "reranked_docs": [{"text":"Deep Learning is..."}]}, "prompt_template":""}' \
+  -d '{"data": {"initial_query":"What is Deep Learning?", "reranked_docs": []}, "conversation_history": [{"question": "Hello", "answer": "Hello as well"}, {"question": "How are you?", "answer": "I am good, thank you!"}, {"question": "Who are you?", "answer": "I am a robot"}], "prompt_template":""}' \
   -H 'Content-Type: application/json'
 ```
 
@@ -132,7 +132,7 @@ Output:
 }
 ```
 
-##### Case 3: Using a Custom Prompt Template for a Specific Taks
+##### Case 3: Using a Custom Prompt Template for a Specific Tasks
 In this case, the input data includes additional fields tailored for a translation task. A custom prompt template is defined to handle this task appropriately.
 
 Example Request:

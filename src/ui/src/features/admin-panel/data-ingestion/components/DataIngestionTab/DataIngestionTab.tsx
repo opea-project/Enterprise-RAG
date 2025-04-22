@@ -11,6 +11,7 @@ import {
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import FilesDataTable from "@/features/admin-panel/data-ingestion/components/FilesDataTable/FilesDataTable";
 import LinksDataTable from "@/features/admin-panel/data-ingestion/components/LinksDataTable/LinksDataTable";
+import S3CertificateAlertBanner from "@/features/admin-panel/data-ingestion/components/S3CertificateAlertBanner/S3CertificateAlertBanner";
 import UploadDataDialog from "@/features/admin-panel/data-ingestion/components/UploadDataDialog/UploadDataDialog";
 
 const RefreshButton = () => {
@@ -48,6 +49,7 @@ const RefreshButton = () => {
 
 const DataIngestionTab = () => (
   <div className="data-ingestion-panel">
+    <S3CertificateAlertBanner />
     <header>
       <h2>Stored Data</h2>
       <div className="data-ingestion-panel__actions">

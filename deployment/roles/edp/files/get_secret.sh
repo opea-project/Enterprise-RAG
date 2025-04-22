@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 KEYCLOAK_URL=localhost:1234
 KEYCLOAK_REALM=EnterpriseRAG
 KEYCLOAK_CLIENT_ID=admin

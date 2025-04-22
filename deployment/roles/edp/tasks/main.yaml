@@ -1,3 +1,6 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 # check if chatqa is being deployed and fetch namespace
 - name: Set roles facts

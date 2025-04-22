@@ -1,3 +1,6 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 # check before update dependencises
 - name: Set override_values.yaml path
@@ -101,4 +104,3 @@
   no_log: true # due to enormous output.
   tags:
     - uninstall
-

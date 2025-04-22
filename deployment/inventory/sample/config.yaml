@@ -1,3 +1,6 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 vault_password_file: FILL_HERE # Provide the path to your vault.txt file (e.g. /home/ubuntu/path/to/vault.txt)
 kubeconfig: FILL_HERE  # Provide the path to kubeconfig (e.g. /home/ubuntu/.kube/config)

@@ -1,3 +1,6 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 # when running role should be executed with_items: ; also needs rework of mechanics , but works for now. there should be better way to handle ansible-vault pw's
 

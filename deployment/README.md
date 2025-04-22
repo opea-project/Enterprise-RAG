@@ -112,6 +112,9 @@ The default resource allocations are defined for Xeon only deployment in [`resou
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
 
+> [!NOTE]
+EnterpriseRAG allows to implement autoscaling mechanism for pods. For more information how to fill `hpa` section reffer to [horizontal pod autoscaler](#enabling-pod-security-admission-psa)
+
 For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/components/edp` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./components/edp/values.yaml) file and edit definition for particular elements from that deployment.
 
 ### Skipping Warm-up for vLLM Deployment
@@ -462,6 +465,22 @@ Run this command to delete all namespaces, custom resource definitions, releases
 ```
 
 ## Additional features
+
+### Enabling Horizontal pod autoscaling
+
+The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources_cpu](./components/gmc/microservices-connector/helm/resources-cpu.yaml) when running on Xeon or [resources_gaudi](./components/gmc/microservices-connector/helm/resources-gaudi.yaml) when running on Gaudi.
+To enable HPA use option `--hpa` when running the `install_chatqa.sh`. 
+For more information how to set parameters in HPA section please refer to this [README](./hpa/README.md).
+
+To update you HPA configuration:
+- Modify `hpa` section in resources file
+- Update configuration by running: `./install_chatqa.sh` command with `--upgrade` option
+bash
+```
+./install_chatqna.sh --deploy <pipeline> --upgrade --no-edp --no-mesh --hpa
+```
+For detailed information how to configure pipeline please reffer to:
+[configure_pipeline](./../docs/configure_pipeline.md)
 
 ### Enabling Pod Security Admission (PSA)
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.

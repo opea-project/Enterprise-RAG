@@ -154,3 +154,54 @@ spec:
           emptyDir: {}
         - name: torchserve-logs
           emptyDir: {}
+---
+{{- if .Values.hpaEnabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: torchserve-embedding
+  labels:
+  {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: torchserve-embedding-svc-deployment
+  minReplicas: {{ ( ((index .Values "services" .filename).hpa).minReplicas | default 4) }}
+  maxReplicas: {{ ( ((index .Values "services" .filename).hpa).maxReplicas | default 10) }}
+  metrics:
+  - type: Object
+    object:
+      metric:
+        name: torchserve_requests_total
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: torchserve-embedding-svc
+      target:
+        type: Value
+        value: {{ ( ((index .Values "services" .filename).hpa).targetValue | default "150m") }}
+  {{- $hpaBehavior := ( ((index .Values "services" .filename).hpa).behavior) }}
+  {{- if $hpaBehavior }}
+  behavior:
+    {{- toYaml $hpaBehavior | nindent 4 }}
+  {{- else }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 30
+      - type: Pods
+        value: 1
+        periodSeconds: 30
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      selectPolicy: Max
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 120
+  {{- end }}
+{{- end }}

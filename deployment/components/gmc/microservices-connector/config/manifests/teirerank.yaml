@@ -143,3 +143,57 @@ spec:
             sizeLimit: 1Gi
         - name: tmp
           emptyDir: {}
+---
+{{- if .Values.hpaEnabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tei-reranking
+  labels:
+  {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tei-reranking-svc-deployment
+  minReplicas: {{ ( ((index .Values "services" .filename).hpa).minReplicas | default 1) }}
+  maxReplicas: {{ ( ((index .Values "services" .filename).hpa).maxReplicas | default 3) }}
+  metrics:
+  - type: Object
+    object:
+      metric:
+        name: tei_reranking_duration_sum
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: tei-reranking-svc
+      target:
+        type: AverageValue
+        averageValue: {{ ( ((index .Values "services" .filename).hpa).averageValue | default 2) }}
+  {{- $hpaBehavior := ( ((index .Values "services" .filename).hpa).behavior) }}
+  {{- if $hpaBehavior }}
+  behavior:
+    {{- toYaml $hpaBehavior | nindent 4 }}
+  {{- else }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+    scaleUp:
+      selectPolicy: Max
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+  {{- end }}
+{{- end }}

@@ -203,7 +203,7 @@ celery:
   tag: latest
   pullPolicy: Always
   config:
-    concurrency: "2"
+    concurrency: "6"
     logLevel: "debug"
   environment:
     - name: EDP_EXTERNAL_URL
@@ -511,6 +511,27 @@ dataprep:
     limits:
       cpu: "8"
       memory: "16Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 4
+    targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
 
 dpguard:
   enabled: false

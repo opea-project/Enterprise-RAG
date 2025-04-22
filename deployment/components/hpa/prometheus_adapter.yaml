@@ -1,0 +1,92 @@
+prometheus:
+  url: http://telemetry-kube-prometheus-prometheus.monitoring.svc
+  timeout: 30s
+
+rules:
+  default: false
+  resources: []
+  custom:
+    - seriesQuery: '{__name__="vllm:time_per_output_token_seconds_sum",service="vllm-service-m"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^vllm:time_per_output_token_seconds_sum$
+        as: "vllm_token_latency"
+      metricsQuery: 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-service-m"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-service-m"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="vllm:time_per_output_token_seconds_sum",service="vllm-gaudi-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^vllm:time_per_output_token_seconds_sum$
+        as: "vllm_token_latency_gaudi"
+      metricsQuery: 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-gaudi-svc"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="ts_inference_requests_total",namespace="chatqa",service="torchserve-embedding-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^ts_inference_requests_total$
+        as: "torchserve_requests_total"
+      metricsQuery: 'avg(rate(ts_inference_requests_total{namespace="chatqa",service="torchserve-embedding-svc"}[1m])) by (<<.GroupBy>>)'
+    - seriesQuery: '{__name__="te_request_duration_sum",service="tei-reranking-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^te_request_duration_sum$
+        as: "tei_reranking_duration_sum"
+      metricsQuery: 'sum(rate(te_request_duration_sum{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(te_request_duration_count{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="edp_files_uploaded_total",service="edp-backend"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^edp_files_uploaded_total$
+        as: "edp_backend_files_to_upload"
+      metricsQuery: 'edp_files_uploaded_total{namespace="edp",service="edp-backend"}'
+    - seriesQuery: '{__name__="http_request_duration_seconds_sum", service="input-scan-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^http_request_duration_seconds_sum$
+        as: "http_request_duration_seconds_avg_input_scan"
+      metricsQuery: 'avg(rate(http_request_duration_seconds_sum{service="input-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>) / (0.001 + avg(rate(http_request_duration_seconds_count{service="input-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="http_request_duration_seconds_sum", service="output-scan-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^http_request_duration_seconds_sum$
+        as: "http_request_duration_seconds_avg_output_scan"
+      metricsQuery: 'avg(rate(http_request_duration_seconds_sum{service="output-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>) / (0.001 + avg(rate(http_request_duration_seconds_count{service="output-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>))'

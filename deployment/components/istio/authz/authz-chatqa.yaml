@@ -209,8 +209,8 @@ spec:
   - from:
     - source:
         notPrincipals:
-          - cluster.local/ns/chatqa/sa/default # router-service-deployment-
-          - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/chatqa/sa/default # router-service-deployment-
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 # reranking-svc
 apiVersion: security.istio.io/v1
@@ -265,6 +265,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/chatqa/sa/telemetry-kube-prometheus-prometheus
 ---
 # retriever-svc
 apiVersion: security.istio.io/v1

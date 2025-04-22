@@ -166,3 +166,57 @@ spec:
           emptyDir: {}
         - name: config
           emptyDir: {}
+---
+{{- if .Values.hpaEnabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vllm
+  labels:
+  {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vllm-service-m-deployment
+  minReplicas: {{ ( ((index .Values "services" .filename).hpa).minReplicas | default 1) }}
+  maxReplicas: {{ ( ((index .Values "services" .filename).hpa).maxReplicas | default 4) }}
+  metrics:
+  - type: Object
+    object:
+      metric:
+        # vLLM time metrics are in seconds
+        name: vllm_token_latency
+      describedObject:
+        apiVersion: v1
+        # get metric for named object of given type (in same namespace)
+        kind: Service
+        name: vllm-service-m
+      target:
+        # vllm_token_latency is average for all the vLLM pods. To avoid replica fluctuations when
+        # vLLM startup + request processing takes longer than HPA evaluation period, this uses
+        # "Value" (replicas = metric.value / target.value), instead of "averageValue" type:
+        #  https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/#algorithm-details
+        type: Value
+        value: {{ ( ((index .Values "services" .filename).hpa).targetValue | default "150m") }}
+  {{- $hpaBehavior := ( ((index .Values "services" .filename).hpa).behavior) }}
+  {{- if $hpaBehavior }}
+  behavior:
+    {{- toYaml $hpaBehavior | nindent 4 }}
+  {{- else }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 90
+    scaleUp:
+      selectPolicy: Max
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 90
+  {{- end }}
+{{- end }}

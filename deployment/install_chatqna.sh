@@ -13,6 +13,7 @@ telemetry_traces_path="$repo_path/deployment/components/telemetry/helm/charts/tr
 telemetry_traces_instr_path="$repo_path/deployment/components/telemetry/helm/charts/traces-instr"
 ui_path="$repo_path/deployment/components/ui"
 scripts_path="$repo_path/deployment/scripts"
+hpa_path="$repo_path/deployment/components/hpa"
 keycloak_path="$repo_path/deployment/components/keycloak"
 api_gateway_path="$repo_path/deployment/components/apisix"
 api_gateway_crd_path="$repo_path/deployment/components/apisix-routes"
@@ -38,6 +39,7 @@ GMC_NS=system
 ISTIO_NS="istio-system"
 
 AUTH_HELM="oci://registry-1.docker.io/bitnamicharts/keycloak"
+HPA_HELM="prometheus-community/prometheus-adapter"
 INGRESS_HELM="ingress-nginx/ingress-nginx"
 
 # keycloak specific vars
@@ -81,6 +83,7 @@ function usage() {
     echo -e "\t--use-alternate-tagging: Use repo:component_tag tagging format instead of the default (repo/component:tag)."
     echo -e "\t--test: Run a connection test."
     echo -e "\t--telemetry: Start telemetry services."
+    echo -e "\t--hpa: enables horizontal pod autoscaler for the services"
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
@@ -148,6 +151,10 @@ function helm_install() {
         helm_cmd+=" --values $gmc_path/resources-gaudi.yaml"
     fi
 
+    if $hpa_flag; then
+        helm_cmd+=" --set hpaEnabled=true"
+    fi
+
     IFS=',' read -ra feature_list <<< "$FEATURES"
     for feature in "${feature_list[@]}"; do
         case $feature in
@@ -169,6 +176,7 @@ function helm_install() {
         exit 1
     fi
 }
+
 
 function enforce_namespace_policy() {
     local namespace=$1
@@ -470,7 +478,7 @@ function start_telemetry() {
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
-
+    
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
@@ -478,7 +486,7 @@ function start_telemetry() {
     else
         HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
-
+    
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
@@ -509,6 +517,11 @@ function start_telemetry() {
     # I) telemetry/base (metrics)
     helm dependency build "$telemetry_path" > /dev/null
     helm_install $TELEMETRY_NS telemetry "$telemetry_path" "$HELM_INSTALL_TELEMETRY_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
+    # install prometheus-adapter if hpa is emabled
+    HELM_INSTALL_HPA_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT -f $hpa_path/prometheus_adapter.yaml"
+    if $hpaEnabled; then
+        helm_install $TELEMETRY_NS prometheus-adapter "$HPA_HELM" "$HELM_INSTALL_HPA_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
+    fi
 
     # II) telemetry/logs
     helm dependency build "$telemetry_logs_path"  > /dev/null
@@ -532,7 +545,6 @@ function start_telemetry() {
     # IIIb) telemetry/traces-instr check
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
-
 }
 
 function clear_telemetry() {
@@ -542,6 +554,9 @@ function clear_telemetry() {
 
     # Delete the tls-secret if it exists
     kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
+    
+    # uninstall prometheus adapter first 
+    helm status -n "$TELEMETRY_NS" prometheus-adapter > /dev/null 2>&1 && helm uninstall --namespace $TELEMETRY_NS prometheus-adapter
 
     # Delete otelcol-traces with timeout and webhook handling
     if kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1; then
@@ -835,6 +850,7 @@ create_flag=false
 deploy_flag=false
 test_flag=false
 telemetry_flag=false
+hpa_flag=false
 ui_flag=false
 # mesh installation is undecided, unless deploy is given or mesh explicitly requested
 default_mesh_flag=true
@@ -850,6 +866,7 @@ clear_deployment_flag=false
 clear_fingerprint_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
+clear_hpa_flag=false
 clear_mesh_flag=false
 clear_all_flag=false
 clear_auth_flag=false
@@ -910,6 +927,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --telemetry)
             telemetry_flag=true
+            create_flag=true
+            ;;
+        --hpa)
+            hpa_flag=true
             create_flag=true
             ;;
         --registry)
@@ -1129,9 +1150,9 @@ if $mesh_flag && $create_flag; then
     done
     # configure mTLS strict mode for namespace
     for ns in "${updated_ns_list[@]}"; do
-        if [ $ns == $INGRESS_NS ]; then
+	if [ -f $istio_path/mTLS-strict-$ns.yaml ]; then
             # ingress needs dedicated configuration
-            kubectl apply -n $INGRESS_NS -f $istio_path/mTLS-strict-ingress-nginx.yaml
+	    kubectl apply -n $ns -f $istio_path/mTLS-strict-$ns.yaml
         else
             kubectl apply -n $ns -f $istio_path/mTLS-strict.yaml
         fi
@@ -1191,11 +1212,16 @@ if $clear_fingerprint_flag; then
     clear_fingerprint
 fi
 
-
 if $clear_all_flag; then
     # disable strict mode and authorization policies first to avoid cleanup lock-up
     kubectl delete --ignore-not-found $(printf " -f %s" $(ls $istio_path/authz/authz-*))
-    kubectl get peerauthentication -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' | xargs -ti kubectl delete --ignore-not-found peerauthentication default -n '{}'
+    for ns in $(kubectl get peerauthentication -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}'); do
+      if [ -f $istio_path/mTLS-strict-$ns.yaml ]; then
+        kubectl delete --ignore-not-found -n $ns -f $istio_path/mTLS-strict-$ns.yaml
+      else
+        kubectl delete --ignore-not-found -n $ns -f $istio_path/mTLS-strict.yaml
+      fi
+    done
     clear_deployment
     clear_fingerprint
     clear_edp

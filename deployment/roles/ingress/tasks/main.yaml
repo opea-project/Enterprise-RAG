@@ -55,24 +55,11 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
+    timeout: "{{ helm_timeout }}"
   register: helm_result
   tags:
     - install
     - update
-
-# - name: Add istio label to namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: "{{ ingress.namespace }}"
-#     definition:
-#       metadata:
-#         labels:
-#           istio.io/dataplane-mode: ambient
-#     force: true
-#   tags:
-#     - install
-#     - update
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

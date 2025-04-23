@@ -6,6 +6,7 @@
   environment:
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   vars:
+    helm_timeout: "10m0s"
     components_dir: "{{ playbook_dir }}/../components"
     log_dir: "{{ playbook_dir }}/../ansible-logs"
   pre_tasks:

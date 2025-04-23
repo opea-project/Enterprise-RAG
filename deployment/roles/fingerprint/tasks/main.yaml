@@ -88,20 +88,6 @@
     - install
     - update
 
-# - name: Add istio label to namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: "{{ fingerprint.namespace }}"
-#     definition:
-#       metadata:
-#         labels:
-#           istio.io/dataplane-mode: ambient
-#     force: true
-#   tags:
-#     - install
-#     - update
-
 - name: Create password secret
   kubernetes.core.k8s:
     state: present
@@ -117,7 +103,7 @@
         MONGO_PASSWORD: "{{ fingerprint_db_password | b64encode }}"
         MONGO_HOST: "{{ ('fingerprint-mongodb.' + fingerprint.namespace + '.svc') | b64encode }}"
         MONGO_PORT: "{{ '27017' | b64encode }}"
-  # no_log: true
+  no_log: true
   with_items:
     - "{{ fingerprint.namespace }}"
     - chatqa
@@ -152,6 +138,7 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
+    timeout: "{{ helm_timeout }}"
   register: helm_result
   tags:
     - install

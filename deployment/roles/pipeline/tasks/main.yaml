@@ -44,20 +44,6 @@
     - install
     - update
 
-# - name: Add istio label to namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: "{{ item.namespace }}"
-#     definition:
-#       metadata:
-#         labels:
-#           istio.io/dataplane-mode: ambient
-#     force: true
-#   tags:
-#     - install
-#     - update
-
 # this w/a for the fact that gmc should not create pvc in moment of helm install, but pvc should be included inside the manifest of given microservice
 # although it needs to be verified wheter it is possible to share pvc between different microservices, because I think that they will be multiplied
 # wait skipped due to the fact of pvc being in pending state until picked up by microservice therefore wait is looped
@@ -69,25 +55,12 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
+    timeout: "{{ helm_timeout }}"
     wait: true
   register: helm_result
   tags:
     - install
     - update
-
-# - name: Add istio label to namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: "{{ gmc.namespace }}"
-#     definition:
-#       metadata:
-#         labels:
-#           istio.io/dataplane-mode: ambient
-#     force: true
-#   tags:
-#     - install
-#     - update
 
 - name: Set facts for password generation
   ansible.builtin.set_fact:

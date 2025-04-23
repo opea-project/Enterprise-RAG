@@ -80,21 +80,6 @@
     - install
     - update
 
-# - name: Add istio label to namespace
-#   kubernetes.core.k8s:
-#     api_version: v1
-#     kind: Namespace
-#     name: "{{ item }}"
-#     labels:
-#       istio.io/dataplane-mode: ambient
-#     force: true
-#   with_items:
-#     - "{{ telemetry.monitoring.namespace }}"
-#     - "{{ telemetry.traces.namespace }}"
-#   tags:
-#     - install
-#     - update
-
 - name: Create TLS secret
   kubernetes.core.k8s:
     state: present
@@ -238,6 +223,7 @@
           tag: "{{ helm_otelcol_logs_image_tag }}"
     create_namespace: true
     wait: true
+    timeout: "{{ helm_timeout }}"
   tags:
     - install
     - update
@@ -254,6 +240,7 @@
         dnsService: "{{ dns_service_name }}"
     create_namespace: true
     wait: true
+    timeout: "{{ helm_timeout }}"
   tags:
     - install
     - update
@@ -267,6 +254,7 @@
     values_files: "{{ telemetry.traces_instr.helm_default_values_file }}"
     create_namespace: true
     wait: true
+    timeout: "{{ helm_timeout }}"
   tags:
     - install
     - update

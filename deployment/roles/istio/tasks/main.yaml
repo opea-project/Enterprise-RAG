@@ -62,6 +62,7 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
+    timeout: "{{ helm_timeout }}"
   tags:
     - install
     - update
@@ -101,6 +102,5 @@
   loop_control:
     label: "{{ item.metadata.name }}"
   when: istio_crds.resources | length > 0
-  no_log: true # due to enormous output.
   tags:
     - uninstall

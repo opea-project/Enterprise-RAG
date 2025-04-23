@@ -73,8 +73,6 @@ const (
 	TorchserveReranking StepNameType = "TorchserveReranking"
 	// PromptTemplate
 	PromptTemplate StepNameType = "PromptTemplate"
-	// Tgi
-	Tgi StepNameType = "Tgi"
 	// Llm
 	Llm StepNameType = "Llm"
 	// LLMGuardInput

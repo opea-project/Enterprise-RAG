@@ -6,82 +6,13 @@ from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
 from langchain_community.llms import VLLMOpenAI
-from langchain_huggingface import HuggingFaceEndpoint
-from requests.exceptions import ConnectionError, ReadTimeout, RequestException
+from requests.exceptions import ConnectionError, ReadTimeout
 
 from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 from comps.llms.utils.connectors.connector import LLMConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-class TGIConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
-        self._endpoint = endpoint
-        self._disable_streaming = disable_streaming
-        self._llm_output_guard_exists = llm_output_guard_exists
-
-    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        connector = HuggingFaceEndpoint(
-            endpoint_url=self._endpoint,
-            max_new_tokens=input.max_new_tokens,
-            top_k=input.top_k,
-            top_p=input.top_p,
-            temperature=input.temperature,
-            repetition_penalty=input.repetition_penalty,
-        )
-
-        if input.streaming and not self._disable_streaming:
-            try:
-                if self._llm_output_guard_exists:
-                    chat_response = ""
-                    async for text in connector.astream(input.query):
-                        chat_response += text
-                    return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
-                                    output_guardrail_params=input.output_guardrail_params)
-                async def stream_generator():
-                    chat_response = ""
-                    async for text in connector.astream(input.query):
-                        chat_response += text
-                        chunk_repr = repr(text)
-                        yield f"data: {chunk_repr}\n\n"
-                    logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
-                    yield "data: [DONE]\n\n"
-
-                return StreamingResponse(stream_generator(), media_type="text/event-stream")
-            except ReadTimeout as e:
-                error_message = f"Failed to invoke the Langchain TGI Connector. Connection established with '{e.request.url}' but " \
-                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
-                logger.error(error_message)
-                raise ReadTimeout(error_message)
-            except ConnectionError as e:
-                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
-                logger.error(error_message)
-                raise ConnectionError(error_message)
-            except Exception as e:
-                logger.error(f"Error streaming from TGI: {e}")
-                raise Exception(f"Error streaming from TGI: {e}")
-        else:
-            try:
-                response = await connector.ainvoke(input.query)
-                return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
-                                    output_guardrail_params=input.output_guardrail_params)
-            except ReadTimeout as e:
-                error_message = f"Failed to invoke the Langchain TGI Connector. Connection established with '{e.request.url}' but " \
-                    "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
-                logger.error(error_message)
-                raise ReadTimeout(error_message)
-            except ConnectionError as e:
-                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
-                logger.error(error_message)
-                raise ConnectionError(error_message)
-            except RequestException as e:
-                error_code = e.response.status_code if e.response else 'No response'
-                error_message = f"Failed to invoke the Langchain TGI Connector. Unable to connect to '{e.request.url}', status_code: {error_code}. Check if the endpoint is available and running."
-                logger.error(error_message)
-                raise RequestException(error_message)
-            except Exception as e:
-                logger.error(f"Error invoking TGI: {e}")
-                raise Exception(f"Error invoking TGI: {e}")
 
 class VLLMConnector:
     def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
@@ -158,7 +89,6 @@ class VLLMConnector:
                 raise Exception(f"Error invoking VLLM: {e}")
 
 SUPPORTED_INTEGRATIONS = {
-    "tgi": TGIConnector,
     "vllm": VLLMConnector
 }
 

@@ -56,8 +56,6 @@ var _ = BeforeSuite(func() {
 		templateDir + "/retriever-usvc.yaml",
 		templateDir + "/reranking-usvc.yaml",
 		templateDir + "/teirerank.yaml",
-		templateDir + "/tgi.yaml",
-		templateDir + "/tgi_gaudi.yaml",
 		templateDir + "/llm-usvc.yaml",
 		"../../config/gmcrouter/gmc-router.yaml",
 	}

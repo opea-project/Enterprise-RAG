@@ -178,15 +178,6 @@ services:
       limits:
         cpu: 16
         memory: 16Gi
-  tgi:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 32
-        memory: 64Gi
-      limits:
-        cpu: 32
-        memory: 64Gi
   torchserve_embedding:
     replicas: 4
     resources:

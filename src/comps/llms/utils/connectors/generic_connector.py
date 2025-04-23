@@ -8,7 +8,6 @@ from typing import Optional, Dict, Union
 
 import openai
 from fastapi.responses import StreamingResponse
-from huggingface_hub import AsyncInferenceClient
 from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
@@ -20,87 +19,6 @@ from comps.llms.utils.connectors.connector import LLMConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-
-class TGIConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool):
-        self._endpoint = endpoint
-        self._disable_streaming = disable_streaming
-        self._llm_output_guard_exists = llm_output_guard_exists
-        self._client = AsyncInferenceClient(model=endpoint, timeout=120)
-
-
-    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        try:
-            generator = await self._client.text_generation(
-                            prompt=input.query,
-                            stream=input.streaming and not self._disable_streaming,
-                            max_new_tokens=input.max_new_tokens,
-                            repetition_penalty=input.repetition_penalty,
-                            temperature=input.temperature,
-                            top_k=input.top_k,
-                            top_p=input.top_p,
-                        )
-
-        except ReadTimeout as e:
-            error_message = f"Failed to invoke the Generic TGI Connector. Connection established with '{e.request.url}' but " \
-                "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
-            logger.error(error_message)
-            raise ReadTimeout(error_message)
-        except ConnectionError as e:
-            error_message = f"Failed to invoke the Generic TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
-            logger.error(error_message)
-            raise ConnectionError(error_message)
-        except RequestException as e:
-            error_code = e.response.status_code if e.response else 'No response'
-            error_message = f"Failed to invoke the Generic TGI Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
-            logger.error(error_message)
-            raise RequestException(error_message)
-        except Exception as e:
-            logger.error(f"Error invoking TGI: {e}")
-            raise Exception(f"Error invoking TGI: {e}")
-
-        if input.streaming and not self._disable_streaming:
-            if self._llm_output_guard_exists:
-                chat_response = ""
-                for text in generator:
-                    chat_response += text
-                return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
-                                output_guardrail_params=input.output_guardrail_params)
-
-            stream_gen_time = []
-            start_local = time.time()
-            async def stream_generator():
-                chat_response = ""
-                try:
-                    async for text in generator:
-                        stream_gen_time.append(time.time() - start_local)
-                        chat_response += text
-                        chunk_repr = repr(text)
-                        logger.debug("[llm - chat_stream] chunk:{chunk_repr}")
-                        yield f"data: {chunk_repr}\n\n"
-                    logger.debug("[llm - chat_stream] stream response: {chat_response}")
-                    yield "data: [DONE]\n\n"
-                except httpx.ReadTimeout as e:
-                    error_message = f"Failed to stream from the Generic TGI Connector. Connection established with '{e.request.url}' but " \
-                        "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
-                    logger.error(error_message)
-                    raise httpx.ReadTimeout(error_message)
-                except httpx.ConnectError as e:
-                    error_message = f"Failed to stream from the Generic TGI Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
-                    logger.error(error_message)
-                    raise httpx.ConnectError(error_message)
-                except RequestException as e:
-                    error_code = e.response.status_code if e.response else 'No response'
-                    error_message = f"Failed to stream from the Generic TGI Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
-                    logger.error(error_message)
-                    raise RequestException(error_message)
-                except Exception as e:
-                    logger.error(f"Error streaming from TGI: {e}")
-                    raise Exception(f"Error streaming from TGI: {e}")
-            return StreamingResponse(stream_generator(), media_type="text/event-stream")
-        else:
-            return GeneratedDoc(text=generator, prompt=input.query, streaming=input.streaming,
-                                output_guardrail_params=input.output_guardrail_params)
 
 class VLLMConnector:
     def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None):
@@ -192,7 +110,6 @@ class VLLMConnector:
                                 output_guardrail_params=input.output_guardrail_params)
 
 SUPPORTED_INTEGRATIONS = {
-    "tgi": TGIConnector,
     "vllm": VLLMConnector
 }
 

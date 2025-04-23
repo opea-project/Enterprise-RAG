@@ -55,9 +55,6 @@ const (
 	Reranking                = "Reranking"
 	TeiReranking             = "TeiReranking"
 	TeiRerankingGaudi        = "TeiRerankingGaudi"
-	Tgi                      = "Tgi"
-	TgiGaudi                 = "TgiGaudi"
-	TgiNvidia                = "TgiNvidia"
 	Llm                      = "Llm"
 	DocSum                   = "DocSum"
 	Router                   = "router"
@@ -101,8 +98,6 @@ var yamlDict = map[string]string{
 	PromptTemplate:      yaml_dir + "prompt-template-usvc.yaml",
 	TeiReranking:        yaml_dir + "teirerank.yaml",
 	TeiRerankingGaudi:   yaml_dir + "teirerank_gaudi.yaml",
-	Tgi:                 yaml_dir + "tgi.yaml",
-	TgiGaudi:            yaml_dir + "tgi_gaudi.yaml",
 	Llm:                 yaml_dir + "llm-usvc.yaml",
 	DocSum:              yaml_dir + "docsum-llm-uservice.yaml",
 	Router:              yaml_dir + "gmc-router.yaml",
@@ -379,7 +374,6 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 func isDownStreamEndpointKey(keyname string) bool {
 	return keyname == "TEI_EMBEDDING_ENDPOINT" ||
 		keyname == "RERANKING_SERVICE_ENDPOINT" ||
-		keyname == "TGI_LLM_ENDPOINT" ||
 		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||

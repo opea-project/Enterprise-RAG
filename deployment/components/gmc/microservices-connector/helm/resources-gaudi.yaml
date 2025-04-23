@@ -188,11 +188,6 @@ services:
       limits:
         cpu: 16
         memory: 16Gi
-  tgi_gaudi:
-    replicas: 1
-    resources:
-      limits:
-        habana.ai/gaudi: 8
   torchserve_embedding:
     replicas: 4
     resources:

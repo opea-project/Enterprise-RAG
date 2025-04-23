@@ -12,8 +12,8 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 | Model server name                 |  Status   |
 | ----------------------------------| --------- |
-| [TGI](./impl/model_server/tgi/)   | &#x2713;  |
 | [VLLM](./impl/model_server/vllm/) | &#x2713;  |
+| TGI                               | &#x2717;  |
 | RAY                               | &#x2717;  |
 
 
@@ -26,7 +26,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_USVC_PORT`                 | The port of the microservice, by default 9000.                                                                        |
 | `LLM_MODEL_NAME`                | The name of language model to be used (e.g., "mistralai/Mistral-7B-Instruct-v0.1")                                             |
 | `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
-| `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
+| `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
@@ -171,51 +171,10 @@ The following examples demonstrate the LLM microservice output in both non-strea
 
 To find validated models running on Gaudi, refer to the following resources:
 
- - **For TGI**, see the [Tested Models and Configurations](https://github.com/huggingface/tgi-gaudi/releases#tested-models-and-configurations).
  - **For vLLM**, see the [Supported Configuration](https://github.com/HabanaAI/vllm-fork/releases#Supported-Configurations).
 
 
 ## Additional Information
-### Project Structure
-
-The project is organized into several directories:
-- `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TGI or vLLM.
-- `utils/`: This directory contains utility scripts and modules that are used by the LLM Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl/
-  │   ├── microservice/
-  │   │   ├── .env
-  │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   └── uv.lock
-  │   │
-  │   ├── model_server/
-  │   │   ├── tgi/
-  │   │   │   ├── README.md
-  │   │   │   └── docker/
-  │       │       ├── .env.cpu
-  │       │       ├── .env.hpu
-  │   │   │       ├── docker-compose-cpu.yml
-  │   │   │       └── docker-compose-hpu.yml
-  │   │   │
-  │   │   └── ...
-  │   └── ...
-  │
-  ├── utils/
-  │   ├── opea_llm.py
-  │   └── connectors/
-  │       ├── connector.py
-  │       ├── generic_connector.py
-  │       └── langchain_connector.py
-  │
-  ├── README.md
-  └── opea_llm_microservice.py
-```
-
 #### Tests
 - `src/tests/unit/llms/`: Contains unit tests for the LLM Microservice components
 

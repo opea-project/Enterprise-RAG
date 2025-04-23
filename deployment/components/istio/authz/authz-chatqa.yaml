@@ -141,22 +141,6 @@ spec:
         - cluster.local/ns/chatqa/sa/llm-usvc
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: chatqa-tgi-service
-  namespace: chatqa
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: tgi
-  action: DENY
-  rules:
-  - from:
-    - source:
-        notPrincipals:
-        - cluster.local/ns/chatqa/sa/llm-usvc
----
 # embedding-svc
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

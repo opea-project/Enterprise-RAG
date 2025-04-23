@@ -1,10 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-export interface ChatMessage {
-  text: string;
+export interface ConversationTurn {
   id: string;
-  isUserMessage: boolean;
-  isStreaming?: boolean;
-  isError?: boolean;
+  question: string;
+  answer: string;
+  error: string | null;
+  isPending: boolean;
 }

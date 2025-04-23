@@ -2,52 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
+import { SerializedError } from "@reduxjs/toolkit/react";
 
-import { UpdatedChatMessage } from "@/features/chat/types";
 import {
-  HTTP_STATUS,
-  OnMessageTextUpdateHandler,
+  ABORT_ERROR_MESSAGE,
+  DEFAULT_ERROR_MESSAGE,
+  HTTP_ERRORS,
+} from "@/features/chat/config/api";
+import {
+  AnswerUpdateHandler,
+  ChatErrorResponse,
 } from "@/features/chat/types/api";
-import { transformErrorMessage } from "@/utils/api";
-
-export const handleUnsuccessfulChatResponse = async (response: Response) => {
-  if (response.status === HTTP_STATUS.REQUEST_TIMEOUT) {
-    throw new Error(`
-        Your request took too long to complete.
-        Please try again later or contact your administrator if the problem persists.
-      `);
-  } else if (response.status === HTTP_STATUS.PAYLOAD_TOO_LARGE) {
-    throw new Error(`
-        Your prompt seems to be too large to be processed.
-        Please shorten your prompt and send it again.
-        If the issue persists, please contact your administrator.
-      `);
-  } else if (response.status === HTTP_STATUS.TOO_MANY_REQUESTS) {
-    throw new Error(`
-        You've reached the limit of requests.
-        Please take a short break and try again soon.
-      `);
-  } else if (response.status === HTTP_STATUS.GUARDRAILS_ERROR) {
-    const error = await response.json();
-    throw new Error(JSON.stringify(error));
-  } else if (!response.ok) {
-    throw new Error(
-      "An error occurred. Please contact your administrator for further details.",
-    );
-  }
-};
+import { ConversationTurn } from "@/types";
 
 export const handleChatJsonResponse = async (
   response: Response,
-  onMessageTextUpdate: OnMessageTextUpdateHandler,
+  onAnswerUpdate: AnswerUpdateHandler,
 ) => {
   const json = await response.json();
-  onMessageTextUpdate(json.text);
+  onAnswerUpdate(json.text);
 };
 
 export const handleChatStreamResponse = async (
   response: Response,
-  onMessageTextUpdate: OnMessageTextUpdateHandler,
+  onAnswerUpdate: AnswerUpdateHandler,
 ) => {
   const reader = response.body?.getReader();
   const decoder = new TextDecoder("utf-8");
@@ -83,63 +61,117 @@ export const handleChatStreamResponse = async (
           .replace(quoteRegex, "")
           .replace(/\\n/, "  \n");
 
-        onMessageTextUpdate(newTextChunk);
+        onAnswerUpdate(newTextChunk);
       }
     }
   }
 };
 
-export const transformChatErrorMessage = (
+export const createGuardrailsErrorResponse = async (response: Response) => {
+  const errorData = await response.json();
+  const guardrailsErrorResponse = {} as ChatErrorResponse;
+  guardrailsErrorResponse.data = errorData;
+  return guardrailsErrorResponse;
+};
+
+export const transformChatErrorResponse = (
   error: FetchBaseQueryError,
-): FetchBaseQueryError => {
-  if (error.status === "PARSING_ERROR") {
-    if (error.originalStatus === HTTP_STATUS.GUARDRAILS_ERROR) {
-      const data = JSON.parse(JSON.parse(error.data).error).detail;
-      return { status: error.originalStatus, data };
-    } else {
+): Pick<ChatErrorResponse, "status" | "data"> => {
+  const responseError = error as ChatErrorResponse;
+
+  if (isAbortResponseError(responseError)) {
+    return {
+      status: HTTP_ERRORS.CLIENT_CLOSED_REQUEST.statusCode,
+      data: HTTP_ERRORS.CLIENT_CLOSED_REQUEST.errorMessage,
+    };
+  }
+
+  const statusCode = responseError.originalStatus || responseError.status;
+
+  switch (statusCode) {
+    case HTTP_ERRORS.REQUEST_TIMEOUT.statusCode:
       return {
-        status: error.originalStatus,
-        data: error.error,
+        status: HTTP_ERRORS.REQUEST_TIMEOUT.statusCode,
+        data: HTTP_ERRORS.REQUEST_TIMEOUT.errorMessage,
       };
-    }
+    case HTTP_ERRORS.PAYLOAD_TOO_LARGE.statusCode:
+      return {
+        status: HTTP_ERRORS.PAYLOAD_TOO_LARGE.statusCode,
+        data: HTTP_ERRORS.PAYLOAD_TOO_LARGE.errorMessage,
+      };
+    case HTTP_ERRORS.TOO_MANY_REQUESTS.statusCode:
+      return {
+        status: HTTP_ERRORS.TOO_MANY_REQUESTS.statusCode,
+        data: HTTP_ERRORS.TOO_MANY_REQUESTS.errorMessage,
+      };
+    case HTTP_ERRORS.GUARDRAILS_ERROR.statusCode:
+      return {
+        status: HTTP_ERRORS.GUARDRAILS_ERROR.statusCode,
+        data: parseGuardrailsResponseErrorDetail(responseError),
+      };
+    default:
+      return {
+        status: statusCode,
+        data: DEFAULT_ERROR_MESSAGE,
+      };
   }
-
-  return transformErrorMessage(error, "Unknown error occurred");
 };
 
-export const getChatErrorMessage = (
-  error: unknown,
-): string | UpdatedChatMessage => {
-  if (typeof error === "object" && error !== null && "error" in error) {
-    if (
-      typeof error.error === "object" &&
-      error.error !== null &&
-      "status" in error.error &&
-      "data" in error.error &&
-      typeof error.error.data === "string"
-    ) {
-      const { status, data } = error.error;
-      if (typeof status === "number") {
-        if (status === HTTP_STATUS.GUARDRAILS_ERROR) {
-          return data;
-        }
-
-        return {
-          text: data,
-          isError: true,
-        };
-      } else if (typeof status === "string") {
-        if (status === "FETCH_ERROR" && data.includes("AbortError")) {
-          return "";
-        }
-
-        return {
-          text: data,
-          isError: true,
-        };
-      }
-    }
-  }
-
-  return "";
+const isAbortResponseError = (errorResponse: ChatErrorResponse) => {
+  const isFetchAbortError =
+    errorResponse.status === "FETCH_ERROR" &&
+    errorResponse.error === ABORT_ERROR_MESSAGE;
+  const isParsingAbortError =
+    errorResponse.status === "PARSING_ERROR" &&
+    errorResponse.originalStatus === 200 &&
+    errorResponse.error.includes("AbortError:");
+  return isFetchAbortError || isParsingAbortError;
 };
+
+const parseGuardrailsResponseErrorDetail = (
+  responseError: ChatErrorResponse,
+) => {
+  try {
+    if (!isChatErrorResponseDataString(responseError.data)) {
+      return HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages.INVALID_FORMAT;
+    }
+
+    const parsedResponseData = JSON.parse(responseError.data);
+
+    if (!parsedResponseData.error) {
+      return HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages.MISSING_ERROR;
+    } else if (typeof parsedResponseData.error !== "string") {
+      return HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages
+        .INVALID_ERROR_FORMAT;
+    }
+
+    const errorObj = JSON.parse(parsedResponseData.error);
+    return (
+      errorObj.detail ||
+      HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages.UNKNOWN
+    );
+  } catch {
+    return HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages.PARSING_FAILED;
+  }
+};
+
+export const getValidConversationHistory = (
+  conversationTurns: ConversationTurn[],
+): Pick<ConversationTurn, "question" | "answer">[] =>
+  conversationTurns
+    .filter(({ error, answer }) => answer !== "" && error === null)
+    .map(({ question, answer }) => ({
+      question,
+      answer,
+    }));
+
+export const isChatErrorResponse = (
+  error: FetchBaseQueryError | SerializedError | undefined,
+): error is ChatErrorResponse =>
+  error !== null &&
+  typeof error === "object" &&
+  "status" in error &&
+  "data" in error;
+
+export const isChatErrorResponseDataString = (data: unknown): data is string =>
+  typeof data === "string";

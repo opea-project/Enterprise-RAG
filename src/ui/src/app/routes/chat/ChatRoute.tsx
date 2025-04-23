@@ -7,34 +7,34 @@ import InitialChatLayout from "@/features/chat/layouts/InitialChatLayout/Initial
 
 const ChatRoute = () => {
   const {
-    messages,
-    prompt,
-    isStreaming,
-    abortRequest,
-    onPromptSubmit,
+    userInput,
+    conversationTurns,
+    isChatResponsePending,
     onPromptChange,
+    onPromptSubmit,
+    onRequestAbort,
   } = useChat();
 
-  if (messages.length === 0) {
+  if (conversationTurns.length === 0) {
     return (
       <InitialChatLayout
-        prompt={prompt}
-        isStreaming={isStreaming}
-        abortRequest={abortRequest}
-        onPromptSubmit={onPromptSubmit}
+        userInput={userInput}
+        isChatResponsePending={isChatResponsePending}
         onPromptChange={onPromptChange}
+        onPromptSubmit={onPromptSubmit}
+        onRequestAbort={onRequestAbort}
       />
     );
   }
 
   return (
     <ConversationFeedLayout
-      messages={messages}
-      prompt={prompt}
-      isStreaming={isStreaming}
-      abortRequest={abortRequest}
-      onPromptSubmit={onPromptSubmit}
+      userInput={userInput}
+      conversationTurns={conversationTurns}
+      isChatResponsePending={isChatResponsePending}
       onPromptChange={onPromptChange}
+      onPromptSubmit={onPromptSubmit}
+      onRequestAbort={onRequestAbort}
     />
   );
 };

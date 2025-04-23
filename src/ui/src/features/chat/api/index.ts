@@ -4,28 +4,19 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import {
-  addNewBotMessage,
-  addNewUserMessage,
-  setPrompt,
-  updateBotMessageText,
-  updateMessageIsStreamed,
-} from "@/features/chat/store/conversationFeed.slice";
-import { OnMessageTextUpdateHandler } from "@/features/chat/types/api";
+  API_ENDPOINTS,
+  CONTENT_TYPE_ERROR_MESSAGE,
+  HTTP_ERRORS,
+} from "@/features/chat/config/api";
+import { PostPromptRequest } from "@/features/chat/types/api";
 import {
-  getChatErrorMessage,
+  createGuardrailsErrorResponse,
   handleChatJsonResponse,
   handleChatStreamResponse,
-  handleUnsuccessfulChatResponse,
-  transformChatErrorMessage,
+  transformChatErrorResponse,
 } from "@/features/chat/utils/api";
 import { getToken, refreshToken } from "@/lib/auth";
 import { onRefreshTokenFailed } from "@/utils/api";
-
-interface PostPromptRequest {
-  prompt: string;
-  signal: AbortSignal;
-  onMessageTextUpdate: OnMessageTextUpdateHandler;
-}
 
 export const chatQnAApi = createApi({
   reducerPath: "chatQnAApi",
@@ -41,50 +32,39 @@ export const chatQnAApi = createApi({
   }),
   endpoints: (builder) => ({
     postPrompt: builder.mutation<void, PostPromptRequest>({
-      query: ({ prompt, signal, onMessageTextUpdate }) => ({
-        url: "/api/v1/chatqna",
+      query: ({ prompt, conversationHistory, signal, onAnswerUpdate }) => ({
+        url: API_ENDPOINTS.POST_PROMPT,
         method: "POST",
-        body: JSON.stringify({
+        body: {
           text: prompt,
-        }),
+          conversation_history: conversationHistory,
+        },
         signal,
         responseHandler: async (response) => {
+          if (response.status === HTTP_ERRORS.GUARDRAILS_ERROR.statusCode) {
+            const guardrailsErrorResponse =
+              await createGuardrailsErrorResponse(response);
+            return Promise.reject(guardrailsErrorResponse);
+          }
+
           if (!response.ok) {
-            await handleUnsuccessfulChatResponse(response);
+            return Promise.reject(response);
+          }
+
+          const contentType = response.headers.get("Content-Type");
+          if (contentType && contentType.includes("application/json")) {
+            await handleChatJsonResponse(response, onAnswerUpdate);
+          } else if (contentType && contentType.includes("text/event-stream")) {
+            await handleChatStreamResponse(response, onAnswerUpdate);
           } else {
-            const contentType = response.headers.get("Content-Type");
-            if (contentType && contentType.includes("application/json")) {
-              await handleChatJsonResponse(response, onMessageTextUpdate);
-            } else if (
-              contentType &&
-              contentType.includes("text/event-stream")
-            ) {
-              await handleChatStreamResponse(response, onMessageTextUpdate);
-            } else {
-              throw {
-                status: response.status,
-                data: "Response from chat cannot be processed - Unsupported Content-Type",
-              };
-            }
+            throw {
+              status: response.status,
+              data: CONTENT_TYPE_ERROR_MESSAGE,
+            };
           }
         },
       }),
-      transformErrorResponse: (error) => transformChatErrorMessage(error),
-      onQueryStarted: async ({ prompt }, { queryFulfilled, dispatch }) => {
-        try {
-          dispatch(addNewUserMessage(prompt));
-          dispatch(setPrompt(""));
-          dispatch(addNewBotMessage());
-          dispatch(updateMessageIsStreamed(true));
-
-          await queryFulfilled;
-        } catch (error) {
-          const errorMessage = getChatErrorMessage(error);
-          dispatch(updateBotMessageText(errorMessage));
-        } finally {
-          dispatch(updateMessageIsStreamed(false));
-        }
-      },
+      transformErrorResponse: (error) => transformChatErrorResponse(error),
     }),
   }),
 });

@@ -15,9 +15,9 @@ import conversationFeedReducer from "@/features/chat/store/conversationFeed.slic
 
 export const store = configureStore({
   reducer: {
+    conversationFeed: conversationFeedReducer,
     chatQnAGraph: chatQnAGraphReducer,
     colorScheme: colorSchemeReducer,
-    conversationFeed: conversationFeedReducer,
     notifications: notificationsReducer,
     [chatQnAApi.reducerPath]: chatQnAApi.reducer,
     [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,

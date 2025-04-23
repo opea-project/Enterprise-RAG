@@ -10,27 +10,27 @@ import PromptInput from "@/components/ui/PromptInput/PromptInput";
 import ChatDisclaimer from "@/features/chat/components/ChatDisclaimer/ChatDisclaimer";
 
 interface InitialChatLayoutProps {
-  prompt: string;
-  isStreaming: boolean;
-  abortRequest: () => void;
-  onPromptSubmit: () => void;
+  userInput: string;
+  isChatResponsePending: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
+  onPromptSubmit: () => void;
+  onRequestAbort: () => void;
 }
 
 const InitialChatLayout = ({
-  prompt,
-  isStreaming,
-  abortRequest,
-  onPromptSubmit,
+  userInput,
+  isChatResponsePending,
   onPromptChange,
+  onPromptSubmit,
+  onRequestAbort,
 }: InitialChatLayoutProps) => (
   <div className="initial-chat-layout">
     <ChatBotIcon />
     <p className="initial-chat-layout__greeting">What do you want to know?</p>
     <PromptInput
-      prompt={prompt}
-      isStreaming={isStreaming}
-      abortRequest={abortRequest}
+      prompt={userInput}
+      isChatResponsePending={isChatResponsePending}
+      onRequestAbort={onRequestAbort}
       onChange={onPromptChange}
       onSubmit={onPromptSubmit}
     />

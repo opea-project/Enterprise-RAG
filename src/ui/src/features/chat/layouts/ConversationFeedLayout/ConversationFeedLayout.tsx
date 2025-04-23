@@ -1,38 +1,36 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ConversationFeedLayout.scss";
-
 import { ChangeEventHandler } from "react";
 
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
 import ChatDisclaimer from "@/features/chat/components/ChatDisclaimer/ChatDisclaimer";
-import { ChatMessage } from "@/types";
+import { ConversationTurn } from "@/types";
 
 interface ConversationFeedLayoutProps {
-  messages: ChatMessage[];
-  prompt: string;
-  isStreaming: boolean;
-  abortRequest: () => void;
-  onPromptSubmit: () => void;
+  userInput: string;
+  conversationTurns: ConversationTurn[];
+  isChatResponsePending: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
+  onPromptSubmit: () => void;
+  onRequestAbort: () => void;
 }
 
 const ConversationFeedLayout = ({
-  messages,
-  prompt,
-  isStreaming,
-  abortRequest,
-  onPromptSubmit,
+  userInput,
+  conversationTurns,
+  isChatResponsePending,
   onPromptChange,
+  onPromptSubmit,
+  onRequestAbort,
 }: ConversationFeedLayoutProps) => (
-  <div className="conversation-feed-layout">
-    <ConversationFeed messages={messages} />
+  <div className="grid h-full grid-rows-[1fr_auto]">
+    <ConversationFeed conversationTurns={conversationTurns} />
     <PromptInput
-      prompt={prompt}
-      isStreaming={isStreaming}
-      abortRequest={abortRequest}
+      prompt={userInput}
+      isChatResponsePending={isChatResponsePending}
+      onRequestAbort={onRequestAbort}
       onChange={onPromptChange}
       onSubmit={onPromptSubmit}
     />

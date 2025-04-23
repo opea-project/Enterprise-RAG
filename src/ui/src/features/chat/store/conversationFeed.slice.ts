@@ -2,113 +2,96 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { v4 as uuidv4 } from "uuid";
 
-import { UpdatedChatMessage } from "@/features/chat/types";
-import { RootState } from "@/store/index";
-import { ChatMessage } from "@/types";
+import { RootState } from "@/store";
+import { ConversationTurn } from "@/types";
 
-interface ConversationFeedState {
-  prompt: string;
-  messages: ChatMessage[];
-  isStreaming: boolean;
-  currentChatBotMessageId: string | null;
+interface ConversationState {
+  userInput: string;
+  conversationTurns: ConversationTurn[];
+  currentConversationTurnId: string | null;
 }
 
-const initialState: ConversationFeedState = {
-  prompt: "",
-  messages: [],
-  isStreaming: false,
-  currentChatBotMessageId: null,
+const initialState: ConversationState = {
+  userInput: "",
+  conversationTurns: [],
+  currentConversationTurnId: null,
 };
 
 export const conversationFeedSlice = createSlice({
   name: "conversationFeed",
   initialState,
   reducers: {
-    setPrompt: (state, action: PayloadAction<string>) => {
-      state.prompt = action.payload;
+    setUserInput: (state, action: PayloadAction<string>) => {
+      state.userInput = action.payload;
     },
-    addNewUserMessage: (state, action: PayloadAction<string>) => {
-      const prompt = action.payload;
-      const newUserMessage = {
-        id: uuidv4(),
-        text: prompt,
-        isUserMessage: true,
-      };
-      state.messages = [...state.messages, newUserMessage];
-    },
-    addNewBotMessage: (state) => {
-      const id = uuidv4();
-      const newBotMessage = {
-        id,
-        text: "",
-        isUserMessage: false,
-        isStreaming: true,
-      };
-      state.messages = [...state.messages, newBotMessage];
-      state.currentChatBotMessageId = id;
-      state.isStreaming = true;
-    },
-    updateBotMessageText: (
+    addNewConversationTurn: (
       state,
-      action: PayloadAction<string | UpdatedChatMessage>,
+      action: PayloadAction<Pick<ConversationTurn, "id" | "question">>,
     ) => {
-      const previousMessages: ChatMessage[] = [...state.messages];
-      if (typeof action.payload === "string") {
-        const chunk = action.payload;
-        state.messages = previousMessages.map((message) =>
-          message.id === state.currentChatBotMessageId
-            ? {
-                ...message,
-                text: `${message.text}${chunk}`,
-              }
-            : message,
-        );
-      } else {
-        const { text, isError } = action.payload;
-        state.messages = previousMessages.map((message) =>
-          message.id === state.currentChatBotMessageId
-            ? {
-                ...message,
-                text: `${message.text}${text}`,
-                isError,
-              }
-            : message,
-        );
-      }
+      const { id, question } = action.payload;
+      const newConversationTurn = {
+        id,
+        question,
+        answer: "",
+        error: null,
+        isPending: true,
+      };
+
+      state.conversationTurns = [
+        ...state.conversationTurns,
+        newConversationTurn,
+      ];
+      state.currentConversationTurnId = id;
     },
-    updateMessageIsStreamed: (state, action: PayloadAction<boolean>) => {
-      const previousMessages: ChatMessage[] = [...state.messages];
-      const isStreaming = action.payload;
-      state.messages = previousMessages.map((message) =>
-        message.id === state.currentChatBotMessageId
+    updateAnswer: (
+      state,
+      action: PayloadAction<ConversationTurn["answer"]>,
+    ) => {
+      const answer = action.payload;
+      state.conversationTurns = state.conversationTurns.map((turn) =>
+        turn.id === state.currentConversationTurnId
           ? {
-              ...message,
-              isStreaming,
+              ...turn,
+              answer: turn.answer ? `${turn.answer}${answer}` : answer,
             }
-          : message,
+          : turn,
       );
-      if (!isStreaming) {
-        state.currentChatBotMessageId = null;
-      }
-      state.isStreaming = isStreaming;
+    },
+    updateError: (state, action: PayloadAction<ConversationTurn["error"]>) => {
+      const error = action.payload;
+      state.conversationTurns = state.conversationTurns.map((turn) =>
+        turn.id === state.currentConversationTurnId
+          ? { ...turn, error, isPending: false }
+          : turn,
+      );
+    },
+    updateIsPending: (
+      state,
+      action: PayloadAction<ConversationTurn["isPending"]>,
+    ) => {
+      const isPending = action.payload;
+      state.conversationTurns = state.conversationTurns.map((turn) =>
+        turn.id === state.currentConversationTurnId
+          ? { ...turn, isPending }
+          : turn,
+      );
     },
     resetConversationFeedSlice: () => initialState,
   },
 });
 
 export const {
-  setPrompt,
-  addNewUserMessage,
-  addNewBotMessage,
-  updateBotMessageText,
-  updateMessageIsStreamed,
+  setUserInput,
+  addNewConversationTurn,
+  updateAnswer,
+  updateError,
+  updateIsPending,
   resetConversationFeedSlice,
 } = conversationFeedSlice.actions;
-export const selectPrompt = (state: RootState) => state.conversationFeed.prompt;
-export const selectMessages = (state: RootState) =>
-  state.conversationFeed.messages;
-export const selectIsStreaming = (state: RootState) =>
-  state.conversationFeed.isStreaming;
+
+export const selectUserInput = (state: RootState) =>
+  state.conversationFeed.userInput;
+export const selectConversationTurns = (state: RootState) =>
+  state.conversationFeed.conversationTurns;
 export default conversationFeedSlice.reducer;

@@ -3,17 +3,19 @@
 
 import "./UserMessage.scss";
 
+import { memo } from "react";
+
 import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
-import { ChatMessage } from "@/types";
+import { ConversationTurn } from "@/types";
 
-type UserMessageProps = Pick<ChatMessage, "text">;
+type UserMessageProps = Pick<ConversationTurn, "question">;
 
-const UserMessage = ({ text }: UserMessageProps) => (
+const UserMessage = memo(({ question }: UserMessageProps) => (
   <article className="user-message">
     <div className="user-message__text">
-      <MarkdownRenderer content={text} />
+      <MarkdownRenderer content={question} />
     </div>
   </article>
-);
+));
 
 export default UserMessage;

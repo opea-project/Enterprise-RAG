@@ -4,7 +4,7 @@
 .initial-chat-layout {
   @apply relative mx-auto mb-32 h-full;
   @apply flex flex-col items-center justify-center;
-  @apply w-full md:w-[50rem];
+  @apply w-full md:w-[48rem];
 
   & .initial-chat-layout__greeting {
     @apply mb-9 text-center text-[2.5rem] font-semibold leading-[3rem];

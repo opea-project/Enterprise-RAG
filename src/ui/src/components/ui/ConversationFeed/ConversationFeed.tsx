@@ -4,19 +4,20 @@
 import "./ConversationFeed.scss";
 
 import debounce from "lodash.debounce";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import BotMessage from "@/components/ui/BotMessage/BotMessage";
 import ScrollToBottomButton from "@/components/ui/ScrollToBottomButton/ScrollToBottomButton";
 import UserMessage from "@/components/ui/UserMessage/UserMessage";
-import { bottomMargin } from "@/config/conversationFeed";
-import { ChatMessage } from "@/types";
+import { ConversationTurn } from "@/types";
+
+const bottomMargin = 48; // margin to handle bottom scroll detection
 
 interface ConversationFeedProps {
-  messages: ChatMessage[];
+  conversationTurns: ConversationTurn[];
 }
 
-const ConversationFeed = ({ messages }: ConversationFeedProps) => {
+const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
   const conversationFeedRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
@@ -59,13 +60,13 @@ const ConversationFeed = ({ messages }: ConversationFeedProps) => {
 
   useEffect(() => {
     debouncedScrollToBottom("instant");
-  }, [messages.length]);
+  }, [conversationTurns.length]);
 
   useEffect(() => {
     if (isAtBottom() && !isUserScrolling) {
       debouncedScrollToBottom("smooth");
     }
-  }, [messages, isUserScrolling]);
+  }, [conversationTurns, isUserScrolling]);
 
   const handleWheel = useCallback(
     (event: WheelEvent) => {
@@ -122,16 +123,16 @@ const ConversationFeed = ({ messages }: ConversationFeedProps) => {
         className="conversation-feed__scroll"
       >
         <div className="conversation-feed">
-          {messages.map(({ text, isStreaming, isUserMessage, id, isError }) =>
-            isUserMessage ? (
-              <UserMessage key={id} text={text} />
-            ) : (
-              <BotMessage
-                key={id}
-                text={text}
-                isStreaming={isStreaming}
-                isError={isError}
-              />
+          {conversationTurns.map(
+            ({ id, question, answer, error, isPending }) => (
+              <Fragment key={id}>
+                <UserMessage question={question} />
+                <BotMessage
+                  answer={answer}
+                  isPending={isPending}
+                  error={error}
+                />
+              </Fragment>
             ),
           )}
         </div>

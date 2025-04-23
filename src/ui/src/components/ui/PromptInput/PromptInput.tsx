@@ -19,16 +19,16 @@ import { sanitizeString } from "@/utils";
 
 interface PromptInputProps {
   prompt: string;
-  isStreaming?: boolean;
-  abortRequest?: () => void;
+  isChatResponsePending?: boolean;
+  onRequestAbort?: () => void;
   onChange: ChangeEventHandler<HTMLTextAreaElement>;
   onSubmit: (prompt: string) => void;
 }
 
 const PromptInput = ({
   prompt,
-  isStreaming = false,
-  abortRequest,
+  isChatResponsePending = false,
+  onRequestAbort,
   onChange,
   onSubmit,
 }: PromptInputProps) => {
@@ -88,7 +88,7 @@ const PromptInput = ({
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!isSubmitDisabled() && !isStreaming) {
+      if (!isSubmitDisabled() && !isChatResponsePending) {
         submitPrompt();
       }
     }
@@ -96,21 +96,21 @@ const PromptInput = ({
 
   const handleStopBtnClick: MouseEventHandler = (event) => {
     event.preventDefault();
-    abortRequest?.();
+    onRequestAbort?.();
     focusPromptInput();
   };
 
   const handleStopBtnKeyDown: KeyboardEventHandler = (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      abortRequest?.();
+      onRequestAbort?.();
       focusPromptInput();
     }
   };
 
   const getPromptInputButton = () => {
-    if (abortRequest) {
-      return isStreaming ? (
+    if (onRequestAbort) {
+      return isChatResponsePending ? (
         <PromptInputButton
           icon="prompt-stop"
           type="button"

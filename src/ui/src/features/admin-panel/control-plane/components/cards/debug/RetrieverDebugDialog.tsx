@@ -34,8 +34,18 @@ import {
   filterRetrieverFormData,
 } from "@/features/admin-panel/control-plane/utils";
 import { useAppSelector } from "@/store/hooks";
-import { ChatMessage } from "@/types";
+import { ConversationTurn } from "@/types";
 import { getErrorMessage } from "@/utils/api";
+
+const createCodeBlock = (text: string | object) => {
+  let parsedText = text;
+  if (typeof text === "string") {
+    const trimmedText = text.trim();
+    parsedText = JSON.parse(trimmedText);
+  }
+  const formattedText = JSON.stringify(parsedText, null, 2);
+  return `\`\`\`\n${formattedText}\n\`\`\``;
+};
 
 const RetrieverDebugDialog = () => {
   const [postRetrieverQuery] = usePostRetrieverQueryMutation();
@@ -51,7 +61,9 @@ const RetrieverDebugDialog = () => {
   );
 
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationTurns, setConversationTurns] = useState<
+    ConversationTurn[]
+  >([]);
   const [query, setQuery] = useState("");
 
   const chatQnAGraphNodes = useAppSelector(chatQnAGraphNodesSelector);
@@ -89,59 +101,46 @@ const RetrieverDebugDialog = () => {
   };
 
   const handleSubmitQuery = async (query: string) => {
-    const newQueryMessage = JSON.stringify(
-      {
-        query,
-        ...retrieverArgumentsForm,
-        top_n: rerankerArgumentsForm.top_n,
-        rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
-        reranker: isRerankerEnabled,
-      },
-      null,
-      2,
-    );
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: uuidv4(),
-        text: newQueryMessage,
-        isUserMessage: true,
-      },
-    ]);
-
-    const { data, error } = await postRetrieverQuery({
-      ...retrieverArgumentsForm,
+    const newQueryRequest = {
       query,
+      ...retrieverArgumentsForm,
       reranker: isRerankerEnabled,
       top_n: rerankerArgumentsForm.top_n,
       rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
-    });
+    };
+
+    setQuery("");
+
+    const newConversationTurn: ConversationTurn = {
+      id: uuidv4(),
+      question: createCodeBlock(newQueryRequest),
+      answer: "",
+      error: null,
+      isPending: true,
+    };
+    setConversationTurns((prevTurns) => [...prevTurns, newConversationTurn]);
+
+    const { data, error } = await postRetrieverQuery(newQueryRequest);
 
     if (error) {
       const errorMessage = getErrorMessage(
         error,
         ERROR_MESSAGES.POST_RETRIEVER_QUERY,
       );
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuidv4(),
-          text: errorMessage,
-          isUserMessage: false,
-          isError: true,
-        },
+      setConversationTurns((prevTurns) => [
+        ...prevTurns.slice(0, -1),
+        { ...newConversationTurn, error: errorMessage, isPending: false },
       ]);
     } else {
-      const message = data ? data : "";
-      setMessages((prevMessages) => [
-        ...prevMessages,
+      const responseData = data ? data : "";
+      setConversationTurns((prevTurns) => [
+        ...prevTurns.slice(0, -1),
         {
-          id: uuidv4(),
-          text: message,
-          isUserMessage: false,
+          ...newConversationTurn,
+          answer: createCodeBlock(responseData),
+          isPending: false,
         },
       ]);
-      setQuery("");
     }
   };
 
@@ -179,7 +178,7 @@ const RetrieverDebugDialog = () => {
         <div className="flex h-[calc(100vh-12rem)] flex-col text-sm">
           <div className="grid h-full grid-rows-[1fr_auto]">
             <RetrieverDebugChat
-              messages={messages}
+              conversationTurns={conversationTurns}
               query={query}
               handleQueryInputChange={handleQueryInputChange}
               handleSubmitQuery={handleSubmitQuery}
@@ -313,20 +312,20 @@ const RetrieverDebugParamsForm = ({
 };
 
 interface RetrieverDebugChatProps {
-  messages: ChatMessage[];
+  conversationTurns: ConversationTurn[];
   query: string;
   handleQueryInputChange: ChangeEventHandler<HTMLTextAreaElement>;
   handleSubmitQuery: (query: string) => void;
 }
 
 const RetrieverDebugChat = ({
-  messages,
+  conversationTurns,
   query,
   handleQueryInputChange,
   handleSubmitQuery,
 }: RetrieverDebugChatProps) => (
   <>
-    <ConversationFeed messages={messages} />
+    <ConversationFeed conversationTurns={conversationTurns} />
     <PromptInput
       prompt={query}
       onChange={handleQueryInputChange}

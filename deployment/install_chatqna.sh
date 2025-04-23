@@ -482,9 +482,9 @@ function start_telemetry() {
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY --set otelcol-logs.image.tag=otelcol-contrib-journalctl_$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY --set otelcol-logs.image.tag=erag-otelcol-contrib-journalctl_$TAG"
     else
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag-otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
     
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"

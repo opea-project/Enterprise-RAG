@@ -198,7 +198,7 @@ postgresql:
 
 celery:
   nameOverride: "edp-celery"
-  name: "enhanced-dataprep"
+  name: "erag-enhanced-dataprep"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -313,7 +313,7 @@ celery:
 flower:
   enabled: true
   nameOverride: "edp-flower"
-  name: "enhanced-dataprep"
+  name: "erag-enhanced-dataprep"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -475,7 +475,7 @@ backend:
           name: edp-configmap
           key: RERANKER_ENDPOINT
   nameOverride: "edp-backend"
-  name: "enhanced-dataprep"
+  name: "erag-enhanced-dataprep"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -491,7 +491,7 @@ backend:
 
 dataprep:
   nameOverride: "edp-dataprep"
-  name: "dataprep"
+  name: "erag-dataprep"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -536,7 +536,7 @@ dataprep:
 dpguard:
   enabled: false
   nameOverride: "edp-dpguard"
-  name: dpguard
+  name: "erag-dpguard"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -562,7 +562,7 @@ embedding:
     modelServer: "torchserve"
     modelServerEndpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
   nameOverride: "edp-embedding"
-  name: "embedding"
+  name: "erag-embedding"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always
@@ -577,7 +577,7 @@ embedding:
 
 ingestion:
   nameOverride: "edp-ingestion"
-  name: "ingestion"
+  name: "erag-ingestion"
   repository: "localhost:5000/erag"
   tag: latest
   config:
@@ -630,7 +630,7 @@ awsSqs:
           key: AWS_SECRET_ACCESS_KEY
   enabled: false
   nameOverride: "edp-aws"
-  name: "enhanced-dataprep"
+  name: "erag-enhanced-dataprep"
   repository: "localhost:5000/erag"
   tag: latest
   pullPolicy: Always

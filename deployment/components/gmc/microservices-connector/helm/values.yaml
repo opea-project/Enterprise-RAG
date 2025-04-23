@@ -126,34 +126,34 @@ pvc:
 
 images:
   gmcManager:
-    image: "gmcmanager"
+    image: "erag-gmcmanager"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   gmcRouter:
-    image: "gmcrouter"
+    image: "erag-gmcrouter"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   dataprep-usvc:
-    image: "dataprep"
+    image: "erag-dataprep"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   embedding-usvc:
-    image: "embedding"
+    image: "erag-embedding"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
   reranking-usvc:
-    image: "reranking"
+    image: "erag-reranking"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   teirerank:
-    image: "teirerank"
+    image: "erag-teirerank"
     repository: *repo
     tag: *tag
     envfile: "src/comps/reranks/impl/model_server/tei/docker/.env.cpu"
@@ -161,17 +161,17 @@ images:
     envs:
       MODEL_ID: *embedding_model_name
   teirerank_gaudi:
-    image: "teirerank_gaudi"
+    image: "erag-teirerank_gaudi"
     repository: *repo
     tag: *tag
     envfile: "src/comps/reranks/impl/model_server/tei/docker/.env.hpu"
   prompt-template-usvc:
-    image: "prompt_template"
+    image: "erag-prompt_template"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   torchserve_embedding:
-    image: "torchserve_embedding"
+    image: "erag-torchserve_embedding"
     repository: *repo
     tag: *tag
     pullPolicy: Always
@@ -179,41 +179,41 @@ images:
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
   torchserve_reranking:
-    image: "torchserve_reranking"
+    image: "erag-torchserve_reranking"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/reranks/impl/model_server/torchserve/docker/.env"
   retriever-usvc:
-    image: "retriever"
+    image: "erag-retriever"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/retrievers/impl/microservice/.env"
   ingestion-usvc:
-    image: "ingestion"
+    image: "erag-ingestion"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/ingestion/impl/microservice/.env"
   llm-usvc:
-    image: "llm"
+    image: "erag-llm"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/llms/impl/microservice/.env"
   in-guard-usvc:
-    image: "in-guard"
+    image: "erag-in-guard"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   out-guard-usvc:
-    image: "out-guard"
+    image: "erag-out-guard"
     repository: *repo
     tag: *tag
     pullPolicy: Always
   ui-usvc:
-    image: "chatqna-conversation-ui"
+    image: "erag-chatqna-conversation-ui"
     repository: *repo
     tag: *tag
     pullPolicy: Always
@@ -226,7 +226,7 @@ images:
     envs:
       LLM_TGI_MODEL_NAME: *hpu_model
   vllm_gaudi:
-    image: "vllm-gaudi"
+    image: "erag-vllm-gaudi"
     repository: *repo
     tag: *tag
     pullPolicy: Always
@@ -234,7 +234,7 @@ images:
     envs:
       LLM_VLLM_MODEL_NAME: *hpu_model
   vllm:
-    image: "vllm-cpu"
+    image: "erag-vllm-cpu"
     repository: *repo
     tag: *tag
     pullPolicy: Always
@@ -242,13 +242,13 @@ images:
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
   langdtct-usvc:
-    image: "language-detection"
+    image: "erag-language-detection"
     repository: *repo
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/language_detection/impl/microservice/.env"
   fingerprint-usvc:
-    image: "system-fingerprint"
+    image: "erag-system-fingerprint"
     repository: *repo
     tag: *tag
     pullPolicy: Always

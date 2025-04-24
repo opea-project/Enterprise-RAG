@@ -217,14 +217,6 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
-  tgi:
-    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.cpu"
-    envs:
-      LLM_TGI_MODEL_NAME: *cpu_model
-  tgi_gaudi:
-    envfile: "src/comps/llms/impl/model_server/tgi/docker/.env.hpu"
-    envs:
-      LLM_TGI_MODEL_NAME: *hpu_model
   vllm_gaudi:
     image: "erag-vllm-gaudi"
     repository: *repo

@@ -7,6 +7,9 @@ telemetry:
   prometheus:
     helm_repo: https://prometheus-community.github.io/helm-charts
 
+  prometheus_adapter:
+    values_file: "{{ playbook_dir }}/../components/hpa/prometheus_adapter.yaml"
+
   grafana:
     helm_repo: https://grafana.github.io/helm-charts
     tls_secret_name: "grafana-tls"
@@ -17,7 +20,7 @@ telemetry:
        password_secret_name: "grafana-password"
 
   opensearch:
-    helm_repo: https://opensearch-project.github.io/helm-charts
+    helm_repo: https://opensearch-project.github.io/helm-charts/
 
   opensearch_collector:
     helm_repo: https://open-telemetry.github.io/opentelemetry-helm-charts
@@ -43,3 +46,5 @@ telemetry:
 
   otelcol:
     delete_timeout: 10
+
+hpaEnabled: false

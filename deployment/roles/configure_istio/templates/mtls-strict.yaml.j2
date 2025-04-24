@@ -9,15 +9,21 @@ metadata:
   name: default
   namespace: {{ item }}
 spec:
+  mtls:
+    mode: STRICT
 {% if item == "ingress-nginx" %}
   selector:
     matchLabels:
       app.kubernetes.io/name: ingress-nginx
-{% endif %}
-  mtls:
-    mode: STRICT
-{% if item == "ingress-nginx" %}
   portLevelMtls:
     443:
       mode: PERMISSIVE
+{% elif item == "monitoring" and hpaEnabled %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-adapter
+  portLevelMtls:
+    6443:
+      mode: PERMISSIVE
 {% endif %}
+

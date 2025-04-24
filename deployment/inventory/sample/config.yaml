@@ -19,11 +19,12 @@ certs:
 tag: "latest"
 registry: "localhost:5000/erag"
 use_alternate_tagging: false
+hpaEnabled: true
 
 pipelines:
   - namespace: chatqa
-    samplePath: ./pipelines/chatqa/cpu/chatQnA_xeon_torch_llm_guard.yaml
-    resourcesPath: /pipelines/chatqa/cpu/resources-cpu.yaml
+    samplePath: ./pipelines/chatqa/reference-cpu.yaml
+    resourcesPath: /pipelines/chatqa/resources-reference-cpu.yaml
     type: chatqa
 
 gmc:

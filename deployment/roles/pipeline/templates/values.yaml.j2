@@ -16,6 +16,10 @@ common_registry: &repo {{ registry }}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+{% if hpaEnabled is defined %}
+hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+
 images:
   gmcManager:
     image: "erag-gmcmanager"

@@ -197,6 +197,19 @@
     - install
     - update
 
+- name: Install Prometheus Adapter Helm chart
+  kubernetes.core.helm:
+    name: prometheus-adapter
+    chart_ref: "prometheus-community/prometheus-adapter"
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: present
+    values_files: "{{ telemetry.prometheus_adapter.values_file }}"
+    wait: true
+  when: hpaEnabled
+  tags:
+    - install
+    - update
+
 - name: Set otelcol-logs image repository and tag based on condition
   ansible.builtin.set_fact:
     helm_otelcol_logs_image_repo: "{{ registry if use_alternate_tagging else registry ~ '/erag-otelcol-contrib-journalctl' }}"
@@ -295,6 +308,14 @@
   ansible.builtin.command:
     cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
   ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Delete prometheus-adapter Helm chart
+  kubernetes.core.helm:
+    name: prometheus-adapter
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: absent
   tags:
     - uninstall
 

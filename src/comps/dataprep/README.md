@@ -8,6 +8,7 @@ Supported files that dataprep can extract data from:
 
 | File Extension | Loader Class                                                                 |
 |----------------|------------------------------------------------------------------------------|
+| AsciiDoc       | [LoadAsciiDoc](./utils/file_loaders/load_adoc.py)                            |
 | doc            | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
 | docx           | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
 | txt            | [LoadTxt](./utils/file_loaders/load_txt.py)                                  |
@@ -34,6 +35,9 @@ and include that class into the `FileParser`'s `default_mappings` map.
 
 Dataprep uses both `libmagic` and file extension to determine the file type. Both have to match to be processed.
 
+> [!NOTE]
+> AsciiDoc documents are being converted to HTML format with usage of [Asciidoctor](https://github.com/asciidoctor/asciidoctor) before being divided into chunks.
+
 ## Configuration options
 
 Configuration is currently done via environment variables.
@@ -52,7 +56,7 @@ Configuration is currently done via environment variables.
 | `UPLOAD_PATH`                    | `/tmp/opea_upload`        | Path to where the data is saved                                                                  |
 | `DATAPREP_USVC_PORT`             | `9399`                    | (Optional) Dataprep microservice port |
 
-By default, files are saved to a directory under this container. Save path can be changed by setting the `UPLOAD_PATH` environment variable. It is advised to mount an additional volume for the files saved by dataprep. Files are persisted as a point in time reference to the data that is embedded and ultimately ingested into the vector database. 
+By default, files are saved to a directory under this container. Save path can be changed by setting the `UPLOAD_PATH` environment variable. It is advised to mount an additional volume for the files saved by dataprep. Files are persisted as a point in time reference to the data that is embedded and ultimately ingested into the vector database.
 
 For semantic chunking, we are using TorchServe embeddings by default, but you can set it to one of your choice. To enable this functionality, you'll need to set up a separate [Embeddings](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/tree/main/src/comps/embeddings/impl/model-server) instance and configure the following environment variables: `EMBEDDING_MODEL_NAME, EMBEDDING_MODEL_SERVER, EMBEDDING_MODEL_SERVER_ENDPOINT`. Once `use_semantic_chunking` is set to `True`, the dataprep microservice will automatically connect to this instance using the configured endpoint to generate embeddings for semantic chunking operations.
 
@@ -162,53 +166,4 @@ For both files and links the output has the same format, containg the extracted 
     }
   ]
 }
-```
-
-## Additional Information
-### Project Structure
-
-The project is organized into several directories:
-
-- `impl/`: This directory contains the implementation of the supported dataprep service.
-
-- `utils/`: This directory contains utility scripts and modules that are used by the Dataprep Microservice. It included the web crawler and script for extracting text from various files.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl
-  │   ├── microservice
-  │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   ├── uv.lock
-  │   │   └── .env
-  ├── opea_dataprep_microservice.py
-  ├── README.md
-  ├── test
-  │   ├── file2.txt
-  │   ├── file.txt
-  │   ├── ia.pdf
-  │   ├── ia_spec.pdf
-  │   └── test_data.pdf
-  └── utils
-      ├── crawler.py
-      ├── file_loaders
-      │   ├── abstract_loader.py
-      │   ├── load_csv.py
-      │   ├── load_doc.py
-      │   ├── load_html.py
-      │   ├── load_image.py
-      │   ├── load_json.py
-      │   ├── load_md.py
-      │   ├── load_pdf.py
-      │   ├── load_ppt.py
-      │   ├── load_txt.py
-      │   ├── load_xls.py
-      │   ├── load_xml.py
-      │   └── load_yaml.py
-      ├── file_parser.py
-      ├── opea_dataprep.py
-      ├── splitter.py
-      └── utils.py
 ```

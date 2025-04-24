@@ -15,7 +15,7 @@ class LoadHtml(AbstractLoader):
 
     def extract_text(self):
         """Load the html file."""
-        data_html = UnstructuredHTMLLoader(self.file_path).load()
+        data_html = UnstructuredHTMLLoader(self.file_path, mode="elements").load()
         content = []
         for ins in data_html:
             content.append(ins.page_content)

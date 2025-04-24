@@ -4,7 +4,7 @@
 from comps.dataprep.utils.file_parser import FileParser
 from comps.dataprep.utils.file_loaders.load_pdf import LoadPdf
 from comps.cores.mega.logger import get_opea_logger
-from langchain_text_splitters import HTMLHeaderTextSplitter, RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
@@ -18,21 +18,14 @@ class Splitter:
         self.process_table = process_table
         self.table_strategy = table_strategy
         self.separators = self.get_separators()
-        self.split_headers = self.get_split_headers()
         self.text_splitter = self.get_text_splitter()
-        self.html_splitter = self.get_html_splitter()
 
     def load_text(self, file_path: str):
         return FileParser(file_path).parse() # raises Value Error if file is not supported
 
     def split(self, file_path: str):
         text = self.load_text(file_path)
-        chunks = []
-
-        if file_path.split('.')[-1] == 'html':
-            chunks = self.split_html(text)
-        else:
-            chunks = self.split_text(text)
+        chunks = self.split_text(text)
 
         if file_path.split('.')[-1] == 'pdf':
             table_chunks = LoadPdf(file_path).get_tables_result(self.table_strategy)
@@ -45,10 +38,6 @@ class Splitter:
         chunks = self.text_splitter.split_text(text)
         return chunks
 
-    def split_html(self, html: str):
-        chunks = self.html_splitter.split_text(html)
-        return [chunk.page_content for chunk in chunks]
-
     def get_text_splitter(self):
         return RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
@@ -56,18 +45,6 @@ class Splitter:
             add_start_index=True,
             separators=self.separators
         )
-
-    def get_html_splitter(self):
-        return HTMLHeaderTextSplitter(
-            headers_to_split_on=self.split_headers
-        )
-
-    def get_split_headers(self):
-        return [
-            ("h1", "Header 1"),
-            ("h2", "Header 2"),
-            ("h3", "Header 3"),
-        ]
 
     def get_separators(self):
         separators = [

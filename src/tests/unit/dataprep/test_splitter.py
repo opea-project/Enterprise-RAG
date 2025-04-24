@@ -14,13 +14,6 @@ def test_text_splitter():
     assert len(splitted_text) == 6
     assert splitted_text == ['Marry', 'had', 'a', 'litt', 'ittle', 'lamb']
 
-def test_html_splitter():
-    text = "<html><body><h1>Header 1</h1><p>hello</p><h2>Header 2</h2><p>world</p><h3>Header 3</h3></body></html>"
-    s = Splitter(chunk_size=5, chunk_overlap=3)
-    splitted_text = s.split_html(text)
-
-    assert splitted_text == ['hello', 'world']
-
 # Custom embedding class to simulate embeddings for semantic chunking
 class CustomEmbeddingModel:
     def __init__(self, embedding_dim=384):

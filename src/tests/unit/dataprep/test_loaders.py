@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from comps.dataprep.utils.file_loaders.load_csv import LoadCsv
+from comps.dataprep.utils.file_loaders.load_adoc import LoadAsciiDoc
 from comps.dataprep.utils.file_loaders.load_doc import LoadDoc
 from comps.dataprep.utils.file_loaders.load_html import LoadHtml
 from comps.dataprep.utils.file_loaders.load_json import LoadJson
@@ -17,6 +18,13 @@ import os
 def abs_file_path(file_name):
     file_path = '../../files/dataprep_upload/'
     return os.path.join(os.path.dirname(__file__), file_path, file_name)
+
+def test_adoc_loader():
+    file_name = 'test_dataprep.adoc'
+    loader = LoadAsciiDoc(abs_file_path(file_name))
+    text = loader.extract_text()
+    assert text is not None
+    assert len(text) > 0
 
 def test_csv_loader():
     file_name = 'test_dataprep.csv'

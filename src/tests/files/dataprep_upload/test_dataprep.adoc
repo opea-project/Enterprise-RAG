@@ -1,0 +1,50 @@
+== Sample AsciiDoc Document
+
+Welcome to the *Sample AsciiDoc Document*. This document showcases
+various features of AsciiDoc.
+
+=== Table of Contents
+
+[arabic]
+. link:#introduction[Introduction]
+. link:#features[Features]
+. link:#code-examples[Code Examples]
+. link:#images[Images]
+. link:#links[Links]
+. link:#conclusion[Conclusion]
+
+=== Introduction
+
+This document demonstrates the basic syntax of AsciiDoc. AsciiDoc is a
+lightweight markup language with plain-text formatting syntax.
+
+=== Features
+
+AsciiDoc supports the following features:
+
+* *Bold text*
+* _Italic text_
+* https://www.example.com[Links]
+* Lists
+** Unordered list item 1
+** Unordered list item 2
+** Unordered list item 3
+*** Nested item
+* Numbered list
+[arabic]
+. First item
+. Second item
+. Third item
+
+=== Code Examples
+
+You can include code in your AsciiDoc document. Here’s an example of a
+Bash function:
+
+[source, bash]
+----
+
+#!/bin/bash
+echo "Hello, World!"
+
+----

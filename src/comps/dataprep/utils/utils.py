@@ -90,7 +90,7 @@ def parse_files(files: List[UploadFile], splitter: Splitter) -> List[TextDoc]:
             raise e
         finally:
             if os.path.exists(saved_path):
-                logger.info(f"removed {saved_path} after processing")
+                logger.info(f"Removed {saved_path} after processing")
                 os.remove(saved_path)
 
     return parsed_texts
@@ -121,7 +121,7 @@ def parse_links(links: List[str], splitter: Splitter) -> List[TextDoc]:
             raise e
         finally:
             if os.path.exists(saved_path):
-                logger.info(f"removed {saved_path} after processing")
+                logger.info(f"Removed {saved_path} after processing")
                 os.remove(saved_path)
 
     return parsed_texts

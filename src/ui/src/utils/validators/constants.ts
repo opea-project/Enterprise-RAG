@@ -6,4 +6,4 @@ export const clientMaxBodySize = 64; // 64 MB - src/ui/default.conf - client_max
 // eslint-disable-next-line no-control-regex
 export const nullCharsRegex = /(\x00|\u0000|\0|%00)/;
 
-export const fileExtensionsWithoutMIMETypes: string[] = ["md", "jsonl", "yaml"];
+export const fileExtensionsWithoutMIMETypes: string[] = ["md", "jsonl", "yaml", "adoc"];

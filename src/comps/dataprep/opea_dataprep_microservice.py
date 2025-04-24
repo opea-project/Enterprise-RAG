@@ -103,7 +103,7 @@ async def process(input: DataPrepInput) -> TextDocList:
                 if not f.filename:
                     raise ValueError(f"File #{fidx} filename was empty.")
                 if not is_valid_filename(f.filename):
-                    raise ValueError(f"File {f.filename} had an invalid filename.")
+                    raise ValueError(f"File {f.filename} has an invalid filename.")
                 if not f.data64:
                     raise ValueError(f"File {f.filename} base64 data was empty.")
                 file_data = base64.b64decode(f.data64)

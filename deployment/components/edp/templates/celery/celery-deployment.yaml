@@ -101,6 +101,7 @@ spec:
             - "-A"
             - "app.tasks.celery"
             - "worker"
+            - "-B"
             - "--loglevel={{ .Values.celery.config.logLevel }}"
             - "--concurrency={{ .Values.celery.config.concurrency }}"
           env:
@@ -115,6 +116,10 @@ spec:
           {{- if .Values.proxy.noProxy }}
             - name: no_proxy
               value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
+          {{- end }}
+          {{- if .Values.celery.config.scheduledSync.enabled }}
+            - name: EDP_SYNC_TASK_TIME_SECONDS
+              value: {{ .Values.celery.config.scheduledSync.syncPeriodSeconds | quote }}
           {{- end }}
           {{- toYaml .Values.celery.environment | nindent 12 }}
           ports:

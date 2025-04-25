@@ -196,13 +196,7 @@ def list_buckets():
     Returns:
         Response: A JSON response containing a list of buckets.
     """
-    buckets = minio_internal.list_buckets()
-    bucket_names = [bucket.name for bucket in buckets]
-    regex_filter = str(os.getenv('BUCKET_NAME_REGEX_FILTER', ''))
-    if len(regex_filter) > 0:
-        bucket_names = [name for name in bucket_names if re.match(regex_filter, name)]
-        logger.debug(f"Displaying {len(bucket_names)}/{len(buckets)} buckets after applying regex filter: {regex_filter}")
-
+    bucket_names = filtered_list_bucket(minio_internal)
     return JSONResponse(content={'buckets': bucket_names})
 
 # -------------- Event processing ------------
@@ -370,6 +364,84 @@ def delete_existing_link(uri):
                 link_status.task_id = task.id
                 db.commit()
                 logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
+
+def filtered_list_bucket(client):
+    buckets = client.list_buckets()
+    bucket_names = [bucket.name for bucket in buckets]
+    regex_filter = str(os.getenv('BUCKET_NAME_REGEX_FILTER', ''))
+    if len(regex_filter) > 0:
+        bucket_names = [name for name in bucket_names if re.match(regex_filter, name)]
+        logger.debug(f"Displaying {len(bucket_names)}/{len(buckets)} buckets after applying regex filter: {regex_filter}")
+
+    return bucket_names
+
+def sync_files(minio_client, add_file_func, update_file_func, delete_file_func, skip_file_func=None):
+    """
+    Synchronizes files between MinIO storage and the database.
+    This function performs the following steps:
+    1. Retrieves the database connection.
+    2. Fetches the list of buckets from MinIO storage.
+    3. For each bucket, it lists the objects and compares them with the database records.
+    4. If a file exists in both MinIO and the database but has changed, it updates the database.
+    5. If a file is new in MinIO, it adds it to the database.
+    6. If a file exists in the database but not in MinIO, it deletes the record from the database.
+    7. Returns a JSON response indicating the success or failure of the synchronization process.
+    Returns:
+        Response: A JSON response with a message indicating the result of the synchronization process.
+    """
+
+    bucket_names = filtered_list_bucket(minio_client)
+
+    with get_db() as db:
+        try:
+            for bucket_name in bucket_names:
+                minio_files = minio_client.list_objects(bucket_name)
+                for obj in minio_files:
+                    file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == obj.object_name).first()
+                    if file_status:
+                        if file_status.etag != obj.etag or file_status.size != obj.size:
+                            # File exists and seems to be changed, delete it and add a new one
+                            if callable(update_file_func):
+                                update_file_func(bucket_name, obj.object_name, obj.etag, obj.content_type, obj.size)
+                            logger.debug(f"File {obj.object_name} in bucket {bucket_name} has changed. Processing.")
+                        else:
+                            # File exactly the same, skip
+                            if callable(skip_file_func):
+                                skip_file_func(bucket_name, obj.object_name)
+                            logger.debug(f"File {obj.object_name} in bucket {bucket_name} has the same size and etag. Skipping.")
+                    else:
+                        # File is a new file without any data in vector database
+                        if callable(add_file_func):
+                            add_file_func(bucket_name, obj.object_name, obj.etag, obj.content_type, obj.size)
+                        logger.debug(f"File {obj.object_name} in bucket {bucket_name} is a new file. Processing.")
+        except S3Error as e:
+            logger.error(f"An error occurred: {e}")
+        db.commit()
+
+    with get_db() as db:
+        try:
+            for bucket_name in bucket_names:
+                minio_files = minio_client.list_objects(bucket_name)
+                minio_objects = [obj.object_name for obj in minio_files]
+                files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name.notin_(minio_objects)).all()
+
+                for obj in files_in_db_but_not_in_minio:
+                    if callable(delete_file_func):
+                        delete_file_func(obj.bucket_name, obj.object_name)
+                    logger.debug(f"File {obj.object_name} in bucket {obj.bucket_name} does not exist in storage but is in DB. Deleting.")
+
+        except S3Error as e:
+            logger.error(f"An error occurred: {e}")
+        db.commit()
+
+    with get_db() as db:
+        objects_from_buckets_in_db_but_not_in_storage = db.query(FileStatus).filter(FileStatus.bucket_name.notin_(bucket_names))
+        for obj in objects_from_buckets_in_db_but_not_in_storage:
+            if callable(delete_file_func):
+                delete_file_func(obj.bucket_name, obj.object_name)
+            logger.debug(f"File {obj.object_name} in bucket {obj.bucket_name} - whole bucket is missing. Deleting.")
+
+    return True
 
 @app.post('/minio_event')
 def process_minio_event(event: Union[S3EventData, MinioEventData], request: Request):
@@ -684,59 +756,52 @@ def api_file_task_cancel(file_uuid: str, request: Request):
         else:
             raise HTTPException(status_code=404, detail="File not found")
 
+@app.get('/api/files/sync')
+def api_sync_diff(request: Request):
+    """
+    This function shows the difference between the files in MinIO storage and the database.
+    It returns an array containing a list of files and their action that would be performed.
+    """
+    diff = []
+
+    def add_file_func(bucket_name, object_name, etag, content_type, size, obj=diff):
+        obj.append({ 'action': 'add', 'bucket_name': bucket_name, 'object_name': object_name })
+
+    def update_file_func(bucket_name, object_name, etag, content_type, size, obj=diff):
+        obj.append({ 'action': 'update', 'bucket_name': bucket_name, 'object_name': object_name })
+
+    def delete_file_func(bucket_name, object_name, obj=diff):
+        obj.append({ 'action': 'delete', 'bucket_name': bucket_name, 'object_name': object_name })
+
+    def skip_file_func(bucket_name, object_name, obj=diff):
+        obj.append({ 'action': 'no action', 'bucket_name': bucket_name, 'object_name': object_name })
+
+    try:
+        sync_files(minio_internal, add_file_func, update_file_func, delete_file_func, skip_file_func)
+    except Exception as e:
+        logger.error(f"Error during sync: {e}")
+        raise HTTPException(status_code=400, detail="Error during generating sync diff")
+
+    return JSONResponse(content=diff)
 
 @app.post('/api/files/sync')
 def api_sync(request: Request):
     """
-    Synchronizes files between MinIO storage and the database.
-    This function performs the following steps:
-    1. Retrieves the database connection.
-    2. Fetches the list of buckets from MinIO storage.
-    3. For each bucket, it lists the objects and compares them with the database records.
-    4. If a file exists in both MinIO and the database but has changed, it updates the database.
-    5. If a file is new in MinIO, it adds it to the database.
-    6. If a file exists in the database but not in MinIO, it deletes the record from the database.
-    7. Returns a JSON response indicating the success or failure of the synchronization process.
+    This function calls the sync_files function to synchronize files between MinIO storage and the database.
+    It schedules tasks to celery with the files to be added and deleted.
     Returns:
-        Response: A JSON response with a message indicating the result of the synchronization process.
+        JSONResponse: A JSON response indicating the result of the synchronization process.
+    Raises:
+        HTTPException: If an error occurs during the synchronization process.
     """
+    try:
+        sync_files(minio_internal, add_new_file, add_new_file, delete_existing_file)
+    except Exception as e:
+        logger.error(f"Error during sync: {e}")
+        raise HTTPException(status_code=400, detail="Error during sync")
 
-    with get_db() as db:
-        try:
-            bucket = os.getenv('MINIO_BUCKET')
-            buckets = []
+    return JSONResponse(content={'message': 'Files synced successfully'})
 
-            if bucket:
-                buckets = [minio_internal.get_bucket(bucket)]
-            else:
-                buckets = minio_internal.list_buckets()
-
-            for bucket in buckets:
-                minio_files = minio_internal.list_objects(bucket.name)
-                for obj in minio_files:
-                    file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name == obj.object_name).first()
-                    if file_status:
-                        if file_status.etag != obj.etag or file_status.size != obj.size:
-                            # File exists and seems to be changed, delete it and add a new one
-                            add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
-                            logger.info(f"File {obj.object_name} in bucket {bucket.name} has changed. Processing.")
-                        else:
-                            # File exactly the same, skip
-                            logger.info(f"File {obj.object_name} in bucket {bucket.name} has the same size and etag. Skipping.")
-                    else:
-                        # File is a new file without any data in vector database
-                        add_new_file(bucket.name, obj.object_name, obj.etag, obj.content_type, obj.size)
-                        logger.info(f"File {obj.object_name} in bucket {bucket.name} is a new file. Processing.")
-
-                minio_objects = [obj.object_name for obj in minio_files]
-                files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket.name, FileStatus.object_name.notin_(minio_objects)).all()
-                for obj in files_in_db_but_not_in_minio:
-                        delete_existing_file(obj.bucket_name, obj.object_name)
-                        logger.info(f"File {obj.object_name} in bucket {obj.bucket_name} does not exist in storage but is in DB. Deleting.")
-
-            return JSONResponse(content={'message': 'Files synced successfully'})
-        except S3Error as e:
-            raise HTTPException(status_code=400, detail=f"An error occurred: {e}")
 
 # -------------- Debugging Features ---------------
 

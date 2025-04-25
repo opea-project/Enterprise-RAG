@@ -204,7 +204,10 @@ celery:
   pullPolicy: Always
   config:
     concurrency: "6"
-    logLevel: "debug"
+    logLevel: "info"
+    scheduledSync:
+      enabled: false
+      syncPeriodSeconds: "60"
   environment:
     - name: EDP_EXTERNAL_URL
       valueFrom:

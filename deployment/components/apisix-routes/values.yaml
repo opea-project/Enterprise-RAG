@@ -69,6 +69,8 @@ endpoints:
       - /api/retrieve
       - ^/api/v1/edp/presignedUrl$
       - /api/presignedUrl
+      - ^/api/v1/edp/files/sync
+      - /api/files/sync
     permissions:
       - "admin#admin-access"
 

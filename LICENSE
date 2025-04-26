@@ -214,3 +214,10 @@
    The Intel® AI for Enterprise RAG licensed from Intel is intended for socially
    responsible applications and should not be used to cause or contribute to a violation
    of internationally recognized human rights.
+
+   Model Card Guidance: You, not Intel, are responsible for determining model
+   suitability for your use case. For information regarding model limitations,
+   safety considerations, biases, or other information consult the model cards
+   (if any) for models you use, typically found in the repository where the model
+   is available for download. Contact the model provider with questions.
+   Intel does not provide model cards for third party models.

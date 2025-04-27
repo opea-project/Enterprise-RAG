@@ -63,11 +63,27 @@ ui:
 
 edp:
   enabled: true
-  domainName: minio.erag.com
-  apiDomainName: s3.erag.com
   namespace: edp
   dpGuard:
     enabled: false
+  storageType: minio
+  minio:
+    domainName: minio.erag.com
+    apiDomainName: s3.erag.com
+    bucketNameRegexFilter: ".*"
+  s3:
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    sqsEventQueueUrl: ""
+    bucketNameRegexFilter: ".*"
+  s3compatible:
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    internalUrl: "https://s3.example.com"
+    externalUrl: "https://s3.example.com"
+    bucketNameRegexFilter: ".*"
 
 fingerprint:
   enabled: true

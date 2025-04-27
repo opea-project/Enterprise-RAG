@@ -20,8 +20,8 @@
         [] +
         ([ui.domainName] if ui.enabled | default(false) else []) +
         ([keycloak.domainName] if keycloak.enabled | default(false) else []) +
-        ([edp.domainName] if edp.enabled | default(false) else []) +
-        ([edp.apiDomainName] if edp.enabled | default(false) else []) +
+        ([edp.minio.domainName] if (edp.enabled and edp.storageType == "minio") | default(false) else []) +
+        ([edp.minio.apiDomainName] if (edp.enabled and edp.storageType == "minio") | default(false) else []) +
         ([telemetry.domainName] if telemetry.enabled | default(false) else [])
       }}
   tags:

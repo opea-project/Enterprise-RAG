@@ -15,7 +15,6 @@
     state: touch
     mode: '0600'
   when: not password_file_stat.stat.exists
-  notify: Encrypt the password file
   tags:
     - install
 

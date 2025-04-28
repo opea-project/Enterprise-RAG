@@ -32,6 +32,7 @@ gmc:
 
 ingress:
   enabled: true
+  service_type: NodePort
   namespace: ingress-nginx
 
 keycloak:

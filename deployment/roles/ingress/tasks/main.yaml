@@ -7,7 +7,6 @@
     ingress_helm_override_values_path: "{{ tmp_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
   tags:
     - install
-    - update
     - uninstall
 
 - name: Ensure Helm repository is added
@@ -16,21 +15,12 @@
     repo_url: "{{ ingress.helm.repo_url }}"
   tags:
     - install
-    - update
-
-- name: Check if override values file should be generated
-  ansible.builtin.set_fact:
-    generate_override: "{{ ingress.additional_values is defined and ingress.additional_values | dict2items | length > 0 }}"
-  tags:
-    - install
-    - update
 
 - name: Generate override values file from template
   ansible.builtin.template:
     src: "values.yaml.j2"
     dest: "{{ ingress_helm_override_values_path }}"
     mode: '0644'
-  when: generate_override
   tags:
     - install
     - update
@@ -40,11 +30,10 @@
     values_files: >
       {{
         [ingress.helm.default_values_file] +
-        ([ingress_helm_override_values_path] if generate_override else [])
+        [ingress_helm_override_values_path]
       }}
   tags:
     - install
-    - update
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
@@ -56,10 +45,10 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+    wait: true
   register: helm_result
   tags:
     - install
-    - update
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

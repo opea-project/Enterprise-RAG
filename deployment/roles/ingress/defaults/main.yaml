@@ -5,6 +5,7 @@
 ingress:
   enabled: false
   namespace: "ingress-nginx"
+  service_type: "NodePort"
   helm:
     version: "v3.16.1"
     repo_name: "ingress-nginx"

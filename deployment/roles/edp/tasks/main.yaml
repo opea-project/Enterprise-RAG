@@ -2,40 +2,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# check if chatqa is being deployed and fetch namespace
 - name: Set roles facts
   ansible.builtin.set_fact:
-    edp_helm_override_values_path: "{{ log_dir }}/{{ edp.helm.chart_name }}-override-values.yaml"
+    edp_helm_override_values_path: "{{ tmp_dir }}/{{ edp.helm.chart_name }}-override-values.yaml"
   tags:
     - install
-    - update
     - uninstall
 
-- name: Add Helm repository
-  kubernetes.core.helm_repository:
-    name: "{{ edp.helm.repo_name }}"
-    repo_url: "{{ edp.helm.repo_url }}"
-  tags:
-    - install
-    - update
-
-- name: Update Helm repositories
+- name: Ensure Helm repositories
   kubernetes.core.helm_repository:
     name: "{{ edp.helm.repo_name }}"
     repo_url: "{{ edp.helm.repo_url }}"
     state: present
   tags:
     - install
-    - update
 
-# Check if module can be used
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ edp.helm.chart_directory }}"
   tags:
     - install
-    - update
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -47,7 +34,6 @@
         name: "{{ edp.namespace }}"
   tags:
     - install
-    - update
 
 - name: Create TLS secret
   kubernetes.core.k8s:
@@ -115,14 +101,14 @@
     name: keycloak-password
     namespace: auth
   register: client_secret_raw
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
 - name: Decode keycloak password from the secret
   ansible.builtin.set_fact:
     keycloak_password: "{{ client_secret_raw.resources[0].data['admin-password'] | b64decode }}"
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
@@ -139,6 +125,7 @@
   ansible.builtin.command: >
     bash {{ role_path }}/files/get_secret.sh {{ keycloak_password }} EnterpriseRAG-oidc-minio
   register: client_secret_id_raw
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
@@ -168,54 +155,15 @@
   tags:
     - install
 
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    edp_redis_password_file_path: "{{ log_dir }}/{{ edp.redis.auth.user.password_file_name }}.txt"
-    edp_postgresql_admin_password_file_path: "{{ log_dir }}/{{ edp.postgresql.auth.admin.password_file_name }}.txt"
-    edp_postgresql_user_password_file_path: "{{ log_dir }}/{{ edp.postgresql.auth.user.password_file_name }}.txt"
-  tags:
-    - install
-    - uninstall
-
-- name: Generate password or load from file
+- name: Generate password
   ansible.builtin.include_role:
     name: generate_password
-  with_items:
-    - { generate_password_path: "{{ edp_redis_password_file_path }}" }
-  tags:
-    - install
-
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    edp_redis_password: "{{ password }}"
-  tags:
-    - install
-
-- name: Generate password or load from file
-  ansible.builtin.include_role:
-    name: generate_password
-  with_items:
-    - { generate_password_path: "{{ edp_postgresql_admin_password_file_path }}" }
-  tags:
-    - install
-
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    edp_postgresql_admin_password: "{{ password }}"
-  tags:
-    - install
-
-- name: Generate password or load from file
-  ansible.builtin.include_role:
-    name: generate_password
-  with_items:
-    - { generate_password_path: "{{ edp_postgresql_user_password_file_path }}" }
-  tags:
-    - install
-
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    edp_postgresql_user_password: "{{ password }}"
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: EDP_REDIS, user: "{{ edp.redis.auth.user.db_username }}" }
+    - { name: EDP_POSTGRESQL, user: "{{ edp.postgresql.auth.user.db_username }}" }
+    - { name: EDP_POSTGRESQL_ADMIN, user: "{{ edp.postgresql.auth.admin.db_username }}" }
+  when: vars["item.name + '_PASSWORD'"] is undefined
   tags:
     - install
 
@@ -282,14 +230,5 @@
       kind: Namespace
       metadata:
         name: "{{ edp.namespace }}"
-  tags:
-    - uninstall
-
-- name: Remove password file
-  ansible.builtin.file:
-    state: absent
-    path: "{{ item }}"
-  with_items:
-    - "{{ edp_redis_password_file_path }}"
   tags:
     - uninstall

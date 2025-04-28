@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# reminder to check if in already built image i can create entrypoint script that would sed the static pages from auth.erag.com
-# to something that I'd specify in helm values.yaml to be able to dynamic linking stuff instead of having to rebuilt images ...
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    ui_helm_override_values_path: "{{ log_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
+    ui_helm_override_values_path: "{{ tmp_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
   tags:
     - always
 

@@ -22,4 +22,5 @@ fingerprint:
         db_user: "usr"
         password_file_name: "fingerprint-password"
       admin:
+        db_user: "root"
         password_file_name: "fingerprint-admin-password"

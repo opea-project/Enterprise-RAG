@@ -19,10 +19,10 @@ mongodb:
     usernames:
       - {{ fingerprint.mongo.auth.user.db_user }}
     passwords:
-      - {{ fingerprint_db_password }}
+      - {{ MONGO_DB_PASSWORD }}
     databases:
       - {{ fingerprint.mongo.auth.db_name }}
-    rootPassword: {{ fingerprint_db_root_password }}
+    rootPassword: {{ MONGO_ADMIN_PASSWORD }}
 {% if fingerprint.additional_values is defined %}
 {{ fingerprint.additional_values | to_nice_yaml }}
 {% endif %}

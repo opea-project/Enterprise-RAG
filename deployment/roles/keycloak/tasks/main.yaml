@@ -4,10 +4,9 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    keycloak_helm_override_values_path: "{{ log_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
+    keycloak_helm_override_values_path: "{{ tmp_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
   tags:
     - install
-    - update
     - uninstall
 
 - name: Ensure Helm repository is added
@@ -17,7 +16,6 @@
     state: present
   tags:
     - install
-    - update
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -26,7 +24,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -37,7 +34,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -49,7 +45,6 @@
         name: "{{ keycloak.namespace }}"
   tags:
     - install
-    - update
 
 - name: Create TLS secret
   kubernetes.core.k8s:
@@ -66,20 +61,14 @@
       type: kubernetes.io/tls
   tags:
     - install
-    - update
 
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    keycloak_password_file_path: "{{ log_dir }}/{{ keycloak.auth.admin.password_file_name }}.txt"
-  tags:
-    - install
-    - uninstall
-
-- name: Generate password or load from file
+- name: Generate password
   ansible.builtin.include_role:
     name: generate_password
-  with_items:
-    - { generate_password_path: "{{ keycloak_password_file_path }}" }
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: KEYCLOAK_REALM_ADMIN, user: "{{ keycloak.auth.admin.username }}" }
+  when: vars["item.name + '_PASSWORD'"] is undefined
   tags:
     - install
 
@@ -93,8 +82,8 @@
         name: "{{ keycloak.auth.admin.password_secret_name }}"
         namespace: "{{ keycloak.namespace }}"
       data:
-        admin-password: "{{ password | b64encode }}"
-  no_log: true
+        admin-password: "{{ KEYCLOAK_REALM_ADMIN_PASSWORD | b64encode }}"
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
@@ -111,7 +100,6 @@
     wait: true
   tags:
     - install
-    - update
 
 - name: Initial keycloak configuration
   ansible.builtin.include_role:
@@ -139,6 +127,7 @@
   with_items:
     - "{{ keycloak.auth.admin.password_secret_name }}"
     - "{{ keycloak.tls.secret_name }}"
+  no_log: "{{ secure_logs }}"
   tags:
     - uninstall
 
@@ -153,11 +142,3 @@
   tags:
     - uninstall
 
-- name: Remove password file
-  ansible.builtin.file:
-    state: absent
-    path: "{{ item }}"
-  with_items:
-    - "{{ keycloak_password_file_path }}"
-  tags:
-    - uninstall

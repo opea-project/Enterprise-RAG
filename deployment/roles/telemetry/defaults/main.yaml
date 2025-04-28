@@ -15,9 +15,9 @@ telemetry:
     tls_secret_name: "grafana-tls"
     auth:
       admin:
-       username: "admin"
-       password_file_name: "grafana-password"
-       password_secret_name: "grafana-password"
+        username: "admin"
+        password_file_name: "grafana-password"
+        password_secret_name: "grafana-password"
 
   opensearch:
     helm_repo: https://opensearch-project.github.io/helm-charts/

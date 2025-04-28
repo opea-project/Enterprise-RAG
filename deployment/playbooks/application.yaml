@@ -7,14 +7,21 @@
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   vars:
     helm_timeout: "10m0s"
-    components_dir: "{{ playbook_dir }}/../components"
-    log_dir: "{{ playbook_dir }}/../ansible-logs"
+    deployment_dir: "{{ playbook_dir }}/.."
+    components_dir: "{{ deployment_dir }}/components"
+    pipelines_dir: "{{ deployment_dir }}/pipelines/"
+    log_dir: "{{ deployment_dir }}/ansible-logs"
+    tmp_dir: "{{ log_dir }}/tmp"
+    secure_logs: true
   pre_tasks:
     - name: Create log directory if it does not exist
       ansible.builtin.file:
-        path: "{{ log_dir }}"
+        path: "{{ item }}"
         state: directory
         mode: '755'
+      loop:
+        - "{{ log_dir }}"
+        - "{{ tmp_dir }}"
       tags:
         - always
     - name: Disable istio injection for all namespaces
@@ -25,6 +32,11 @@
         tasks_from: manage_injection.yaml
       tags:
         - always
+    - name: Load init passwords
+      include_role:
+        name: generate_password
+      tags:
+        - install
     - name: Run fingerprint role
       include_role:
         name: fingerprint

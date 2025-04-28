@@ -1,0 +1,35 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Generate password
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: VECTOR_DB, user: "default" }
+  when: vars["item.name + '_PASSWORD'"] is undefined
+  tags:
+    - install
+
+- name: Create VectorDB secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item.namespace }}"
+      data:
+        VECTOR_STORE: "{{ 'redis' | b64encode }}"
+        REDIS_URL: "{{ ('redis://default:' + VECTOR_DB_PASSWORD + '@redis-vector-db.chatqa.svc') | b64encode }}"
+        REDIS_HOST: "{{ 'redis-vector-db.chatqa.svc' | b64encode }}"
+        REDIS_PORT: "{{ '6379' | b64encode }}"
+        REDIS_USERNAME: "{{ 'default' | b64encode }}"
+        REDIS_PASSWORD: "{{ VECTOR_DB_PASSWORD | b64encode }}"
+        VECTOR_DB_REDIS_ARGS: "{{ ('--save 60 1000 --appendonly yes --requirepass ' + VECTOR_DB_PASSWORD) | b64encode }}"
+  no_log: "{{ secure_logs }}"
+  when: item.type=='chatqa'
+  tags:
+    - install

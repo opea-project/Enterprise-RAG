@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# check before update dependencises
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    istio_helm_override_values_path: "{{ log_dir }}/{{ istio.helm.chart_name }}-override-values.yaml"
+    istio_helm_override_values_path: "{{ tmp_dir }}/{{ istio.helm.chart_name }}-override-values.yaml"
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
@@ -14,7 +13,6 @@
     state: present
   tags:
     - install
-    - update
 
 # Check if module can be used
 - name: Build Helm chart dependencies
@@ -23,15 +21,12 @@
     chdir: "{{ istio.helm.chart_directory }}"
   tags:
     - install
-    - update
-
 
 - name: Check if override values file should be generated
   ansible.builtin.set_fact:
     generate_override: "{{ istio.additional_values is defined and ingress.additional_values | dict2items | length > 0 }}"
   tags:
     - install
-    - update
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -41,7 +36,6 @@
   when: generate_override
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -52,7 +46,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

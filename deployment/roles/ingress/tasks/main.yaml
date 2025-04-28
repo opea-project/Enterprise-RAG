@@ -4,7 +4,7 @@
 ---
 - name:
   ansible.builtin.set_fact:
-    ingress_helm_override_values_path: "{{ log_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
+    ingress_helm_override_values_path: "{{ tmp_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
   tags:
     - install
     - update

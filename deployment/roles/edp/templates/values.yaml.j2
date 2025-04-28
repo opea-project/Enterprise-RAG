@@ -41,10 +41,10 @@ bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3
 edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 
 redisUsername: {{ edp.redis.auth.user.db_username }}
-redisPassword: "{{ edp_redis_password }}"
+redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 
-postgresDatabasePassword: {{ edp_postgresql_user_password }}
-postgresAdminPassword: {{ edp_postgresql_admin_password }}
+postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
+postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
 
 celery:
   tag: {{ tag }}

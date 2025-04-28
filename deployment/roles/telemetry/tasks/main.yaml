@@ -30,7 +30,8 @@
     - install
     - update
 
-- ansible.builtin.debug:
+- name: Check kind environment
+  ansible.builtin.debug:
     msg: "Kind environment detected. Using 'kube-dns' as the DNS service."
   when: "'kube-dns' in dns_service_name"
   tags:
@@ -60,7 +61,6 @@
     - "{{ telemetry.logging.charts_path }}"
     - "{{ telemetry.traces.charts_path }}"
     - "{{ telemetry.traces_instr.charts_path }}"
-  # when: not all_deps_ok
   tags:
     - install
     - update
@@ -97,24 +97,13 @@
     - install
     - update
 
-- name: Set facts for password generation
-  ansible.builtin.set_fact:
-    telemetry_password_file_path: "{{ log_dir }}/{{ telemetry.grafana.auth.admin.password_file_name }}.txt"
-  tags:
-    - install
-    - uninstall
-
-- name: Generate password or load from file
+- name: Generate password
   ansible.builtin.include_role:
     name: generate_password
-  with_items:
-    - { generate_password_path: "{{ telemetry_password_file_path }}" }
-  tags:
-    - install
-
-- name: Set generated passwords
-  ansible.builtin.set_fact:
-    telemetry_admin_password: "{{ password }}"
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: GRAFANA, user: "{{ telemetry.grafana.auth.admin.username }}" }
+  when: vars["item.name + '_PASSWORD'"] is undefined
   tags:
     - install
 
@@ -129,8 +118,8 @@
         namespace: "{{ telemetry.monitoring.namespace }}"
       data:
         user: "{{ telemetry.grafana.auth.admin.username | b64encode }}"
-        password: "{{ telemetry_admin_password | b64encode }}"
-  no_log: true
+        password: "{{ GRAFANA_PASSWORD | b64encode }}"
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
@@ -161,7 +150,7 @@
     name: vector-database-config
     namespace: chatqa
   register: secret_info
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
     - update
@@ -179,7 +168,7 @@
         namespace: "{{ telemetry.monitoring.namespace }}"
       data: "{{ secret_info.resources[0].data }}"
       type: "{{ secret_info.resources[0].type }}"
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
     - update
@@ -362,14 +351,5 @@
   with_items:
     - "{{ telemetry.monitoring.namespace }}"
     - "{{ telemetry.traces.namespace }}"
-  tags:
-    - uninstall
-
-- name: Remove password file
-  ansible.builtin.file:
-    state: absent
-    path: "{{ item }}"
-  with_items:
-    - "{{ telemetry_password_file_path }}"
   tags:
     - uninstall

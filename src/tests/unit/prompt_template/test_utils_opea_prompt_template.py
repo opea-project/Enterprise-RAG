@@ -45,14 +45,17 @@ def mock_default_input_data():
 def mock_default_response_data():
     """Fixture to provide mock response data."""
     return """
-### You are a helpful, respectful, and honest assistant to help the user with questions. \
-Please refer to the search results obtained from the local knowledge base. \
-Refer also to the conversation history if you think it is relevant to the current question. \
-Ignore all information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
-### Search results: Document1 Document2 Document3 \n
-### Conversation history:  \n
+### You are a helpful, respectful, and honest assistant to help the user answer their question. \
+Please refer to the search results obtained from the local knowledge base and \
+to the conversation history if you think it is relevant to the current question. \
+Ignore all information that is not relevant to the question and answer only the question provided by the user. \
+If you don't know the answer to a question, don't share false information and say that you don't know. \
+### Search results: Document1 Document2 Document3
+### Conversation history: 
+
+
 ### Question: This is my sample query? \n
+
 ### Answer:
 """.strip()
 
@@ -81,14 +84,17 @@ def mock_default_input_data_with_conversation_history():
 def mock_default_response_data_with_conversation_history():
     """Fixture to provide mock response data."""
     return """
-### You are a helpful, respectful, and honest assistant to help the user with questions. \
-Please refer to the search results obtained from the local knowledge base. \
-Refer also to the conversation history if you think it is relevant to the current question. \
-Ignore all information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
-### Search results: Document1 Document2 Document3 \n
-### Conversation history: previous_question: Previous question 2 previous_answer: Previous answer 2 previous_question: Previous question 3 previous_answer: Previous answer 3 previous_question: Previous question 4 previous_answer: Previous answer 4 \n
+### You are a helpful, respectful, and honest assistant to help the user answer their question. \
+Please refer to the search results obtained from the local knowledge base and \
+to the conversation history if you think it is relevant to the current question. \
+Ignore all information that is not relevant to the question and answer only the question provided by the user. \
+If you don't know the answer to a question, don't share false information and say that you don't know. \
+### Search results: Document1 Document2 Document3
+### Conversation history: previous_question: Previous question 2 previous_answer: Previous answer 2 previous_question: Previous question 3 previous_answer: Previous answer 3 previous_question: Previous question 4 previous_answer: Previous answer 4
+
+
 ### Question: This is my sample query? \n
+
 ### Answer:
 """.strip()
 

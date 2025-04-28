@@ -2,14 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 template_001_english = """
-### You are a helpful, respectful, and honest assistant to help the user with questions. \
-Please refer to the search results obtained from the local knowledge base. \
-Refer also to the conversation history if you think it is relevant to the current question. \
-Ignore all information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
-### Search results: {reranked_docs} \n
-### Conversation history: {previous_questions} \n
+### You are a helpful, respectful, and honest assistant to help the user answer their question. \
+Please refer to the search results obtained from the local knowledge base and \
+to the conversation history if you think it is relevant to the current question. \
+Ignore all information that is not relevant to the question and answer only the question provided by the user. \
+If you don't know the answer to a question, don't share false information and say that you don't know. \
+### Search results: {reranked_docs}
+### Conversation history: {previous_questions}
+
+
 ### Question: {initial_query} \n
+
 ### Answer:
 """
 

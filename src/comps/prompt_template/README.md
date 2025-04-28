@@ -78,7 +78,15 @@ Example Request:
 # use the default prompt template
 curl http://localhost:7900/v1/prompt_template \
   -X POST \
-  -d '{"data": {"initial_query":"What is Deep Learning?", "reranked_docs": []}, "conversation_history": [{"question": "Hello", "answer": "Hello as well"}, {"question": "How are you?", "answer": "I am good, thank you!"}, {"question": "Who are you?", "answer": "I am a robot"}], "prompt_template":""}' \
+  -d '{
+        "data": {
+                  "user_prompt": "What is Deep Learning?",
+                  "reranked_docs": [{"text":"Deep Learning is..."}]
+                },
+        "conversation_history": [{"question": "Hello", "answer": "Hello as well"}, {"question": "How are you?", "answer": "I am good, thank you!"}, {"question": "Who are you?", "answer": "I am a robot"}],
+        "system_prompt_template": "",
+        "user_prompt_template": ""
+      }' \
   -H 'Content-Type: application/json'
 ```
 
@@ -86,16 +94,20 @@ Output:
 
 ```json
 {
-  "id": "683f18c2d4dd30e2da5e6bcfaafe2258",
-  "model": null,
-  "query": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is... \n\n### Question: What is Deep Learning? \n\n### Answer:",
+  "id": "76d5d5673028a046fd11c5a457dff293",
+  "messages": {
+    "id": "2799ef8258e871594d4a33ce8f8a975c",
+    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Ignore all information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is...",
+    "user": "### Question: What is Deep Learning? \n\n### Answer:"
+    },
+  "model":null,
   "max_new_tokens": 1024,
   "top_k": 10,
   "top_p": 0.95,
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": false,
+  "streaming": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }
@@ -107,26 +119,39 @@ When a custom prompt template is provided, the system updates to use this templa
 Example Request:
 ```bash
 # use a custom prompt template
-export PROMPT="### Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: {reranked_docs} \n### Question: {initial_query} \n### Answer:"
+export SYSTEM_PROMPT="### Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: {reranked_docs} \n"
+export USER_PROMPT="### Question: {initial_query} \n### Answer:"
 
 curl http://localhost:7900/v1/prompt_template \
   -X POST \
-  -d "{\"data\": {\"initial_query\":\"What is Deep Learning?\", \"reranked_docs\": [{\"text\":\"Deep Learning is...\"}]}, \"prompt_template\":\"${PROMPT}\"}" -H 'Content-Type: application/json'
+  -d "{
+        \"data\":{
+                  \"initial_query\": \"What is Deep Learning?\",
+                  \"reranked_docs\": [{\"text\":\"Deep Learning is...\"}]
+                },
+        \"system_prompt_template\": \"${SYSTEM_PROMPT}\",
+        \"user_prompt_template\": \"${USER_PROMPT}\"
+      }" \
+  -H 'Content-Type: application/json'
 ```
 Output:
 
 ```json
 {
-  "id": "6a8c89d33cc42f6a74c1cf0ebbfa3f85",
+  "id": "42d771f93d21e54384235b641e049e34",
+  "messages": {
+    "id": "e9fccf6f875c51d408a0b20cb5c0d967",
+    "system": "### Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is...",
+    "user": "### Question: What is Deep Learning? \n### Answer:"
+  },
   "model": null,
-  "query": "### Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is... \n### Question: What is Deep Learning? \n### Answer:",
   "max_new_tokens": 1024,
   "top_k": 10,
   "top_p": 0.95,
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": false,
+  "streaming": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }
@@ -139,26 +164,40 @@ Example Request:
 
 ```bash
 # define a custom prompt template for a specific task
-export PROMPT="### You are a helpful, respectful, and honest assistant to help the user with translations. Translate this from {source_lang} to {target_lang}.\n### Question: {initial_query} \n### Answer:"
+export SYSTEM_PROMPT="### You are a helpful, respectful, and honest assistant to help the user with translations. Translate this from {source_lang} to {target_lang}.\n"
+export USER_PROMPT="### Question: {initial_query} \n### Answer:"
 
 curl http://localhost:7900/v1/prompt_template \
   -X POST \
-  -d "{\"data\": {\"initial_query\":\"什么是深度学习？\", \"source_lang\": \"chinese\", \"target_lang\": \"english\"},\"prompt_template\":\"${PROMPT}\"}" -H 'Content-Type: application/json'
+  -d "{
+        \"data\": {
+                    \"initial_query\":\"什么是深度学习？\",
+                    \"source_lang\": \"chinese\",
+                    \"target_lang\": \"english\"
+                  },
+        \"system_prompt_template\":\"${SYSTEM_PROMPT}\",
+        \"user_prompt_template\":\"${USER_PROMPT}\"
+      }" \
+  -H 'Content-Type: application/json'
 ```
 
 Output:
 ```json
 {
-  "id": "d902648873a7ccab110014a9edb78677",
+  "id": "cd973589adc7104879f551001bbc2dc2",
+  "messages": {
+    "id": "e5720557015190cdba66be5a65f316c1",
+    "system": "### You are a helpful, respectful, and honest assistant to help the user with translations. Translate this from chinese to english.",
+    "user": "### Question: 什么是深度学习？ \n### Answer:"
+  },
   "model": null,
-  "query": "### You are a helpful, respectful, and honest assistant to help the user with translations. Translate this from chinese to english.\n### Question: 什么是深度学习？ \n### Answer:",
   "max_new_tokens": 1024,
   "top_k": 10,
   "top_p": 0.95,
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": false,
+  "streaming": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }

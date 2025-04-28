@@ -88,24 +88,27 @@ def test_fingerprint_change_arguments(fingerprint_api_helper):
 @allure.testcase("IEASG-T152")
 def test_fingerprint_empty_prompt_template(fingerprint_api_helper, chatqa_api_helper):
     """
-    Make /v1/system_fingerprint/change_arguments API call with an empty prompt_template.
+    Make /v1/system_fingerprint/change_arguments API call with an empty system_prompt_template and user_prompt_template.
     Expect status code 400 because there are no "{initial_query}" and "{reranked_docs}" keywords in the template.
     """
     current_arguments = fingerprint_api_helper.append_arguments("")
-    original_prompt_template = current_arguments.json()["parameters"]["prompt_template"]
+    original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
+    original_user_prompt_template = current_arguments.json()["parameters"]["user_prompt_template"]
     body = [{
         "name": "prompt_template",
         "data": {
-            "prompt_template": "123"
+            "system_prompt_template": "123",
+            "user_prompt_template": "123"
         }
     }]
     response = fingerprint_api_helper.change_arguments(body)
     if response.status_code == 200:
-        logger.debug(f"Reverting prompt template to the original value: {original_prompt_template}")
+        logger.debug(f"Reverting prompt template to the original values: system: {original_system_prompt_template} user: {original_user_prompt_template}")
         body = [{
             "name": "prompt_template",
             "data": {
-                "prompt_template": original_prompt_template
+                "system_prompt_template": original_system_prompt_template,
+                "user_prompt_template": original_user_prompt_template
             }
         }]
         fingerprint_api_helper.change_arguments(body)
@@ -116,21 +119,21 @@ def test_fingerprint_empty_prompt_template(fingerprint_api_helper, chatqa_api_he
 @allure.testcase("IEASG-T151")
 def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_helper):
     """
-    Change the prompt_template to include a specific number. Call ChatQA and check if the response contains the number.
+    Change the system_prompt_template to include a specific number. Call ChatQA and check if the response contains the number.
     """
     current_arguments = fingerprint_api_helper.append_arguments("")
-    original_prompt_template = current_arguments.json()["parameters"]["prompt_template"]
+    original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
     body = [{
         "name": "prompt_template",
         "data": {
-            "prompt_template": "You are a helpful, respectful, and honest assistant to help the user with questions. "
+            "system_prompt_template": "You are a helpful, respectful, and honest assistant to help the user with questions. "
                                "Please refer to the search results obtained from the local knowledge base. Ignore all "
                                "information that you think is not relevant to the question. If you don't know the "
                                "answer to a question, please don't share false information. Always include '1234' "
                                "in your response so that I can identify you - it is very important. Do not generate "
                                "an answer that will not contain '1234'. I have to know it's you and I can only verify "
                                "it by checking if '1234' is in your response. \n\n### Search results: "
-                               "{reranked_docs} \n\n### Question: {initial_query} \n\n### Answer: "
+                               "{reranked_docs} \n\n"
         }
     }]
     change_prompt_response = fingerprint_api_helper.change_arguments(body)
@@ -142,11 +145,11 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
         logger.info(f"ChatQA response after modifying prompt template: {chatbot_response}")
         assert "1234" in chatbot_response, "Response does not contain the expected number '1234'"
     finally:
-        logger.info(f"Reverting prompt template to the original value: {original_prompt_template}")
+        logger.info(f"Reverting prompt template to the original value: {original_system_prompt_template}")
         body = [{
             "name": "prompt_template",
             "data": {
-                "prompt_template": original_prompt_template
+                "system_prompt_template": original_system_prompt_template
             }
         }]
         fingerprint_api_helper.change_arguments(body)

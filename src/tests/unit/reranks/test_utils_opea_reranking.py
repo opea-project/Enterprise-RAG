@@ -29,7 +29,7 @@ def test_class():
 def mock_input_data():
     """Fixture to provide mock input data."""
     return SearchedDoc(
-        initial_query="This is my sample query?",
+        user_prompt="This is my sample query?",
         retrieved_docs=[
             TextDoc(text="Document 1"),
             TextDoc(text="Document 2"),
@@ -132,7 +132,7 @@ def test_torchserve_retrieve_torchserve_model_name_fails():
 #     )
 
 #     # Assert that result.query is not empty
-#     assert result.initial_query, "Query is empty"
+#     assert result.user_prompt, "Query is empty"
 
 #     # Assert that the reranked_docs list has only 1 element
 #     assert len(result.reranked_docs) == 1, "The reranked_docs list should have only 1 element as top_n=1 by default"
@@ -169,7 +169,7 @@ def test_torchserve_retrieve_torchserve_model_name_fails():
 #     )
 
 #     # Assert that result.query is not empty
-#     assert result.initial_query, "Query is empty"
+#     assert result.user_prompt, "Query is empty"
 
 #     # Assert that the reranked_docs list has 2 elements
 #     assert len(result.reranked_docs) == 2, "The reranked_docs list should have 2 elements as top_n=2"
@@ -197,14 +197,14 @@ def test_torchserve_retrieve_torchserve_model_name_fails():
 # @pytest.mark.asyncio
 # @patch("comps.reranks.utils.opea_reranking.aiohttp.ClientSession.post", new_callable=AsyncMock)
 # async def test_call_reranker_raises_exception_when_server_is_unavailable(mock_post, test_class, mock_input_data):
-#     initial_query = mock_input_data.initial_query
+#     user_prompt = mock_input_data.user_prompt
 #     retrieved_docs = [doc.text for doc in mock_input_data.retrieved_docs]
 
 #     # Simulate server unavailability
 #     mock_post.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
 
 #     with pytest.raises(requests.exceptions.RequestException):
-#         await test_class._call_reranker(initial_query, retrieved_docs)
+#         await test_class._call_reranker(user_prompt, retrieved_docs)
 
 #     assert mock_post.call_count == 1
 #     mock_post.assert_awaited_with(
@@ -215,21 +215,21 @@ def test_torchserve_retrieve_torchserve_model_name_fails():
 
 
 @pytest.mark.asyncio
-async def test_run_fallbacks_to_initial_query_if_no_retrieved_docs(test_class):
+async def test_run_fallbacks_to_user_prompt_if_no_retrieved_docs(test_class):
     input_data = SearchedDoc(
-        initial_query="This is my sample query?", retrieved_docs=[], top_n=1
+        user_prompt="This is my sample query?", retrieved_docs=[], top_n=1
     )
 
     result = await test_class.run(input_data)
 
-    assert result.data["initial_query"] == input_data.initial_query, "Query does not match the initial query as expected when no retrieved documents are provided"
+    assert result.data["user_prompt"] == input_data.user_prompt, "Query does not match the user prompt as expected when no retrieved documents are provided"
     # Assert that the reranked_docs list is empty
     assert not result.data["reranked_docs"], "The reranked_docs list should be empty when no retrieved documents are provided"
 
 @pytest.mark.asyncio
-async def test_run_fallbacks_to_initial_query_for_invalid_retrieved_docs(test_class):
+async def test_run_fallbacks_to_user_prompt_for_invalid_retrieved_docs(test_class):
     input_data = SearchedDoc(
-        initial_query="This is my sample query?",
+        user_prompt="This is my sample query?",
         retrieved_docs=[
             TextDoc(text=""),  # empty text
             TextDoc(text="  "),  # tab
@@ -239,15 +239,15 @@ async def test_run_fallbacks_to_initial_query_for_invalid_retrieved_docs(test_cl
     )
 
     result = await test_class.run(input_data)
-    assert result.data["initial_query"] == input_data.initial_query, "Query does not match the initial query as expected when the provided retrieved_docs are empty or invalid"
+    assert result.data["user_prompt"] == input_data.user_prompt, "Query does not match the user prompt as expected when the provided retrieved_docs are empty or invalid"
      # Assert that the reranked_docs list is empty
     assert not result.data["reranked_docs"], "The reranked_docs list should be empty when the provided retrieved_docs are empty or invalid"
 
 
 @pytest.mark.asyncio
-async def test_run_raises_exception_on_empty_initial_query(test_class):
+async def test_run_raises_exception_on_empty_user_prompt(test_class):
     input_data = SearchedDoc(
-        initial_query="",
+        user_prompt="",
         retrieved_docs=[
             TextDoc(text="Document 1"),
             TextDoc(text="Document 2"),
@@ -269,7 +269,7 @@ async def test_run_raises_exception_on_top_N_below_one(mock_post, test_class):
 
     with pytest.raises(ValidationError) as context:
         input_data = SearchedDoc(
-            initial_query="This is my sample query?",
+            user_prompt="This is my sample query?",
             retrieved_docs=[
                 TextDoc(text="Document 1"),
                 TextDoc(text="Document 2"),

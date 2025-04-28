@@ -40,17 +40,22 @@ class VLLMConnector:
             logger.error(error_message)
             raise Exception(f"{error_message}: {e}")
 
+        messages = [
+            {"role": "system", "content": input.messages.system},
+            {"role": "user", "content": input.messages.user}
+            ]
+
         if input.streaming and not self._disable_streaming:
             try:
                 if self._llm_output_guard_exists:
                     chat_response = ""
-                    async for text in llm.astream(input.query):
+                    async for text in llm.astream(messages):
                         chat_response += text
-                    return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                    return GeneratedDoc(text=chat_response, prompt=input.messages.user, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
                 async def stream_generator():
                     chat_response = ""
-                    async for text in llm.astream(input.query):
+                    async for text in llm.astream(messages):
                         chat_response += text
                         chunk_repr = repr(text)
                         yield f"data: {chunk_repr}\n\n"
@@ -72,8 +77,8 @@ class VLLMConnector:
                 raise Exception(f"Error streaming from VLLM: {e}")
         else:
             try:
-                response = await llm.ainvoke(input.query)
-                return GeneratedDoc(text=response, prompt=input.query, streaming=input.streaming,
+                response = await llm.ainvoke(messages)
+                return GeneratedDoc(text=response, prompt=input.messages.user, streaming=input.streaming,
                                     output_guardrail_params=input.output_guardrail_params)
             except ReadTimeout as e:
                 error_message = f"Failed to invoke the Langchain VLLM Connector. Connection established with '{e.request.url}' but " \

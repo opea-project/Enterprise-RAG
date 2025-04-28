@@ -56,14 +56,15 @@ def test_run_succeeds(test_class, mock_input_data):
     assert isinstance(result, PromptTemplateInput), "Method did not return PromptTemplateInput object"
 
     # Assert that the constructed query is correct
-    assert result.prompt_template == """
+    assert result.system_prompt_template == """
             Translate this from {source_lang} to {target_lang}:
             {source_lang}:
+        """
+    assert result.user_prompt_template == """
             {text}
 
-            {target_lang}:            
+            {target_lang}:
         """
-    
     assert result.data["text"] == "Hi. I am doing fine."
     assert result.data["source_lang"] == "English"
     assert result.data["target_lang"] == "Chinese"
@@ -74,24 +75,25 @@ def test_run_suceeds_standalone(test_class_standalone, mock_input_data_standalon
     assert isinstance(result, PromptTemplateInput), "Method did not return PromptTemplateInput object"
 
     # Assert that the constructed query is correct
-    assert result.prompt_template == """
+    assert result.system_prompt_template == """
             Translate this from {source_lang} to {target_lang}:
             {source_lang}:
+        """
+    assert result.user_prompt_template == """
             {text}
 
-            {target_lang}:            
+            {target_lang}:
         """
-    
     assert result.data["text"] == "Hi. I am doing fine."
     assert result.data["source_lang"] == "English"
     assert result.data["target_lang"] == "German"
-    
+
 def test_run_raises_exception_on_empty_query(test_class):
     input_data = GeneratedDoc(text="sample answer", prompt="")
 
     with pytest.raises(ValueError) as context:
         test_class.run(input_data)
-    
+
     assert str(context.value) == "Initial query cannot be empty."
 
 def test_run_raises_exception_on_empty_answer(test_class):
@@ -99,7 +101,7 @@ def test_run_raises_exception_on_empty_answer(test_class):
 
     with pytest.raises(ValueError) as context:
         test_class.run(input_data)
-    
+
     assert str(context.value) == "Answer from LLM cannot be empty."
 
 def test_run_raises_exception_on_missing_question(test_class):
@@ -107,7 +109,7 @@ def test_run_raises_exception_on_missing_question(test_class):
 
     with pytest.raises(ValueError) as context:
         test_class.run(input_data)
-    
+
     assert str(context.value) == "Question not found in the prompt!"
 
 def test_run_raises_exception_on_unsupported_query_language(test_class):
@@ -123,7 +125,7 @@ If you don't know the answer to a question, please don't share false information
 
     with pytest.raises(ValueError) as context:
         test_class.run(input_data)
-    
+
     assert str(context.value) == "Language of query is not supported."
 
 def test_run_raises_exception_on_unsupported_answer_language(test_class):
@@ -139,7 +141,7 @@ If you don't know the answer to a question, please don't share false information
 
     with pytest.raises(ValueError) as context:
         test_class.run(input_data)
-    
+
     assert str(context.value) == "Language of answer is not supported."
 
 def test_run_standalone_raises_exception_on_empty_text(test_class_standalone):
@@ -147,7 +149,7 @@ def test_run_standalone_raises_exception_on_empty_text(test_class_standalone):
 
     with pytest.raises(ValueError) as context:
         test_class_standalone.run(input_data)
-    
+
     assert str(context.value) == "Text to to be translated cannot be empty."
 
 def test_run_standalone_raises_exception_on_empty_target_lang(test_class_standalone):
@@ -155,7 +157,7 @@ def test_run_standalone_raises_exception_on_empty_target_lang(test_class_standal
 
     with pytest.raises(ValueError) as context:
         test_class_standalone.run(input_data)
-    
+
     assert str(context.value) == "Target language cannot be empty."
 
 def test_run_standalone_raises_exception_on_unsupported_text_language(test_class_standalone):
@@ -163,7 +165,7 @@ def test_run_standalone_raises_exception_on_unsupported_text_language(test_class
 
     with pytest.raises(ValueError) as context:
         test_class_standalone.run(input_data)
-    
+
     assert str(context.value) == "Original language of text is not supported."
 
 def test_run_standalone_raises_exception_on_unsupported_target_language(test_class_standalone):
@@ -171,5 +173,5 @@ def test_run_standalone_raises_exception_on_unsupported_target_language(test_cla
 
     with pytest.raises(ValueError) as context:
         test_class_standalone.run(input_data)
-    
+
     assert str(context.value) == "Provided target language is not supported."

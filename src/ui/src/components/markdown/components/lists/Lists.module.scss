@@ -38,4 +38,8 @@
   &:has(input[type="checkbox"]) {
     @apply flex items-center gap-2;
   }
+
+  &:not(&:has(p)) {
+    @apply mb-2;
+  }
 }

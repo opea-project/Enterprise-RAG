@@ -29,16 +29,18 @@ language_dict = {
 
 
 def get_prompt_template() -> str:
-    """Returns a tuple containing prompt template, source and target language."""
-    prompt_template = """
+    """Returns a tuple containing prompt system_prompt_template and user_prompt_template."""
+    system_prompt_template = """
             Translate this from {source_lang} to {target_lang}:
             {source_lang}:
+        """
+    user_prompt_template = """
             {text}
 
-            {target_lang}:            
+            {target_lang}:
         """
-    
-    return prompt_template
+
+    return system_prompt_template, user_prompt_template
 
 
 def get_language_name(lang_code: str) -> str:

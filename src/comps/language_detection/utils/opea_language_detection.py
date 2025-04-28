@@ -96,4 +96,8 @@ class OPEALanguageDetector:
                 source_language = "en"
 
         # Return the prompt template input for translation
-        return PromptTemplateInput(data={"text": input.text, "source_lang": source_language, "target_lang": target_language}, prompt_template=get_prompt_template())
+        system_prompt_template, user_prompt_template = get_prompt_template()
+        return PromptTemplateInput(data={"text": input.text, "source_lang": source_language, "target_lang": target_language},
+                                   system_prompt_template=system_prompt_template,
+                                   user_prompt_template=user_prompt_template
+                                   )

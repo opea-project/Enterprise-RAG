@@ -1,93 +1,115 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import classNames from "classnames";
-import { ChangeEventHandler, useState } from "react";
+import { ChangeEventHandler, useEffect, useState } from "react";
 import { ValidationError } from "yup";
 
 import Button from "@/components/ui/Button/Button";
 import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
+import ServiceArgumentTextArea from "@/features/admin-panel/control-plane/components/ServiceArgumentTextArea/ServiceArgumentTextArea";
+import {
+  PromptTemplateArgs,
+  promptTemplateFormConfig,
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
 import { ChangeArgumentsRequest } from "@/features/admin-panel/control-plane/types/api";
-import { validatePromptTemplateInput } from "@/features/admin-panel/control-plane/validators/promptTemplateInput";
+import { validatePromptTemplateForm } from "@/features/admin-panel/control-plane/validators/promptTemplateInput";
 import { sanitizeString } from "@/utils";
 
 const PromptTemplateCard = ({
-  data: { status, displayName, promptTemplate: defaultPromptTemplate },
+  data: {
+    status,
+    displayName,
+    promptTemplateArgs: prevPromptTemplateArguments,
+  },
 }: ControlPlaneCardProps) => {
   const [changeArguments] = useChangeArgumentsMutation();
 
-  const [promptTemplate, setPromptTemplate] = useState<string>(
-    defaultPromptTemplate || "",
-  );
+  const [promptTemplateForm, setPromptTemplateForm] =
+    useState<PromptTemplateArgs>({} as PromptTemplateArgs);
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
 
-  const validateInput = async (value: string) => {
-    try {
-      await validatePromptTemplateInput(value);
-      setIsInvalid(false);
-      setError("");
-      return true;
-    } catch (validationError) {
-      setIsInvalid(true);
-      setError((validationError as ValidationError).message);
-      return false;
+  useEffect(() => {
+    if (prevPromptTemplateArguments !== undefined) {
+      setPromptTemplateForm(prevPromptTemplateArguments);
     }
+  }, [prevPromptTemplateArguments]);
+
+  useEffect(() => {
+    const validateForm = async () => {
+      try {
+        await validatePromptTemplateForm(promptTemplateForm);
+        setIsInvalid(false);
+        setError("");
+      } catch (validationError) {
+        setIsInvalid(true);
+        setError((validationError as ValidationError).message);
+      }
+    };
+
+    validateForm();
+  }, [promptTemplateForm]);
+
+  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
+    const { value, name } = event.target;
+    setPromptTemplateForm((prevForm) => ({
+      ...prevForm,
+      [name]: sanitizeString(value),
+    }));
   };
 
-  const handleChange: ChangeEventHandler<HTMLTextAreaElement> = async (
-    event,
-  ) => {
-    const newValue = event.target.value;
-    setPromptTemplate(newValue);
-    const sanitizedValue = sanitizeString(newValue);
-    const isValid = await validateInput(sanitizedValue);
-    setIsInvalid(!isValid);
-  };
-
-  const handleChangePromptTemplateBtnClick = () => {
+  const handlePromptTemplateArgsSubmit = () => {
     const changeArgumentsRequest: ChangeArgumentsRequest = [
       {
         name: "prompt_template",
-        data: {
-          prompt_template: promptTemplate,
-        },
+        data: promptTemplateForm,
       },
     ];
 
     changeArguments(changeArgumentsRequest);
   };
 
-  const textareaClassNames = classNames([
-    {
-      "input--invalid": isInvalid,
-    },
-    "w-full text-xs mt-4 mb-0 p-2 h-[calc(100%-5.75rem)]",
-  ]);
-
   const changePromptTemplateBtnDisabled =
-    isInvalid || promptTemplate === defaultPromptTemplate;
+    isInvalid ||
+    (promptTemplateForm.user_prompt_template ===
+      prevPromptTemplateArguments?.user_prompt_template &&
+      promptTemplateForm.system_prompt_template ===
+        prevPromptTemplateArguments?.system_prompt_template);
 
   return (
     <SelectedServiceCard serviceStatus={status} serviceName={displayName}>
-      <textarea
-        value={promptTemplate}
-        name="prompt-template-input"
-        placeholder="Enter your prompt template..."
-        className={textareaClassNames}
-        onChange={handleChange}
-      />
-      <p className="error mb-2 mt-[0.25rem] text-xs italic">{error}</p>
-      <Button
-        size="sm"
-        disabled={changePromptTemplateBtnDisabled}
-        fullWidth
-        onClick={handleChangePromptTemplateBtnClick}
+      <form
+        className="grid h-full grid-rows-[1fr_1fr_auto] gap-4 pt-2 text-xs"
+        onSubmit={handlePromptTemplateArgsSubmit}
       >
-        Change Prompt Template
-      </Button>
+        <ServiceArgumentTextArea
+          value={promptTemplateForm.system_prompt_template}
+          placeholder="Enter system prompt template..."
+          isInvalid={isInvalid}
+          onChange={handleChange}
+          inputConfig={promptTemplateFormConfig.system_prompt_template}
+        />
+        <ServiceArgumentTextArea
+          value={promptTemplateForm.user_prompt_template}
+          placeholder="Enter user prompt template..."
+          isInvalid={isInvalid}
+          onChange={handleChange}
+          inputConfig={promptTemplateFormConfig.user_prompt_template}
+        />
+        <div>
+          <p className="error mb-2 min-h-14 text-xs italic">{error}</p>
+          <Button
+            size="sm"
+            type="submit"
+            disabled={changePromptTemplateBtnDisabled}
+            fullWidth
+          >
+            Change Prompt Template
+          </Button>
+        </div>
+      </form>
     </SelectedServiceCard>
   );
 };

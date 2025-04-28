@@ -122,17 +122,35 @@ The `streaming` parameter controls the API response format:
 ```bash
 # non-streaming mode
 curl http://localhost:9000/v1/chat/completions \
-  -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03,"streaming":false}' \
-  -H 'Content-Type: application/json'
+        -X POST \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: What is Deep Learning? \n\n"
+                    },
+                "max_new_tokens":32,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":false
+            }' \
+        -H 'Content-Type: application/json'
 ```
 
 ```bash
 # streaming mode
 curl http://localhost:9000/v1/chat/completions \
-  -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03,"streaming":true}' \
-  -H 'Content-Type: application/json'
+        -X POST \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: What is Deep Learning? \n\n"
+                    },
+                "max_new_tokens":32,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":true
+            }' \
+        -H 'Content-Type: application/json'
 ```
 
 **Example Output**
@@ -141,31 +159,33 @@ The following examples demonstrate the LLM microservice output in both non-strea
 
  - In **non-streaming mode** (streaming=false), the service returns a single JSON response:
 
-    ```json
-    {
-      "id":"fd49a0d75f7f54089572fa30510f8d3a",
-      "text":"\n\nDeep learning is a subset of machine learning that uses algorithms to learn from data",
-      "prompt":"What is Deep Learning?"
-    }
-    ```
+```json
+{
+  "id":"9a1b09face84c316c9a6297052d8b791",
+  "text":"System: I am a helpful, respectful, and honest assistant designed to help you",
+  "prompt":"### Question: Who are you? \n\n",
+  "streaming":false,
+  "output_guardrail_params":null
+}
+```
 - In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
-    ```
-    data: '\n'
-    data: 'Deep'
-    data: ' learning'
-    data: ' is'
-    data: ' a'
-    data: ' subset'
-    data: ' of'
-    data: ' machine'
-    data: ' learning'
-    data: ' that'
-    data: ' uses'
-    data: ' artificial'
-    data: ' neural'
-    data: ' networks'
-    data: [DONE]
-    ```
+```
+data: '\n'
+data: 'Deep'
+data: ' learning'
+data: ' is'
+data: ' a'
+data: ' subset'
+data: ' of'
+data: ' machine'
+data: ' learning'
+data: ' that'
+data: ' uses'
+data: ' artificial'
+data: ' neural'
+data: ' networks'
+data: [DONE]
+```
 
 ## Validated Model
 
@@ -177,6 +197,3 @@ To find validated models running on Gaudi, refer to the following resources:
 ## Additional Information
 #### Tests
 - `src/tests/unit/llms/`: Contains unit tests for the LLM Microservice components
-
-
-

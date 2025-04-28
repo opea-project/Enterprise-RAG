@@ -3,6 +3,7 @@
 
 import { AnyObject, object, string, TestFunction } from "yup";
 
+import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
 import {
   containsRequiredValues,
   noEmpty,
@@ -10,7 +11,11 @@ import {
 
 type PromptTemplateTestFunction = TestFunction<string | undefined, AnyObject>;
 
-const requiredPlaceholders = ["{initial_query}", "{reranked_docs}", "{previous_questions}"];
+const requiredPlaceholders = [
+  "{user_prompt}",
+  "{reranked_docs}",
+  "{conversation_history}",
+];
 const placeholderRegex = /\{.*?\}/g;
 
 const getContainsRequiredPlaceholdersErrorMessage = ({
@@ -21,7 +26,7 @@ const getContainsRequiredPlaceholdersErrorMessage = ({
   const missingRequiredPlaceholders = [...requiredPlaceholders].filter(
     (requiredValue) => !value.includes(requiredValue),
   );
-  return `Prompt Template is missing the following required placeholders: ${missingRequiredPlaceholders.join(", ")}`;
+  return `Prompt Templates are missing the following required placeholders: ${missingRequiredPlaceholders.join(", ")}`;
 };
 
 const containsAnyPlaceholders: PromptTemplateTestFunction = (value) => {
@@ -52,25 +57,62 @@ const containsUnexpectedPlaceholders: PromptTemplateTestFunction = (value) => {
 const containsRequiredPlaceholders: PromptTemplateTestFunction =
   containsRequiredValues(requiredPlaceholders);
 
+const containsDuplicatePlaceholders: PromptTemplateTestFunction = (value) => {
+  if (value !== undefined) {
+    const matchedPlaceholders = value.match(placeholderRegex);
+    if (matchedPlaceholders !== null) {
+      const uniquePlaceholders = new Set(matchedPlaceholders);
+      return uniquePlaceholders.size === matchedPlaceholders.length;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+};
+
 const validationSchema = object().shape({
-  promptTemplateInput: string()
-    .test("not-empty", "Prompt Template cannot be empty", noEmpty(false))
+  user: string().test(
+    "not-empty",
+    "User Prompt Template cannot be empty",
+    noEmpty(false),
+  ),
+  system: string().test(
+    "not-empty",
+    "System Prompt Template cannot be empty",
+    noEmpty(false),
+  ),
+  joined: string()
+    .test("not-empty", "Prompt Templates cannot be empty", noEmpty(false))
     .test(
       "contains-any-placeholders",
-      "Prompt Template does not contain any placeholders",
+      "Prompt Templates do not contain any placeholders",
       containsAnyPlaceholders,
     )
     .test(
       "contains-unexpected-placeholders",
-      "Prompt Template contains unexpected placeholders",
+      "Prompt Templates contain unexpected placeholders",
       containsUnexpectedPlaceholders,
     )
     .test(
       "contains-required-placeholders",
       getContainsRequiredPlaceholdersErrorMessage,
       containsRequiredPlaceholders,
+    )
+    .test(
+      "contains-duplicated-placeholders",
+      "Prompt Templates contain duplicated placeholders",
+      containsDuplicatePlaceholders,
     ),
 });
 
-export const validatePromptTemplateInput = async (value: string) =>
-  await validationSchema.validate({ promptTemplateInput: value });
+export const validatePromptTemplateForm = async (
+  templates: PromptTemplateArgs,
+) => {
+  const joinedTemplates = Object.values(templates).join("");
+  await validationSchema.validate({
+    user: templates.user_prompt_template,
+    system: templates.system_prompt_template,
+    joined: joinedTemplates,
+  });
+};

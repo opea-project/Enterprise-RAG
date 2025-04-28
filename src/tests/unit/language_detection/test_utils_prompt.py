@@ -7,16 +7,19 @@ from comps.language_detection.utils import prompt
 
 class TestOPEATranslationPrompt(unittest.TestCase):
     def test_get_prompt_template(self):
-        expected_output = """
+        expected_system_prompt_template = """
             Translate this from {source_lang} to {target_lang}:
             {source_lang}:
+        """
+        expected_user_prompt_template = """
             {text}
 
-            {target_lang}:            
+            {target_lang}:
         """
 
-        result = prompt.get_prompt_template()
-        self.assertEqual(result, expected_output)
+        result_system, result_user = prompt.get_prompt_template()
+        self.assertEqual(result_system, expected_system_prompt_template)
+        self.assertEqual(result_user, expected_user_prompt_template)
 
     def test_get_language_name(self):
         expected_output = "Chinese"

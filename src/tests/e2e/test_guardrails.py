@@ -307,10 +307,9 @@ def test_in_guard_sentiment(guard_helper):
 @allure.testcase("IEASG-T87")
 def test_in_guard_token_limit(guard_helper):
     """Check if user's input do not exceed specified token limit"""
-    default_prompt_template_length = 160
     guard_params = {
         "enabled": True,
-        "limit": 10 + default_prompt_template_length
+        "limit": 10
     }
     guard_helper.setup(GuardType.INPUT, "token_limit", guard_params)
     guard_helper.assert_blocked(questions.OVER_LIMIT)

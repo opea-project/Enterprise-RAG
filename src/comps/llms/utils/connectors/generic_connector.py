@@ -36,9 +36,14 @@ class VLLMConnector:
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
-            generator = await self._client.completions.create(
+            messages = [
+                {"role": "system", "content": input.messages.system},
+                {"role": "user", "content": input.messages.user}
+                ]
+
+            generator = await self._client.chat.completions.create(
                 model=self._model_name,
-                prompt=input.query,
+                messages=messages,
                 max_tokens=input.max_new_tokens,
                 temperature=input.temperature,
                 top_p=input.top_p,
@@ -66,9 +71,9 @@ class VLLMConnector:
             if self._llm_output_guard_exists:
                 chat_response = ""
                 async for chunk in generator:
-                    text = chunk.choices[0].text
+                    text = chunk.choices[0].delta.content
                     chat_response += text
-                return GeneratedDoc(text=chat_response, prompt=input.query, streaming=input.streaming,
+                return GeneratedDoc(text=chat_response, prompt=input.messages.user, streaming=input.streaming,
                                 output_guardrail_params=input.output_guardrail_params)
 
             stream_gen_time = []
@@ -78,7 +83,7 @@ class VLLMConnector:
                 chat_response = ""
                 try:
                     async for chunk in generator:
-                        text = chunk.choices[0].text
+                        text = chunk.choices[0].delta.content
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
                         chunk_repr = repr(text)
@@ -106,7 +111,7 @@ class VLLMConnector:
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator.choices[0].text, prompt=input.query, streaming=input.streaming,
+            return GeneratedDoc(text=generator.choices[0].message.content, prompt=input.messages.user, streaming=input.streaming,
                                 output_guardrail_params=input.output_guardrail_params)
 
 SUPPORTED_INTEGRATIONS = {

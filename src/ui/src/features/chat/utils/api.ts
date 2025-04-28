@@ -59,7 +59,7 @@ export const handleChatStreamResponse = async (
         }
         newTextChunk = newTextChunk
           .replace(quoteRegex, "")
-          .replace(/\\n/, "  \n");
+          .replace(/\\n/g, "  \n");
 
         onAnswerUpdate(newTextChunk);
       }

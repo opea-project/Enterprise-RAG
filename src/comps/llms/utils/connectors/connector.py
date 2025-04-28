@@ -38,7 +38,7 @@ class LLMConnector(ABC):
 
     async def _validate(self) -> None:
         try:
-            tested_params = {"query": "test", "max_new_tokens": 5}
+            tested_params = {"messages": {"system": "test", "user": "test"}, "max_new_tokens": 5}
             test_input = LLMParamsDoc(**tested_params, streaming=False)
             await self.generate(test_input)
             logger.info("Connection with LLM model server validated successfully.")

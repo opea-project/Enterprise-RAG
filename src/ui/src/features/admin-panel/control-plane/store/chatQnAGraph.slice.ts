@@ -114,7 +114,7 @@ const updateNodeDetails = (
     retrieverArgs: parameters.retrieverArgs,
     inputGuardArgs: parameters.inputGuardArgs,
     outputGuardArgs: parameters.outputGuardArgs,
-    promptTemplate: parameters.promptTemplate,
+    promptTemplateArgs: parameters.promptTemplateArgs,
   };
 
   for (const [key, value] of Object.entries(servicesArgsMap)) {

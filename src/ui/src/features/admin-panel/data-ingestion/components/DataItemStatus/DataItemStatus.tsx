@@ -17,6 +17,7 @@ import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
+import { titleCaseString } from "@/utils";
 
 const statusIconMap: Record<DataStatus, ReactNode> = {
   uploaded: <UploadIcon className="data-item-status__icon" />,
@@ -37,7 +38,7 @@ interface DataItemStatusProps {
 
 const DataItemStatus = ({ status, statusMessage }: DataItemStatusProps) => {
   const statusIcon = statusIconMap[status];
-  const statusText = status.slice(0, 1).toUpperCase() + status.slice(1);
+  const statusText = titleCaseString(status);
   const isStatusMessageEmpty = statusMessage === "";
   const statusClassNames = classNames({
     "data-item-status": true,

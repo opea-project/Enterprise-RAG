@@ -69,7 +69,7 @@ const ServiceArgumentCheckbox = ({
             <Tooltip
               title={tooltipText}
               trigger={<InfoIcon />}
-              placement="right"
+              placement="left"
             />
           )}
           <span>{name}</span>

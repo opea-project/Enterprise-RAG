@@ -6,6 +6,7 @@ import { Edge, Node, Position } from "@xyflow/react";
 import { llmInputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
 import { llmOutputGuardArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
 import { llmArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
+import { promptTemplateArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
 import { rerankerArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import { retrieverArgumentsDefault } from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import { ServiceData } from "@/features/admin-panel/control-plane/types";
@@ -102,7 +103,7 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "prompt_template",
       displayName: "Prompt Template",
-      promptTemplate: "",
+      promptTemplateArgs: promptTemplateArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       selected: false,

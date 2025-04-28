@@ -87,7 +87,7 @@ class DataPrepInput(BaseDoc):
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
-    initial_query: str
+    user_prompt: str
     top_n: PositiveInt = 3
     rerank_score_threshold: Optional[float] = 0.02
     conversation_history: Optional[List[PrevQuestionDetails]] = None
@@ -99,7 +99,8 @@ class PromptTemplateInput(BaseDoc):
     data: Dict[str, Any]
     conversation_history: Optional[List[PrevQuestionDetails]] = None
     conversation_history_parse_type: str = "naive"
-    prompt_template: Optional[str] = None
+    system_prompt_template: Optional[str] = None
+    user_prompt_template: Optional[str] = None
 
 class AnonymizeModel(BaseDoc):
     enabled: bool = False
@@ -316,9 +317,13 @@ class LLMGuardOutputGuardrailParams(BaseDoc):
     url_reachability: URLReachabilityModel = URLReachabilityModel()
     anonymize_vault: Optional[List[Tuple]] = None # the only parameter not available in fingerprint. Used to tramsmit vault
 
+class LLMPromptTemplate(BaseDoc):
+    system: str
+    user: str
+
 class LLMParamsDoc(BaseDoc):
+    messages: LLMPromptTemplate
     model: Optional[str] = None  # for openai and ollama
-    query: str
     max_new_tokens: PositiveInt = 1024
     top_k: PositiveInt = 10
     top_p: NonNegativeFloat = 0.95

@@ -26,7 +26,7 @@ USVC_NAME = "opea_service@llm_guard_input_scanner"
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
 
 usvc_config = {
-    **dotenv_values(".env"),
+    **dotenv_values("impl/microservice/.env"),
     **os.environ # override loaded values with environment variables - priotity
 }
 

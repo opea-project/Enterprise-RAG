@@ -40,6 +40,7 @@ from comps.cores.proto.docarray import (
     GeneratedDoc,
     GraphDoc,
     LLMParamsDoc,
+    LLMPromptTemplate,
     LVMDoc,
     RAGASParams,
     RAGASScores,

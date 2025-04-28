@@ -24,7 +24,8 @@ export const parseServicesParameters = (
     streaming,
     search_type,
     k,
-    prompt_template,
+    user_prompt_template,
+    system_prompt_template,
     distance_threshold,
     fetch_k,
     lambda_mult,
@@ -54,7 +55,10 @@ export const parseServicesParameters = (
       score_threshold,
     },
     rerankerArgs: { top_n, rerank_score_threshold },
-    promptTemplate: prompt_template,
+    promptTemplateArgs: {
+      user_prompt_template,
+      system_prompt_template,
+    },
     inputGuardArgs: input_guardrail_params as LLMInputGuardArgs,
     outputGuardArgs: output_guardrail_params as LLMOutputGuardArgs,
   };

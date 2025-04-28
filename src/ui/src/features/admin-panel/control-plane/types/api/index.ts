@@ -4,6 +4,7 @@
 import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
 import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
 import { LLMArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
+import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
 import { RerankerArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import { RetrieverArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import {
@@ -30,7 +31,7 @@ export interface FetchedServicesParameters {
   llmArgs?: LLMArgs;
   retrieverArgs?: RetrieverArgs;
   rerankerArgs?: RerankerArgs;
-  promptTemplate?: string;
+  promptTemplateArgs?: PromptTemplateArgs;
   inputGuardArgs?: LLMInputGuardArgs;
   outputGuardArgs?: LLMOutputGuardArgs;
 }
@@ -57,7 +58,8 @@ export interface AppendArgumentsParameters {
   score_threshold: number;
   rerank_score_threshold: number | null;
   top_n: number;
-  prompt_template: string;
+  user_prompt_template: string;
+  system_prompt_template: string;
   input_guardrail_params: {
     [key: string]: {
       [key: string]: string | number | boolean | string[] | undefined | null;

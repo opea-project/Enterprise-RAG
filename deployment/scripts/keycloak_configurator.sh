@@ -16,6 +16,8 @@ HTTP_CODE=""
 
 SSO_SESSION_MAX_LIFESPAN=10800
 SSO_SESSION_IDLE_TIMEOUT=1800
+PAR_REQUEST_URI_LIFESPAN=240
+CURL_RETRY_LIMIT=1
 REALM_DEFAULT_SIGNATURE_ALGORITHM='"RS384"'
 
 source $repo_path/deployment/credentials_utils.sh
@@ -44,6 +46,7 @@ function curl_keycloak() {
     local json=$2
     local method=${3:-POST}
     local response=""
+    local retry_count=${4:-0}
 
     response=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" "$url" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -52,6 +55,10 @@ function curl_keycloak() {
 
     if [[ "$response" =~ ^2 ]]; then
         return 0
+    elif [[ "$response" == 401 && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
+        print_log "Access token expired. Retrying with a new token..."
+        get_access_token
+        curl_keycloak "$url" "$json" "$method" $((retry_count + 1))
     elif [[ "$response" == 409 ]]; then
         HTTP_CODE=$response
         return 1
@@ -67,15 +74,32 @@ function curl_keycloak() {
     fi
 }
 
+function curl_get_id() {
+    local url=$1
+    local retry_count=${2:-0}
+    local response=""
+
+    response=$(curl -s -X GET "$url" \
+        -H "Authorization: Bearer $ACCESS_TOKEN" \
+        -H "Content-Type: application/json")
+
+    # Check for 401 and retry if within retry limit
+    if [[ "$(echo "$response" | jq -e '.error? // empty')" =~ "HTTP 401 Unauthorized" && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
+        get_access_token
+        curl_get_id "$url" $((retry_count + 1))
+    else
+        echo "$response"
+    fi
+}
+
 function get_client_id() {
     local realm_name=$1
     local client_name=$2
     local url="${KEYCLOAK_URL}/admin/realms/$realm_name/clients"
 
     local client_id=""
-    client_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "clientId" --arg value "$client_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    client_id=$(curl_get_id "$url")
+    client_id=$(echo $client_id | jq -r --arg key "clientId" --arg value "$client_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$client_id"
 }
@@ -86,9 +110,8 @@ function get_group_id() {
     local url="${KEYCLOAK_URL}/admin/realms/$realm_name/groups"
 
     local group_id=""
-    group_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$group_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    group_id=$(curl_get_id "$url")
+    group_id=$(echo $group_id | jq -r --arg key "name" --arg value "$group_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$group_id"
 }
@@ -99,9 +122,8 @@ function get_realm_role_id() {
     local url="${KEYCLOAK_URL}/admin/realms/$realm_name/roles"
 
     local role_id=""
-    role_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    role_id=$(curl_get_id "$url")
+    role_id=$(echo $role_id | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$role_id"
 }
@@ -115,9 +137,8 @@ function get_client_role_id() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_id}/roles"
 
     local role_id=""
-    role_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    role_id=$(curl_get_id "$url")
+    role_id=$(echo $role_id | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$role_id"
 }
@@ -128,9 +149,8 @@ function get_user_id() {
     local url="${KEYCLOAK_URL}/admin/realms/$realm_name/users"
 
     local user_id=""
-    user_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "username" --arg value "$username" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    user_id=$(curl_get_id "$url")
+    user_id=$(echo $user_id | jq -r --arg key "username" --arg value "$username" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$user_id"
 }
@@ -145,9 +165,8 @@ function get_resource_id() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_id}/authz/resource-server/resource"
 
     local resource_id=""
-    resource_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$resource_name" '.[] | select(.[$key] == $value)' | jq -r '._id')
+    resource_id=$(curl_get_id "$url")
+    resource_id=$(echo $resource_id | jq -r --arg key "name" --arg value "$resource_name" '.[] | select(.[$key] == $value)' | jq -r '._id')
 
     echo "$resource_id"
 }
@@ -161,9 +180,8 @@ function get_policy_id() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_id}/authz/resource-server/policy"
 
     local policy_id=""
-    policy_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$policy_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    policy_id=$(curl_get_id "$url")
+    policy_id=$(echo $policy_id | jq -r --arg key "name" --arg value "$policy_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$policy_id"
 }
@@ -175,9 +193,8 @@ function get_global_client_scope_id() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/client-scopes"
 
     local scope_id=""
-    scope_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    scope_id=$(curl_get_id "$url")
+    scope_id=$(echo $scope_id | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$scope_id"
 }
@@ -192,9 +209,8 @@ function get_client_client_scope_id() {
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_id}/optional-client-scopes"
 
     local scope_id=""
-    scope_id=$(curl -s -X GET "$url" \
-        -H "Authorization: Bearer $ACCESS_TOKEN" \
-        -H "Content-Type: application/json" | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    scope_id=$(curl_get_id "$url")
+    scope_id=$(echo $scope_id | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$scope_id"
 }
@@ -369,7 +385,10 @@ function set_realm_timeouts() {
     "ssoSessionIdleTimeout": '"$SSO_SESSION_IDLE_TIMEOUT"',
     "ssoSessionMaxLifespan": '"$SSO_SESSION_MAX_LIFESPAN"',
     "clientSessionIdleTimeout": '"$SSO_SESSION_IDLE_TIMEOUT"',
-    "clientSessionMaxLifespan": '"$SSO_SESSION_MAX_LIFESPAN"'
+    "clientSessionMaxLifespan": '"$SSO_SESSION_MAX_LIFESPAN"',
+    "attributes": {
+        "parRequestUriLifespan": '"$PAR_REQUEST_URI_LIFESPAN"'
+        }
     }'
 
     if curl_keycloak "$url" "$TIMEOUT_REALM_JSON" "PUT"; then
@@ -724,10 +743,10 @@ assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "ERAG-user" "EnterpriseRAG
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "ERAG-admin" "EnterpriseRAG-oidc-backend"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "ERAG-user" "EnterpriseRAG-oidc-backend"
 
-set_realm_timeouts "$KEYCLOAK_REALM"
-set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 set_realm_signature_algorithms "$KEYCLOAK_REALM"
 set_realm_signature_algorithms "$KEYCLOAK_DEFAULT_REALM"
+set_realm_timeouts "$KEYCLOAK_REALM"
+set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 
 # Minio
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://minio.erag.com' baseUrl='https://minio.erag.com' redirectUris='https://minio.erag.com/oauth_callback'"

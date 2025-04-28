@@ -42,8 +42,12 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.ingestion.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "helm-edp.vllm.name" -}}
+{{- default .Chart.Name .Values.vllm.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "helm-edp.noProxyWithContainers" -}}
-{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
 {{- define "helm-edp.awsSqs.name" -}}
@@ -140,6 +144,14 @@ ingestion labels
 */}}
 {{- define "helm-edp.ingestion.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "helm-edp.ingestion.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+vllm labels
+*/}}
+{{- define "helm-edp.vllm.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.vllm.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 

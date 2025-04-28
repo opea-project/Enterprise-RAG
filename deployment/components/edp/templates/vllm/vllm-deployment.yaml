@@ -1,17 +1,18 @@
+{{- if .Values.vllm.enabled -}}
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.dataprep.nameOverride | default (include "helm-edp.fullname" .) }}
+  name: {{ .Values.vllm.nameOverride | default (include "helm-edp.fullname" .) }}
   labels:
     {{- include "helm-edp.selectorLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.dataprep.replicas }}
+  replicas: {{ .Values.vllm.replicas }}
   selector:
     matchLabels:
-      {{- include "helm-edp.dataprep.selectorLabels" . | nindent 6 }}
+      {{- include "helm-edp.vllm.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -19,7 +20,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "helm-edp.dataprep.selectorLabels" . | nindent 8 }}
+        {{- include "helm-edp.vllm.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -28,41 +29,16 @@ spec:
       serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      {{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
-      initContainers:
-        - name: wait-for-vllm-server
-          image: alpine/curl
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          env:
-            - name: VLLM_SERVER_ENDPOINT
-              valueFrom:
-                configMapKeyRef:
-                  name: edp-dataprep-configmap
-                  key: VLLM_SERVER_ENDPOINT
-          command:
-            - sh
-            - -c
-            - |
-                if [ -z "$VLLM_SERVER_ENDPOINT" ]; then
-                  echo "Environment variable VLLM_SERVER_ENDPOINT is not set. Skipping the init container.";
-                else
-                  until curl -s $VLLM_SERVER_ENDPOINT; do
-                    echo "waiting for vllm model server $VLLM_SERVER_ENDPOINT to be ready...";
-                    sleep 2;
-                  done;
-                fi;
-      {{- end }}
       containers:
-        - name: {{ .Values.dataprep.nameOverride }}
+        - name: {{ .Values.vllm.nameOverride }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
           {{ if .Values.alternateTagging }}
-          image: {{ .Values.dataprep.repository }}:{{ .Values.dataprep.name }}_{{ .Values.dataprep.tag | default .Chart.AppVersion }}
+          image: {{ .Values.vllm.repository }}:{{ .Values.vllm.name }}_{{ .Values.vllm.tag | default .Chart.AppVersion }}
           {{ else }}
-          image: {{ .Values.dataprep.repository }}/{{ .Values.dataprep.name }}:{{ .Values.dataprep.tag | default .Chart.AppVersion }}
+          image: {{ .Values.vllm.repository }}/{{ .Values.vllm.name }}:{{ .Values.vllm.tag | default .Chart.AppVersion }}
           {{ end }}
-          imagePullPolicy: {{ .Values.dataprep.pullPolicy }}
+          imagePullPolicy: {{ .Values.vllm.pullPolicy }}
           env:
           {{- if .Values.proxy.httpProxy }}
             - name: http_proxy
@@ -76,17 +52,42 @@ spec:
             - name: no_proxy
               value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
           {{- end }}
-          {{- if .Values.dataprep.environment }}
-            {{- toYaml .Values.dataprep.environment | nindent 12 }}
+          {{- if .Values.vllm.environment }}
+            {{- toYaml .Values.vllm.environment | nindent 12 }}
           {{- end }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: edp-hf-token-secret
+                  key: HF_TOKEN
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
           envFrom:
-            - secretRef:
-                name: vector-database-config
             - configMapRef:
-                name: edp-dataprep-configmap
+                name: edp-vllm-configmap
+          args:
+            - --model
+            - "$(LLM_VLLM_MODEL_NAME)"
+            - --port
+            - "8008"
+            - --device
+            - "cpu"
+            - --tensor-parallel-size
+            - "$(VLLM_TP_SIZE)"
+            - --pipeline-parallel-size
+            - "$(VLLM_PP_SIZE)"
+            - --dtype
+            - "$(VLLM_DTYPE)"
+            - --max_model_len
+            - "$(VLLM_MAX_MODEL_LEN)"
+            - --max-num-seqs
+            - "$(VLLM_MAX_NUM_SEQS)"
+            - --disable-log-requests
           ports:
             - name: http
-              containerPort: 9399
+              containerPort: 8008
               protocol: TCP
           volumeMounts:
             - mountPath: /tmp
@@ -112,7 +113,10 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- toYaml .Values.dataprep.resources | nindent 12 }}
+            {{- toYaml .Values.vllm.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -125,6 +129,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      volumes:
-        - name: tmp
-          emptyDir: {}
+{{- end }}

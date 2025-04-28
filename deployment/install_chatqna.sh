@@ -63,6 +63,7 @@ TAG="latest"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
 FEATURES=""
+EDP_DATAPREP_TYPE="normal"
 
 available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
 
@@ -88,6 +89,7 @@ function usage() {
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--dpguard: Create Dataprep Guardrail."
+    echo -e "\t--edp-dataprep-type: Choose type of dataprep: normal or hierarchical. (default normal)"
     echo -e "\t-ep|--enforce-pss: Enforce strict pod security policies."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
@@ -128,6 +130,13 @@ function validate_deployment_settings() {
             print_log "Warning: $proxy is empty in $values_file but set in the environment. Consider updating the values file."
         fi
     done
+
+    local edp_values_file="${edp_path}/values.yaml"
+
+    if [[ -z $(grep -E "^hfToken: " "$edp_values_file" | awk '{print $2}' | xargs) ]]; then
+        print_log "Error: The hfToken value is required and must be set in $edp_values_file"
+        exit 1
+    fi
 }
 
 function helm_install() {
@@ -721,6 +730,7 @@ function start_ui() {
 
 function start_edp() {
     local pipeline=$1
+    local edp_dataprep_type=$2
     print_header "Start Enhanced Dataprep"
 
     # Update redis password in chatQnA pipeline's manifest
@@ -780,6 +790,17 @@ function start_edp() {
     if $dpguard; then
         print_log "Enabling Dataprep Guardrail"
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true --set dpguard.tag=$TAG"
+    fi
+
+    if [[ "$edp_dataprep_type" == "hierarchical" ]]; then
+        print_log "Enabling Hierarchical Dataprep"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep"
+
+        if [[ "$pipeline" == *"xeon"* ]]; then
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.vllm_server_endpoint=http://vllm-service-m.chatqa.svc:8000" # Use existing vllm-cpu server
+        else
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set vllm.enabled=true" # Spin up new vllm-cpu server
+        fi
     fi
 
     helm dependency update "$edp_path" > /dev/null
@@ -955,6 +976,15 @@ while [[ "$#" -gt 0 ]]; do
         --dpguard)
             dpguard=true
             ;;
+        --edp-dataprep-type)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --edp-dataprep-type. Please provide a valid dataprep type."
+                usage
+                exit 1
+            fi
+            EDP_DATAPREP_TYPE=$1
+            ;;
         --no-mesh)
             mesh_flag=false
             ;;
@@ -1082,7 +1112,7 @@ fi
 
 
 HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY --set image.ui.tag=$TAG"
-HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY --set celery.tag=$TAG --set flower.repository=$REGISTRY --set flower.tag=$TAG --set backend.repository=$REGISTRY --set backend.tag=$TAG --set dataprep.repository=$REGISTRY --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY --set dpguard.tag=$TAG"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY --set celery.tag=$TAG --set flower.repository=$REGISTRY --set flower.tag=$TAG --set backend.repository=$REGISTRY --set backend.tag=$TAG --set dataprep.repository=$REGISTRY --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY --set dpguard.tag=$TAG --set vllm.repository=$REGISTRY --set vllm.tag=$TAG"
 if $use_alternate_tagging; then
     HELM_INSTALL_UI_DEFAULT_ARGS="$HELM_INSTALL_UI_DEFAULT_ARGS --set alternateTagging=true"
     HELM_INSTALL_EDP_DEFAULT_ARGS="$HELM_INSTALL_EDP_DEFAULT_ARGS --set alternateTagging=true"
@@ -1134,7 +1164,7 @@ if $ui_flag; then
 fi
 
 if $edp_flag && ! $clear_any_flag; then
-    start_edp "$PIPELINE"
+    start_edp "$PIPELINE" "$EDP_DATAPREP_TYPE"
     updated_ns_list+=($ENHANCED_DATAPREP_NS)
 fi
 

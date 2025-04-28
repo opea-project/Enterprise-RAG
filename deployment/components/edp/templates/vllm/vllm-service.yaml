@@ -1,0 +1,20 @@
+{{- if .Values.vllm.enabled -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.vllm.nameOverride | default (include "helm-edp.fullname" .) }}
+  labels:
+    {{- include "helm-edp.vllm.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8008
+      targetPort: 8008
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "helm-edp.vllm.selectorLabels" . | nindent 4 }}
+{{- end }}

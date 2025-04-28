@@ -9,3 +9,8 @@ metadata:
 data:
   CHUNK_SIZE: {{ .Values.dataprep.config.chunk_size | quote }}
   CHUNK_OVERLAP: {{ .Values.dataprep.config.chunk_overlap | quote }}
+{{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
+  VLLM_SERVER_ENDPOINT: {{ .Values.dataprep.config.vllm_server_endpoint | quote }}
+  SUMMARY_MODEL_NAME: {{ .Values.dataprep.config.summary_model_name | quote }}
+  MAX_NEW_TOKENS: {{ .Values.dataprep.config.max_new_tokens | quote }}
+{{- end }}

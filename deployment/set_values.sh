@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 HELM_VALUES_PATH=components/gmc/microservices-connector/helm/values.yaml
+EDP_HELM_VALUES_PATH=components/edp/values.yaml
 
 # Function to display usage information
 usage() {
@@ -24,6 +25,15 @@ if [ -n "$value" ]; then
 fi
 }
 
+update_edp_helm_value() {
+    local key="$1"
+    local value="$2"
+
+    if [ -n "$value" ]; then
+        sed -i -E "s#(${key}) \"(.*)\"#\1 \"${value}\"#g" "$EDP_HELM_VALUES_PATH"
+    fi
+}
+
 # Parse command-line arguments; using RAG_* to prevent from pre exported variables
 # !TODO this should be changed to use non-positional parameters
 while getopts "p:u:n:g:r:f:t:" opt; do
@@ -41,6 +51,7 @@ done
 
 # Change values if RAG
 if [ -n "$RAG_HUG_TOKEN" ]; then update_helm_value ".*hugToken:" "$RAG_HUG_TOKEN" ;fi
+if [ -n "$RAG_HUG_TOKEN" ]; then update_edp_helm_value ".*hfToken:" "$RAG_HUG_TOKEN" ;fi
 if [ -n "$RAG_REPOSITORY" ]; then update_helm_value "^common_registry: &repo" "$RAG_REPOSITORY" ;fi
 if [ -n "$RAG_TAG" ]; then update_helm_value "^common_tag: &tag" "$RAG_TAG" ;fi
 if [ -n "$RAG_HTTP_PROXY" ]; then update_helm_value "httpProxy:" "$RAG_HTTP_PROXY" ;fi

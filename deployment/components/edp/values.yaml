@@ -33,6 +33,8 @@ redisPassword: ""
 postgresDatabasePassword: "" # set by install_chatqna.sh
 postgresAdminPassword: "" # set by install_chatqna.sh
 
+hfToken: "" # set by set_values.sh
+
 minio:
   persistence:
     enabled: true
@@ -507,6 +509,9 @@ dataprep:
   config:
     chunk_size: "512"
     chunk_overlap: "64"
+    vllm_server_endpoint: "http://edp-vllm:8008"
+    summary_model_name: "Intel/neural-chat-7b-v3-3"
+    max_new_tokens: "100"
   resources:
     requests:
       cpu: "8"
@@ -603,6 +608,31 @@ ingestion:
     limits:
       cpu: "4"
       memory: "4Gi"
+
+vllm:
+  enabled: false
+  config:
+    modelName: "Intel/neural-chat-7b-v3-3"
+    cpuKvcacheSpace: "40"
+    dtype: "bfloat16"
+    maxNumSeqs: "256"
+    skipWarmup: "true"
+    tpSize: "1"
+    ppSize: "1"
+    maxModelLen: "4096"
+  nameOverride: "edp-vllm"
+  name: "vllm-cpu"
+  repository: "localhost:5000/erag"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  resources:
+    requests:
+      cpu: "32"
+      memory: "64Gi"
+    limits:
+      cpu: "32"
+      memory: "100Gi"
 
 awsSqs:
   environment:

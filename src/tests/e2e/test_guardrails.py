@@ -30,7 +30,7 @@ def test_in_guard_anonymize(guard_helper):
 
 
 @allure.testcase("IEASG-T73")
-def test_in_guard_ban_code(guard_helper):
+def test_in_guard_ban_code(guard_helper, code_snippets):
     """
     Enable "ban_code" input scanner and check if questions containing code samples are rejected.
     Check both (MODEL_SM and MODEL_TINY) models.
@@ -45,7 +45,7 @@ def test_in_guard_ban_code(guard_helper):
             "threshold": 0.9
         }
         guard_helper.setup(GuardType.INPUT, "ban_code", guard_params)
-        for language, code_snippet in guard_helper.code_snippets().items():
+        for language, code_snippet in code_snippets().items():
             status_code, response = guard_helper.call_chatqa(code_snippet)
             if status_code != 466:
                 languages_not_banned.append(f"{language} ({model})")
@@ -83,6 +83,7 @@ def test_in_guard_ban_competitors(guard_helper):
     guard_helper.assert_allowed(questions.INTEL)
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T75")
 def test_in_guard_ban_substrings(guard_helper):
     """
@@ -157,7 +158,7 @@ def test_in_guard_ban_topics(guard_helper):
 
 
 @allure.testcase("IEASG-T77")
-def test_in_guard_code(guard_helper):
+def test_in_guard_code(guard_helper, code_snippets):
     """
     Enable "code" input scanner with some languages that should be blocked.
     Check if questions containing code snippets in a language from the list are rejected.
@@ -170,16 +171,16 @@ def test_in_guard_code(guard_helper):
         "threshold": 0.95
     }
     guard_helper.setup(GuardType.INPUT, "code", guard_params)
-    code_snippets = guard_helper.code_snippets()
+    snippets = code_snippets()
 
     # Python and JavaScript related questions should be blocked
     for language_key in ["javascript", "python", "python_with_plain_text"]:
-        guard_helper.assert_blocked(code_snippets[language_key], reason="it is in language that is marked as blocked")
+        guard_helper.assert_blocked(snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
     for language_key in ["c++", "ruby"]:
         guard_helper.assert_allowed(
-            code_snippets[language_key], reason="it is in language that is not marked as blocked")
+            snippets[language_key], reason="it is in language that is not marked as blocked")
 
 
 @allure.testcase("IEASG-T78")
@@ -271,6 +272,7 @@ def test_in_guard_regex(guard_helper):
     assert "12345" in response
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T85")
 def test_in_guard_secrets(guard_helper):
     """Check if scanner detects secrets (like token, keys)"""

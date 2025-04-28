@@ -40,6 +40,7 @@ def cleanup(edp_helper):
             edp_helper.delete_link(link["id"])
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T120")
 def test_edp_list_files(edp_helper):
     """Check whether the list of files is returned correctly"""
@@ -48,6 +49,7 @@ def test_edp_list_files(edp_helper):
     logger.info(f"Files: {response.json()}")
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T121")
 def test_edp_upload_file(edp_helper):
     """Upload a file using presigned URL. Wait for the file to be in ingested state"""
@@ -60,6 +62,7 @@ def test_edp_upload_file(edp_helper):
         edp_helper.wait_for_file_upload(file_basename, "ingested", timeout=60)
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T122")
 def test_edp_delete_file(edp_helper):
     """Delete a file using presigned URL. Wait for the file to be removed from the list"""
@@ -82,6 +85,7 @@ def test_edp_huge_file_upload(edp_helper):
     edp_helper.upload_test_file(size=63, prefix=method_name(), status="ingested", timeout=10800)
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T124")
 def test_edp_cancel_task(edp_helper):
     """Upload a large file and cancel the processing task"""
@@ -170,6 +174,7 @@ def test_edp_cancel_already_ingested_task(edp_helper):
     assert response.status_code == 404, f"Unexpected status code. Response: {response.text}"
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T132")
 def test_edp_list_links(edp_helper):
     """Check whether the list of links is returned correctly"""
@@ -181,6 +186,7 @@ def test_edp_list_links(edp_helper):
         pytest.fail(f"Failed to decode JSON response. Response: {response.text}")
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T133")
 def test_edp_upload_links(edp_helper):
     """Upload a couple of valid links and verify that they appear in the list of links"""
@@ -202,6 +208,7 @@ def test_edp_upload_links(edp_helper):
         edp_helper.wait_for_link_upload(link, "ingested", timeout=300)
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T134")
 def test_edp_delete_link(edp_helper):
     """Upload a link and delete it. Verify that the link is no longer in the list of links"""
@@ -345,6 +352,7 @@ def test_edp_upload_to_nonexistent_bucket(edp_helper):
                                                     f"to nonexistent bucket. Response: {response.text}")
 
 
+@pytest.mark.smoke
 @allure.testcase("IEASG-T155")
 def test_edp_list_buckets(edp_helper):
     """Check whether the list of buckets is returned correctly"""

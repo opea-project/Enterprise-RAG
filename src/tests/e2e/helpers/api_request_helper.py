@@ -233,3 +233,8 @@ class ApiRequestHelper:
                 timeout=10
             )
             return response
+
+    def words_in_response(self, substrings, response):
+        """Returns true if any of the substrings appear in the response strings"""
+        response = response.lower()
+        return any(substring in response for substring in substrings)

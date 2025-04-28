@@ -123,3 +123,26 @@ def generic_api_helper():
 @pytest.fixture(scope="session")
 def guard_helper(chatqa_api_helper, fingerprint_api_helper):
     return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
+
+
+@pytest.fixture(scope="session")
+def code_snippets():
+    """
+    Reads code snippet files from a specified directory and returns
+    a dictionary mapping each snippet's name (without the file extension)
+    to its content.
+    """
+    def _code_snippets(snippets_dir=None):
+        code_snippets = {}
+        if snippets_dir is None:
+            snippets_dir = "files/code_snippets"
+
+        for filename in os.listdir(snippets_dir):
+            file_path = os.path.join(snippets_dir, filename)
+            with open(file_path, 'r') as file:
+                content = file.read()
+                name_without_extension = os.path.splitext(filename)[0]
+                code_snippets[name_without_extension] = content
+        return code_snippets
+
+    return _code_snippets

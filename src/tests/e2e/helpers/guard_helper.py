@@ -5,7 +5,6 @@
 
 import logging
 from enum import Enum
-import os
 import time
 
 logger = logging.getLogger(__name__)
@@ -313,31 +312,6 @@ class GuardHelper:
         status_code, response_text = self.call_chatqa(question)
         assert "We sanitized the answer due to the guardrails policies" in response_text, "Output should be truncated"
         return response_text
-
-    def code_snippets(self, snippets_dir=None):
-        """
-        Reads code snippet files from a specified directory and returns
-        a dictionary mapping each snippet's name (without the file extension)
-        to its content.
-        """
-        code_snippets = {}
-        if snippets_dir is None:
-            snippets_dir = "files/code_snippets"
-
-        for filename in os.listdir(snippets_dir):
-            file_path = os.path.join(snippets_dir, filename)
-            with open(file_path, 'r') as file:
-                content = file.read()
-                name_without_extension = os.path.splitext(filename)[0]
-                code_snippets[name_without_extension] = content
-        return code_snippets
-
-    def code_snippet(self, snippets_dir, snippet_name):
-        """
-        Reads a code snippet file from a specified directory and returns its content.
-        """
-        code_snippets = self.code_snippets(snippets_dir)
-        return code_snippets[snippet_name]
 
     def disable_all_guards(self):
         """Disable all input and output guards"""

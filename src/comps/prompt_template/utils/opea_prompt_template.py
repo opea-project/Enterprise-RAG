@@ -20,7 +20,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 class OPEAPromptTemplate:
     def __init__(self):
         self._if_conv_history_in_prompt = False
-        self._conversation_history_placeholder = "previous_questions"
+        self._conversation_history_placeholder = "conversation_history"
         self.ch_handler = ConversationHistoryHandler()
         try:
             self._validate(default_system_template, default_user_template)
@@ -78,7 +78,7 @@ class OPEAPromptTemplate:
 
         if self._conversation_history_placeholder not in extra_placeholders:
             logger.warning("A placeholder for conversation history is missing. LLM will not remember previous answers. " +
-                           "Add {previous_questions} placeholder if you want to add the conversation to LLM.")
+                           "Add {conversation_history} placeholder if you want to add the conversation to LLM.")
             self._if_conv_history_in_prompt = False
         else:
             self._if_conv_history_in_prompt = True

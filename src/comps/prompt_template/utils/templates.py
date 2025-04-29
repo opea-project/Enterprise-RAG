@@ -8,7 +8,7 @@ Refer also to the conversation history if you think it is relevant to the curren
 Ignore all information that you think is not relevant to the question. \
 If you don't know the answer to a question, please don't share false information. \
 ### Search results: {reranked_docs} \n
-### Conversation history: {previous_questions} \n
+### Conversation history: {conversation_history} \n
 """
 
 template_user_english = """

@@ -298,6 +298,82 @@ def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper)
     assert not chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
 
 
+@allure.testcase("IEASG-T176")
+def test_adoc_basic(edp_helper, chatqa_api_helper):
+    """Validate basic *.adoc files support and learning capabilities"""
+    # 1. Test lists
+    question = "What did Grendal Nuvrick see when he woke up?"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.adoc", question)
+    assert "squirrel" in response.lower(), UNRELATED_RESPONSE_MSG
+
+    # 2. Test titles
+    question = "What are the titles in the story about Grendal Nuvrick?"
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(["strange", "end"], response), UNRELATED_RESPONSE_MSG
+
+    # 3. Text formatting
+    question = "What did Grendal Nuvrick say when he saw the squirrel?"
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(["not", "normal"], response), UNRELATED_RESPONSE_MSG
+    question = "What did Grendal Nuvrick say when he opened the door and smiled?"
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(["think", "stay"], response), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T177")
+def test_adoc_recognized_as_troff_mime_type(edp_helper, chatqa_api_helper):
+    """
+    Upload a file with 'text/troff' mime type.
+    Check if the file is recognized as adoc.
+    Ask a question related to the content of the file.
+    """
+    question = " What category does Flornax Quibit belong to?"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_troff_mime_type.adoc", question)
+    assert "hardware" in response.lower(), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T178")
+def test_adoc_links(edp_helper, chatqa_api_helper):
+    """Check if links are properly extracted from the adoc file"""
+    question = "Give me a link to the website that describes the story of a man named Snorflina Quibbledew"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_links.adoc", question)
+    assert "https://pppoooiiiuuu.org" in response.lower(), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T179")
+def test_adoc_tables(edp_helper, chatqa_api_helper):
+    """Validate if tables are recognized in the adoc file"""
+    # 1. Test tables in a standard format
+    question = " What category does Flornax Quibit belong to?"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_tables.adoc", question)
+    assert "homeware" in response.lower(), UNRELATED_RESPONSE_MSG
+    # 2. Test tables in csv format
+    question = "What is the price for Myzterna Flux?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "42" in response, UNRELATED_RESPONSE_MSG
+    # 3. Test tables with merged cells
+    question = "Give me a description of the product called 'Luminoid Krux'"
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(["compact", "light", "cube"], response), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T180")
+def test_adoc_source_code(edp_helper, chatqa_api_helper):
+    """Put a code block in the adoc file and check if it is recognized"""
+    question = ("What does the dockerfile set up? I refer to "
+                "'Example Dockerfile with Explanations' document created by LipTanBuTan")
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_source_code.adoc", question)
+    assert chatqa_api_helper.words_in_response(["flask", "python", "web"], response), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T181")
+def test_adoc_substitutions(edp_helper, chatqa_api_helper):
+    """Check if substitutions are recognized in the text (*.adoc file)"""
+    question = "What village did Plonka Nibbertwist live in?"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_substitutions.adoc", question)
+    assert "zumbleflick" in response.lower(), UNRELATED_RESPONSE_MSG
+
+
 def delete_and_ask_question(edp_helper, chatqa_api_helper, file, question):
     response = edp_helper.generate_presigned_url(file, "DELETE")
     edp_helper.delete_file(response.json().get("url"))

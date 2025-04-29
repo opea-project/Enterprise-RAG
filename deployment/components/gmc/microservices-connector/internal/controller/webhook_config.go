@@ -31,6 +31,15 @@ const (
 var (
 	logw           = logf.Log.WithName("WebhookConfig")
 	validatingPath = fmt.Sprintf("/validate-%s-%s-%s", strings.Replace(apiGroup, ".", "-", 2), apiVersion, resource)
+
+	workingNs = func() string {
+		ns := os.Getenv("TARGET_NAMESPACE")
+		if ns == "" {
+			ns = "chatqa"
+			_log.Info("TARGET_NAMESPACE environment variable is not set. Defaulting to " + ns)
+		}
+		return ns
+	}()
 )
 
 func GetEnvWithDefault(key, defaultValue string) string {

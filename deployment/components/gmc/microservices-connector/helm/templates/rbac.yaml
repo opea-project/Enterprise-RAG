@@ -15,10 +15,12 @@ metadata:
 automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
 {{- end }}
 ---
+{{- $clusterRoleName := include "gmc.fullname" . | printf "%s-manager-role" }}
+{{- if not (lookup "rbac.authorization.k8s.io/v1" "ClusterRole" "" $clusterRoleName) }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "gmc.fullname" . }}-manager-role
+  name: {{ $clusterRoleName }}
 rules:
 - apiGroups:
   - ""
@@ -95,17 +97,18 @@ rules:
   - patch
   - update
   - watch
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
     {{- include "gmc.labels" . | nindent 4 }}
-  name: {{ include "gmc.fullname" . }}-manager-rolebinding
+  name: {{ include "gmc.fullname" . }}-manager-rolebinding-{{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "gmc.fullname" . }}-manager-role
+  name: {{ $clusterRoleName }}
 subjects:
 - kind: ServiceAccount
   name: {{ include "gmc.serviceAccountName" . }}

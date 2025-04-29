@@ -70,7 +70,6 @@ const (
 	dplymtSubfix             = "-deployment"
 	METADATA_PLATFORM        = "gmc/platform"
 	DefaultRouterServiceName = "router-service"
-	GMCConfigMapName         = "gmc-config"
 	ASR                      = "Asr"
 	TTS                      = "Tts"
 	SpeechT5                 = "SpeechT5"
@@ -119,6 +118,15 @@ var yamlDict = map[string]string{
 
 var (
 	_log = ctrl.Log.WithName("GMC")
+
+	GMCConfigMapName = func() string {
+		gmcName := os.Getenv("GMC_CONFIGMAP_NAME")
+		if gmcName == "" {
+			gmcName = "gmc-config"
+			_log.Info("GMC_CONFIGMAP_NAME environment variable is not set. Defaulting to " + gmcName)
+		}
+		return gmcName
+	}()
 )
 
 // GMConnectorReconciler reconciles a GMConnector object
@@ -815,10 +823,17 @@ func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceTy
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	namespace, _, err := kubeConfig.Namespace()
-	if err != nil {
-		_log.Error(err, "Failed to get namespace from kubeconfig")
-		return nil, err
+	namespace := os.Getenv("NAMESPACE")
+	var err error
+
+	if namespace == "" {
+		_log.Info("Warning: NAMESPACE environment variable is not set, trying to use kubeconfig namespace for the service")
+
+		namespace, _, err = kubeConfig.Namespace()
+		if err != nil {
+			_log.Error(err, "Failed to get namespace from kubeconfig")
+			return nil, err
+		}
 	}
 
 	configMap := &corev1.ConfigMap{}
@@ -833,7 +848,7 @@ func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceTy
 	if tmpltFile == "" {
 		return nil, errors.New("unexpected target")
 	}
-	
+
 	if configMap != nil {
 		_log.Info("[DEBUG] Configmap found", "configMapName", GMCConfigMapName, "namespace", namespace)
 		yamlName := strings.TrimPrefix(tmpltFile, yaml_dir)
@@ -1164,13 +1179,35 @@ func isDeploymentStatusChanged(e event.UpdateEvent) bool {
 
 }
 
+func isInWorkingNamespace(namespace string) bool {
+	return namespace == workingNs
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *GMConnectorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// logging the working namespace
+	_log.Info("Setting up controller with manager ", "namespace", workingNs)
+
 	// Predicate to ignore updates to status subresource
 	gmcfilter := predicate.Funcs{
 		UpdateFunc: isGMCSpecOrMetadataChanged,
 		// Other funcs like CreateFunc, DeleteFunc, GenericFunc can be left as default
 		// if you only want to customize the UpdateFunc behavior.
+	}
+
+	nsFilter := predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			return isInWorkingNamespace(e.Object.GetNamespace())
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			return isInWorkingNamespace(e.ObjectNew.GetNamespace())
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return isInWorkingNamespace(e.Object.GetNamespace())
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return isInWorkingNamespace(e.Object.GetNamespace())
+		},
 	}
 
 	// Predicate to only trigger on status changes for Deployment
@@ -1198,16 +1235,16 @@ func (r *GMConnectorReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mcv1alpha3.GMConnector{}, builder.WithPredicates(gmcfilter)).
+		For(&mcv1alpha3.GMConnector{}, builder.WithPredicates(predicate.And(gmcfilter, nsFilter))).
 		Watches(
 			&appsv1.Deployment{},
 			&handler.EnqueueRequestForObject{},
-			builder.WithPredicates(deploymentFilter),
+			builder.WithPredicates(predicate.And(deploymentFilter, nsFilter)),
 		).
 		Watches(
 			&corev1.ConfigMap{},
 			&handler.EnqueueRequestForObject{},
-			builder.WithPredicates(configMapFilter),
+			builder.WithPredicates(predicate.And(configMapFilter, nsFilter)),
 		).
 		Complete(r)
 }

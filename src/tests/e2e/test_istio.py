@@ -17,7 +17,8 @@ http_endpoints = [
     "fgp-svc.chatqa.svc.cluster.local:6012",
     "input-scan-svc.chatqa.svc.cluster.local:8050",
     "llm-svc.chatqa.svc.cluster.local:9000",
-    "output-scan-svc.chatqa.svc.cluster.local:8060",
+    # Output guards disabled
+    # "output-scan-svc.chatqa.svc.cluster.local:8060",
     "prompt-template-svc.chatqa.svc.cluster.local:7900",
     "redis-vector-db.chatqa.svc.cluster.local:6379",
     "reranking-svc.chatqa.svc.cluster.local:8000",

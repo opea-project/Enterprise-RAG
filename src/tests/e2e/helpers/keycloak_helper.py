@@ -12,7 +12,7 @@ import os
 import requests
 
 logger = logging.getLogger(__name__)
-DEFAULT_CREDENTIALS_PATH = "../../deployment/default_credentials.txt"
+DEFAULT_CREDENTIALS_PATH = "../../deployment/ansible-logs/default_credentials.txt"
 
 
 class CredentialsNotFound(Exception):
@@ -84,7 +84,7 @@ class KeycloakHelper:
 
     def _retrieve_admin_password(self):
         """Retrieve the admin password from the keycloak secret"""
-        keycloak_secret_name = "keycloak"
+        keycloak_secret_name = "keycloak-password"
         logger.debug(f"Retrieving the admin password from the '{keycloak_secret_name}' secret")
         secrets = kr8s.get("secrets", namespace="auth")
         for secret in secrets:

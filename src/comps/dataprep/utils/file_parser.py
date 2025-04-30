@@ -51,7 +51,9 @@ class FileParser:
 
     def default_mappings(self):
         return [
-            {'file_type': 'adoc',  'loader_file_name': 'load_adoc',  'loader_class': 'LoadAsciiDoc', 'mime_type': 'text/plain'},
+            # Magic library tends to return multiple mime types for a file, so we need to split them
+            # and check if any of them match the file type
+            {'file_type': 'adoc',  'loader_file_name': 'load_adoc',  'loader_class': 'LoadAsciiDoc', 'mime_type': 'text/plain, text/troff, text/x-ruby'},
             {'file_type': 'doc',   'loader_file_name': 'load_doc',   'loader_class': 'LoadDoc',      'mime_type': 'application/msword'},
             {'file_type': 'docx',  'loader_file_name': 'load_doc',   'loader_class': 'LoadDoc',      'mime_type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'},
             {'file_type': 'txt',   'loader_file_name': 'load_txt',   'loader_class': 'LoadTxt',      'mime_type': 'text/plain'},
@@ -64,7 +66,7 @@ class FileParser:
             {'file_type': 'html',  'loader_file_name': 'load_html',  'loader_class': 'LoadHtml',     'mime_type': 'text/html'},
             {'file_type': 'md',    'loader_file_name': 'load_md',    'loader_class': 'LoadMd',       'mime_type': 'text/plain'},
             {'file_type': 'xml',   'loader_file_name': 'load_xml',   'loader_class': 'LoadXml',      'mime_type': 'text/xml'},
-            {'file_type': 'yaml',  'loader_file_name': 'load_yaml',  'loader_class': 'LoadYaml',     'mime_type': 'application/yaml'},
+            {'file_type': 'yaml',  'loader_file_name': 'load_yaml',  'loader_class': 'LoadYaml',     'mime_type': 'text/plain, application/yaml'},
             {'file_type': 'ppt',   'loader_file_name': 'load_ppt',   'loader_class': 'LoadPpt',      'mime_type': 'application/vnd.ms-powerpoint'},
             {'file_type': 'pptx',  'loader_file_name': 'load_ppt',   'loader_class': 'LoadPpt',      'mime_type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'},
             {'file_type': 'tiff',  'loader_file_name': 'load_image', 'loader_class': 'LoadImage',    'mime_type': 'image/tiff'},
@@ -75,7 +77,11 @@ class FileParser:
         ]
 
     def supported_mime_types(self):
-        return [mapping['mime_type'] for mapping in self._mappings]
+        mime_types = set()
+        for mapping in self._mappings:
+            for mime_type in mapping['mime_type'].split(','):
+                mime_types.add(mime_type.strip())
+        return list(mime_types)
 
     def supported_types(self):
         return [mapping['file_type'] for mapping in self._mappings]
@@ -83,6 +89,7 @@ class FileParser:
     def supported_file(self, mime_type):
         mappings = []
         for mapping in self._mappings:
-            if mapping['mime_type'] == mime_type:
+            mime_types = [m.strip() for m in mapping['mime_type'].split(',')]
+            if mime_type in mime_types:
                 mappings.append(mapping)
         return mappings

@@ -16,6 +16,11 @@ alternateTagging: {{ use_alternate_tagging }}
 {% if storage == "minio" %}
 edpAccessKey: {{ edp_minio_access_key }}
 edpSecretKey: {{ edp_minio_secret_key }}
+
+{% if hpaEnabled is defined %}
+hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+
 edpOidcClientSecret: {{ edp_client_secret_id }}
 minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
 minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"

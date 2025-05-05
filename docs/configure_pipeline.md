@@ -40,8 +40,8 @@ It's possible to update the resource requests and limits in the appropriate YAML
 ### Resource Files
 
 The resource configurations are defined in separate YAML files:
-- [`resources-cpu.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-cpu.yaml)
-- [`resources-gaudi.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-gaudi.yaml)
+- [`resources-reference-cpu`](../deployment/pipelines/chatqa/resources-reference-cpu.yaml)
+- [`resources-reference-hpu.yaml`](../deployment/pipelines/chatqa/resources-reference-hpu.yaml)
 - [`resources-tdx.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml)
 
 These files contain the resource requests and limits for each microservice.

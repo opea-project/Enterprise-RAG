@@ -182,7 +182,7 @@ function helm_install() {
                     print_log "Error: KBS_ADDRESS environment variable is not set. Exiting."
                     exit 1
                 fi
-                helm_cmd+=" --values $gmc_path/resources-tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
+                helm_cmd+=" --values $manifests_path/resources-tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
                 ;;
         esac
     done

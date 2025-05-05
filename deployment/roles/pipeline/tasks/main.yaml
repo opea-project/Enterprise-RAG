@@ -5,7 +5,7 @@
 - name: Set override facts
   ansible.builtin.set_fact:
     helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
-    helm_override_resources_path: "{{ playbook_dir }}/{{ item.resourcesPath }}"
+    helm_override_resources_path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
   tags:
     - always
 
@@ -37,7 +37,7 @@
         [gmc.helm.default_values_file] +
         [gmc.helm.default_resources_file] +
         [helm_override_values_path] +
-        ([playbook_dir + '/..' + item.resourcesPath] if item.resourcesPath is defined else [])
+        ([helm_override_resources_path] if item.resourcesPath is defined else [])
       }}
   tags:
     - install
@@ -68,7 +68,7 @@
 - name: Apply pipeline
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('file', playbook_dir + '/../' + item.samplePath) }}"
+    definition: "{{ lookup('file', pipelines_dir + item.samplePath) }}"
     namespace: "{{ item.namespace }}"
   tags:
     - install

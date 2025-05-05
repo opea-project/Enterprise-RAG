@@ -22,8 +22,8 @@ hpaEnabled: false
 
 pipelines:
   - namespace: chatqa
-    samplePath: ./pipelines/chatqa/reference-cpu.yaml
-    resourcesPath: /pipelines/chatqa/resources-reference-cpu.yaml
+    samplePath: chatqa/reference-cpu.yaml
+    resourcesPath: chatqa/resources-reference-cpu.yaml
     type: chatqa
 
 gmc:

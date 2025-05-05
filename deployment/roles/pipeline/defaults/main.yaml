@@ -12,6 +12,6 @@ gmc:
     release_name: "gmc"
     chart_version: "1.1.0"
     default_values_file: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm/values.yaml"
-    default_resources_file: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm/resources-cpu.yaml"
+    default_resources_file: "{{ pipelines_dir }}/chatqa/resources-reference-cpu.yaml"
 
 hpaEnabled: false

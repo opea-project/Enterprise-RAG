@@ -60,17 +60,17 @@
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Secret
-    name: "{{ apisix.secrets.keycloak.password_secret_name }}"
+    name: "{{ keycloak.auth.admin.password_secret_name }}"
     namespace: "{{ keycloak.namespace }}"
   register: client_secret_raw
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
 - name: Decode keycloak password from the secret
   ansible.builtin.set_fact:
     keycloak_password: "{{ client_secret_raw.resources[0].data['admin-password'] | b64decode }}"
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 
@@ -136,7 +136,7 @@
         namespace: "{{ apisix.namespace }}"
       data:
         CLIENT_SECRET: "{{ client_secret_id.stdout | b64encode }}"
-  no_log: true
+  no_log: "{{ secure_logs }}"
   tags:
     - install
 

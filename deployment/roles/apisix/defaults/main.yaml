@@ -17,5 +17,3 @@ apisix:
 
   secrets:
     secret_name: "apisix-secret"
-    keycloak:
-      password_secret_name: "keycloak-password"

@@ -132,7 +132,7 @@ If you want to store your images encrypted in your container registry, follow th
 
 ### Deployment customization
 
-Edit the [resources-tdx.yaml](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
+Edit the [resources-tdx.yaml](../deployment/pipelines/chatqa/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.

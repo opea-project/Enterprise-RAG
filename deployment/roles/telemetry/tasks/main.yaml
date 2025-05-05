@@ -87,7 +87,7 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ telemetry.grafana.tls_secret_name }}"
+        name: "{{ telemetry.grafana.tls.secret_name }}"
         namespace: "{{ telemetry.monitoring.namespace }}"
       data:
         tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
@@ -103,7 +103,6 @@
     tasks_from: generate_password.yaml
   loop:
     - { name: GRAFANA, user: "{{ telemetry.grafana.auth.admin.username }}" }
-  when: vars["item.name + '_PASSWORD'"] is undefined
   tags:
     - install
 

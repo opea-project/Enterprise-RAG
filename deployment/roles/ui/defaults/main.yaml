@@ -14,4 +14,4 @@ ui:
     default_values_file: "{{ playbook_dir }}/../components/ui/values.yaml"
 
   tls:
-    secret_name: "ui-tls"
+    secret_name: "tls-secret"

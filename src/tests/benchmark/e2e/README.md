@@ -15,8 +15,14 @@ sudo cp repo_path/deployment/tls.crt /usr/local/share/ca-certificates/ && sudo u
 
 ### Ingesting data into RAG
 Before running the test it is advised to ingest some data into eRAG to ensure that vector database contains some real context data. In order to do so there is the script which will do that. It can take few hours to execute that part.
+
+####
+Please export `no_proxy` value so it would contain `erag.com` and `.erag.com`.
+
+Next execute bellow script:
+
 ```bash
-sudo ./prepare_1M_vectors.sh
+sudo -E ./prepare_1M_vectors.sh
 ```
 Script will load around 40 000 vectors based on real documents which are context related with the queries executed by the test benchmark. Additionally, it will fill the database with the context of Simple English Wikipedia dump to achieve totally 1 000 000 of vectors. When testing using such a database we can simulate the production size databases and test the impact of data retrieval in eRAG pipeline.
 ### Test execution

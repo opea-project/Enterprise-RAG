@@ -12,7 +12,8 @@ telemetry:
 
   grafana:
     helm_repo: https://grafana.github.io/helm-charts
-    tls_secret_name: "grafana-tls"
+    tls:
+      secret_name: "tls-secret"
     auth:
       admin:
         username: "admin"

@@ -28,6 +28,33 @@
     - install
     - update
 
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ui.namespace }}"
+  tags:
+    - install
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ ui.tls.secret_name }}"
+        namespace: "{{ ui.namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ ui.helm.release_name }}"

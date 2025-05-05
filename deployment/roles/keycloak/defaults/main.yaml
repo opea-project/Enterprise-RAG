@@ -16,10 +16,9 @@ keycloak:
     default_values_file: "{{ playbook_dir }}/../components/keycloak/values.yaml"
 
   tls:
-    secret_name: "keycloak-tls"
+    secret_name: "tls-secret"
 
   auth:
     admin:
       username: "admin"
-      password_secret_name: "keycloak-password"
-      password_file_name: "keycloak-password"
+      password_secret_name: "keycloak"

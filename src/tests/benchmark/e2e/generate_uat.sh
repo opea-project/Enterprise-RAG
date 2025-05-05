@@ -5,6 +5,7 @@
 repo_path=$(git rev-parse --show-toplevel)
 source ${repo_path}/src/ui/.env
 source ${repo_path}/deployment/default_credentials.txt
+source ${repo_path}/deployment/ansible-logs/default_credentials.txt
 
 username=${KEYCLOAK_ERAG_ADMIN_USERNAME}
 password=${KEYCLOAK_ERAG_ADMIN_PASSWORD}

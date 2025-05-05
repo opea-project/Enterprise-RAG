@@ -104,7 +104,7 @@ cd deployment
 ```
 
 > [!NOTE]
-> In case we are deploying the solution on `Xeon`, please change the `PIPELINE` parameter to the pipeline dedicated for Xeon, for example, `xeon_torch_llm_guard`. For more information, refer to [Configure Pipeline](docs/configure_pipeline.md).
+> In case we are deploying the solution on `Xeon`, please change the `PIPELINE` parameter to the pipeline to `reference-cpu.yaml`. For more information, refer to [Configure Pipeline](docs/configure_pipeline.md).
 
 Proxy variables are optional.
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.

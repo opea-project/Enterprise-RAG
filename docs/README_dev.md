@@ -82,13 +82,12 @@ Deploy the pipeline. Choose a command that suits your needs. More information on
 
 ### c) Deploy everything
 ```bash
-./install_chatqna.sh --auth --kind --deploy xeon_torch_llm_guard --ui --telemetry --tag $TAG
+./install_chatqna.sh --auth --kind --deploy reference-cpu.yaml --ui --telemetry --tag $TAG
 
 # Install or reinstall(upgrade) individual components
-./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
-./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade                        # namespaces: system, chatqa, dataprep
-./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade              # namespaces: system, chatqa, dataprep
-./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-namespace
+./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx
+./install_chatqna.sh --tag $TAG --kind --deploy reference-cpu.yaml --upgrade                # namespaces: system, chatqa
+./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-traces
 ./install_chatqna.sh --tag $TAG --kind --ui --upgrade                                       # namespaces: erag-ui
 ```
 

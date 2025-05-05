@@ -4,7 +4,7 @@
 
 # paths
 repo_path=$(realpath "$(pwd)/../")
-manifests_path="$repo_path/deployment/components/gmc/microservices-connector/config/samples"
+manifests_path="$repo_path/deployment/pipelines/chatqa"
 gmc_path="$repo_path/deployment/components/gmc/microservices-connector/helm"
 fingerprint_path="$repo_path/deployment/components/fingerprint"
 telemetry_path="$repo_path/deployment/components/telemetry/helm"
@@ -65,8 +65,9 @@ ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads prop
 FEATURES=""
 EDP_DATAPREP_TYPE="normal"
 
-available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
-
+#available_pipelines=$(cd "$manifests_path/examples" && find *.yaml && cd "$manifests_path" && find reference* | paste -sd ',')
+available_pipelines=$(cd "$manifests_path/examples" && find *.yaml | sed 's/^/examples\//' && cd "$manifests_path" && find reference* | paste -sd ',')
+echo $available_pipelines
 source $repo_path/deployment/credentials_utils.sh
 
 function usage() {
@@ -101,7 +102,7 @@ function usage() {
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --auth --deploy gaudi_torch_in_out_guards --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease"
+    echo -e "Example: $0 --auth --deploy reference-hpu.yaml --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease"
 }
 
 function print_header() {
@@ -120,6 +121,15 @@ function validate_deployment_settings() {
         print_log "Error: The hugToken value is required and must be set in $values_file"
         exit 1
     fi
+
+    local deployment_manifest="$manifests_path/$1"
+    if [[ ! -f $deployment_manifest ]]; then
+        print_log "Error: Deployment manifest file '$deployment_manifest' does not exist."
+        print_log "Pipelines available: $available_pipelines"
+
+        exit 1
+    fi
+
 
     for proxy in "httpProxy" "httpsProxy" "noProxy"; do
         proxy_name=$(echo "$proxy" | sed 's/P/_p/')
@@ -155,9 +165,9 @@ function helm_install() {
     fi
 
     if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
-        helm_cmd+=" --values $gmc_path/resources-cpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
     else
-        helm_cmd+=" --values $gmc_path/resources-gaudi.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-gaudi.yaml"
     fi
 
     if $hpa_flag; then
@@ -447,7 +457,7 @@ function start_deployment() {
     helm_install $GMC_NS gmc "$gmc_path" "$HELM_INSTALL_DEPLOYMENT_TAGGING"
 
     # Fingerprint deployment
-    local deployment_manifest="$manifests_path/chatQnA_$pipeline.yaml"
+    local deployment_manifest="$manifests_path/$pipeline"
     if grep -q "Fingerprint" $deployment_manifest; then
         start_fingerprint
     fi
@@ -1064,7 +1074,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if $deploy_flag; then
-    validate_deployment_settings
+    validate_deployment_settings "$PIPELINE"
 fi
 
 # additional logic for-default settings

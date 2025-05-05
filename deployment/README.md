@@ -107,7 +107,7 @@ Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/mi
 
 ## Defining Resource for you machine
 
-The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./components/gmc/microservices-connector/helm/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./components/gmc/microservices-connector/helm/resources-gaudi.yaml).
+The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./pipelines/chatqa/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./pipelines/chatqa/resources-cpu.yaml).
 
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
@@ -148,11 +148,11 @@ Use the command below to install via the one click script:
 
 ##### Xeon-Only
 ```bash
-./one_click_chatqna.sh -g HUG_TOKEN -d xeon_torch_llm_guard [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY] [--features FEATURES]
+./one_click_chatqna.sh -g HUG_TOKEN -d reference-cpu.yaml [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
 
 > [!NOTE]
-> For Xeon-only setups, pass a Xeon-specific pipeline to the One Click script, for example `xeon_torch_llm_guard` as shown above.
+> For Xeon-only pass `reference-cpu.yaml` as shown above.
 >
 > Using the `one_click_chatqna.sh` is an alternative option to the Step-by-Step Installation described in the next section.
 
@@ -236,18 +236,18 @@ The HF access token can be created [here](https://huggingface.co/settings/tokens
 
 ##### Xeon + Gaudi (Default):
 
-Run the following command to deploy the `gaudi_torch_in_out_guards` pipeline, along with telemetry and UI services:
+Run the following command to deploy the `reference-hpu.yaml` pipeline, along with telemetry and UI services:
 ```bash
-./install_chatqna.sh --deploy gaudi_torch_in_out_guards --auth --telemetry --ui
+./install_chatqna.sh --deploy reference-hpu.yaml --auth --telemetry --ui
 ```
 
 You can run `./install_chatqna.sh --help` to get detailed information.
 
 ##### Xeon-Only:
-This command is intended for Xeon-only deployments, deploying the `xeon_torch_in_out_guards` pipeline along with telemetry and UI services:
+This command is intended for Xeon-only deployments, deploying the `reference-cpu.yaml` pipeline along with telemetry and UI services:
 
 ```bash
-./install_chatqna.sh --deploy xeon_torch_llm_guard --auth --telemetry --ui
+./install_chatqna.sh --deploy reference-cpu.yaml --auth --telemetry --ui
 ```
 
 You can run `./install_chatqna.sh --help` to get detailed information.
@@ -346,7 +346,7 @@ Explore a diverse set of easily deployable sample pipeline configurations. Examp
 - `Input and Output Guard Pipeline`: Adds layers of protection by scanning both incoming queries and outgoing responses to ensure security and compliance.
 
 > [!NOTE]
-For Xeon + Gaudi deployments, pipeline names include the term `gaudi` (e.g., `gaudi_torch_in_out_guards`), while for Xeon-only deployments, pipeline names include `xeon` (e.g., `xeon_torch_in_out_guards`).
+For Xeon + Gaudi deployments, set pipeline to `reference-hpu.yaml`, while for Xeon-only deployments use `reference-cpu.yaml`.
 
 ## Interact with ChatQnA
 

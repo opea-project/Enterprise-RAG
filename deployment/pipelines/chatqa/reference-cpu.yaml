@@ -80,6 +80,13 @@ spec:
           serviceName: input-scan-svc
           config:
             endpoint: /v1/llmguardinput
+      - name: VLLM
+        dependency: Hard
+        internalService:
+          serviceName: vllm-service-m
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
       - name: Llm
         data: $response
         dependency: Hard
@@ -89,10 +96,3 @@ spec:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-service-m
-      - name: VLLM
-        dependency: Hard
-        internalService:
-          serviceName: vllm-service-m
-          config:
-            endpoint: /v1/completions
-          isDownstreamService: true

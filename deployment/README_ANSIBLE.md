@@ -98,6 +98,10 @@ Run `kubectl get pods -A` to verify that the expected pods are running. For more
 
 **Important**: In case of any failure, it's better to proceed with an [uninstall](#uninstall) first, as something may have already been deployed (check `kubectl get pods -A`), and the next installation attempt will fail for sure.
 
+> [!NOTE]
+> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`. 
+> Ensure your HF_TOKEN grants access to this model.
+> Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 
 #### Uninstall
 To uninstall the application, use the following Ansible command:

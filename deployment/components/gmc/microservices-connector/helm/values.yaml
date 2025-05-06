@@ -22,7 +22,7 @@ namespace: chatqa
 common_tag: &tag "latest"
 common_registry: &repo "localhost:5000/erag"
 
-llm_model: &cpu_model "Intel/neural-chat-7b-v3-3"
+llm_model: &cpu_model "meta-llama/Llama-3.1-8B-Instruct"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"

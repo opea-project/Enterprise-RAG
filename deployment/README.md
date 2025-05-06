@@ -228,6 +228,12 @@ Similarly, for the selected Vector Store (for example `deployment/components/gmc
 The `set_values.sh` script automates Helm value configuration for the `components/gmc/microservices-connector` chart,
 simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
+> [!NOTE]
+> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`. 
+> Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
+> Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
+
+
 ```bash
 ./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN] -r [REPOSITORY] -t [TAG]
 ```

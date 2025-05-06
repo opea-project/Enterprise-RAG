@@ -100,7 +100,6 @@ const UploadDataDialog = () => {
         filesUploadError = getErrorMessage(error, ERROR_MESSAGES.POST_FILES);
       } else {
         setFiles([]);
-        setSelectedBucket("");
       }
     }
 
@@ -139,7 +138,6 @@ const UploadDataDialog = () => {
     if (ref.current) {
       setFiles([]);
       setLinks([]);
-      setSelectedBucket("");
       resetUploadErrors();
       ref.current.close();
     }

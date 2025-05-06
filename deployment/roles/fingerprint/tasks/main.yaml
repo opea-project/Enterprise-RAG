@@ -6,7 +6,7 @@
   ansible.builtin.set_fact:
     fingerprint_helm_override_values_path: "{{ tmp_dir }}/{{ fingerprint.helm.release_name }}-override-values.yaml"
   tags:
-    - always
+    - install
 
 - name: Ensure Helm repository is present
   kubernetes.core.helm_repository:
@@ -15,7 +15,6 @@
     state: present
   tags:
     - install
-    - update
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
@@ -23,7 +22,6 @@
     chdir: "{{ fingerprint.helm.chart_directory }}"
   tags:
     - install
-    - update
 
 - name: Generate password
   ansible.builtin.include_role:
@@ -32,7 +30,14 @@
   loop:
     - { name: MONGO_DB, user: "{{ fingerprint.mongo.auth.user.db_user }}" }
     - { name: MONGO_ADMIN, user: "{{ fingerprint.mongo.auth.admin.db_user }}" }
-  when: vars["item.name + '_PASSWORD'"] is undefined
+  tags:
+    - install
+
+# Creates chatqa_namespace
+- name: Get chatqa namespace
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: get_chatqa_namespace.yaml
   tags:
     - install
 
@@ -44,12 +49,11 @@
       kind: Namespace
       metadata:
         name: "{{ item }}"
-  with_items:
+  loop:
     - "{{ fingerprint.namespace }}"
-    - chatqa
+    - "{{ chatqa_namespace }}"
   tags:
     - install
-    - update
 
 - name: Create password secret
   kubernetes.core.k8s:
@@ -67,9 +71,9 @@
         MONGO_HOST: "{{ ('fingerprint-mongodb.' + fingerprint.namespace + '.svc') | b64encode }}"
         MONGO_PORT: "{{ '27017' | b64encode }}"
   no_log: "{{ secure_logs }}"
-  with_items:
+  loop:
     - "{{ fingerprint.namespace }}"
-    - chatqa
+    - "{{ chatqa_namespace }}"
   tags:
     - install
 
@@ -80,7 +84,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -91,7 +94,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
@@ -105,23 +107,6 @@
   register: helm_result
   tags:
     - install
-    - update
-
-- name: Delete password secret
-  kubernetes.core.k8s:
-    state: absent
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{ fingerprint.mongo.auth.password_secret_name }}"
-        namespace: "{{ item }}"
-  with_items:
-    - "{{ fingerprint.namespace }}"
-    - "chatqa"
-  no_log: "{{ secure_logs }}"
-  tags:
-    - uninstall
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

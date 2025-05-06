@@ -14,29 +14,12 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
   pre_tasks:
-    - name: Create log directory if it does not exist
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        mode: '755'
-      loop:
-        - "{{ log_dir }}"
-        - "{{ tmp_dir }}"
-      tags:
-        - always
-    - name: Disable istio injection for all namespaces
-      vars:
-        istio_injection: false
+    - name: Preinstall tasks
       include_role:
-        name: configure_istio
-        tasks_from: manage_injection.yaml
-      tags:
-        - always
-    - name: Load init passwords
-      include_role:
-        name: generate_password
+        name: pre_install
       tags:
         - install
+        - uninstall
     - name: Run fingerprint role
       include_role:
         name: fingerprint
@@ -50,7 +33,6 @@
       tags:
         - always
   roles:
-    - role: certs
     - { role: ingress, when: ingress.enabled }
     - { role: istio, when: istio.enabled }
     - { role: keycloak, when: keycloak.enabled }
@@ -58,7 +40,6 @@
     - { role: ui, when: ui.enabled }
     - { role: edp, when: edp.enabled }
     - { role: telemetry, when: telemetry.enabled }
-  # temp solution before splitting routes
   post_tasks:
     - name: Install apisix routes
       kubernetes.core.helm:
@@ -76,6 +57,13 @@
       when: istio.enabled
       tags:
         - always
+    - name: Create log directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}"
+        state: absent
+        mode: '755'
+      tags:
+        - install
     - name: Delete apisix routes
       kubernetes.core.helm:
         name: "auth-apisix-crds"
@@ -96,3 +84,12 @@
       tags:
         - install
         - uninstall
+    - name: Delete tmp directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+        mode: '755'
+      loop:
+        - "{{ tmp_dir }}"
+      tags:
+        - install

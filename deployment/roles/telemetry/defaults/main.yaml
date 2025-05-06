@@ -4,6 +4,7 @@
 ---
 telemetry:
   enabled: false
+  domainName: grafana.erag.com
   prometheus:
     helm_repo: https://prometheus-community.github.io/helm-charts
 

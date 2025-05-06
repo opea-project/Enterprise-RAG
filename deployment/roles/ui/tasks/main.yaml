@@ -6,7 +6,7 @@
   ansible.builtin.set_fact:
     ui_helm_override_values_path: "{{ tmp_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
   tags:
-    - always
+    - install
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -15,7 +15,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -26,7 +25,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -66,7 +64,6 @@
     timeout: "{{ helm_timeout }}"
   tags:
     - install
-    - update
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

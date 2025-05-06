@@ -2,14 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# telemetry might be moved to other playbook ; but needs to be designed how to interact with istio
 - name: Set roles facts
   ansible.builtin.set_fact:
-    telemetry_monitoring_helm_override_values_path: "{{ log_dir }}/telemetry-monitoring-override-values.yaml"
+    telemetry_monitoring_helm_override_values_path: "{{ tmp_dir }}/telemetry-monitoring-override-values.yaml"
   tags:
     - install
-    - update
-    - uninstall
 
 # Important: Loki and Tempo depend on correct DNS resolution to communicate with each other (via service discovery).
 # kind clusters typically use 'kube-dns' instead of 'coredns'.
@@ -21,14 +18,12 @@
   register: node_list
   tags:
     - install
-    - update
 
 - name: Determine DNS service name based on environment
   ansible.builtin.set_fact:
     dns_service_name: "{{ 'kube-dns' if 'kind' in node_list.resources | map(attribute='metadata.name') | list | join(' ') else 'coredns' }}"
   tags:
     - install
-    - update
 
 - name: Check kind environment
   ansible.builtin.debug:
@@ -36,7 +31,6 @@
   when: "'kube-dns' in dns_service_name"
   tags:
     - install
-    - update
 
 - name: Update Helm repositories
   kubernetes.core.helm_repository:
@@ -50,20 +44,18 @@
     - { url: "{{ telemetry.opensearch_collector.helm_repo }}", name: "opentelemetry" }
   tags:
     - install
-    - update
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ item }}"
-  with_items:
+  loop:
     - "{{ telemetry.monitoring.charts_path }}"
     - "{{ telemetry.logging.charts_path }}"
     - "{{ telemetry.traces.charts_path }}"
     - "{{ telemetry.traces_instr.charts_path }}"
   tags:
     - install
-    - update
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -73,12 +65,11 @@
       kind: Namespace
       metadata:
         name: "{{ item }}"
-  with_items:
+  loop:
     - "{{ telemetry.monitoring.namespace }}"
     - "{{ telemetry.traces.namespace }}"
   tags:
     - install
-    - update
 
 - name: Create TLS secret
   kubernetes.core.k8s:
@@ -129,7 +120,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -140,7 +130,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Get the secret from the source namespace
   kubernetes.core.k8s_info:
@@ -152,7 +141,6 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
-    - update
 
 - name: Create the secret in the target namespace
   kubernetes.core.k8s:
@@ -170,7 +158,6 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
-    - update
 
 - name: Install monitoring Helm chart
   kubernetes.core.helm:
@@ -183,7 +170,6 @@
     wait: true
   tags:
     - install
-    - update
 
 - name: Install Prometheus Adapter Helm chart
   kubernetes.core.helm:
@@ -196,7 +182,6 @@
   when: hpaEnabled
   tags:
     - install
-    - update
 
 - name: Set otelcol-logs image repository and tag based on condition
   ansible.builtin.set_fact:
@@ -204,7 +189,6 @@
     helm_otelcol_logs_image_tag: "{{ 'erag-otelcol-contrib-journalctl_' ~ tag if use_alternate_tagging else tag }}"
   tags:
     - install
-    - update
 
 - name: Install logging Helm chart
   kubernetes.core.helm:
@@ -227,7 +211,6 @@
     timeout: "{{ helm_timeout }}"
   tags:
     - install
-    - update
 
 - name: Install traces Helm chart
   kubernetes.core.helm:
@@ -244,7 +227,6 @@
     timeout: "{{ helm_timeout }}"
   tags:
     - install
-    - update
 
 - name: Install traces instrumentation Helm chart
   kubernetes.core.helm:
@@ -258,7 +240,6 @@
     timeout: "{{ helm_timeout }}"
   tags:
     - install
-    - update
 
 - name: Delete CRD
   kubernetes.core.k8s:

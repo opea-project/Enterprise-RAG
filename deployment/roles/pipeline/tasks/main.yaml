@@ -7,7 +7,7 @@
     helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
     helm_override_resources_path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
   tags:
-    - always
+    - install
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -16,7 +16,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Ensure pipeline namespace exists
   kubernetes.core.k8s:
@@ -28,7 +27,6 @@
         name: "{{ item.namespace }}"
   tags:
     - install
-    - update
 
 - name: Set fact for Helm values files
   ansible.builtin.set_fact:
@@ -55,7 +53,6 @@
     wait: true
   tags:
     - install
-    - update
 
 - name: Include chatqa specific tasks
   ansible.builtin.include_tasks:
@@ -63,7 +60,13 @@
   when: item.type=='chatqa'
   tags:
     - install
-    - update
+
+- name: Sleep mitigation due to GMC Helm chart readiness
+  ansible.builtin.pause:
+    seconds: 5
+  when: item.type=='chatqa'
+  tags:
+    - install
 
 - name: Apply pipeline
   kubernetes.core.k8s:
@@ -72,7 +75,6 @@
     namespace: "{{ item.namespace }}"
   tags:
     - install
-    - update
 
 - name: Remove pipeline namespace
   kubernetes.core.k8s:

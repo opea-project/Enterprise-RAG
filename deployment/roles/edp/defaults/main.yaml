@@ -2,9 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-
-hpaEnabled: false
-
 edp:
   enabled: false
   namespace: "edp"
@@ -17,6 +14,8 @@ edp:
     release_name: "edp"
     default_values_file: "{{ playbook_dir }}/../components/edp/values.yaml"
     chart_directory: "{{ playbook_dir }}/../components/edp"
+
+  client_id: "EnterpriseRAG-oidc-minio"
 
   vector_db:
     auth:

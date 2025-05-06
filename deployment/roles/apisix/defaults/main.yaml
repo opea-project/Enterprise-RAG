@@ -17,3 +17,5 @@ apisix:
 
   secrets:
     secret_name: "apisix-secret"
+
+  client_id: "EnterpriseRAG-oidc-backend"

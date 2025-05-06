@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name:
+- name: Set override_values.yaml path
   ansible.builtin.set_fact:
     ingress_helm_override_values_path: "{{ tmp_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
   tags:
     - install
-    - uninstall
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
@@ -23,7 +22,6 @@
     mode: '0644'
   tags:
     - install
-    - update
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -46,7 +44,6 @@
     create_namespace: true
     timeout: "{{ helm_timeout }}"
     wait: true
-  register: helm_result
   tags:
     - install
 

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
-kubeconfig: FILL_HERE  # Provide the path to kubeconfig (e.g. /home/ubuntu/.kube/config)
+kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
 
 httpProxy:
 httpsProxy:

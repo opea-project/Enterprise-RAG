@@ -1,8 +1,0 @@
-{#
-Copyright (C) 2024-2025 Intel Corporation
-SPDX-License-Identifier: Apache-2.0
-#}
-
-{% if istio.additional_values is defined %}
-{{ istio.additional_values | to_nice_yaml | indent(2) }}
-{% endif %}

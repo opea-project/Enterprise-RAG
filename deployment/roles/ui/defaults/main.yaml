@@ -5,6 +5,7 @@
 ui:
   enabled: false
   namespace: "rag-ui"
+  domainName: erag.com
   helm:
     version: "v3.16.1"
     chart_name: "chatqa-app"

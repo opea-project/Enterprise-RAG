@@ -7,7 +7,6 @@
     keycloak_helm_override_values_path: "{{ tmp_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
   tags:
     - install
-    - uninstall
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
@@ -68,7 +67,6 @@
     tasks_from: generate_password.yaml
   loop:
     - { name: KEYCLOAK_REALM_ADMIN, user: "{{ keycloak.auth.admin.username }}" }
-  when: vars["item.name + '_PASSWORD'"] is undefined
   tags:
     - install
 
@@ -102,8 +100,7 @@
     - install
 
 - name: Initial keycloak configuration
-  ansible.builtin.include_role:
-    name: configure_keycloak
+  ansible.builtin.include_tasks: configure_keycloak.yaml
   tags:
     - install
 
@@ -112,22 +109,6 @@
     name: "{{ keycloak.helm.release_name }}"
     namespace: "{{ keycloak.namespace }}"
     state: absent
-  tags:
-    - uninstall
-
-- name: Delete password secret
-  kubernetes.core.k8s:
-    state: absent
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{ item }}"
-        namespace: "{{ keycloak.namespace }}"
-  with_items:
-    - "{{ keycloak.auth.admin.password_secret_name }}"
-    - "{{ keycloak.tls.secret_name }}"
-  no_log: "{{ secure_logs }}"
   tags:
     - uninstall
 
@@ -141,4 +122,3 @@
         name: "{{ keycloak.namespace }}"
   tags:
     - uninstall
-

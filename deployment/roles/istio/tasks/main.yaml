@@ -14,36 +14,10 @@
   tags:
     - install
 
-# Check if module can be used
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ istio.helm.chart_directory }}"
-  tags:
-    - install
-
-- name: Check if override values file should be generated
-  ansible.builtin.set_fact:
-    generate_override: "{{ istio.additional_values is defined and ingress.additional_values | dict2items | length > 0 }}"
-  tags:
-    - install
-
-- name: Generate override values file from template
-  ansible.builtin.template:
-    src: "values.yaml.j2"
-    dest: "{{ istio_helm_override_values_path }}"
-    mode: '0644'
-  when: generate_override
-  tags:
-    - install
-
-- name: Set values_files list
-  ansible.builtin.set_fact:
-    values_files: >
-      {{
-        [istio.helm.default_values_file] +
-        ([istio_helm_override_values_path] if generate_override else [])
-      }}
   tags:
     - install
 
@@ -52,7 +26,7 @@
     name: "{{ istio.helm.release_name }}"
     chart_ref: "{{ istio.helm.chart_directory }}"
     namespace: "{{ istio.namespace }}"
-    values_files: "{{ values_files }}"
+    values_files: "{{ istio.helm.default_values_file }}"
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"

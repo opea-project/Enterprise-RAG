@@ -92,6 +92,7 @@ tag_and_push() {
         echo "$full_image_name pushed succesfully"
     else
         echo "Push failed. Please check the logs at ${logs_dir}/push_$(basename ${full_image_name}).log for more details."
+        return 1
     fi
 }
 
@@ -143,6 +144,7 @@ build_component() {
         echo "$full_image_name built successfully"
     else
         echo "Build failed. Please check the logs at ${logs_dir}/build_$(basename ${full_image_name}).log for more details."
+        return 1
     fi
 }
 
@@ -213,7 +215,7 @@ echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build_flag"
 echo "max parallel jobs = $_max_parallel_jobs"
 echo "do_push = $do_push_flag"
-echo "TAG_VERSION = $TAG_VERSION"
+echo "TAG_VERSION = $TAG"
 echo "REGISTRY_PATH = $REGISTRY_PATH"
 echo "components_to_build = ${components_to_build[*]}"
 

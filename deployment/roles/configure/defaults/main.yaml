@@ -1,0 +1,10 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+httpProxy: ""
+httpsProxy: ""
+noProxy: ""
+helm_version: "v3.16.1"
+docker_version: "26.1.4"
+kubectl_version: "v1.30.12" # since we support 1.29-1.31

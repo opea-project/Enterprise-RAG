@@ -14,6 +14,16 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
   pre_tasks:
+    - name: Configure environment
+      include_role:
+        name: configure
+      tags:
+        - configure
+    - name: Build and push images
+      include_role:
+        name: images
+      tags:
+        - build-images
     - name: Preinstall tasks
       include_role:
         name: pre_install
@@ -25,13 +35,15 @@
         name: fingerprint
       when: fingerprint.enabled
       tags:
-        - always
+        - install
+        - uninstall
     - name: Run pipeline role with items
       include_role:
         name: pipeline
       with_items: "{{ pipelines }}"
       tags:
-        - always
+        - install
+        - uninstall
   roles:
     - { role: ingress, when: ingress.enabled }
     - { role: istio, when: istio.enabled }
@@ -57,13 +69,6 @@
       when: istio.enabled
       tags:
         - always
-    - name: Create log directory if it does not exist
-      ansible.builtin.file:
-        path: "{{ tmp_dir }}"
-        state: absent
-        mode: '755'
-      tags:
-        - install
     - name: Delete apisix routes
       kubernetes.core.helm:
         name: "auth-apisix-crds"

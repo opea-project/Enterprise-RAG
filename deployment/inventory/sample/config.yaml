@@ -17,6 +17,7 @@ certs:
 
 tag: "latest"
 registry: "localhost:5000/erag"
+setup_registry: true
 use_alternate_tagging: false
 hpaEnabled: false
 
@@ -32,7 +33,7 @@ gmc:
 
 ingress:
   enabled: true
-  service_type: NodePort
+  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
   namespace: ingress-nginx
 
 keycloak:

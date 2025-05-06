@@ -89,6 +89,22 @@ kubectl get crd -o name | grep 'istio.io' | xargs kubectl delete # removing crds
 
 ### Running the Ansible Playbook
 
+#### Configure
+To install needed prerequisites(docker,kubectl,helm and apt packages), use the following Ansible command:
+```bash
+ansible-playbook playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags configure -K -u $USER
+```
+If any of those tools are already installed installation will be skipped. Currently supported OS is Ubuntu 20.04 and 22.04
+
+**Important**: This command needs to become sudo user to manage packages. That's why '-K -u $USER' is needed.
+
+#### Build images
+To build and push images, use the following Ansible command:
+```bash
+ansible-playbook playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags build-images
+```
+**Important**: This command may take a while, since it is building and pushing all needed images.
+
 #### Install
 To install the application, use the following Ansible command:
 ```bash
@@ -102,6 +118,13 @@ Run `kubectl get pods -A` to verify that the expected pods are running. For more
 > The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`. 
 > Ensure your HF_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
+
+#### Full Installation
+To perform full installation use the following Ansible command:
+```bash
+ansible-playbook playbooks/application.yaml -e @inventory/test-cluster/config.yaml --tags configure,build-images,install  -K -u $USER
+```
+**Important**: This command needs to become sudo user to manage packages. That's why '-K -u $USER' is needed.
 
 #### Uninstall
 To uninstall the application, use the following Ansible command:

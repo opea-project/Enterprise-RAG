@@ -823,7 +823,7 @@ func (r *GMConnectorReconciler) getTemplateBytes(ctx context.Context, resourceTy
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-	namespace := os.Getenv("NAMESPACE")
+	namespace := gmcNs
 	var err error
 
 	if namespace == "" {
@@ -1180,7 +1180,7 @@ func isDeploymentStatusChanged(e event.UpdateEvent) bool {
 }
 
 func isInWorkingNamespace(namespace string) bool {
-	return namespace == workingNs
+	return namespace == workingNs || namespace == gmcNs
 }
 
 // SetupWithManager sets up the controller with the Manager.

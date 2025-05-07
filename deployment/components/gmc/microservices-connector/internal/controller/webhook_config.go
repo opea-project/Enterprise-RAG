@@ -40,6 +40,15 @@ var (
 		}
 		return ns
 	}()
+
+	gmcNs = func() string {
+		ns := os.Getenv("NAMESPACE")
+		if ns == "" {
+			ns = "system"
+			_log.Info("NAMESPACE environment variable is not set. Defaulting to " + ns)
+		}
+		return ns
+	}()
 )
 
 func GetEnvWithDefault(key, defaultValue string) string {

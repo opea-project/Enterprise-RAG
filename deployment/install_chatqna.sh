@@ -67,7 +67,6 @@ EDP_DATAPREP_TYPE="normal"
 
 #available_pipelines=$(cd "$manifests_path/examples" && find *.yaml && cd "$manifests_path" && find reference* | paste -sd ',')
 available_pipelines=$(cd "$manifests_path/examples" && find *.yaml | sed 's/^/examples\//' && cd "$manifests_path" && find reference* | paste -sd ',')
-echo $available_pipelines
 source $repo_path/deployment/credentials_utils.sh
 
 function usage() {

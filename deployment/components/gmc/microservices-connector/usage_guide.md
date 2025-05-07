@@ -7,13 +7,13 @@ Below are sample use cases:
 
 ## Use GMC to compose a chatQnA Pipeline
 
-A sample for chatQnA can be found at config/samples/chatQnA_xeon.yaml
+A sample for chatQnA can be found at [reference-cpu.yaml](../../../pipelines/chatqa/reference-cpu.yaml)
 
 **Deploy chatQnA GMC custom resource**
 
 ```sh
 kubectl create ns chatqa
-kubectl apply -f $(pwd)/config/samples/chatQnA_xeon.yaml
+kubectl apply -f ../../../pipelines/chatqa/reference-cpu.yaml
 ```
 
 **GMC will reconcile chatQnA custom resource and get all related components/services ready**

@@ -48,5 +48,5 @@ Once the custom metrics are accessible via the API service, we can define HPA ob
         periodSeconds: 90
   ```
 
-As there might be performance differences between different hardware setups, please fill in the [CPU resources](../components/gmc/microservices-connector/helm/resources-cpu.yaml) or [Gaudi resources](../components/gmc/microservices-connector/helm/resources-gaudi.yaml) HPA section values prior to deploying the solution.
+As there might be performance differences between different hardware setups, please fill in the [CPU resources](../../pipelines/chatqa/resources-reference-cpu.yaml) or [Gaudi resources](../../pipelines/chatqa/resources-reference-hpu.yaml) HPA section values prior to deploying the solution.
 Every component that is able to scale up has HPA section that was set assuming hardware platform is Xeon Gen4 platform and default `LLM` `embedding` `reranking` models are set. Therefore, please consider modifying target values per component if needed. Sections in resources files would give information about which metrics expression represents the target value.

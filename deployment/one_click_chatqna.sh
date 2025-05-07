@@ -16,7 +16,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-PIPELINE=gaudi_torch_guard
+PIPELINE=reference-hpu.yaml
 TAG=latest
 REGISTRY_NAME=localhost:5000
 REGISTRY_PATH=erag

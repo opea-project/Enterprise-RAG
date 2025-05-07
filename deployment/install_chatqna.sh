@@ -786,9 +786,9 @@ function start_edp() {
     local erag_no_proxy=$(awk '/noProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
 
     local embedding_endpoint_helm=""
-    if [[ "$pipeline" == "xeon_torch" ]]; then
+    if [[ "$pipeline" == "examples/cpu-torch.yaml" ]]; then
         embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=torchserve --set embedding.config.modelServerEndpoint=http://torchserve-embedding-svc.chatqa.svc:8090 "
-    elif [[ "$pipeline" == "xeon" ]]; then
+    elif [[ "$pipeline" == "examples/cpu-tei.yaml" ]]; then
         embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=tei --set embedding.config.modelServerEndpoint=http://tei-embedding-svc.chatqa.svc:80 "
     else
         embedding_endpoint_helm=" --set embedding.enabled=false --set embedding.remoteEmbeddingUri=http://embedding-svc.chatqa.svc:6000/v1/embeddings " # use default embedding from chatqa
@@ -805,7 +805,7 @@ function start_edp() {
         print_log "Enabling Hierarchical Dataprep"
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep"
 
-        if [[ "$pipeline" == *"xeon"* ]]; then
+        if [[ "$pipeline" == *"cpu"* ]]; then
             HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.vllm_server_endpoint=http://vllm-service-m.chatqa.svc:8000" # Use existing vllm-cpu server
         else
             HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set vllm.enabled=true" # Spin up new vllm-cpu server
@@ -1108,8 +1108,8 @@ if [[ "$telemetry_flag" == "true" ]]; then
 fi
 
 if [[ "$FEATURES" == *"tdx"* ]]; then
-  if [[ ! "$PIPELINE" == *"xeon"* ]]; then
-    print_log "Error: TDX feature is only supported for xeon pipelines."
+  if [[ ! "$PIPELINE" == *"cpu"* ]]; then
+    print_log "Error: TDX feature is only supported for cpu pipelines."
     exit 1
   fi
 

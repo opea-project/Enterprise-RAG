@@ -33,6 +33,31 @@
   tags:
     - install
 
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ ingress.helm.release_name }}"

@@ -55,6 +55,20 @@
   tags:
     - install
 
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ fingerprint.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Create password secret
   kubernetes.core.k8s:
     state: present

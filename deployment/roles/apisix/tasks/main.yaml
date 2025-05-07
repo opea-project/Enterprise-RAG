@@ -33,7 +33,7 @@
   tags:
     - install
 
-- name: Assure that namespace is present
+- name: Ensure namespace exists
   kubernetes.core.k8s:
     state: present
     definition:
@@ -41,6 +41,20 @@
       kind: Namespace
       metadata:
         name: "{{ apisix.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ apisix.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
   tags:
     - install
 

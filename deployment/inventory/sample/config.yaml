@@ -20,6 +20,7 @@ registry: "localhost:5000/erag"
 setup_registry: true
 use_alternate_tagging: false
 hpaEnabled: false
+enforcePSS: false
 
 pipelines:
   - namespace: chatqa

@@ -45,6 +45,20 @@
   tags:
     - install
 
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Create TLS secret
   kubernetes.core.k8s:
     state: present

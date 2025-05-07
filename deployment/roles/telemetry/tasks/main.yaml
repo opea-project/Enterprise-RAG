@@ -71,6 +71,23 @@
   tags:
     - install
 
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  loop:
+    - "{{ telemetry.monitoring.namespace }}"
+    - "{{ telemetry.traces.namespace }}"
+  tags:
+    - install
+
 - name: Create TLS secret
   kubernetes.core.k8s:
     state: present

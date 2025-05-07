@@ -28,6 +28,45 @@
   tags:
     - install
 
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Ensure GMC namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Set fact for Helm values files
   ansible.builtin.set_fact:
     values_files: >
@@ -39,7 +78,6 @@
       }}
   tags:
     - install
-    - update
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

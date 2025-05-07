@@ -9,7 +9,7 @@ requires-python = "==3.12.*"
 dependencies = [
     "openvino_tokenizers==2025.0.0.0",
     "optimum-intel==1.22.0",
-    "torch==2.6.0",
+    "torch==2.7.0",
     "jinja2 == 3.1.6",
     "MarkupSafe==3.0.2"
 ]

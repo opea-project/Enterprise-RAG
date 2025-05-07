@@ -23,4 +23,5 @@ test = [
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
+    "h11==0.16.0",
 ]

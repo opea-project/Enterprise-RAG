@@ -22,6 +22,7 @@ dependencies = [
     "jinja2==3.1.6",
     "python-dotenv==1.1.0",
     "pyyaml==6.0.2",
+    "h11==0.16.0",
 ]
 
 [project.optional-dependencies]

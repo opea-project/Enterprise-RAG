@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM intel/intel-extension-for-pytorch:2.6.0-pip-base
+FROM intel/intel-extension-for-pytorch:2.7.0-pip-base
 
 ENV LANG=C.UTF-8
 
@@ -30,9 +30,9 @@ ENV PATH="$PATH:/home/user/.local/bin"
 ENV PYTHONPATH="/home/user"
 ENV HF_HOME="/home/user/tmp"
 
-RUN pip install --no-cache-dir -U transformers==4.49
+RUN pip install --no-cache-dir -U transformers==4.50
 
-RUN python -m pip install oneccl_bind_pt==2.6.0 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
+RUN python -m pip install oneccl_bind_pt==2.7.0 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
 
 # Install TorchServe pypi dependencies directly from their requirements.txt file
 RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.12.0/requirements/common.txt \

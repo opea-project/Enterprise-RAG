@@ -26,7 +26,7 @@ COPY ./comps/dataprep/impl/microservice/uv.lock uv.lock
 
 # --locked will fail when any changes in pyproject.toml were introduced
 # Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
-RUN uv sync --locked --no-cache --extra cpu
+RUN uv sync --locked --no-cache
 ENV PATH="/home/user/.venv/bin:$PATH"
 
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py

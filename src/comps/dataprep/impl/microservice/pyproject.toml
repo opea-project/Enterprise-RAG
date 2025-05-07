@@ -18,7 +18,7 @@ dependencies = [
     "beautifulsoup4==4.12.3",
     "docx2txt==0.8",
     "easyocr==1.7.1",
-    "huggingface_hub==0.24.5",
+    "huggingface_hub==0.26.0",
     "langchain==0.3.6",
     "langchain-community==0.3.0",
     "langchain-text-splitters==0.3.0",
@@ -36,23 +36,18 @@ dependencies = [
     "cairosvg==2.7.1",
     "python-magic==0.4.27",
     "pathvalidate==3.2.2",
-    "torch==2.6.0",
     "langchain-experimental==0.3.4",
     "langchain-huggingface==0.1.2",
     "starlette==0.40.0",
     "jinja2==3.1.6",
     "python-dotenv==1.1.0",
+    "torch==2.7.0",
+    "torchvision==0.22.0",
+    "h11==0.16.0",
+    "transformers==4.50.0",
 ]
 
 [project.optional-dependencies]
-cpu = [
-  "torch==2.6.0",
-  "torchvision==0.21.0",
-]
-cu124 = [
-  "torch==2.6.0",
-  "torchvision==0.21.0",
-]
 test = [
     "pytest==8.3.4",
     "pytest-asyncio==0.24.0",
@@ -64,22 +59,12 @@ test = [
     "opentelemetry-sdk==1.25.0",
 ]
 
-[tool.uv]
-conflicts = [
-  [
-    { extra = "cpu" },
-    { extra = "cu124" },
-  ],
-]
-
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cpu", extra = "cpu" },
-  { index = "pytorch-cu124", extra = "cu124" },
+    { index = "pytorch-cpu" },
 ]
 torchvision = [
-  { index = "pytorch-cpu", extra = "cpu" },
-  { index = "pytorch-cu124", extra = "cu124" },
+    { index = "torchvision-cpu" },
 ]
 
 [[tool.uv.index]]
@@ -88,6 +73,6 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [[tool.uv.index]]
-name = "pytorch-cu124"
-url = "https://download.pytorch.org/whl/cu124"
+name = "torchvision-cpu"
+url = "https://download.pytorch.org/whl/cpu"
 explicit = true

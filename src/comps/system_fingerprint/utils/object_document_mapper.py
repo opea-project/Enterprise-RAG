@@ -250,25 +250,29 @@ class LLMGuardOutputGuardrailParams(Document):
     url_reachability: URLReachabilityModel = None
 
 class PromptTemplateParams(Document):
-    prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
+    system_prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
-But be careful to not incorporate information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \n
+Refer also to the conversation history if you think it is relevant to the current question. \
+Ignore all information that you think is not relevant to the question. \
+If you don't know the answer to a question, please don't share false information. \
 ### Search results: {reranked_docs} \n
-### Question: {initial_query} \n
+### Conversation history: {conversation_history} \n
+"""
+    user_prompt_template: str = """### Question: {user_prompt} \n
 ### Answer:
 """
 
 class RetrieverParams(Document):
     search_type: str = "similarity"
-    k: PositiveInt = 4
+    k: PositiveInt = 10
     distance_threshold: Optional[float] = None
     fetch_k: PositiveInt = 20
     lambda_mult: NonNegativeFloat = 0.5
     score_threshold: NonNegativeFloat = 0.2
 
 class RerankerParams(Document):
-    top_n: PositiveInt = 1
+    top_n: PositiveInt = 3
+    rerank_score_threshold: Optional[float] = 0.02
 
 class LLMParams(Document):
     max_new_tokens: int = 1024

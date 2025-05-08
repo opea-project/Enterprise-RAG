@@ -14,25 +14,25 @@ import {
 } from "react";
 
 import PromptInputButton from "@/components/ui/PromptInputButton/PromptInputButton";
-import { promptMaxLength } from "@/config/promptInput";
-import {
-  selectAbortController,
-  selectIsStreaming,
-} from "@/features/chat/store/conversationFeed.slice";
-import { useAppSelector } from "@/store/hooks";
+import { promptMaxHeight, promptMaxLength } from "@/config/promptInput";
 import { sanitizeString } from "@/utils";
 
 interface PromptInputProps {
   prompt: string;
+  isChatResponsePending?: boolean;
+  onRequestAbort?: () => void;
   onChange: ChangeEventHandler<HTMLTextAreaElement>;
   onSubmit: (prompt: string) => void;
 }
 
-const PromptInput = ({ prompt, onChange, onSubmit }: PromptInputProps) => {
+const PromptInput = ({
+  prompt,
+  isChatResponsePending = false,
+  onRequestAbort,
+  onChange,
+  onSubmit,
+}: PromptInputProps) => {
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const isStreaming = useAppSelector(selectIsStreaming);
-  const abortController = useAppSelector(selectAbortController);
 
   useEffect(() => {
     focusPromptInput();
@@ -49,8 +49,19 @@ const PromptInput = ({ prompt, onChange, onSubmit }: PromptInputProps) => {
   const recalcuatePromptInputHeight = () => {
     const promptInput = promptInputRef.current;
     if (promptInput !== null) {
+      const currentHeight = promptInput.style.height;
       promptInput.style.height = "auto";
-      promptInput.style.height = `${promptInput.scrollHeight}px`;
+      const targetHeight = `${promptInput.scrollHeight}px`;
+      promptInput.style.height = currentHeight;
+
+      const maxHeight = promptMaxHeight;
+      const targetHeightNumber = parseInt(targetHeight, 10);
+      promptInput.style.overflowY =
+        targetHeightNumber > maxHeight ? "scroll" : "hidden";
+
+      requestAnimationFrame(() => {
+        promptInput.style.height = targetHeight;
+      });
     }
   };
 
@@ -77,44 +88,52 @@ const PromptInput = ({ prompt, onChange, onSubmit }: PromptInputProps) => {
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!isSubmitDisabled() && !isStreaming) {
+      if (!isSubmitDisabled() && !isChatResponsePending) {
         submitPrompt();
       }
     }
   };
 
-  const stopStreaming = () => {
-    abortController?.abort(""); // empty string set for further error handling
-  };
-
   const handleStopBtnClick: MouseEventHandler = (event) => {
     event.preventDefault();
-    stopStreaming();
+    onRequestAbort?.();
     focusPromptInput();
   };
 
   const handleStopBtnKeyDown: KeyboardEventHandler = (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      stopStreaming();
+      onRequestAbort?.();
       focusPromptInput();
     }
   };
 
-  const promptInputButton = isStreaming ? (
-    <PromptInputButton
-      icon="prompt-stop"
-      type="button"
-      onClick={handleStopBtnClick}
-      onKeyDown={handleStopBtnKeyDown}
-    />
-  ) : (
-    <PromptInputButton
-      icon="prompt-send"
-      type="submit"
-      disabled={isSubmitDisabled()}
-    />
-  );
+  const getPromptInputButton = () => {
+    if (onRequestAbort) {
+      return isChatResponsePending ? (
+        <PromptInputButton
+          icon="prompt-stop"
+          type="button"
+          onClick={handleStopBtnClick}
+          onKeyDown={handleStopBtnKeyDown}
+        />
+      ) : (
+        <PromptInputButton
+          icon="prompt-send"
+          type="submit"
+          disabled={isSubmitDisabled()}
+        />
+      );
+    } else {
+      return (
+        <PromptInputButton
+          icon="prompt-send"
+          type="submit"
+          disabled={isSubmitDisabled()}
+        />
+      );
+    }
+  };
 
   return (
     <form className="prompt-input__form" onSubmit={handleSubmit}>
@@ -128,7 +147,7 @@ const PromptInput = ({ prompt, onChange, onSubmit }: PromptInputProps) => {
         onChange={onChange}
         onKeyDown={handleKeyDown}
       />
-      {promptInputButton}
+      {getPromptInputButton()}
     </form>
   );
 };

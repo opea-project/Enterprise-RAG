@@ -58,6 +58,9 @@ class OPEAEmbedding:
         self._connector = connector.lower()
         self._APIs = []
 
+        self.REQUEST_BATCH_SIZE = 16 # how many texts are in one request
+        self.ASYNCIO_MAX_TASKS_NUMBER = 128
+
         self._api_config = None
         if self._is_api_based():
             self._api_config = self._get_api_config()
@@ -103,26 +106,33 @@ class OPEAEmbedding:
                 raise ValueError("Input text is empty. Provide a valid input text.")
 
             # Multithreaded executor is needed to enabled batching in the model server
-            async def multithreaded_embed_query(doc):
-                # TODO: Process a batch of documents instead of handling them one by one
-                res_vector = await self.embed_documents([doc.text])
+            logger.debug(f"Received {len(docs_to_parse)} texts in the request.")
+            async def multithreaded_embed_query(i, batch, semaphore):
+                async with semaphore:
+                    texts = [doc.text for doc in batch]
+                    res_vectors = await self.embed_documents(texts)
 
-                if len(res_vector) == 1:
-                    # For documents of 1 KB or smaller, TorchServe returns the result vector wrapped in an additional list,
-                    # extract the inner list to ensure compatibility with the next steps
-                    res_vector = res_vector[0]
+                    if len(res_vectors) == 1:
+                        res_vector = res_vectors[0]
+                        return [EmbedDoc(text=batch[0].text, embedding=res_vector, metadata=batch[0].metadata)]
 
+                    embed_docs = []
+                    for doc, res_vector in zip(batch, res_vectors):
+                        embed_docs.append(EmbedDoc(text=doc.text, embedding=res_vector, metadata=doc.metadata))
+                    return embed_docs
 
-                return EmbedDoc(text=doc.text, embedding=res_vector, metadata=doc.metadata)
+            batches = [docs_to_parse[i:i + self.REQUEST_BATCH_SIZE] for i in range(0, len(docs_to_parse), self.REQUEST_BATCH_SIZE)]
 
-
-            # Create tasks for each document
-            tasks = [multithreaded_embed_query(doc) for doc in docs_to_parse]
+            semaphore = asyncio.Semaphore(self.ASYNCIO_MAX_TASKS_NUMBER)
+            tasks = [multithreaded_embed_query(i, batch, semaphore) for i, batch in enumerate(batches)]
 
             # Run all tasks concurrently
             docs = await asyncio.gather(*tasks)
+            flatten_docs = []
+            for d in docs:
+                flatten_docs.extend(d)
 
-            return EmbedDocList(docs=docs) # return EmbedDocList
+            return EmbedDocList(docs=flatten_docs) # return EmbedDocList
 
 
     def _import_langchain(self) -> None:

@@ -101,9 +101,9 @@ class OPEAReranker:
             Exception: If there is any other error during the request to the reranking service.
         """
 
-        # Although unlikely, ensure that 'initial_query' is provided and not empty before proceeding.
+        # Although unlikely, ensure that 'user_prompt' is provided and not empty before proceeding.
 
-        if not input.initial_query.strip():
+        if not input.user_prompt.strip():
             logger.error("No initial query provided.")
             raise ValueError("Initial query cannot be empty.")
 
@@ -113,10 +113,10 @@ class OPEAReranker:
             try:
                 retrieved_docs = [doc.text for doc in input.retrieved_docs]
                 response_data = await self._async_call_reranker(
-                    input.initial_query, retrieved_docs
+                    input.user_prompt, retrieved_docs
                 )
-                logger.info(f"Received response from reranking service: {response_data}")
-                best_response_list = self._filter_top_n(input.top_n, response_data)
+                logger.debug(f"Received response from reranking service: {response_data}")
+                best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
             except TimeoutError as e:
                 raise TimeoutError(e)
             except Timeout as e:
@@ -131,7 +131,7 @@ class OPEAReranker:
                 logger.error(f"Error during request to reranking service: {e}")
                 raise Exception(f"Error during request to reranking service: {e}")
 
-            if not best_response_list:
+            if not response_data:
                 logger.warning("No best responses found. Using all retrieved documents.")
                 reranked_docs = input.retrieved_docs
             else:
@@ -140,18 +140,19 @@ class OPEAReranker:
             logger.warning("No retrieved documents found")
             reranked_docs = []
 
-        return PromptTemplateInput(data={"initial_query": input.initial_query.strip(), "reranked_docs": reranked_docs})
+        cleaned_reranked_docs = [doc.text for doc in reranked_docs]
+        return PromptTemplateInput(data={"user_prompt": input.user_prompt.strip(), "reranked_docs": cleaned_reranked_docs})
 
 
     async def _async_call_reranker(
         self,
-        initial_query: str,
+        user_prompt: str,
         retrieved_docs: List[str],
     ) -> RerankScoreResponse:
         """
         Async calls the reranker service to rerank the retrieved documents based on the initial query.
         Args:
-            initial_query (str): The initial query string.
+            user_prompt (str): The initial query string.
             retrieved_docs (List[str]): The list of retrieved documents.
         Returns:
             RerankScoreResponse: The response from the reranker service.
@@ -161,7 +162,7 @@ class OPEAReranker:
             Exception: For any other exceptions that occur during the request.
         """
 
-        data = {"query": initial_query, "texts": retrieved_docs}
+        data = {"query": user_prompt, "texts": retrieved_docs}
 
         try:
             async with aiohttp.ClientSession() as session:
@@ -191,7 +192,7 @@ class OPEAReranker:
             logger.error(f"An error occurred while requesting to the reranking service: {e}")
             raise Exception(f"An error occurred while requesting to the reranking service: {e}")
 
-    def _filter_top_n(self, top_n: int, data: RerankScoreResponse) -> RerankScoreResponse:
+    def _filter_top_n(self, top_n: int, data: RerankScoreResponse, score_threshold: float=None) -> RerankScoreResponse:
         """
         Filter and return the top N responses based on their scores.
 
@@ -203,4 +204,8 @@ class OPEAReranker:
             List[Dict[str, float]]: The filtered list of top responses.
 
         """
-        return heapq.nlargest(top_n, data, key=lambda x: x["score"])
+        top_n_outputs = heapq.nlargest(top_n, data, key=lambda x: x["score"])
+        if score_threshold is not None:
+            out = [s for s in top_n_outputs if s["score"] > score_threshold]
+            return out
+        return top_n_outputs

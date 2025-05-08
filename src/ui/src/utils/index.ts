@@ -5,15 +5,7 @@ import DOMPurify from "dompurify";
 import { toASCII } from "punycode";
 import { validate as isUuidValid } from "uuid";
 
-const isSafeHref = (href: string | undefined) => {
-  const sanitizedHref = sanitizeHref(href);
-  return href === sanitizedHref;
-};
-
-const isPunycodeSafe = (input: string) => {
-  const punycodeInput = toASCII(input);
-  return input === punycodeInput;
-};
+import { acronyms } from "@/utils/constants";
 
 const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
   if (!isUuidValid(uuid)) {
@@ -22,6 +14,22 @@ const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
 
   const encodedUuid = encodeURIComponent(uuid);
   return baseUrl.replace("{uuid}", encodedUuid);
+};
+
+const formatSnakeCaseToTitleCase = (value: string) =>
+  value
+    .split("_")
+    .map((str) => (acronyms.includes(str) ? str : titleCaseString(str)))
+    .join(" ");
+
+const isSafeHref = (href: string | undefined) => {
+  const sanitizedHref = sanitizeHref(href);
+  return href === sanitizedHref;
+};
+
+const isPunycodeSafe = (input: string) => {
+  const punycodeInput = toASCII(input);
+  return input === punycodeInput;
 };
 
 const tryDecode = (value: string) => {
@@ -34,11 +42,6 @@ const tryDecode = (value: string) => {
     }
   }
   return decodedValue;
-};
-
-const sanitizeString = (value: string) => {
-  const decodedValue = tryDecode(value);
-  return DOMPurify.sanitize(decodedValue);
 };
 
 const sanitizeHref = (href: string | undefined) => {
@@ -59,10 +62,20 @@ const sanitizeHref = (href: string | undefined) => {
   }
 };
 
+const sanitizeString = (value: string) => {
+  const decodedValue = tryDecode(value);
+  return DOMPurify.sanitize(decodedValue);
+};
+
+const titleCaseString = (value: string) =>
+  `${value.slice(0, 1).toUpperCase()}${value.slice(1).toLowerCase()}`;
+
 export {
   constructUrlWithUuid,
+  formatSnakeCaseToTitleCase,
   isPunycodeSafe,
   isSafeHref,
   sanitizeHref,
   sanitizeString,
+  titleCaseString,
 };

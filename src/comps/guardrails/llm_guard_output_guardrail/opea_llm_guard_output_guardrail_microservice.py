@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import time
 
 from dotenv import dotenv_values
 from fastapi import Request, HTTPException
@@ -18,6 +19,7 @@ from comps import (
     opea_microservices,
     register_microservice,
     register_statistics,
+    statistics_dict,
 )
 from comps.guardrails.llm_guard_output_guardrail.utils.llm_guard_output_guardrail import (
     OPEALLMGuardOutputGuardrail
@@ -62,6 +64,7 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
         Exception: If there is an error creating the GeneratedDoc or decoding the streaming
         response.
     """
+    start = time.time()
     try:
         data = await llm_output.json()
         doc = GeneratedDoc(**data)
@@ -74,6 +77,8 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
         raise HTTPException(status_code=500, detail=f"{e}") from e
 
     scanned_output = output_guardrail.scan_llm_output(doc)
+
+    statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
 
     if doc.streaming is False:
         return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False)

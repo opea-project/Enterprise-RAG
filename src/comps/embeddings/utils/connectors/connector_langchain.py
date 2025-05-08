@@ -122,7 +122,7 @@ SUPPORTED_INTEGRATIONS = {
     "tei": HuggingFaceEndpointEmbeddings,
     "torchserve": HuggingFaceEndpointEmbeddings,
     "mosec": MosecEmbeddings,
-    "ovms": OVMSEndpointEmbeddings,
+    # "ovms": OVMSEndpointEmbeddings, # FIXME: OVMS returns an output of shape [1, 8, 1024] for one request instead of [1, 1024] - investigation is needed
 }
 
 class LangchainEmbedding(EmbeddingConnector):

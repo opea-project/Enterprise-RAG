@@ -6,7 +6,7 @@
 import allure
 import pytest
 
-ORIGINAL_TEST = "test_dataprep.sh"
+ORIGINAL_TEST = "scripts/test_dataprep.sh"
 
 
 @allure.testcase("IEASG-T12")

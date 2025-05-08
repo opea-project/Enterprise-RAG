@@ -14,6 +14,7 @@ import {
   ServiceStatus,
 } from "@/features/admin-panel/control-plane/types";
 import { useAppSelector } from "@/store/hooks";
+import { formatSnakeCaseToTitleCase } from "@/utils";
 
 interface SelectedServiceCardProps extends PropsWithChildren {
   serviceStatus?: ServiceStatus;
@@ -63,19 +64,6 @@ const SelectedServiceCard = ({
   );
 };
 
-const formatLabel = (label: string) =>
-  label
-    .split("_")
-    .map((word) => {
-      if (["LLM", "DB"].includes(word)) {
-        return word;
-      }
-
-      word = word.toLowerCase();
-      return `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`;
-    })
-    .join(" ");
-
 interface ServiceDetailsGridProps {
   serviceDetails?: ServiceDetails;
 }
@@ -89,7 +77,9 @@ const ServiceDetailsGrid = ({ serviceDetails }: ServiceDetailsGridProps) => {
     <section className="service-details-grid">
       {Object.entries(serviceDetails).map(([label, value]) => (
         <Fragment key={label}>
-          <p className="service-detail-label">{formatLabel(label)}</p>
+          <p className="service-detail-label">
+            {formatSnakeCaseToTitleCase(label)}
+          </p>
           <p className="service-detail-value">{value}</p>
         </Fragment>
       ))}

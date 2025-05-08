@@ -1,0 +1,28 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+{% if tag is defined %}
+image:
+  fingerprint:
+    tag: "{{ tag }}"
+{% endif %}
+    repository: {{ registry }}
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
+mongodb:
+  auth:
+    usernames:
+      - {{ fingerprint.mongo.auth.user.db_user }}
+    passwords:
+      - {{ MONGO_DB_PASSWORD }}
+    databases:
+      - {{ fingerprint.mongo.auth.db_name }}
+    rootPassword: {{ MONGO_ADMIN_PASSWORD }}
+{% if fingerprint.additional_values is defined %}
+{{ fingerprint.additional_values | to_nice_yaml }}
+{% endif %}

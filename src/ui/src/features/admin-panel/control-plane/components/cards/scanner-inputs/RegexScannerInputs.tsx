@@ -9,7 +9,7 @@ import ServiceArgumentThreeStateSwitch from "@/features/admin-panel/control-plan
 import {
   RegexScannerArgs,
   RegexScannerConfig,
-} from "@/features/admin-panel/control-plane/config/guards/scanners";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import useGuardScannerInputs from "@/features/admin-panel/control-plane/hooks/useGuardScannerInputs";
 
 const RegexScannerInputs = ({

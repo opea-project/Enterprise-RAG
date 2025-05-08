@@ -5,35 +5,40 @@ import re
 
 from comps import (
     LLMParamsDoc,
+    LLMPromptTemplate,
     TextDoc,
     PromptTemplateInput,
     get_opea_logger
 )
 
-
-from comps.prompt_template.utils.templates import template_001_english as default_prompt_template
+from comps.prompt_template.utils.templates import template_system_english as default_system_template
+from comps.prompt_template.utils.templates import template_user_english as default_user_template
+from comps.prompt_template.utils.conversation_history_handler import ConversationHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEAPromptTemplate:
     def __init__(self):
-
+        self._if_conv_history_in_prompt = False
+        self._conversation_history_placeholder = "conversation_history"
+        self.ch_handler = ConversationHistoryHandler()
         try:
-            self._validate(default_prompt_template)
-            self.prompt_template = default_prompt_template
+            self._validate(default_system_template, default_user_template)
+            self.system_prompt_template = default_system_template
+            self.user_prompt_template = default_user_template
         except ValueError as e:
             logger.error(f"Default prompt template validation failed, err={e}")
             raise ValueError(f"Default prompt template validation failed, err={e}")
         logger.info("Initializing OPEAPromptTemplate with default template")
 
 
-    def _validate(self, prompt_template: str, placeholders: set = {"initial_query", "reranked_docs"}) -> None:
+    def _validate(self, system_prompt_template: str, user_prompt_template: str, placeholders: set = {"user_prompt", "reranked_docs"}) -> None:
         """
         Validates the given prompt template by checking for required and unexpected placeholders.
         Args:
             prompt_template (str): The prompt template string to be validated.
             placeholders (set, optional): A set of expected placeholders that should be present in the template.
-                Defaults to {"initial_query", "reranked_docs"}.
+                Defaults to {"user_prompt", "reranked_docs"}.
         Raises:
             ValueError: If the prompt template is empty.
             ValueError: If the prompt template does not contain any placeholders.
@@ -42,31 +47,44 @@ class OPEAPromptTemplate:
             ValueError: If the prompt template contains unexpected placeholders.
         """
 
-        if prompt_template.strip() == "":
+        if system_prompt_template.strip() == "" or user_prompt_template.strip == "":
             raise ValueError("Prompt template cannot be empty")
 
-        
         # Find all placeholders in the format {placeholder}
-        placeholders_in_template = extract_placeholders_from_template(prompt_template)
-        if not placeholders_in_template:
+        system_placeholders_in_template = set(extract_placeholders_from_template(system_prompt_template))
+        user_placeholders_in_template = set(extract_placeholders_from_template(user_prompt_template))
+        if not system_placeholders_in_template or not user_placeholders_in_template:
             raise ValueError("The prompt template does not contain any placeholders")
 
         if not placeholders:
             raise ValueError("The set of expected placeholders cannot be empty")
 
-         # Ensure the required placeholders are present in the template
-        missing_placeholders = placeholders - set(placeholders_in_template)
+        if system_placeholders_in_template.intersection(user_placeholders_in_template) != set():
+            duplicates = system_placeholders_in_template.intersection(user_placeholders_in_template)
+            raise ValueError(f"System prompt cannot have same placeholders as user prompt. Found duplicates: {duplicates}")
+
+        combined_placeholders = system_placeholders_in_template.union(user_placeholders_in_template)
+
+         # Ensure the required placeholders are present in templates
+        missing_placeholders = placeholders - combined_placeholders
         if missing_placeholders:
             raise ValueError(f"The prompt template is missing the following required placeholders: {missing_placeholders}")
 
-        # Ensure no placeholders in the template are not in the provided placeholders set
-        extra_placeholders = set(placeholders_in_template) - placeholders
-        if extra_placeholders:
-            raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders}")
+        # Ensure no placeholders in templates are not in the provided placeholders set
+        extra_placeholders = combined_placeholders - placeholders
+        extra_placeholders_no_ch = extra_placeholders - set([self._conversation_history_placeholder])
+        if extra_placeholders_no_ch:
+            raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders_no_ch}")
+
+        if self._conversation_history_placeholder not in extra_placeholders:
+            logger.warning("A placeholder for conversation history is missing. LLM will not remember previous answers. " +
+                           "Add {conversation_history} placeholder if you want to add the conversation to LLM.")
+            self._if_conv_history_in_prompt = False
+        else:
+            self._if_conv_history_in_prompt = True
 
 
-
-    def _changed(self, new_prompt_template: str, placeholders: list) -> bool:
+    def _changed(self, new_system_prompt_template: str, new_user_prompt_template: str, placeholders: list) -> bool:
         """
         Checks if the new prompt template is different from the current one and updates it if valid.
         Args:
@@ -78,19 +96,21 @@ class OPEAPromptTemplate:
             Exception: If the new prompt template fails validation.
         """
 
-        # These checks are redundant since the _changed method is called only when new_prompt_template is not empty, 
+        # These checks are redundant since the _changed method is called only when new_prompt_template is not empty,
         # but they are retained for the sake of atomicity.
-        if new_prompt_template.strip() is None or new_prompt_template.strip() == "":
+        if (new_system_prompt_template.strip() is None or new_system_prompt_template.strip() == "") and \
+            (new_user_prompt_template.strip() is None or new_user_prompt_template.strip() == ""):
             logger.info("No changes made to the prompt template")
             return False
-        
-        if new_prompt_template == self.prompt_template:
+
+        if new_system_prompt_template == self.system_prompt_template and new_user_prompt_template == self.user_prompt_template:
             logger.info("No changes made to the prompt template; it is already set")
             return False
-        
+
         try:
-            self._validate(new_prompt_template, placeholders)
-            self.prompt_template = new_prompt_template
+            self._validate(new_system_prompt_template, new_user_prompt_template, placeholders)
+            self.system_prompt_template = new_system_prompt_template
+            self.user_prompt_template = new_user_prompt_template
         except Exception as e:
             logger.error(f"Prompt template validation failed: {e}")
             raise
@@ -100,16 +120,20 @@ class OPEAPromptTemplate:
 
     def _get_prompt(self, **kwargs) -> str:
         """
-        Generates a formatted prompt string by inserting the provided arguments
-        into the prompt template.
+        Generates a formatted system and user prompts strings by inserting the provided arguments
+        into the prompt templates.
 
         Args:
-            **kwargs: Arbitrary keyword arguments to be included in the prompt.
+            **kwargs: Arbitrary keyword arguments to be included in the prompts.
 
         Returns:
-            str: The formatted prompt string.
+            tuple: The formatted system and user prompt strings.
         """
-        return self.prompt_template.format(**kwargs).strip()
+        system_prompt = self.system_prompt_template.format(**kwargs).strip()
+        user_prompt = self.user_prompt_template.format(**kwargs).strip()
+
+        return system_prompt, user_prompt
+
 
 
     async def run(self, input: PromptTemplateInput) -> LLMParamsDoc:
@@ -128,31 +152,42 @@ class OPEAPromptTemplate:
         logger.debug(f"Keys in input data: {keys}")
 
         # Update prompt template if a new one is provided in the input and logs the update.
-        if input.prompt_template is not None:
-            if self._changed(input.prompt_template, keys):
+        if input.system_prompt_template is not None and input.user_prompt_template is not None:
+            if self._changed(input.system_prompt_template, input.user_prompt_template, keys):
                 logger.info("The prompt template has been updated.")
-                logger.debug(f"A new prompt template: {self.prompt_template}")
+                logger.debug(f"System Prompt:\n{self.system_prompt_template}")
+                logger.debug(f"User Prompt:\n{self.user_prompt_template}")
             else:
                 logger.debug("The prompt template has not been updated.")
                 # Ensure the input data keys match the expected placeholders
                 # even if the prompt template has not changed
-                expected_placeholders = extract_placeholders_from_template(self.prompt_template)
+                expected_placeholders_system = extract_placeholders_from_template(self.system_prompt_template)
+                expected_placeholders_user = extract_placeholders_from_template(self.user_prompt_template)
+                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._conversation_history_placeholder])
                 if keys != expected_placeholders:
                     logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
                     raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
 
-
         # Build the prompt data based on the input data by extracting text from nested dictionaries if needed
-        final_prompt = ""
+        final_system_prompt = ""
+        final_user_prompt = ""
         prompt_data = {}
 
         for key, value in input.data.items():
             prompt_data[key] = extract_text_from_nested_dict(value)
             logger.debug(f"Extracted text for key {key}: {prompt_data[key]}")
 
+        # Get conversation history
+        if self._if_conv_history_in_prompt:
+            if input.conversation_history is None:
+                prompt_data[self._conversation_history_placeholder] = ""
+            else:
+                prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
+                                                                                                                 input.conversation_history_parse_type)
+
         # Generate the final prompt
         try:
-            final_prompt = self._get_prompt(**prompt_data).strip()
+            final_system_prompt, final_user_prompt = self._get_prompt(**prompt_data)
         except KeyError as e:
             logger.error(f"Failed to get prompt from template, missing value for key {e}")
             raise KeyError(f"Failed to get prompt from template, missing value for key {e}")
@@ -160,7 +195,7 @@ class OPEAPromptTemplate:
             logger.error(f"Failed to get prompt from template, err={e}")
             raise
 
-        return LLMParamsDoc(query=final_prompt)
+        return LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt))
 
 
 def extract_placeholders_from_template(template: str) -> set:
@@ -190,6 +225,8 @@ def extract_text_from_nested_dict(data: any) -> str:
         """
         if isinstance(data, str):
             return data
+        elif data is None:
+            return ""
         elif isinstance(data, TextDoc):
             return data.text
         elif isinstance(data, list):

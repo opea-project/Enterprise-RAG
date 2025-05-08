@@ -5,9 +5,6 @@ Enterprise RAG provides telemetry via Grafana dashboards. To access the dashboar
 
 Upon visiting `https://grafana.erag.com`, you should observe the following UI layout:
 
-> **_NOTE!_**  
-> Please ask Enterprise RAG team for credentials to access Grafana.
-
 ![login screenshot](../images/telemetry/login.png)
 
 ### Dashboards

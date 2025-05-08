@@ -3,22 +3,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  changeServiceArguments,
-  setChatQnAGraphEditMode,
-} from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
+import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
+import { setChatQnAGraphIsEditModeEnabled } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
   ServiceArgumentInputValue,
 } from "@/features/admin-panel/control-plane/types";
-import { ChangeArgumentsRequestData } from "@/features/admin-panel/control-plane/types/systemFingerprint";
+import { ChangeArgumentsRequestData } from "@/features/admin-panel/control-plane/types/api";
 import { useAppDispatch } from "@/store/hooks";
 
 type ArgumentsForm = Record<string, Record<string, ServiceArgumentInputValue>>;
 
 const useGuardServiceCard = <T>(guardName: string, args?: T) => {
   const dispatch = useAppDispatch();
+  const [changeArguments] = useChangeArgumentsMutation();
 
   const [invalidArguments, setInvalidArguments] = useState<
     [string, string[]][]
@@ -96,22 +95,24 @@ const useGuardServiceCard = <T>(guardName: string, args?: T) => {
   );
 
   const onEditArgumentsButtonClick = () => {
-    dispatch(setChatQnAGraphEditMode(true));
+    dispatch(setChatQnAGraphIsEditModeEnabled(true));
   };
 
   const onConfirmChangesButtonClick = () => {
-    dispatch(
-      changeServiceArguments({
+    const changeArgumentsRequest = [
+      {
         name: guardName,
         data: argumentsForm as ChangeArgumentsRequestData,
-      }),
-    );
+      },
+    ];
+
+    changeArguments(changeArgumentsRequest);
   };
 
   const onCancelChangesButtonClick = () => {
     setArgumentsForm(previousArgumentsValues);
     setInvalidArguments([]);
-    dispatch(setChatQnAGraphEditMode(false));
+    dispatch(setChatQnAGraphIsEditModeEnabled(false));
   };
 
   const isGuardFormModified = () =>

@@ -1,0 +1,25 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+keycloak:
+  enabled: false
+  namespace: "auth"
+  domainName: auth.erag.com
+  helm:
+    version: "v3.16.1"
+    repo_name: "bitnami"
+    repo_url: "https://charts.bitnami.com/bitnami"
+    chart_url: "oci://registry-1.docker.io/bitnamicharts/keycloak"
+    chart_name: "keycloak"
+    chart_version: "24.3.2"
+    release_name: "keycloak"
+    default_values_file: "{{ playbook_dir }}/../components/keycloak/values.yaml"
+
+  tls:
+    secret_name: "tls-secret"
+
+  auth:
+    admin:
+      username: "admin"
+      password_secret_name: "keycloak"

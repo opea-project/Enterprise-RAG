@@ -1,0 +1,39 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Validate settings
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: validate_settings.yaml
+  tags:
+    - install
+    - uninstall
+- name: Create log directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '755'
+  loop:
+    - "{{ log_dir }}"
+    - "{{ tmp_dir }}"
+  tags:
+    - always
+- name: Disable istio injection for all namespaces
+  vars:
+    istio_injection: false
+  ansible.builtin.include_role:
+    name: configure_istio
+    tasks_from: manage_injection.yaml
+  tags:
+    - always
+- name: Load init passwords
+  ansible.builtin.include_role:
+    name: generate_password
+  tags:
+    - install
+- name: Handle certificates
+  ansible.builtin.include_role:
+    name: certs
+  tags:
+    - install

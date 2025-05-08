@@ -8,7 +8,7 @@ import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/com
 import {
   LLMArgs,
   llmFormConfig,
-} from "@/features/admin-panel/control-plane/config/llm";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
 import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 
 const LLMCard = ({
@@ -28,7 +28,7 @@ const LLMCard = ({
       serviceDetails={details}
       footerProps={footerProps}
     >
-      <p className="mb-1 mt-3 text-sm font-medium">Service Arguments</p>
+      <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentNumberInput
         {...llmFormConfig.max_new_tokens}
         initialValue={previousArgumentsValues.max_new_tokens}

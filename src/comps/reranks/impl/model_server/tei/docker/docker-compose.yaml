@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   reranking-tei-model-server:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.6
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.7
     container_name: reranking-tei-model-server
     ports:
       - "${RERANKER_TEI_PORT}:80"

@@ -23,14 +23,14 @@ export const initializeKeycloak = async (onAuthenticated: () => void) => {
 };
 export const redirectToLogin = () => keycloak.login(loginOptions);
 export const redirectToLogout = () => keycloak.logout();
-export const refreshToken = async () => {
+export const refreshToken = async (onRefreshTokenFailed: () => void) => {
   if (keycloak.authenticated) {
     try {
       await keycloak.updateToken(minTokenValidity);
     } catch (error) {
       console.error("An error occurred while refreshing the token:", error);
       console.error("Failed to refresh token. Logging out...");
-      redirectToLogout();
+      onRefreshTokenFailed();
     }
   } else {
     console.warn("User is not authenticated. Redirecting to login...");

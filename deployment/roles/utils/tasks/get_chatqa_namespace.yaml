@@ -1,0 +1,21 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Get namespace for the first pipeline item with type chatqa
+  ansible.builtin.set_fact:
+    chatqa_namespace: >-
+      {{
+        (pipelines | selectattr('type', 'equalto', 'chatqa') | list | first).namespace
+        if (pipelines | selectattr('type', 'equalto', 'chatqa') | list | first) is not none
+        else ''
+      }}
+  tags:
+    - install
+
+- name: Fail if no chatqa namespace is found
+  ansible.builtin.fail:
+    msg: "No pipeline item with type 'chatqa' found."
+  when: chatqa_namespace is not defined or chatqa_namespace | length == 0
+  tags:
+    - install

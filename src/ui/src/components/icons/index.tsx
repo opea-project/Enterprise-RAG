@@ -6,6 +6,9 @@ import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
 import ChatIcon from "@/components/icons/ChatIcon/ChatIcon";
 import CloseIcon from "@/components/icons/CloseIcon/CloseIcon";
 import CloseNotificationIcon from "@/components/icons/CloseNotificationIcon/CloseNotificationIcon";
+import CopyErrorIcon from "@/components/icons/CopyErrorIcon/CopyErrorIcon";
+import CopyIcon from "@/components/icons/CopyIcon/CopyIcon";
+import CopySuccessIcon from "@/components/icons/CopySuccessIcon/CopySuccessIcon";
 import DarkModeIcon from "@/components/icons/DarkModeIcon/DarkModeIcon";
 import DataPrepIcon from "@/components/icons/DataPrepIcon/DataPrepIcon";
 import DeleteIcon from "@/components/icons/DeleteIcon/DeleteIcon";
@@ -31,6 +34,9 @@ export const icons = {
   chat: ChatIcon,
   close: CloseIcon,
   "close-notification": CloseNotificationIcon,
+  "copy-error": CopyErrorIcon,
+  copy: CopyIcon,
+  "copy-success": CopySuccessIcon,
   "dark-mode": DarkModeIcon,
   "data-prep": DataPrepIcon,
   delete: DeleteIcon,

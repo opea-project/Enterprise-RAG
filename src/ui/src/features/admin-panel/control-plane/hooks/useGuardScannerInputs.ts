@@ -5,6 +5,7 @@ import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
+import { formatSnakeCaseToTitleCase } from "@/utils";
 
 const useGuardScannerInputs = (
   scannerId: string,
@@ -21,10 +22,7 @@ const useGuardScannerInputs = (
   const handleArgumentValidityChange =
     handlers.onArgumentValidityChange(scannerId);
 
-  const titleCasedName = scannerId
-    .split("_")
-    .map((word) => `${word[0].toUpperCase()}${word.slice(1)}`)
-    .join(" ");
+  const titleCasedName = formatSnakeCaseToTitleCase(scannerId);
 
   return {
     titleCasedName,

@@ -9,7 +9,7 @@
     @apply grid grid-rows-[1fr_3rem];
 
     & .selected-service-card__header {
-      @apply px-4 pt-4 relative;
+      @apply relative px-4 pt-4;
       @apply grid grid-cols-[1rem_auto] items-center justify-items-start gap-2;
 
       & .selected-service-card__header__service-name {

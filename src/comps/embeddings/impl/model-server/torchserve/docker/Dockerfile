@@ -1,7 +1,8 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM intel/intel-extension-for-pytorch:2.5.0-pip-base
+FROM python:3.11-slim
+COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
 
@@ -19,8 +20,10 @@ RUN apt-get -y update                           \
  && apt-get clean
 
 RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
+RUN rm -rf /usr/local/lib/python3.11/site-packages/*
 
-# create user and folders
+# Create user and folders
 RUN useradd -u 1000 -m -s /bin/bash user        \
  && mkdir -p /home/user/tmp /opt/ml/model       \
  && chown -R user /home/user /opt/ml/model
@@ -30,19 +33,12 @@ ENV PATH="$PATH:/home/user/.local/bin"
 ENV PYTHONPATH="/home/user"
 ENV HF_HOME="/home/user/tmp"
 
-RUN pip install --no-cache-dir -U   \
-    sentence_transformers==3.2.1    \
-    transformers==4.46              \
-    accelerate==0.34.2
-
-# RUN python -m pip install oneccl_bind_pt==2.5.0 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/cpu/us/
-
-# Install TorchServe pypi dependencies directly from their requirements.txt file
-RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/serve/v0.12.0/requirements/common.txt \
- && pip install --no-cache-dir -U   \
-    torchserve==0.12.0              \
-    torch-model-archiver==0.12.0
-RUN pip install --no-cache-dir -U packaging==24.2
+# Install UV requirements
+WORKDIR /home/user/
+COPY ./docker/pyproject.toml pyproject.toml
+COPY ./docker/uv.lock uv.lock
+RUN uv sync --locked --no-cache
+ENV PATH="/home/user/.venv/bin:$PATH"
 
 # Add TS entrypoint
 COPY --chown=user:user docker/config.properties /home/user
@@ -51,11 +47,7 @@ COPY --chown=user:user model/embedding_handler.py /home/user/utils/embedding_han
 COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yaml
 RUN chmod +x /home/user/entrypoint.sh
 
-# Cleanup
-RUN pip cache purge && rm -rf /tmp/tmp* && rm -iRf /home/user/.cache
-
-WORKDIR /home/user/
-# INTEL specific ENVs
+# Intel specific environment variables
 ENV KMP_SETTINGS=1
 ENV KMP_AFFINITY=granularity=fine,compact,1,0
 ENV KMP_BLOCKTIME=1

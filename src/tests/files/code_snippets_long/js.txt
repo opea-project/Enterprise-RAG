@@ -1,0 +1,151 @@
+const fs = require("fs");
+const readline = require("readline");
+
+const TASKS_FILE = "tasks.json";
+
+class Task {
+  constructor(title, description = "", dueDate = null, completed = false) {
+    this.title = title;
+    this.description = description;
+    this.dueDate = dueDate;
+    this.completed = completed;
+  }
+
+  toString() {
+    const status = this.completed ? "[?]" : "[ ]";
+    const due = this.dueDate ? ` (Due: ${this.dueDate})` : "";
+    const desc = this.description ? `\n    ${this.description}` : "";
+    return `${status} ${this.title}${due}${desc}`;
+  }
+}
+
+class ToDoList {
+  constructor() {
+    this.tasks = [];
+    this.load();
+  }
+
+  addTask(task) {
+    this.tasks.push(task);
+  }
+
+  listTasks() {
+    if (this.tasks.length === 0) {
+      console.log("No tasks available.");
+      return;
+    }
+    this.tasks.forEach((task, i) => {
+      console.log(`${i + 1}. ${task.toString()}`);
+    });
+  }
+
+  completeTask(index) {
+    if (this.tasks[index]) {
+      this.tasks[index].completed = true;
+      console.log("Task marked complete.");
+    } else {
+      console.log("Invalid task number.");
+    }
+  }
+
+  removeTask(index) {
+    if (this.tasks[index]) {
+      this.tasks.splice(index, 1);
+      console.log("Task removed.");
+    } else {
+      console.log("Invalid task number.");
+    }
+  }
+
+  save() {
+    fs.writeFileSync(TASKS_FILE, JSON.stringify(this.tasks, null, 2));
+    console.log("Tasks saved.");
+  }
+
+  load() {
+    if (fs.existsSync(TASKS_FILE)) {
+      const data = fs.readFileSync(TASKS_FILE);
+      const raw = JSON.parse(data);
+      this.tasks = raw.map(
+        (t) =>
+          new Task(t.title, t.description, t.dueDate, t.completed)
+      );
+    }
+  }
+}
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+const todo = new ToDoList();
+
+function showMenu() {
+  console.log(`
+==== TO-DO LIST ====
+1. Add task
+2. List tasks
+3. Mark task as complete
+4. Remove task
+5. Save tasks
+6. Load tasks
+0. Exit
+  `);
+}
+
+function ask(prompt) {
+  return new Promise((resolve) => {
+    rl.question(prompt, resolve);
+  });
+}
+
+async function getTaskInput() {
+  const title = await ask("Title: ");
+  const description = await ask("Description (optional): ");
+  const dueDate = await ask("Due date (optional): ");
+  return new Task(title, description, dueDate);
+}
+
+async function main() {
+  while (true) {
+    showMenu();
+    const choice = await ask("Choose an option: ");
+    switch (choice) {
+      case "1":
+        const task = await getTaskInput();
+        todo.addTask(task);
+        console.log("Task added.");
+        break;
+      case "2":
+        todo.listTasks();
+        break;
+      case "3":
+        todo.listTasks();
+        const cIdx = await ask("Enter task number to complete: ");
+        todo.completeTask(parseInt(cIdx) - 1);
+        break;
+      case "4":
+        todo.listTasks();
+        const rIdx = await ask("Enter task number to remove: ");
+        todo.removeTask(parseInt(rIdx) - 1);
+        break;
+      case "5":
+        todo.save();
+        break;
+      case "6":
+        todo.load();
+        console.log("Tasks loaded.");
+        break;
+      case "0":
+        todo.save();
+        rl.close();
+        console.log("Goodbye!");
+        return;
+      default:
+        console.log("Invalid choice.");
+    }
+  }
+}
+
+main();

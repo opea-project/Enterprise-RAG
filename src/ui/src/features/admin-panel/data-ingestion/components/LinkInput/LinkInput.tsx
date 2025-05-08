@@ -78,7 +78,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
         value={value}
         name="link-input"
         type="url"
-        placeholder="Enter valid URL (starting with http:// or https://)"
+        placeholder="Enter valid URL (starting with http:// or https://) to HTML document"
         className={classNames({ "input--invalid": isInvalid })}
         onChange={handleLinkInputChange}
         onKeyDown={handleLinkInputKeyDown}

@@ -9,6 +9,7 @@ export const filenameUnsafeCharsRegex = new RegExp(/[<>:"/\\|?*\x00-\x1F]/g);
 export const filenameMaxLength = 255;
 
 export const supportedFileExtensions = [
+  "adoc",
   "pdf",
   "html",
   "txt",

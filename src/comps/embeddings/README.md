@@ -19,7 +19,7 @@ Support for specific model servers with Dockerfiles or build instruction.
 | ------------                | ----------| ------------|
 | [torchserve](./impl/model-server/torchserve)  | &#x2713;  | &#x2717;    |
 | [TEI](./impl/model-server/tei/)                | &#x2713;  | &#x2713;    |
-| [OVMS](./impl/model-server/ovms)              | &#x2713;  | &#x2717;    |
+| [OVMS](./impl/model-server/ovms)              | &#x2717;  | &#x2717;    |
 | [mosec](./impl/model-server/mosec)            | &#x2713;  | &#x2717;    |
 
 ## Configuration Options

@@ -59,8 +59,29 @@ Send the request to model server:
 ```bash
 curl http://localhost:8008/v1/completions \
     -X POST \
-    -d '{"model": "mistralai/Mistral-7B-Instruct-v0.1", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+    -d '{
+            "model": "Intel/neural-chat-7b-v3-3",
+            "prompt": "What is Deep Learning?",
+            "max_tokens": 32,
+            "temperature": 0
+        }' \
     -H "Content-Type: application/json"
+```
+
+VLLM also supports OpenAI Chat Completions API ([here](https://docs.vllm.ai/en/stable/getting_started/quickstart.html#openai-chat-completions-api-with-vllm)) to help build the prompt in more dynamic way. You can send the request this way like so:
+
+```bash
+curl http://localhost:8008/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+            "model": "Intel/neural-chat-7b-v3-3",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "What is Deep Learning?"}
+            ],
+            "max_tokens": 32,
+            "temperature": 0
+        }'
 ```
 
 Expected output:
@@ -69,7 +90,7 @@ Expected output:
   "id": "cmpl-1d9266525da24c5ba747e69208f71332",
   "object": "text_completion",
   "created": 1725543426,
-  "model": "mistralai/Mistral-7B-Instruct-v0.1",
+  "model": "Intel/neural-chat-7b-v3-3",
   "choices": [
     {
       "index": 0,
@@ -120,7 +141,9 @@ To build and start the services using Docker Compose
 
 ```bash
 cd docker
-mkdir -p data/
+
+# for CPU device
+export UID && docker compose --env-file=.env.cpu -f docker-compose-cpu.yaml up --build -d
 
 # for HPU device (Gaudi)
 docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
@@ -132,7 +155,7 @@ docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
     ```bash
     curl http://localhost:8008/v1/completions \
         -X POST \
-        -d '{"model": "mistralai/Mistral-7B-Instruct-v0.1", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
+        -d '{"model": "Intel/neural-chat-7b-v3-3", "prompt": "What is Deep Learning?", "max_tokens": 32, "temperature": 0}' \
         -H "Content-Type: application/json"
     ```
     **NOTICE**: First ensure that the model server is operational. Warming up might take a while, and during this phase, the endpoint won't be ready to serve the query.
@@ -149,7 +172,16 @@ docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
-        -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_p":0.95,"temperature":0.01,"streaming":false}' \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: Who are you? \n\n"
+                    },
+                "max_new_tokens":17,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":false
+            }' \
         -H 'Content-Type: application/json'
     ```
 
@@ -157,7 +189,16 @@ docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
     ```bash
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
-        -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_p":0.95,"temperature":0.01,"streaming":true}' \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: What is Deep Learning? \n\n"
+                    },
+                "max_new_tokens":32,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":true
+            }' \
         -H 'Content-Type: application/json'
     ```
 

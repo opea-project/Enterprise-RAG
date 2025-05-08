@@ -48,17 +48,24 @@ while True:
         for message in messages:
             logger.debug(f"Received message: {message}")
 
-            data = message['Body']
+            data = message.get('Body')
+            logger.debug(f"Extracted message body: {data}")
+
             try:
                 data = json.loads(data)
-            except json.JSONDecodeError:
-                raise 'Invalid JSON format'
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to decode JSON: {e}")
 
-            logger.debug(f"Received message: {data}")
+                # Unqueue this message
+                sqs.delete_message(
+                    QueueUrl=queue_url,
+                    ReceiptHandle=message['ReceiptHandle']
+                )
+                continue
 
             # Check if records is available
             if data.get('Records', None) is None:
-                logger.debug("Records not found in the message")
+                logger.warning("Records not found in the message")
                 # Unqueue this message
                 sqs.delete_message(
                     QueueUrl=queue_url,

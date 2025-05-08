@@ -1,0 +1,155 @@
+import java.io.*;
+import java.util.*;
+
+class Task implements Serializable {
+    private String title;
+    private String description;
+    private boolean completed;
+    private String dueDate;
+
+    public Task(String title, String description, String dueDate) {
+        this.title = title;
+        this.description = description;
+        this.dueDate = dueDate;
+        this.completed = false;
+    }
+
+    public void markCompleted() {
+        completed = true;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public String toString() {
+        return (completed ? "[?] " : "[ ] ") + title +
+                (dueDate != null && !dueDate.isEmpty() ? " (Due: " + dueDate + ")" : "") +
+                (description != null && !description.isEmpty() ? "\n    " + description : "");
+    }
+}
+
+class ToDoList {
+    private List<Task> tasks = new ArrayList<>();
+    private final String filename = "tasks.ser";
+
+    public void addTask(Task task) {
+        tasks.add(task);
+    }
+
+    public void listTasks() {
+        if (tasks.isEmpty()) {
+            System.out.println("No tasks yet.");
+            return;
+        }
+        int index = 1;
+        for (Task task : tasks) {
+            System.out.println(index++ + ". " + task);
+        }
+    }
+
+    public void markTaskCompleted(int index) {
+        if (index >= 0 && index < tasks.size()) {
+            tasks.get(index).markCompleted();
+            System.out.println("Marked as complete.");
+        } else {
+            System.out.println("Invalid index.");
+        }
+    }
+
+    public void removeTask(int index) {
+        if (index >= 0 && index < tasks.size()) {
+            tasks.remove(index);
+            System.out.println("Task removed.");
+        } else {
+            System.out.println("Invalid index.");
+        }
+    }
+
+    public void saveTasks() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
+            out.writeObject(tasks);
+            System.out.println("Tasks saved.");
+        } catch (IOException e) {
+            System.out.println("Error saving tasks.");
+        }
+    }
+
+    public void loadTasks() {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
+            tasks = (List<Task>) in.readObject();
+            System.out.println("Tasks loaded.");
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("No saved tasks found.");
+        }
+    }
+}
+
+public class ToDoApp {
+    public static void printMenu() {
+        System.out.println("\n===== TO-DO LIST =====");
+        System.out.println("1. Add task");
+        System.out.println("2. List tasks");
+        System.out.println("3. Mark task complete");
+        System.out.println("4. Remove task");
+        System.out.println("5. Save tasks");
+        System.out.println("6. Load tasks");
+        System.out.println("0. Exit");
+        System.out.print("Choice: ");
+    }
+
+    public static Task getTaskInput(Scanner scanner) {
+        System.out.print("Title: ");
+        String title = scanner.nextLine();
+        System.out.print("Description: ");
+        String description = scanner.nextLine();
+        System.out.print("Due date (optional): ");
+        String dueDate = scanner.nextLine();
+        return new Task(title, description, dueDate);
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        ToDoList todo = new ToDoList();
+        todo.loadTasks();
+
+        while (true) {
+            printMenu();
+            String input = scanner.nextLine();
+            switch (input) {
+                case "1":
+                    Task task = getTaskInput(scanner);
+                    todo.addTask(task);
+                    System.out.println("Task added.");
+                    break;
+                case "2":
+                    todo.listTasks();
+                    break;
+                case "3":
+                    todo.listTasks();
+                    System.out.print("Enter task number to complete: ");
+                    int completeIndex = Integer.parseInt(scanner.nextLine()) - 1;
+                    todo.markTaskCompleted(completeIndex);
+                    break;
+                case "4":
+                    todo.listTasks();
+                    System.out.print("Enter task number to remove: ");
+                    int removeIndex = Integer.parseInt(scanner.nextLine()) - 1;
+                    todo.removeTask(removeIndex);
+                    break;
+                case "5":
+                    todo.saveTasks();
+                    break;
+                case "6":
+                    todo.loadTasks();
+                    break;
+                case "0":
+                    todo.saveTasks();
+                    System.out.println("Goodbye!");
+                    return;
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+    }
+}

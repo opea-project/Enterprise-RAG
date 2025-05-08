@@ -33,7 +33,6 @@ def test_fingerprint_append_arguments(fingerprint_api_helper):
     assert response_json.get("text") == text
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T52")
 def test_fingerprint_parameters_modification(fingerprint_api_helper):
     """
@@ -49,7 +48,6 @@ def test_fingerprint_parameters_modification(fingerprint_api_helper):
     assert max_new_tokens != 666, "'append argument' API call should not modify parameters"
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T53")
 def test_fingerprint_change_arguments(fingerprint_api_helper):
     """
@@ -63,14 +61,95 @@ def test_fingerprint_change_arguments(fingerprint_api_helper):
         {
             "name": "llm",
             "data": {
-                "max_new_tokens": current_max_new_tokens + 1,
-                "top_k": 10
+                "max_new_tokens": current_max_new_tokens + 1
             }
         }
     ]
 
+    try:
+        response = fingerprint_api_helper.change_arguments(body)
+        assert response.status_code == 200, "Unexpected status code"
+        new_arguments = fingerprint_api_helper.append_arguments("")
+        new_value_max_new_tokens = new_arguments.json()["parameters"]["max_new_tokens"]
+        assert new_value_max_new_tokens == current_max_new_tokens + 1
+    finally:
+        logger.info(f"Reverting max_new_tokens value to {current_max_new_tokens}")
+        body = [
+            {
+                "name": "llm",
+                "data": {
+                    "max_new_tokens": current_max_new_tokens
+                }
+            }
+        ]
+        fingerprint_api_helper.change_arguments(body)
+
+
+@allure.testcase("IEASG-T152")
+def test_fingerprint_empty_prompt_template(fingerprint_api_helper, chatqa_api_helper):
+    """
+    Make /v1/system_fingerprint/change_arguments API call with an empty system_prompt_template and user_prompt_template.
+    Expect status code 400 because there are no "{initial_query}" and "{reranked_docs}" keywords in the template.
+    """
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
+    original_user_prompt_template = current_arguments.json()["parameters"]["user_prompt_template"]
+    body = [{
+        "name": "prompt_template",
+        "data": {
+            "system_prompt_template": "123",
+            "user_prompt_template": "123"
+        }
+    }]
     response = fingerprint_api_helper.change_arguments(body)
-    assert response.status_code == 200, "Unexpected status code"
-    new_arguments = fingerprint_api_helper.append_arguments("")
-    new_value_max_new_tokens = new_arguments.json()["parameters"]["max_new_tokens"]
-    assert new_value_max_new_tokens == current_max_new_tokens + 1
+    if response.status_code == 200:
+        logger.debug(f"Reverting prompt template to the original values: system: {original_system_prompt_template} user: {original_user_prompt_template}")
+        body = [{
+            "name": "prompt_template",
+            "data": {
+                "system_prompt_template": original_system_prompt_template,
+                "user_prompt_template": original_user_prompt_template
+            }
+        }]
+        fingerprint_api_helper.change_arguments(body)
+    assert response.status_code == 400, "Unexpected status code"
+
+
+@pytest.mark.smoke
+@allure.testcase("IEASG-T151")
+def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_helper):
+    """
+    Change the system_prompt_template to include a specific number. Call ChatQA and check if the response contains the number.
+    """
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
+    body = [{
+        "name": "prompt_template",
+        "data": {
+            "system_prompt_template": "You are a helpful, respectful, and honest assistant to help the user with questions. "
+                               "Please refer to the search results obtained from the local knowledge base. Ignore all "
+                               "information that you think is not relevant to the question. If you don't know the "
+                               "answer to a question, please don't share false information. Always include '1234' "
+                               "in your response so that I can identify you - it is very important. Do not generate "
+                               "an answer that will not contain '1234'. I have to know it's you and I can only verify "
+                               "it by checking if '1234' is in your response. \n\n### Search results: "
+                               "{reranked_docs} \n\n"
+        }
+    }]
+    change_prompt_response = fingerprint_api_helper.change_arguments(body)
+    try:
+        assert change_prompt_response.status_code == 200, "Unexpected status code for prompt template modification call"
+        response = chatqa_api_helper.call_chatqa("What is the capital of France?")
+        assert response.status_code == 200, "Unexpected status code when calling ChatQA with modified prompt template"
+        chatbot_response = chatqa_api_helper.format_response(response)
+        logger.info(f"ChatQA response after modifying prompt template: {chatbot_response}")
+        assert "1234" in chatbot_response, "Response does not contain the expected number '1234'"
+    finally:
+        logger.info(f"Reverting prompt template to the original value: {original_system_prompt_template}")
+        body = [{
+            "name": "prompt_template",
+            "data": {
+                "system_prompt_template": original_system_prompt_template
+            }
+        }]
+        fingerprint_api_helper.change_arguments(body)

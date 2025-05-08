@@ -25,7 +25,7 @@ def mock_redis_vectorstore():
         mock_instance = MockClass.return_value
         #mock_instance.add_texts = ['a', 'b', 'c']
         mock_instance.search = SearchedDoc(
-            initial_query='Hello?',
+            user_prompt='Hello?',
             retrieved_docs=DocList(docs=[
                 TextDoc(text='Hello, how are you?'),
                 TextDoc(text='Hello, I am fine.')

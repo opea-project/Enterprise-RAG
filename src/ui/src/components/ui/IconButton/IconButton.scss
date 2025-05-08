@@ -20,12 +20,20 @@
     @apply text-light-text-error dark:text-dark-text-error;
   }
 
+  &.icon-button--success {
+    @apply text-light-status-success dark:text-dark-status-success;
+  }
+
   &.icon-button--contained {
     @apply rounded-none p-0 text-3xl;
     @apply text-light-text-inverse dark:text-dark-text-primary;
     @apply bg-light-primary dark:bg-dark-primary;
     @apply disabled:bg-light-bg-disabled dark:disabled:bg-dark-bg-disabled;
     @apply disabled:text-light-text-disabled dark:disabled:text-dark-text-disabled;
+
+    &.icon-button--sm {
+      @apply h-8 w-8 rounded p-2 text-sm;
+    }
   }
 
   &.icon-button--outlined {
@@ -45,6 +53,12 @@
       @apply bg-transparent p-0 dark:bg-transparent;
       @apply border-light-status-error dark:border-dark-status-error;
       @apply text-light-text-error dark:text-dark-text-error;
+    }
+
+    &.icon-button--outlined-success {
+      @apply bg-transparent p-0 dark:bg-transparent;
+      @apply border-light-status-success dark:border-dark-status-success;
+      @apply text-light-status-success dark:text-dark-status-success;
     }
   }
 }

@@ -1,0 +1,352 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set roles facts
+  ansible.builtin.set_fact:
+    telemetry_monitoring_helm_override_values_path: "{{ tmp_dir }}/telemetry-monitoring-override-values.yaml"
+  tags:
+    - install
+
+# Important: Loki and Tempo depend on correct DNS resolution to communicate with each other (via service discovery).
+# kind clusters typically use 'kube-dns' instead of 'coredns'.
+# Checks if we're running in a kind environment to decide whether to use kube-dns or coredns
+- name: Get node list
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: node_list
+  tags:
+    - install
+
+- name: Determine DNS service name based on environment
+  ansible.builtin.set_fact:
+    dns_service_name: "{{ 'kube-dns' if 'kind' in node_list.resources | map(attribute='metadata.name') | list | join(' ') else 'coredns' }}"
+  tags:
+    - install
+
+- name: Check kind environment
+  ansible.builtin.debug:
+    msg: "Kind environment detected. Using 'kube-dns' as the DNS service."
+  when: "'kube-dns' in dns_service_name"
+  tags:
+    - install
+
+- name: Update Helm repositories
+  kubernetes.core.helm_repository:
+    name: "{{ item.name }}"
+    repo_url: "{{ item.url }}"
+    state: present
+  loop:
+    - { url: "{{ telemetry.prometheus.helm_repo }}", name: "prometheus-community" }
+    - { url: "{{ telemetry.grafana.helm_repo }}", name: "grafana" }
+    - { url: "{{ telemetry.opensearch.helm_repo }}", name: "opensearch" }
+    - { url: "{{ telemetry.opensearch_collector.helm_repo }}", name: "opentelemetry" }
+  tags:
+    - install
+
+- name: Build Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency build
+    chdir: "{{ item }}"
+  loop:
+    - "{{ telemetry.monitoring.charts_path }}"
+    - "{{ telemetry.logging.charts_path }}"
+    - "{{ telemetry.traces.charts_path }}"
+    - "{{ telemetry.traces_instr.charts_path }}"
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  loop:
+    - "{{ telemetry.monitoring.namespace }}"
+    - "{{ telemetry.traces.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  loop:
+    - "{{ telemetry.monitoring.namespace }}"
+    - "{{ telemetry.traces.namespace }}"
+  tags:
+    - install
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ telemetry.grafana.tls.secret_name }}"
+        namespace: "{{ telemetry.monitoring.namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+    - update
+
+- name: Generate password
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: GRAFANA, user: "{{ telemetry.grafana.auth.admin.username }}" }
+  tags:
+    - install
+
+- name: Create password secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ telemetry.grafana.auth.admin.password_secret_name }}"
+        namespace: "{{ telemetry.monitoring.namespace }}"
+      data:
+        user: "{{ telemetry.grafana.auth.admin.username | b64encode }}"
+        password: "{{ GRAFANA_PASSWORD | b64encode }}"
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ telemetry_monitoring_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [telemetry.monitoring.helm_default_values_file] +
+        [telemetry_monitoring_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Get the secret from the source namespace
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: vector-database-config
+    namespace: chatqa
+  register: secret_info
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Create the secret in the target namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Secret
+    name: vector-database-config
+    namespace: "{{ telemetry.monitoring.namespace }}"
+    state: present
+    definition:
+      metadata:
+        name: "{{ secret_info.resources[0].metadata.name }}"
+        namespace: "{{ telemetry.monitoring.namespace }}"
+      data: "{{ secret_info.resources[0].data }}"
+      type: "{{ secret_info.resources[0].type }}"
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Install monitoring Helm chart
+  kubernetes.core.helm:
+    name: telemetry
+    chart_ref: "{{ telemetry.monitoring.charts_path }}"
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: present
+    values_files: "{{ values_files }}"
+    create_namespace: true
+    wait: true
+  tags:
+    - install
+
+- name: Install Prometheus Adapter Helm chart
+  kubernetes.core.helm:
+    name: prometheus-adapter
+    chart_ref: "prometheus-community/prometheus-adapter"
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: present
+    values_files: "{{ telemetry.prometheus_adapter.values_file }}"
+    wait: true
+  when: hpaEnabled
+  tags:
+    - install
+
+- name: Set otelcol-logs image repository and tag based on condition
+  ansible.builtin.set_fact:
+    helm_otelcol_logs_image_repo: "{{ registry if use_alternate_tagging else registry ~ '/erag-otelcol-contrib-journalctl' }}"
+    helm_otelcol_logs_image_tag: "{{ 'erag-otelcol-contrib-journalctl_' ~ tag if use_alternate_tagging else tag }}"
+  tags:
+    - install
+
+- name: Install logging Helm chart
+  kubernetes.core.helm:
+    name: telemetry-logs
+    chart_ref: "{{ telemetry.logging.charts_path }}"
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: present
+    values_files:
+      - "{{ telemetry.logging.helm_default_values_file }}"
+      - "{{ telemetry.logging.helm_journalctl_values_file }}"
+    values:
+      global:
+        dnsService: "{{ dns_service_name }}"
+      otelcol-logs:
+        image:
+          repository: "{{ helm_otelcol_logs_image_repo }}"
+          tag: "{{ helm_otelcol_logs_image_tag }}"
+    create_namespace: true
+    wait: true
+    timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Install traces Helm chart
+  kubernetes.core.helm:
+    name: telemetry-traces
+    chart_ref: "{{ telemetry.traces.charts_path }}"
+    release_namespace: "{{ telemetry.traces.namespace }}"
+    state: present
+    values_files: "{{ telemetry.traces.helm_default_values_file }}"
+    values:
+      global:
+        dnsService: "{{ dns_service_name }}"
+    create_namespace: true
+    wait: true
+    timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Install traces instrumentation Helm chart
+  kubernetes.core.helm:
+    name: telemetry-traces-instr
+    chart_ref: "{{ telemetry.traces_instr.charts_path }}"
+    release_namespace: "{{ telemetry.traces.namespace }}"
+    state: present
+    values_files: "{{ telemetry.traces_instr.helm_default_values_file }}"
+    create_namespace: true
+    wait: true
+    timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Delete CRD
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      metadata:
+        name: otelcols/otelcol-traces
+  tags:
+    - uninstall
+
+- name: Delete mutating webhook configuration if it exists
+  kubernetes.core.k8s:
+    state: absent
+    api_version: admissionregistration.k8s.io/v1
+    kind: MutatingWebhookConfiguration
+    name: telemetry-traces-otel-operator-mutation
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Delete validating webhook configuration if it exists
+  kubernetes.core.k8s:
+    state: absent
+    api_version: admissionregistration.k8s.io/v1
+    kind: ValidatingWebhookConfiguration
+    name: telemetry-traces-otel-operator-validation
+  ignore_errors: true
+  tags:
+    - uninstall
+
+# temporary mitigation
+- name: Patch otelcol-traces to remove finalizers using kubectl
+  ansible.builtin.command:
+    cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Delete prometheus-adapter Helm chart
+  kubernetes.core.helm:
+    name: prometheus-adapter
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete monitoring Helm chart
+  kubernetes.core.helm:
+    name: telemetry
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete logging Helm chart
+  kubernetes.core.helm:
+    name: telemetry-logs
+    release_namespace: "{{ telemetry.monitoring.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete traces-instr Helm chart
+  kubernetes.core.helm:
+    name: telemetry-traces-instr
+    release_namespace: "{{ telemetry.traces.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete traces Helm chart
+  kubernetes.core.helm:
+    name: telemetry-traces
+    release_namespace: "{{ telemetry.traces.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  with_items:
+    - "{{ telemetry.monitoring.namespace }}"
+    - "{{ telemetry.traces.namespace }}"
+  tags:
+    - uninstall

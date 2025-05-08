@@ -3,7 +3,7 @@ from minio.error import S3Error
 from app.main import app
 from fastapi.testclient import TestClient
 from urllib3.response import HTTPResponse as BaseHTTPResponse
-from app.main import add_new_file, delete_existing_file
+from app.main import add_new_file, delete_existing_file, filtered_list_bucket
 
 client = TestClient(app)
 
@@ -44,6 +44,34 @@ def test_metrics(mock_get_db):
         assert 'edp_celery_reserved_tasks_total' in response.text
         assert 'edp_celery_scheduled_tasks_total' in response.text
         assert 'edp_celery_active_tasks_total' in response.text
+
+def test_filtered_list_bucket():
+    with patch('app.main.minio_internal') as mock_minio:
+        mock_bucket1 = MagicMock()
+        mock_bucket1.name = "test-bucket"
+        mock_bucket2 = MagicMock()
+        mock_bucket2.name = "myown-bucket"
+        mock_bucket3 = MagicMock()
+        mock_bucket3.name = "my-bucket"
+        mock_minio.list_buckets.return_value = [mock_bucket1, mock_bucket2, mock_bucket3]
+
+        bucket_names = filtered_list_bucket(mock_minio)
+        assert bucket_names == ["test-bucket", "myown-bucket", "my-bucket"]
+
+def test_filtered_list_bucket_with_regex():
+    with patch('app.main.minio_internal') as mock_minio:
+        mock_bucket1 = MagicMock()
+        mock_bucket1.name = "test-bucket"
+        mock_bucket2 = MagicMock()
+        mock_bucket2.name = "myown-bucket"
+        mock_bucket3 = MagicMock()
+        mock_bucket3.name = "my-bucket"
+        mock_minio.list_buckets.return_value = [mock_bucket1, mock_bucket2, mock_bucket3]
+
+        with patch('os.getenv', return_value='my.*') as mock_getenv:
+            bucket_names = filtered_list_bucket(mock_minio)
+            mock_getenv.assert_called_with('BUCKET_NAME_REGEX_FILTER', '')
+            assert bucket_names == ["myown-bucket", "my-bucket"]
 
 @patch('app.main.get_db')
 @patch('app.main.process_file_task')
@@ -688,7 +716,8 @@ def test_api_sync():
         mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
-        mock_bucket = MagicMock(name="test-bucket")
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
         mock_list_buckets.return_value = [mock_bucket]
 
         mock_object = MagicMock(object_name="test-object", etag="test-etag", size=1024, content_type="application/octet-stream")
@@ -718,7 +747,8 @@ def test_api_sync_new_file():
         mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
-        mock_bucket = MagicMock(name="test-bucket")
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
         mock_list_buckets.return_value = [mock_bucket]
 
         mock_object = MagicMock(object_name="new-object", etag="new-etag", size=2048, content_type="application/octet-stream")
@@ -747,7 +777,8 @@ def test_api_sync_deleted_file():
         mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
-        mock_bucket = MagicMock(name="test-bucket")
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
         mock_list_buckets.return_value = [mock_bucket]
 
         mock_list_objects.return_value = []
@@ -776,7 +807,8 @@ def test_api_sync_changed_file():
         mock_get_db.return_value.__enter__.return_value = mock_db
 
         # Mock MinIO buckets and objects
-        mock_bucket = MagicMock(name="test-bucket")
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
         mock_list_buckets.return_value = [mock_bucket]
 
         mock_object = MagicMock(object_name="test-object", etag="new-etag", size=2048, content_type="application/octet-stream")
@@ -795,21 +827,102 @@ def test_api_sync_changed_file():
         mock_add_new_file.assert_called_once()
         mock_delete_existing_file.assert_called_once_with("test-bucket", "test-object")
 
-def test_api_sync_s3_error():
-    with patch('app.main.minio_internal.list_buckets') as mock_list_buckets:
-        mock_list_buckets.side_effect = S3Error(
-            code='NoSuchBucket',
-            resource='my-bucket/my-object',
-            message='The specified bucket does not exist',
-            request_id='',
-            host_id='',
-            response=BaseHTTPResponse()
-        )
+def test_api_sync_diff_new_file():
+    with patch('app.main.get_db') as mock_get_db, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects:
 
-        response = client.post('/api/files/sync')
+        mock_db = MagicMock()
+        mock_get_db.return_value.__enter__.return_value = mock_db
 
-        assert response.status_code == 400
-        assert response.json()['detail'].startswith('An error occurred')
+        # Mock MinIO buckets and objects
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
+        mock_list_buckets.return_value = [mock_bucket]
+
+        mock_object = MagicMock(object_name="new-object", etag="new-etag", size=2048, content_type="application/octet-stream")
+        mock_list_objects.return_value = [mock_object]
+
+        # Mock database files
+        mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        response = client.get('/api/files/sync')
+
+        assert response.status_code == 200
+        assert response.json() == [{'action': 'add', 'bucket_name': 'test-bucket', 'object_name': 'new-object'}]
+
+def test_api_sync_diff_deleted_file():
+    with patch('app.main.get_db') as mock_get_db, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects:
+
+        mock_db = MagicMock()
+        mock_get_db.return_value.__enter__.return_value = mock_db
+
+        # Mock MinIO buckets and objects
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
+        mock_list_buckets.return_value = [mock_bucket]
+
+        mock_list_objects.return_value = []
+
+        # Mock database files
+        mock_file_status = MagicMock(bucket_name="test-bucket", object_name="test-object", etag="test-etag", size=1024)
+        mock_db.query.return_value.filter.return_value.all.return_value = [mock_file_status]
+
+        response = client.get('/api/files/sync')
+
+        assert response.status_code == 200
+        assert response.json() == [{'action': 'delete', 'bucket_name': 'test-bucket', 'object_name': 'test-object'}]
+
+def test_api_sync_diff_changed_file():
+    with patch('app.main.get_db') as mock_get_db, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects:
+
+        mock_db = MagicMock()
+        mock_get_db.return_value.__enter__.return_value = mock_db
+
+        # Mock MinIO buckets and objects
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
+        mock_list_buckets.return_value = [mock_bucket]
+
+        mock_object = MagicMock(object_name="test-object", etag="new-etag", size=2048, content_type="application/octet-stream")
+        mock_list_objects.return_value = [mock_object]
+
+        # Mock database files - we update the etag and size
+        mock_db.query.return_value.filter.return_value.all.return_value = [] # no additional files in db
+
+        response = client.get('/api/files/sync')
+
+        assert response.status_code == 200
+        assert response.json() == [{'action': 'update', 'bucket_name': 'test-bucket', 'object_name': 'test-object'}]
+
+def test_api_sync_diff_no_change_file():
+    with patch('app.main.get_db') as mock_get_db, \
+            patch('app.main.minio_internal.list_buckets') as mock_list_buckets, \
+            patch('app.main.minio_internal.list_objects') as mock_list_objects:
+
+        mock_db = MagicMock()
+        mock_get_db.return_value.__enter__.return_value = mock_db
+
+        # Mock MinIO buckets and objects
+        mock_bucket = MagicMock()
+        mock_bucket.name = "test-bucket"
+        mock_list_buckets.return_value = [mock_bucket]
+
+        mock_object = MagicMock(object_name="test-object", etag="old-etag", size=1024)
+        mock_list_objects.return_value = [mock_object]
+
+        # Mock database files
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_object
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        response = client.get('/api/files/sync')
+
+        assert response.status_code == 200
+        assert response.json() == [{'action': 'no action', 'bucket_name': 'test-bucket', 'object_name': 'test-object'}]
 
 def test_api_link_task_retry():
     link_uuid = "123e4567-e89b-12d3-a456-426614174000"

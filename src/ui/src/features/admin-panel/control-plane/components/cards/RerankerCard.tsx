@@ -7,11 +7,11 @@ import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/com
 import {
   RerankerArgs,
   rerankerFormConfig,
-} from "@/features/admin-panel/control-plane/config/reranker";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 
 const RerankerCard = ({
-  data: { id, status, displayName, rerankerArgs },
+  data: { id, status, details, displayName, rerankerArgs },
 }: ControlPlaneCardProps) => {
   const {
     previousArgumentsValues,
@@ -24,12 +24,19 @@ const RerankerCard = ({
     <SelectedServiceCard
       serviceStatus={status}
       serviceName={displayName}
+      serviceDetails={details}
       footerProps={footerProps}
     >
-      <p className="mb-1 mt-3 text-sm font-medium">Service Arguments</p>
+      <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
         initialValue={previousArgumentsValues.top_n}
+        onArgumentValueChange={onArgumentValueChange}
+        onArgumentValidityChange={onArgumentValidityChange}
+      />
+      <ServiceArgumentNumberInput
+        {...rerankerFormConfig.rerank_score_threshold}
+        initialValue={previousArgumentsValues.rerank_score_threshold}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />

@@ -1,0 +1,99 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    ui_helm_override_values_path: "{{ tmp_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ ui_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [ui.helm.default_values_file] +
+        [ui_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ui.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ui.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ ui.tls.secret_name }}"
+        namespace: "{{ ui.namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ ui.helm.release_name }}"
+    chart_ref: "{{ ui.helm.chart_directory }}"
+    namespace: "{{ ui.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ ui.helm.release_name }}"
+    namespace: "{{ ui.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ui.namespace }}"
+  tags:
+    - uninstall

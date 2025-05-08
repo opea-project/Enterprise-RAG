@@ -1,0 +1,43 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+domainName: &dname {{ ui.domainName }}
+tlsSecret: &tsecret {{ ui.tls.secret_name }}
+
+service:
+  type: ClusterIP
+  name: &svcName "ui-chart"
+  port: &svcPort 4173
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+{% if tag is defined %}
+image:
+  ui:
+    tag: {{ tag }}
+{% endif %}
+    repository: {{ registry }}
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  tls:
+    - hosts:
+      - *dname
+      secretName: *tsecret
+  hosts:
+    - host: *dname
+      paths:
+        - pathType: Prefix
+          path: /
+          backend:
+            service:
+              name: *svcName
+              port:
+                number: *svcPort
+{% if ui.additional_values is defined %}
+{{ ui.additional_values | to_nice_yaml }}
+{% endif %}

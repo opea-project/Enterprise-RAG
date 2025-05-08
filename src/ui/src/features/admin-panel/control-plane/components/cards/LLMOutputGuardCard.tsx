@@ -13,7 +13,7 @@ import SelectedServiceCard from "@/features/admin-panel/control-plane/components
 import {
   LLMOutputGuardArgs,
   llmOutputGuardFormConfig,
-} from "@/features/admin-panel/control-plane/config/guards/llmOutputGuard";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
 import useGuardServiceCard from "@/features/admin-panel/control-plane/hooks/useGuardServiceCard";
 
 const LLMOutputGuardCard = ({

@@ -1,0 +1,80 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+proxy:
+  httpProxy: {{ httpProxy }}
+  httpsProxy: {{ httpsProxy }}
+  noProxy: {{ noProxy }}
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
+{% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "minio" %}
+{% if storage == "minio" %}
+edpAccessKey: {{ edp_minio_access_key }}
+edpSecretKey: {{ edp_minio_secret_key }}
+
+{% if hpaEnabled is defined %}
+hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+
+edpOidcClientSecret: {{ edp_client_secret_id }}
+minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
+minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
+edpInternalSecure: false
+bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
+{% elif storage == "s3" %}
+edpBaseRegion: "{{ lookup('env', 's3_region') or edp.s3.region }}"
+edpAccessKey: "{{ lookup('env', 's3_access_key') or edp.s3.accessKeyId }}"
+edpSecretKey: "{{ lookup('env', 's3_secret_key') or edp.s3.secretAccessKey }}"
+edpExternalUrl: "https://s3.amazonaws.com"
+edpInternalUrl: "https://s3.amazonaws.com"
+edpSqsEventQueueUrl: "{{ lookup('env', 's3_sqs_queue') or edp.s3.sqsEventQueueUrl }}"
+bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3.bucketNameRegexFilter | default('.*', true) }}
+{% elif storage == "s3compatible" %}
+edpBaseRegion: "{{ lookup('env', 's3_region') or edp.s3compatible.region }}"
+edpAccessKey: "{{ lookup('env', 's3_access_key') or edp.s3compatible.accessKeyId }}"
+edpSecretKey: "{{ lookup('env', 's3_secret_key') or edp.s3compatible.secretAccessKey }}"
+edpExternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.externalUrl }}"
+edpInternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.internalUrl }}"
+bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
+{% endif %}
+
+edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+
+redisUsername: {{ edp.redis.auth.user.db_username }}
+redisPassword: "{{ EDP_REDIS_PASSWORD }}"
+
+postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
+postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
+
+celery:
+  tag: {{ tag }}
+  repository: {{ registry }}
+flower:
+  tag: {{ tag }}
+  repository: {{ registry }}
+backend:
+  tag: {{ tag }}
+  repository: {{ registry }}
+dataprep:
+  tag: {{ tag }}
+  repository: {{ registry }}
+ingestion:
+  tag: {{ tag }}
+  repository: {{ registry }}
+embedding:
+  enabled: false
+  remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+  repository: {{ registry }}
+dpguard:
+  enabled: {{ edp.dpGuard.enabled }}
+  tag: {{ tag }}
+  repository: {{ registry }}
+awsSqs:
+  enabled: {{ "true" if storage == "s3" else "false" }}
+  tag: {{ tag }}
+  repository: {{ registry }}

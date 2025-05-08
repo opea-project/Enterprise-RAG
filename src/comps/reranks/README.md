@@ -91,20 +91,22 @@ curl http://localhost:8000/v1/health_check \
 
 ####  3.2. Sending a Request
 
-The `top_n` parameter allows you to specify the number of results returned by the reranker model. By default, the reranker returns only the top result (top_n=1). Adding the top_n parameter enables you to retrieve multiple ranked results, with the option to adjust it as needed.
+The `top_n` parameter allows you to specify the number of results returned by the reranker model. By default, the reranker returns only the top three result (top_n=3). Adding the top_n parameter enables you to retrieve multiple ranked results, with the option to adjust it as needed.
+
+Additionally, you can pass `rerank_score_threshold` to filter received docs based on the model output. Reranking model returns a similarity distance that is mapped to a float value between 0 and 1 using a sigmoid function. For reranker the higher value, the better similarity to the prompt. If rerank_score_threshold is defined, the microservice will ignore all chunks that returned a score equal or lower than this value.
 
 **Example Input**
 
 ```bash
 curl http://localhost:8000/v1/reranking \
   -X POST \
-  -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}], "top_n":1}' \
+  -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}], "top_n":1, "rerank_score_threshold": 0.02}' \
   -H 'Content-Type: application/json'
 ```
 
 **Example Output**
 
-The reranking microservice outputs a JSON containing the original user question, a list of relevant documents based on reranked top_n results, and a prompt template (may be null if the default is used) for generating a prompt based on the provided data.
+The reranking microservice outputs a JSON containing the original user question and a list of relevant documents based on reranked top_n results.
 ```json
 {
   "id": "d5d4102b8dc9414866d9c2ee550c9229",

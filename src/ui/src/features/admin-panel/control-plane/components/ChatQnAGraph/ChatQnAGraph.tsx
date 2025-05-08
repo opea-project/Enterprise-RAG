@@ -21,6 +21,7 @@ import {
   onChatQnAGraphConnect,
   onChatQnAGraphEdgesChange,
   onChatQnAGraphNodesChange,
+  setChatQnAGraphIsEditModeEnabled,
   setChatQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { ServiceData } from "@/features/admin-panel/control-plane/types";
@@ -47,6 +48,7 @@ const ChatQnAGraph = () => {
 
   const handleSelectionChange = useCallback(
     ({ nodes }: { nodes: Node[] }) => {
+      dispatch(setChatQnAGraphIsEditModeEnabled(false));
       dispatch(
         setChatQnAGraphSelectedServiceNode(nodes as Node<ServiceData>[]),
       );

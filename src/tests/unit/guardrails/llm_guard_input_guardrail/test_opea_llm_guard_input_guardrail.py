@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch
 from fastapi import HTTPException
 from comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_guardrail import OPEALLMGuardInputGuardrail
-from comps import LLMParamsDoc
+from comps import LLMParamsDoc, LLMPromptTemplate
 from comps.cores.proto.docarray import LLMGuardInputGuardrailParams, BanCodeModel
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def mock_input_doc():
     input_guardrail_params = LLMGuardInputGuardrailParams(ban_code=ban_code_model)
 
     return LLMParamsDoc(
-        query="This is a test query",
+        messages=LLMPromptTemplate(system="You are a helpful assistant", user="This is a test query"),
         streaming=False,
         max_new_tokens=50,
         repetition_penalty=1.0,

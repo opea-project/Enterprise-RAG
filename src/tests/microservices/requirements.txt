@@ -7,6 +7,6 @@ allure-pytest==2.13.5 # Apache 2.0
 python-on-whales==0.73.0  # MIT
 requests==2.32.3 # Apache 2.0
 python-dotenv==1.0.1 # BSD License (BSD-3-Clause)
-transformers==4.48.0 # Apache 2.0
+transformers==4.50.0 # Apache 2.0
 sentencepiece==0.2.0 # Apache 2.0
 protobuf==5.29.3 # 3-Clause BSD License

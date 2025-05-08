@@ -4,22 +4,23 @@
 
 # paths
 repo_path=$(realpath "$(pwd)/../")
-manifests_path="$repo_path/deployment/microservices-connector/config/samples"
-gmc_path="$repo_path/deployment/microservices-connector/helm"
-fingerprint_path="$repo_path/deployment/fingerprint"
-telemetry_path="$repo_path/deployment/telemetry/helm"
-telemetry_logs_path="$repo_path/deployment/telemetry/helm/charts/logs"
-telemetry_traces_path="$repo_path/deployment/telemetry/helm/charts/traces"
-telemetry_traces_instr_path="$repo_path/deployment/telemetry/helm/charts/traces-instr"
-ui_path="$repo_path/deployment/ui/chat-qna"
-auth_path="$repo_path/deployment/auth"
-keycloak_path="$repo_path/deployment/auth/keycloak"
-api_gateway_path="$repo_path/deployment/auth/apisix"
-api_gateway_crd_path="$repo_path/deployment/auth/apisix-routes"
-ingress_path="$repo_path/deployment/auth/ingress"
-configs_path="$repo_path/deployment/auth/configs"
-edp_path="$repo_path/deployment/edp/helm"
-istio_path="$repo_path/deployment/istio"
+manifests_path="$repo_path/deployment/pipelines/chatqa"
+gmc_path="$repo_path/deployment/components/gmc/microservices-connector/helm"
+fingerprint_path="$repo_path/deployment/components/fingerprint"
+telemetry_path="$repo_path/deployment/components/telemetry/helm"
+telemetry_logs_path="$repo_path/deployment/components/telemetry/helm/charts/logs"
+telemetry_traces_path="$repo_path/deployment/components/telemetry/helm/charts/traces"
+telemetry_traces_instr_path="$repo_path/deployment/components/telemetry/helm/charts/traces-instr"
+ui_path="$repo_path/deployment/components/ui"
+scripts_path="$repo_path/deployment/scripts"
+hpa_path="$repo_path/deployment/components/hpa"
+keycloak_path="$repo_path/deployment/components/keycloak"
+api_gateway_path="$repo_path/deployment/components/apisix"
+api_gateway_crd_path="$repo_path/deployment/components/apisix-routes"
+ingress_path="$repo_path/deployment/components/ingress"
+configs_path="$repo_path/deployment/configs"
+edp_path="$repo_path/deployment/components/edp"
+istio_path="$repo_path/deployment/components/istio"
 
 # ports
 KEYCLOAK_FPORT=1234
@@ -38,6 +39,7 @@ GMC_NS=system
 ISTIO_NS="istio-system"
 
 AUTH_HELM="oci://registry-1.docker.io/bitnamicharts/keycloak"
+HPA_HELM="prometheus-community/prometheus-adapter"
 INGRESS_HELM="ingress-nginx/ingress-nginx"
 
 # keycloak specific vars
@@ -47,7 +49,7 @@ KEYCLOAK_URL=http://localhost:$KEYCLOAK_FPORT
 DEFAULT_REALM=master
 CONFIGURE_URL=$KEYCLOAK_URL/realms/$DEFAULT_REALM/.well-known/openid-configuration
 
-INGRESS_CHARTS_VERSION=4.12.0
+INGRESS_CHARTS_VERSION=4.12.1
 KEYCLOAK_CHARTS_VERSION=24.3.2
 K8S_VERSION=v1.29
 
@@ -56,14 +58,15 @@ KEYCLOAK_PASS=""
 
 # others
 PIPELINE=""
-REGISTRY="localhost:5000"
+REGISTRY="localhost:5000/erag"
 TAG="latest"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
 FEATURES=""
+EDP_DATAPREP_TYPE="normal"
 
-available_pipelines=$(cd "$manifests_path" && find chatQnA_*.yaml | sed 's|chatQnA_||g; s|.yaml||g' | paste -sd ',')
-
+#available_pipelines=$(cd "$manifests_path/examples" && find *.yaml && cd "$manifests_path" && find reference* | paste -sd ',')
+available_pipelines=$(cd "$manifests_path/examples" && find *.yaml | sed 's/^/examples\//' && cd "$manifests_path" && find reference* | paste -sd ',')
 source $repo_path/deployment/credentials_utils.sh
 
 function usage() {
@@ -81,10 +84,12 @@ function usage() {
     echo -e "\t--use-alternate-tagging: Use repo:component_tag tagging format instead of the default (repo/component:tag)."
     echo -e "\t--test: Run a connection test."
     echo -e "\t--telemetry: Start telemetry services."
+    echo -e "\t--hpa: enables horizontal pod autoscaler for the services"
     echo -e "\t--registry <REGISTRY>: Use specific registry for deployment."
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--dpguard: Create Dataprep Guardrail."
+    echo -e "\t--edp-dataprep-type: Choose type of dataprep: normal or hierarchical. (default normal)"
     echo -e "\t-ep|--enforce-pss: Enforce strict pod security policies."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
     echo -e "\t--timeout <TIMEOUT>: Set timeout for helm commands. (default 5m)"
@@ -96,7 +101,7 @@ function usage() {
     echo -e "\t-cu|--clear-ui: Clear auth and ui services."
     echo -e "\t-ca|--clear-all: Clear the all services."
     echo -e "\t-h|--help: Display this help message."
-    echo -e "Example: $0 --auth --deploy gaudi_torch_in_out_guards --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease"
+    echo -e "Example: $0 --auth --deploy reference-hpu.yaml --telemetry --ui --grafana_password changeitplease --keycloak_admin_password changeitplease"
 }
 
 function print_header() {
@@ -116,6 +121,15 @@ function validate_deployment_settings() {
         exit 1
     fi
 
+    local deployment_manifest="$manifests_path/$1"
+    if [[ ! -f $deployment_manifest ]]; then
+        print_log "Error: Deployment manifest file '$deployment_manifest' does not exist."
+        print_log "Pipelines available: $available_pipelines"
+
+        exit 1
+    fi
+
+
     for proxy in "httpProxy" "httpsProxy" "noProxy"; do
         proxy_name=$(echo "$proxy" | sed 's/P/_p/')
         uppercase_proxy_name=${proxy_name^^}
@@ -125,6 +139,13 @@ function validate_deployment_settings() {
             print_log "Warning: $proxy is empty in $values_file but set in the environment. Consider updating the values file."
         fi
     done
+
+    local edp_values_file="${edp_path}/values.yaml"
+
+    if [[ -z $(grep -E "^hfToken: " "$edp_values_file" | awk '{print $2}' | xargs) ]]; then
+        print_log "Error: The hfToken value is required and must be set in $edp_values_file"
+        exit 1
+    fi
 }
 
 function helm_install() {
@@ -143,9 +164,13 @@ function helm_install() {
     fi
 
     if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
-        helm_cmd+=" --values $gmc_path/resources-cpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
     else
-        helm_cmd+=" --values $gmc_path/resources-gaudi.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-gaudi.yaml"
+    fi
+
+    if $hpa_flag; then
+        helm_cmd+=" --set hpaEnabled=true"
     fi
 
     IFS=',' read -ra feature_list <<< "$FEATURES"
@@ -156,7 +181,7 @@ function helm_install() {
                     print_log "Error: KBS_ADDRESS environment variable is not set. Exiting."
                     exit 1
                 fi
-                helm_cmd+=" --values $gmc_path/resources-tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
+                helm_cmd+=" --values $manifests_path/resources-tdx.yaml --set tdx.common.kbsAddress=${KBS_ADDRESS}"
                 ;;
         esac
     done
@@ -169,6 +194,7 @@ function helm_install() {
         exit 1
     fi
 }
+
 
 function enforce_namespace_policy() {
     local namespace=$1
@@ -331,10 +357,9 @@ function start_fingerprint() {
     create_database_secret "mongo" $DEPLOYMENT_NS $FINGERPRINT_DB_USERNAME "$FINGERPRINT_DB_PASSWORD" $FINGERPRINT_NS $MONGO_DATABASE_NAME # for deployment via gmc manifests in chatqna namespace
 
     local HELM_INSTALL_FINGERPRINT_REPO
+    HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY --set image.fingerprint.tag=$TAG"
     if $use_alternate_tagging; then
-        HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag --set image.fingerprint.tag=system-fingerprint_$TAG"
-    else
-        HELM_INSTALL_FINGERPRINT_REPO="--set image.fingerprint.repository=$REGISTRY/erag/system-fingerprint --set image.fingerprint.tag=$TAG"
+        HELM_INSTALL_FINGERPRINT_REPO="$HELM_INSTALL_FINGERPRINT_REPO --set alternateTagging=true"
     fi
 
     HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_FINGERPRINT_REPO \
@@ -370,27 +395,18 @@ function start_mesh() {
     # Please note following instruction may be needed for multi node kind
     # https://medium.com/@SabujJanaCodes/touring-the-kubernetes-istio-ambient-mesh-part-1-setup-ztunnel-c80336fcfb2d
     # Install Istio
-    print_log "installing Istio"
+    print_log "Installing Istio"
     helm repo add istio https://istio-release.storage.googleapis.com/charts
     helm repo update
 
     kubectl get namespace $ISTIO_NS > /dev/null 2>&1 || kubectl create namespace $ISTIO_NS
     enforce_namespace_policy $ISTIO_NS "privileged"
 
-    # 1) base: crds
-    helm_install $ISTIO_NS istio-base istio/base "--set defaultRevision=default --version $ISTIO_VERSION"
-    # 2) control plane: istiod
-    helm_install $ISTIO_NS istiod istio/istiod '--wait --version '$ISTIO_VERSION' --set profile=ambient -f '$istio_path'/meshconfig-values.yaml --set extraContainerArgs={--tls-cipher-suites=TLS_AES_128_GCM_SHA256\,TLS_AES_256_GCM_SHA384\,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384\,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384\,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256\,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}'
-    print_log "waiting until istiod ready" ; wait_for_condition check_pods "$ISTIO_NS"
+    HELM_INSTALL_ISTIO_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT -f $istio_path/values.yaml"
 
-    # 3) control-plane: CNI
-    helm_install $ISTIO_NS istio-cni istio/cni "--set profile=ambient --version $ISTIO_VERSION"
-    # Fix for https://github.com/istio/istio/issues/53849
-    kubectl patch -n $ISTIO_NS ds/istio-cni-node --type=json -p='[{"op": "add", "path": "/spec/template/spec/containers/0/securityContext/capabilities/add/-", "value": "DAC_OVERRIDE"}]'
-    print_log "waiting until istio-cni ready" ; wait_for_condition check_istio "$ISTIO_NS" "app.kubernetes.io/instance=istio-cni"
+    helm dependency build "$istio_path" > /dev/null
 
-    # 4) data-plane: ztunnel
-    helm_install $ISTIO_NS ztunnel istio/ztunnel "--version $ISTIO_VERSION --wait"
+    helm_install $ISTIO_NS istio "$istio_path" "$HELM_INSTALL_ISTIO_DEFAULT_ARGS"
 
     print_log "waiting until pods in $ISTIO_NS are ready"
     wait_for_condition check_pods "$ISTIO_NS"
@@ -403,6 +419,9 @@ function clear_mesh() {
     helm status -n $ISTIO_NS istiod > /dev/null 2>&1 && helm uninstall istiod -n $ISTIO_NS
     helm status -n $ISTIO_NS istio-base > /dev/null 2>&1 && helm uninstall istio-base -n $ISTIO_NS
     kubectl get ns $ISTIO_NS > /dev/null 2>&1 && kubectl delete ns $ISTIO_NS
+    if kubectl get crd -o name | grep 'istio.io' > /dev/null 2>&1; then
+        kubectl get crd -o name | grep 'istio.io' | xargs kubectl delete
+    fi
 }
 
 # deploys GMConnector, chatqna pipeline and dataprep pipeline
@@ -437,7 +456,7 @@ function start_deployment() {
     helm_install $GMC_NS gmc "$gmc_path" "$HELM_INSTALL_DEPLOYMENT_TAGGING"
 
     # Fingerprint deployment
-    local deployment_manifest="$manifests_path/chatQnA_$pipeline.yaml"
+    local deployment_manifest="$manifests_path/$pipeline"
     if grep -q "Fingerprint" $deployment_manifest; then
         start_fingerprint
     fi
@@ -477,15 +496,15 @@ function start_telemetry() {
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
-
+    
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag --set otelcol-logs.image.tag=otelcol-contrib-journalctl_$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY --set otelcol-logs.image.tag=erag-otelcol-contrib-journalctl_$TAG"
     else
-        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag/otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
+        HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag-otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
-
+    
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
@@ -516,6 +535,11 @@ function start_telemetry() {
     # I) telemetry/base (metrics)
     helm dependency build "$telemetry_path" > /dev/null
     helm_install $TELEMETRY_NS telemetry "$telemetry_path" "$HELM_INSTALL_TELEMETRY_DEFAULT_ARGS $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
+    # install prometheus-adapter if hpa is emabled
+    HELM_INSTALL_HPA_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT -f $hpa_path/prometheus_adapter.yaml"
+    if $hpaEnabled; then
+        helm_install $TELEMETRY_NS prometheus-adapter "$HPA_HELM" "$HELM_INSTALL_HPA_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
+    fi
 
     # II) telemetry/logs
     helm dependency build "$telemetry_logs_path"  > /dev/null
@@ -539,7 +563,6 @@ function start_telemetry() {
     # IIIb) telemetry/traces-instr check
     print_log "waiting until pods in $TELEMETRY_TRACES_NS are ready"
     wait_for_condition check_pods "$TELEMETRY_TRACES_NS"
-
 }
 
 function clear_telemetry() {
@@ -549,6 +572,9 @@ function clear_telemetry() {
 
     # Delete the tls-secret if it exists
     kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
+    
+    # uninstall prometheus adapter first 
+    helm status -n "$TELEMETRY_NS" prometheus-adapter > /dev/null 2>&1 && helm uninstall --namespace $TELEMETRY_NS prometheus-adapter
 
     # Delete otelcol-traces with timeout and webhook handling
     if kubectl get otelcols/otelcol-traces -n "$TELEMETRY_TRACES_NS" > /dev/null 2>&1; then
@@ -593,7 +619,7 @@ function start_authentication() {
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
 
-    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_CHARTS_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/keycloak-values.yaml"
+    HELM_INSTALL_AUTH_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --version $KEYCLOAK_CHARTS_VERSION --set auth.adminUser=$keycloak_user --set auth.adminPassword=$KEYCLOAK_PASS -f $keycloak_path/values.yaml"
 
     helm_install $AUTH_NS keycloak "$AUTH_HELM" "$HELM_INSTALL_AUTH_DEFAULT_ARGS $HELM_INSTALL_AUTH_EXTRA_ARGS"
 
@@ -615,11 +641,11 @@ function start_authentication() {
     fi
 
     # fix paths across scripts
-    cd "$auth_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
+    cd "$scripts_path" && bash keycloak_configurator.sh "$KEYCLOAK_PASS" ; cd - > /dev/null 2>&1
 
     # create apisix-secret with client_secret
     if ! kubectl get secret apisix-secret -n $GATEWAY_NS > /dev/null 2>&1; then
-        client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS)
+        client_secret=$(bash "$scripts_path"/get_secret.sh $KEYCLOAK_PASS)
         create_secret apisix-secret $GATEWAY_NS "CLIENT_SECRET=$client_secret"
     fi
 
@@ -713,6 +739,7 @@ function start_ui() {
 
 function start_edp() {
     local pipeline=$1
+    local edp_dataprep_type=$2
     print_header "Start Enhanced Dataprep"
 
     # Update redis password in chatQnA pipeline's manifest
@@ -737,7 +764,7 @@ function start_edp() {
     # get passwd from file
     get_or_create_and_store_credentials KEYCLOAK_REALM_ADMIN admin $KEYCLOAK_PASS
     KEYCLOAK_PASS=${NEW_PASSWORD}
-    local minio_client_secret=$(bash "$auth_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
+    local minio_client_secret=$(bash "$scripts_path"/get_secret.sh $KEYCLOAK_PASS $minio_keycloak_client_id)
 
     kill -2 $PID
     kill_process "kubectl port-forward --namespace $AUTH_NS svc/keycloak"
@@ -759,9 +786,9 @@ function start_edp() {
     local erag_no_proxy=$(awk '/noProxy:/ {gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
 
     local embedding_endpoint_helm=""
-    if [[ "$pipeline" == "xeon_torch" ]]; then
+    if [[ "$pipeline" == "examples/cpu-torch.yaml" ]]; then
         embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=torchserve --set embedding.config.modelServerEndpoint=http://torchserve-embedding-svc.chatqa.svc:8090 "
-    elif [[ "$pipeline" == "xeon" ]]; then
+    elif [[ "$pipeline" == "examples/cpu-tei.yaml" ]]; then
         embedding_endpoint_helm=" --set embedding.enabled=true --set embedding.config.modelServer=tei --set embedding.config.modelServerEndpoint=http://tei-embedding-svc.chatqa.svc:80 "
     else
         embedding_endpoint_helm=" --set embedding.enabled=false --set embedding.remoteEmbeddingUri=http://embedding-svc.chatqa.svc:6000/v1/embeddings " # use default embedding from chatqa
@@ -771,7 +798,18 @@ function start_edp() {
 
     if $dpguard; then
         print_log "Enabling Dataprep Guardrail"
-        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true "
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true --set dpguard.tag=$TAG"
+    fi
+
+    if [[ "$edp_dataprep_type" == "hierarchical" ]]; then
+        print_log "Enabling Hierarchical Dataprep"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep"
+
+        if [[ "$pipeline" == *"cpu"* ]]; then
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.vllm_server_endpoint=http://vllm-service-m.chatqa.svc:8000" # Use existing vllm-cpu server
+        else
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set vllm.enabled=true" # Spin up new vllm-cpu server
+        fi
     fi
 
     helm dependency update "$edp_path" > /dev/null
@@ -842,6 +880,7 @@ create_flag=false
 deploy_flag=false
 test_flag=false
 telemetry_flag=false
+hpa_flag=false
 ui_flag=false
 # mesh installation is undecided, unless deploy is given or mesh explicitly requested
 default_mesh_flag=true
@@ -857,6 +896,7 @@ clear_deployment_flag=false
 clear_fingerprint_flag=false
 clear_ui_flag=false
 clear_telemetry_flag=false
+clear_hpa_flag=false
 clear_mesh_flag=false
 clear_all_flag=false
 clear_auth_flag=false
@@ -919,6 +959,10 @@ while [[ "$#" -gt 0 ]]; do
             telemetry_flag=true
             create_flag=true
             ;;
+        --hpa)
+            hpa_flag=true
+            create_flag=true
+            ;;
         --registry)
             shift
             if [[ -z "$1" || "$1" == --* ]]; then
@@ -940,6 +984,15 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --dpguard)
             dpguard=true
+            ;;
+        --edp-dataprep-type)
+            shift
+            if [[ -z "$1" || "$1" == --* ]]; then
+                print_log "Error: Invalid or no parameter provided for --edp-dataprep-type. Please provide a valid dataprep type."
+                usage
+                exit 1
+            fi
+            EDP_DATAPREP_TYPE=$1
             ;;
         --no-mesh)
             mesh_flag=false
@@ -1020,7 +1073,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if $deploy_flag; then
-    validate_deployment_settings
+    validate_deployment_settings "$PIPELINE"
 fi
 
 # additional logic for-default settings
@@ -1055,8 +1108,8 @@ if [[ "$telemetry_flag" == "true" ]]; then
 fi
 
 if [[ "$FEATURES" == *"tdx"* ]]; then
-  if [[ ! "$PIPELINE" == *"xeon"* ]]; then
-    print_log "Error: TDX feature is only supported for xeon pipelines."
+  if [[ ! "$PIPELINE" == *"cpu"* ]]; then
+    print_log "Error: TDX feature is only supported for cpu pipelines."
     exit 1
   fi
 
@@ -1066,15 +1119,15 @@ if [[ "$FEATURES" == *"tdx"* ]]; then
     fi
 fi
 
+
+HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY --set image.ui.tag=$TAG"
+HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY --set celery.tag=$TAG --set flower.repository=$REGISTRY --set flower.tag=$TAG --set backend.repository=$REGISTRY --set backend.tag=$TAG --set dataprep.repository=$REGISTRY --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY --set dpguard.tag=$TAG --set vllm.repository=$REGISTRY --set vllm.tag=$TAG"
 if $use_alternate_tagging; then
-    HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag --set image.ui.tag=chatqna-conversation-ui_$TAG "
-    HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag --set celery.tag=enhanced-dataprep_$TAG --set flower.repository=$REGISTRY/erag --set flower.tag=enhanced-dataprep_$TAG --set backend.repository=$REGISTRY/erag --set backend.tag=enhanced-dataprep_$TAG --set dataprep.repository=$REGISTRY/erag --set dataprep.tag=dataprep_$TAG  --set embedding.repository=$REGISTRY/erag --set embedding.tag=embedding_$TAG --set ingestion.repository=$REGISTRY/erag --set ingestion.tag=ingestion_$TAG --set awsSqs.repository=$REGISTRY/erag --set awsSqs.tag=enhanced-dataprep_$TAG --set dpguard.repository=$REGISTRY/erag --set dpguard.tag=dpguard_$TAG"
-else
-    HELM_INSTALL_UI_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set image.ui.repository=$REGISTRY/erag/chatqna-conversation-ui --set image.ui.tag=$TAG "
-    HELM_INSTALL_EDP_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT --set celery.repository=$REGISTRY/erag/enhanced-dataprep --set celery.tag=$TAG --set flower.repository=$REGISTRY/erag/enhanced-dataprep --set flower.tag=$TAG --set backend.repository=$REGISTRY/erag/enhanced-dataprep --set backend.tag=$TAG --set dataprep.repository=$REGISTRY/erag/dataprep --set dataprep.tag=$TAG  --set embedding.repository=$REGISTRY/erag/embedding --set embedding.tag=$TAG --set ingestion.repository=$REGISTRY/erag/ingestion --set ingestion.tag=$TAG --set awsSqs.repository=$REGISTRY/erag/enhanced-dataprep --set awsSqs.tag=$TAG --set dpguard.repository=$REGISTRY/erag/dpguard --set dpguard.tag=$TAG "
+    HELM_INSTALL_UI_DEFAULT_ARGS="$HELM_INSTALL_UI_DEFAULT_ARGS --set alternateTagging=true"
+    HELM_INSTALL_EDP_DEFAULT_ARGS="$HELM_INSTALL_EDP_DEFAULT_ARGS --set alternateTagging=true"
 fi
 
-HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/ingress-values.yaml"
+HELM_INSTALL_INGRESS_DEFAULT_ARGS="--timeout $HELM_TIMEOUT --version $INGRESS_CHARTS_VERSION -f $ingress_path/values.yaml"
 HELM_INSTALL_GATEWAY_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 HELM_INSTALL_GATEWAY_CRD_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT"
 
@@ -1120,7 +1173,7 @@ if $ui_flag; then
 fi
 
 if $edp_flag && ! $clear_any_flag; then
-    start_edp "$PIPELINE"
+    start_edp "$PIPELINE" "$EDP_DATAPREP_TYPE"
     updated_ns_list+=($ENHANCED_DATAPREP_NS)
 fi
 
@@ -1136,9 +1189,9 @@ if $mesh_flag && $create_flag; then
     done
     # configure mTLS strict mode for namespace
     for ns in "${updated_ns_list[@]}"; do
-        if [ $ns == $INGRESS_NS ]; then
+	if [ -f $istio_path/mTLS-strict-$ns.yaml ]; then
             # ingress needs dedicated configuration
-            kubectl apply -n $INGRESS_NS -f $istio_path/mTLS-strict-ingress-nginx.yaml
+	    kubectl apply -n $ns -f $istio_path/mTLS-strict-$ns.yaml
         else
             kubectl apply -n $ns -f $istio_path/mTLS-strict.yaml
         fi
@@ -1164,7 +1217,7 @@ if $test_flag; then
     if $mesh_flag; then
         test_args="--mesh --istio-path $istio_path"
     fi
-    bash test_connection.sh $test_args
+    bash scripts/test_connection.sh $test_args
 fi
 
 if $clear_auth_flag; then
@@ -1198,11 +1251,16 @@ if $clear_fingerprint_flag; then
     clear_fingerprint
 fi
 
-
 if $clear_all_flag; then
     # disable strict mode and authorization policies first to avoid cleanup lock-up
     kubectl delete --ignore-not-found $(printf " -f %s" $(ls $istio_path/authz/authz-*))
-    kubectl get peerauthentication -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' | xargs -ti kubectl delete --ignore-not-found peerauthentication default -n '{}'
+    for ns in $(kubectl get peerauthentication -A -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}'); do
+      if [ -f $istio_path/mTLS-strict-$ns.yaml ]; then
+        kubectl delete --ignore-not-found -n $ns -f $istio_path/mTLS-strict-$ns.yaml
+      else
+        kubectl delete --ignore-not-found -n $ns -f $istio_path/mTLS-strict.yaml
+      fi
+    done
     clear_deployment
     clear_fingerprint
     clear_edp

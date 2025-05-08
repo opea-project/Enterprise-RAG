@@ -1,0 +1,40 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Validate if kubeconfig file exists
+  ansible.builtin.stat:
+    path: "{{ kubeconfig }}"
+  register: kubeconfig_file
+  ignore_errors: true
+  tags:
+    - install
+    - uninstall
+
+- name: Fail if kubeconfig file does not exist
+  ansible.builtin.fail:
+    msg: "The kubeconfig file '{{ kubeconfig }}' does not exist. Ansible does not extend '~/' automatically"
+  when: not kubeconfig_file.stat.exists
+  tags:
+    - install
+    - uninstall
+
+- name: Validate if kubeconfig can connect to the cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: kubeconfig_connection
+  ignore_errors: true
+  tags:
+    - install
+    - uninstall
+
+- name: Fail if kubeconfig cannot connect to the cluster
+  ansible.builtin.fail:
+    msg: >-
+      Failed to connect to the Kubernetes cluster using the provided kubeconfig.
+      Ensure the kubeconfig file '{{ kubeconfig }}' is valid and the cluster is reachable.
+  when: kubeconfig_connection.resources is not defined or kubeconfig_connection.resources | length == 0
+  tags:
+    - install
+    - uninstall

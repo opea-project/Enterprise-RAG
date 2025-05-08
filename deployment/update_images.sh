@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "langdtct-usvc" "edp-usvc" "dpguard-usvc")
+default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "langdtct-usvc" "edp-usvc" "dpguard-usvc" "hierarchical-dataprep-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -39,6 +39,7 @@ usage() {
     echo -e "\t\tExample: repo/erag:gmcrouter_1.2 instead of repo/erag/gmcrouter:1.2."
     echo -e "\t--hpu: Build components for HPU platform."
     echo -e "\t--no-cache: Build images without using docker cache."
+    echo -e "\t--registry-path: Specify the registry path (default is $REGISTRY_PATH)."
     echo -e "Components available (default is all):"
     echo -e "\t ${default_components[*]}"
     echo -e "Example: $0 --build --push --registry my-registry embedding-usvc reranking-usvc"
@@ -91,6 +92,7 @@ tag_and_push() {
         echo "$full_image_name pushed succesfully"
     else
         echo "Push failed. Please check the logs at ${logs_dir}/push_$(basename ${full_image_name}).log for more details."
+        return 1
     fi
 }
 
@@ -142,6 +144,7 @@ build_component() {
         echo "$full_image_name built successfully"
     else
         echo "Build failed. Please check the logs at ${logs_dir}/build_$(basename ${full_image_name}).log for more details."
+        return 1
     fi
 }
 
@@ -187,6 +190,10 @@ while [ $# -gt 0 ]; do
         --no-cache)
             no_cache="--no-cache"
             ;;
+        --registry-path)
+            shift
+            REGISTRY_PATH=${1}
+            ;;
         --help)
             usage
             exit 0
@@ -208,7 +215,8 @@ echo "REGISTRY_NAME = $REGISTRY_NAME"
 echo "do_build = $do_build_flag"
 echo "max parallel jobs = $_max_parallel_jobs"
 echo "do_push = $do_push_flag"
-echo "TAG_VERSION = $TAG_VERSION"
+echo "TAG_VERSION = $TAG"
+echo "REGISTRY_PATH = $REGISTRY_PATH"
 echo "components_to_build = ${components_to_build[*]}"
 
 if $setup_registry_flag; then
@@ -226,18 +234,18 @@ for component in "${components_to_build[@]}"; do
     (
     case $component in
         gmcManager)
-            path="${repo_path}/deployment/microservices-connector"
+            path="${repo_path}/deployment/components/gmc/microservices-connector"
             dockerfile="Dockerfile.manager"
-            image=gmcmanager
+            image=erag-gmcmanager
 
             if $do_build_flag; then build_component $path $dockerfile $REGISTRY_PATH $image; fi
             if $do_push_flag; then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image; fi
             ;;
 
         gmcRouter)
-            path="${repo_path}/deployment/microservices-connector"
+            path="${repo_path}/deployment/components/gmc/microservices-connector"
             dockerfile="Dockerfile.router"
-            image=gmcrouter
+            image=erag-gmcrouter
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -246,7 +254,7 @@ for component in "${components_to_build[@]}"; do
         embedding-usvc)
             path="${repo_path}/src"
             dockerfile="comps/embeddings/impl/microservice/Dockerfile"
-            image=embedding
+            image=erag-embedding
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -255,7 +263,7 @@ for component in "${components_to_build[@]}"; do
         torchserve-embedding)
             path="${repo_path}/src/comps/embeddings/impl/model-server/torchserve"
             dockerfile="docker/Dockerfile"
-            image=torchserve_embedding
+            image=erag-torchserve_embedding
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -264,7 +272,7 @@ for component in "${components_to_build[@]}"; do
         torchserve-reranking)
             path="${repo_path}/src/comps/reranks/impl/model_server/torchserve"
             dockerfile="docker/Dockerfile"
-            image=torchserve_reranking
+            image=erag-torchserve_reranking
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -274,7 +282,7 @@ for component in "${components_to_build[@]}"; do
         reranking-usvc)
             path="${repo_path}/src"
             dockerfile="comps/reranks/impl/microservice/Dockerfile"
-            image=reranking
+            image=erag-reranking
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -283,7 +291,7 @@ for component in "${components_to_build[@]}"; do
         prompt-template-usvc)
             path="${repo_path}/src"
             dockerfile="comps/prompt_template/impl/microservice/Dockerfile"
-            image=prompt_template
+            image=erag-prompt_template
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -292,7 +300,16 @@ for component in "${components_to_build[@]}"; do
         dataprep-usvc)
             path="${repo_path}/src"
             dockerfile="comps/dataprep/impl/microservice/Dockerfile"
-            image=dataprep
+            image=erag-dataprep
+
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
+            ;;
+        
+        hierarchical-dataprep-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/hierarchical_dataprep/impl/microservice/Dockerfile"
+            image=hierarchical_dataprep
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -301,7 +318,7 @@ for component in "${components_to_build[@]}"; do
         retriever-usvc)
             path="${repo_path}/src"
             dockerfile="comps/retrievers/impl/microservice/Dockerfile"
-            image=retriever
+            image=erag-retriever
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -310,7 +327,7 @@ for component in "${components_to_build[@]}"; do
         ingestion-usvc)
             path="${repo_path}/src"
             dockerfile="comps/ingestion/impl/microservice/Dockerfile"
-            image=ingestion
+            image=erag-ingestion
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -319,7 +336,7 @@ for component in "${components_to_build[@]}"; do
         llm-usvc)
             path="${repo_path}/src"
             dockerfile="comps/llms/impl/microservice/Dockerfile"
-            image=llm
+            image=erag-llm
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -328,7 +345,7 @@ for component in "${components_to_build[@]}"; do
         in-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile"
-            image=in-guard
+            image=erag-in-guard
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -337,7 +354,7 @@ for component in "${components_to_build[@]}"; do
         out-guard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
-            image=out-guard
+            image=erag-out-guard
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -346,7 +363,7 @@ for component in "${components_to_build[@]}"; do
         dpguard-usvc)
             path="${repo_path}/src"
             dockerfile="comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile"
-            image=dpguard
+            image=erag-dpguard
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -355,7 +372,7 @@ for component in "${components_to_build[@]}"; do
         ui-usvc)
             path="${repo_path}/src"
             dockerfile="ui/Dockerfile"
-            image=chatqna-conversation-ui
+            image=erag-chatqna-conversation-ui
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -364,7 +381,7 @@ for component in "${components_to_build[@]}"; do
         fingerprint-usvc)
             path="${repo_path}/src"
             dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
-            image=system-fingerprint
+            image=erag-system-fingerprint
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -372,8 +389,8 @@ for component in "${components_to_build[@]}"; do
  
         otelcol-contrib-journalctl)
             path="${repo_path}"
-            dockerfile="deployment/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
-            image=otelcol-contrib-journalctl
+            dockerfile="deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
+            image=erag-otelcol-contrib-journalctl
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -382,7 +399,7 @@ for component in "${components_to_build[@]}"; do
         vllm-gaudi)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.hpu"
-            image=vllm-gaudi
+            image=erag-vllm-gaudi
 
             if $if_gaudi_flag;then
                 if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
@@ -395,7 +412,7 @@ for component in "${components_to_build[@]}"; do
         vllm-cpu)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
             dockerfile="docker/Dockerfile.cpu"
-            image=vllm-cpu
+            image=erag-vllm-cpu
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -404,7 +421,7 @@ for component in "${components_to_build[@]}"; do
         langdtct-usvc)
             path="${repo_path}/src"
             dockerfile="comps/language_detection/impl/microservice/Dockerfile"
-            image=language-detection
+            image=erag-language-detection
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
@@ -413,7 +430,7 @@ for component in "${components_to_build[@]}"; do
         edp-usvc)
             path="${repo_path}/src"
             dockerfile="edp/Dockerfile"
-            image=enhanced-dataprep
+            image=erag-enhanced-dataprep
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi

@@ -18,7 +18,6 @@ from llm_guard.output_scanners import (
     ReadingTime,
     FactualConsistency,
     Gibberish,
-    Regex,
     Relevance,
     Sensitive,
     Sentiment,
@@ -103,7 +102,7 @@ ENABLED_SCANNERS = [
     'url_reachability'
 ]
 
-from comps.guardrails.utils.scanners import OPEABanSubstrings
+from comps.guardrails.utils.scanners import OPEABanSubstrings, OPEARegexScanner
 from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 
@@ -970,7 +969,7 @@ class OutputScannersConfig:
             regex_params['redact'] = redact
 
         logger.info(f"Creating Regex scanner with params: {regex_params}")
-        return Regex(**regex_params)
+        return OPEARegexScanner(**regex_params)
 
     def _create_relevance_scanner(self, scanner_config):
         enabled_models = {'MODEL_EN_BGE_BASE': RELEVANCE_MODEL_EN_BGE_BASE,
@@ -1005,7 +1004,19 @@ class OutputScannersConfig:
         threshold = scanner_config.get('threshold', None)
 
         if entity_types is not None:
-            sensitive_params['entity_types'] = entity_types
+            if isinstance(entity_types, str):
+                entity_types = sanitize_env(entity_types)
+
+            if entity_types:
+                if isinstance(entity_types, str):
+                    artifacts = set([',', '', '.'])
+                    sensitive_params['entity_types'] = list(set(entity_types.split(',')) - artifacts)
+                elif isinstance(entity_types, list):
+                    sensitive_params['entity_types'] = entity_types
+                else:
+                    logger.error("Provided type is not valid for Sensitive scanner")
+                    raise ValueError("Provided type is not valid for Sensitive scanner")
+
         if regex_patterns is not None:
             sensitive_params['regex_patterns'] = regex_patterns
         if redact is not None:

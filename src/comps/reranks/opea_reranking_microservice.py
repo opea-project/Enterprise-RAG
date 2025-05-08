@@ -115,6 +115,7 @@ async def process(input: SearchedDoc) -> PromptTemplateInput:
                              detail=f"An error occurred while processing: {str(e)}"
     )
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+    res.conversation_history = input.conversation_history
     return res
 
 

@@ -6,17 +6,20 @@ import time
 
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from typing import Union
 
 from comps import (
-    LLMParamsDoc,
+    PromptTemplateInput,
     MegaServiceEndpoint,
     GeneratedDoc,
+    TranslationInput,
     ServiceType,
     change_opea_logger_level,
     get_opea_logger,
     opea_microservices,
     register_microservice,
     register_statistics,
+    sanitize_env,
     statistics_dict,
 )
 from comps.language_detection.utils.opea_language_detection import OPEALanguageDetector
@@ -32,7 +35,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the language detector class with environment variables.
-opea_language_detector = OPEALanguageDetector()
+opea_language_detector = OPEALanguageDetector(is_standalone=(sanitize_env(os.getenv('LANG_DETECT_STANDALONE')) == "True"))
 
 # Register the microservice with the specified configuration.
 @register_microservice(
@@ -41,21 +44,21 @@ opea_language_detector = OPEALanguageDetector()
     endpoint=str(MegaServiceEndpoint.LANGUAGE_DETECTION),
     host='0.0.0.0',
     port=int(os.getenv('LANGUAGE_DETECTION_USVC_PORT', default=8001)),
-    input_datatype=GeneratedDoc,
-    output_datatype=LLMParamsDoc,
+    input_datatype=Union[GeneratedDoc, TranslationInput],
+    output_datatype=PromptTemplateInput,
 )
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-def process(input: GeneratedDoc) -> LLMParamsDoc:
+def process(input: Union[GeneratedDoc, TranslationInput]) -> PromptTemplateInput:
     """
     Process the input document using the OPEALanguageDetector.
 
     Args:
-        input (GeneratedDoc): The input document to be processed.
+        input (Union[GeneratedDoc, TranslationInput]): The input document to be processed.
 
     Returns:
-        LLMParamsDoc: The processed document with LLM parameters.
+        PromptTemplateInput: The prompt template and placeholders for translation.
     """
     start = time.time()
     try:

@@ -66,9 +66,11 @@ const ServiceArgumentCheckbox = ({
       {!hideLabel && (
         <label htmlFor={inputId} className={labelClassNames}>
           {tooltipText && (
-            <Tooltip text={tooltipText} position="right">
-              <InfoIcon />
-            </Tooltip>
+            <Tooltip
+              title={tooltipText}
+              trigger={<InfoIcon />}
+              placement="left"
+            />
           )}
           <span>{name}</span>
         </label>

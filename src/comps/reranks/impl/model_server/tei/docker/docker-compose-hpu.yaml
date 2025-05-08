@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   reranking-tei-model-server:
-    image: ghcr.io/huggingface/tei-gaudi:1.5.2
+    image: ghcr.io/huggingface/tei-gaudi:1.5.3
     container_name: reranking-tei-model-server
     ports:
       - "${RERANKER_TEI_PORT}:80"

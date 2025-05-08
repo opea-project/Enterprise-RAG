@@ -3,12 +3,21 @@
 
 import yaml
 from comps.dataprep.utils.file_loaders.abstract_loader import AbstractLoader
-
+import re
 
 class LoadYaml(AbstractLoader):
     def extract_text(self):
-        """Load and process yaml file."""
-        data = None
-        with open(self.file_path, 'r') as f:
-            data = yaml.safe_load(f)
-        return yaml.dump(data)
+        """Load and extract text from yaml file."""
+        content = None
+        try:
+            with open(self.file_path, 'r') as f:
+                data = yaml.safe_load(f)
+                content = yaml.dump(data)
+        except yaml.YAMLError:
+            with open(self.file_path, 'r') as f:
+                content = f.read()
+                jinja_pattern = re.compile(r'{{.*?}}|{%.*?%}')
+                if not jinja_pattern.search(content):
+                    raise ValueError(f"File {self.file_path} is not a valid yaml file.")
+                
+        return content

@@ -245,17 +245,33 @@ curl http://localhost:8050/v1/health_check \
 ```bash
 curl http://localhost:8050/v1/llmguardinput \
   -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03,"streaming":false}' \
+  -d '{
+        "messages": {
+                "system": "You are a helpful assistant",
+                "user": "How are you?"
+            },
+        "max_new_tokens":17,
+        "top_k":10,
+        "top_p":0.95,
+        "typical_p":0.95,
+        "temperature":0.01,
+        "repetition_penalty":1.03,
+        "streaming":false
+    }' \
   -H 'Content-Type: application/json'
 ```
 
 #### Example output (when no scanners enabled or scanner did not catch any problem)
-```bash
+```json
 {
-    "id":"dded42f32bd9dddcb43bc0884d437faa",
-    "model":null,"query":"What is Deep Learning?",
-    "max_new_tokens":17,"top_k":10,"top_p":0.95,
-    "typical_p":0.95,"temperature":0.01,
+    "id":"d343573ed6be001001d505c335aa332b",
+    "messages":{"id":"0949788bf8bc1853371efd8a4752cc15","system":"You are a helpful assistant","user":"How are you?"},
+    "model":null,
+    "max_new_tokens":17,
+    "top_k":10,
+    "top_p":0.95,
+    "typical_p":0.95,
+    "temperature":0.01,
     "repetition_penalty":1.03,
     "streaming":false,
     "input_guardrail_params":null,
@@ -269,7 +285,10 @@ curl http://localhost:8050/v1/llmguardinput \
 ```bash
 curl http://localhost:8050/v1/llmguardinput \
   -X POST \
-  -d '{"query":"What are virus and backdoor?",
+  -d '{"messages": {
+                "system": "You are a helpful assistant.",
+                "user": "What is Deep Learning?"
+            },
         "max_new_tokens":17,
         "top_k":10,"top_p":0.95,
         "typical_p":0.95,
@@ -297,26 +316,3 @@ curl http://localhost:8050/v1/llmguardinput \
 ```
 
 A full set of possible configurations can be found in the file [object_document_mapper.py](src/comps/system_fingerprint/utils/object_document_mapper.py).
-
-## Additional Information
-### Project Structure
-
-The project is organized into several directories:
-
-- `impl/`: This directory contains configuration files for the LLM Guard Input Guardrail Microservice.
-- `utils/`: This directory contains scripts that are used by the LLM Guard Input Guardrail Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-├── README.md
-├── impl
-│   └── microservice
-│       ├── .env
-│       ├── Dockerfile
-│       ├── pyproject.toml
-│       └── uv.lock
-├── opea_llm_guard_input_guardrail_microservice.py
-└── utils
-    ├── llm_guard_input_guardrail.py
-    └── llm_guard_input_scanners.py

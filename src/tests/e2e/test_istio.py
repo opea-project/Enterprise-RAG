@@ -17,7 +17,8 @@ http_endpoints = [
     "fgp-svc.chatqa.svc.cluster.local:6012",
     "input-scan-svc.chatqa.svc.cluster.local:8050",
     "llm-svc.chatqa.svc.cluster.local:9000",
-    "output-scan-svc.chatqa.svc.cluster.local:8060",
+    # Output guards disabled
+    # "output-scan-svc.chatqa.svc.cluster.local:8060",
     "prompt-template-svc.chatqa.svc.cluster.local:7900",
     "redis-vector-db.chatqa.svc.cluster.local:6379",
     "reranking-svc.chatqa.svc.cluster.local:8000",
@@ -102,6 +103,7 @@ class TestIstioInMesh:
         yield
         istio_helper.delete_namespace()
 
+    @pytest.mark.smoke
     @allure.testcase("IEASG-T142")
     def test_authorization_gets_connections_blocked(self, istio_helper):
         endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}

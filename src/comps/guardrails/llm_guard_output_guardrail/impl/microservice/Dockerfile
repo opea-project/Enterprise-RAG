@@ -10,6 +10,8 @@ RUN apt-get update -y && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
+RUN rm -rf /usr/local/lib/python3.11/site-packages/*
 
 RUN useradd -m -s /bin/bash user
 
@@ -25,6 +27,10 @@ COPY ./comps/guardrails/llm_guard_output_guardrail/impl/microservice/uv.lock uv.
 # Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
 RUN uv sync --locked --no-cache
 ENV PATH="/home/user/.venv/bin:$PATH"
+
+# Install packages required for Sensitive Scanner
+RUN python -m spacy download zh_core_web_sm
+RUN python -m spacy download en_core_web_sm
 
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py

@@ -1,0 +1,100 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Install application
+  hosts: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+  vars:
+    helm_timeout: "10m0s"
+    deployment_dir: "{{ playbook_dir }}/.."
+    components_dir: "{{ deployment_dir }}/components"
+    pipelines_dir: "{{ deployment_dir }}/pipelines/"
+    log_dir: "{{ deployment_dir }}/ansible-logs"
+    tmp_dir: "{{ log_dir }}/tmp"
+    secure_logs: true
+  pre_tasks:
+    - name: Configure environment
+      include_role:
+        name: configure
+      tags:
+        - configure
+    - name: Build and push images
+      include_role:
+        name: images
+      tags:
+        - build-images
+    - name: Preinstall tasks
+      include_role:
+        name: pre_install
+      tags:
+        - install
+        - uninstall
+    - name: Run fingerprint role
+      include_role:
+        name: fingerprint
+      when: fingerprint.enabled
+      tags:
+        - install
+        - uninstall
+    - name: Run pipeline role with items
+      include_role:
+        name: pipeline
+      with_items: "{{ pipelines }}"
+      tags:
+        - install
+        - uninstall
+  roles:
+    - { role: ingress, when: ingress.enabled }
+    - { role: istio, when: istio.enabled }
+    - { role: keycloak, when: keycloak.enabled }
+    - { role: apisix, when: apisix.enabled }
+    - { role: ui, when: ui.enabled }
+    - { role: edp, when: edp.enabled }
+    - { role: telemetry, when: telemetry.enabled }
+  post_tasks:
+    - name: Install apisix routes
+      kubernetes.core.helm:
+        name: "auth-apisix-crds"
+        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
+        namespace: "auth-apisix"
+        state: present
+        force: true
+      tags:
+        - install
+        - update
+    - name: Include configure_istio role
+      include_role:
+        name: configure_istio
+      when: istio.enabled
+      tags:
+        - always
+    - name: Delete apisix routes
+      kubernetes.core.helm:
+        name: "auth-apisix-crds"
+        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
+        namespace: "auth-apisix"
+        state: absent
+      tags:
+        - uninstall
+    - name: Remove log directory
+      ansible.builtin.file:
+        path: "{{ log_dir }}"
+        state: absent
+      tags:
+        - uninstall
+    - name: Verify if all pods are in desired state
+      include_role:
+        name: check_pods
+      tags:
+        - install
+        - uninstall
+    - name: Delete tmp directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+        mode: '755'
+      loop:
+        - "{{ tmp_dir }}"
+      tags:
+        - install

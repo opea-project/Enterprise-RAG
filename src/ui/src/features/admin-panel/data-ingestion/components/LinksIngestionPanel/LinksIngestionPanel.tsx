@@ -31,6 +31,9 @@ const LinksIngestionPanel = ({ links, setLinks }: LinksIngestionPanelProps) => {
   return (
     <section>
       <h2>Links</h2>
+      <p className="mb-2 text-xs">
+        Supported text-based links extensions: HTML
+      </p>
       <LinkInput addLinkToList={addLinkToList} />
       {links.length > 0 && (
         <LinksList

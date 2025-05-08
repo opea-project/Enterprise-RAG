@@ -1,0 +1,92 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    ingress_helm_override_values_path: "{{ tmp_dir }}/{{ ingress.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ ingress.helm.repo_name }}"
+    repo_url: "{{ ingress.helm.repo_url }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ ingress_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [ingress.helm.default_values_file] +
+        [ingress_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ ingress.helm.release_name }}"
+    chart_ref: "{{ ingress.helm.repo_name }}/{{ ingress.helm.chart_name }}"
+    chart_version: "{{ ingress.helm.chart_version }}"
+    namespace: "{{ ingress.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+    wait: true
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ ingress.helm.release_name }}"
+    namespace: "{{ ingress.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Remove namespace
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ingress.namespace }}"
+    state: absent
+  tags:
+    - uninstall

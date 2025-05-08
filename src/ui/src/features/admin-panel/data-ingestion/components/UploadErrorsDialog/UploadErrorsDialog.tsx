@@ -9,6 +9,7 @@ import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import Anchor from "@/components/ui/Anchor/Anchor";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
+import { titleCaseString } from "@/utils";
 
 const s3Url = import.meta.env.VITE_S3_URL;
 
@@ -46,14 +47,14 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
     }
 
     const isUndeterminedNetworkError =
-      uploadErrors[dataType].includes("Failed to fetch");
+      uploadErrors[dataType].includes("Failed to upload");
 
-    const sectionTitle = `${dataType[0].toUpperCase()}${dataType.slice(1)}`;
+    const sectionTitle = titleCaseString(dataType);
 
     return (
       <section className="upload-errors-dialog__section">
         <h4>{sectionTitle}</h4>
-        <p>{uploadErrors[dataType]}</p>
+        <p className="mb-2">{uploadErrors[dataType]}</p>
         {isUndeterminedNetworkError && UndeterminedNetworkErrorMessage}
       </section>
     );

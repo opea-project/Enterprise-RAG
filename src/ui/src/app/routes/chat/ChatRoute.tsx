@@ -1,19 +1,42 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import useChat from "@/features/chat/hooks/useChat";
 import ConversationFeedLayout from "@/features/chat/layouts/ConversationFeedLayout/ConversationFeedLayout";
 import InitialChatLayout from "@/features/chat/layouts/InitialChatLayout/InitialChatLayout";
-import { selectMessages } from "@/features/chat/store/conversationFeed.slice";
-import { useAppSelector } from "@/store/hooks";
 
 const ChatRoute = () => {
-  const messages = useAppSelector(selectMessages);
+  const {
+    userInput,
+    conversationTurns,
+    isChatResponsePending,
+    onPromptChange,
+    onPromptSubmit,
+    onRequestAbort,
+  } = useChat();
 
-  if (messages.length === 0) {
-    return <InitialChatLayout />;
+  if (conversationTurns.length === 0) {
+    return (
+      <InitialChatLayout
+        userInput={userInput}
+        isChatResponsePending={isChatResponsePending}
+        onPromptChange={onPromptChange}
+        onPromptSubmit={onPromptSubmit}
+        onRequestAbort={onRequestAbort}
+      />
+    );
   }
 
-  return <ConversationFeedLayout />;
+  return (
+    <ConversationFeedLayout
+      userInput={userInput}
+      conversationTurns={conversationTurns}
+      isChatResponsePending={isChatResponsePending}
+      onPromptChange={onPromptChange}
+      onPromptSubmit={onPromptSubmit}
+      onRequestAbort={onRequestAbort}
+    />
+  );
 };
 
 export default ChatRoute;

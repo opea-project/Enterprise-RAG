@@ -22,7 +22,7 @@ Initialize kind cluster and create a local registry.
 
 ```bash
 # Create Local registry and kind-control-plane containers:
-bash ./telemetry/helm/example/kind-with-registry-opea-models-mount.sh
+bash ./components/telemetry/helm/example/kind-with-registry-opea-models-mount.sh
 kind export kubeconfig
 docker ps
 kubectl get pods -A
@@ -52,7 +52,7 @@ Check your changes with following command:
 
 ```bash
 # check yaml values
-git --no-pager diff microservices-connector/helm/values.yaml
+git --no-pager diff components/gmc/microservices-connector/helm/values.yaml
 ```
 
 Build the images and push them to the registry. Reminder: skip `TAG` by removing `-t $TAG` for every command if you want to build and run the deployment on the `latest`.
@@ -81,20 +81,14 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 Deploy the pipeline. Choose a command that suits your needs. More information on install_chatqna.sh parameters can be found [here](../deployment/README.md).
 
 ### c) Deploy everything
+With configuration file filled with proper values, run:
 ```bash
-./install_chatqna.sh --auth --kind --deploy xeon_torch_llm_guard --ui --telemetry --tag $TAG
-
-# Install or reinstall(upgrade) individual components
-./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx namespaces
-./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch --upgrade                        # namespaces: system, chatqa, dataprep
-./install_chatqna.sh --tag $TAG --kind --deploy xeon_torch_llm_guard --upgrade              # namespaces: system, chatqa, dataprep
-./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-namespace
-./install_chatqna.sh --tag $TAG --kind --ui --upgrade                                       # namespaces: erag-ui
+ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
 ```
 
 To verify that the deployment was successful, run the following command:
 ```bash
-./test_connection.sh
+./scripts/test_connection.sh
 ```
 
 Check out following commands for any additional needs.
@@ -105,7 +99,7 @@ In order to access UI or Grafana, follow instructions available in [deployment/R
 
 Default passwords are available in `default_credentials.txt`. Change the passwords after first succesful login.
 ```bash
-cat default_credentials.txt
+cat ansible-logs/default_credentials.txt
 ```
 
 ### (Optionally) install metrics-server (for resource usage metrics)

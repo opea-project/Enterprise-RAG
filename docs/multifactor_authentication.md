@@ -4,7 +4,7 @@
 
 Before proceeding with this guide, verify that the keycloak instance is already up and running 
 
-Log in as admin to the Keycloak Admin Console [keycloak console](https:auth.erag.com) using credentials available in `default_credentials.txt` 
+Log in as admin to the Keycloak Admin Console [keycloak console](https:auth.erag.com) using credentials available in `ansible-logs/default_credentials.yaml`
 
 ## Enable the OTP (One-Time Password) Form in Authentication Flow
 

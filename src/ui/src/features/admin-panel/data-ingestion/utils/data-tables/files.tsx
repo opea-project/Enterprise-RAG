@@ -86,7 +86,7 @@ export const getFilesTableColumns = ({
         >
           Download
         </Button>
-        <FileTextExtractionDialog fileUuid={id} fileName={object_name} />
+        <FileTextExtractionDialog uuid={id} fileName={object_name} />
         {status === "error" && (
           <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
             Retry

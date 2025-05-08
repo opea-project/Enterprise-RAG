@@ -5,7 +5,7 @@
 Upon visiting https://erag.com, you will be redirected to Keycloak login page where you will be asked to enter your credentials.
 
 > [!NOTE]
-> To access **Intel® AI for Enterprise RAG UI**, you have to use one time credentials for admin (`KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`) or user (`KEYCLOAK_ERAG_USER_USERNAME` and `KEYCLOAK_ERAG_USER_PASSWORD`) generated in `default_credentials.txt` file inside `deployment` folder.
+> To access **Intel® AI for Enterprise RAG UI**, you have to use one time credentials for admin (`KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`) or user (`KEYCLOAK_ERAG_USER_USERNAME` and `KEYCLOAK_ERAG_USER_PASSWORD`) generated in `default_credentials.txt` file inside `deployment/ansible-logs` folder.
 >
 > After first login you will be requested to change the default password. Your new password must be at least 12 characters long, include at least 1 digit, 1 uppercase letter, 1 lowercase letter and 1 special character. It also must be different from the last 5 passwords you have used.
 
@@ -39,14 +39,14 @@ For example, when you click on the LLM service, as shown in the screenshot below
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. LLM max_new_tokens parameter value changed to 2048, waiting to be confirmed.](../images/ui/control_plane_confirm.png)
 
-From **Control Plane** view you are also able to change currently used prompt template by selecting Prompt Template service node from the graph. Edit current template and click "Confirm Changes" to update it.
+From **Control Plane** view you are also able to change currently used prompt templates by selecting Prompt Template service node from the graph. Edit current prompt templates and click "Confirm Changes" to update them.
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template service selected.](../images/ui/control_plane_prompt_template.png)
 
 > [!NOTE]
-> Prompt Template cannot be empty and it requires to contain two placeholders: **{reranked_docs}** and **{initial_query}** that can be placed anywhere inside the template text. In case any of these requirements is not met, an error message will be displayed on the screen under Prompt Template text input as shown below.
+> Prompt Templates cannot be empty and have to contain three placeholders: **{user_prompt}**, **{reranked_docs}** and **{conversation_history}** that can be placed anywhere in both templates once. In case any of these requirements are not met, an error message will be displayed on the screen under text inputs as shown below.
 
-![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template textarea input in invalid state with error messages displayed below.](../images/ui/control_plane_prompt_template_invalid.png)
+![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template textarea inputs in invalid state with error message displayed below.](../images/ui/control_plane_prompt_template_invalid.png)
 
 ### Data Ingestion
 

@@ -33,9 +33,11 @@ const ServiceStatusIndicator = ({
   }
 
   return (
-    <Tooltip text={status} position={forNode ? "top" : "left"}>
-      <div className={serviceStatusIndicatorClassNames}></div>
-    </Tooltip>
+    <Tooltip
+      title={status}
+      trigger={<div className={serviceStatusIndicatorClassNames}></div>}
+      placement={forNode ? "top" : "left"}
+    />
   );
 };
 

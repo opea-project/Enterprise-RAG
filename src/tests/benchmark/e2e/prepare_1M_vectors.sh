@@ -10,7 +10,9 @@ redis_get_vectors()
 
 	REDIS_PASS=$(kubectl get secret --namespace $NS $SECRET -o jsonpath="{.data.REDIS_PASSWORD}" | base64 --decode)
 	CONTAINER_NAME=$(kubectl get pods --namespace $NS -l app=$APP -o jsonpath='{.items[*].metadata.name}')
-	vectors=$(kubectl exec -it $CONTAINER_NAME --namespace $NS -- redis-cli -a "$REDIS_PASS" ft.info default_index | grep num_docs -A 1 | tail -n1 | rev | cut -d " " -f1 | rev)
+	idx_name=$(kubectl exec -it $CONTAINER_NAME --namespace $NS -- redis-cli -a "$REDIS_PASS" ft._list | grep index | cut -d " " -f 2)
+	cmd="ft.info $idx_name"
+	vectors=$(echo $cmd | kubectl exec -it $CONTAINER_NAME --namespace $NS -- redis-cli -a "$REDIS_PASS" 2>/dev/null | grep num_docs -A 1 | tail -n1 | rev | cut -d " " -f1 | rev)
 	echo "current vectors in Redis: $vectors"
 	vectors="${vectors//[$'\t\r\n ']}"
 	export REDIS_VECTORS=$vectors
@@ -112,7 +114,18 @@ fill_with_wikipedia()
 
 export TEMP_DIR="/tmp/ragdocumentsedp"
 export EDP_URL="https://erag.com/api/v1/edp"
-export EXPECTED_VECTORS=1000000
+export EXPECTED_VECTORS=${1:-1000000}
+if [ -n "$1" ]; then
+  echo "Using non-default value for EXPECTED_VECTORS: $EXPECTED_VECTORS"
+else
+  echo "Using default value for EXPECTED_VECTORS: $EXPECTED_VECTORS"
+fi
+
+redis_get_vectors
+if [ "$REDIS_VECTORS" -gt "$EXPECTED_VECTORS" ]; then
+  echo "Number of expected vectors are met, exiting"
+  exit 0
+fi
 
 rm -rf $TEMP_DIR
 upload_relevant_documents

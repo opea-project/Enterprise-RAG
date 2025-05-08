@@ -40,16 +40,19 @@ from comps.cores.proto.docarray import (
     GeneratedDoc,
     GraphDoc,
     LLMParamsDoc,
+    LLMPromptTemplate,
     LVMDoc,
     RAGASParams,
     RAGASScores,
     SearchedDoc,
+    PrevQuestionDetails,
     PromptTemplateInput,
     TextDoc,
     PromptCreate,
     PromptGet,
     PromptId,
     PromptOutput,
+    TranslationInput,
     TextDocList
 )
 

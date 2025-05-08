@@ -1,0 +1,103 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+proxy:
+  httpProxy: {{ httpProxy }}
+  httpsProxy: {{ httpsProxy }}
+  noProxy: {{ noProxy }}
+tokens:
+  hugToken: {{ huggingToken }}
+common_tag: &tag {{ tag }}
+common_registry: &repo {{ registry }}
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
+{% if hpaEnabled is defined %}
+hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+
+images:
+  gmcManager:
+    image: "erag-gmcmanager"
+    repository: *repo
+    tag: *tag
+  gmcRouter:
+    image: "erag-gmcrouter"
+    repository: *repo
+    tag: *tag
+  dataprep-usvc:
+    image: "erag-dataprep"
+    repository: *repo
+    tag: *tag
+  embedding-usvc:
+    image: "erag-embedding"
+    repository: *repo
+    tag: *tag
+  reranking-usvc:
+    image: "erag-reranking"
+    repository: *repo
+    tag: *tag
+  teirerank:
+    image: "erag-teirerank"
+    repository: *repo
+    tag: *tag
+  teirerank_gaudi:
+    image: "erag-teirerank_gaudi"
+    repository: *repo
+    tag: *tag
+  prompt-template-usvc:
+    image: "erag-prompt_template"
+    repository: *repo
+    tag: *tag
+  torchserve_embedding:
+    image: "erag-torchserve_embedding"
+    repository: *repo
+    tag: *tag
+  torchserve_reranking:
+    image: "erag-torchserve_reranking"
+    repository: *repo
+    tag: *tag
+  retriever-usvc:
+    image: "erag-retriever"
+    repository: *repo
+    tag: *tag
+  ingestion-usvc:
+    image: "erag-ingestion"
+    repository: *repo
+    tag: *tag
+  llm-usvc:
+    image: "erag-llm"
+    repository: *repo
+    tag: *tag
+  in-guard-usvc:
+    image: "erag-in-guard"
+    repository: *repo
+    tag: *tag
+  out-guard-usvc:
+    image: "erag-out-guard"
+    repository: *repo
+    tag: *tag
+  ui-usvc:
+    image: "erag-chatqna-conversation-ui"
+    repository: *repo
+    tag: *tag
+  vllm_gaudi:
+    image: "erag-vllm-gaudi"
+    repository: *repo
+    tag: *tag
+  vllm:
+    image: "erag-vllm-cpu"
+    repository: *repo
+    tag: *tag
+  langdtct-usvc:
+    image: "erag-language_detection"
+    repository: *repo
+    tag: *tag
+  fingerprint-usvc:
+    image: "erag-system-fingerprint"
+    repository: *repo
+    tag: *tag

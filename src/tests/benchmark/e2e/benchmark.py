@@ -100,7 +100,8 @@ def call_chatqa(url, question, wid, tokenizer, bearer):
 
     start = time.time()
     try:
-        response = requests.post(url, headers=headers, data=data, stream=True)
+        response = requests.post(url, headers=headers, data=data, stream=True,
+                                 verify="/etc/ssl/certs/ca-certificates.crt")
         res.code = response.status_code
         answer = ""
         lines = ""

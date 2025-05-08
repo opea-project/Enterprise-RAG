@@ -12,8 +12,8 @@ Support for specific model servers with Dockerfiles or build instruction.
 
 | Model server name                 |  Status   |
 | ----------------------------------| --------- |
-| [TGI](./impl/model_server/tgi/)   | &#x2713;  |
 | [VLLM](./impl/model_server/vllm/) | &#x2713;  |
+| TGI                               | &#x2717;  |
 | RAY                               | &#x2717;  |
 
 
@@ -26,7 +26,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_USVC_PORT`                 | The port of the microservice, by default 9000.                                                                        |
 | `LLM_MODEL_NAME`                | The name of language model to be used (e.g., "mistralai/Mistral-7B-Instruct-v0.1")                                             |
 | `LLM_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'generic'. If not specified, the generic connection method will be used. |
-| `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "tgi", "vllm")                                                               |
+| `LLM_MODEL_SERVER`              | Specifies the type of model server (e.g. "vllm")                                                               |
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
@@ -122,17 +122,35 @@ The `streaming` parameter controls the API response format:
 ```bash
 # non-streaming mode
 curl http://localhost:9000/v1/chat/completions \
-  -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03,"streaming":false}' \
-  -H 'Content-Type: application/json'
+        -X POST \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: What is Deep Learning? \n\n"
+                    },
+                "max_new_tokens":32,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":false
+            }' \
+        -H 'Content-Type: application/json'
 ```
 
 ```bash
 # streaming mode
 curl http://localhost:9000/v1/chat/completions \
-  -X POST \
-  -d '{"query":"What is Deep Learning?","max_new_tokens":17,"top_k":10,"top_p":0.95,"typical_p":0.95,"temperature":0.01,"repetition_penalty":1.03,"streaming":true}' \
-  -H 'Content-Type: application/json'
+        -X POST \
+        -d '{
+                "messages": {
+                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
+                    "user": "### Question: What is Deep Learning? \n\n"
+                    },
+                "max_new_tokens":32,
+                "top_p":0.95,
+                "temperature":0.01,
+                "streaming":true
+            }' \
+        -H 'Content-Type: application/json'
 ```
 
 **Example Output**
@@ -141,83 +159,41 @@ The following examples demonstrate the LLM microservice output in both non-strea
 
  - In **non-streaming mode** (streaming=false), the service returns a single JSON response:
 
-    ```json
-    {
-      "id":"fd49a0d75f7f54089572fa30510f8d3a",
-      "text":"\n\nDeep learning is a subset of machine learning that uses algorithms to learn from data",
-      "prompt":"What is Deep Learning?"
-    }
-    ```
+```json
+{
+  "id":"9a1b09face84c316c9a6297052d8b791",
+  "text":"System: I am a helpful, respectful, and honest assistant designed to help you",
+  "prompt":"### Question: Who are you? \n\n",
+  "streaming":false,
+  "output_guardrail_params":null
+}
+```
 - In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
-    ```
-    data: '\n'
-    data: 'Deep'
-    data: ' learning'
-    data: ' is'
-    data: ' a'
-    data: ' subset'
-    data: ' of'
-    data: ' machine'
-    data: ' learning'
-    data: ' that'
-    data: ' uses'
-    data: ' artificial'
-    data: ' neural'
-    data: ' networks'
-    data: [DONE]
-    ```
+```
+data: '\n'
+data: 'Deep'
+data: ' learning'
+data: ' is'
+data: ' a'
+data: ' subset'
+data: ' of'
+data: ' machine'
+data: ' learning'
+data: ' that'
+data: ' uses'
+data: ' artificial'
+data: ' neural'
+data: ' networks'
+data: [DONE]
+```
 
 ## Validated Model
 
 To find validated models running on Gaudi, refer to the following resources:
 
- - **For TGI**, see the [Tested Models and Configurations](https://github.com/huggingface/tgi-gaudi/releases#tested-models-and-configurations).
  - **For vLLM**, see the [Supported Configuration](https://github.com/HabanaAI/vllm-fork/releases#Supported-Configurations).
 
 
 ## Additional Information
-### Project Structure
-
-The project is organized into several directories:
-- `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TGI or vLLM.
-- `utils/`: This directory contains utility scripts and modules that are used by the LLM Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl/
-  │   ├── microservice/
-  │   │   ├── .env
-  │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   └── uv.lock
-  │   │
-  │   ├── model_server/
-  │   │   ├── tgi/
-  │   │   │   ├── README.md
-  │   │   │   └── docker/
-  │       │       ├── .env.cpu
-  │       │       ├── .env.hpu
-  │   │   │       ├── docker-compose-cpu.yml
-  │   │   │       └── docker-compose-hpu.yml
-  │   │   │
-  │   │   └── ...
-  │   └── ...
-  │
-  ├── utils/
-  │   ├── opea_llm.py
-  │   └── connectors/
-  │       ├── connector.py
-  │       ├── generic_connector.py
-  │       └── langchain_connector.py
-  │
-  ├── README.md
-  └── opea_llm_microservice.py
-```
-
 #### Tests
 - `src/tests/unit/llms/`: Contains unit tests for the LLM Microservice components
-
-
-

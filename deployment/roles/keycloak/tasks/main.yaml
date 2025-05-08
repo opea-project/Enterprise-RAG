@@ -1,0 +1,138 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    keycloak_helm_override_values_path: "{{ tmp_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ keycloak.helm.repo_name }}"
+    repo_url: "{{ keycloak.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ keycloak_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [keycloak.helm.default_values_file] +
+        [keycloak_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak.tls.secret_name }}"
+        namespace: "{{ keycloak.namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+
+- name: Generate password
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: KEYCLOAK_REALM_ADMIN, user: "{{ keycloak.auth.admin.username }}" }
+  tags:
+    - install
+
+- name: Create password secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ keycloak.auth.admin.password_secret_name }}"
+        namespace: "{{ keycloak.namespace }}"
+      data:
+        admin-password: "{{ KEYCLOAK_REALM_ADMIN_PASSWORD | b64encode }}"
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Install Helm chart
+  kubernetes.core.helm:
+    name: "{{ keycloak.helm.release_name }}"
+    chart_ref: "{{ keycloak.helm.repo_name }}/{{ keycloak.helm.chart_name }}"
+    chart_version: "{{ keycloak.helm.chart_version }}"
+    namespace: "{{ keycloak.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+    wait: true
+  tags:
+    - install
+
+- name: Initial keycloak configuration
+  ansible.builtin.include_tasks: configure_keycloak.yaml
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ keycloak.helm.release_name }}"
+    namespace: "{{ keycloak.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ keycloak.namespace }}"
+  tags:
+    - uninstall

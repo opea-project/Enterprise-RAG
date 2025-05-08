@@ -8,9 +8,12 @@ import { ChangeEventHandler, FormEvent, useRef, useState } from "react";
 import Button from "@/components/ui/Button/Button";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
-import { postFileToExtractText } from "@/features/admin-panel/data-ingestion/api/postFileToExtractText";
+import { usePostFileToExtractTextMutation } from "@/features/admin-panel/data-ingestion/api/edpApi";
+import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
+import { createPostFileToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/utils/api";
 import useDebug from "@/hooks/useDebug";
+import { getErrorMessage } from "@/utils/api";
 
 interface FileTextExtractionFormProps {
   isLoadingExtractedText: boolean;
@@ -134,17 +137,16 @@ export const FileTextExtractionForm = ({
 };
 
 interface FileTextExtractionDialogProps {
-  fileUuid: string;
+  uuid: string;
   fileName: string;
 }
 
 const FileTextExtractionDialog = ({
-  fileUuid,
+  uuid,
   fileName,
 }: FileTextExtractionDialogProps) => {
-  const [extractedText, setExtractedText] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [postFileToExtractText, { data: extractedText, isLoading, error }] =
+    usePostFileToExtractTextMutation();
 
   const ref = useRef<HTMLDialogElement>(null);
   const handleClose = () => ref.current?.close();
@@ -156,34 +158,14 @@ const FileTextExtractionDialog = ({
     return null;
   }
 
-  const extractText = async (
-    uuid: string,
-    queryParams?: ExtractTextQueryParamsFormData,
-  ) => {
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      setExtractedText(null);
-      const text = await postFileToExtractText(uuid, queryParams);
-      setExtractedText(text);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to extract text from the file";
-      setErrorMessage(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleClick = async () => {
     showDialog();
-    extractText(fileUuid);
+    postFileToExtractText({ uuid });
   };
 
-  const onFormSubmit = (queryParams: ExtractTextQueryParamsFormData) => {
-    extractText(fileUuid, queryParams);
+  const onFormSubmit = (queryParamsForm: ExtractTextQueryParamsFormData) => {
+    const queryParams = createPostFileToExtractTextQueryParams(queryParamsForm);
+    postFileToExtractText({ uuid, queryParams });
   };
 
   const trigger = (
@@ -201,9 +183,13 @@ const FileTextExtractionDialog = ({
       );
     }
 
-    if (extractedText === null) {
-      if (errorMessage) {
-        return <p className="error">{errorMessage}</p>;
+    if (extractedText === undefined) {
+      if (error) {
+        return (
+          <p className="error">
+            {getErrorMessage(error, ERROR_MESSAGES.POST_FILE_TO_EXTRACT_TEXT)}
+          </p>
+        );
       }
       return <p>No text extracted from the file</p>;
     }

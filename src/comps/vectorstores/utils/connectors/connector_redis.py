@@ -263,7 +263,7 @@ class ConnectorRedis(VectorStoreConnector):
                     metadata=metadata
                 )
             )
-        return SearchedDoc(retrieved_docs=searched_docs, initial_query=input_text)
+        return SearchedDoc(retrieved_docs=searched_docs, user_prompt=input_text)
 
     async def similarity_search_by_vector(self, input_text: str, embedding: List[float], k: int, distance_threshold: float = None, filter_expression: Optional[Union[str, FilterExpression]] = None, parse_result: bool = True) -> SearchedDoc:
         try:
@@ -289,7 +289,7 @@ class ConnectorRedis(VectorStoreConnector):
         except exceptions.ResponseError as e:
             if "no such index" in str(e):
                 logger.warning("No such index found in vector store. Import data first.")
-                return SearchedDoc(retrieved_docs=[], initial_query=input_text)
+                return SearchedDoc(retrieved_docs=[], user_prompt=input_text)
             raise e
         except Exception as e:
             logger.exception("Error occured while searching by vector")

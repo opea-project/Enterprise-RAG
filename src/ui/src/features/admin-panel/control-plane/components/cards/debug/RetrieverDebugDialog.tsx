@@ -8,20 +8,21 @@ import Button from "@/components/ui/Button/Button";
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
-import { postRetrieverQuery } from "@/features/admin-panel/control-plane/api/postRetrieverQuery";
+import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
+import { ERROR_MESSAGES } from "@/features/admin-panel/control-plane/config/api";
 import {
   RerankerArgs,
   rerankerArgumentsDefault,
   rerankerFormConfig,
-} from "@/features/admin-panel/control-plane/config/reranker";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import {
   RetrieverArgs,
   retrieverArgumentsDefault,
   retrieverFormConfig,
   searchTypesArgsMap,
-} from "@/features/admin-panel/control-plane/config/retriever";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 import { chatQnAGraphNodesSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
@@ -33,9 +34,22 @@ import {
   filterRetrieverFormData,
 } from "@/features/admin-panel/control-plane/utils";
 import { useAppSelector } from "@/store/hooks";
-import { ChatMessage } from "@/types";
+import { ConversationTurn } from "@/types";
+import { getErrorMessage } from "@/utils/api";
+
+const createCodeBlock = (text: string | object) => {
+  let parsedText = text;
+  if (typeof text === "string") {
+    const trimmedText = text.trim();
+    parsedText = JSON.parse(trimmedText);
+  }
+  const formattedText = JSON.stringify(parsedText, null, 2);
+  return `\`\`\`\n${formattedText}\n\`\`\``;
+};
 
 const RetrieverDebugDialog = () => {
+  const [postRetrieverQuery] = usePostRetrieverQueryMutation();
+
   const ref = useRef<HTMLDialogElement>(null);
   const handleClose = () => ref.current?.close();
   const showDialog = () => ref.current?.showModal();
@@ -47,7 +61,9 @@ const RetrieverDebugDialog = () => {
   );
 
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationTurns, setConversationTurns] = useState<
+    ConversationTurn[]
+  >([]);
   const [query, setQuery] = useState("");
 
   const chatQnAGraphNodes = useAppSelector(chatQnAGraphNodesSelector);
@@ -85,50 +101,44 @@ const RetrieverDebugDialog = () => {
   };
 
   const handleSubmitQuery = async (query: string) => {
-    const newQueryMessage = JSON.stringify(
-      {
-        query,
-        ...retrieverArgumentsForm,
-        top_n: rerankerArgumentsForm.top_n,
-        reranker: isRerankerEnabled,
-      },
-      null,
-      2,
-    );
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: uuidv4(),
-        text: newQueryMessage,
-        isUserMessage: true,
-      },
-    ]);
-    try {
-      const message = await postRetrieverQuery(
-        query,
-        retrieverArgumentsForm,
-        rerankerArgumentsForm.top_n,
-        isRerankerEnabled,
+    const newQueryRequest = {
+      query,
+      ...retrieverArgumentsForm,
+      reranker: isRerankerEnabled,
+      top_n: rerankerArgumentsForm.top_n,
+      rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
+    };
+
+    setQuery("");
+
+    const newConversationTurn: ConversationTurn = {
+      id: uuidv4(),
+      question: createCodeBlock(newQueryRequest),
+      answer: "",
+      error: null,
+      isPending: true,
+    };
+    setConversationTurns((prevTurns) => [...prevTurns, newConversationTurn]);
+
+    const { data, error } = await postRetrieverQuery(newQueryRequest);
+
+    if (error) {
+      const errorMessage = getErrorMessage(
+        error,
+        ERROR_MESSAGES.POST_RETRIEVER_QUERY,
       );
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          id: uuidv4(),
-          text: message,
-          isUserMessage: false,
-        },
+      setConversationTurns((prevTurns) => [
+        ...prevTurns.slice(0, -1),
+        { ...newConversationTurn, error: errorMessage, isPending: false },
       ]);
-      setQuery("");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : JSON.stringify(error);
-      setMessages((prevMessages) => [
-        ...prevMessages,
+    } else {
+      const responseData = data ? data : "";
+      setConversationTurns((prevTurns) => [
+        ...prevTurns.slice(0, -1),
         {
-          id: uuidv4(),
-          text: errorMessage,
-          isUserMessage: false,
-          isError: true,
+          ...newConversationTurn,
+          answer: createCodeBlock(responseData),
+          isPending: false,
         },
       ]);
     }
@@ -168,7 +178,7 @@ const RetrieverDebugDialog = () => {
         <div className="flex h-[calc(100vh-12rem)] flex-col text-sm">
           <div className="grid h-full grid-rows-[1fr_auto]">
             <RetrieverDebugChat
-              messages={messages}
+              conversationTurns={conversationTurns}
               query={query}
               handleQueryInputChange={handleQueryInputChange}
               handleSubmitQuery={handleSubmitQuery}
@@ -290,25 +300,32 @@ const RetrieverDebugParamsForm = ({
         onArgumentValidityChange={onRerankerArgumentValidityChange}
         readOnlyDisabled
       />
+      <ServiceArgumentNumberInput
+        {...rerankerFormConfig.rerank_score_threshold}
+        initialValue={rerankerPreviousArgumentsValues.rerank_score_threshold}
+        onArgumentValueChange={onRerankerArgumentValueChange}
+        onArgumentValidityChange={onRerankerArgumentValidityChange}
+        readOnlyDisabled
+      />
     </>
   );
 };
 
 interface RetrieverDebugChatProps {
-  messages: ChatMessage[];
+  conversationTurns: ConversationTurn[];
   query: string;
   handleQueryInputChange: ChangeEventHandler<HTMLTextAreaElement>;
   handleSubmitQuery: (query: string) => void;
 }
 
 const RetrieverDebugChat = ({
-  messages,
+  conversationTurns,
   query,
   handleQueryInputChange,
   handleSubmitQuery,
 }: RetrieverDebugChatProps) => (
   <>
-    <ConversationFeed messages={messages} />
+    <ConversationFeed conversationTurns={conversationTurns} />
     <PromptInput
       prompt={query}
       onChange={handleQueryInputChange}

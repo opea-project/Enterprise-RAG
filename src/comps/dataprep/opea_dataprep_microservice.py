@@ -35,10 +35,11 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 # Next, dataprep calls can be overriden with the input parameters if passed.
 def run_dataprep(files, links, chunk_size, chunk_overlap, process_table, table_strategy):
     dataprep = opea_dataprep.OPEADataprep(
-        chunk_size=int(sanitize_env(str(os.getenv("CHUNK_SIZE")))),
-        chunk_overlap=int(sanitize_env(str(os.getenv("CHUNK_OVERLAP")))),
-        process_table=sanitize_env(str(os.getenv("PROCESS_TABLE"))),
-        table_strategy=sanitize_env(str(os.getenv("PROCESS_TABLE_STRATEGY")))
+        chunk_size=int(sanitize_env(os.getenv("CHUNK_SIZE"))),
+        chunk_overlap=int(sanitize_env(os.getenv("CHUNK_OVERLAP"))),
+        process_table=sanitize_env(os.getenv("PROCESS_TABLE")),
+        table_strategy=sanitize_env(os.getenv("PROCESS_TABLE_STRATEGY")),
+        use_semantic_chunking=(sanitize_env(os.getenv("USE_SEMANTIC_CHUNKING")).lower() == "true")
     )
     textdocs = dataprep.dataprep(
         files=files,
@@ -102,7 +103,7 @@ async def process(input: DataPrepInput) -> TextDocList:
                 if not f.filename:
                     raise ValueError(f"File #{fidx} filename was empty.")
                 if not is_valid_filename(f.filename):
-                    raise ValueError(f"File {f.filename} had an invalid filename.")
+                    raise ValueError(f"File {f.filename} has an invalid filename.")
                 if not f.data64:
                     raise ValueError(f"File {f.filename} base64 data was empty.")
                 file_data = base64.b64decode(f.data64)

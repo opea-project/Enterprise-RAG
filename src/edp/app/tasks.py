@@ -408,3 +408,27 @@ def delete_link_task(self, link_id: Any, *args, **kwargs):
     self.db.commit()
     logger.debug(f"[{id}] File deleted successfully from database.")
     return True
+
+
+@celery.on_after_finalize.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+    edp_sync_seconds = os.environ.get('EDP_SYNC_TASK_TIME_SECONDS', None)
+    if edp_sync_seconds and edp_sync_seconds != "":
+        logger.info(f"Adding periodic sync task each {edp_sync_seconds} seconds")
+        sender.add_periodic_task(int(edp_sync_seconds), sync_files_task.s(), name='Sync files between storage and db')
+    else:
+        logger.info("No periodic tasks registered")
+
+@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 1})
+def sync_files_task(self, *Args, **kwargs):
+    from app.main import add_new_file, delete_existing_file, sync_files, minio_internal
+
+    logger.debug("Started File Sync process")
+
+    try:
+        sync_files(minio_internal, add_new_file, add_new_file, delete_existing_file)
+    except Exception as e:
+        logger.error(f"Error syncing files: {e}")
+
+    logger.debug("Ended File Sync process")
+    return True

@@ -5,7 +5,7 @@
 Upon visiting https://erag.com, you will be redirected to Keycloak login page where you will be asked to enter your credentials.
 
 > [!NOTE]
-> To access **Intel® AI for Enterprise RAG UI**, you have to use one time credentials for admin (`KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`) or user (`KEYCLOAK_ERAG_USER_USERNAME` and `KEYCLOAK_ERAG_USER_PASSWORD`) generated in `default_credentials.txt` file inside `deployment` folder.
+> To access **Intel® AI for Enterprise RAG UI**, you have to use one time credentials for admin (`KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`) or user (`KEYCLOAK_ERAG_USER_USERNAME` and `KEYCLOAK_ERAG_USER_PASSWORD`) generated in `default_credentials.txt` file inside `deployment/ansible-logs` folder.
 >
 > After first login you will be requested to change the default password. Your new password must be at least 12 characters long, include at least 1 digit, 1 uppercase letter, 1 lowercase letter and 1 special character. It also must be different from the last 5 passwords you have used.
 

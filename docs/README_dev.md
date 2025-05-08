@@ -81,14 +81,9 @@ reg ls -k -f localhost:5000 2>/dev/null | grep $TAG
 Deploy the pipeline. Choose a command that suits your needs. More information on install_chatqna.sh parameters can be found [here](../deployment/README.md).
 
 ### c) Deploy everything
+With configuration file filled with proper values, run:
 ```bash
-./install_chatqna.sh --auth --kind --deploy reference-cpu.yaml --ui --telemetry --tag $TAG
-
-# Install or reinstall(upgrade) individual components
-./install_chatqna.sh --tag $TAG --kind --auth --upgrade --keycloak_admin_password admin     # namespaces: auth, auth-apisix, ingress-nginx
-./install_chatqna.sh --tag $TAG --kind --deploy reference-cpu.yaml --upgrade                # namespaces: system, chatqa
-./install_chatqna.sh --tag $TAG --kind --telemetry --upgrade --grafana_password devonly     # namespaces: monitoring, monitoring-traces
-./install_chatqna.sh --tag $TAG --kind --ui --upgrade                                       # namespaces: erag-ui
+ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
 ```
 
 To verify that the deployment was successful, run the following command:
@@ -104,7 +99,7 @@ In order to access UI or Grafana, follow instructions available in [deployment/R
 
 Default passwords are available in `default_credentials.txt`. Change the passwords after first succesful login.
 ```bash
-cat default_credentials.txt
+cat ansible-logs/default_credentials.txt
 ```
 
 ### (Optionally) install metrics-server (for resource usage metrics)

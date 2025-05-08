@@ -4,37 +4,24 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
 
 ## Table of Contents
 
-1. [Verify System Status](#verify-system-status)
-   1. [Xeon + Gaudi (Default)](#xeon--gaudi-default)
-   2. [Xeon-Only](#xeon-only)
-2. [Preconfigure the Environment](#preconfigure-the-environment)
-3. [Prepare Configuration Files](#prepare-configuration-files)
-   1. [Prepare Main Configuration File](#prepare-main-configuration-file)
-   2. [Storage](#storage)
-   3. [Defining Resource for Your Machine](#defining-resource-for-your-machine)
-   4. [Skipping Warm-up for vLLM Deployment](#skipping-warm-up-for-vllm-deployment)
-   5. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
-4. [Configure the Environment](#configure-the-environment)
-5. [Prepare Images](#prepare-images)
-   1. [Build and Push Images](#build-and-push-images)
-6. [Deployment Options](#deployment-options)
-   1. [Installation](#installation)
-   2. [Verify Services](#verify-services)
-7. [Interact with ChatQnA](#interact-with-chatqna)
-   1. [Test Deployment](#test-deployment)
-   2. [Access the UI/Grafana](#access-the-uigrafana)
-   3. [UI Credentials for the First Login](#ui-credentials-for-the-first-login)
-   4. [Credentials for Grafana and Keycloak](#credentials-for-grafana-and-keycloak)
-   5. [Credentials for Vector Store](#credentials-for-vector-store)
-   6. [Credentials for Enhanced Dataprep Pipeline (EDP)](#credentials-for-enhanced-dataprep-pipeline-edp)
-   7. [Data Ingestion, UI, and Telemetry](#data-ingestion-ui-and-telemetry)
-8. [Configure ChatQnA](#configure-chatqna)
-9. [Clear All](#clear-all)
-10. [Additional Features](#additional-features)
-    1. [Enabling Horizontal Pod Autoscaling](#enabling-horizontal-pod-autoscaling)
-    2. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
-    3. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
-    4. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id)
+ 1. [Verify System Status](#verify-system-status)
+ 2. [Configure the Environment](#configure-the-environment)
+ 3. [Storage Class](#storage-class)
+ 4. [Defining Resource for you machine](#defining-resource-for-you-machine)
+ 5. [Deployment Options](#deployment-options)
+    1.  [Quick start with a one click script](#quick-start-with-one-click-script)
+    2.  [Step-by-Step Installation](#build-step-by-step)
+ 6. [Verify Services](#verify-services)
+ 7. [Available Pipelines](#available-pipelines)
+ 8. [Interact with ChatQnA](#interact-with-chatqna)
+     1. [Test Deployment](#test-deployment)
+     2. [Access UI/Grafana](#access-the-uigrafana)
+ 9. [Configure ChatQnA](#configure-chatqna)
+ 10. [Clear Deployment](#clear-deployment)
+ 11. [Additional features](#additional-features)
+     1. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
+     2. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
+     3. [Single Sign On Integration using Microsoft Entra ID (formerly Azure Active Directory)](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
 ---
 
 ## Verify System Status
@@ -80,133 +67,22 @@ If your output does not match these expectations, please refer to the [prerequis
 > [!NOTE]
 > The example above uses the [Local Path Provisioner CSI driver](https://github.com/rancher/local-path-provisioner). Any CSI driver supporting **`ReadWriteOnce`** (single-node clusters) or **`ReadWriteMany`** (multi-node clusters) may be used. See [Storage Class](#storage-class) for details.
 
----
-
-## Preconfigure the environment
-
-It is recommended to use python3-venv to manage python packages.
-
-```sh
-sudo apt-get install python3-venv
-python3 -m venv erag-venv
-source erag-venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-ansible-galaxy collection install -r requirements.yaml --upgrade
+## Configure the Environment
+To prepare your environment for development and deployment, run the following command (Proxy commands are optional):
+```bash
+./configure.sh [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY]
 ```
 
----
+This command will configure various tools in your environment, including `Docker`, `Helm`, `make`, `zip`, and `jq`.
+> [!NOTE]
+> Before running the script, please be aware that it uses `sudo` privileges to install the mentioned packages and configure settings. Please use with caution, as this may overwrite existing configurations.
 
-## Prepare configuration files
+> [!NOTE]
+> ./configure.sh installs Docker. It might not start the docker process. If it is your case, run `systemctl start docker`. To check if docker is running, run `systemctl status docker`.
 
-### Prepare main configuration file
+The script completes successfully with the confirmation: `All installations and configurations are complete`.
 
-To prepare configuration file create a copy of exemplary one:
-
-```sh
-cp -r inventory/sample inventory/test-cluster
-```
-
-Fill proper variables at `inventory/test-cluster/config.yaml`
-
-```yaml
-huggingToken: FILL_HERE # Provide your Hugging Face token here
-kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
-
-# proxy settings are optional
-httpProxy:
-httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field with the following:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-
-# If you wish to pass your own certificates provide full path to both of them and set autoGenerated to false. Make sure those
-# certificates have proper extra SANs covered.
-certs:
-  autoGenerated: true
-  pathToCert: ""
-  pathToKey: ""
-  commonName: "erag.com"
-
-registry: "localhost:5000/erag"
-tag: "latest"
-setup_registry: true # this is localhost registry that may be used for localhost one-node deployment
-use_alternate_tagging: false # changes format of images from registry/image:tag to registry:image_tag
-
-hpaEnabled: false # enables Horizontal Pod Autoscaler
-enforcePSS: false # enforces Pod Security Standards
-
-pipelines:
-  - namespace: chatqa
-    samplePath: chatqa/reference-cpu.yaml
-    resourcesPath: chatqa/resources-reference-cpu.yaml
-    type: chatqa
-
-gmc:
-  enabled: true
-  namespace: system
-
-ingress:
-  enabled: true
-  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
-  namespace: ingress-nginx
-
-keycloak:
-  enabled: true
-  namespace: auth
-  domainName: auth.erag.com
-
-apisix:
-  enabled: true
-  namespace: auth-apisix
-
-istio:
-  enabled: true
-  namespace: istio-system
-
-telemetry:
-  enabled: true
-  domainName: grafana.erag.com
-  monitoring:
-    namespace: monitoring
-  traces:
-    namespace: monitoring-traces
-
-ui:
-  enabled: true
-  domainName: erag.com
-  namespace: rag-ui
-
-edp:
-  enabled: true
-  namespace: edp
-  dpGuard:
-    enabled: false
-  storageType: minio
-  minio:
-    domainName: minio.erag.com
-    apiDomainName: s3.erag.com
-    bucketNameRegexFilter: ".*"
-  s3:
-    region: "us-east-1"
-    accessKeyId: ""
-    secretAccessKey: ""
-    sqsEventQueueUrl: ""
-    bucketNameRegexFilter: ".*"
-  s3compatible:
-    region: "us-east-1"
-    accessKeyId: ""
-    secretAccessKey: ""
-    internalUrl: "https://s3.example.com"
-    externalUrl: "https://s3.example.com"
-    bucketNameRegexFilter: ".*"
-
-fingerprint:
-  enabled: true
-  namespace: fingerprint
-
-```
-### Storage
-#### Storage Class
+## Storage Class
 Users can define their own CSI driver that will be used during deployment. StorageClass should support accessMode ReadWriteMany(RWX).
 
 > [!WARNING]
@@ -214,7 +90,7 @@ If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is de
 
 We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
 
-#### Setting Default Storage Class
+### Setting Default Storage Class
 Before running the EnterpriseRAG solution, ensure that you have set the correct StorageClass as the default one. You can list storage classes using the following command:
 
 ```bash
@@ -229,27 +105,9 @@ kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":
 ```
 Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
 
-#### Storage settings
+## Defining Resource for you machine
 
-> [!NOTE]
-> The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
-
-You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
-
-If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
-
-Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
-
-> [!NOTE]
-> The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
-
-#### EDP storage types
-
-By default edp storage type is set to minio, which deploys minio and s3 in-cluster for additional options go to [edp](../src/edp/README.md).
-
-### Defining Resource for your machine
-
-The default resource allocations are defined for cpu only deployment in [`resources-cpu.yaml`](./pipelines/chatqa/resources-cpu.yaml) or for cpu and Gaudi in [`resources-gaudi.yaml`](./pipelines/chatqa/resources-cpu.yaml).
+The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./pipelines/chatqa/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./pipelines/chatqa/resources-cpu.yaml).
 
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
@@ -267,35 +125,50 @@ The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up p
 > [!NOTE]
 By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
-### Additional settings for running telemetry
+### additional settings for running telemetry
 
 Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./components/telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
 
----
+## Deployment Options
+There are two ways to install ChatQnA using the Enterprise RAG solution:
+1.  [Quick start with a one click script](#quick-start-with-one-click-script)
+2.  [Step-by-Step Installation](#build-step-by-step)
 
-## Configure the Environment
-To prepare your environment for development and deployment, run the following command:
+### Quick Start with One Click Script
 
-```sh
-ansible-playbook -u $USER -K playbooks/application.yaml --tags configure -e @inventory/test-cluster/config.yaml
+With the `one_click_chatqna.sh` script,  you can automate all the steps performed above such as configuration, building and pushing images and finally installing ChatQnA.
+
+####  Install ChatQnA via `one_click_chatqna.sh`
+Use the command below to install via the one click script:
+
+##### Xeon + Gaudi (Default)
+```bash
+./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
 ```
 
-This command will configure various tools in your environment, including `Docker`, `Helm`, `make`, `zip`, and `jq`.
+##### Xeon-Only
+```bash
+./one_click_chatqna.sh -g HUG_TOKEN -d reference-cpu.yaml [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY] [--features FEATURES]
+```
 
 > [!NOTE]
-> Before running the script, please be aware that it uses `sudo` privileges to install the mentioned packages and configure settings. Please use with caution, as this may overwrite existing configurations.
+> For Xeon-only pass `reference-cpu.yaml` as shown above.
+>
+> Using the `one_click_chatqna.sh` is an alternative option to the Step-by-Step Installation described in the next section.
 
----
+You can run `one_click_chatqna.sh --help` to get detailed information.
 
-## Prepare images
- PALCEHOLDER: By default public registry is used, if you prefer to build your own images and push to private registry follow instructions below:
-### Build and Push Images
+Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
+
+### Build Step-by-Step
+
+#### Build and Push Images
 Enterprise RAG is built on top of a collection of microservice components that form a service-based toolkit. This includes a variety of services such as llm (large language models), embedding, and reranking, among others.
 
 The `update_images.sh` script is responsible for building the images for these microservices from source
 and pushing them to a specified registry. The script consists of three main steps:
 
-#### Step 1: Build
+##### Step 1: Build
 
 The first step is to build the images for each microservice component using the source code. This involves
 compiling the code, packaging it into Docker images, and performing any necessary setup tasks.
@@ -309,7 +182,7 @@ compiling the code, packaging it into Docker images, and performing any necessar
 > - You can use `-j <number of concurrent tasks>` parameter to increase number of concurrent tasks.
 > - List of available images is available, when running `./update_images.sh --help`.
 
-#### Step 2: Setup Registry
+##### Step 2: Setup Registry
 
 The second step is to configure the registry where the built images will be pushed. This may involve
 setting up authentication, specifying the image tags, and defining other configuration parameters.
@@ -318,7 +191,7 @@ setting up authentication, specifying the image tags, and defining other configu
 ./update_images.sh --setup-registry
 ```
 
-#### Step 3: Push
+##### Step 3: Push
 
 The final step is to push the built images to the configured registry. This ensures that the images are
 deployed to the desired environment and can be accessed by the application.
@@ -331,19 +204,62 @@ deployed to the desired environment and can be accessed by the application.
 
 Run `./update_images.sh --help` to get detailed information.
 
----
+####  Install ChatQnA via `install_chatqna.sh`
 
-## Deployment Options
+To install ChatQnA, use the `install_chatqna.sh` script, a streamlined deployment process for our
+Enterprise RAG solution. This script automates the setup of ChatQnA services, including pipeline
+deployment, telemetry integration, and UI authentication.
 
-### Installation
+##### Storage settings
 
-With configuration file in place run:
+> [!NOTE]
+> The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
 
-```sh
-ansible-playbook -u $USER -K playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
+You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
+
+If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
+
+Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+
+> [!NOTE]
+> The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
+
+##### Configure
+The `set_values.sh` script automates Helm value configuration for the `components/gmc/microservices-connector` chart,
+simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
+
+> [!NOTE]
+> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`. 
+> Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
+> Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
+
+
+```bash
+./set_values.sh -p [HTTP_PROXY] -u [HTTPS_PROXY] -n [NO_PROXY] -g [HUGGINGFACEHUB_API_TOKEN] -r [REPOSITORY] -t [TAG]
 ```
 
-After successful playbook completion proceed to [Verify Services](#verify-services) to check if the deployment is successful.
+The HF access token can be created [here](https://huggingface.co/settings/tokens).
+
+##### Xeon + Gaudi (Default):
+
+Run the following command to deploy the `reference-hpu.yaml` pipeline, along with telemetry and UI services:
+```bash
+./install_chatqna.sh --deploy reference-hpu.yaml --auth --telemetry --ui
+```
+
+You can run `./install_chatqna.sh --help` to get detailed information.
+
+##### Xeon-Only:
+This command is intended for Xeon-only deployments, deploying the `reference-cpu.yaml` pipeline along with telemetry and UI services:
+
+```bash
+./install_chatqna.sh --deploy reference-cpu.yaml --auth --telemetry --ui
+```
+
+You can run `./install_chatqna.sh --help` to get detailed information.
+
+Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
+
 
 ## Verify Services
 
@@ -426,7 +342,17 @@ system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1
 </pre>
 </details>
 
----
+## Available Pipelines
+
+This [page](./components/gmc/microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the
+`install_chatqna.sh` script.
+
+Explore a diverse set of easily deployable sample pipeline configurations. Examples include:
+
+- `Input and Output Guard Pipeline`: Adds layers of protection by scanning both incoming queries and outgoing responses to ensure security and compliance.
+
+> [!NOTE]
+For Xeon + Gaudi deployments, set pipeline to `reference-hpu.yaml`, while for Xeon-only deployments use `reference-cpu.yaml`.
 
 ## Interact with ChatQnA
 
@@ -492,7 +418,7 @@ S3 API is exposed at:
 
 ### UI credentials for the first login
 
-Once deployment is complete, there will be file `default_credentials.txt` created in `deployment/ansible-logs` folder with one time passwords for application admin and user. After one time password will be provided you will be requested to change the default password.
+Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passowrds for application admin and user. After one time password will be provided you will be requested to change the default password.
 
 > [!CAUTION]
 > Please remove file `default_credentials.txt` after the first succesful login.
@@ -501,15 +427,14 @@ Once deployment is complete, there will be file `default_credentials.txt` create
 
 Default credentials for Keycloak and Grafana:
 - **username:** admin
-- **password:** stored in `ansible-logs/default_credentials.yaml` file, please change passwords after first login in Grafana or Keycloak.
+- **password:** stored in `default_credentials.txt` file, please change passwords after first login in Grafana or Keycloak.
 
 > [!CAUTION]
-> Please use ansible-vault to secure password file `ansible-logs/default_credentials.yaml` after the first succesfull login. With
-`ansible-vault encrypt ansible-logs/default_credentials.yaml`. After that remember to add `-ask-vault-pass` to `ansible-playbook` command.
+> Please remove file `default_credentials.txt` after the first succesfull login and changing passwords.
 
 ### Credentials for Vector Store
 
-Default credentials for selected Vector Store are stored in `ansible-logs/default_credentials.yaml` and are generated on first deployment.
+Default credentials for selected Vector Store are stored in `default_credentials.txt` and are generated on first deployment.
 
 ### Credentials for Enhanced Dataprep Pipeline (EDP)
 
@@ -522,11 +447,11 @@ Internal EDP services credentials:
 
 Redis:
 - **username:** default
-- **password:** stored in `ansible-logs/default_credentials.yaml`
+- **password:** stored in `default_credentials.txt`
 
 Postgres:
 - **username:** edp
-- **password:** stored in `ansible-logs/default_credentials.yaml`
+- **password:** stored in `default_credentials.txt`
 
 ### Data Ingestion, UI and Telemetry
 
@@ -534,30 +459,31 @@ For adding data to the knowledge base and exploring the UI interface visit [this
 
 For accessing Grafana dashboards for all the services, visit [this](../docs/telemetry.md) page.
 
----
+## Configure ChatQnA
+To change the LLM model in the pipeline, follow the instructions [here](../docs/configure_pipeline.md)
 
-## Clear deployment
-Run this command to delete all namespaces, releases, and services associated with the ChatQNA pipeline:
-```sh
-ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
+It is also possible to configure the input and output guardrails for the LLM service. Follow instructions [here](../src/comps/guardrails/llm_guard_input_guardrail/README.md) for input guardrails and [here](../src/comps/guardrails/llm_guard_output_guardrail/README.md) for output guardrails.
+
+## Clear All
+Run this command to delete all namespaces, custom resource definitions, releases, and services associated with the ChatQNA pipeline:
+```bash
+./install_chatqna.sh -ca
 ```
-
----
 
 ## Additional features
 
 ### Enabling Horizontal pod autoscaling
 
 The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources_cpu](./components/gmc/microservices-connector/helm/resources-cpu.yaml) when running on Xeon or [resources_gaudi](./components/gmc/microservices-connector/helm/resources-gaudi.yaml) when running on Gaudi.
-To enable HPA set `hpaEnabled` to true at [configuration file](#prepare-main-configuration-file).
+To enable HPA use option `--hpa` when running the `install_chatqa.sh`. 
 For more information how to set parameters in HPA section please refer to this [README](./hpa/README.md).
 
 To update you HPA configuration:
 - Modify `hpa` section in resources file
-- Run installation command
-sh
+- Update configuration by running: `./install_chatqa.sh` command with `--upgrade` option
+bash
 ```
-ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml`
+./install_chatqna.sh --deploy <pipeline> --upgrade --no-edp --no-mesh --hpa
 ```
 For detailed information how to configure pipeline please reffer to:
 [configure_pipeline](./../docs/configure_pipeline.md)
@@ -565,11 +491,11 @@ For detailed information how to configure pipeline please reffer to:
 ### Enabling Pod Security Admission (PSA)
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
 
-We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSA set `enforcePSS` to `true` at [configuration file](#prepare-main-configuration-file).
+We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSS use option `--enable-pss` when running the `install_chatqa.sh` script. To find more information please refer to the [deploy](#install-chatqna-via-install_chatqnash) section in [Step-by-Step Approach](#build-step-by-step)
 
 ### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 
-Currently TDX is only supported on [bash deployment](./README_bash.md). Ansible TDX support is planned for next minor release.
+For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® TDX), refer to the [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](../docs/tdx.md) guide.
 
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.

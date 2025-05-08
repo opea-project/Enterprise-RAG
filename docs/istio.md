@@ -130,7 +130,7 @@ Workloads may share ServiceAccount only within same namespace (ServiceAccount re
 
 ### Configuring PeerAuthentication
 
-Authentication configuration is defined in files stored under path: `deployment/istio` in the project.
+Authentication configuration is defined in files stored under path: `deployment/components/istio` in the project.
 * At present the authentication is enforced for all namespaces, one namespace at a time by an installer script.
 * Each namespace with pure `STRICT` mTLS mode gets a `PeerAuthentication` resource applied based on file `mTLS-strict.yaml`.
 * If any specific authentication rules are needed they should be placed in a file named `mTLS-strict-*NAMESPACE*.yaml`. Installation utilities will apply this file instead.
@@ -161,7 +161,7 @@ spec:
 
 ### Configuring AuthorizationPolicy
 
-* Authorization configuration is defined in files stored under path: `deployment/istio/authz`.<br/>
+* Authorization configuration is defined in files stored under path: `deployment/components/istio/authz`.<br/>
 * Each namespace has its own file named `authz-*NAMESPACE*.yaml`. Each of the files may contain multiple instances of `AuthorizationPolicy` for specific workload.
 * All authorization rules are built on a `DENY`-by-default principle.
 * For the time being it’s necessary to review the resources periodically.
@@ -273,7 +273,7 @@ To verify correct operation you may also want to:
     error="io error: deadline has elapsed" error="connection timed out, maybe a NetworkPolicy is blocking HBONE port 15008
   ```
   * This does suggest an existing NetworkPolicy that allows specific ports, but doesn’t include istio port 15008.
-  * Common case for several helm charts, see: `keycloak-values.yaml`, `edp/helm/values.yaml`, `fingerprint/values.yaml`.
+  * Common case for several helm charts, see: `../deployment/components/keycloak/values.yaml`, `../deployment/components/edp/values.yaml`, `../deployment/components/fingerprint/values.yaml`.
 
 * Denial by `PeerAuthentication`:
   ```log

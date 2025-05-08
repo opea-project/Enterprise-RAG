@@ -15,10 +15,11 @@ certs:
   pathToKey: ""
   commonName: "erag.com"
 
-tag: "latest"
 registry: "localhost:5000/erag"
+tag: "latest"
 setup_registry: true
 use_alternate_tagging: false
+
 hpaEnabled: false
 enforcePSS: false
 

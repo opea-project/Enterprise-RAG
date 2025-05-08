@@ -48,7 +48,8 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 | Operating System    | Ubuntu 20.04/22.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
-| Gaudi Firmware Version | 1.20.0
+| Gaudi Firmware Version | 1.20.0                                                                                                          |
+| Python              | 3.10                                                                                                               |
 
 ## Hardware Prerequisites for Deployment using Gaudi® AI Accelerator
 
@@ -70,7 +71,7 @@ If you don't have a Gaudi® AI Accelerator, you can request these instances in [
 - As there is a limited number of machines with Gaudi accelerators, you need to be whitelisted to be able to access them. Therefore:
   - Send your email, Account ID, and information that you have requested an instance to [EnterpriseRAGRequest@intel.com](mailto:EnterpriseRAGRequest@intel.com) so we could add you to the whitelist.
 - on Intel® Tiber™ AI Cloud the left pane select `Catalog > Hardware`. Once you are added to the whitelist you should see Gaudi instances available.
-- Select the Machine image - for example: `ubuntu-2204-gaudi2-1.19.1-*` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
+- Select the Machine image - for example: `ubuntu-2204-gaudi2-1.20.1-*` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
 - Upload your public key and launch the instance
 - Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
 
@@ -96,24 +97,64 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
 -   **Prepared Gaudi Node**: Please refer to the [Gaudi Software Stack](./docs/prerequisites.md#gaudi-software-stack) section of the prerequisites section.
 
-# Installation
+# Pre-Installation
+
+It is recommended to use python3-venv to manage python packages.
 
 ```sh
 cd deployment
-./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
+sudo apt-get install python3-venv
+python3 -m venv erag-venv
+source erag-venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
 
-> [!NOTE]
-> In case we are deploying the solution on `Xeon`, please change the `PIPELINE` parameter to the pipeline to `reference-cpu.yaml`. For more information, refer to [Configure Pipeline](docs/configure_pipeline.md).
+# Configuration file
 
-Proxy variables are optional.
+To prepare configuration file create a copy of examplary one:
+
+```sh
+cd deployment
+cp -r inventory/sample inventory/test-cluster
+```
+
+Fill proper variables at `inventory/test-cluster/config.yaml`
+
+```yaml
+huggingToken: FILL_HERE # Provide your Hugging Face token here
+kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
+
+# proxy settings are optional
+httpProxy:
+httpsProxy:
+# If HTTP/HTTPS proxy is set, update the noProxy field with the following:
+noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+[...]
+pipelines:
+  - namespace: chatqa
+    samplePath: chatqa/reference-cpu.yaml # for hpu deployment we set chatqa/reference-hpu.yaml
+    resourcesPath: chatqa/resources-reference-cpu.yaml # for hpu deployment we set chatqa/resources-reference-hpu.yaml
+    type: chatqa
+```
+
+# Installation
+
+```sh
+ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @inventory/test-cluster/config.yaml
+```
+
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
+
+> [!NOTE]
+> Alternatively, installation can be performed with [Bash deployment](deployment/README_bash.md).
 
 # Remove installation
 
 ```sh
 cd deployment
-./install_chatqna.sh -ca
+ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
 ```
 
 # Support

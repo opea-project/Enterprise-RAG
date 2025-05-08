@@ -1,3 +1,7 @@
+> [!IMPORTANT]  
+> ⚠️ **Warning:** Deployment via bash scripts is **deprecated** and will be **removed in a future release**.  
+> It is strongly recommended to use the [Ansible deployment method](./README.md) instead.
+
 # Deploy Intel&reg; AI for Enterprise RAG
 
 This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon + Gaudi deployment. If you are deploying on Xeon-only hardware, please follow the Xeon-only instructions marked throughout this guide.
@@ -17,7 +21,7 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
      1. [Test Deployment](#test-deployment)
      2. [Access UI/Grafana](#access-the-uigrafana)
  9. [Configure ChatQnA](#configure-chatqna)
- 10. [Clear Deployment](#clear-deployment)
+ 10. [Clear Deployment](#clear-all)
  11. [Additional features](#additional-features)
      1. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
      2. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
@@ -107,13 +111,13 @@ Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/mi
 
 ## Defining Resource for you machine
 
-The default resource allocations are defined for Xeon only deployment in [`resources-cpu.yaml`](./pipelines/chatqa/resources-cpu.yaml) or for Xeon + Gaudi in [`resources-gaudi.yaml`](./pipelines/chatqa/resources-cpu.yaml).
+The default resource allocations are defined for Xeon only deployment in [`resources-reference-cpu.yaml`](./pipelines/chatqa/resources-reference-cpu.yaml) or for Xeon + Gaudi in [`resources-reference-hpu.yaml`](./pipelines/chatqa/resources-reference-hpu.yaml).
 
 > [!NOTE]
 It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
 
 > [!NOTE]
-EnterpriseRAG allows to implement autoscaling mechanism for pods. For more information how to fill `hpa` section reffer to [horizontal pod autoscaler](#enabling-pod-security-admission-psa)
+EnterpriseRAG allows to implement autoscaling mechanism for pods. For more information how to fill `hpa` section reffer to [horizontal pod autoscaler](#enabling-horizontal-pod-autoscaling)
 
 For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/components/edp` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./components/edp/values.yaml) file and edit definition for particular elements from that deployment.
 
@@ -143,12 +147,12 @@ Use the command below to install via the one click script:
 
 ##### Xeon + Gaudi (Default)
 ```bash
-./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY] [--features FEATURES]
+./one_click_chatqna.sh -g HUG_TOKEN [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -d [PIPELINE] -t [TAG] -y [REGISTRY_NAME] [-r REGISTRY_PATH] [--features FEATURES]
 ```
 
 ##### Xeon-Only
 ```bash
-./one_click_chatqna.sh -g HUG_TOKEN -d reference-cpu.yaml [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY] [--features FEATURES]
+./one_click_chatqna.sh -g HUG_TOKEN -d reference-cpu.yaml [-p HTTP_PROXY] [-u HTTPS_PROXY] [-n NO_PROXY] -t [TAG] -y [REGISTRY_NAME] [-r REGISTRY_PATH] [--features FEATURES]
 ```
 
 > [!NOTE]
@@ -156,7 +160,7 @@ Use the command below to install via the one click script:
 >
 > Using the `one_click_chatqna.sh` is an alternative option to the Step-by-Step Installation described in the next section.
 
-You can run `one_click_chatqna.sh --help` to get detailed information.
+You can run `./one_click_chatqna.sh --help` to get detailed information.
 
 Proceed to [Verify Services](#verify-services) to check if the deployment is successful.
 
@@ -217,15 +221,15 @@ deployment, telemetry integration, and UI authentication.
 
 You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
 
-If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
+If using EDP, update the `deployment/components/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
 
-Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/config/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/components/gmc/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
 
 > [!NOTE]
 > The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
 
 ##### Configure
-The `set_values.sh` script automates Helm value configuration for the `components/gmc/microservices-connector` chart,
+The `set_values.sh` script automates Helm value configuration for the `deployment/components/gmc/microservices-connector/helm` chart,
 simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
 > [!NOTE]
@@ -344,7 +348,7 @@ system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1
 
 ## Available Pipelines
 
-This [page](./components/gmc/microservices-connector/config/samples) contains a collection of sample pipeline configurations, which can be easily deployed using the
+This [page](./pipelines/chatqa/examples) contains a collection of sample pipeline configurations, which can be easily deployed using the
 `install_chatqna.sh` script.
 
 Explore a diverse set of easily deployable sample pipeline configurations. Examples include:
@@ -418,7 +422,7 @@ S3 API is exposed at:
 
 ### UI credentials for the first login
 
-Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passowrds for application admin and user. After one time password will be provided you will be requested to change the default password.
+Once deployment is complete, there will be file `default_credentials.txt` created in `deployment` folder with one time passwords for application admin and user. After one time password will be provided you will be requested to change the default password.
 
 > [!CAUTION]
 > Please remove file `default_credentials.txt` after the first succesful login.
@@ -474,9 +478,9 @@ Run this command to delete all namespaces, custom resource definitions, releases
 
 ### Enabling Horizontal pod autoscaling
 
-The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources_cpu](./components/gmc/microservices-connector/helm/resources-cpu.yaml) when running on Xeon or [resources_gaudi](./components/gmc/microservices-connector/helm/resources-gaudi.yaml) when running on Gaudi.
+The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources-reference-cpu.yaml](./pipelines/chatqa/resources-reference-cpu.yaml) when running on Xeon or [resources-reference-hpu.yaml](./pipelines/chatqa/resources-reference-hpu.yaml) when running on Gaudi.
 To enable HPA use option `--hpa` when running the `install_chatqa.sh`. 
-For more information how to set parameters in HPA section please refer to this [README](./hpa/README.md).
+For more information how to set parameters in HPA section please refer to this [README](./components/hpa/README.md).
 
 To update you HPA configuration:
 - Modify `hpa` section in resources file
@@ -546,4 +550,4 @@ To configure Enterprise RAG SSO using Azure Single Sign On use the following ste
 
 After this configuration, Keycloak log-in page should have an additional link on the bottom of the log-in form - named `Enterprise SSO`. This should redirect you to Azure log-in page.
 
-Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`) users will have apropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.
+Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`) users will have appropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.

@@ -34,7 +34,8 @@
   register: namespace_check_results
   loop: "{{ enabled_namespaces }}"
   tags:
-    - always
+    - install
+    - uninstall
 
 - name: Collect existing namespaces
   ansible.builtin.set_fact:
@@ -45,7 +46,8 @@
          | map(attribute='item')
          | list }}
   tags:
-    - always
+    - install
+    - uninstall
 
 - name: Remove labels for enabled namespaces
   kubernetes.core.k8s:
@@ -60,4 +62,5 @@
   loop: "{{ existing_namespaces }}"
   when: not istio_injection
   tags:
-    - always
+    - install
+    - uninstall

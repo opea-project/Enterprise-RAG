@@ -49,4 +49,5 @@
     istio_injection: true
   ansible.builtin.include_tasks: manage_injection.yaml
   tags:
-    - always
+    - install
+    - uninstall

@@ -7,7 +7,13 @@
     that:
       - ansible_distribution == "Ubuntu"
       - ansible_distribution_version in ["20.04", "22.04"]
-    fail_msg: "Configuration of system is only supported for Ubuntu 20.04 or 22.04."
+    fail_msg: >
+      [WARNING]: This system is running {{ ansible_distribution }} {{ ansible_distribution_version }},
+      which is not officially supported. Only Ubuntu 20.04 and 22.04 are validated.
+      Proceeding may result in failures during dependency installation or unexpected behavior.
+    success_msg: >
+      [INFO]: This system is running {{ ansible_distribution }} {{ ansible_distribution_version }}
+  ignore_errors: yes
   tags:
     - configure
 

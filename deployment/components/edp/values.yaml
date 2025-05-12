@@ -201,7 +201,7 @@ postgresql:
 celery:
   nameOverride: "edp-celery"
   name: "erag-enhanced-dataprep"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   config:
@@ -334,7 +334,7 @@ flower:
   enabled: true
   nameOverride: "edp-flower"
   name: "erag-enhanced-dataprep"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   command: "celery -A tasks.celery flower"
@@ -496,7 +496,7 @@ backend:
           key: RERANKER_ENDPOINT
   nameOverride: "edp-backend"
   name: "erag-enhanced-dataprep"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   command: "python main.py"
@@ -512,7 +512,7 @@ backend:
 dataprep:
   nameOverride: "edp-dataprep"
   name: "erag-dataprep"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -560,7 +560,7 @@ dpguard:
   enabled: false
   nameOverride: "edp-dpguard"
   name: "erag-dpguard"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -586,7 +586,7 @@ embedding:
     modelServerEndpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
   nameOverride: "edp-embedding"
   name: "erag-embedding"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -601,7 +601,7 @@ embedding:
 ingestion:
   nameOverride: "edp-ingestion"
   name: "erag-ingestion"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   config:
     # Vector Algorithm configuration
@@ -637,7 +637,7 @@ vllm:
     maxModelLen: "4096"
   nameOverride: "edp-vllm"
   name: "vllm-cpu"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   replicas: 1
@@ -679,7 +679,7 @@ awsSqs:
   enabled: false
   nameOverride: "edp-aws"
   name: "erag-enhanced-dataprep"
-  repository: "localhost:5000/erag"
+  repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
   command: "python sqs.py"

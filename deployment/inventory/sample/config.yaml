@@ -15,10 +15,11 @@ certs:
   pathToKey: ""
   commonName: "erag.com"
 
-registry: "localhost:5000/erag"
-tag: "latest"
+registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
+tag: "1.2.0"
 setup_registry: true
 use_alternate_tagging: false
+helm_timeout: "10m0s"
 
 hpaEnabled: false
 enforcePSS: false

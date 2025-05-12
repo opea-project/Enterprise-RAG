@@ -20,7 +20,7 @@ namespace: chatqa
 
 # Common tag & repository for all images. Override if needed for specific images.
 common_tag: &tag "latest"
-common_registry: &repo "localhost:5000/erag"
+common_registry: &repo "docker.io/opea"
 
 llm_model: &cpu_model "meta-llama/Llama-3.1-8B-Instruct"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"

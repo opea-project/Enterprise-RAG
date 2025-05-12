@@ -6,7 +6,6 @@
   environment:
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   vars:
-    helm_timeout: "10m0s"
     deployment_dir: "{{ playbook_dir }}/.."
     components_dir: "{{ deployment_dir }}/components"
     pipelines_dir: "{{ deployment_dir }}/pipelines/"

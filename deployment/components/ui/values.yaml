@@ -24,7 +24,7 @@ extraNginxVars:
 
 image:
   ui:
-    repository: "localhost:5000/erag"
+    repository: "docker.io/opea"
     name: erag-chatqna-conversation-ui
     pullPolicy: Always
     tag: "latest"

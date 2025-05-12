@@ -13,7 +13,7 @@ alternateTagging: false
 image:
   fingerprint:
     name: "erag-system-fingerprint"
-    repository: "localhost:5000/erag"
+    repository: "docker.io/opea"
     tag: "latest"
     pullPolicy: Always
 

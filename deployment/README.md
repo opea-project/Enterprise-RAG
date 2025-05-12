@@ -127,8 +127,8 @@ certs:
   pathToKey: ""
   commonName: "erag.com"
 
-registry: "localhost:5000/erag"
-tag: "latest"
+registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
+tag: "1.2.0"
 setup_registry: true # this is localhost registry that may be used for localhost one-node deployment
 use_alternate_tagging: false # changes format of images from registry/image:tag to registry:image_tag
 

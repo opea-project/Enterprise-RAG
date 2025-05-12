@@ -231,6 +231,16 @@ celery:
         secretKeyRef:
           name: edp-minio-secrets
           key: EDP_INTERNAL_SECURE
+    - name: EDP_EXTERNAL_CERT_VERIFY
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_EXTERNAL_CERT_VERIFY
+    - name: EDP_INTERNAL_CERT_VERIFY
+      valueFrom:
+        secretKeyRef:
+          name: edp-minio-secrets
+          key: EDP_INTERNAL_CERT_VERIFY
     - name: EDP_BASE_REGION
       valueFrom:
         secretKeyRef:
@@ -246,6 +256,11 @@ celery:
         secretKeyRef:
           name: edp-minio-secrets
           key: EDP_SECRET_KEY
+    - name: BUCKET_NAME_REGEX_FILTER
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: BUCKET_NAME_REGEX_FILTER
     - name: CELERY_BROKER_URL
       valueFrom:
         secretKeyRef:

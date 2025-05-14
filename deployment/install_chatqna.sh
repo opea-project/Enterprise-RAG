@@ -163,10 +163,10 @@ function helm_install() {
       msg="upgrade or installation"
     fi
 
-    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
+    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"hpu"* ]]; then
         helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
     else
-        helm_cmd+=" --values $manifests_path/resources-reference-gaudi.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-hpu.yaml"
     fi
 
     if $hpa_flag; then

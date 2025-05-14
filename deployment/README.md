@@ -576,6 +576,22 @@ ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cl
 For detailed information on how to configure the pipeline, please refer to:
 [configure_pipeline](./../docs/configure_pipeline.md)
 
+### Enabling Horizontal pod autoscaling
+
+The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources_cpu](./components/gmc/microservices-connector/helm/resources-cpu.yaml) when running on Xeon or [resources_gaudi](./components/gmc/microservices-connector/helm/resources-gaudi.yaml) when running on Gaudi.
+To enable HPA set `hpaEnabled` to true at [configuration file](#prepare-main-configuration-file).
+For more information how to set parameters in HPA section please refer to this [README](./hpa/README.md).
+
+To update you HPA configuration:
+- Modify `hpa` section in resources file
+- Run installation command
+sh
+```
+ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml`
+```
+For detailed information how to configure pipeline please reffer to:
+[configure_pipeline](./../docs/configure_pipeline.md)
+
 ### Enabling Pod Security Admission (PSA)
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
 

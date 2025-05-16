@@ -819,18 +819,18 @@ function start_edp() {
         s3)
             print_log "Using AWS S3 storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         s3compatible)
             print_log "Using S3 API compatible storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         minio | "")
             print_log "Using Minio storage"
             local minio_access_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 10)
             local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 16)
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpInternalSecure=false --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=true --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpInternalSecure=false --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
             ;;
     esac
 

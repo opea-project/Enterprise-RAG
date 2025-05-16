@@ -36,6 +36,7 @@ postgresAdminPassword: "" # set by install_chatqna.sh
 hfToken: "" # set by set_values.sh
 
 minio:
+  enabled: true
   persistence:
     enabled: true
     size: 10Gi
@@ -83,42 +84,42 @@ minio:
     - name: "MINIO_BROWSER_REDIRECT_URL"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_REDIRECT_URI
     - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_CONFIG_URL
     - name: "MINIO_IDENTITY_OPENID_CLIENT_ID"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_CLIENT_ID
     - name: "MINIO_IDENTITY_OPENID_CLIENT_SECRET"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_CLIENT_SECRET
     - name: "MINIO_IDENTITY_OPENID_CLAIM_NAME"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_CLAIM_NAME
     - name: "MINIO_IDENTITY_OPENID_REDIRECT_URI"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_REDIRECT_URI
     - name: "MINIO_IDENTITY_OPENID_DISPLAY_NAME"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_DISPLAY_NAME
     - name: "MINIO_IDENTITY_OPENID_SCOPES"
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_OIDC_SCOPES
     - name: "MINIO_NOTIFY_WEBHOOK_ENABLE_EDP"
       value: "on"
@@ -126,7 +127,7 @@ minio:
       value: "http://edp-backend:5000/minio_event"
     - name: "MINIO_NOTIFY_WEBHOOK_MAX_RETRY_EDP"
       value: "3"
-  extraEnvVarsSecret: "edp-minio-secrets"
+  extraEnvVarsSecret: "edp-access-secret"
   extraVolumes:
     - name: tls-secret-volume
       secret:
@@ -214,47 +215,47 @@ celery:
     - name: EDP_EXTERNAL_URL
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_URL
     - name: EDP_INTERNAL_URL
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_URL
     - name: EDP_EXTERNAL_SECURE
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_SECURE
     - name: EDP_INTERNAL_SECURE
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_SECURE
     - name: EDP_EXTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_CERT_VERIFY
     - name: EDP_INTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_CERT_VERIFY
     - name: EDP_BASE_REGION
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_BASE_REGION
     - name: MINIO_ACCESS_KEY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_ACCESS_KEY
     - name: MINIO_SECRET_KEY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_SECRET_KEY
     - name: BUCKET_NAME_REGEX_FILTER
       valueFrom:
@@ -427,47 +428,47 @@ backend:
     - name: EDP_EXTERNAL_URL
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_URL
     - name: EDP_INTERNAL_URL
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_URL
     - name: EDP_EXTERNAL_SECURE
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_SECURE
     - name: EDP_INTERNAL_SECURE
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_SECURE
     - name: EDP_EXTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_EXTERNAL_CERT_VERIFY
     - name: EDP_INTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_INTERNAL_CERT_VERIFY
     - name: EDP_BASE_REGION
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_BASE_REGION
     - name: MINIO_ACCESS_KEY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_ACCESS_KEY
     - name: MINIO_SECRET_KEY
       valueFrom:
         secretKeyRef:
-          name: edp-minio-secrets
+          name: edp-access-secret
           key: EDP_SECRET_KEY
     - name: BUCKET_NAME_REGEX_FILTER
       valueFrom:

@@ -9,6 +9,12 @@ metadata:
 data:
   CHUNK_SIZE: {{ .Values.dataprep.config.chunk_size | quote }}
   CHUNK_OVERLAP: {{ .Values.dataprep.config.chunk_overlap | quote }}
+{{- if .Values.dataprep.semantic_chunking_enabled }}
+  USE_SEMANTIC_CHUNKING: "True"
+  EMBEDDING_MODEL_NAME: {{ .Values.dataprep.config.embedding_model_name | quote }}
+  EMBEDDING_MODEL_SERVER: {{ .Values.dataprep.config.embedding_model_server | quote }}
+  EMBEDDING_MODEL_SERVER_ENDPOINT: {{ .Values.dataprep.config.embedding_model_server_endpoint | quote }}
+{{- end }}
 {{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
   VLLM_SERVER_ENDPOINT: {{ .Values.dataprep.config.vllm_server_endpoint | quote }}
   SUMMARY_MODEL_NAME: {{ .Values.dataprep.config.summary_model_name | quote }}

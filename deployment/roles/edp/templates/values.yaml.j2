@@ -78,3 +78,5 @@ awsSqs:
   enabled: {{ "true" if storage == "s3" else "false" }}
   tag: {{ tag }}
   repository: {{ registry }}
+minio:
+  enabled: {{ "true" if storage == "minio" else "false" }}

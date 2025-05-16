@@ -89,6 +89,7 @@ function usage() {
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--dpguard: Create Dataprep Guardrail."
+    echo -e "\t--semantic-chunking: Enable Semantic Chunking."
     echo -e "\t--edp-dataprep-type: Choose type of dataprep: normal or hierarchical. (default normal)"
     echo -e "\t-ep|--enforce-pss: Enforce strict pod security policies."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
@@ -163,10 +164,10 @@ function helm_install() {
       msg="upgrade or installation"
     fi
 
-    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
+    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"hpu"* ]]; then
         helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
     else
-        helm_cmd+=" --values $manifests_path/resources-reference-gaudi.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-hpu.yaml"
     fi
 
     if $hpa_flag; then
@@ -801,7 +802,16 @@ function start_edp() {
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true --set dpguard.tag=$TAG"
     fi
 
-    if [[ "$edp_dataprep_type" == "hierarchical" ]]; then
+    # Enable advanced RAG techniques
+    if $semantic_chunking; then
+        print_log "Enabling Semantic Chunking"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.semantic_chunking_enabled=true"
+        if [[ "$pipeline" == *"torch"* || "$pipeline" == *"reference"* ]]; then
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.embedding_model_server=torchserve --set dataprep.config.embedding_model_server_endpoint=http://torchserve-embedding-svc.chatqa.svc:8090"
+        else
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.embedding_model_server=tei --set dataprep.config.embedding_model_server_endpoint=http://tei-embedding-svc.chatqa.svc:80"
+        fi
+    elif [[ "$edp_dataprep_type" == "hierarchical" ]]; then
         print_log "Enabling Hierarchical Dataprep"
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep"
 
@@ -819,18 +829,18 @@ function start_edp() {
         s3)
             print_log "Using AWS S3 storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         s3compatible)
             print_log "Using S3 API compatible storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         minio | "")
             print_log "Using Minio storage"
             local minio_access_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 10)
             local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 16)
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpInternalSecure=false --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=true --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpInternalSecure=false --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
             ;;
     esac
 
@@ -890,6 +900,7 @@ auth_flag=false
 helm_upgrade=false
 edp_flag=true
 dpguard=false
+semantic_chunking=false
 strict_policy_flag=false
 clear_any_flag=false
 clear_deployment_flag=false
@@ -984,6 +995,9 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --dpguard)
             dpguard=true
+            ;;
+        --semantic-chunking)
+            semantic_chunking=true
             ;;
         --edp-dataprep-type)
             shift

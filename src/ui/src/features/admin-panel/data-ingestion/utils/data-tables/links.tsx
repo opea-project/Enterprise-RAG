@@ -30,6 +30,15 @@ export const getLinksTableColumns = ({
   {
     accessorKey: "uri",
     header: "Link",
+    cell: ({
+      row: {
+        original: { uri },
+      },
+    }) => (
+      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
+        {uri}
+      </div>
+    ),
   },
   {
     id: "chunks",

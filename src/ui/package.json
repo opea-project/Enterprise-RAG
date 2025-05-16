@@ -13,7 +13,6 @@
     "format": "prettier --write ./**/*.{js,jsx,ts,tsx,css,md,json,css,scss} --config ./.prettierrc.json"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.1.0",
     "@reduxjs/toolkit": "^2.2.7",
     "@tanstack/react-table": "^8.20.6",
     "@xyflow/react": "^12.3.1",

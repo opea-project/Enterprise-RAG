@@ -1,5 +1,5 @@
 > [!IMPORTANT]  
-> ⚠️ **Warning:** Deployment via bash scripts is **deprecated** and will be **removed in a future release**.  
+> ⚠️ **Warning:** Deployment via bash scripts is **deprecated** and will be **removed in the 1.3.0 release**.
 > It is strongly recommended to use the [Ansible deployment method](./README.md) instead.
 
 # Deploy Intel&reg; AI for Enterprise RAG

@@ -7,10 +7,15 @@ import { IconName } from "@/components/icons";
 import IconButton from "@/components/ui/IconButton/IconButton";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { paths } from "@/config/paths";
+import { isAdminUser } from "@/lib/auth";
 
 const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  if (!isAdminUser()) {
+    return null;
+  }
 
   const isChatPage = location.pathname === paths.chat;
   const tooltipTitle = isChatPage ? "Admin Panel" : "Chat";

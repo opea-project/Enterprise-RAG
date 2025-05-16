@@ -11,7 +11,7 @@ import ScrollToBottomButton from "@/components/ui/ScrollToBottomButton/ScrollToB
 import UserMessage from "@/components/ui/UserMessage/UserMessage";
 import { ConversationTurn } from "@/types";
 
-const bottomMargin = 48; // margin to handle bottom scroll detection
+const bottomMargin = 80; // margin to handle bottom scroll detection
 
 interface ConversationFeedProps {
   conversationTurns: ConversationTurn[];

@@ -10,6 +10,7 @@ import {
 
 import ErrorRoute from "@/app/routes/error/ErrorRoute";
 import PageLayout from "@/components/layouts/PageLayout/PageLayout";
+import RootLayout from "@/components/layouts/RootLayout/RootLayout";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
 import { paths } from "@/config/paths";
 import useColorScheme from "@/hooks/useColorScheme";
@@ -27,7 +28,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorRoute />,
   },
   {
-    element: <PageLayout />,
+    element: <RootLayout />,
     children: [
       {
         path: paths.chat,
@@ -44,7 +45,9 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Suspense fallback={<LoadingFallback />}>
-              <AdminPanelRoute />
+              <PageLayout>
+                <AdminPanelRoute />
+              </PageLayout>
             </Suspense>
           </ProtectedRoute>
         ),

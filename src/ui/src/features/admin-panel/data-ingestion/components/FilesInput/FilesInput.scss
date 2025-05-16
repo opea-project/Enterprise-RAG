@@ -4,7 +4,7 @@
 .files-input-error-alert {
   @apply -mt-2 rounded-b p-4 py-3 text-center text-sm;
   @apply bg-light-status-error dark:bg-dark-status-error;
-  @apply text-light-text-primary dark:text-dark-text-inverse;
+  @apply text-light-text-inverse dark:text-dark-text-primary;
 }
 
 .files-input-box {

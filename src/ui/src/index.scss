@@ -25,7 +25,13 @@
 }
 
 body {
-  font-family: "Inter", sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica",
+    "Arial",
+    sans-serif;
   font-weight: normal;
   font-size: 16px;
 }

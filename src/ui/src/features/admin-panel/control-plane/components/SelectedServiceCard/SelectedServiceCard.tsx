@@ -14,7 +14,6 @@ import {
   ServiceStatus,
 } from "@/features/admin-panel/control-plane/types";
 import { useAppSelector } from "@/store/hooks";
-import { formatSnakeCaseToTitleCase } from "@/utils";
 
 interface SelectedServiceCardProps extends PropsWithChildren {
   serviceStatus?: ServiceStatus;
@@ -77,9 +76,7 @@ const ServiceDetailsGrid = ({ serviceDetails }: ServiceDetailsGridProps) => {
     <section className="service-details-grid">
       {Object.entries(serviceDetails).map(([label, value]) => (
         <Fragment key={label}>
-          <p className="service-detail-label">
-            {formatSnakeCaseToTitleCase(label)}
-          </p>
+          <p className="service-detail-label">{label}</p>
           <p className="service-detail-value">{value}</p>
         </Fragment>
       ))}

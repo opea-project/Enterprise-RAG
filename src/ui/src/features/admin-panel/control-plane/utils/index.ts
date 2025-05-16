@@ -9,6 +9,7 @@ import {
   FilterFormDataFunction,
   FilterInvalidArgumentsFunction,
 } from "@/features/admin-panel/control-plane/hooks/useServiceCard";
+import { titleCaseString } from "@/utils";
 
 export const filterRetrieverFormData: FilterFormDataFunction<RetrieverArgs> = (
   data,
@@ -36,4 +37,27 @@ export const filterInvalidRetrieverArguments: FilterInvalidArgumentsFunction<
   } else {
     return invalidArguments;
   }
+};
+
+export const formatServiceDetailValue = (value: string) => {
+  const serviceDetailsValuesMap: Record<string, string> = {
+    // Connectors
+    langchain: "LangChain",
+    llama_index: "LlamaIndex",
+    // Model Servers
+    torchserve: "TorchServe",
+    tei: "TEI",
+    tgi: "TGI",
+    ovms: "OpenVino™ Model Server",
+    mosec: "Mosec",
+    vllm: "vLLM",
+    // Databases
+    redis: "Redis",
+  };
+
+  if (serviceDetailsValuesMap[value]) {
+    return serviceDetailsValuesMap[value];
+  }
+
+  return titleCaseString(value);
 };

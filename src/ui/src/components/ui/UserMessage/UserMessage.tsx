@@ -3,19 +3,41 @@
 
 import "./UserMessage.scss";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 
 import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
+import CopyButton from "@/components/ui/CopyButton/CopyButton";
 import { ConversationTurn } from "@/types";
 
 type UserMessageProps = Pick<ConversationTurn, "question">;
 
-const UserMessage = memo(({ question }: UserMessageProps) => (
-  <article className="user-message">
-    <div className="user-message__text">
-      <MarkdownRenderer content={question} />
-    </div>
-  </article>
-));
+const UserMessage = memo(({ question }: UserMessageProps) => {
+  const [showCopyBtn, setShowCopyBtn] = useState(false);
+
+  const handleMouseEnter = () => {
+    setShowCopyBtn(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowCopyBtn(false);
+  };
+
+  return (
+    <article
+      className="user-message"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="flex w-full flex-col">
+        <div className="user-message__text">
+          <MarkdownRenderer content={question} />
+        </div>
+        <div className="user-message__footer h-11 self-end pt-2">
+          <CopyButton textToCopy={question} show={showCopyBtn} />
+        </div>
+      </div>
+    </article>
+  );
+});
 
 export default UserMessage;

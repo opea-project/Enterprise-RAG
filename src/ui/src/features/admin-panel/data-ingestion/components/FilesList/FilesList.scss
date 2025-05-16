@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .file-list-item {
-  @apply mb-4 grid h-9 grid-cols-[1fr_2.5rem] items-center gap-2;
+  @apply mb-3 grid h-10 grid-cols-[1fr_2.5rem] items-center gap-2;
 
   & .file-list-item-text {
-    @apply grid grid-cols-[10fr_2fr] items-center gap-4 px-3 py-2;
+    @apply h-10 grid grid-cols-[10fr_2fr] items-center gap-4 px-3 py-2;
     @apply rounded border border-light-border dark:border-dark-border;
-    @apply bg-light-bg-2 px-3 py-2 dark:bg-dark-bg-2;
+    @apply bg-light-bg-2 px-3.5 py-2 dark:bg-dark-bg-2;
 
     & .file-list-item__file-name {
       @apply overflow-hidden text-ellipsis whitespace-nowrap;

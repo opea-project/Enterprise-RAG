@@ -30,6 +30,7 @@ dependencies:
   - name: minio
     version: "14.10.3"  # Use the latest stable version
     repository: "https://charts.bitnami.com/bitnami"
+    condition: minio.enabled
   - name: redis
     version: "20.6.3"  # Use the latest stable version
     repository: "https://charts.bitnami.com/bitnami"

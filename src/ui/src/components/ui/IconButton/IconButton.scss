@@ -13,7 +13,7 @@
   @apply disabled:text-light-text-disabled disabled:dark:text-dark-text-disabled;
 
   &.icon-button--sm {
-    @apply h-4 w-4 p-0 text-sm;
+    @apply h-8 w-8 p-2 text-sm;
   }
 
   &.icon-button--error {

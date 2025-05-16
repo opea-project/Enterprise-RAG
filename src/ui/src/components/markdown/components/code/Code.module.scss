@@ -9,7 +9,8 @@
 }
 
 .preWrapper {
-  @apply relative mb-0 p-4 pr-12;
+  @apply mb-0 p-2;
+  @apply grid grid-cols-[auto_2rem] items-start gap-4;
   @apply border border-solid border-light-border;
 
   &:not(:last-child) {
@@ -17,7 +18,7 @@
   }
 
   .pre {
-    @apply whitespace-pre-wrap;
+    @apply whitespace-pre-wrap px-2 py-1;
 
     .code {
       @apply rounded-none bg-transparent p-0;

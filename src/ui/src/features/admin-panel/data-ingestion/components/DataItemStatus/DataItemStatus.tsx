@@ -7,6 +7,7 @@ import classNames from "classnames";
 import { ReactNode } from "react";
 
 import BlockedIcon from "@/components/icons/BlockedIcon/BlockedIcon";
+import CanceledIcon from "@/components/icons/CanceledIcon/CanceledIcon";
 import DataPrepIcon from "@/components/icons/DataPrepIcon/DataPrepIcon";
 import DeleteIcon from "@/components/icons/DeleteIcon/DeleteIcon";
 import DPGuardIcon from "@/components/icons/DPGuardIcon/DPGuardIcon";
@@ -28,6 +29,7 @@ const statusIconMap: Record<DataStatus, ReactNode> = {
   embedding: <EmbeddingIcon className="data-item-status__icon" />,
   ingested: <SuccessIcon className="data-item-status__icon" />,
   deleting: <DeleteIcon className="data-item-status__icon" />,
+  canceled: <CanceledIcon className="data-item-status__icon" />,
   blocked: <BlockedIcon className="data-item-status__icon" />,
 };
 

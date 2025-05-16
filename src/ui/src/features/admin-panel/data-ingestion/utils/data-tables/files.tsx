@@ -40,6 +40,15 @@ export const getFilesTableColumns = ({
   {
     accessorKey: "object_name",
     header: "Name",
+    cell: ({
+      row: {
+        original: { object_name: fileName },
+      },
+    }) => (
+      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
+        {fileName}
+      </div>
+    ),
   },
   {
     accessorKey: "size",

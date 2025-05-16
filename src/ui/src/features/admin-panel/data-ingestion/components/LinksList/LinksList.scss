@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .link-list-item {
-  @apply mb-4 grid h-9 grid-cols-[1fr_2.5rem] items-center gap-2;
+  @apply mb-3 grid h-10 grid-cols-[1fr_2.5rem] items-center gap-2;
 }
 
 .link-list-item__url {
-  @apply overflow-hidden text-ellipsis whitespace-nowrap;
-  @apply bg-light-bg-2 px-3 py-2 dark:bg-dark-bg-2;
+  @apply h-10 overflow-hidden text-ellipsis whitespace-nowrap;
+  @apply bg-light-bg-2 px-3.5 py-2 dark:bg-dark-bg-2;
   @apply rounded border border-light-border dark:border-dark-border;
 }

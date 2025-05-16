@@ -3,11 +3,13 @@
 
 import "./BotMessage.scss";
 
+import classNames from "classnames";
 import { memo } from "react";
 
 import ChatBotIcon from "@/components/icons/ChatBotIcon/ChatBotIcon";
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
+import CopyButton from "@/components/ui/CopyButton/CopyButton";
 import PulsingDot from "@/components/ui/PulsingDot/PulsingDot";
 import { ConversationTurn } from "@/types";
 import { sanitizeString } from "@/utils";
@@ -27,11 +29,19 @@ const BotMessage = memo(({ answer, error, isPending }: BotMessageProps) => {
     ) : (
       <div className="bot-message__text">
         <MarkdownRenderer content={sanitizedAnswer} />
+        <div className="bot-message__footer">
+          <CopyButton textToCopy={sanitizedAnswer} show={!isPending} />
+        </div>
       </div>
     );
 
+  const className = classNames("bot-message", {
+    "mb-6": isWaitingForAnswer,
+    "mb-4": !isWaitingForAnswer,
+  });
+
   return (
-    <div className="bot-message">
+    <div className={className}>
       <ChatBotIcon forConversation />
       {isWaitingForAnswer ? <PulsingDot /> : botResponse}
     </div>

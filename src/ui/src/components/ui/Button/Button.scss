@@ -15,6 +15,14 @@ button {
 
   &.button--sm {
     @apply h-6 px-3 py-1 text-xs;
+
+    &.button--with-icon {
+      @apply gap-1 pl-1;
+
+      & svg {
+        @apply text-lg;
+      }
+    }
   }
 
   &.button--success {

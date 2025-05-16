@@ -32,10 +32,15 @@
     }
   }
 
-  & pre {
-    @apply w-full text-wrap p-3 text-sm;
+  & .extracted-file-text {
+    @apply w-full p-3;
+    @apply flex flex-col items-start;
     @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
-    @apply text-light-text-primary dark:text-dark-text-primary;
-    overflow-wrap: anywhere;
+
+    & pre {
+      @apply w-full text-wrap p-3 text-sm;
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      overflow-wrap: anywhere;
+    }
   }
 }

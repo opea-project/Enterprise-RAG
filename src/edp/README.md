@@ -78,11 +78,9 @@ If you want to utilize all functionality, depeding on the application server you
 
 | Service | Environment Variable       | Description |
 |---------|----------------------------|--------------------------|
-| Celery  | EDP_EXTERNAL_URL           | Base URL for External S3 endpoint |
-|         | EDP_INTERNAL_URL           | Base URL for Internal S3 endpoint |
-|         | EDP_EXTERNAL_SECURE        | Should EDP use secure connection to external S3 endpoint |
+| Celery  | EDP_EXTERNAL_URL           | Base URL for External S3 endpoint, assumes http:// schema if not defined in the url |
+|         | EDP_INTERNAL_URL           | Base URL for Internal S3 endpoint, assumes http:// schema if not defined in the url |
 |         | EDP_EXTERNAL_CERT_VERIFY   | Should EDP verify the external S3 endpoint certificate validity |
-|         | EDP_INTERNAL_SECURE        | Should EDP use secure connection to internal S3 endpoint |
 |         | EDP_INTERNAL_CERT_VERIFY   | Should EDP verify the internal S3 endpoint certificate validity |
 |         | EDP_BASE_REGION            | Base region for EDP S3 buckets |
 |         | EDP_SYNC_TASK_TIME_SECONDS | If defined and not empty, will enable Celery's periodic task to pull changes from storage |
@@ -115,9 +113,7 @@ If you want to utilize all functionality, depeding on the application server you
 |         | DATABASE_PASSWORD          | Password for PostgreSQL database |
 |         | EDP_EXTERNAL_URL           | Base URL for External S3 endpoint |
 |         | EDP_INTERNAL_URL           | Base URL for Internal S3 endpoint |
-|         | EDP_EXTERNAL_SECURE        | Should EDP use secure connection to external S3 endpoint |
 |         | EDP_EXTERNAL_CERT_VERIFY   | Should EDP verify the external S3 endpoint certificate validity |
-|         | EDP_INTERNAL_SECURE        | Should EDP use secure connection to internal S3 endpoint |
 |         | EDP_INTERNAL_CERT_VERIFY   | Should EDP verify the internal S3 endpoint certificate validity |
 |         | EDP_BASE_REGION            | Base region for EDP S3 buckets |
 |         | MINIO_ACCESS_KEY           | Access key either to MinIO or S3 IAM user |
@@ -202,7 +198,7 @@ If you are unable to use bucket notifications through the `minio-event` URL or u
 If you deployed ERAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.
 
 ### Protocol missmatch
-If you encounter a protocol mismatch error, it may be because edpExternalSecure is set to false while using ERAG with an SSL connection. This occurs when ERAG expects HTTPS but the configuration allows HTTP. The edpExternalSecure setting is used by presigned URLs that are exposed to the end user only. To resolve this issue, ensure that edpExternalSecure matches your ERAG connection. Set it to true for HTTPS or false for HTTP. For example, if your ERAG is at https://myrag.example.com and you set edpExternalSecure to false while configuring the storage endpoint to storage.myrag.example.com, this will generate a presigned URL with an HTTP schema, resulting in a protocol mismatch error.
+If you encounter a protocol mismatch error, it may be because edpExternalUrl has different schema than ERAG schema. For example, if your ERAG is at https://myrag.example.com and you set edpExternalUrl to http://s3.example.com, this will generate a presigned URL with an HTTP schema, resulting in a protocol mismatch error on a https secured Web UI.
 
 ### CORS related issues
 Your chosen S3 storage endpoint can be configured with special settings known as CORS (Cross-Origin Resource Sharing). When you upload a file using the EDP web GUI, your browser requests a presigned URL from the backend. This URL enables you to upload files to S3-compatible storage without needing to provide credentials. However, this URL will not match the current URL of the EDP GUI you are using. For instance, if your GUI is running under myrag.example.com and the storage is configured at storage.mycorp.internal, you will encounter a CORS error. This occurs because your browser and the storage endpoint do not permit requests from unapproved origins. To resolve this issue, ensure that the storage is properly configured to allow your origin. In the example above, the CORS configuration on your chosen storage should permit requests from myrag.example.com. For more details on CORS, please refer to the manufacturer's documentation.
@@ -225,3 +221,43 @@ coverage html
 ```
 
 This will run the tests and create a code coverage report.
+
+### Testing S3 Compatible
+
+Run a simple S3 mock server. Port 9191 will be used to expose a https server with self-signed certificate.
+
+```bash
+docker run --rm -p 9191:9191 -e initialBuckets=default,secondary -t adobe/s3mock
+```
+
+Export EDP confgiuration:
+
+```bash
+export edp_storage_type="s3compatible"
+export s3_access_key="testtesttest"
+export s3_secret_key="testtesttest"
+export s3_compatible_endpoint="https://<your IP address here>:9191/"
+export s3_region="us-east-1"
+export s3_bucket_name_regex_filter=".*"
+export s3_cert_verify="false"
+```
+
+As this endpoint does not have event notifications built in, enable scheduled sync. Edit `deployment/components/edp/values.yaml` and set the following values:
+```yaml
+celery:
+  config:
+    scheduledSync:
+      enabled: true
+      syncPeriodSeconds: "60"
+```
+
+Then deploy using `install_chatqna.sh` depending on the deployment type you're using. Example for development:
+```bash
+./install_chatqna.sh --auth --deploy examples/cpu-torch.yaml --ui --kind
+```
+
+After successful deployment, upload files using either WebGUI or cURL:
+
+```bash
+curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k
+```

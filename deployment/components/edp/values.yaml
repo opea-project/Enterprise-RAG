@@ -10,10 +10,8 @@ proxy:
 alternateTagging: false
 
 edpExternalUrl: "https://s3.erag.com"
-edpExternalSecure: "true"
 edpExternalCertVerify: "true"
 edpInternalUrl: "edp-minio:9000"
-edpInternalSecure: "true"
 edpInternalCertVerify: "true"
 edpBaseRegion: 'us-east-1'
 edpSqsEventQueueUrl: ""
@@ -222,16 +220,6 @@ celery:
         secretKeyRef:
           name: edp-access-secret
           key: EDP_INTERNAL_URL
-    - name: EDP_EXTERNAL_SECURE
-      valueFrom:
-        secretKeyRef:
-          name: edp-access-secret
-          key: EDP_EXTERNAL_SECURE
-    - name: EDP_INTERNAL_SECURE
-      valueFrom:
-        secretKeyRef:
-          name: edp-access-secret
-          key: EDP_INTERNAL_SECURE
     - name: EDP_EXTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:
@@ -435,16 +423,6 @@ backend:
         secretKeyRef:
           name: edp-access-secret
           key: EDP_INTERNAL_URL
-    - name: EDP_EXTERNAL_SECURE
-      valueFrom:
-        secretKeyRef:
-          name: edp-access-secret
-          key: EDP_EXTERNAL_SECURE
-    - name: EDP_INTERNAL_SECURE
-      valueFrom:
-        secretKeyRef:
-          name: edp-access-secret
-          key: EDP_INTERNAL_SECURE
     - name: EDP_EXTERNAL_CERT_VERIFY
       valueFrom:
         secretKeyRef:

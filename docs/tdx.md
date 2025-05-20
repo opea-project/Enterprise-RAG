@@ -79,16 +79,14 @@ Follow the steps below to deploy ChatQnA:
 1. Make sure that you have exported the KBS_ADDRESS:
 
    ```bash
-   export KBS_ADDRESS=<YOUR_KBS_ADDRESS>
+   export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
    ```
 
 2. Set the environment variables:
 
    ```bash
-   export HUGGINGFACEHUB_API_TOKEN="your_hf_token"
    export REGISTRY="your_container_registry"
    export TAG="your_tag"
-   export PIPELINE="xeon_torch_llm_guard"
    ```
 
 3. Login to your registry:
@@ -97,27 +95,36 @@ Follow the steps below to deploy ChatQnA:
    docker login your_container_registry
    ```
 
-4. Push the images to your container registry and deploy ChatQnA by adding `--no-mesh --features tdx` parameter and leaving all other parameters without changes (note, that only `*xeon*` pipelines are supported with Intel TDX):
+4. Push the images to your container registry:
 
    ```bash
    ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
-   ./set_values.sh -g "${HUGGINGFACEHUB_API_TOKEN}" -r "${REGISTRY}" -t "${TAG}"
-   ./install_chatqna.sh --deploy "${PIPELINE}" --registry "${REGISTRY}" --tag "${TAG}" --no-mesh --features tdx
    ```
 
+5. Update inventory/sample/config.yaml
+
+   ```bash
+   huggingToken: "" # Provide your Hugging Face token here
+   kubeconfig: ""   # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
+   registry: ""     # Provide your_container_registry
+   tag: ""          # Provide your_tag
+   tdxEnabled: true # Set to true to enable Intel TDX
+   ```
+
+6.  Deploy eRAG
+
+   ```bash
+    ansible-playbook playbooks/application.yaml -e @inventory/sample/config.yaml --tags install
+   ```
 
 ## Protected services
 
-By default, the microservices protected with Intel TDX are:
+By default all microservices under following namespaces are protected with Intel TDX:
 
-* `in-guard-usvc` 
-* `llm-usvc` 
-* `out-guard-usvc` 
-* `redis-vector-db` 
-* `reranking-usvc` 
-* `retriever-usvc` 
-* `tei` 
-* `teirerank`
+* `chatqa` 
+* `edp`
+* `fingerprint` 
+* `rag-ui` 
 
 
 ## Advanced configuration
@@ -132,7 +139,7 @@ If you want to store your images encrypted in your container registry, follow th
 
 ### Deployment customization
 
-Edit the [resources-tdx.yaml](../deployment/pipelines/chatqa/resources-tdx.yaml) file to customize the Intel TDX-specific configuration.
+Edit the [resources-tdx.yaml](../deployment/components/*/resources-tdx.yaml) files to customize the Intel TDX-specific configurations per namespace.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.
@@ -141,5 +148,4 @@ It overrides resources requests and limits only if increasing the resources.
 ## Limitations
 
 1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
-2. Only `*xeon*` pipelines are supported with Intel TDX (e.g.: `chatQnA_xeon_torch_llm_guard`)
-3. Some microservices defined in [resources-tdx.yaml](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml) may not yet work with Intel TDX due to various issues in opensource components.
+2. Only `*cpu*` pipelines are supported with Intel TDX (e.g.: `examples/cpu-torch.yaml`)

@@ -1,4 +1,10 @@
-# Enterprise RAG Enhanced DataPrep
+# Enterprise RAG Enhanced DataPrep Service
+
+The OPEA ERAG Enhanced Data Preparation service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `MinIO`, `AWS S3`, and `S3-compatible` endpoints.
+
+Below you find how to configure the chosen storage backend for both Ansible-based deployment and install_chatqna.sh-based deployment (legacy).
+
+>⚠️ The `install_chatqna.sh` script is deprecated and will be removed in version 1.3.0.
 
 ## Requirements
 
@@ -7,9 +13,9 @@
 - A stand alone `redis search` server for VectorDB data is required.
 - A stand alone `postgresql` server for storing file and link entries is required.
 - A S3 compatible storage (one of the following)
-    - A stand alone `minio` server for storing files. This is included and optional.
-    - An external AWS S3 bucket. Example scripts for creating one are located in terraform directory.
-    - External server compatible with S3 API
+    - A stand alone `MinIO` server for storing files. This is included and optional.
+    - An external AWS S3 bucket. Example scripts for creating one are located in terraform directory - see [terraform/README.md](terraform/README.md).
+    - External server compatible with the S3 API
 
 - Running application server:
     - backend - application for file management
@@ -17,18 +23,89 @@
     - (optional) flower - web ui for celery tasks
     - (optional) sqs - queue listener for S3 events if using AWS S3
 
+
+## Configuration in Ansible-based Deployment
+
+### Storage endpoints
+Use the config.yaml file to define the storage backend. Set the desired `storageType` under the edp section in your config.yaml, see [inventory/sample/config.yaml](../../deployment/inventory/sample/config.yaml). Then, configure the appropriate sub-section based on the selected type.
+
+#### Internal MinIO Storage (default)
+This will deploy and use the bundled MinIO instance:
+```yaml
+edp:
+  enabled: true
+  storageType: minio
+  minio:
+    domainName: minio.erag.com
+    apiDomainName: s3.erag.com
+    bucketNameRegexFilter: ".*"
+```
+
+#### AWS S3 Storage
+To connect to AWS S3, set the storage type to s3 and provide your credentials and configuration:
+
+```yaml
+edp:
+  enabled: true
+  storageType: s3
+  s3:
+    accessKey: "<your-aws-access-key>"
+    secretKey: "<your-aws-secret-key>"
+    region: "us-east-1"
+    sqsQueue: "<optional-sqs-endpoint-uri>"
+    bucketNameRegexFilter: ".*"
+```
+
+To see example scripts for creating required AWS resources such as S3 buckets and SQS queues, refer to the [terraform/README.md](terraform/README.md).
+
+Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
+
+#### S3 API Compatible Storage
+To use other storage server that is compatible with S3 API, follow similar steps as in the above AWS S3 storage with substitution to your s3-compatible endpoint settings:
+
+```yaml
+edp:
+  enabled: true
+  s3compatible:
+    region: "<optional, required if your storage enforces region settings>"
+    accessKeyId: "<your-access-key>"
+    secretAccessKey: "<your-secret-key>"
+    internalUrl: "https://s3.example.com"
+    externalUrl: "https://s3.example.com"
+    bucketNameRegexFilter: ".*"
+```
+
+Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_compatible_endpoint`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
+
+> Note: If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
+
+Then deploy the application by following the instructions in [deployment/README.md](../../deployment/README.md). Example for installation:
+```bash
+ansible-playbook playbooks/application.yaml --tags install -e @path/to/your/config.yaml
+```
+
+After successful deployment, upload files using either WebGUI or cURL:
+
+```bash
+curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k
+```
+
+## Configuration in Bash-based deployment (Legacy)
+
+For [bash-based install_chatqna.sh deployment](../../deployment/README_bash.md), the storage backends are configured only via environment variables.
+
+> Note: `install_chatqna.sh` is deprecated and will be removed in version 1.3.0.
+> Please migrate to the Ansible-based deployment.
+
 ### Storage endpoints
 
-Currently, EDP allows using the following storage backends for storing and processing files from.
+#### Internal MinIO Storage (default)
+If using minio storage, MinIO server will be automatically deployed and configured. MinIO is used if not overridden by `edp_storage_type` env variable while running `install_chatqna.sh`.
 
-#### Internal MinIO storage server (default)
-If using minio storage, MinIO server will be automatically deployed and configured. Minio is used if not overriden by `edp_storage_type` env variable while running `install_chatqna.sh`.
+#### AWS S3 Storage
+To connect to AWS S3, set the `edp_storage_type` environment variable to "s3" and provide the necessary configuration using the appropriate environment variables listed below. For example scripts that create the required AWS resources—such as S3 buckets and SQS queues—refer to the [terraform/README.md](terraform/README.md).
 
-#### AWS S3 storage
-For requirements for using S3 storage with this software, please refer to the [terraform README.md](terraform/README.md) for more details and installation instructions.
-
-For example:
-```
+```bash
 export edp_storage_type="s3"            # This will choose S3 as storage type for EDP
 export s3_access_key=""                 # IAM access key which will be used to communicate with AWS
 export s3_secret_key=""                 # IAM secret key which will be used to communicate with AWS
@@ -40,8 +117,44 @@ cd deployment
 ./install_chatqna.sh <command options>
 ```
 
-#### S3 API compatible storage
-If the S3 compatible endpoint does not support bucket notifications, files uploaded to the storage will not appear in EDP database and will not be visible in the UI. Data will also not be processed and available in the vector database of choice. To overcome this, a pulling synchronization option is available. To use it, edit the `deployment/components/edp/values.yaml` file and set the `celery.config.scheduledSync.enabled` to `true`. Optionally configure the pulling frequency by setting the `celery.config.scheduledSync.syncPeriodSeconds` - set the number of seconds between each pull request from storage. Note that for storages with high amount of files and/or frequently changed files requires more delay between each subsequent pulls. For small amount of files this option can be set to a lower value, such as "60" seconds. Sample configuration that enables scheduled synchronization:
+#### S3 API Compatible Storage
+To use other storage server that is compatible with S3 API, follow similar steps as in the above AWS S3 storage with substitution to your s3-compatible endpoint settings. Set the `edp_storage_type` environment variable to "s3compatible" and provide the required configuration via additional environment variables:
+
+```bash
+export edp_storage_type="s3compatible"  # This will choose S3 as storage type for EDP
+export s3_access_key=                   # S3 compatible storage access key
+export s3_secret_key=                   # S3 compatible storage secret key
+export s3_compatible_endpoint=          # S3 compatible storage endpoint
+export s3_region=""                     # (optional) Region if it is required by the S3 compatible storage
+export s3_bucket_name_regex_filter=".*" # (optional) Filter bucket names to display in WebUI
+
+cd deployment
+./install_chatqna.sh <command options>
+```
+> Note: If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
+
+
+Then deploy using `install_chatqna.sh`. Example for development:
+```bash
+./install_chatqna.sh --auth --deploy reference-cpu.yaml  --ui --kind
+```
+
+After successful deployment, upload files using either WebGUI or cURL:
+
+```bash
+curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k
+```
+
+## Storage Synchronization
+If the configured S3-compatible storage does not support bucket notifications, files uploaded to the storage will not be automatically registered in the EDP database, and they won't be visible in the ERAG UI.
+
+To address this limitation, Enterprise DataPrep provides a pull-based synchronization mechanism. When enabled, it periodically scans the configured storage and updates the internal database accordingly.
+
+To use it, edit the `deployment/components/edp/values.yaml` file and set the `celery.config.scheduledSync.enabled` to `true`.
+
+Pulling frequency can by adjusted by setting the `celery.config.scheduledSync.syncPeriodSeconds` - set the number of seconds between each pull request from storage. Note that for storages with high amount of files and/or frequently changed files requires more delay between each subsequent pulls, so consider increasing this value to reduce load. For small datasets, lower values (e.g., 60 seconds) are acceptable.
+
+Sample configuration that enables scheduled synchronization:
 
 ```yaml
 celery:
@@ -55,26 +168,12 @@ You can also manually schedule the synchronization task. To run the synchronizat
 - `POST /api/files/sync/` to backend container form within the cluster.
 - `POST /api/v1/edp/files/sync` to WebUI - this requires passing `Authorization` token.
 
-To use external storage server that is compatible with S3 API, follow similar steps as in the above AWS S3 storage with substitution to your endpoint settings.
-
-For example:
-```
-export edp_storage_type="s3compatible"  # This will choose S3 as storage type for EDP
-export s3_access_key=                   # S3 compatible storage access key
-export s3_secret_key=                   # S3 compatible storage secret key
-export s3_compatible_endpoint=          # S3 compatible storage endpoint
-export s3_region=""                     # (optional) Region if it is required by the S3 compatible storage
-export s3_bucket_name_regex_filter=".*" # (optional) Filter bucket names to display in WebUI
-
-cd deployment
-./install_chatqna.sh <command options>
-```
 
 ## Setup
 
 ### Environment variables
 
-If you want to utilize all functionality, depeding on the application server you have to provide these environment variables:
+If you want to utilize all functionality, depending on the application server you have to provide these environment variables:
 
 | Service | Environment Variable       | Description |
 |---------|----------------------------|--------------------------|
@@ -192,12 +291,12 @@ And proceed to the following url `http://localhost:1234/docs`
 ## Troubleshooting
 
 ### My selected S3 or S3-Compatible storage does not support bucket notifications
-If you are unable to use bucket notifications through the `minio-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart (deployment/components/edp/values.yaml) by enabling it and configuring the synchronization period.
+If you are unable to use bucket notifications through the `minio-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart (deployment/components/edp/values.yaml) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
 ### File upload certificate error
 If you deployed ERAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.
 
-### Protocol missmatch
+### Protocol mismatch
 If you encounter a protocol mismatch error, it may be because edpExternalUrl has different schema than ERAG schema. For example, if your ERAG is at https://myrag.example.com and you set edpExternalUrl to http://s3.example.com, this will generate a presigned URL with an HTTP schema, resulting in a protocol mismatch error on a https secured Web UI.
 
 ### CORS related issues
@@ -214,7 +313,7 @@ This ensures that the database and users were initialized successfully. If the d
 FATAL:  password authentication failed for user "edp"
 DETAIL:  Role "edp" does not exist.
 ```
-This indicated the PostgreSQL database was not initialized properly.
+This indicates the PostgreSQL database was not initialized properly.
 
 ## Testing
 
@@ -243,33 +342,27 @@ Run a simple S3 mock server. Port 9191 will be used to expose a https server wit
 docker run --rm -p 9191:9191 -e initialBuckets=default,secondary -t adobe/s3mock
 ```
 
-Export EDP confgiuration:
+Configure EDP for the S3 compatible storage by either exporting environment variables or setting values in your config.yaml.
 
-```bash
-export edp_storage_type="s3compatible"
-export s3_access_key="testtesttest"
-export s3_secret_key="testtesttest"
-export s3_compatible_endpoint="https://<your IP address here>:9191/"
-export s3_region="us-east-1"
-export s3_bucket_name_regex_filter=".*"
-export s3_cert_verify="false"
-```
+Example config.yaml snippet:
 
-As this endpoint does not have event notifications built in, enable scheduled sync. Edit `deployment/components/edp/values.yaml` and set the following values:
 ```yaml
-celery:
-  config:
-    scheduledSync:
-      enabled: true
-      syncPeriodSeconds: "60"
+edp:
+  enabled: true
+  storageType: "s3compatible"
+
+  s3compatible:
+    region: "us-east-1"
+    accessKeyId: "testtesttest"
+    secretAccessKey: "testtesttest"
+    internalUrl: "https://<your-IP-address>:9191"
+    externalUrl: "https://<your-IP-address>:9191"
+    bucketNameRegexFilter: ".*"
 ```
 
-Then deploy using `install_chatqna.sh` depending on the deployment type you're using. Example for development:
-```bash
-./install_chatqna.sh --auth --deploy examples/cpu-torch.yaml --ui --kind
-```
+Since this mock endpoint does not support event notifications, make sure scheduled synchronization is enabled as described in the [synchronization section](#storage-synchronization).
 
-After successful deployment, upload files using either WebGUI or cURL:
+Deploy the application via Ansible using your configuration. After successful deployment, upload files using either WebGUI or cURL:
 
 ```bash
 curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k

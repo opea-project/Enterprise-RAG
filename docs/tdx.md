@@ -148,4 +148,4 @@ It overrides resources requests and limits only if increasing the resources.
 ## Limitations
 
 1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
-2. Only `*cpu*` pipelines are supported with Intel TDX (e.g.: `examples/cpu-torch.yaml`)
+2. Only `*cpu*` pipelines are supported with Intel TDX (e.g.: `chatqa/reference-cpu.yaml`)

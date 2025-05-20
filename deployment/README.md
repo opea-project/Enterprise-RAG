@@ -587,7 +587,7 @@ We can deploy Enterprise RAG with enforced validation of PSS across all deployed
 
 ### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 
-Currently, TDX is only supported on [bash deployment](./README_bash.md). Ansible TDX support is planned for the next minor release.
+For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® TDX), refer to the [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](../docs/tdx.md) guide.
 
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.

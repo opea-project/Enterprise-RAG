@@ -22,7 +22,7 @@
   tags:
     - install
 
-- name: Initial keycloak confuration
+- name: Initial keycloak configuration
   ansible.builtin.command: >
     bash {{ role_path }}/files/keycloak_configurator.sh {{ KEYCLOAK_REALM_ADMIN_PASSWORD }} {{ edp.minio.domainName}}
   no_log: "{{ secure_logs }}"

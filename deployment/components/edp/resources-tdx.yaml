@@ -17,7 +17,7 @@ postgresql:
     extraPodSpec:
       runtimeClassName: kata-qemu-tdx
     podAnnotations:
-      io.containerd.cri.runtime-handler: kata-qemu-tdx #"{{ .Values.runtimeClassName }}"
+      io.containerd.cri.runtime-handler: kata-qemu-tdx
       io.katacontainers.config.runtime.create_container_timeout: "1800"
     podLabels:
       istio.io/dataplane-mode: none
@@ -32,7 +32,7 @@ redis:
     extraPodSpec:
       runtimeClassName: kata-qemu-tdx
     podAnnotations:
-      io.containerd.cri.runtime-handler: kata-qemu-tdx #"{{ .Values.runtimeClassName }}"
+      io.containerd.cri.runtime-handler: kata-qemu-tdx
       io.katacontainers.config.runtime.create_container_timeout: "1800"
     podLabels:
       istio.io/dataplane-mode: none
@@ -42,12 +42,6 @@ redis:
   volumePermissions:
     image:
       pullPolicy: Always
-
-    #    ROOT_PASSWORD=$(kubectl get secret --namespace $ENHANCED_DATAPREP_NS edp-minio -o jsonpath="{.data.root-password}" | base64 -d)
-    #"global.postgresql.auth.password=$postgresql_edp_password"
-#    if [ ! -z "$ROOT_PASSWORD" ]; then
-#    HELM_INSTALL_TDX_ARGS+=("auth.rootPassword=$ROOT_PASSWORD")
-#    fi
 
 tdx:
   common:

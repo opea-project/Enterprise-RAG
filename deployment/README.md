@@ -295,8 +295,12 @@ This command will configure various tools in your environment, including `Docker
 ---
 
 ## Docker Images
-Enterprise RAG is built from a set of microservices, including components for
-LLMs (Large Language Models), embedding, reranking, and more. Prebuilt images for Enterprise RAG components are publicly available on [OPEA Docker Hub](https://hub.docker.com/u/opea?page=1&search=erag) and are used by default, as defined by the  `registry` and `tag` values in [inventory/sample/config.yaml](inventory/sample/config.yaml).
+
+Deployment utilizes Docker images - check [docker images list](../docs/docker_images_list.md) for detailed information. 
+
+Prebuilt images for Enterprise RAG components are publicly available on [OPEA Docker Hub](https://hub.docker.com/u/opea?page=1&search=erag) and are used by default, as defined by the  `registry` and `tag` values in [inventory/sample/config.yaml](inventory/sample/config.yaml).
+
+Deployment is based on released docker images - check [Docker images list](../docs/docker_images_list.md) for detailed information.
 
 If you prefer to build the images manually and push them to a private registry, follow the steps below. Then, update the registry and tag values in your `config.yaml` file accordingly to point to them.
 

@@ -1,0 +1,1 @@
+Routing service for Intel® AI for Enterprise RAG service communication

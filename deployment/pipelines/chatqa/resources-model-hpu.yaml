@@ -217,13 +217,15 @@ modelConfigs:
   "mistralai/Mixtral-8x7B-Instruct-v0.1":
     configMapValues:
       PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
+      PT_HPU_LAZY_MODE: "1"
       EXPERIMENTAL_WEIGHT_SHARING: "0"
-      VLLM_SKIP_WARMUP: "false"
+      VLLM_SKIP_WARMUP: "true"
       VLLM_GRAPH_RESERVED_MEM: "0.05"
       VLLM_DECODE_BLOCK_BUCKET_STEP: "256"
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+      VLLM_ENABLE_EXPERT_PARALLEL: "0"
     extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling"]
     tensor_parallel_size: "2"
 

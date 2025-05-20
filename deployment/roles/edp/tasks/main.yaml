@@ -158,6 +158,7 @@
     values_files: >
       {{
         [edp.helm.default_values_file] +
+        ([edp.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
         [edp_helm_override_values_path]
       }}
   tags:

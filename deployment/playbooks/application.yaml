@@ -29,6 +29,13 @@
       tags:
         - install
         - uninstall
+    - name: Install Istio
+      include_role:
+        name: istio
+      when: istio.enabled
+      tags:
+        - install
+        - uninstall
     - name: Run fingerprint role
       include_role:
         name: fingerprint
@@ -45,7 +52,6 @@
         - uninstall
   roles:
     - { role: ingress, when: ingress.enabled }
-    - { role: istio, when: istio.enabled }
     - { role: keycloak, when: keycloak.enabled }
     - { role: apisix, when: apisix.enabled }
     - { role: ui, when: ui.enabled }
@@ -59,12 +65,14 @@
         namespace: "auth-apisix"
         state: present
         force: true
+      when: apisix.enabled
       tags:
         - install
         - update
-    - name: Include configure_istio role
+    - name: Configure Istio
       include_role:
-        name: configure_istio
+        name: istio
+        tasks_from: configure.yaml
       when: istio.enabled
       tags:
         - always
@@ -74,6 +82,7 @@
         chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
         namespace: "auth-apisix"
         state: absent
+      when: apisix.enabled
       tags:
         - uninstall
     - name: Remove log directory

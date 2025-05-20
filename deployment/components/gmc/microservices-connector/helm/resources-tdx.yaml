@@ -32,13 +32,6 @@ tdx:
           memory: 2Gi
         requests:
           memory: 2Gi
-    fingerprint-svc:
-      tdxEnabled: true
-      resources:
-        limits:
-          memory: 2Gi
-        requests:
-          memory: 2Gi
     ingestion-usvc:
       tdxEnabled: true
       resources:
@@ -143,64 +136,3 @@ tdx:
           memory: 1Gi
         requests:
           memory: 1Gi
-    ui-chart:
-      tdxEnabled: true
-      resources:
-        limits:
-          memory: 1Gi
-        requests:
-          memory: 1Gi
-    edp-backend:
-      tdxEnabled: true
-      resources:
-        limits:
-          cpu: 2
-          memory: 2Gi
-        requests:
-          cpu: 2
-          memory: 2Gi
-    edp-celery:
-      tdxEnabled: true
-      resources:
-        limits:
-          cpu: 4
-          memory: 8Gi
-        requests:
-          cpu: 2
-          memory: 4Gi
-    edp-dataprep:
-      tdxEnabled: true
-      resources:
-        requests:
-          cpu: 8
-          memory: 16Gi
-        limits:
-          cpu: 8
-          memory: 16Gi
-    edp-flower:
-      tdxEnabled: true
-      resources:
-        limits:
-          cpu: 2
-          memory: 2Gi
-        requests:
-          cpu: 1
-          memory: 1Gi
-    edp-ingestion:
-      tdxEnabled: true
-      resources:
-        limits:
-          cpu: 4
-          memory: 4Gi
-        requests:
-          cpu: 1
-          memory: 2Gi
-    edp-embedding:
-      tdxEnabled: true
-      resources:
-        limits:
-          cpu: 4
-          memory: 4Gi
-        requests:
-          cpu: 1
-          memory: 2Gi

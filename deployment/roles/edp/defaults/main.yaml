@@ -13,6 +13,7 @@ edp:
     chart_version: "1.1.0"
     release_name: "edp"
     default_values_file: "{{ playbook_dir }}/../components/edp/values.yaml"
+    tdx_resources_file: "{{ playbook_dir }}/../components/edp/resources-tdx.yaml"
     chart_directory: "{{ playbook_dir }}/../components/edp"
 
   client_id: "EnterpriseRAG-oidc-minio"
@@ -44,17 +45,14 @@ edp:
     enabled: false
 
   storageType: minio
-
   minio:
     domainName: minio.erag.com
     apiDomainName: s3.erag.com
-
   s3:
     region: "us-east-1"
     accessKeyId: ""
     secretAccessKey: ""
     sqsEventQueueUrl: ""
-
   s3compatible:
     region: "us-east-1"
     accessKeyId: ""

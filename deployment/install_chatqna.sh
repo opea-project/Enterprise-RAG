@@ -156,6 +156,11 @@ function helm_install() {
     name=$2
     path=$3
     args=$4
+    shift
+    shift
+    shift
+    shift
+    args2=("$@")
 
     msg="installation"
     helm_cmd="install"
@@ -190,11 +195,28 @@ function helm_install() {
     done
 
     print_log "helm $msg of \"$name\" in \"$namespace\" namespace in progress ..."
-    if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+
+    if [ -z "$args2" ]; then
+      #print_log "helm $helm_cmd -n \"$namespace\" --create-namespace \"$name\" \"$path\" $args"
+      if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+      else
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
+          exit 1
+      fi
     else
-        print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
-        exit 1
+      command_args=""
+      for param in "${args2[@]}"; do
+        command_args+="$param,"
+      done
+      command_args="${command_args::-1}"
+      #print_log "helm $helm_cmd -n \"$namespace\" --create-namespace \"$name\" \"$path\" $args --set \"$command_args\""
+      if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args --set "$command_args" 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+      else
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
+          exit 1
+      fi
     fi
 }
 
@@ -371,12 +393,22 @@ function start_fingerprint() {
         --set mongodb.auth.databases[0]=$MONGO_DATABASE_NAME \
         --set mongodb.auth.rootPassword=$FINGERPRINT_DB_ROOT_PASSWORD"
 
+    if [[ "$FEATURES" == *"tdx"* ]]; then
+      HELM_INSTALL_FINGERPRINT_TDX_ARGS=(
+          "mongodb.runtimeClassName=kata-qemu-tdx"
+          "mongodb.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+#        HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS+=" --set mongodb.podAnnotations.io\\.katacontainers\\.config\\.runtime\\.create_container_timeout='1800' --set "
+          "mongodb.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "mongodb.image.pullPolicy=Always"
+      )
+    fi
+
     if ! helm repo list | grep -q 'bitnami' ; then helm repo add bitnami https://charts.bitnami.com/bitnami ; fi
 
     helm repo update > /dev/null
     helm dependency build "$fingerprint_path" > /dev/null
 
-    helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS"
+    helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS" "${HELM_INSTALL_FINGERPRINT_TDX_ARGS[@]}"
 }
 
 function create_secret() {
@@ -408,6 +440,15 @@ function start_mesh() {
     HELM_INSTALL_ISTIO_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT -f $istio_path/values.yaml"
 
     helm dependency build "$istio_path" > /dev/null
+
+    IFS=',' read -ra feature_list <<< "$FEATURES"
+    for feature in "${feature_list[@]}"; do
+      case $feature in
+        tdx)
+          HELM_INSTALL_ISTIO_DEFAULT_ARGS+=" --values $istio_path/custom-init-container-values.yaml"
+          ;;
+      esac
+    done
 
     helm_install $ISTIO_NS istio "$istio_path" "$HELM_INSTALL_ISTIO_DEFAULT_ARGS"
 
@@ -499,7 +540,7 @@ function start_telemetry() {
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
-    
+
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
@@ -507,7 +548,7 @@ function start_telemetry() {
     else
         HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag-otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
-    
+
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
@@ -575,8 +616,8 @@ function clear_telemetry() {
 
     # Delete the tls-secret if it exists
     kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
-    
-    # uninstall prometheus adapter first 
+
+    # uninstall prometheus adapter first
     helm status -n "$TELEMETRY_NS" prometheus-adapter > /dev/null 2>&1 && helm uninstall --namespace $TELEMETRY_NS prometheus-adapter
 
     # Delete otelcol-traces with timeout and webhook handling
@@ -847,7 +888,33 @@ function start_edp() {
             ;;
     esac
 
-    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS $HELM_INSTALL_EDP_CONFIGURATION_ARGS --set redisUsername=$redis_username --set redisPassword=$redis_password "
+    if [[ "$FEATURES" == *"tdx"* ]]; then
+        ROOT_PASSWORD=$(kubectl get secret --namespace $ENHANCED_DATAPREP_NS edp-minio -o jsonpath="{.data.root-password}" | base64 -d)
+        HELM_INSTALL_TDX_ARGS=(
+          "minio.runtimeClassName=kata-qemu-tdx"
+          "postgresql.primary.extraPodSpec.runtimeClassName=kata-qemu-tdx"
+          "redis.master.extraPodSpec.runtimeClassName=kata-qemu-tdx"
+          ## "minio.imagePullSecrets=runtimeClassName=kata-qemu-tdx"
+          # "minio.provisioning.spec.template.metadata.spec.runtimeClassName=kata-qemu-tdx"
+          "minio.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "postgresql.primary.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "redis.master.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          # "minio.provisioning.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "postgresql.primary.containers.imagePullPolicy=Always"
+          "redis.master.containers.imagePullPolicy=Always"
+          "minio.image.PullPolicy=Always"
+          "global.postgresql.auth.password=$postgresql_edp_password"
+          "minio.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "postgresql.primary.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "redis.master.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          # "minio.provisioning.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+      )
+      if [ ! -z "$ROOT_PASSWORD" ]; then
+        HELM_INSTALL_TDX_ARGS+=("auth.rootPassword=$ROOT_PASSWORD")
+      fi
+    fi
+
+    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS $HELM_INSTALL_EDP_CONFIGURATION_ARGS --set redisUsername=$redis_username --set redisPassword=$redis_password" "${HELM_INSTALL_TDX_ARGS[@]}"
 
     print_log "waiting until pods in $ENHANCED_DATAPREP_NS are ready"
     wait_for_condition check_pods "$ENHANCED_DATAPREP_NS"

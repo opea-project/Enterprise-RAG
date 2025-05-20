@@ -9,6 +9,18 @@
   tags:
     - install
     - uninstall
+- name: Load tdx system variable
+  ansible.builtin.set_fact:
+    KBS_ADDRESS: "{{ lookup('env', 'KBS_ADDRESS') }}"
+  when: tdxEnabled
+  tags:
+    - install
+- name: Fail if KBS_ADDRESS is null or empty
+  ansible.builtin.fail:
+    msg: "KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable."
+  when: tdxEnabled and (KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0)
+  tags:
+    - install
 - name: Create log directory if it does not exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -23,7 +35,7 @@
   vars:
     istio_injection: false
   ansible.builtin.include_role:
-    name: configure_istio
+    name: istio
     tasks_from: manage_injection.yaml
   tags:
     - always

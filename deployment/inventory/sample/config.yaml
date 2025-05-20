@@ -23,6 +23,7 @@ helm_timeout: "10m0s"
 
 hpaEnabled: false
 enforcePSS: false
+tdxEnabled: false
 
 pipelines:
   - namespace: chatqa

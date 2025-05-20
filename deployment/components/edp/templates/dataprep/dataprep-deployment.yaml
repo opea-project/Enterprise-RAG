@@ -18,9 +18,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.dataprep.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.dataprep.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.dataprep.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.dataprep.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -57,6 +58,7 @@ spec:
       initContainers:
         - name: wait-for-vllm-server
           image: alpine/curl
+          imagePullPolicy: {{ .Values.dataprep.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
@@ -137,7 +139,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- toYaml .Values.dataprep.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.dataprep.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.dataprep.nameOverride $defaultValues .Values) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

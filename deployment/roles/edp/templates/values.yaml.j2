@@ -53,6 +53,23 @@ redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
 postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
 
+{% if tdxEnabled is defined and tdxEnabled %}
+tdx:
+  common:
+    kbsAddress: {{ KBS_ADDRESS }}
+minio:
+  podAnnotations:
+    io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+postgresql:
+  primary:
+    podAnnotations:
+      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+redis:
+  master:
+    podAnnotations:
+      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+{% endif %}
+
 celery:
   tag: {{ tag }}
   repository: {{ registry }}

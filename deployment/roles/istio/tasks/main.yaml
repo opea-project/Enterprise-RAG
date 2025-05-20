@@ -46,12 +46,22 @@
   tags:
     - install
 
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [istio.helm.default_values_file] +
+        ([istio.helm.custom_init_container_values_file] if (tdxEnabled is defined and tdxEnabled | bool) else [])
+      }}
+  tags:
+    - install
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ istio.helm.release_name }}"
     chart_ref: "{{ istio.helm.chart_directory }}"
     namespace: "{{ istio.namespace }}"
-    values_files: "{{ istio.helm.default_values_file }}"
+    values_files: "{{ values_files }}"
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"

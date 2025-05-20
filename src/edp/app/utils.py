@@ -28,7 +28,7 @@ def get_http_client(endpoint, cert_check=True):
     cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
 
     endpoint = str(endpoint)
-    if not endpoint.startswith('http://'):
+    if not endpoint.startswith(('http://', 'https://')):
         endpoint = f"http://{endpoint}"
     endpoint = parse_url(endpoint)
     proxy = select_proxy(endpoint.url, get_environ_proxies(endpoint.url))
@@ -46,7 +46,7 @@ def get_http_client(endpoint, cert_check=True):
     )
 
     if proxy:
-        if not proxy.startswith('http://'):
+        if not proxy.startswith(('http://', 'https://')):
             proxy = f"http://{proxy}"
         proxy_url = parse_url(proxy)
         if not proxy_url.host:

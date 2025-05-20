@@ -66,6 +66,7 @@ const (
 	yaml_dir                 = "/tmp/microservices/yamls/"
 	Service                  = "Service"
 	Deployment               = "Deployment"
+	StatefulSet              = "StatefulSet"
 	ServiceAccount           = "ServiceAccount"
 	dplymtSubfix             = "-deployment"
 	METADATA_PLATFORM        = "gmc/platform"
@@ -362,6 +363,103 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				_log.Error(err, "Failed to convert deployment to obj", "name", deploymentObj.GetName())
 				return nil, err
 			}
+		} else if obj.GetKind() == StatefulSet {
+			deploymentObj := &appsv1.StatefulSet{}
+			err = scheme.Scheme.Convert(obj, deploymentObj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
+				return nil, err
+			}
+			if svc != "" {
+				deploymentObj.SetName(svc + dplymtSubfix)
+				// Set the labels if they're specified
+				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
+				deploymentObj.Spec.Template.Labels["app"] = svc
+			}
+
+			deploymentObj.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
+				Type: appsv1.RollingUpdateStatefulSetStrategyType,
+			}
+
+			// append the user defined ENVs
+			var newEnvVars []corev1.EnvVar
+			if svcCfg != nil {
+				for name, value := range *svcCfg {
+					if name == "endpoint" || name == "nodes" {
+						continue
+					}
+
+					var endpoint, ns string
+					var fetch bool
+
+					parts := strings.SplitN(value, ":", 2)
+					if len(parts) == 2 {
+						if parts[0] == "fetch_from" {
+							fetch = true
+							value = parts[1]
+						} else {
+							return nil, fmt.Errorf("Invalid syntax: expected 'fetch_from:service/namespace', got '%s'", value)
+						}
+					}
+
+					parts = strings.Split(value, "/")
+					if len(parts) != 1 && len(parts) != 2 {
+						return nil, fmt.Errorf("Invalid syntax: expected 'service/namespace', got '%s'", value)
+					}
+
+					if len(parts) == 2 {
+						endpoint = parts[0]
+						ns = parts[1]
+					} else {
+						endpoint = value
+						ns = graphNs
+					}
+
+					var err error
+					if fetch {
+						value, err = r.fetchEnvVarFromServiceStatefulSet(ctx, ns, endpoint, name)
+						if err != nil {
+							return nil, fmt.Errorf("failed to fetch environment variable %s from service %s in namespace %s: %v", name, endpoint, ns, err)
+						}
+					} else if isDownStreamEndpointKey(name) {
+						if ns == graphNs {
+							ds := findDownStreamService(endpoint, stepCfg, nodeCfg)
+							value, err = getDownstreamSvcEndpoint(ns, endpoint, ds)
+						} else {
+							value, err = r.getDownstreamSvcEndpointInNs(ctx, ns, endpoint)
+						}
+
+						if err != nil {
+							return nil, fmt.Errorf("failed to find downstream service endpoint %s-%s: %v", name, endpoint, err)
+						}
+					}
+					itemEnvVar := corev1.EnvVar{
+						Name:  name,
+						Value: value,
+					}
+					newEnvVars = append(newEnvVars, itemEnvVar)
+				}
+			}
+
+			if len(newEnvVars) > 0 {
+				deploymentObj.Spec.Template.Spec.Containers = setEnvVars(deploymentObj.Spec.Template.Spec.Containers, newEnvVars)
+				deploymentObj.Spec.Template.Spec.InitContainers = setEnvVars(deploymentObj.Spec.Template.Spec.InitContainers, newEnvVars)
+			}
+
+			if configMapOrServiceChanged {
+				_log.Info("ConfigMap or Service changed, force update statefulset", "name", deploymentObj.GetName())
+				// Force update the deployment
+				if deploymentObj.Annotations == nil {
+					deploymentObj.Spec.Template.Annotations = make(map[string]string)
+				}
+				deploymentObj.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+			}
+
+			err = scheme.Scheme.Convert(deploymentObj, obj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert statefulset to obj", "name", deploymentObj.GetName())
+				return nil, err
+			}
 		}
 
 		objectChanged, err := r.applyResourceToK8s(graph, ctx, obj)
@@ -424,6 +522,30 @@ func (r *GMConnectorReconciler) fetchEnvVarFromService(ctx context.Context, name
 
 	// Query the Kubernetes API for the specific deployment in the specified namespace
 	deployment := &appsv1.Deployment{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
+	if err != nil {
+		return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
+	}
+
+	_log.Info("Found deployment in provided namespace", "name", serviceName, "namespace", namespace)
+
+	// Iterate through the containers in the deployment to find the environment variable
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		for _, env := range container.Env {
+			if env.Name == envVarName {
+				return env.Value, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("environment variable %s not found in deployment %s in namespace %s", envVarName, serviceName, namespace)
+}
+
+func (r *GMConnectorReconciler) fetchEnvVarFromServiceStatefulSet(ctx context.Context, namespace string, serviceName string, envVarName string) (string, error) {
+	_log.Info("Fetch environment variable from service", "namespace", namespace, "service", serviceName, "envVar", envVarName)
+
+	// Query the Kubernetes API for the specific deployment in the specified namespace
+	deployment := &appsv1.StatefulSet{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
 	if err != nil {
 		return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)

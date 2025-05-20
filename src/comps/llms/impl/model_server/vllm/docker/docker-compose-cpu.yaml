@@ -4,8 +4,8 @@
 services:
   llm-vllm-model-server:
     build:
-      context: .
-      dockerfile: Dockerfile.cpu
+      context: ..
+      dockerfile: docker/Dockerfile.cpu
       args:
         USER_UID: ${UID}
     image: vllm:cpu

@@ -53,12 +53,13 @@ spec:
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: vllm
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
+  serviceName: "vllm-service-m"
   replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
   selector:
     matchLabels:
@@ -71,7 +72,7 @@ spec:
     spec:
       {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.vllmSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: vllm
@@ -91,29 +92,20 @@ spec:
               valueFrom:
                 resourceFieldRef:
                   resource: limits.cpu
+            - name: VLLM_POD_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
-          args:
-            - --model
-            - "$(LLM_VLLM_MODEL_NAME)"
-            - --device
-            - "cpu"
-            - --tensor-parallel-size
-            - "$(VLLM_TP_SIZE)"
-            - --pipeline-parallel-size
-            - "$(VLLM_PP_SIZE)"
-            - --dtype
-            - "$(VLLM_DTYPE)"
-            - --max_model_len
-            - "$(VLLM_MAX_MODEL_LEN)"
-            - --max-num-seqs
-            - "$(VLLM_MAX_NUM_SEQS)"
-            - --disable-log-requests
-            - --download-dir
-            - "/data"
-          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - |
+                source assign_cores.sh
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"
           volumeMounts:
             - mountPath: /data
               name: model-volume
@@ -177,7 +169,7 @@ metadata:
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
-    kind: Deployment
+    kind: StatefulSet
     name: vllm-service-m-deployment
   minReplicas: {{ ( ((index .Values "services" .filename).hpa).minReplicas | default 1) }}
   maxReplicas: {{ ( ((index .Values "services" .filename).hpa).maxReplicas | default 4) }}

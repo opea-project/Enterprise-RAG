@@ -56,6 +56,12 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
+vllmSecurityContext:
+  fsGroup: 2000
+  runAsGroup: 3000
+  runAsNonRoot: true
+  runAsUser: 1000
+
 securityContext:
   capabilities:
     drop:

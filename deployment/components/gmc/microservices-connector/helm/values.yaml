@@ -22,7 +22,7 @@ namespace: chatqa
 common_tag: &tag "latest"
 common_registry: &repo "docker.io/opea"
 
-llm_model: &cpu_model "meta-llama/Llama-3.1-8B-Instruct"
+llm_model: &cpu_model "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
@@ -228,7 +228,6 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
     envs:
       LLM_VLLM_MODEL_NAME: *hpu_model
   vllm:
@@ -236,7 +235,6 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.cpu"
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
   langdtct-usvc:

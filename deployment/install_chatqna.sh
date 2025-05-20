@@ -166,8 +166,10 @@ function helm_install() {
 
     if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"hpu"* ]]; then
         helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-model-cpu.yaml"
     else
         helm_cmd+=" --values $manifests_path/resources-reference-hpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-model-hpu.yaml"
     fi
 
     if $hpa_flag; then

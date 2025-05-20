@@ -2,6 +2,8 @@
 # Source: vllm/templates/configmap.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+{{- $modelName := required "Please specify a valid llm_model name in your Helm chart values" .Values.llm_model }}
+{{- $port := "8000" }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -11,8 +13,14 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  {{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default ((index .Values).defaultModelConfigs).configMapValues }}
+  {{- if $configMapValues }}
+    {{- range $key, $value := $configMapValues }}
+      {{- printf "%s: %s" $key ($value | quote) | nindent 2 }}
+    {{- end }}
+  {{- end }}
   LLM_DEVICE: "cpu"
-  PORT: "8000"
+  PORT: {{ $port | quote }}
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
@@ -41,7 +49,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 8000
+    - port: {{ $port }}
       targetPort: 8000
       protocol: TCP
       name: vllm
@@ -100,12 +108,23 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
+          {{- if $modelArgs }}
+          {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--port" $port) }}
+          command:
+            - bash
+            - -c
+            - |
+                source assign_cores.sh
+                {{ join " " $cmd }}
+          {{- else }}
           command:
             - bash
             - -c
             - |
                 source assign_cores.sh
                 python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"
+          {{- end }}
           volumeMounts:
             - mountPath: /data
               name: model-volume
@@ -119,7 +138,7 @@ spec:
               name: config
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: {{ $port }}
               protocol: TCP
           livenessProbe:
             failureThreshold: 24
@@ -127,20 +146,20 @@ spec:
             periodSeconds: 60
             httpGet:
               path: /health
-              port: 8000
+              port: http
           readinessProbe:
             initialDelaySeconds: 30
             periodSeconds: 60
             httpGet:
               path: /health
-              port: 8000
+              port: http
           startupProbe:
             failureThreshold: 120
             initialDelaySeconds: 30
             periodSeconds: 60
             httpGet:
               path: /health
-              port: 8000
+              port: http
           resources:
             {{- $defaultValues := "{requests: {cpu: '32', memory: '64Gi'}, limits: {cpu: '32', memory: '100Gi'}}" -}}
             {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}

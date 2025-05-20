@@ -11,7 +11,7 @@ alternateTagging: false
 
 edpExternalUrl: "https://s3.erag.com"
 edpExternalCertVerify: "true"
-edpInternalUrl: "edp-minio:9000"
+edpInternalUrl: "http://edp-minio:9000"
 edpInternalCertVerify: "true"
 edpBaseRegion: 'us-east-1'
 edpSqsEventQueueUrl: ""

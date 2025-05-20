@@ -20,11 +20,11 @@ edpSecretKey: {{ edp_minio_secret_key }}
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
-
+edpExternalCertVerify: false
+edpInternalCertVerify: false
 edpOidcClientSecret: {{ edp_client_secret_id }}
 minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
 minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
-edpInternalSecure: false
 bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
 {% elif storage == "s3" %}
 edpBaseRegion: "{{ lookup('env', 's3_region') or edp.s3.region }}"
@@ -40,6 +40,8 @@ edpAccessKey: "{{ lookup('env', 's3_access_key') or edp.s3compatible.accessKeyId
 edpSecretKey: "{{ lookup('env', 's3_secret_key') or edp.s3compatible.secretAccessKey }}"
 edpExternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.externalUrl }}"
 edpInternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.internalUrl }}"
+edpExternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.edpExternalCertVerify }}"
+edpInternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.edpInternalCertVerify }}"
 bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
 {% endif %}
 

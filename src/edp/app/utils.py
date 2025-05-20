@@ -11,24 +11,25 @@ from urllib.parse import urlunsplit
 from urllib3.util.url import parse_url
 
 def get_local_minio_client():
-    endpoint = os.getenv('EDP_INTERNAL_URL', 'minio:9000')
+    endpoint = os.getenv('EDP_INTERNAL_URL', 'http://edp-minio:9000')
     cert_check = str(os.getenv('EDP_INTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
     return get_minio_client(endpoint, region, cert_check)
 
 def get_remote_minio_client():
-    endpoint = os.getenv('EDP_EXTERNAL_URL', 'minio:9000')
+    endpoint = os.getenv('EDP_EXTERNAL_URL', 'http://edp-minio:9000')
     cert_check = str(os.getenv('EDP_EXTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
     return get_minio_client(endpoint, region, cert_check)
 
 def get_http_client(endpoint, cert_check=True):
-    from requests.utils import select_proxy, get_environ_proxies, prepend_scheme_if_needed
+    from requests.utils import select_proxy, get_environ_proxies
     from requests.exceptions import InvalidProxyURL
     cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
 
     endpoint = str(endpoint)
-    endpoint = prepend_scheme_if_needed(endpoint, "http")
+    if not endpoint.startswith('http://'):
+        endpoint = f"http://{endpoint}"
     endpoint = parse_url(endpoint)
     proxy = select_proxy(endpoint.url, get_environ_proxies(endpoint.url))
 
@@ -45,7 +46,8 @@ def get_http_client(endpoint, cert_check=True):
     )
 
     if proxy:
-        proxy = prepend_scheme_if_needed(proxy, "http")
+        if not proxy.startswith('http://'):
+            proxy = f"http://{proxy}"
         proxy_url = parse_url(proxy)
         if not proxy_url.host:
             raise InvalidProxyURL(

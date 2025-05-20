@@ -9,7 +9,6 @@ import numpy
 from PIL import Image
 from comps.dataprep.utils.file_loaders.abstract_loader import AbstractLoader
 
-
 class LoadPdf(AbstractLoader):
     def __init__(self, file_path):
         super().__init__(file_path)

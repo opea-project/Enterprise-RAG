@@ -65,6 +65,8 @@ endpoints:
       - /api/list_buckets
       - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/extract$
       - /api/file/$1/extract
+      - ^/api/v1/edp/link/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/extract$
+      - /api/link/$1/extract
       - ^/api/v1/edp/retrieve$
       - /api/retrieve
       - ^/api/v1/edp/presignedUrl$

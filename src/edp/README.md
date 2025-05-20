@@ -203,6 +203,19 @@ If you encounter a protocol mismatch error, it may be because edpExternalUrl has
 ### CORS related issues
 Your chosen S3 storage endpoint can be configured with special settings known as CORS (Cross-Origin Resource Sharing). When you upload a file using the EDP web GUI, your browser requests a presigned URL from the backend. This URL enables you to upload files to S3-compatible storage without needing to provide credentials. However, this URL will not match the current URL of the EDP GUI you are using. For instance, if your GUI is running under myrag.example.com and the storage is configured at storage.mycorp.internal, you will encounter a CORS error. This occurs because your browser and the storage endpoint do not permit requests from unapproved origins. To resolve this issue, ensure that the storage is properly configured to allow your origin. In the example above, the CORS configuration on your chosen storage should permit requests from myrag.example.com. For more details on CORS, please refer to the manufacturer's documentation.
 
+### PostgreSQL connection errors
+Make sure that PostgreSQL initialization process was successfull. This container should not have restarted when deploying the solution. Ensure that output logs from the deployment contain following lines:
+```
+Creating user edp
+Granting access to "edp" to the database "edp"
+```
+This ensures that the database and users were initialized successfully. If the database container was restarted, check the container events and look for readinessProbe events. If the initialization process is taking long, this probe might restart the container, interrupting the initializaton process. This will result in connections errors such as:
+```
+FATAL:  password authentication failed for user "edp"
+DETAIL:  Role "edp" does not exist.
+```
+This indicated the PostgreSQL database was not initialized properly.
+
 ## Testing
 
 This application has unit tests written in `pytest`. Install it using `pip` since this is not a requirement for production.

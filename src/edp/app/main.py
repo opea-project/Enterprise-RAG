@@ -834,7 +834,7 @@ def api_file_text_extract(file_uuid: str, request: Request):
             })
 
             if response.status_code != 200:
-                return JSONResponse(content={'details': f"Something went wrong: {response.text}"})
+                return JSONResponse(status_code=500, content={'details': f"Something went wrong: {response.text}"})
             else:
                 return JSONResponse(content={'docs': response.json()})
         except S3Error as e:
@@ -842,6 +842,35 @@ def api_file_text_extract(file_uuid: str, request: Request):
         finally:
             minio_response.close()
             minio_response.release_conn()
+
+@app.post("/api/link/{link_uuid}/extract")
+def api_link_text_extract(link_uuid: str, request: Request):
+    try:
+        link_id = uuid.UUID(link_uuid, version=4)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid link_id passed: {link_uuid}")
+
+    with get_db() as db:
+        link = db.query(LinkStatus).filter(LinkStatus.id == link_id).first()
+
+        try:
+            import requests
+
+            DATAPREP_ENDPOINT  = os.environ.get('DATAPREP_ENDPOINT')
+            response = requests.post(DATAPREP_ENDPOINT, json={
+                'links': [ str(link.uri) ],
+                'chunk_size': request.query_params.get('chunk_size', 512),
+                'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                'process_table': request.query_params.get('process_table', 'false'),
+                'table_strategy': request.query_params.get('table_strategy', 'fast'),
+            })
+
+            if response.status_code != 200:
+                return JSONResponse(status_code=500, content={'details': f"Something went wrong: {response.text}"})
+            else:
+                return JSONResponse(content={'docs': response.json()})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error downloading link. {e}")
 
 @app.post("/api/retrieve")
 async def api_retrieve(request: Request):
@@ -862,7 +891,7 @@ async def api_retrieve(request: Request):
         response = requests.post(EMBEDDING_ENDPOINT, json=embedding_request)
 
         if response.status_code != 200:
-            return JSONResponse(content={'details': f"Embedding went wrong: {response.text}"})
+            return JSONResponse(status_code=500, content={'details': f"Embedding went wrong: {response.text}"})
 
         retriever_request = response.json()
         retriever_request['search_type'] = get_f(d, 'search_type', 'similarity')
@@ -883,12 +912,12 @@ async def api_retrieve(request: Request):
             logger.debug(f"Request to reranker: {reranker_request}")
             request = requests.post(RERANKER_ENDPOINT, json=reranker_request)
             if request.status_code != 200:
-                return JSONResponse(content={'details': f"Reranker went wrong: {request.text}"})
+                return JSONResponse(status_code=500, content={'details': f"Reranker went wrong: {request.text}"})
             else:
                 return JSONResponse(content={'docs': request.json()})
 
         if response.status_code != 200:
-            return JSONResponse(content={'details': f"Retriever went wrong: {response.text}"})
+            return JSONResponse(status_code=500, content={'details': f"Retriever went wrong: {response.text}"})
         else:
             return JSONResponse(content={'docs': response.json()})
     except Exception as e:

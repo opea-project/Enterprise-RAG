@@ -120,13 +120,6 @@
 - name: Generate random string for access key
   ansible.builtin.set_fact:
     edp_minio_access_key: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits,special') }}"
-  when: edp.storageType == "minio"
-  no_log: "{{ secure_logs }}"
-  tags:
-    - install
-
-- name: Generate random string for secret key
-  ansible.builtin.set_fact:
     edp_minio_secret_key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,special') }}"
   when: edp.storageType == "minio"
   no_log: "{{ secure_logs }}"

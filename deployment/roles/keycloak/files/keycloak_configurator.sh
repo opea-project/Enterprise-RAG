@@ -21,7 +21,8 @@ PAR_REQUEST_URI_LIFESPAN=240
 CURL_RETRY_LIMIT=1
 REALM_DEFAULT_SIGNATURE_ALGORITHM='"RS384"'
 
-credentials_path=${2:-../ansible-logs/default_credentials.txt} # hardcode here
+minio_domain=${2:-minio.erag.com}
+credentials_path=${3:-../ansible-logs/default_credentials.txt}
 
 generate_random_password() {
   local LENGTH=12
@@ -857,7 +858,7 @@ set_realm_timeouts "$KEYCLOAK_REALM"
 set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 
 # Minio
-create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://minio.erag.com' baseUrl='https://minio.erag.com' redirectUris='https://minio.erag.com/oauth_callback'"
+create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://$minio_domain' baseUrl='https://$minio_domain' redirectUris='https://$minio_domain/oauth_callback'"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readonly"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"

@@ -35,7 +35,7 @@ const NotificationToast = ({ id, text, severity }: NotificationToastProps) => {
     };
   }, [dispatch, id]);
 
-  const handleClickDismissBtn = () => {
+  const handleDismissBtnPress = () => {
     dispatch(deleteNotification(id));
   };
 
@@ -48,8 +48,9 @@ const NotificationToast = ({ id, text, severity }: NotificationToastProps) => {
       <IconButton
         size="sm"
         icon="close-notification"
+        aria-label="Dismiss notification"
         className="notification-toast__dismiss-btn"
-        onClick={handleClickDismissBtn}
+        onPress={handleDismissBtnPress}
       />
     </div>
   );

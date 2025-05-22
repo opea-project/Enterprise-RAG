@@ -6,8 +6,8 @@ import { PiSunFill } from "react-icons/pi";
 
 const LightModeIcon = ({ className, ...props }: IconBaseProps) => (
   <PiSunFill
-    className={`text-base text-light-text-accent ${className}`}
     {...props}
+    className={`text-base text-light-text-accent ${className}`}
   />
 );
 

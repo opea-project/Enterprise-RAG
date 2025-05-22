@@ -1,24 +1,16 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  AnchorHTMLAttributes,
-  ImgHTMLAttributes,
-  PropsWithChildren,
-} from "react";
+import { ImgHTMLAttributes, PropsWithChildren } from "react";
 
-import Anchor from "@/components/ui/Anchor/Anchor";
+import Anchor, { AnchorProps } from "@/components/ui/Anchor/Anchor";
 
 import styles from "./Other.module.scss";
 
-type AProps = PropsWithChildren<
-  Pick<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "title">
->;
+type AProps = PropsWithChildren<Pick<AnchorProps, "href">>;
 
-export const A = ({ children, href, title }: AProps) => (
-  <Anchor href={href} title={title}>
-    {children}
-  </Anchor>
+export const A = ({ children, href }: AProps) => (
+  <Anchor href={href}>{children}</Anchor>
 );
 
 type ImgProps = Pick<

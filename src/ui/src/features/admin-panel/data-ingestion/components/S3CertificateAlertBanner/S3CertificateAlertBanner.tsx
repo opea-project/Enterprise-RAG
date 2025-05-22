@@ -31,11 +31,11 @@ const S3CertificateAlertBanner = () => {
     setHasErrors(allErrors.length > 0);
   }, [allErrors.length]);
 
-  const handleS3UrlClick = () => {
+  const handleS3UrlPress = () => {
     dispatch(s3Api.util.resetApiState());
   };
 
-  const handleDismissBtnClick = () => {
+  const handleDismissBtnPress = () => {
     setHasErrors(false);
     dispatch(s3Api.util.resetApiState());
   };
@@ -55,7 +55,7 @@ const S3CertificateAlertBanner = () => {
       <Anchor
         href={s3Url}
         className="text-light-text-inverse"
-        onClick={handleS3UrlClick}
+        onPress={handleS3UrlPress}
       >
         {s3Url}
       </Anchor>
@@ -63,7 +63,7 @@ const S3CertificateAlertBanner = () => {
         If you believe this is a false positive, you can dismiss this alert
         using the button below.
       </p>
-      <Button variant="outlined" size="sm" onClick={handleDismissBtnClick}>
+      <Button variant="outlined" size="sm" onPress={handleDismissBtnPress}>
         Dismiss
       </Button>
     </div>

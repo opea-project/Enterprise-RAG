@@ -150,7 +150,7 @@ const UploadDataDialog = () => {
   };
 
   const triggerButton = (
-    <Button icon="upload" onClick={showDialog}>
+    <Button icon="upload" onPress={showDialog}>
       Upload
     </Button>
   );

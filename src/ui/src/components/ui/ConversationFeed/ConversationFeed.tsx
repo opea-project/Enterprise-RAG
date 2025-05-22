@@ -139,7 +139,7 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
       </div>
       <ScrollToBottomButton
         show={showScrollToBottomBtn}
-        onClick={() => debouncedScrollToBottom("smooth")}
+        onPress={() => debouncedScrollToBottom("smooth")}
       />
     </div>
   );

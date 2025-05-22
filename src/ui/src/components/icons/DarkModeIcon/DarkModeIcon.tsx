@@ -6,8 +6,8 @@ import { PiMoonStarsFill } from "react-icons/pi";
 
 const DarkModeIcon = ({ className, ...props }: IconBaseProps) => (
   <PiMoonStarsFill
-    className={`text-base text-dark-text-inverse ${className}`}
     {...props}
+    className={`text-base text-dark-text-inverse ${className}`}
   />
 );
 

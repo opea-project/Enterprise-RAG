@@ -7,7 +7,7 @@
   @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
   & button.three-state-switch__button {
-    @apply h-4 rounded p-0 text-xs;
+    @apply h-4 rounded-sm p-0 text-xs;
 
     @apply bg-light-bg-1 dark:bg-dark-bg-1;
     @apply text-light-text-primary dark:text-dark-text-primary;

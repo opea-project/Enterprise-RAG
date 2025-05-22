@@ -3,18 +3,17 @@
 
 import "./PromptInputButton.scss";
 
-import { ButtonHTMLAttributes } from "react";
-
 import { IconName } from "@/components/icons";
-import IconButton from "@/components/ui/IconButton/IconButton";
+import IconButton, {
+  IconButtonProps,
+} from "@/components/ui/IconButton/IconButton";
 
-interface PromptInputButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
+interface PromptInputButtonProps extends Omit<IconButtonProps, "color"> {
   icon: IconName;
 }
 
 const PromptInputButton = ({ icon, ...props }: PromptInputButtonProps) => (
-  <IconButton icon={icon} className="prompt-input__button" {...props} />
+  <IconButton {...props} icon={icon} className="prompt-input__button" />
 );
 
 export default PromptInputButton;

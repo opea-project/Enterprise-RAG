@@ -4,7 +4,10 @@
 import "./IconButton.scss";
 
 import classNames from "classnames";
-import { ButtonHTMLAttributes } from "react";
+import {
+  Button as ReactAriaButton,
+  ButtonProps as ReactAriaButtonProps,
+} from "react-aria-components";
 
 import { IconName, icons } from "@/components/icons";
 
@@ -12,7 +15,7 @@ type IconButtonVariants = "outlined" | "contained";
 type IconButtonSizes = "sm";
 export type IconButtonColor = "primary" | "error" | "success";
 
-interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface IconButtonProps extends ReactAriaButtonProps {
   icon: IconName;
   color?: IconButtonColor;
   size?: IconButtonSizes;
@@ -48,9 +51,9 @@ const IconButton = ({
   const IconComponent = icons[icon];
 
   return (
-    <button className={iconButtonClassNames} {...props}>
+    <ReactAriaButton {...props} className={iconButtonClassNames}>
       <IconComponent />
-    </button>
+    </ReactAriaButton>
   );
 };
 

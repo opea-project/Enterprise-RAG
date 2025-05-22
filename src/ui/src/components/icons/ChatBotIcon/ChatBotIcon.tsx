@@ -23,7 +23,7 @@ const ChatBotIcon = ({
     },
     className,
   ]);
-  return <GiAtom className={chatIconClassNames} {...props} />;
+  return <GiAtom {...props} className={chatIconClassNames} />;
 };
 
 export default ChatBotIcon;

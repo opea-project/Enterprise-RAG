@@ -77,11 +77,11 @@ export const getLinksTableColumns = ({
       <div className="flex items-center justify-center gap-2">
         <FileLinkExtractionDialog uuid={id} />
         {status === "error" && (
-          <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
+          <Button size="sm" variant="outlined" onPress={() => retryHandler(id)}>
             Retry
           </Button>
         )}
-        <Button size="sm" color="error" onClick={() => deleteHandler(id)}>
+        <Button size="sm" color="error" onPress={() => deleteHandler(id)}>
           Delete
         </Button>
       </div>

@@ -24,7 +24,11 @@ const Dialog = forwardRef<HTMLDialogElement, DialogProps>(
           <div className="dialog__box">
             <header className="dialog__header">
               <h3>{title}</h3>
-              <IconButton icon="close" onClick={onClose} />
+              <IconButton
+                icon="close"
+                aria-label="Close dialog"
+                onPress={onClose}
+              />
             </header>
             <section className="dialog__content">{children}</section>
             {footer && <footer className="dialog__actions">{footer}</footer>}

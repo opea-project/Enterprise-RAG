@@ -7,7 +7,6 @@ import {
   ChangeEventHandler,
   FormEventHandler,
   KeyboardEventHandler,
-  MouseEventHandler,
   useCallback,
   useEffect,
   useRef,
@@ -94,8 +93,7 @@ const PromptInput = ({
     }
   };
 
-  const handleStopBtnClick: MouseEventHandler = (event) => {
-    event.preventDefault();
+  const handleStopBtnPress = () => {
     onRequestAbort?.();
     focusPromptInput();
   };
@@ -114,14 +112,16 @@ const PromptInput = ({
         <PromptInputButton
           icon="prompt-stop"
           type="button"
-          onClick={handleStopBtnClick}
+          aria-label="Stop response"
+          onPress={handleStopBtnPress}
           onKeyDown={handleStopBtnKeyDown}
         />
       ) : (
         <PromptInputButton
           icon="prompt-send"
           type="submit"
-          disabled={isSubmitDisabled()}
+          aria-label="Send prompt"
+          isDisabled={isSubmitDisabled()}
         />
       );
     } else {
@@ -129,7 +129,8 @@ const PromptInput = ({
         <PromptInputButton
           icon="prompt-send"
           type="submit"
-          disabled={isSubmitDisabled()}
+          aria-label="Send prompt"
+          isDisabled={isSubmitDisabled()}
         />
       );
     }

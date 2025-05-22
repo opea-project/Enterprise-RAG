@@ -27,7 +27,7 @@ const FilesList = ({ files, setFiles }: FilesListProps) => {
 
   return (
     <>
-      <ListHeader onClearListBtnClick={clearList} />
+      <ListHeader onClearListBtnPress={clearList} />
       <ul>
         {files.map((file, index) => (
           <li key={`file-list-item-${index}`} className="file-list-item">
@@ -40,7 +40,8 @@ const FilesList = ({ files, setFiles }: FilesListProps) => {
             <IconButton
               icon="delete"
               color="error"
-              onClick={() => removeDocumentFromList(index)}
+              aria-label="Delete file from the list"
+              onPress={() => removeDocumentFromList(index)}
             />
           </li>
         ))}

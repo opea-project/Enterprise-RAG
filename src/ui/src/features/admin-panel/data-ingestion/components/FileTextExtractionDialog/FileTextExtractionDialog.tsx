@@ -134,7 +134,7 @@ export const FileTextExtractionForm = ({
             onChange={handleCheckboxInputChange}
           />
         </div>
-        <Button type="submit" disabled={isLoadingExtractedText}>
+        <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text
         </Button>
       </form>
@@ -166,7 +166,7 @@ const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
     visibleTextOffset < maxVisibleTextOffset &&
     formattedExtractedText.length > 0;
 
-  const handleLoadMoreTextButtonClick = () => {
+  const handleLoadMoreTextButtonPress = () => {
     setVisibleTextOffset((prevOffset) => prevOffset + linesPerPage);
   };
 
@@ -178,7 +178,7 @@ const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
           size="sm"
           variant="outlined"
           fullWidth
-          onClick={handleLoadMoreTextButtonClick}
+          onPress={handleLoadMoreTextButtonPress}
         >
           Load more text...
         </Button>
@@ -209,7 +209,7 @@ const FileTextExtractionDialog = ({
     return null;
   }
 
-  const handleClick = async () => {
+  const handlePress = async () => {
     showDialog();
     postFileToExtractText({ uuid });
   };
@@ -220,7 +220,7 @@ const FileTextExtractionDialog = ({
   };
 
   const trigger = (
-    <Button size="sm" variant="outlined" onClick={handleClick}>
+    <Button size="sm" variant="outlined" onPress={handlePress}>
       Extract Text
     </Button>
   );

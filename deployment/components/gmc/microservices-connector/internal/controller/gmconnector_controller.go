@@ -858,34 +858,57 @@ func (r *GMConnectorReconciler) collectResourceStatus(graph *mcv1alpha3.GMConnec
 		name := strings.Split(resName, ":")[2]
 		ns := strings.Split(resName, ":")[3]
 
-		if kind == Deployment {
+		if kind == Deployment || kind == StatefulSet {
 			totalCnt += 1
 
-			deployment := &appsv1.Deployment{}
+			var deployment client.Object
+			if kind == Deployment {
+				deployment = &appsv1.Deployment{}
+			} else {
+				deployment = &appsv1.StatefulSet{}
+			}
+
 			err := r.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, deployment)
 			if err != nil {
-				_log.Info("Collecting status: failed to get deployment", "name", name, "error", err)
+				_log.Info("Collecting status: failed to get object", "name", name, "kind", kind, "error", err)
 				continue
 			}
+
 			var deploymentStatus strings.Builder
 			statusVerbose := "Not ready"
-			if deployment.Status.AvailableReplicas == *deployment.Spec.Replicas {
-				readyCnt += 1
-				statusVerbose = "Ready"
-			}
-			deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d updated | %d total | %d available | %d unavailable\n",
-				statusVerbose,
-				*deployment.Spec.Replicas,
-				deployment.Status.UpdatedReplicas,
-				deployment.Status.Replicas,
-				deployment.Status.AvailableReplicas,
-				deployment.Status.UnavailableReplicas))
-			deploymentStatus.WriteString("Conditions:\n")
-			for _, condition := range deployment.Status.Conditions {
-				deploymentStatus.WriteString(fmt.Sprintf("  Type: %s\n", condition.Type))
-				deploymentStatus.WriteString(fmt.Sprintf("  Status: %s\n", condition.Status))
-				deploymentStatus.WriteString(fmt.Sprintf("  Reason: %s\n", condition.Reason))
-				deploymentStatus.WriteString(fmt.Sprintf("  Message: %s\n", condition.Message))
+
+			if kind == Deployment {
+				d := deployment.(*appsv1.Deployment)
+				if d.Status.AvailableReplicas == *d.Spec.Replicas {
+					readyCnt += 1
+					statusVerbose = "Ready"
+				}
+				deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d updated | %d total | %d available | %d unavailable\n",
+					statusVerbose,
+					*d.Spec.Replicas,
+					d.Status.UpdatedReplicas,
+					d.Status.Replicas,
+					d.Status.AvailableReplicas,
+					d.Status.UnavailableReplicas))
+				deploymentStatus.WriteString("Conditions:\n")
+				for _, condition := range d.Status.Conditions {
+					deploymentStatus.WriteString(fmt.Sprintf("  Type: %s\n", condition.Type))
+					deploymentStatus.WriteString(fmt.Sprintf("  Status: %s\n", condition.Status))
+					deploymentStatus.WriteString(fmt.Sprintf("  Reason: %s\n", condition.Reason))
+					deploymentStatus.WriteString(fmt.Sprintf("  Message: %s\n", condition.Message))
+				}
+			} else { // StatefulSet
+				s := deployment.(*appsv1.StatefulSet)
+				if s.Status.ReadyReplicas == *s.Spec.Replicas {
+					readyCnt += 1
+					statusVerbose = "Ready"
+				}
+				deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d ready | %d current | %d updated\n",
+					statusVerbose,
+					*s.Spec.Replicas,
+					s.Status.ReadyReplicas,
+					s.Status.CurrentReplicas,
+					s.Status.UpdatedReplicas))
 			}
 			graph.Status.Annotations[resName] = deploymentStatus.String()
 		}

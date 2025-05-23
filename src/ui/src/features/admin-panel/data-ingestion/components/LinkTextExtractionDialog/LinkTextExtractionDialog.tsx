@@ -128,7 +128,7 @@ export const LinkTextExtractionForm = ({
             onChange={handleCheckboxInputChange}
           />
         </div>
-        <Button type="submit" disabled={isLoadingExtractedText}>
+        <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text
         </Button>
       </form>
@@ -140,9 +140,7 @@ interface LinkTextExtractionDialogProps {
   uuid: string;
 }
 
-const LinkTextExtractionDialog = ({
-  uuid,
-}: LinkTextExtractionDialogProps) => {
+const LinkTextExtractionDialog = ({ uuid }: LinkTextExtractionDialogProps) => {
   const [postLinkToExtractText, { data: extractedText, isLoading, error }] =
     usePostLinkToExtractTextMutation();
 
@@ -156,7 +154,7 @@ const LinkTextExtractionDialog = ({
     return null;
   }
 
-  const handleClick = async () => {
+  const handlePress = async () => {
     showDialog();
     postLinkToExtractText({ uuid });
   };
@@ -167,7 +165,7 @@ const LinkTextExtractionDialog = ({
   };
 
   const trigger = (
-    <Button size="sm" variant="outlined" onClick={handleClick}>
+    <Button size="sm" variant="outlined" onPress={handlePress}>
       Extract Text
     </Button>
   );

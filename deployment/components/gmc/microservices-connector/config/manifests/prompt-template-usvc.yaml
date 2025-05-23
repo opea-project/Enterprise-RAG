@@ -53,9 +53,10 @@ spec:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
   template:
     metadata:
-      labels:
-        {{- include "manifest.selectorLabels" (list .filename .) | nindent 8 }}
+      {{- include "manifest.podLabels" (list .filename .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
@@ -104,3 +105,4 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+

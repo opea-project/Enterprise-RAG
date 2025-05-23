@@ -4,7 +4,6 @@
 import { string } from "yup";
 
 import { linkErrorMessage } from "@/features/admin-panel/data-ingestion/utils/constants";
-import { notLinkToFile } from "@/features/admin-panel/data-ingestion/validators";
 import { noInvalidCharacters } from "@/utils/validators/functions/textInput";
 
 const validationSchema = string()
@@ -14,11 +13,6 @@ const validationSchema = string()
     "no-invalid-characters",
     "URL contains invalid characters. Please try again.",
     noInvalidCharacters(),
-  )
-  .test(
-    "not-link-to-file",
-    "Only links to HTML files are supported.",
-    notLinkToFile(),
   );
 
 export const validateLinkInput = async (value: string) =>

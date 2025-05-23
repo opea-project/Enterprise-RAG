@@ -6,7 +6,7 @@
 }
 
 .conversation-feed__scroll {
-  @apply h-full overflow-y-auto [scrollbar-gutter:stable];
+  @apply h-full overflow-y-auto pb-8 [scrollbar-gutter:stable];
 }
 
 .conversation-feed {

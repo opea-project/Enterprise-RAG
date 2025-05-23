@@ -18,9 +18,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.celery.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.celery.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.celery.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.celery.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -33,6 +34,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: bitnami/postgresql:16.3.0
+          imagePullPolicy: {{ .Values.celery.pullPolicy }}
           env:
             - name: DATABASE_HOST
               valueFrom:
@@ -66,6 +68,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: redis:alpine
+          imagePullPolicy: {{ .Values.celery.pullPolicy }}
           env:
             - name: REDIS_URL
               valueFrom:
@@ -145,7 +148,8 @@ spec:
               - "-c"
               - "celery inspect ping -d celery@$(hostname) | grep -q OK"
           resources:
-            {{- toYaml .Values.celery.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.celery.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.celery.nameOverride $defaultValues .Values) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -158,3 +162,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+

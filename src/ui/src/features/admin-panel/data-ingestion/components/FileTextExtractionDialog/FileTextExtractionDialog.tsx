@@ -3,7 +3,13 @@
 
 import "./FileTextExtractionDialog.scss";
 
-import { ChangeEventHandler, FormEvent, useRef, useState } from "react";
+import {
+  ChangeEventHandler,
+  FormEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Button from "@/components/ui/Button/Button";
 import Dialog from "@/components/ui/Dialog/Dialog";
@@ -128,10 +134,55 @@ export const FileTextExtractionForm = ({
             onChange={handleCheckboxInputChange}
           />
         </div>
-        <Button type="submit" disabled={isLoadingExtractedText}>
+        <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text
         </Button>
       </form>
+    </div>
+  );
+};
+
+interface ExtractedFileTextProps {
+  extractedText: string;
+}
+
+const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
+  const linesPerPage = 40;
+  const [visibleTextOffset, setVisibleTextOffset] = useState(linesPerPage);
+
+  const formattedExtractedText = useMemo(
+    () => JSON.stringify(extractedText ?? "", null, 2),
+    [extractedText],
+  );
+  const maxVisibleTextOffset = formattedExtractedText.split("\n").length;
+
+  const visibleFormattedExtractedText = useMemo(
+    () =>
+      formattedExtractedText.split("\n").slice(0, visibleTextOffset).join("\n"),
+    [formattedExtractedText, visibleTextOffset],
+  );
+
+  const isLoadMoreButtonVisible =
+    visibleTextOffset < maxVisibleTextOffset &&
+    formattedExtractedText.length > 0;
+
+  const handleLoadMoreTextButtonPress = () => {
+    setVisibleTextOffset((prevOffset) => prevOffset + linesPerPage);
+  };
+
+  return (
+    <div className="extracted-file-text">
+      <pre>{visibleFormattedExtractedText}</pre>
+      {isLoadMoreButtonVisible && (
+        <Button
+          size="sm"
+          variant="outlined"
+          fullWidth
+          onPress={handleLoadMoreTextButtonPress}
+        >
+          Load more text...
+        </Button>
+      )}
     </div>
   );
 };
@@ -158,7 +209,7 @@ const FileTextExtractionDialog = ({
     return null;
   }
 
-  const handleClick = async () => {
+  const handlePress = async () => {
     showDialog();
     postFileToExtractText({ uuid });
   };
@@ -169,7 +220,7 @@ const FileTextExtractionDialog = ({
   };
 
   const trigger = (
-    <Button size="sm" variant="outlined" onClick={handleClick}>
+    <Button size="sm" variant="outlined" onPress={handlePress}>
       Extract Text
     </Button>
   );
@@ -194,9 +245,7 @@ const FileTextExtractionDialog = ({
       return <p>No text extracted from the file</p>;
     }
 
-    const formattedExtractedText = JSON.stringify(extractedText, null, 2);
-
-    return <pre>{formattedExtractedText}</pre>;
+    return <ExtractedFileText extractedText={extractedText} />;
   };
 
   return (
@@ -211,6 +260,7 @@ const FileTextExtractionDialog = ({
           isLoadingExtractedText={isLoading}
           onFormSubmit={onFormSubmit}
         />
+
         {getContent()}
       </div>
     </Dialog>

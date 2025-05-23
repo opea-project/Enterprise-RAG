@@ -38,7 +38,11 @@ const UploadDataDialogFooter = ({
       ) : (
         toBeUploadedMessage
       )}
-      <Button icon={uploadBtnIcon} disabled={uploadDisabled} onClick={onSubmit}>
+      <Button
+        icon={uploadBtnIcon}
+        isDisabled={uploadDisabled}
+        onPress={onSubmit}
+      >
         {uploadBtnContent}
       </Button>
     </div>

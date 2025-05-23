@@ -55,7 +55,7 @@ const RetrieverDebugDialog = () => {
   const showDialog = () => ref.current?.showModal();
 
   const trigger = (
-    <Button size="sm" className="absolute right-4 top-4" onClick={showDialog}>
+    <Button size="sm" className="absolute right-4 top-4" onPress={showDialog}>
       Debug
     </Button>
   );

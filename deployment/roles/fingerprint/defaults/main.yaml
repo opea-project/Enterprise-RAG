@@ -13,6 +13,7 @@ fingerprint:
     release_name: "fingerprint"
     chart_directory: "{{ playbook_dir }}/../components/fingerprint"
     default_values_file: "{{ playbook_dir }}/../components/fingerprint/values.yaml"
+    tdx_resources_file: "{{ playbook_dir }}/../components/fingerprint/resources-tdx.yaml"
 
   mongo:
     auth:

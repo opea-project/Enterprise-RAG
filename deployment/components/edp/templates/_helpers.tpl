@@ -183,6 +183,39 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
+{{/*
+Generic pod label definition
+*/}}
+{{- define "manifest.podLabels" -}}
+{{- $deploymentName := index . 0 -}}
+{{- $context := index . 1 -}}
+labels:
+  {{- if eq $deploymentName "edp-celery" }}
+  {{- include "helm-edp.celery.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-flower" }}
+  {{- include "helm-edp.flower.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-backend" }}
+  {{- include "helm-edp.backend.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-dataprep" }}
+  {{- include "helm-edp.dataprep.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-dpguard" }}
+  {{- include "helm-edp.dpguard.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-embedding" }}
+  {{- include "helm-edp.embedding.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-ingestion" }}
+  {{- include "helm-edp.ingestion.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-vllm" }}
+  {{- include "helm-edp.vllm.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-awssqs" }}
+  {{- include "helm-edp.awsSqs.selectorLabels" $context | nindent 2 }}
+  {{- else }}
+  {{- include "helm-edp.selectorLabels" $context | nindent 2 }}
+  {{- end }}
+{{- if $context.Values.tdx }}
+  {{- include "manifest.tdx.labels" (list $deploymentName $context) | nindent 2 }}
+{{- end }}
+{{- end }}
+
 {{- /*
   Retrieves resource values based on the provided filename and values.
 */ -}}
@@ -204,3 +237,4 @@ Create the name of the service account to use
   {{- $defaultValues | toYaml }}
 {{- end -}}
 {{- end -}}
+

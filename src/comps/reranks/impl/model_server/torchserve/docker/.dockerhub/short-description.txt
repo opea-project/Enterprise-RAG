@@ -1,0 +1,1 @@
+Intel® AI for Enterprise RAG Reranking Model Server powered by TorchServe 

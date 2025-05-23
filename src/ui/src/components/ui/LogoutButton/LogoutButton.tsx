@@ -7,7 +7,7 @@ import { redirectToLogout } from "@/lib/auth";
 import { resetStore } from "@/store/utils";
 
 const LogoutButton = () => {
-  const handleLogout = () => {
+  const handlePress = () => {
     resetStore();
     redirectToLogout();
   };
@@ -15,7 +15,9 @@ const LogoutButton = () => {
   return (
     <Tooltip
       title="Logout"
-      trigger={<IconButton icon="logout" onClick={handleLogout} />}
+      trigger={
+        <IconButton icon="logout" aria-label="Logout" onPress={handlePress} />
+      }
       placement="bottom"
     />
   );

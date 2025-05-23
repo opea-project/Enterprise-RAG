@@ -18,9 +18,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.ingestion.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.ingestion.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.ingestion.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.ingestion.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -31,6 +32,7 @@ spec:
       initContainers:
         - name: wait-for-redis
           image: redis:alpine
+          imagePullPolicy: {{ .Values.ingestion.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           envFrom:
@@ -120,7 +122,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- toYaml .Values.ingestion.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.ingestion.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.ingestion.nameOverride $defaultValues .Values) | nindent 12 }}
       volumes:
         - name: tmp
           emptyDir: {}

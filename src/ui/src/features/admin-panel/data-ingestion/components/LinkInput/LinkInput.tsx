@@ -49,7 +49,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
 
   const handleLinkInputKeyDown = (event: KeyboardEvent) => {
     if (!isInvalid && value.length > 0 && event.code === "Enter") {
-      handleAddNewLinkItem();
+      handleAddLinkBtnPress();
     }
   };
 
@@ -62,7 +62,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
     inputRef.current!.focus();
   };
 
-  const handleAddNewLinkItem = () => {
+  const handleAddLinkBtnPress = () => {
     const sanitizedValue = sanitizeString(value);
     addLinkToList(sanitizedValue);
     clearNewFileLinkInput();
@@ -78,7 +78,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
         value={value}
         name="link-input"
         type="url"
-        placeholder="Enter valid URL (starting with http:// or https://) to HTML document"
+        placeholder="Enter valid URL (starting with http:// or https://)"
         className={classNames({ "input--invalid": isInvalid })}
         onChange={handleLinkInputChange}
         onKeyDown={handleLinkInputKeyDown}
@@ -86,8 +86,9 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
       <IconButton
         icon="plus"
         variant="contained"
-        disabled={addLinkBtnDisabled}
-        onClick={handleAddNewLinkItem}
+        aria-label="Add list to the list"
+        isDisabled={addLinkBtnDisabled}
+        onPress={handleAddLinkBtnPress}
       />
       {isInvalid && <p className="link-input-error-message">{errorMessage}</p>}
     </div>

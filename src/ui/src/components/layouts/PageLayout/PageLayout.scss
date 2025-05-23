@@ -1,15 +1,15 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.layout-root {
+.page-layout__root {
   @apply flex h-full w-full;
 }
 
-.content {
+.page-layout__content {
   @apply relative h-full max-w-full overflow-hidden;
   @apply flex flex-1 flex-col;
 }
 
-.main-outlet {
+.page-layout__main-outlet {
   @apply flex h-[calc(100vh-6rem)] flex-col;
 }

@@ -14,6 +14,11 @@ service:
 {% if use_alternate_tagging is defined %}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
+{% if tdxEnabled is defined and tdxEnabled %}
+tdx:
+  common:
+    kbsAddress: {{ KBS_ADDRESS }}
+{% endif %}
 {% if tag is defined %}
 image:
   ui:

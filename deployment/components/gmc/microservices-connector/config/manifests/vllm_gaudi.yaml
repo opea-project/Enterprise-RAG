@@ -2,6 +2,8 @@
 # Source: vllm-gaudi/templates/configmap.yaml
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+{{- $modelName := required "Please specify a valid llm_model_gaudi name in your Helm chart values" .Values.llm_model_gaudi }}
+{{- $port := "8000" }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -11,8 +13,14 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  {{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default ((index .Values).defaultModelConfigs).configMapValues }}
+  {{- if $configMapValues }}
+    {{- range $key, $value := $configMapValues }}
+      {{- printf "%s: %s" $key ($value | quote) | nindent 2 }}
+    {{- end }}
+  {{- end }}
   LLM_DEVICE: "hpu"
-  PORT: "2080"
+  PORT: {{ $port | quote }}
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
@@ -42,7 +50,7 @@ spec:
   type: ClusterIP
   ports:
     - port: 80
-      targetPort: 2080
+      targetPort: {{ $port }}
       protocol: TCP
       name: vllm-gaudi
   selector:
@@ -90,12 +98,19 @@ spec:
             {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
             {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
             - name: VLLM_TP_SIZE
-              value: {{ index $resourceLimits.limits "habana.ai/gaudi" | quote }}
+              {{- $tppSize := (index (default dict .Values.modelConfigs) $modelName).tensor_parallel_size | default ((index .Values).defaultModelConfigs).tensor_parallel_size | default 1 }}
+              value: {{ $tppSize | quote }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "manifest.image" (list .filename .Values) }}
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
+          {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
+          {{- if $modelArgs }}
+          {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
+          command: ["/bin/bash", "-c", {{ join " " $cmd | quote }} ]
+          {{- else }}
           command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data" ]
+          {{- end }}
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
@@ -110,7 +125,7 @@ spec:
               name: var-log
           ports:
             - name: http
-              containerPort: 2080
+              containerPort: {{ $port }}
               protocol: TCP
           readinessProbe:
             initialDelaySeconds: 5
@@ -124,7 +139,8 @@ spec:
             tcpSocket:
               port: http
           resources:
-            {{- toYaml $resourceLimits | nindent 12 }}
+            limits:
+              habana.ai/gaudi: {{ $tppSize | quote }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

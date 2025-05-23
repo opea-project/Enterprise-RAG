@@ -1,0 +1,1 @@
+Intel® AI for Enterprise RAG Prompt Template Service for managing and customizing prompt templates

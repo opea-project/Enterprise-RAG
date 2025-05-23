@@ -15,6 +15,7 @@ export type DataStatus =
   | "embedding"
   | "ingested"
   | "deleting"
+  | "canceled"
   | "blocked";
 
 export interface FileDataItem {

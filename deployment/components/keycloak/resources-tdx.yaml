@@ -1,0 +1,21 @@
+#podAnnotations:
+#  io.containerd.cri.runtime-handler: kata-qemu-tdx
+#  io.katacontainers.config.runtime.create_container_timeout: "1800"
+#podLabels:
+#  istio.io/dataplane-mode: none
+#  sidecar.istio.io/inject: "true"
+image:
+  pullPolicy: Always
+
+postgresql:
+#  primary:
+#    extraPodSpec:
+#      runtimeClassName: kata-qemu-tdx
+#    podAnnotations:
+#      io.containerd.cri.runtime-handler: kata-qemu-tdx
+#      io.katacontainers.config.runtime.create_container_timeout: "1800"
+#    podLabels:
+#      istio.io/dataplane-mode: none
+#      sidecar.istio.io/inject: "true"
+  image:
+    pullPolicy: Always

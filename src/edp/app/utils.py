@@ -8,61 +8,75 @@ from minio.credentials import EnvMinioProvider
 from minio.signer import presign_v4
 from datetime import datetime, timedelta
 from urllib.parse import urlunsplit
+from urllib3.util.url import parse_url
 
 def get_local_minio_client():
-    endpoint = os.getenv('EDP_INTERNAL_URL', 'minio:9000')
-    url_secure = str(os.getenv('EDP_INTERNAL_SECURE', True))
+    endpoint = os.getenv('EDP_INTERNAL_URL', 'http://edp-minio:9000')
     cert_check = str(os.getenv('EDP_INTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
-    return get_minio_client(endpoint, url_secure, region, cert_check)
+    return get_minio_client(endpoint, region, cert_check)
 
 def get_remote_minio_client():
-    endpoint = os.getenv('EDP_EXTERNAL_URL', 'minio:9000')
-    url_secure = str(os.getenv('EDP_EXTERNAL_SECURE', True))
+    endpoint = os.getenv('EDP_EXTERNAL_URL', 'http://edp-minio:9000')
     cert_check = str(os.getenv('EDP_EXTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
-    return get_minio_client(endpoint, url_secure, region, cert_check)
+    return get_minio_client(endpoint, region, cert_check)
 
-def get_minio_client(endpoint=None, url_secure=None, region=None, cert_check=True):
-    is_secure = str(url_secure).lower() not in ['false', '0', 'f', 'n', 'no']
+def get_http_client(endpoint, cert_check=True):
+    from requests.utils import select_proxy, get_environ_proxies
+    from requests.exceptions import InvalidProxyURL
     cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
 
-    http_client = None
-    proxy = None
+    endpoint = str(endpoint)
+    if not endpoint.startswith(('http://', 'https://')):
+        endpoint = f"http://{endpoint}"
+    endpoint = parse_url(endpoint)
+    proxy = select_proxy(endpoint.url, get_environ_proxies(endpoint.url))
 
-    if is_secure:
-        proxy = os.getenv('https_proxy', None)
-    else:
-        proxy = os.getenv('http_proxy', None)
+    if endpoint.scheme == 'https' and not cert_check:
+        urllib3.disable_warnings() # skip InsecureRequestWarning message 
 
-    if is_secure and proxy is not None and proxy != '':
+    timeout_time = timedelta(seconds=30).seconds
+    timeout = Timeout(connect=timeout_time, read=timeout_time)
+    cert_reqs = 'CERT_REQUIRED' if cert_check else 'CERT_NONE'
+    retries = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[500, 502, 503, 504]
+    )
+
+    if proxy:
         if not proxy.startswith(('http://', 'https://')):
-            proxy = ('https://' if is_secure else 'http://') + proxy
-        timeout = timedelta(minutes=1).seconds
-        http_client=urllib3.ProxyManager(
-            proxy,
-            timeout=Timeout(connect=timeout, read=timeout),
-            cert_reqs='CERT_REQUIRED' if cert_check else 'CERT_NONE',
-            retries=Retry(
-                total=5,
-                backoff_factor=0.2,
-                status_forcelist=[500, 502, 503, 504]
+            proxy = f"http://{proxy}"
+        proxy_url = parse_url(proxy)
+        if not proxy_url.host:
+            raise InvalidProxyURL(
+                "Please check proxy URL. It is malformed "
+                "and could be missing the host."
             )
+        return urllib3.ProxyManager(
+            proxy_url.url,
+            timeout=timeout,
+            cert_reqs=cert_reqs,
+            retries=retries
+        )
+    else:
+        return urllib3.PoolManager(
+            timeout=timeout,
+            cert_reqs=cert_reqs,
+            retries=retries
         )
 
-    # pass only host and port to minio
-    http_prefix='http://'
-    https_prefix='https://'
-    endpoint = endpoint.rstrip('/')
-    if endpoint.startswith(http_prefix):
-        endpoint = endpoint[len(http_prefix):]
-    if endpoint.startswith(https_prefix):
-        endpoint = endpoint[len(https_prefix):]
+def get_minio_client(endpoint=None, region=None, cert_check=True):
+    cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
 
+    endpoint = parse_url(endpoint)
+    http_client = get_http_client(endpoint, cert_check)
+    # pass only host and port to minio
     minio = Minio(
-        endpoint,
+        endpoint._replace(scheme=None, path=None, query=None, fragment=None).url,
         credentials=EnvMinioProvider(),
-        secure=is_secure,
+        secure=True if endpoint.scheme == 'https' else False,
         region=region,
         http_client=http_client,
         cert_check=cert_check

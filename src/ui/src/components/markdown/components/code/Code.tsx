@@ -4,7 +4,7 @@
 import classNames from "classnames";
 import { HTMLAttributes, PropsWithChildren } from "react";
 
-import CopyButton from "@/components/markdown/components/code/CopyButton";
+import CopyButton from "@/components/ui/CopyButton/CopyButton";
 import parseChildrenTextContent from "@/components/utils/parseChildrenTextContent";
 
 import styles from "./Code.module.scss";
@@ -17,8 +17,8 @@ export const Pre = ({ children }: PropsWithChildren) => {
 
   return (
     <div className={styles.preWrapper}>
-      {window.isSecureContext && <CopyButton rawCode={rawCode} />}
       <pre className={styles.pre}>{children}</pre>
+      <CopyButton textToCopy={rawCode} />
     </div>
   );
 };

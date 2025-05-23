@@ -5,7 +5,7 @@ import { IconBaseProps } from "react-icons";
 import { FaSpinner } from "react-icons/fa";
 
 const LoadingIcon = ({ className, ...props }: IconBaseProps) => (
-  <FaSpinner className={`${className} animate-spin`} {...props} />
+  <FaSpinner {...props} className={`${className} animate-spin`} />
 );
 
 export default LoadingIcon;

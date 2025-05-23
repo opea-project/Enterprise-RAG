@@ -4,7 +4,8 @@
 import "./ThreeStateSwitch.scss";
 
 import classNames from "classnames";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { v4 as uuidv4 } from "uuid";
 
 export type ThreeStateSwitchValue = boolean | null;
@@ -30,27 +31,25 @@ const ThreeStateSwitch = ({
     }
   }, [readOnly, initialValue]);
 
-  const handleBtnClick = (value: boolean | null) => {
+  const handleBtnPress = (newValue: ThreeStateSwitchValue) => {
     if (!readOnly) {
-      setState(value);
+      setState(newValue);
+
       if (onChange) {
-        onChange(name, value);
+        onChange(name, newValue);
       }
     }
   };
 
-  const trueBtnClassNames = classNames({
-    "three-state-switch__button": true,
+  const trueBtnClassNames = classNames("three-state-switch__button", {
     "three-state-switch__button--active": state === true,
   });
 
-  const falseBtnClassNames = classNames({
-    "three-state-switch__button": true,
+  const falseBtnClassNames = classNames("three-state-switch__button", {
     "three-state-switch__button--active": state === false,
   });
 
-  const nullBtnClassNames = classNames({
-    "three-state-switch__button": true,
+  const nullBtnClassNames = classNames("three-state-switch__button", {
     "three-state-switch__button--active": state === null,
   });
 
@@ -61,33 +60,43 @@ const ThreeStateSwitch = ({
     "three-state-switch",
   );
 
-  const switchId = `${name}-three-state-switch-${uuidv4()}`;
+  const switchId = useMemo(
+    () => `${name}-three-state-switch-${uuidv4()}`,
+    [name],
+  );
 
   return (
     <div>
-      <span className="three-state-switch__label" id={switchId}>
+      <label id={switchId} className="three-state-switch__label">
         {name}
-      </span>
-      <div aria-labelledby={switchId} className={switchClassNames}>
-        <button
+      </label>
+      <ToggleButtonGroup
+        aria-labelledby={switchId}
+        isDisabled={readOnly}
+        className={switchClassNames}
+      >
+        <ToggleButton
+          id="three-state-switch--true"
           className={trueBtnClassNames}
-          onClick={() => handleBtnClick(true)}
+          onPress={() => handleBtnPress(true)}
         >
           true
-        </button>
-        <button
+        </ToggleButton>
+        <ToggleButton
+          id="three-state-switch--false"
           className={falseBtnClassNames}
-          onClick={() => handleBtnClick(false)}
+          onPress={() => handleBtnPress(false)}
         >
           false
-        </button>
-        <button
+        </ToggleButton>
+        <ToggleButton
+          id="three-state-switch--null"
           className={nullBtnClassNames}
-          onClick={() => handleBtnClick(null)}
+          onPress={() => handleBtnPress(null)}
         >
           null
-        </button>
-      </div>
+        </ToggleButton>
+      </ToggleButtonGroup>
     </div>
   );
 };

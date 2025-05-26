@@ -59,7 +59,7 @@ KEYCLOAK_PASS=""
 # others
 PIPELINE=""
 REGISTRY="docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-TAG="1.2.0"
+TAG="1.2.1"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
 FEATURES=""

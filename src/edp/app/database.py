@@ -18,7 +18,7 @@ DATABASE_NAME = os.getenv("DATABASE_NAME",'enhanced_dataprep')
 
 DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
-engine = create_engine(DATABASE_URL, pool_size=32, max_overflow=64)
+engine = create_engine(DATABASE_URL, pool_size=32, max_overflow=64, pool_use_lifo=True, pool_pre_ping=True, pool_recycle=1800)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

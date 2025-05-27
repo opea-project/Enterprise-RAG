@@ -34,6 +34,15 @@ extraEnvVars:
     value: "true"
 postgresql:
   primary:
+    resources:
+      requests:
+        cpu: "1"
+        ephemeral-storage: "50Mi"
+        memory: "1Gi"
+      limits:
+        cpu: "2"
+        ephemeral-storage: "1Gi"
+        memory: "2Gi"
     networkPolicy:
       extraIngress:
         - ports:

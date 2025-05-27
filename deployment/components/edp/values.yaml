@@ -189,6 +189,15 @@ postgresql:
       cpu: "2"
       memory: "4Gi"
   primary:
+    resources:
+      requests:
+        cpu: "1"
+        ephemeral-storage: "50Mi"
+        memory: "2Gi"
+      limits:
+        cpu: "2"
+        ephemeral-storage: "1Gi"
+        memory: "4Gi"
     networkPolicy:
       extraIngress:
         - ports:

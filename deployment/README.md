@@ -209,7 +209,7 @@ fingerprint:
 
 ```
 > [!NOTE]
-> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`.
+> The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 

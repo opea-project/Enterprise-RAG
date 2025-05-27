@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./FileTextExtractionDialog.scss";
+import "./TextExtractionDialog.scss";
 
 import {
   ChangeEventHandler,
@@ -12,31 +12,31 @@ import {
 } from "react";
 
 import Button from "@/components/ui/Button/Button";
+import CheckboxInput from "@/components/ui/CheckboxInput/CheckboxInput";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
-import { usePostFileToExtractTextMutation } from "@/features/admin-panel/data-ingestion/api/edpApi";
-import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
-import { createPostFileToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/utils/api";
 import useDebug from "@/hooks/useDebug";
-import { getErrorMessage } from "@/utils/api";
 
-interface FileTextExtractionFormProps {
+interface TextExtractionFormProps {
   isLoadingExtractedText: boolean;
-  onFormSubmit: (queryParams: ExtractTextQueryParamsFormData) => void;
+  onFormSubmit: (
+    queryParams: ExtractTextQueryParamsFormData,
+    isFormEnabled: boolean,
+  ) => void;
 }
 
-export const FileTextExtractionForm = ({
+export const TextExtractionForm = ({
   isLoadingExtractedText,
   onFormSubmit,
-}: FileTextExtractionFormProps) => {
+}: TextExtractionFormProps) => {
   const [formData, setFormData] = useState<ExtractTextQueryParamsFormData>({
     chunk_size: 0,
     chunk_overlap: 0,
     process_table: false,
     table_strategy: false,
   });
-  const [formEnabled, setFormEnabled] = useState<boolean>(false);
+  const [isFormEnabled, setIsFormEnabled] = useState<boolean>(false);
 
   const handleRangeInputChange: ChangeEventHandler<HTMLInputElement> = (
     event,
@@ -48,43 +48,33 @@ export const FileTextExtractionForm = ({
     }));
   };
 
-  const handleCheckboxInputChange: ChangeEventHandler<HTMLInputElement> = (
-    event,
-  ) => {
-    const { name, checked } = event.target;
+  const handleCheckboxInputChange = (name: string, isSelected: boolean) => {
     setFormData((prevFormData) => ({
       ...prevFormData,
-      [name]: checked,
+      [name]: isSelected,
     }));
   };
 
-  const handleEnableFormCheckboxChange: ChangeEventHandler<HTMLInputElement> = (
-    event,
-  ) => {
-    setFormEnabled(event.target.checked);
+  const handleEnableFormCheckboxChange = (isSelected: boolean) => {
+    setIsFormEnabled(isSelected);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    onFormSubmit(formData);
+    onFormSubmit(formData, isFormEnabled);
   };
 
-  const formDisabled = isLoadingExtractedText || !formEnabled;
+  const formDisabled = isLoadingExtractedText || !isFormEnabled;
 
   return (
-    <div className="file-text-extraction-dialog__content-form-column">
-      <div>
-        <input
-          type="checkbox"
-          id="use-parameters"
-          name="use-parameters"
-          checked={formEnabled}
-          disabled={isLoadingExtractedText}
-          onChange={handleEnableFormCheckboxChange}
-        />
-        <label htmlFor="use-parameters">Use Parameters</label>
-      </div>
+    <div className="text-extraction-dialog__content-form-column">
+      <CheckboxInput
+        label="Use Parameters"
+        name="use-parameters"
+        isSelected={isFormEnabled}
+        isDisabled={isLoadingExtractedText}
+        onChange={handleEnableFormCheckboxChange}
+      />
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="chunk_size">Chunk Size (0-9999)</label>
@@ -112,28 +102,24 @@ export const FileTextExtractionForm = ({
             onChange={handleRangeInputChange}
           />
         </div>
-        <div>
-          <label htmlFor="process_table">Process Table</label>
-          <input
-            type="checkbox"
-            id="process_table"
-            name="process_table"
-            checked={formData.process_table}
-            disabled={formDisabled}
-            onChange={handleCheckboxInputChange}
-          />
-        </div>
-        <div>
-          <label htmlFor="table_strategy">Table Strategy: Fast</label>
-          <input
-            type="checkbox"
-            id="table_strategy"
-            name="table_strategy"
-            checked={formData.table_strategy}
-            disabled={formDisabled}
-            onChange={handleCheckboxInputChange}
-          />
-        </div>
+        <CheckboxInput
+          label="Process Table"
+          name="process_table"
+          isSelected={formData.process_table}
+          isDisabled={formDisabled}
+          onChange={(isSelected) =>
+            handleCheckboxInputChange("process_table", isSelected)
+          }
+        />
+        <CheckboxInput
+          label="Table Strategy: Fast"
+          name="table_strategy"
+          isSelected={formData.table_strategy}
+          isDisabled={formDisabled}
+          onChange={(isSelected) =>
+            handleCheckboxInputChange("table_strategy", isSelected)
+          }
+        />
         <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text
         </Button>
@@ -142,11 +128,11 @@ export const FileTextExtractionForm = ({
   );
 };
 
-interface ExtractedFileTextProps {
+interface ExtractedTextProps {
   extractedText: string;
 }
 
-const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
+const ExtractedText = ({ extractedText }: ExtractedTextProps) => {
   const linesPerPage = 40;
   const [visibleTextOffset, setVisibleTextOffset] = useState(linesPerPage);
 
@@ -171,7 +157,7 @@ const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
   };
 
   return (
-    <div className="extracted-file-text">
+    <div className="extracted-text">
       <pre>{visibleFormattedExtractedText}</pre>
       {isLoadMoreButtonVisible && (
         <Button
@@ -187,18 +173,26 @@ const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
   );
 };
 
-interface FileTextExtractionDialogProps {
-  uuid: string;
-  fileName: string;
+interface TextExtractionDialogProps {
+  objectName: string;
+  extractedText?: string;
+  isLoading: boolean;
+  errorMessage?: string;
+  onTriggerPress: () => void;
+  onFormSubmit: (
+    queryParams: ExtractTextQueryParamsFormData,
+    isFormEnabled: boolean,
+  ) => void;
 }
 
-const FileTextExtractionDialog = ({
-  uuid,
-  fileName,
-}: FileTextExtractionDialogProps) => {
-  const [postFileToExtractText, { data: extractedText, isLoading, error }] =
-    usePostFileToExtractTextMutation();
-
+const TextExtractionDialog = ({
+  objectName,
+  extractedText,
+  isLoading,
+  errorMessage,
+  onTriggerPress,
+  onFormSubmit,
+}: TextExtractionDialogProps) => {
   const ref = useRef<HTMLDialogElement>(null);
   const handleClose = () => ref.current?.close();
   const showDialog = () => ref.current?.showModal();
@@ -211,12 +205,7 @@ const FileTextExtractionDialog = ({
 
   const handlePress = async () => {
     showDialog();
-    postFileToExtractText({ uuid });
-  };
-
-  const onFormSubmit = (queryParamsForm: ExtractTextQueryParamsFormData) => {
-    const queryParams = createPostFileToExtractTextQueryParams(queryParamsForm);
-    postFileToExtractText({ uuid, queryParams });
+    onTriggerPress();
   };
 
   const trigger = (
@@ -225,7 +214,7 @@ const FileTextExtractionDialog = ({
     </Button>
   );
 
-  const dialogTitle = `${fileName} - Extracted Text`;
+  const dialogTitle = `${objectName} - Extracted Text`;
 
   const getContent = () => {
     if (isLoading) {
@@ -235,17 +224,13 @@ const FileTextExtractionDialog = ({
     }
 
     if (extractedText === undefined) {
-      if (error) {
-        return (
-          <p className="error">
-            {getErrorMessage(error, ERROR_MESSAGES.POST_FILE_TO_EXTRACT_TEXT)}
-          </p>
-        );
+      if (errorMessage) {
+        return <p className="error">{errorMessage}</p>;
       }
       return <p>No text extracted from the file</p>;
     }
 
-    return <ExtractedFileText extractedText={extractedText} />;
+    return <ExtractedText extractedText={extractedText} />;
   };
 
   return (
@@ -255,8 +240,8 @@ const FileTextExtractionDialog = ({
       title={dialogTitle}
       onClose={handleClose}
     >
-      <div className="file-text-extraction-dialog__content">
-        <FileTextExtractionForm
+      <div className="text-extraction-dialog__content">
+        <TextExtractionForm
           isLoadingExtractedText={isLoading}
           onFormSubmit={onFormSubmit}
         />
@@ -267,4 +252,4 @@ const FileTextExtractionDialog = ({
   );
 };
 
-export default FileTextExtractionDialog;
+export default TextExtractionDialog;

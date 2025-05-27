@@ -6,7 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
-import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/FileTextExtractionDialog/FileTextExtractionDialog";
+import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import {
   formatFileSize,

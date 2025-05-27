@@ -5,6 +5,9 @@ import { ChangeEventHandler, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import Button from "@/components/ui/Button/Button";
+import CheckboxInput, {
+  CheckboxInputChangeHandler,
+} from "@/components/ui/CheckboxInput/CheckboxInput";
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
@@ -94,10 +97,10 @@ const RetrieverDebugDialog = () => {
     onArgumentValidityChange: onRerankerArgumentValidityChange,
   } = useServiceCard<RerankerArgs>("reranker", rerankerArgs);
 
-  const handleRerankerEnabledCheckboxChange: ChangeEventHandler<
-    HTMLInputElement
-  > = (event) => {
-    setIsRerankerEnabled(event.target.checked);
+  const handleRerankerEnabledCheckboxChange: CheckboxInputChangeHandler = (
+    isSelected,
+  ) => {
+    setIsRerankerEnabled(isSelected);
   };
 
   const handleSubmitQuery = async (query: string) => {
@@ -170,7 +173,7 @@ const RetrieverDebugDialog = () => {
             onRerankerArgumentValueChange={onRerankerArgumentValueChange}
             onRerankerArgumentValidityChange={onRerankerArgumentValidityChange}
             isRerankerEnabled={isRerankerEnabled}
-            handleRerankerEnabledCheckboxChange={
+            onRerankerEnabledCheckboxChange={
               handleRerankerEnabledCheckboxChange
             }
           />
@@ -199,7 +202,7 @@ interface RetrieverDebugParamsFormProps {
   onRerankerArgumentValueChange: OnArgumentValueChangeHandler;
   onRerankerArgumentValidityChange: OnArgumentValidityChangeHandler;
   isRerankerEnabled: boolean;
-  handleRerankerEnabledCheckboxChange: ChangeEventHandler<HTMLInputElement>;
+  onRerankerEnabledCheckboxChange: CheckboxInputChangeHandler;
 }
 
 const RetrieverDebugParamsForm = ({
@@ -211,7 +214,7 @@ const RetrieverDebugParamsForm = ({
   onRerankerArgumentValueChange,
   onRerankerArgumentValidityChange,
   isRerankerEnabled,
-  handleRerankerEnabledCheckboxChange,
+  onRerankerEnabledCheckboxChange,
 }: RetrieverDebugParamsFormProps) => {
   const visibleRerankerArgumentInputs = retrieverArgumentsForm?.search_type
     ? searchTypesArgsMap[retrieverArgumentsForm.search_type]
@@ -281,18 +284,13 @@ const RetrieverDebugParamsForm = ({
         />
       )}
       <p className="mb-2 mt-3">Reranker</p>
-      <div className="my-2 flex w-full items-center gap-2">
-        <input
-          type="checkbox"
-          checked={isRerankerEnabled}
-          name="reranker-enabled"
-          id="reranker-enabled"
-          onChange={handleRerankerEnabledCheckboxChange}
-        />
-        <label htmlFor="reranker-enabled" className="mb-0 text-xs">
-          Enable Reranker
-        </label>
-      </div>
+      <CheckboxInput
+        label="Enable Reranker"
+        size="sm"
+        name="reranker-enabled"
+        isSelected={isRerankerEnabled}
+        onChange={onRerankerEnabledCheckboxChange}
+      />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
         initialValue={rerankerPreviousArgumentsValues.top_n}

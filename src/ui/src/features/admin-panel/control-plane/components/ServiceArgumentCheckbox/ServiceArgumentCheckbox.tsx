@@ -1,14 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ServiceArgumentCheckbox.scss";
+import { useCallback, useEffect, useState } from "react";
 
-import classNames from "classnames";
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-
-import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
-import Tooltip from "@/components/ui/Tooltip/Tooltip";
+import CheckboxInput, {
+  CheckboxInputChangeHandler,
+} from "@/components/ui/CheckboxInput/CheckboxInput";
 import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { OnArgumentValueChangeHandler } from "@/features/admin-panel/control-plane/types";
 import { useAppSelector } from "@/store/hooks";
@@ -19,7 +16,6 @@ interface ServiceArgumentCheckboxProps {
   initialValue: ServiceArgumentCheckboxValue;
   name: string;
   tooltipText?: string;
-  hideLabel?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
 }
 
@@ -27,63 +23,38 @@ const ServiceArgumentCheckbox = ({
   initialValue,
   name,
   tooltipText,
-  hideLabel,
   onArgumentValueChange,
 }: ServiceArgumentCheckboxProps) => {
   const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const readOnly = !isEditModeEnabled;
+  const isDisabled = !isEditModeEnabled;
 
-  const [checked, setChecked] =
+  const [isSelected, setIsSelected] =
     useState<ServiceArgumentCheckboxValue>(initialValue);
 
   useEffect(() => {
-    if (readOnly) {
-      setChecked(initialValue);
+    if (isDisabled) {
+      setIsSelected(initialValue);
     }
-  }, [readOnly, initialValue]);
+  }, [isDisabled, initialValue]);
 
-  const handleChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setChecked(event.target.checked);
-      onArgumentValueChange(name, event.target.checked);
+  const handleChange: CheckboxInputChangeHandler = useCallback(
+    (isSelected) => {
+      setIsSelected(isSelected);
+      onArgumentValueChange(name, isSelected);
     },
     [name, onArgumentValueChange],
   );
 
-  const inputId = `${name}-checkbox-${uuidv4()}`;
-
-  const labelClassNames = classNames([
-    "service-argument-checkbox__label",
-    { "pointer-events-none": readOnly, "m-0": hideLabel },
-  ]);
-  const inputClassNames = classNames([
-    "service-argument-checkbox",
-    { "pointer-events-none": readOnly, "m-0": hideLabel },
-  ]);
-
   return (
-    <div className="service-argument-checkbox__wrapper">
-      {!hideLabel && (
-        <label htmlFor={inputId} className={labelClassNames}>
-          {tooltipText && (
-            <Tooltip
-              title={tooltipText}
-              trigger={<InfoIcon />}
-              placement="left"
-            />
-          )}
-          <span>{name}</span>
-        </label>
-      )}
-      <input
-        className={inputClassNames}
-        type="checkbox"
-        id={inputId}
-        name={inputId}
-        checked={checked}
-        onChange={handleChange}
-      />
-    </div>
+    <CheckboxInput
+      label={name}
+      size="sm"
+      tooltipText={tooltipText}
+      isSelected={isSelected}
+      isDisabled={isDisabled}
+      name={name}
+      onChange={handleChange}
+    />
   );
 };
 

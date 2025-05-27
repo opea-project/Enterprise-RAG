@@ -25,6 +25,10 @@ const formatFileSize = (fileSize: number) => {
 };
 
 const formatProcessingTimePeriod = (processingDuration: number) => {
+  if (processingDuration < 0) {
+    return "N/A";
+  }
+
   const hours = Math.floor(processingDuration / 3600);
   const minutes = Math.floor((processingDuration % 3600) / 60);
   const seconds = processingDuration % 60;
@@ -82,8 +86,9 @@ const sanitizeFileName = (filename: string) => {
     "_",
   );
   const truncatedFileName = sanitizedFileName.substring(0, filenameMaxLength);
-  const encodedFileName = encodeURIComponent(truncatedFileName);
-  return encodedFileName;
+
+  // Encode/decode cycle helps expose homoglyphs and unusual characters
+  return decodeURIComponent(encodeURIComponent(truncatedFileName));
 };
 
 const sanitizeFiles = (files: File[]): File[] =>

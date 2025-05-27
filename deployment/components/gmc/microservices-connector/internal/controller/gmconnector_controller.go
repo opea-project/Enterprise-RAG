@@ -66,6 +66,7 @@ const (
 	yaml_dir                 = "/tmp/microservices/yamls/"
 	Service                  = "Service"
 	Deployment               = "Deployment"
+	StatefulSet              = "StatefulSet"
 	ServiceAccount           = "ServiceAccount"
 	dplymtSubfix             = "-deployment"
 	METADATA_PLATFORM        = "gmc/platform"
@@ -362,6 +363,103 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				_log.Error(err, "Failed to convert deployment to obj", "name", deploymentObj.GetName())
 				return nil, err
 			}
+		} else if obj.GetKind() == StatefulSet {
+			deploymentObj := &appsv1.StatefulSet{}
+			err = scheme.Scheme.Convert(obj, deploymentObj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
+				return nil, err
+			}
+			if svc != "" {
+				deploymentObj.SetName(svc + dplymtSubfix)
+				// Set the labels if they're specified
+				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
+				deploymentObj.Spec.Template.Labels["app"] = svc
+			}
+
+			deploymentObj.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
+				Type: appsv1.RollingUpdateStatefulSetStrategyType,
+			}
+
+			// append the user defined ENVs
+			var newEnvVars []corev1.EnvVar
+			if svcCfg != nil {
+				for name, value := range *svcCfg {
+					if name == "endpoint" || name == "nodes" {
+						continue
+					}
+
+					var endpoint, ns string
+					var fetch bool
+
+					parts := strings.SplitN(value, ":", 2)
+					if len(parts) == 2 {
+						if parts[0] == "fetch_from" {
+							fetch = true
+							value = parts[1]
+						} else {
+							return nil, fmt.Errorf("Invalid syntax: expected 'fetch_from:service/namespace', got '%s'", value)
+						}
+					}
+
+					parts = strings.Split(value, "/")
+					if len(parts) != 1 && len(parts) != 2 {
+						return nil, fmt.Errorf("Invalid syntax: expected 'service/namespace', got '%s'", value)
+					}
+
+					if len(parts) == 2 {
+						endpoint = parts[0]
+						ns = parts[1]
+					} else {
+						endpoint = value
+						ns = graphNs
+					}
+
+					var err error
+					if fetch {
+						value, err = r.fetchEnvVarFromServiceStatefulSet(ctx, ns, endpoint, name)
+						if err != nil {
+							return nil, fmt.Errorf("failed to fetch environment variable %s from service %s in namespace %s: %v", name, endpoint, ns, err)
+						}
+					} else if isDownStreamEndpointKey(name) {
+						if ns == graphNs {
+							ds := findDownStreamService(endpoint, stepCfg, nodeCfg)
+							value, err = getDownstreamSvcEndpoint(ns, endpoint, ds)
+						} else {
+							value, err = r.getDownstreamSvcEndpointInNs(ctx, ns, endpoint)
+						}
+
+						if err != nil {
+							return nil, fmt.Errorf("failed to find downstream service endpoint %s-%s: %v", name, endpoint, err)
+						}
+					}
+					itemEnvVar := corev1.EnvVar{
+						Name:  name,
+						Value: value,
+					}
+					newEnvVars = append(newEnvVars, itemEnvVar)
+				}
+			}
+
+			if len(newEnvVars) > 0 {
+				deploymentObj.Spec.Template.Spec.Containers = setEnvVars(deploymentObj.Spec.Template.Spec.Containers, newEnvVars)
+				deploymentObj.Spec.Template.Spec.InitContainers = setEnvVars(deploymentObj.Spec.Template.Spec.InitContainers, newEnvVars)
+			}
+
+			if configMapOrServiceChanged {
+				_log.Info("ConfigMap or Service changed, force update statefulset", "name", deploymentObj.GetName())
+				// Force update the deployment
+				if deploymentObj.Annotations == nil {
+					deploymentObj.Spec.Template.Annotations = make(map[string]string)
+				}
+				deploymentObj.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+			}
+
+			err = scheme.Scheme.Convert(deploymentObj, obj, nil)
+			if err != nil {
+				_log.Error(err, "Failed to convert statefulset to obj", "name", deploymentObj.GetName())
+				return nil, err
+			}
 		}
 
 		objectChanged, err := r.applyResourceToK8s(graph, ctx, obj)
@@ -424,6 +522,30 @@ func (r *GMConnectorReconciler) fetchEnvVarFromService(ctx context.Context, name
 
 	// Query the Kubernetes API for the specific deployment in the specified namespace
 	deployment := &appsv1.Deployment{}
+	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
+	if err != nil {
+		return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
+	}
+
+	_log.Info("Found deployment in provided namespace", "name", serviceName, "namespace", namespace)
+
+	// Iterate through the containers in the deployment to find the environment variable
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		for _, env := range container.Env {
+			if env.Name == envVarName {
+				return env.Value, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("environment variable %s not found in deployment %s in namespace %s", envVarName, serviceName, namespace)
+}
+
+func (r *GMConnectorReconciler) fetchEnvVarFromServiceStatefulSet(ctx context.Context, namespace string, serviceName string, envVarName string) (string, error) {
+	_log.Info("Fetch environment variable from service", "namespace", namespace, "service", serviceName, "envVar", envVarName)
+
+	// Query the Kubernetes API for the specific deployment in the specified namespace
+	deployment := &appsv1.StatefulSet{}
 	err := r.Client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: serviceName}, deployment)
 	if err != nil {
 		return "", fmt.Errorf("failed to get deployment %s in namespace %s: %v", serviceName, namespace, err)
@@ -736,34 +858,57 @@ func (r *GMConnectorReconciler) collectResourceStatus(graph *mcv1alpha3.GMConnec
 		name := strings.Split(resName, ":")[2]
 		ns := strings.Split(resName, ":")[3]
 
-		if kind == Deployment {
+		if kind == Deployment || kind == StatefulSet {
 			totalCnt += 1
 
-			deployment := &appsv1.Deployment{}
+			var deployment client.Object
+			if kind == Deployment {
+				deployment = &appsv1.Deployment{}
+			} else {
+				deployment = &appsv1.StatefulSet{}
+			}
+
 			err := r.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, deployment)
 			if err != nil {
-				_log.Info("Collecting status: failed to get deployment", "name", name, "error", err)
+				_log.Info("Collecting status: failed to get object", "name", name, "kind", kind, "error", err)
 				continue
 			}
+
 			var deploymentStatus strings.Builder
 			statusVerbose := "Not ready"
-			if deployment.Status.AvailableReplicas == *deployment.Spec.Replicas {
-				readyCnt += 1
-				statusVerbose = "Ready"
-			}
-			deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d updated | %d total | %d available | %d unavailable\n",
-				statusVerbose,
-				*deployment.Spec.Replicas,
-				deployment.Status.UpdatedReplicas,
-				deployment.Status.Replicas,
-				deployment.Status.AvailableReplicas,
-				deployment.Status.UnavailableReplicas))
-			deploymentStatus.WriteString("Conditions:\n")
-			for _, condition := range deployment.Status.Conditions {
-				deploymentStatus.WriteString(fmt.Sprintf("  Type: %s\n", condition.Type))
-				deploymentStatus.WriteString(fmt.Sprintf("  Status: %s\n", condition.Status))
-				deploymentStatus.WriteString(fmt.Sprintf("  Reason: %s\n", condition.Reason))
-				deploymentStatus.WriteString(fmt.Sprintf("  Message: %s\n", condition.Message))
+
+			if kind == Deployment {
+				d := deployment.(*appsv1.Deployment)
+				if d.Status.AvailableReplicas == *d.Spec.Replicas {
+					readyCnt += 1
+					statusVerbose = "Ready"
+				}
+				deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d updated | %d total | %d available | %d unavailable\n",
+					statusVerbose,
+					*d.Spec.Replicas,
+					d.Status.UpdatedReplicas,
+					d.Status.Replicas,
+					d.Status.AvailableReplicas,
+					d.Status.UnavailableReplicas))
+				deploymentStatus.WriteString("Conditions:\n")
+				for _, condition := range d.Status.Conditions {
+					deploymentStatus.WriteString(fmt.Sprintf("  Type: %s\n", condition.Type))
+					deploymentStatus.WriteString(fmt.Sprintf("  Status: %s\n", condition.Status))
+					deploymentStatus.WriteString(fmt.Sprintf("  Reason: %s\n", condition.Reason))
+					deploymentStatus.WriteString(fmt.Sprintf("  Message: %s\n", condition.Message))
+				}
+			} else { // StatefulSet
+				s := deployment.(*appsv1.StatefulSet)
+				if s.Status.ReadyReplicas == *s.Spec.Replicas {
+					readyCnt += 1
+					statusVerbose = "Ready"
+				}
+				deploymentStatus.WriteString(fmt.Sprintf("%s; Replicas: %d desired | %d ready | %d current | %d updated\n",
+					statusVerbose,
+					*s.Spec.Replicas,
+					s.Status.ReadyReplicas,
+					s.Status.CurrentReplicas,
+					s.Status.UpdatedReplicas))
 			}
 			graph.Status.Annotations[resName] = deploymentStatus.String()
 		}

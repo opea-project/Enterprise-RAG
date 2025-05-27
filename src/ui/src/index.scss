@@ -25,7 +25,13 @@
 }
 
 body {
-  font-family: "Inter", sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica",
+    "Arial",
+    sans-serif;
   font-weight: normal;
   font-size: 16px;
 }
@@ -79,11 +85,7 @@ select.input--invalid {
   @apply text-light-text-error dark:text-dark-text-error;
 }
 
-input[type="checkbox"] {
-  @apply cursor-pointer accent-light-primary disabled:cursor-default dark:accent-dark-primary;
-}
-
-input:read-only:not(input[type="checkbox"]),
+input:read-only,
 .input--read-only,
 select.input--read-only {
   @apply text-light-text-primary dark:text-dark-text-primary;

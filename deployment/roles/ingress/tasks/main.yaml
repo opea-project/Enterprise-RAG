@@ -67,8 +67,8 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
-    timeout: "{{ helm_timeout }}"
     wait: true
+    timeout: "{{ helm_timeout }}"
   tags:
     - install
 

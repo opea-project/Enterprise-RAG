@@ -38,6 +38,11 @@ def test_supported_mappings(mock_fileparser, mock_mimetype):
     fp = FileParser(file_name)
     assert fp.supported_types() == ['xyz']
 
+def test_supported_extension_capslock(mock_fileparser, mock_mimetype):
+    file_name = 'TEST_DATAPREP.XYZ'
+    fp = FileParser(file_name)
+    assert fp.file_type == 'xyz'
+
 def test_supported_mime_types(mock_fileparser, mock_mimetype):
     file_name = 'test_dataprep.xyz'
     fp = FileParser(file_name)

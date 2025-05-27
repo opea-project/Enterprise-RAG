@@ -3,17 +3,19 @@
 
 import "./PageLayout.scss";
 
-import { Outlet } from "react-router-dom";
+import { PropsWithChildren, ReactNode } from "react";
 
 import AppHeader from "@/components/ui/AppHeader/AppHeader";
 
-const PageLayout = () => (
-  <div className="layout-root">
-    <div className="content">
-      <AppHeader />
-      <main className="main-outlet">
-        <Outlet />
-      </main>
+interface PageLayoutProps extends PropsWithChildren {
+  appHeaderExtraActions?: ReactNode;
+}
+
+const PageLayout = ({ appHeaderExtraActions, children }: PageLayoutProps) => (
+  <div className="page-layout__root">
+    <div className="page-layout__content">
+      <AppHeader extraActions={appHeaderExtraActions} />
+      <main className="page-layout__main-outlet">{children}</main>
     </div>
   </div>
 );

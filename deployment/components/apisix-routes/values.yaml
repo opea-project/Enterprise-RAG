@@ -8,7 +8,6 @@ auth:
 endpoints:
   - name: chatqna
     namespace: chatqa
-    hostname: erag.com
     path: /api/v1/chatqna
     backend_service: router-service
     service_port: 8080
@@ -19,7 +18,6 @@ endpoints:
       - "user#user-access"
   - name: fingerprint-append
     namespace: fingerprint
-    hostname: erag.com
     path: /v1/system_fingerprint/append_arguments
     service_port: 6012
     backend_service: fingerprint-svc
@@ -29,7 +27,6 @@ endpoints:
       - "admin#admin-access"
   - name: fingerprint-change
     namespace: fingerprint
-    hostname: erag.com
     path: /v1/system_fingerprint/change_arguments
     service_port: 6012
     backend_service: fingerprint-svc
@@ -39,7 +36,6 @@ endpoints:
       - "admin#admin-access"
   - name: edp
     namespace: edp
-    hostname: erag.com
     path: /api/v1/edp/*
     backend_service: edp-backend
     service_port: 5000
@@ -65,6 +61,8 @@ endpoints:
       - /api/list_buckets
       - ^/api/v1/edp/file/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/extract$
       - /api/file/$1/extract
+      - ^/api/v1/edp/link/([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})/extract$
+      - /api/link/$1/extract
       - ^/api/v1/edp/retrieve$
       - /api/retrieve
       - ^/api/v1/edp/presignedUrl$

@@ -15,6 +15,7 @@ module.exports = {
           secondary: "#3D447F",
           accent: "#3D447F",
           focus: "#3D447F",
+          "focus-inverse": "#F2F3FF",
           border: "#3D447F",
           text: {
             primary: "#2B2C30",

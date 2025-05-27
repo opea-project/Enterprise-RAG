@@ -104,6 +104,7 @@
     values_files: >
       {{
         [fingerprint.helm.default_values_file] +
+        ([fingerprint.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
         [fingerprint_helm_override_values_path]
       }}
   tags:

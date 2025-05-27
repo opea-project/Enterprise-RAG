@@ -227,9 +227,7 @@ services:
         memory: 16Gi
   vllm_gaudi:
     replicas: 1
-    resources:
-      limits:
-        habana.ai/gaudi: 8
+    # Note: For vllm_gaudi, the habana.ai/gaudi limit is set to the tensor-parallel-size value defined in deployment/pipelines/chatqa/resources-model-hpu.yaml
     hpa:
       minReplicas: 1
       maxReplicas: 4

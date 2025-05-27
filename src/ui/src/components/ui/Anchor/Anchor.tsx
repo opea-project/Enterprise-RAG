@@ -4,50 +4,51 @@
 import "./Anchor.scss";
 
 import classNames from "classnames";
-import { AnchorHTMLAttributes, MouseEventHandler } from "react";
+import { ReactNode } from "react";
+import { Link, LinkProps, PressEvent } from "react-aria-components";
 
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon/ExternalLinkIcon";
 import { isSafeHref, sanitizeHref } from "@/utils";
 
-interface AnchorProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+export interface AnchorProps extends LinkProps {
+  children: ReactNode;
   isExternal?: boolean;
 }
 
 const Anchor = ({
+  children,
+  isExternal,
   href,
   target = "_blank",
   className,
-  children,
-  isExternal,
-  onClick,
-  ...attrs
+  onPress,
+  ...props
 }: AnchorProps) => {
   const isSafe = isSafeHref(href);
   const safeHref = isSafe ? sanitizeHref(href) : undefined;
   const rel = target === "_blank" ? "noopener noreferrer" : undefined;
   const anchorClassNames = classNames([{ invalid: !isSafe }, className]);
 
-  const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (!isSafe) {
-      event.preventDefault();
-    } else if (onClick) {
-      onClick(event);
+  const handlePress = (event: PressEvent) => {
+    if (onPress && isSafe) {
+      onPress(event);
     }
   };
 
   return (
-    <a
+    <Link
+      {...props}
       href={safeHref}
       target={target}
       rel={rel}
       className={anchorClassNames}
-      onClick={handleClick}
-      {...attrs}
+      onPress={handlePress}
+      aria-disabled={!isSafe}
     >
       {!isSafe && "Caution: Malicious link - "}
       {children}
       {isExternal && <ExternalLinkIcon size={12} />}
-    </a>
+    </Link>
   );
 };
 

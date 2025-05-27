@@ -42,4 +42,8 @@
   &:not(&:has(p)) {
     @apply mb-2;
   }
+
+  &:not(&:has(p)):last-child {
+    @apply mb-0;
+  }
 }

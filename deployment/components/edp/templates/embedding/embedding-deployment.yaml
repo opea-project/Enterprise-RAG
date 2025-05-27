@@ -19,9 +19,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.embedding.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.embedding.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.embedding.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.embedding.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -32,6 +33,7 @@ spec:
       initContainers:
         - name: wait-for-embedding
           image: alpine/curl
+          imagePullPolicy: {{ .Values.embedding.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
@@ -109,7 +111,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- toYaml .Values.embedding.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.embedding.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.embedding.nameOverride $defaultValues .Values) | nindent 12 }}
       volumes:
         - name: tmp
           emptyDir: {}

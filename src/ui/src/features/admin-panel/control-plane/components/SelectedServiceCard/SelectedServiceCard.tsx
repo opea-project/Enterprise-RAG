@@ -4,7 +4,8 @@
 import "./SelectedServiceCard.scss";
 
 import classNames from "classnames";
-import { Fragment, MouseEventHandler, PropsWithChildren } from "react";
+import { Fragment, PropsWithChildren } from "react";
+import { PressEvent } from "react-aria-components";
 
 import Button from "@/components/ui/Button/Button";
 import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
@@ -14,7 +15,6 @@ import {
   ServiceStatus,
 } from "@/features/admin-panel/control-plane/types";
 import { useAppSelector } from "@/store/hooks";
-import { formatSnakeCaseToTitleCase } from "@/utils";
 
 interface SelectedServiceCardProps extends PropsWithChildren {
   serviceStatus?: ServiceStatus;
@@ -77,9 +77,7 @@ const ServiceDetailsGrid = ({ serviceDetails }: ServiceDetailsGridProps) => {
     <section className="service-details-grid">
       {Object.entries(serviceDetails).map(([label, value]) => (
         <Fragment key={label}>
-          <p className="service-detail-label">
-            {formatSnakeCaseToTitleCase(label)}
-          </p>
+          <p className="service-detail-label">{label}</p>
           <p className="service-detail-value">{value}</p>
         </Fragment>
       ))}
@@ -89,9 +87,9 @@ const ServiceDetailsGrid = ({ serviceDetails }: ServiceDetailsGridProps) => {
 
 interface SelectedServiceCardFooterProps {
   isConfirmChangesButtonDisabled: boolean;
-  onConfirmChangesButtonClick: MouseEventHandler;
-  onCancelChangesButtonClick: MouseEventHandler;
-  onEditArgumentsButtonClick: MouseEventHandler;
+  onConfirmChangesButtonClick: (event: PressEvent) => void;
+  onCancelChangesButtonClick: (event: PressEvent) => void;
+  onEditArgumentsButtonClick: (event: PressEvent) => void;
 }
 
 const SelectedServiceCardFooter = ({
@@ -107,8 +105,8 @@ const SelectedServiceCardFooter = ({
       size="sm"
       color="success"
       fullWidth
-      disabled={isConfirmChangesButtonDisabled}
-      onClick={onConfirmChangesButtonClick}
+      isDisabled={isConfirmChangesButtonDisabled}
+      onPress={onConfirmChangesButtonClick}
     >
       Confirm Changes
     </Button>
@@ -119,14 +117,14 @@ const SelectedServiceCardFooter = ({
       size="sm"
       variant="outlined"
       fullWidth
-      onClick={onCancelChangesButtonClick}
+      onPress={onCancelChangesButtonClick}
     >
       Cancel
     </Button>
   );
 
   const EditServiceArgumentsButton = (
-    <Button size="sm" fullWidth onClick={onEditArgumentsButtonClick}>
+    <Button size="sm" fullWidth onPress={onEditArgumentsButtonClick}>
       Edit Service Arguments
     </Button>
   );

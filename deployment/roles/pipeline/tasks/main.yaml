@@ -6,6 +6,7 @@
   ansible.builtin.set_fact:
     helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
     helm_override_resources_path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
+    helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath }}"
   tags:
     - install
 
@@ -73,11 +74,25 @@
       {{
         [gmc.helm.default_values_file] +
         [gmc.helm.default_resources_file] +
+        ([gmc.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([helm_override_resources_path] if item.resourcesPath is defined else []) +
         [helm_override_values_path] +
-        ([helm_override_resources_path] if item.resourcesPath is defined else [])
+        ([helm_override_model_config_path] if item.modelConfigPath is defined else [])
       }}
   tags:
     - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - install
+    - update
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

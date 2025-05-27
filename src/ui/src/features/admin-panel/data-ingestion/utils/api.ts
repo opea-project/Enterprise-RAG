@@ -5,13 +5,13 @@ import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
 import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
-import { PostFileToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/types/api";
+import { PostLinkToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/types/api";
 import { AppDispatch } from "@/store";
 import { getErrorMessage } from "@/utils/api";
 
-const createPostFileToExtractTextQueryParams = (
+const createPostToExtractTextQueryParams = (
   queryParamsObj: ExtractTextQueryParamsFormData,
-): PostFileToExtractTextQueryParams => {
+): PostLinkToExtractTextQueryParams => {
   const queryParamsEntries = Object.entries(queryParamsObj)
     .map(([key, value]) =>
       key === "table_strategy"
@@ -39,4 +39,4 @@ const handleOnQueryStarted = async <T>(
   }
 };
 
-export { createPostFileToExtractTextQueryParams, handleOnQueryStarted };
+export { createPostToExtractTextQueryParams, handleOnQueryStarted };

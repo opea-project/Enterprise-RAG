@@ -9,6 +9,21 @@
   tags:
     - install
     - uninstall
+
+- name: Load tdx system variable
+  ansible.builtin.set_fact:
+    KBS_ADDRESS: "{{ lookup('env', 'KBS_ADDRESS') }}"
+  when: tdxEnabled
+  tags:
+    - install
+
+- name: Fail if KBS_ADDRESS is null or empty
+  ansible.builtin.fail:
+    msg: "KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable."
+  when: tdxEnabled and (KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0)
+  tags:
+    - install
+
 - name: Create log directory if it does not exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -19,19 +34,41 @@
     - "{{ tmp_dir }}"
   tags:
     - always
+
 - name: Disable istio injection for all namespaces
   vars:
     istio_injection: false
   ansible.builtin.include_role:
-    name: configure_istio
+    name: istio
     tasks_from: manage_injection.yaml
   tags:
     - always
+
 - name: Load init passwords
   ansible.builtin.include_role:
     name: generate_password
   tags:
     - install
+
+- name: Set facts for domain names if not defined
+  ansible.builtin.set_fact:
+    ui: >-
+      {{ ui | combine({'domainName': certs.commonName | default(ui.domainName)}) }}
+    keycloak: >-
+      {{ keycloak | combine({'domainName': 'auth.' + certs.commonName | default(keycloak.domainName)}) }}
+    telemetry: >-
+      {{ telemetry | combine({'domainName': 'grafana.' + certs.commonName | default(telemetry.domainName)}) }}
+    edp: >-
+      {{ edp | combine({
+          'minio': edp.minio | default({}) | combine({
+            'domainName': 'minio.' + certs.commonName | default(edp.minio.domainName),
+            'apiDomainName': 's3.' + certs.commonName | default(edp.minio.apiDomainName)
+          })
+        })
+      }}
+  tags:
+    - install
+
 - name: Handle certificates
   ansible.builtin.include_role:
     name: certs

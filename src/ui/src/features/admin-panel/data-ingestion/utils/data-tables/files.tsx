@@ -6,7 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
-import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/FileTextExtractionDialog/FileTextExtractionDialog";
+import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import {
   formatFileSize,
@@ -40,6 +40,15 @@ export const getFilesTableColumns = ({
   {
     accessorKey: "object_name",
     header: "Name",
+    cell: ({
+      row: {
+        original: { object_name: fileName },
+      },
+    }) => (
+      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
+        {fileName}
+      </div>
+    ),
   },
   {
     accessorKey: "size",
@@ -82,20 +91,20 @@ export const getFilesTableColumns = ({
       <div className="flex items-center justify-center gap-2">
         <Button
           size="sm"
-          onClick={() => downloadHandler(object_name, bucket_name)}
+          onPress={() => downloadHandler(object_name, bucket_name)}
         >
           Download
         </Button>
         <FileTextExtractionDialog uuid={id} fileName={object_name} />
         {status === "error" && (
-          <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
+          <Button size="sm" variant="outlined" onPress={() => retryHandler(id)}>
             Retry
           </Button>
         )}
         <Button
           size="sm"
           color="error"
-          onClick={() => deleteHandler(object_name, bucket_name)}
+          onPress={() => deleteHandler(object_name, bucket_name)}
         >
           Delete
         </Button>

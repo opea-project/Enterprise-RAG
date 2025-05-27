@@ -22,7 +22,7 @@ const LinksList = ({ links, setLinks, removeLinkFromList }: LinksListProps) => {
 
   return (
     <>
-      <ListHeader onClearListBtnClick={clearList} />
+      <ListHeader onClearListBtnPress={clearList} />
       <ul>
         {links.map(({ id, value }) => (
           <li key={id} className="link-list-item">
@@ -30,7 +30,8 @@ const LinksList = ({ links, setLinks, removeLinkFromList }: LinksListProps) => {
             <IconButton
               icon="delete"
               color="error"
-              onClick={() => removeLinkFromList(id)}
+              aria-label="Delete link from the list"
+              onPress={() => removeLinkFromList(id)}
             />
           </li>
         ))}

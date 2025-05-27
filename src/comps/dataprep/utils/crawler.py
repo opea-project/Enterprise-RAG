@@ -4,9 +4,14 @@
 import multiprocessing
 import re
 import requests
+import os
+import json
+import uuid
+from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 from bs4 import BeautifulSoup
 from comps.cores.mega.logger import get_opea_logger
+from pathvalidate import FileNameSanitizer
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
@@ -15,12 +20,89 @@ class Crawler:
         if pool:
             assert isinstance(pool, (str, list, tuple)), "url pool should be str, list or tuple"
         self.pool = pool
-        self.headers = {
-            "Accept-Encoding": "gzip, deflate",
+        default_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+            "Accept-Encoding": "gzip, deflate",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Priority": "u=0, i"
         }
         self.fetched_pool = set()
+        self.max_times = int(os.getenv("CRAWLER_MAX_RETRIES", "1"))
+        self.timeout = int(os.getenv("CRAWLER_HTTP_TIMEOUT", "60"))
+        self.max_file_size = int(os.getenv("CRAWLER_MAX_FILE_SIZE_MB", "128")) * 1024 * 1024  # X MB in bytes
+        env_headers =  os.getenv("CRAWLER_HEADERS")
+        if env_headers:
+            try:
+                self.headers = json.loads(env_headers)
+            except (TypeError, json.JSONDecodeError):
+                self.headers = None
+        else:
+            self.headers = default_headers
+        
+    def download_file(self, url, upload_folder):
+        max_times = self.max_times
+        while max_times:
+            if not url.startswith("http") or not url.startswith("https"):
+                url = "http://" + url
+            logger.info("start fetch %s...", url)
+            try:
+                response = requests.get(url, headers=self.headers, verify=True, stream=True, timeout=(10, self.timeout))  # Tuple timeout: (connect, read)
+
+                if response.status_code != 200:
+                    logger.error("fail to fetch %s, response status code: %s", url, response.status_code)
+                else:  # Save file
+                    filename = ""
+                    if "Content-Disposition" in response.headers.keys():
+                        match = re.findall("filename=(.+)", response.headers["Content-Disposition"])
+                        if len(match) > 0:
+                            filename = match[0]
+
+                    if filename == "":
+                        filename = url.split("/")[-1] or 'index.html' # safe default
+
+                    # Sanitize filename
+                    filename = filename.replace('"', "")
+                    filename = filename.replace("'", "")
+                    filename = filename.replace("..", "")
+                    filename = FileNameSanitizer().sanitize(filename)
+
+                    extension = filename.split(".")[-1] if "." in filename else "html"
+                    temp_filename = f"{str(uuid.uuid4())}.{extension}"
+                    file_path = Path(os.path.join(upload_folder, temp_filename))
+                    content_type = re.findall("([a-z]+/[a-z]+)", response.headers.get("Content-Type"))
+                    content_type = content_type[0] if len(content_type) > 0 else ""
+                    logger.info(f"Downloaded Content-Type(s): {content_type}")
+
+                    downloaded_size = 0
+                    with open(file_path, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=1024):
+                            if chunk:
+                                downloaded_size += len(chunk)
+                                if downloaded_size > self.max_file_size:
+                                    f.close()
+                                    file_path.unlink()
+                                    raise ValueError(f"Downloaded file exceeds the maximum allowed size of {self.max_file_size / (1024 * 1024):.0f} MB: {url}")
+                                f.write(chunk)
+
+                    logger.info(f"Saved file {temp_filename} from {url}")
+
+                    return {
+                        "url": url,
+                        "filename": filename,
+                        "file_path": str(file_path.resolve()),
+                        "content_type": content_type
+                    }
+
+            except Exception as e:
+                logger.exception(f"Failed to fetch {url}, caused by {e}")
+                raise Exception(e)
+            max_times -= 1
 
     def get_sublinks(self, soup):
         sublinks = []
@@ -61,7 +143,8 @@ class Crawler:
                 )
         return sublinks
 
-    def fetch(self, url, headers=None, max_times=5):
+    def fetch(self, url, headers=None):
+        max_times = self.max_times
         if not headers:
             headers = self.headers
         while max_times:
@@ -69,9 +152,9 @@ class Crawler:
                 url = "http://" + url
             logger.info("start fetch %s...", url)
             try:
-                response = requests.get(url, headers=headers, verify=True)
+                response = requests.get(url, headers=headers, verify=True, timeout=(10, self.timeout))  # Tuple timeout: (connect, read)
                 if response.status_code != 200:
-                    logger.info("fail to fetch %s, response status code: %s", url, response.status_code)
+                    logger.error("fail to fetch %s, response status code: %s", url, response.status_code)
                 else:
                     return response
             except Exception as e:

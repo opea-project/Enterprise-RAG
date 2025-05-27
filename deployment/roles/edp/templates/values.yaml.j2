@@ -16,15 +16,15 @@ alternateTagging: {{ use_alternate_tagging }}
 {% if storage == "minio" %}
 edpAccessKey: {{ edp_minio_access_key }}
 edpSecretKey: {{ edp_minio_secret_key }}
-
+edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
-
+edpExternalCertVerify: false
+edpInternalCertVerify: false
 edpOidcClientSecret: {{ edp_client_secret_id }}
 minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
 minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
-edpInternalSecure: false
 bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
 {% elif storage == "s3" %}
 edpBaseRegion: "{{ lookup('env', 's3_region') or edp.s3.region }}"
@@ -40,6 +40,8 @@ edpAccessKey: "{{ lookup('env', 's3_access_key') or edp.s3compatible.accessKeyId
 edpSecretKey: "{{ lookup('env', 's3_secret_key') or edp.s3compatible.secretAccessKey }}"
 edpExternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.externalUrl }}"
 edpInternalUrl: "{{ lookup('env', 's3_compatible_endpoint') or edp.s3compatible.internalUrl }}"
+edpExternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.edpExternalCertVerify }}"
+edpInternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.edpInternalCertVerify }}"
 bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
 {% endif %}
 
@@ -50,6 +52,23 @@ redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 
 postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
 postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
+
+{% if tdxEnabled is defined and tdxEnabled %}
+tdx:
+  common:
+    kbsAddress: {{ KBS_ADDRESS }}
+minio:
+  podAnnotations:
+    io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+postgresql:
+  primary:
+    podAnnotations:
+      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+redis:
+  master:
+    podAnnotations:
+      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+{% endif %}
 
 celery:
   tag: {{ tag }}
@@ -78,3 +97,83 @@ awsSqs:
   enabled: {{ "true" if storage == "s3" else "false" }}
   tag: {{ tag }}
   repository: {{ registry }}
+minio:
+  enabled: {{ "true" if storage == "minio" else "false" }}
+{% if storage == "minio" %}
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostname: *minioBrowserDomain
+    path: /
+    tls: true
+    extraTls:
+    - hosts:
+        - *minioBrowserDomain
+      secretName: tls-secret
+  apiIngress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostname: *minioApiDomain
+    path: /
+    tls: true
+    extraTls:
+    - hosts:
+        - *minioApiDomain
+    annotations:
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "Access-Control-Allow-Origin,DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+  extraEnvVars:
+    - name: "MINIO_DOMAIN"
+      value: *minioApiDomain
+    - name: "MINIO_BROWSER_REDIRECT_URL"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_REDIRECT_URI
+    - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CONFIG_URL
+    - name: "MINIO_IDENTITY_OPENID_CLIENT_ID"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CLIENT_ID
+    - name: "MINIO_IDENTITY_OPENID_CLIENT_SECRET"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CLIENT_SECRET
+    - name: "MINIO_IDENTITY_OPENID_CLAIM_NAME"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CLAIM_NAME
+    - name: "MINIO_IDENTITY_OPENID_REDIRECT_URI"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_REDIRECT_URI
+    - name: "MINIO_IDENTITY_OPENID_DISPLAY_NAME"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_DISPLAY_NAME
+    - name: "MINIO_IDENTITY_OPENID_SCOPES"
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_SCOPES
+    - name: "MINIO_NOTIFY_WEBHOOK_ENABLE_EDP"
+      value: "on"
+    - name: "MINIO_NOTIFY_WEBHOOK_ENDPOINT_EDP"
+      value: "http://edp-backend:5000/minio_event"
+    - name: "MINIO_NOTIFY_WEBHOOK_MAX_RETRY_EDP"
+      value: "3"
+  extraVolumes:
+    - name: tls-secret-volume
+      secret:
+        secretName: {{ edp.tls.secret_name }}
+{% endif %}

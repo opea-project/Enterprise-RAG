@@ -69,7 +69,7 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
     event.preventDefault();
   };
 
-  const handleBrowseFilesButtonClick = () => {
+  const handleBrowseFilesButtonPress = () => {
     fileInputRef.current!.click();
   };
 
@@ -92,7 +92,7 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
         <FileInputIcon fontSize={20} />
         <p>Drag and Drop Files Here</p>
         <p className="text-xs">or</p>
-        <Button size="sm" onClick={handleBrowseFilesButtonClick}>
+        <Button size="sm" onPress={handleBrowseFilesButtonPress}>
           Browse Files
         </Button>
         <p className="text-xs">{totalSizeLimitMsg}</p>

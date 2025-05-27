@@ -20,6 +20,12 @@ alternateTagging: {{ use_alternate_tagging }}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 
+{% if tdxEnabled is defined and tdxEnabled %}
+tdx:
+  common:
+    kbsAddress: {{ KBS_ADDRESS }}
+{% endif %}
+
 images:
   gmcManager:
     image: "erag-gmcmanager"

@@ -235,7 +235,7 @@ for component in "${components_to_build[@]}"; do
     case $component in
         gmcManager)
             path="${repo_path}/deployment/components/gmc/microservices-connector"
-            dockerfile="Dockerfile.manager"
+            dockerfile="manager/Dockerfile"
             image=erag-gmcmanager
 
             if $do_build_flag; then build_component $path $dockerfile $REGISTRY_PATH $image; fi
@@ -244,7 +244,7 @@ for component in "${components_to_build[@]}"; do
 
         gmcRouter)
             path="${repo_path}/deployment/components/gmc/microservices-connector"
-            dockerfile="Dockerfile.router"
+            dockerfile="router/Dockerfile"
             image=erag-gmcrouter
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi

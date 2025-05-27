@@ -49,9 +49,8 @@ def mock_default_response_data():
         "Please refer to the search results obtained from the local knowledge base. " \
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. " \
-        "### Search results: Document1 Document2 Document3 \n\n" \
-        "### Conversation history:",
+        "If you don't know the answer to a question, please don't share false information. \n" \
+        " ### Search results: Document1 Document2 Document3\n### Conversation history:",
                              user="### Question: This is my sample query? \n\n### Answer:")
 
 
@@ -82,8 +81,8 @@ def mock_default_response_data_with_conversation_history():
         "Please refer to the search results obtained from the local knowledge base. " \
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. " \
-        "### Search results: Document1 Document2 Document3 \n\n" \
+        "If you don't know the answer to a question, please don't share false information. \n" \
+        " ### Search results: Document1 Document2 Document3\n" \
         "### Conversation history: previous_question: Previous question 2 previous_answer: Previous answer 2 previous_question: Previous question 3 previous_answer: Previous answer 3 previous_question: Previous question 4 previous_answer: Previous answer 4",
                              user="### Question: This is my sample query? \n\n### Answer:")
 

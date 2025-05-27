@@ -4,7 +4,9 @@
 import "./AdminPanelRoute.scss";
 
 import classNames from "classnames";
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
+import { Key, Tab, TabList, TabPanel, Tabs } from "react-aria-components";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import Notifications from "@/components/ui/Notifications/Notifications";
 import ControlPlaneTab from "@/features/admin-panel/control-plane/components/ControlPlaneTab/ControlPlaneTab";
@@ -12,52 +14,67 @@ import DataIngestionTab from "@/features/admin-panel/data-ingestion/components/D
 import TelemetryAuthenticationTab from "@/features/admin-panel/telemetry-authentication/components/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
 
 const adminPanelTabs = [
-  "Control Plane",
-  "Data Ingestion",
-  "Telemetry & Authentication",
+  { name: "Control Plane", path: "control-plane", panel: <ControlPlaneTab /> },
+  {
+    name: "Data Ingestion",
+    path: "data-ingestion",
+    panel: <DataIngestionTab />,
+  },
+  {
+    name: "Telemetry & Authentication",
+    path: "telemetry-authentication",
+    panel: <TelemetryAuthenticationTab />,
+  },
 ];
 
 const AdminPanelRoute = () => {
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [selectedTab, setSelectedTab] = useState<Key>(adminPanelTabs[0].path);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleTabBtnClick = (selectedTabIndex: number) => {
-    setSelectedTabIndex(selectedTabIndex);
+  useEffect(() => {
+    const path = location.pathname.split("/").pop();
+    const tab = adminPanelTabs.find((tab) => tab.path === path);
+    if (tab !== undefined) {
+      setSelectedTab(tab.path as Key);
+    } else {
+      navigate(`/admin-panel/${adminPanelTabs[0].path}`, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const handleTabBtnClick = (path: Key) => {
+    setSelectedTab(path);
+    navigate(`/admin-panel/${path}`);
   };
-
-  const isTabSelected = useCallback(
-    (tabName: string) =>
-      selectedTabIndex === adminPanelTabs.findIndex((tab) => tab === tabName),
-    [selectedTabIndex],
-  );
 
   return (
     <div className="admin-panel">
-      <nav className="admin-panel-tabs">
-        {adminPanelTabs.map((tabName, tabIndex) => (
-          <button
-            key={`tab-button-${tabName}`}
-            className={classNames({
-              "admin-panel-tab-button": true,
-              "active-tab": isTabSelected(tabName),
-            })}
-            onClick={() => handleTabBtnClick(tabIndex)}
+      <Tabs selectedKey={selectedTab} onSelectionChange={handleTabBtnClick}>
+        <TabList className="admin-panel-tabs" aria-label="Admin Panel views">
+          {adminPanelTabs.map((tab) => (
+            <Tab
+              key={`${tab.path}-tab`}
+              id={tab.path}
+              className={({ isSelected }) =>
+                classNames("admin-panel-tab-button", {
+                  "active-tab": isSelected,
+                })
+              }
+            >
+              {tab.name}
+            </Tab>
+          ))}
+        </TabList>
+        {adminPanelTabs.map((tab) => (
+          <TabPanel
+            key={`${tab.path}-panel`}
+            id={tab.path}
+            className="admin-panel-tab-content"
           >
-            {tabName}
-          </button>
+            {tab.panel}
+          </TabPanel>
         ))}
-      </nav>
-      <div
-        className={classNames({
-          "admin-panel-tab-content": true,
-          "data-ingestion-tab-content": isTabSelected("Data Ingestion"),
-        })}
-      >
-        {isTabSelected("Control Plane") && <ControlPlaneTab />}
-        {isTabSelected("Data Ingestion") && <DataIngestionTab />}
-        {isTabSelected("Telemetry & Authentication") && (
-          <TelemetryAuthenticationTab />
-        )}
-      </div>
+      </Tabs>
       <Notifications />
     </div>
   );

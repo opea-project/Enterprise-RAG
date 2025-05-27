@@ -5,9 +5,10 @@
   @apply w-full;
 
   & .admin-panel-tabs {
-    @apply flex gap-16 border-b border-b-light-border px-16 dark:border-b-dark-border;
+    @apply flex h-8 gap-16 border-b border-b-light-border px-16 dark:border-b-dark-border;
 
-    & button.admin-panel-tab-button {
+    & .admin-panel-tab-button {
+      @apply cursor-pointer;
       @apply border-b-transparent transition-colors;
       @apply rounded-none border-b-4 bg-transparent px-0;
       @apply text-light-text-accent dark:text-dark-text-accent;
@@ -19,10 +20,6 @@
   }
 
   & .admin-panel-tab-content {
-    @apply relative overflow-y-auto;
-
-    &.data-ingestion-tab-content {
-      @apply max-h-[calc(100vh-8.5rem)];
-    }
+    @apply relative max-h-[calc(100vh-8rem)] overflow-y-auto;
   }
 }

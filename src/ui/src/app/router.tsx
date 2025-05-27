@@ -41,7 +41,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: paths.adminPanel,
+        path: `${paths.adminPanel}/*`,
         element: (
           <ProtectedRoute>
             <Suspense fallback={<LoadingFallback />}>

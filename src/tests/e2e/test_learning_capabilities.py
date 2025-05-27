@@ -329,7 +329,7 @@ def test_adoc_recognized_as_troff_mime_type(edp_helper, chatqa_api_helper):
     """
     question = " What category does Flornax Quibit belong to?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_troff_mime_type.adoc", question)
-    assert "hardware" in response.lower(), UNRELATED_RESPONSE_MSG
+    assert "homeware" in response.lower(), UNRELATED_RESPONSE_MSG
 
 
 @allure.testcase("IEASG-T178")

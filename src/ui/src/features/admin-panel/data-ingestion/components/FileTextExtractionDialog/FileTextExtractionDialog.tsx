@@ -3,7 +3,13 @@
 
 import "./FileTextExtractionDialog.scss";
 
-import { ChangeEventHandler, FormEvent, useRef, useState } from "react";
+import {
+  ChangeEventHandler,
+  FormEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Button from "@/components/ui/Button/Button";
 import Dialog from "@/components/ui/Dialog/Dialog";
@@ -136,6 +142,51 @@ export const FileTextExtractionForm = ({
   );
 };
 
+interface ExtractedFileTextProps {
+  extractedText: string;
+}
+
+const ExtractedFileText = ({ extractedText }: ExtractedFileTextProps) => {
+  const linesPerPage = 40;
+  const [visibleTextOffset, setVisibleTextOffset] = useState(linesPerPage);
+
+  const formattedExtractedText = useMemo(
+    () => JSON.stringify(extractedText ?? "", null, 2),
+    [extractedText],
+  );
+  const maxVisibleTextOffset = formattedExtractedText.split("\n").length;
+
+  const visibleFormattedExtractedText = useMemo(
+    () =>
+      formattedExtractedText.split("\n").slice(0, visibleTextOffset).join("\n"),
+    [formattedExtractedText, visibleTextOffset],
+  );
+
+  const isLoadMoreButtonVisible =
+    visibleTextOffset < maxVisibleTextOffset &&
+    formattedExtractedText.length > 0;
+
+  const handleLoadMoreTextButtonClick = () => {
+    setVisibleTextOffset((prevOffset) => prevOffset + linesPerPage);
+  };
+
+  return (
+    <div className="extracted-file-text">
+      <pre>{visibleFormattedExtractedText}</pre>
+      {isLoadMoreButtonVisible && (
+        <Button
+          size="sm"
+          variant="outlined"
+          fullWidth
+          onClick={handleLoadMoreTextButtonClick}
+        >
+          Load more text...
+        </Button>
+      )}
+    </div>
+  );
+};
+
 interface FileTextExtractionDialogProps {
   uuid: string;
   fileName: string;
@@ -194,9 +245,7 @@ const FileTextExtractionDialog = ({
       return <p>No text extracted from the file</p>;
     }
 
-    const formattedExtractedText = JSON.stringify(extractedText, null, 2);
-
-    return <pre>{formattedExtractedText}</pre>;
+    return <ExtractedFileText extractedText={extractedText} />;
   };
 
   return (
@@ -211,6 +260,7 @@ const FileTextExtractionDialog = ({
           isLoadingExtractedText={isLoading}
           onFormSubmit={onFormSubmit}
         />
+
         {getContent()}
       </div>
     </Dialog>

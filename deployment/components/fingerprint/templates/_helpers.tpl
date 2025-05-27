@@ -50,3 +50,38 @@ Commonly used name templates
 {{- printf "%s-%s" .Release.Name (include "fingerprint.name" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Generic pod label definition
+*/}}
+{{- define "manifest.podLabels" -}}
+{{- $deploymentName := index . 0 -}}
+{{- $context := index . 1 -}}
+labels:
+  {{- include "fingerprint.selectorLabels" $context | nindent 2 }}
+{{- if $context.Values.tdx }}
+  {{- include "manifest.tdx.labels" (list $deploymentName $context) | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{- /*
+  Retrieves resource values based on the provided filename and values.
+*/ -}}
+{{- define "manifest.getResource" -}}
+{{- $filename := index . 0 -}}
+{{- $defaultValues := fromYaml (index . 1) -}}
+{{- $values := index . 2 -}}
+
+{{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "resources") }}
+  {{- $defaultValues = index $values "services" $filename "resources" }}
+{{- end -}}
+
+{{- $isTDXEnabled := hasKey $values "tdx" -}}
+{{- $isGaudiService := regexMatch "(?i)gaudi" $filename -}}
+
+{{- if and $isTDXEnabled (not $isGaudiService) }}
+  {{- include "manifest.tdx.getResourceValues" (dict "defaultValues" $defaultValues "filename" $filename "values" $values) }}
+{{- else }}
+  {{- $defaultValues | toYaml }}
+{{- end -}}
+{{- end -}}

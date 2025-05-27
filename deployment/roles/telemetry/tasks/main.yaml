@@ -289,10 +289,11 @@
   tags:
     - uninstall
 
-# temporary mitigation
 - name: Patch otelcol-traces to remove finalizers using kubectl
   ansible.builtin.command:
     cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
   ignore_errors: true
   tags:
     - uninstall

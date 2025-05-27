@@ -18,9 +18,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.backend.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.backend.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.backend.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.backend.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -31,8 +32,9 @@ spec:
       initContainers:
         - name: wait-for-postgresql
           securityContext:
-             {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: bitnami/postgresql:16.3.0
+          imagePullPolicy: {{ .Values.backend.pullPolicy }}
           env:
             - name: DATABASE_HOST
               valueFrom:
@@ -64,8 +66,9 @@ spec:
                 fi;
         - name: wait-for-redis
           securityContext:
-             {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: redis:alpine
+          imagePullPolicy: {{ .Values.backend.pullPolicy }}
           env:
             - name: REDIS_URL
               valueFrom:
@@ -96,7 +99,7 @@ spec:
           image: {{ .Values.backend.repository }}/{{ .Values.backend.name }}:{{ .Values.backend.tag | default .Chart.AppVersion }}
           {{ end }}
           imagePullPolicy: {{ .Values.backend.pullPolicy }}
-          command: 
+          command:
             {{- range $index, $element := splitList " " .Values.backend.command }}
             - {{ $element | quote }}
             {{- end }}
@@ -129,7 +132,8 @@ spec:
               path: /health
               port: http
           resources:
-            {{- toYaml .Values.backend.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.backend.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.backend.nameOverride $defaultValues .Values) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

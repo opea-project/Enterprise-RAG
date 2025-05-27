@@ -145,6 +145,7 @@ class EdpHelper(ApiRequestHelper):
 
     def wait_for_file_upload(self, filename, desired_status, timeout=FILE_UPLOAD_TIMEOUT_S):
         """Wait for the file to be uploaded and have the desired status"""
+        file_status = ""
         sleep_interval = 10
         start_time = time.time()
         while time.time() < start_time + timeout:
@@ -153,6 +154,11 @@ class EdpHelper(ApiRequestHelper):
             for file in files:
                 if file.get("object_name") == filename:
                     file_found = True
+                    if file.get("status") == "error":
+                        last_status_message = "no previous status known."
+                        if file_status:
+                            last_status_message = f"last known status {file_status}."
+                        raise FileStatusException(f"File {filename} has status {file.get("status")}, {last_status_message}")
                     file_status = file.get("status")
                     if self._status_reached(file_status, desired_status):
                         logger.info(f"File {filename} has status {desired_status}. "
@@ -215,6 +221,10 @@ class EdpHelper(ApiRequestHelper):
 
 
 class DeleteTimeoutException(Exception):
+    pass
+
+
+class FileStatusException(Exception):
     pass
 
 

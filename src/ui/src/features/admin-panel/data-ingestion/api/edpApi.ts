@@ -104,6 +104,19 @@ export const edpApi = createApi({
         params: queryParams,
       }),
     }),
+    postLinkToExtractText: builder.mutation<
+      string,
+      PostFileToExtractTextRequest
+    >({
+      query: ({ uuid, queryParams }) => ({
+        url: constructUrlWithUuid(
+          API_ENDPOINTS.POST_LINK_TO_EXTRACT_TEXT,
+          uuid,
+        ),
+        method: "POST",
+        params: queryParams,
+      }),
+    }),
     getLinks: builder.query<LinkDataItem[], void>({
       query: () => API_ENDPOINTS.GET_LINKS,
       transformErrorResponse: (error) =>
@@ -191,6 +204,7 @@ export const {
   useGetFilePresignedUrlMutation,
   useRetryFileActionMutation,
   usePostFileToExtractTextMutation,
+  usePostLinkToExtractTextMutation,
   useGetLinksQuery,
   useLazyGetLinksQuery,
   usePostLinksMutation,

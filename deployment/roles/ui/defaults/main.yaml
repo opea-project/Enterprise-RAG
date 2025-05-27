@@ -13,6 +13,7 @@ ui:
     release_name: "chatqa-app"
     chart_directory: "{{ playbook_dir }}/../components/ui"
     default_values_file: "{{ playbook_dir }}/../components/ui/values.yaml"
+    tdx_resources_file: "{{ playbook_dir }}/../components/ui/resources-tdx.yaml"
 
   tls:
     secret_name: "tls-secret"

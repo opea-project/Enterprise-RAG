@@ -1,0 +1,15 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.copy-btn {
+  @apply hover:bg-light-bg-2 dark:hover:bg-dark-bg-2;
+  @apply transition-all duration-300 ease-in-out;
+
+  &.invisible {
+    @apply pointer-events-none opacity-0;
+  }
+
+  &.visible {
+    @apply pointer-events-auto opacity-100;
+  }
+}

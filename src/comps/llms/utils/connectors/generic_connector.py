@@ -31,7 +31,8 @@ class VLLMConnector:
             api_key="EMPTY",
             base_url=self._endpoint,
             timeout=120,
-            default_headers=self._headers
+            default_headers=self._headers,
+            http_client=httpx.AsyncClient(headers={"Connection": "close"})
         )
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:

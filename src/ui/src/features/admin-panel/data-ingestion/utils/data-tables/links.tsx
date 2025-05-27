@@ -6,6 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
+import FileLinkExtractionDialog from "@/features/admin-panel/data-ingestion/components/LinkTextExtractionDialog/LinkTextExtractionDialog";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatProcessingTimePeriod } from "@/features/admin-panel/data-ingestion/utils";
 
@@ -30,6 +31,15 @@ export const getLinksTableColumns = ({
   {
     accessorKey: "uri",
     header: "Link",
+    cell: ({
+      row: {
+        original: { uri },
+      },
+    }) => (
+      <div className="text-wrap" style={{ overflowWrap: "anywhere" }}>
+        {uri}
+      </div>
+    ),
   },
   {
     id: "chunks",
@@ -65,6 +75,7 @@ export const getLinksTableColumns = ({
       },
     }) => (
       <div className="flex items-center justify-center gap-2">
+        <FileLinkExtractionDialog uuid={id} />
         {status === "error" && (
           <Button size="sm" variant="outlined" onClick={() => retryHandler(id)}>
             Retry

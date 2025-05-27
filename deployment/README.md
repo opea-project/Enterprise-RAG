@@ -11,11 +11,11 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
 3. [Prepare Configuration Files](#prepare-configuration-files)
    1. [Prepare Main Configuration File](#prepare-main-configuration-file)
    2. [Storage](#storage)
-   3. [Defining Resource for Your Machine](#defining-resource-for-your-machine)
+   3. [Defining Resources for Your Machine](#defining-resources-for-your-machine)
    4. [Skipping Warm-up for vLLM Deployment](#skipping-warm-up-for-vllm-deployment)
    5. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
 4. [Configure the Environment](#configure-the-environment)
-5. [Prepare Images](#prepare-images)
+5. [Docker Images](#docker-images)
    1. [Build and Push Images](#build-and-push-images)
 6. [Deployment Options](#deployment-options)
    1. [Installation](#installation)
@@ -34,7 +34,7 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
     1. [Enabling Horizontal Pod Autoscaling](#enabling-horizontal-pod-autoscaling)
     2. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
     3. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
-    4. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id)
+    4. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
 ---
 
 ## Verify System Status
@@ -48,9 +48,9 @@ This command verifies that all necessary Kubernetes components are running.
 ### Xeon + Gaudi (Default)
 The expected output should include pods in the following namespaces:
 
-        - `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
-        - `habana-system`: Habana device plugin
-        - `local-path-storage`: Local path provisioner
+- `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
+- `habana-system`: Habana device plugin
+- `local-path-storage`: Local path provisioner
 
 For example, your output might look similar to:
 ```
@@ -72,8 +72,8 @@ local-path-storage   local-path-provisioner-f78b6cbbc-cqw9m     1/1     Running 
 
 For Xeon-only deployments, the `habana-system` namespace will not be present. In this case, the expected output should include only:
 
-        - `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
-        - `local-path-storage`: Local path provisioner
+  - `kube-system`: Calico, Kube-apiserver, Kube-controller-manager, Kube-scheduler, DNS, and NodeLocalDNS
+  - `local-path-storage`: Local path provisioner
 
 If your output does not match these expectations, please refer to the [prerequisites](../docs/prerequisites.md) guide.
 
@@ -82,9 +82,9 @@ If your output does not match these expectations, please refer to the [prerequis
 
 ---
 
-## Preconfigure the environment
+## Preconfigure the Environment
 
-It is recommended to use python3-venv to manage python packages.
+It is recommended to use python3-venv to manage Python packages:
 
 ```sh
 sudo apt-get install python3-venv
@@ -97,17 +97,17 @@ ansible-galaxy collection install -r requirements.yaml --upgrade
 
 ---
 
-## Prepare configuration files
+## Prepare Configuration Files
 
-### Prepare main configuration file
+### Prepare Main Configuration File
 
-To prepare configuration file create a copy of exemplary one:
+To prepare the configuration file, create a copy of the example one:
 
 ```sh
 cp -r inventory/sample inventory/test-cluster
 ```
 
-Fill proper variables at `inventory/test-cluster/config.yaml`
+Fill in the appropriate variables in `inventory/test-cluster/config.yaml`:
 
 ```yaml
 huggingToken: FILL_HERE # Provide your Hugging Face token here
@@ -131,14 +131,17 @@ registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local regis
 tag: "1.2.0"
 setup_registry: true # this is localhost registry that may be used for localhost one-node deployment
 use_alternate_tagging: false # changes format of images from registry/image:tag to registry:image_tag
+helm_timeout: "10m0s"
 
 hpaEnabled: false # enables Horizontal Pod Autoscaler
 enforcePSS: false # enforces Pod Security Standards
+tdxEnabled: false # enables Intel® Trust Domain Extensions
 
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml
     resourcesPath: chatqa/resources-reference-cpu.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
     type: chatqa
 
 gmc:
@@ -206,24 +209,24 @@ fingerprint:
 
 ```
 > [!NOTE]
-> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`.
+> The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 
 ### Storage
 #### Storage Class
-Users can define their own CSI driver that will be used during deployment. StorageClass should support accessMode ReadWriteMany(RWX).
+Users can define their own CSI driver that will be used during deployment. The StorageClass should support accessMode ReadWriteMany (RWX).
 
 > [!WARNING]
-If the driver does not support ReadWriteMany accessMode, and EnterpriseRAG is deployed on a multi-node cluster, we can expect pods to hang in `container creating` state for `tei-reranking` or `vllm`. The root cause is that those pods would be using the same PVC `model-volume-llm` and only one of the pods will be able to access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) and use it in reranking manifest: [teirerank.yaml](./components/gmc/microservices-connector/config/manifests/teirerank.yaml) in volumes section. However we strongly recommend using a storageClass that supports ReadWriteMany accessMode.
+> If the driver does not support ReadWriteMany accessMode and Enterprise RAG is deployed on a multi-node cluster, pods may hang in `container creating` state for `tei-reranking` or `vllm`. This occurs because these pods use the same PVC `model-volume-llm` and only one pod can access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) and using it in the reranking manifest: [teirerank.yaml](./components/gmc/microservices-connector/config/manifests/teirerank.yaml) in the volumes section. However, we strongly recommend using a StorageClass that supports ReadWriteMany accessMode.
 
 We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
 
 #### Setting Default Storage Class
-Before running the EnterpriseRAG solution, ensure that you have set the correct StorageClass as the default one. You can list storage classes using the following command:
+Before running the Enterprise RAG solution, ensure that you have set the correct StorageClass as the default one. You can list storage classes using the following command:
 
 ```bash
-ubuntu@node1:~/applications.ai.enterprise-rag.enterprise-ai-solution/deployment$ kubectl get sc -A
+kubectl get sc -A
 NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  12d
 ```
@@ -234,7 +237,7 @@ kubectl patch storageclass <storage_class_name> -p '{"metadata": {"annotations":
 ```
 Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) matches your chosen storage class's capabilities.
 
-#### Storage settings
+#### Storage Settings
 
 > [!NOTE]
 > The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
@@ -248,21 +251,22 @@ Similarly, for the selected Vector Store (for example `deployment/components/gmc
 > [!NOTE]
 > The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
 
-#### EDP storage types
+#### EDP Storage Types
 
-By default edp storage type is set to minio, which deploys minio and s3 in-cluster for additional options go to [edp](../src/edp/README.md).
+By default, the EDP storage type is set to MinIO, which deploys MinIO and S3 in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
 
-### Defining Resource for your machine
+### Defining Resources For Your Machine
 
-The default resource allocations are defined for cpu only deployment in [`resources-cpu.yaml`](./pipelines/chatqa/resources-cpu.yaml) or for cpu and Gaudi in [`resources-gaudi.yaml`](./pipelines/chatqa/resources-cpu.yaml).
-
-> [!NOTE]
-It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended Hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
+The default resource allocations are defined for CPU-only deployment in [`resources-reference-cpu.yaml`](./pipelines/chatqa/resources-reference-cpu.yaml) or for CPU and Gaudi in [`resources-reference-hpu.yaml`](./pipelines/chatqa/resources-reference-hpu.yaml).
 
 > [!NOTE]
-EnterpriseRAG allows to implement autoscaling mechanism for pods. For more information how to fill `hpa` section reffer to [horizontal pod autoscaler](#enabling-pod-security-admission-psa)
+> It is possible to reduce the resources allocated to the model server if you encounter issues with node capacity, but this will likely result in a performance drop. Recommended hardware parameters to run RAG pipeline are available [here](../README.md#hardware-prerequisites-for-deployment-using-xeon-only).
 
-For Enhanced Dataprep Pipeline (EDP) configuration, please refer to a separate helm chart located in `deployment/components/edp` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, locate the [`values.yaml`](./components/edp/values.yaml) file and edit definition for particular elements from that deployment.
+> [!NOTE]
+> Enterprise RAG supports autoscaling of pods using Horizontal Pod Autoscalers (HPA). For details on how to configure the `hpa` section, refer to [Horizontal Pod Autoscaler](#enabling-horizontal-pod-autoscaling).
+
+
+For Enhanced Dataprep Pipeline (EDP) configuration, please refer to the separate Helm chart located in the `deployment/components/edp` folder. It does not have a separate `resources*.yaml` definition. To change resources before deployment, edit the [`values.yaml`](./components/edp/values.yaml) file for particular elements in that deployment.
 
 ### Skipping Warm-up for vLLM Deployment
 The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in:
@@ -270,11 +274,11 @@ The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up p
   - For vLLM running on CPU: [vllm/docker/.env.cpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu)
 
 > [!NOTE]
-By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
+> By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.
 
-### Additional settings for running telemetry
+### Additional Settings for Running Telemetry
 
-Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./components/telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors)
+Enterprise RAG includes the installation of a telemetry stack by default, which requires setting the number of iwatch open descriptors on each cluster host. For more information, follow the instructions in [Number of iwatch open descriptors](./components/telemetry/helm/charts/logs/README.md#1b-number-of-iwatch-open-descriptors).
 
 ---
 
@@ -292,27 +296,38 @@ This command will configure various tools in your environment, including `Docker
 
 ---
 
-## Prepare images
- PALCEHOLDER: By default public registry is used, if you prefer to build your own images and push to private registry follow instructions below:
-### Build and Push Images
-Enterprise RAG is built on top of a collection of microservice components that form a service-based toolkit. This includes a variety of services such as llm (large language models), embedding, and reranking, among others.
+## Docker Images
 
-The `update_images.sh` script is responsible for building the images for these microservices from source
-and pushing them to a specified registry. The script consists of three main steps:
+Deployment utilizes Docker images - check [docker images list](../docs/docker_images_list.md) for detailed information. 
+
+Prebuilt images for Enterprise RAG components are publicly available on [OPEA Docker Hub](https://hub.docker.com/u/opea?page=1&search=erag) and are used by default, as defined by the  `registry` and `tag` values in [inventory/sample/config.yaml](inventory/sample/config.yaml).
+
+Deployment is based on released docker images - check [Docker images list](../docs/docker_images_list.md) for detailed information.
+
+If you prefer to build the images manually and push them to a private registry, follow the steps below. Then, update the registry and tag values in your `config.yaml` file accordingly to point to them.
+
+### Build and Push Images
+
+The `update_images.sh` script is responsible for building the images for these microservices from source and pushing them to a specified registry. The script consists of three main steps: build images, set up the registry, and push the images. To execute all at once, run:
+```bash
+./update_images.sh --build --setup-registry --push
+```
+
+Alternatively, you can run each step separately. Below is a detailed description of each step, along with additional options. You can also run `./update_images.sh --help` for more information.
 
 #### Step 1: Build
 
-The first step is to build the images for each microservice component using the source code. This involves
-compiling the code, packaging it into Docker images, and performing any necessary setup tasks.
+The first step is to build the images for each microservice component using the source code. This involves compiling the code, packaging it into Docker images, and performing any necessary setup tasks.
 
 ```bash
 ./update_images.sh --build
 ```
 
 > [!NOTE]
-> - You can build individual images, for example `./update_images.sh --build  embedding-usvc reranking-usvc` which only builds the embedding and reranking images.
-> - You can use `-j <number of concurrent tasks>` parameter to increase number of concurrent tasks.
-> - List of available images is available, when running `./update_images.sh --help`.
+> - You can build individual images, for example `./update_images.sh --build embedding-usvc reranking-usvc` which only builds the embedding and reranking images.
+> - To list all available image names, run `./update_images.sh --help` and refer to the "Components Available" section.
+> - Use `-j <number of concurrent tasks>` parameter to increase the number of concurrent tasks.
+> - Use `--tag <your tag>` to set a custom image tag. Defaults to `latest` if not specified.
 
 #### Step 2: Setup Registry
 
@@ -323,6 +338,8 @@ setting up authentication, specifying the image tags, and defining other configu
 ./update_images.sh --setup-registry
 ```
 
+By default, the registry is set to `localhost:5000` You can change this by specifying a different registry using the `--registry` option.
+
 #### Step 3: Push
 
 The final step is to push the built images to the configured registry. This ensures that the images are
@@ -331,10 +348,7 @@ deployed to the desired environment and can be accessed by the application.
 ```bash
 ./update_images.sh --push
 ```
-> [!NOTE]
-> Multiple steps can also be executed in a single step using `./update_images.sh --build --setup-registry --push`, which simplifies the build process and reduces the number of commands needed.
 
-Run `./update_images.sh --help` to get detailed information.
 
 ---
 
@@ -342,13 +356,13 @@ Run `./update_images.sh --help` to get detailed information.
 
 ### Installation
 
-With configuration file in place run:
+With the configuration file in place, run:
 
 ```sh
 ansible-playbook -u $USER -K playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
 ```
 
-After successful playbook completion proceed to [Verify Services](#verify-services) to check if the deployment is successful.
+After successful playbook completion, proceed to [Verify Services](#verify-services) to check if the deployment is successful.
 
 ## Verify Services
 
@@ -427,7 +441,6 @@ monitoring           telemetry-prometheus-node-exporter-99k2t                1/1
 monitoring           telemetry-prometheus-redis-exporter-64d9d6f989-d4w64    1/1     Running     0              11m
 rag-ui               ui-chart-5b98cb4c54-k58ck                               1/1     Running     0              14m
 system               gmc-contoller-5d7d8b49bf-xj9zv                          1/1     Running     0              22m
-------------------------------------------------------------
 </pre>
 </details>
 
@@ -452,30 +465,31 @@ data: ':'
 data: ' AV'
 data: 'X'
 data: [DONE]
-Test finished succesfully
+Test finished successfully
 ```
 
 ### Access the UI/Grafana
 
-To access the UI, do the following:
-1. Forward the port from the ingress pod.
-```bash
-sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
-```
-2. If you'd like to access the UI from another machine, tunel the port from the host:
-```bash
-ssh -L 443:localhost:443 user@ip
-```
-3. Update `/etc/hosts` file on the machine where you'd like to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
+To access the UI, follow these steps:
+1. Forward the port from the ingress pod:
+    ```bash
+    sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
+    ```
+2. If you want to access the UI from another machine, tunnel the port from the host:
+    ```bash
+    ssh -L 443:localhost:443 user@ip
+    ```
+3. Update the `/etc/hosts` file on the machine where you want to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
 
-     For example, the updated file content should resemble the following:
+    For example, the updated file content should resemble the following:
 
-```bash
-127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
-```
+    ```
+    127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+    ```
 
-> [!NOTE]
-> This is the IPv4 address of local machine.
+    > [!NOTE]
+    > This is the IPv4 address of the local machine.
+
 
 Once the update is complete, you can access the Enterprise RAG UI by typing the following URL in your web browser:
 `https://erag.com`
@@ -493,28 +507,28 @@ S3 API is exposed at:
 `https://s3.erag.com`
 
 > [!CAUTION]
-> Before ingesting the data, access the `https://s3.erag.com` to agree to accessing the self-signed certificate.
+> Before ingesting data, access `https://s3.erag.com` to agree to accessing the self-signed certificate.
 
-### UI credentials for the first login
+### UI Credentials for the First Login
 
-Once deployment is complete, there will be file `default_credentials.txt` created in `deployment/ansible-logs` folder with one time passwords for application admin and user. After one time password will be provided you will be requested to change the default password.
+Once deployment is complete, a file named `default_credentials.txt` will be created in the `deployment/ansible-logs` folder with one-time passwords for the application admin and user. After entering the one-time password, you will be required to change the default password.
 
 > [!CAUTION]
-> Please remove file `default_credentials.txt` after the first succesful login.
+> Please remove the `default_credentials.txt` file after the first successful login.
 
 ### Credentials for Grafana and Keycloak
 
 Default credentials for Keycloak and Grafana:
 - **username:** admin
-- **password:** stored in `ansible-logs/default_credentials.yaml` file, please change passwords after first login in Grafana or Keycloak.
+- **password:** stored in `ansible-logs/default_credentials.yaml` file. Please change passwords after first login in Grafana or Keycloak.
 
 > [!CAUTION]
-> Please use ansible-vault to secure password file `ansible-logs/default_credentials.yaml` after the first succesfull login. With
-`ansible-vault encrypt ansible-logs/default_credentials.yaml`. After that remember to add `-ask-vault-pass` to `ansible-playbook` command.
+> Please use ansible-vault to secure the password file `ansible-logs/default_credentials.yaml` after the first successful login by running:
+> `ansible-vault encrypt ansible-logs/default_credentials.yaml`. After that, remember to add `-ask-vault-pass` to the `ansible-playbook` command.
 
 ### Credentials for Vector Store
 
-Default credentials for selected Vector Store are stored in `ansible-logs/default_credentials.yaml` and are generated on first deployment.
+Default credentials for the selected Vector Store are stored in `ansible-logs/default_credentials.yaml` and are generated on first deployment.
 
 ### Credentials for Enhanced Dataprep Pipeline (EDP)
 
@@ -535,13 +549,13 @@ Postgres:
 
 ### Data Ingestion, UI and Telemetry
 
-For adding data to the knowledge base and exploring the UI interface visit [this](../docs/UI_features.md) page.
+For adding data to the knowledge base and exploring the UI interface, visit [this](../docs/UI_features.md) page.
 
-For accessing Grafana dashboards for all the services, visit [this](../docs/telemetry.md) page.
+For accessing Grafana dashboards for all services, visit [this](../docs/telemetry.md) page.
 
 ---
 
-## Clear deployment
+## Clear All
 Run this command to delete all namespaces, releases, and services associated with the ChatQNA pipeline:
 ```sh
 ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
@@ -549,80 +563,81 @@ ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-
 
 ---
 
-## Additional features
+## Additional Features
 
-### Enabling Horizontal pod autoscaling
+### Enabling Horizontal Pod Autoscaling
 
-The feature enables automated scaling mechanism for pipeline components that might become bottleneck for RAG pipeline. The components are being scaled up based on rules defined in `hpa` section [resources_cpu](./components/gmc/microservices-connector/helm/resources-cpu.yaml) when running on Xeon or [resources_gaudi](./components/gmc/microservices-connector/helm/resources-gaudi.yaml) when running on Gaudi.
-To enable HPA set `hpaEnabled` to true at [configuration file](#prepare-main-configuration-file).
-For more information how to set parameters in HPA section please refer to this [README](./hpa/README.md).
+This feature enables an automated scaling mechanism for pipeline components that might become bottlenecks for the RAG pipeline. The components are scaled up based on rules defined in the `hpa` section of [resources-reference-cpu](./pipelines/chatqa/resources-reference-cpu.yaml) when running on Xeon or [resources-reference-hpu](./pipelines/chatqa/resources-reference-hpu.yaml) when running on Gaudi.
 
-To update you HPA configuration:
-- Modify `hpa` section in resources file
-- Run installation command
-sh
+To enable HPA, set `hpaEnabled` to true in the [configuration file](#prepare-main-configuration-file).
+For more information on how to set parameters in the HPA section, please refer to this [README](./hpa/README.md).
+
+To update your HPA configuration:
+1. Modify the `hpa` section in the resources file
+2. Run the installation command:
+```sh
+ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
 ```
-ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml`
-```
-For detailed information how to configure pipeline please reffer to:
+
+For detailed information on how to configure the pipeline, please refer to:
 [configure_pipeline](./../docs/configure_pipeline.md)
 
 ### Enabling Pod Security Admission (PSA)
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
 
-We can deploy enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSA set `enforcePSS` to `true` at [configuration file](#prepare-main-configuration-file).
+We can deploy Enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSA, set `enforcePSS` to `true` in the [configuration file](#prepare-main-configuration-file).
 
 ### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 
-Currently TDX is only supported on [bash deployment](./README_bash.md). Ansible TDX support is planned for next minor release.
+For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® TDX), refer to the [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](../docs/tdx.md) guide.
 
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.
 
-### Single Sign On Integration using Microsoft Entra ID (formerly Azure Active Directory)
+### Single Sign-On Integration Using Microsoft Entra ID (formerly Azure Active Directory)
 
 #### Prerequisites
 
-1. Configured and working Microsoft Entra ID 
-     - preconfigured and working SSO for other applications
-     - two new groups - one for `erag-admins`, one for `erag-users` - save `Object ID` for those entitites
-     - defined some user accounts that can be later added to either `erag-admins` or `erag-users` groups 
-2. Registered a new Azure `App registration`
-     - configured with Redirect URI `https://auth.erag.com/realms/EnterpriseRAG/broker/oidc/endpoint`
-     - in App registration -> Overview - save the `Application (client) ID` value
-     - in App registration -> Overview -> Endpoints - save `OpenID Connect metadata document` value
-     - in App registration -> Manage -> Cerficiates & secrets -> New client secret - create and save `Client secret` value
-3. Add users to newly created groups, either `erag-admins` or `erag-users` in Microsoft Entra ID
+1. Configured and working Microsoft Entra ID:
+    - preconfigured and working SSO for other applications
+    - two new groups - one for `erag-admins`, one for `erag-users` - save `Object ID` for these entitites
+    - defined user accounts that can be later added to either `erag-admins` or `erag-users` groups 
+2. Registered a new Azure `App registration`:
+    - configured with Redirect URI `https://auth.erag.com/realms/EnterpriseRAG/broker/oidc/endpoint`
+    - in App registration -> Overview - save the `Application (client) ID` value
+    - in App registration -> Overview -> Endpoints - save `OpenID Connect metadata document` value
+    - in App registration -> Manage -> Certificates & secrets -> New client secret - create and save `Client secret` value
+3. Add users to the newly created groups, either `erag-admins` or `erag-users` in Microsoft Entra ID
 
-#### Keycloak configuration
+#### Keycloak Configuration
 
-To configure Enterprise RAG SSO using Azure Single Sign On use the following steps:
+To configure Enterprise RAG SSO using Azure Single Sign-On, follow these steps:
 
-1. Log in as `admin` user into Keycloak and select `EnterpriseRAG` realm.
+1. Log in as `admin` user into Keycloak and select the `EnterpriseRAG` realm.
 2. Choose `Identity providers` from the left menu.
 3. Add a new `OpenID Connect Identity Provider` and configure:
      - Field `Alias` - enter your SSO alias, for example `enterprise-sso`
      - Field `Display name` - enter your link display name to redirect to external SSO, for example `Enterprise SSO`
      - Field `Discovery endpoint` - enter your `OpenID Connect metadata document`. Configuration fields should autopopulate
-4. Choose `Groups` in left menu. Then create the following groups:
-     1. `erag-admin-group` should consist of following groups from keycloak:
+4. Choose `Groups` in the left menu. Then create the following groups:
+     1. `erag-admin-group` should consist of the following groups from Keycloak:
           - `(EnterpriseRAG-oidc) ERAG-admin`
           - `(EnterpriseRAG-oidc-backend) ERAG-admin`
           - `(EnterpriseRAG-oidc-minio) consoleAdmin` # if using internal MinIO
-     2. `erag-user-group` should consist of following groups from keycloak:
+     2. `erag-user-group` should consist of the following groups from Keycloak:
           - `(EnterpriseRAG-oidc) ERAG-user`
           - `(EnterpriseRAG-oidc-backend) ERAG-user`
           - `(EnterpriseRAG-oidc-minio) readonly` # if using internal MinIO
-5. Configure two `Identity mappers` in `Mappers` under created `Identity provider`
-     1. Add Identity Provider Mapper - for group `erag-admin-group`
+5. Configure two `Identity mappers` in `Mappers` under the created `Identity provider`:
+     1. Add Identity Provider Mapper - for group `erag-admin-group`:
           - Field `Name` - this is the `Object ID` from `erag-admins` from Microsoft Entra ID
           - Field `Mapper type` - enter `Hardcoded Group`
           - Field `Group` - select `erag-admin-group`
-     2. Add Identity Provider Mapper - for group `erag-user-group`
+     2. Add Identity Provider Mapper - for group `erag-user-group`:
           - Field `Name` - this is the `Object ID` from `erag-users` from Microsoft Entra ID
           - Field `Mapper type` - enter `Hardcoded Group`
           - Field `Group` - select `erag-user-group`
 
-After this configuration, Keycloak log-in page should have an additional link on the bottom of the log-in form - named `Enterprise SSO`. This should redirect you to Azure log-in page.
+After this configuration, the Keycloak login page should have an additional link at the bottom of the login form - named `Enterprise SSO`. This should redirect you to the Azure login page.
 
-Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`) users will have apropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.
+Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`), users will have appropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.

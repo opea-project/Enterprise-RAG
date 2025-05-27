@@ -10,6 +10,8 @@ import {
   FetchedServicesParameters,
   GetServicesDetailsResponse,
 } from "@/features/admin-panel/control-plane/types/api";
+import { formatServiceDetailValue } from "@/features/admin-panel/control-plane/utils";
+import { formatSnakeCaseToTitleCase } from "@/utils";
 
 export const parseServicesParameters = (
   parameters: AppendArgumentsParameters,
@@ -97,7 +99,7 @@ export const parseServiceDetailsResponseData = (
   const statusEntries = Object.entries(annotations)
     .filter(
       ([key]) =>
-        key.startsWith("Deployment:apps/v1:") &&
+        (key.startsWith("Deployment:apps/v1:") || key.startsWith("StatefulSet:apps/v1:")) &&
         !["fgp", "router"].includes(key), // Filter out fingerprint and router services
     )
     .map(([key, value]) => {
@@ -127,17 +129,23 @@ export const parseServiceDetailsResponseData = (
       const serviceNodeId = serviceNameNodeIdMap[serviceName];
 
       const config = step.internalService.config ?? {};
-      const configEntries = Object.entries(config).filter(
-        ([key]) =>
-          key !== "endpoint" &&
-          !key.toLowerCase().includes("endpoint") &&
-          !key.toLowerCase().includes("url"),
-      );
+      if (serviceNodeId === "vectordb") {
+        config.USED_VECTOR_DB = usedVectorDb;
+      }
+
+      const configEntries = Object.entries(config)
+        .filter(
+          ([key]) =>
+            key !== "endpoint" &&
+            !key.toLowerCase().includes("endpoint") &&
+            !key.toLowerCase().includes("url"),
+        )
+        .map(([key, value]) => [
+          formatSnakeCaseToTitleCase(key),
+          formatServiceDetailValue(value),
+        ]);
 
       const metadata = Object.fromEntries(configEntries);
-      if (serviceNodeId === "vectordb") {
-        metadata.USED_VECTOR_DB = usedVectorDb;
-      }
 
       return [serviceNodeId, metadata];
     })

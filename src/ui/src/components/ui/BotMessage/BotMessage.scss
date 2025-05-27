@@ -2,21 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .bot-message {
-  @apply mx-auto px-9 py-5 md:px-0;
+  @apply mx-auto px-9 md:px-0;
   @apply grid grid-cols-[auto_1fr] items-start gap-6 self-start;
   @apply w-full md:w-[42rem];
 
   & .bot-message__text {
-    @apply max-w-[calc(100vw-8rem)] md:max-w-[38rem];
+    @apply max-w-[calc(100vw-8rem)] md:max-w-[40rem];
     @apply mt-2;
     @apply text-light-text-accent dark:text-dark-text-accent;
+
+    & .bot-message__footer {
+      @apply flex items-center justify-end pt-2;
+    }
   }
 
   & .bot-message__error {
-    @apply w-full rounded-md px-4 py-2 text-base;
+    @apply mt-1 w-full rounded-md px-4 py-2 text-base;
     @apply grid grid-cols-[auto_1fr] items-center gap-4;
     @apply bg-light-status-error dark:bg-dark-status-error;
-    @apply border-light-status-error dark:border-dark-status-error;
     @apply text-light-text-inverse dark:text-dark-text-primary;
   }
 }

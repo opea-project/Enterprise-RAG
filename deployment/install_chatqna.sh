@@ -59,7 +59,7 @@ KEYCLOAK_PASS=""
 # others
 PIPELINE=""
 REGISTRY="docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-TAG="1.2.0"
+TAG="1.2.1"
 HELM_TIMEOUT="10m"
 ISTIO_VERSION="1.24.1" # ambient is GA but kiali fails to resolve workloads properly (app lables issues?)
 FEATURES=""
@@ -89,6 +89,7 @@ function usage() {
     echo -e "\t--ui: Start ui services (requires deployment & auth)."
     echo -e "\t--no-edp: Skip creation of Enhanced Dataprep Pipeline."
     echo -e "\t--dpguard: Create Dataprep Guardrail."
+    echo -e "\t--semantic-chunking: Enable Semantic Chunking."
     echo -e "\t--edp-dataprep-type: Choose type of dataprep: normal or hierarchical. (default normal)"
     echo -e "\t-ep|--enforce-pss: Enforce strict pod security policies."
     echo -e "\t--upgrade: Helm will install or upgrade charts."
@@ -155,6 +156,11 @@ function helm_install() {
     name=$2
     path=$3
     args=$4
+    shift
+    shift
+    shift
+    shift
+    args2=("$@")
 
     msg="installation"
     helm_cmd="install"
@@ -163,10 +169,12 @@ function helm_install() {
       msg="upgrade or installation"
     fi
 
-    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"gaudi"* ]]; then
+    if [ -z "$PIPELINE" ] || [[ ! "$PIPELINE" == *"hpu"* ]]; then
         helm_cmd+=" --values $manifests_path/resources-reference-cpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-model-cpu.yaml"
     else
-        helm_cmd+=" --values $manifests_path/resources-reference-gaudi.yaml"
+        helm_cmd+=" --values $manifests_path/resources-reference-hpu.yaml"
+        helm_cmd+=" --values $manifests_path/resources-model-hpu.yaml"
     fi
 
     if $hpa_flag; then
@@ -187,11 +195,28 @@ function helm_install() {
     done
 
     print_log "helm $msg of \"$name\" in \"$namespace\" namespace in progress ..."
-    if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
-        print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+
+    if [ -z "$args2" ]; then
+      #print_log "helm $helm_cmd -n \"$namespace\" --create-namespace \"$name\" \"$path\" $args"
+      if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+      else
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
+          exit 1
+      fi
     else
-        print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
-        exit 1
+      command_args=""
+      for param in "${args2[@]}"; do
+        command_args+="$param,"
+      done
+      command_args="${command_args::-1}"
+      #print_log "helm $helm_cmd -n \"$namespace\" --create-namespace \"$name\" \"$path\" $args --set \"$command_args\""
+      if helm $helm_cmd -n "$namespace" --create-namespace "$name" "$path" $args --set "$command_args" 2> >(grep -v 'found symbolic link' >&2) > /dev/null; then
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace finished successfully."
+      else
+          print_log "helm $msg of \"$name\" in \"$namespace\" namespace failed. Exiting"
+          exit 1
+      fi
     fi
 }
 
@@ -368,12 +393,22 @@ function start_fingerprint() {
         --set mongodb.auth.databases[0]=$MONGO_DATABASE_NAME \
         --set mongodb.auth.rootPassword=$FINGERPRINT_DB_ROOT_PASSWORD"
 
+    if [[ "$FEATURES" == *"tdx"* ]]; then
+      HELM_INSTALL_FINGERPRINT_TDX_ARGS=(
+          "mongodb.runtimeClassName=kata-qemu-tdx"
+          "mongodb.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+#        HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS+=" --set mongodb.podAnnotations.io\\.katacontainers\\.config\\.runtime\\.create_container_timeout='1800' --set "
+          "mongodb.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "mongodb.image.pullPolicy=Always"
+      )
+    fi
+
     if ! helm repo list | grep -q 'bitnami' ; then helm repo add bitnami https://charts.bitnami.com/bitnami ; fi
 
     helm repo update > /dev/null
     helm dependency build "$fingerprint_path" > /dev/null
 
-    helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS"
+    helm_install "$FINGERPRINT_NS" fingerprint "$fingerprint_path" "$HELM_INSTALL_FINGERPRINT_DEFAULT_ARGS" "${HELM_INSTALL_FINGERPRINT_TDX_ARGS[@]}"
 }
 
 function create_secret() {
@@ -405,6 +440,15 @@ function start_mesh() {
     HELM_INSTALL_ISTIO_DEFAULT_ARGS="--wait --timeout $HELM_TIMEOUT -f $istio_path/values.yaml"
 
     helm dependency build "$istio_path" > /dev/null
+
+    IFS=',' read -ra feature_list <<< "$FEATURES"
+    for feature in "${feature_list[@]}"; do
+      case $feature in
+        tdx)
+          HELM_INSTALL_ISTIO_DEFAULT_ARGS+=" --values $istio_path/custom-init-container-values.yaml"
+          ;;
+      esac
+    done
 
     helm_install $ISTIO_NS istio "$istio_path" "$HELM_INSTALL_ISTIO_DEFAULT_ARGS"
 
@@ -496,7 +540,7 @@ function start_telemetry() {
     echo "*** Telemetry 'base' variables:"
     echo "HELM_INSTALL_TELEMETRY_DEFAULT_ARGS: $HELM_INSTALL_TELEMETRY_DEFAULT_ARGS"
     echo "HELM_INSTALL_TELEMETRY_EXTRA_ARGS: $HELM_INSTALL_TELEMETRY_EXTRA_ARGS"
-    
+
     ### Logs variables
     local HELM_INSTALL_TELEMETRY_REPO
     if $use_alternate_tagging; then
@@ -504,7 +548,7 @@ function start_telemetry() {
     else
         HELM_INSTALL_TELEMETRY_REPO="--set otelcol-logs.image.repository=$REGISTRY/erag-otelcol-contrib-journalctl --set otelcol-logs.image.tag=$TAG"
     fi
-    
+
     TELEMETRY_LOGS_IMAGE="--wait --timeout $HELM_TIMEOUT $HELM_INSTALL_TELEMETRY_REPO"
     TELEMETRY_LOGS_JOURNALCTL="-f $telemetry_logs_path/values-journalctl.yaml"
     HELM_INSTALL_TELEMETRY_LOGS_DEFAULT_ARGS="--wait $TELEMETRY_LOGS_IMAGE  $TELEMETRY_LOGS_JOURNALCTL $LOKI_DNS_FLAG"
@@ -572,8 +616,8 @@ function clear_telemetry() {
 
     # Delete the tls-secret if it exists
     kubectl get secret tls-secret -n $TELEMETRY_NS > /dev/null 2>&1 && kubectl delete secret tls-secret -n $TELEMETRY_NS
-    
-    # uninstall prometheus adapter first 
+
+    # uninstall prometheus adapter first
     helm status -n "$TELEMETRY_NS" prometheus-adapter > /dev/null 2>&1 && helm uninstall --namespace $TELEMETRY_NS prometheus-adapter
 
     # Delete otelcol-traces with timeout and webhook handling
@@ -801,7 +845,16 @@ function start_edp() {
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dpguard.enabled=true --set dpguard.tag=$TAG"
     fi
 
-    if [[ "$edp_dataprep_type" == "hierarchical" ]]; then
+    # Enable advanced RAG techniques
+    if $semantic_chunking; then
+        print_log "Enabling Semantic Chunking"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.semantic_chunking_enabled=true"
+        if [[ "$pipeline" == *"torch"* || "$pipeline" == *"reference"* ]]; then
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.embedding_model_server=torchserve --set dataprep.config.embedding_model_server_endpoint=http://torchserve-embedding-svc.chatqa.svc:8090"
+        else
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.embedding_model_server=tei --set dataprep.config.embedding_model_server_endpoint=http://tei-embedding-svc.chatqa.svc:80"
+        fi
+    elif [[ "$edp_dataprep_type" == "hierarchical" ]]; then
         print_log "Enabling Hierarchical Dataprep"
         HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep"
 
@@ -819,22 +872,49 @@ function start_edp() {
         s3)
             print_log "Using AWS S3 storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=true --set edpExternalUrl=https://s3.amazonaws.com --set edpInternalUrl=https://s3.amazonaws.com --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpSqsEventQueueUrl=$s3_sqs_queue --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         s3compatible)
             print_log "Using S3 API compatible storage"
             region=${s3_region:-"us-west-2"}
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
+            s3_cert_verify="${s3_cert_verify:-"true"}"
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=false --set awsSqs.enabled=false --set edpExternalUrl=$s3_compatible_endpoint --set edpInternalUrl=$s3_compatible_endpoint --set edpBaseRegion=$region --set edpAccessKey=$s3_access_key --set edpSecretKey=$s3_secret_key --set edpInternalCertVerify=$s3_cert_verify --set edpExternalCertVerify=$s3_cert_verify --set bucketNameRegexFilter=$s3_bucket_name_regex_filter "
             ;;
         minio | "")
             print_log "Using Minio storage"
             local minio_access_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 10)
             local minio_secret_key=$(tr -dc 'A-Za-z0-9!?%' < /dev/urandom | head -c 16)
-            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpInternalSecure=false --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set minio.enabled=true --set awsSqs.enabled=false --set edpExternalUrl=https://s3.erag.com --set edpInternalUrl=http://edp-minio:9000 --set edpAccessKey=$minio_access_key --set edpSecretKey=$minio_secret_key --set edpOidcClientSecret=$minio_client_secret "
             ;;
     esac
 
-    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS $HELM_INSTALL_EDP_CONFIGURATION_ARGS --set redisUsername=$redis_username --set redisPassword=$redis_password "
+    if [[ "$FEATURES" == *"tdx"* ]]; then
+        ROOT_PASSWORD=$(kubectl get secret --namespace $ENHANCED_DATAPREP_NS edp-minio -o jsonpath="{.data.root-password}" | base64 -d)
+        HELM_INSTALL_TDX_ARGS=(
+          "minio.runtimeClassName=kata-qemu-tdx"
+          "postgresql.primary.extraPodSpec.runtimeClassName=kata-qemu-tdx"
+          "redis.master.extraPodSpec.runtimeClassName=kata-qemu-tdx"
+          ## "minio.imagePullSecrets=runtimeClassName=kata-qemu-tdx"
+          # "minio.provisioning.spec.template.metadata.spec.runtimeClassName=kata-qemu-tdx"
+          "minio.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "postgresql.primary.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "redis.master.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          # "minio.provisioning.podAnnotations.io\\.containerd\\.cri\\.runtime-handler=kata-qemu-tdx"
+          "postgresql.primary.containers.imagePullPolicy=Always"
+          "redis.master.containers.imagePullPolicy=Always"
+          "minio.image.PullPolicy=Always"
+          "global.postgresql.auth.password=$postgresql_edp_password"
+          "minio.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "postgresql.primary.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          "redis.master.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+          # "minio.provisioning.podAnnotations.io\\.katacontainers\\.config\\.hypervisor\\.kernel_params=agent\\.guest_components_rest_api=all agent\\.aa_kbc_params=cc_kbc::${KBS_ADDRESS}"
+      )
+      if [ ! -z "$ROOT_PASSWORD" ]; then
+        HELM_INSTALL_TDX_ARGS+=("auth.rootPassword=$ROOT_PASSWORD")
+      fi
+    fi
+
+    helm_install $ENHANCED_DATAPREP_NS edp "$edp_path" "$HELM_INSTALL_EDP_DEFAULT_ARGS $HELM_INSTALL_EDP_CONFIGURATION_ARGS --set redisUsername=$redis_username --set redisPassword=$redis_password" "${HELM_INSTALL_TDX_ARGS[@]}"
 
     print_log "waiting until pods in $ENHANCED_DATAPREP_NS are ready"
     wait_for_condition check_pods "$ENHANCED_DATAPREP_NS"
@@ -890,6 +970,7 @@ auth_flag=false
 helm_upgrade=false
 edp_flag=true
 dpguard=false
+semantic_chunking=false
 strict_policy_flag=false
 clear_any_flag=false
 clear_deployment_flag=false
@@ -984,6 +1065,9 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --dpguard)
             dpguard=true
+            ;;
+        --semantic-chunking)
+            semantic_chunking=true
             ;;
         --edp-dataprep-type)
             shift

@@ -19,9 +19,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.flower.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.flower.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.flower.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.flower.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -34,6 +35,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: redis:alpine
+          imagePullPolicy: {{ .Values.flower.pullPolicy }}
           env:
             - name: REDIS_URL
               valueFrom:
@@ -97,7 +99,8 @@ spec:
               path: /
               port: http
           resources:
-            {{- toYaml .Values.flower.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.flower.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.flower.nameOverride $defaultValues .Values) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

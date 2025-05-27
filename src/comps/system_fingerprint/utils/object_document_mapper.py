@@ -254,8 +254,8 @@ class PromptTemplateParams(Document):
 Please refer to the search results obtained from the local knowledge base. \
 Refer also to the conversation history if you think it is relevant to the current question. \
 Ignore all information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
-### Search results: {reranked_docs} \n
+If you don't know the answer to a question, please don't share false information. \n \
+### Search results: {reranked_docs}
 ### Conversation history: {conversation_history} \n
 """
     user_prompt_template: str = """### Question: {user_prompt} \n

@@ -18,9 +18,10 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.dataprep.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.dataprep.nameOverride .) | nindent 6 }}
+      {{- include "manifest.tdx.annotations" (list .Values.dataprep.nameOverride .) | nindent 6 }}
     spec:
+      {{- include "manifest.tdx.runtimeClassName" (list .Values.dataprep.nameOverride .) | nindent 6 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -28,10 +29,36 @@ spec:
       serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.dataprep.semantic_chunking_enabled }}
+      initContainers:
+        - name: wait-for-embedding-server
+          image: alpine/curl
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: EMBEDDING_MODEL_SERVER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: edp-dataprep-configmap
+                  key: EMBEDDING_MODEL_SERVER_ENDPOINT
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$EMBEDDING_MODEL_SERVER_ENDPOINT" ]; then
+                  echo "Environment variable EMBEDDING_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $EMBEDDING_MODEL_SERVER_ENDPOINT; do
+                    echo "waiting for embedding model server $EMBEDDING_MODEL_SERVER_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+      {{- end }}
       {{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
       initContainers:
         - name: wait-for-vllm-server
           image: alpine/curl
+          imagePullPolicy: {{ .Values.dataprep.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
@@ -112,7 +139,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           resources:
-            {{- toYaml .Values.dataprep.resources | nindent 12 }}
+            {{- $defaultValues := toYaml .Values.dataprep.resources | nindent 12 -}}
+            {{- include "manifest.getResource" (list .Values.dataprep.nameOverride $defaultValues .Values) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

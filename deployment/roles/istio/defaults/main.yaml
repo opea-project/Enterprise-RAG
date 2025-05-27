@@ -14,3 +14,4 @@ istio:
     release_name: "istio"
     chart_version: "1.1.0"
     default_values_file: "{{ playbook_dir }}/../components/istio/values.yaml"
+    custom_init_container_values_file: "{{ playbook_dir }}/../components/istio/custom-init-container-values.yaml"

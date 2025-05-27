@@ -16,8 +16,7 @@ spec:
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      labels:
-        {{- include "helm-edp.awsSqs.selectorLabels" . | nindent 8 }}
+      {{- include "manifest.podLabels" (list .Values.awsSqs.nameOverride .) | nindent 6 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

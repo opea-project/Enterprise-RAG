@@ -84,7 +84,7 @@ class KeycloakHelper:
 
     def _retrieve_admin_password(self):
         """Retrieve the admin password from the keycloak secret"""
-        keycloak_secret_name = "keycloak-password"
+        keycloak_secret_name = "keycloak"
         logger.debug(f"Retrieving the admin password from the '{keycloak_secret_name}' secret")
         secrets = kr8s.get("secrets", namespace="auth")
         for secret in secrets:

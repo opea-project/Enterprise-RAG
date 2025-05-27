@@ -22,6 +22,10 @@ export interface PostFileToExtractTextQueryParams
   table_strategy?: string;
 }
 
+export interface PostLinkToExtractTextQueryParams
+  extends PostFileToExtractTextQueryParams {
+}
+
 export interface GetS3BucketsListResponseData {
   buckets: string[];
 }

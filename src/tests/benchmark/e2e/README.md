@@ -28,7 +28,7 @@ Script will load around 40 000 vectors based on real documents which are context
 ### Test execution
 In order to run the test you need to generate a file with valid User Access Tokens. There is a script do do that. Those tokens are valid for 10800 seconds (after tokens expiration eRAG is going to return 401 errors). You need to execute the number of token which is greater or equal to number of connections which you want to test for example:
 ```bash
-sudo ./generate_uat_to_file.sh /opt/uat.txt 32
+sudo -E ./generate_uat_to_file.sh /opt/uat.txt 32
 ```
 After that, you can run the benchmark. You need to specify the input file with test questions, length of the test, number of parallel connections and location of file with tokens. Also, it is suggested to specify the tokenizer model for benchmark, which would be the same as eRAG LLM model.
 ```bash

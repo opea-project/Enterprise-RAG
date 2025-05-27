@@ -13,11 +13,16 @@ dialog {
     & header.dialog__header {
       @apply h-14 w-full rounded-t py-2 pl-4 pr-2;
       @apply flex items-center justify-between;
-      @apply bg-light-bg-1 dark:bg-dark-bg-1;
-      @apply border-b border-b-light-border dark:border-b-dark-border;
+      @apply bg-light-primary dark:bg-dark-primary;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
 
       & h3 {
         @apply mb-0 text-lg;
+      }
+
+      & button {
+        @apply text-light-text-inverse dark:text-dark-text-primary;
+        @apply focus-visible:outline-light-focus-inverse dark:focus-visible:outline-dark-focus;
       }
     }
 
@@ -28,7 +33,6 @@ dialog {
     & footer.dialog__actions {
       @apply h-14 w-full rounded-b px-4 py-2;
       @apply flex items-center justify-end;
-      @apply bg-light-bg-1 dark:bg-dark-bg-1;
       @apply border-t border-t-light-border dark:border-t-dark-border;
     }
   }

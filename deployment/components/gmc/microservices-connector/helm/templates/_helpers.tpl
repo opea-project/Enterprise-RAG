@@ -88,6 +88,20 @@ app.kubernetes.io/instance: {{ $deploymentName }}
 
 
 {{/*
+Generic pod label definition
+*/}}
+{{- define "manifest.podLabels" -}}
+{{- $deploymentName := index . 0 -}}
+{{- $context := index . 1 -}}
+labels:
+  {{- include "manifest.selectorLabels" (list $deploymentName $context) | nindent 2 }}
+{{- if $context.Values.tdx }}
+  {{- include "manifest.tdx.labels" (list $deploymentName $context) | nindent 2 }}
+{{- end }}
+{{- end }}
+
+
+{{/*
 Helper placeholder for image pull secrets
 */}}
 {{- define "gmc.imagePullSecrets" -}}

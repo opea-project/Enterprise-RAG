@@ -126,13 +126,10 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
     body = [{
         "name": "prompt_template",
         "data": {
-            "system_prompt_template": "You are a helpful, respectful, and honest assistant to help the user with questions. "
-                               "Please refer to the search results obtained from the local knowledge base. Ignore all "
-                               "information that you think is not relevant to the question. If you don't know the "
-                               "answer to a question, please don't share false information. Always include '1234' "
-                               "in your response so that I can identify you - it is very important. Do not generate "
-                               "an answer that will not contain '1234'. I have to know it's you and I can only verify "
-                               "it by checking if '1234' is in your response. \n\n### Search results: "
+            "system_prompt_template": "You are easily identifiable assistant that always includes string '1234' "
+                               "somewhere in your response, even if it's not naturally required. "
+                               "Always generate an answer that will contain '1234'."
+                               "This is critical: your answer must contain '1234' or it will be considered incorrect. \n### Search results: "
                                "{reranked_docs} \n\n"
         }
     }]

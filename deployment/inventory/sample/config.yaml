@@ -16,18 +16,20 @@ certs:
   commonName: "erag.com"
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.2.0"
+tag: "1.2.1"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
 
 hpaEnabled: false
 enforcePSS: false
+tdxEnabled: false
 
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml
     resourcesPath: chatqa/resources-reference-cpu.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
     type: chatqa
 
 gmc:

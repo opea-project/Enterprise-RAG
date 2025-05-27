@@ -135,11 +135,13 @@ helm_timeout: "10m0s"
 
 hpaEnabled: false # enables Horizontal Pod Autoscaler
 enforcePSS: false # enforces Pod Security Standards
+tdxEnabled: false # enables Intel® Trust Domain Extensions
 
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml
     resourcesPath: chatqa/resources-reference-cpu.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
     type: chatqa
 
 gmc:

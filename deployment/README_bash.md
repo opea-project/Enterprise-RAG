@@ -233,7 +233,7 @@ The `set_values.sh` script automates Helm value configuration for the `deploymen
 simplifying customization. Use the following to set your HF token to for services such as LLM, Embedding, Re-ranking. Retrieve your HuggingFace Token [here](https://huggingface.co/settings/tokens).
 
 > [!NOTE]
-> The default LLM for Xeon execution is `meta-llama/Llama-3.1-8B-Instruct`. 
+> The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`. 
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 

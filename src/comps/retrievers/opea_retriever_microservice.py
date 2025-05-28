@@ -56,7 +56,12 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
 
     result_vectors = None
     try:
-        result_vectors = await retriever.retrieve(vector)
+        if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
+            k_summaries = int(sanitize_env(os.getenv("K_SUMMARIES")))
+            k_chunks = int(sanitize_env(os.getenv("K_CHUNKS")))
+            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks)
+        else:
+            result_vectors = await retriever.retrieve(vector)
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,

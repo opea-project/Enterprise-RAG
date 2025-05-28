@@ -90,14 +90,14 @@ class HierarchicalIndexer:
                 for page in doc_pages:
                     page_text = page.page_content
                     summary = self._generate_summary(page_text)
-                    metadata = {"doc_id": doc_id, "page": page.metadata["page"], "summary": True}
+                    metadata = {"doc_id": doc_id, "page": page.metadata["page"], "summary": 1}
                     parsed_summaries.append(TextDoc(text=summary, metadata=metadata))
                 
                 # Split page into chunks
                 doc_chunks = self.text_splitter.split_documents(doc_pages)
                 for chunk in doc_chunks:
                     chunk_text = chunk.page_content
-                    metadata = {"doc_id": doc_id, "page": chunk.metadata["page"], "summary": False}
+                    metadata = {"doc_id": doc_id, "page": chunk.metadata["page"], "summary": 0}
                     parsed_chunks.append(TextDoc(text=chunk_text, metadata=metadata))
             except Exception as e:
                 logger.exception(e)

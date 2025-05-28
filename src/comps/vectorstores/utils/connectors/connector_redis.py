@@ -52,7 +52,7 @@ class ConnectorRedis(VectorStoreConnector):
         return vector_schema
 
     def _metadata_schema(self):
-        return [
+        metadata_schema = [
             {
                 "name": "bucket_name",
                 "type": "text",
@@ -74,6 +74,22 @@ class ConnectorRedis(VectorStoreConnector):
                 "type": "text",
             }
         ]
+        if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
+            metadata_schema.extend([
+                {
+                    "name": "doc_id",
+                    "type": "text",
+                },
+                {
+                    "name": "page",
+                    "type": "numeric",
+                },
+                {
+                    "name": "summary",
+                    "type": "numeric",
+                }
+            ])
+        return metadata_schema
 
     def _vector_schema(self, schema: dict, metadata_schema: Optional[dict]=None) -> IndexSchema:
         index_name = f"{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_index"

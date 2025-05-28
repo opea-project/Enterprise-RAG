@@ -606,6 +606,8 @@ ingestion:
     vector_hnsw_ef_construction: "32"
     vector_hnsw_ef_runtime: "32"
     vector_hnsw_epsilon: "0.01"
+    # For hierarchical indices
+    use_hierarchical_indices: "False"
   pullPolicy: Always
   replicas: 1
   resources:

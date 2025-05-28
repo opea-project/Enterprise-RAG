@@ -99,7 +99,7 @@ JSON_DATA
 ### Example output
 
 As mentioned above, for each file, summaries are generated for pages and then the page is broken down into chunks.
-Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's a sample response for a file with 2 pages. Note that the summary docs have `summary: true` whereas the chunk docs have `summary: false`.
+Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's a sample response for a file with 2 pages. Note that the summary docs have `summary: 1` whereas the chunk docs have `summary: 0`.
 
 ```json
 {
@@ -109,7 +109,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 0,
-        "summary": true,
+        "summary": 1,
       }
     },
     {
@@ -117,7 +117,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 1,
-        "summary": true,
+        "summary": 1,
       }
     },
     {
@@ -125,7 +125,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 0,
-        "summary": false,
+        "summary": 0,
       }
     },
     {
@@ -133,7 +133,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 0,
-        "summary": false,
+        "summary": 0,
       }
     },
     {
@@ -141,7 +141,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 1,
-        "summary": false,
+        "summary": 0,
       }
     },
     {
@@ -149,7 +149,7 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
       "metadata": {
         "doc_id": "abcdef",
         "page": 1,
-        "summary": false,
+        "summary": 0,
       }
     }
   ]

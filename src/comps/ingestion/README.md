@@ -10,6 +10,7 @@ Configuration is done by selecting the desired vector store type. In addition, t
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
 | `VECTOR_STORE`          | `redis`           | Vector Store database type         |
 | `INGESTION_USVC_PORT`          | `6120`           | (Optional) Ingestion microservice port         |
+| `USE_HIERARCHICAL_INDICES` | `False`        | Enable/disable Hierarchical Indices Advanced RAG Technique         |
 
 ### Vector Store Support Matrix
 

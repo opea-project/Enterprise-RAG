@@ -122,6 +122,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/llm-usvc
+        - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1

@@ -53,7 +53,7 @@ class FileParser:
         return [
             # Magic library tends to return multiple mime types for a file, so we need to split them
             # and check if any of them match the file type
-            {'file_type': 'adoc',  'loader_file_name': 'load_adoc',  'loader_class': 'LoadAsciiDoc', 'mime_type': 'text/plain, text/troff, text/x-ruby'},
+            {'file_type': 'adoc',  'loader_file_name': 'load_adoc',  'loader_class': 'LoadAsciiDoc', 'mime_type': 'text/plain, text/troff, text/x-ruby, text/x-script.python'},
             {'file_type': 'doc',   'loader_file_name': 'load_doc',   'loader_class': 'LoadDoc',      'mime_type': 'application/msword'},
             {'file_type': 'docx',  'loader_file_name': 'load_doc',   'loader_class': 'LoadDoc',      'mime_type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'},
             {'file_type': 'txt',   'loader_file_name': 'load_txt',   'loader_class': 'LoadTxt',      'mime_type': 'text/plain'},

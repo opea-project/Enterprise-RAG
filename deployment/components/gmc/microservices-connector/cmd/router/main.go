@@ -116,10 +116,10 @@ type ErrorResponse struct {
 }
 
 type Detail struct {
-	Type  string   `json:"type"`
-	Loc   []string `json:"loc"`
-	Msg   string   `json:"msg"`
-	Input int      `json:"input"`
+	Type  string   	  `json:"type"`
+	Loc   interface{} `json:"loc"`
+	Msg   string   	  `json:"msg"`
+	Input interface{} `json:"input"`
 	Ctx   struct {
 		Gt int `json:"gt"`
 	} `json:"ctx"`

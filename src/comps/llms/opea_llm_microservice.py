@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from fastapi.responses import Response
 from langsmith import traceable
+from openai import BadRequestError
 from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
@@ -93,6 +94,10 @@ async def process(input: LLMParamsDoc) -> Response:
         error_message = f"A Connection error occurred while processing: {str(e)}"
         logger.exception(error_message)
         raise HTTPException(status_code=404, detail=error_message)
+    except BadRequestError as e:
+        error_message = f"A BadRequestError occured while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
     except RequestException as e:
         error_code = e.response.status_code if e.response else 500
         error_message = f"A RequestException occurred while processing: {str(e)}"

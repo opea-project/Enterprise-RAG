@@ -8,8 +8,24 @@ from comps import (
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class ConversationHistoryHandler:
+    def validate_conversation_history(self, con_history: List[PrevQuestionDetails]):
+        if con_history is None:
+            return False
+
+        if len(con_history) == 0:
+            return False
+
+        if_not_empty_history = False
+        for h in con_history:
+            if h.question.strip() != "" or h.answer.strip() != "":
+                if_not_empty_history = True
+        return if_not_empty_history
+
+
     def parse_conversation_history(self, con_history: List[PrevQuestionDetails], type: str, params: dict = {}) -> str:
-        logger.info(params)
+        if self.validate_conversation_history(con_history) is False:
+            return ""
+
         if type.lower() == "naive":
             return self._get_history_naive(con_history, **params)
         else:
@@ -23,7 +39,7 @@ class ConversationHistoryHandler:
 
         formatted_output = ""
         for conv in last_k_answers:
-            formatted_output += f"previous_question: {conv.question} previous_answer: {conv.answer} "
+            formatted_output += f"User: {conv.question}\nAssistant: {conv.answer}\n"
 
         logger.info(formatted_output)
         return formatted_output.strip()

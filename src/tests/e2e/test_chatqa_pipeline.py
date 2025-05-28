@@ -268,8 +268,8 @@ def test_follow_up_questions_empty_conversation(chatqa_api_helper):
     # A list with empty dict
     history = {"conversation_history": [{}]}
     response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code in [200, 400], (f"Unexpected status code returned: {response.status_code}. "
-                                                f"Answer: {response.text}")
+    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
+                                         f"Answer: {response.text}")
     response_text = chatqa_api_helper.format_response(response)
     logger.info(f"Response: {response_text}")
 

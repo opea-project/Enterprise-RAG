@@ -342,9 +342,11 @@ Run a simple S3 mock server. Port 9191 will be used to expose a https server wit
 docker run --rm -p 9191:9191 -e initialBuckets=default,secondary -t adobe/s3mock
 ```
 
-Configure EDP for the S3 compatible storage by either exporting environment variables or setting values in your config.yaml.
+The following placeholder `<your-IP-address>` should be replaced with the external IP address of the host machine where the Docker container is being executed.
 
-Example config.yaml snippet:
+Configure EDP for the S3 compatible storage by either exporting environment variables or setting values in your `config.yaml`. If using an environment that requires proxy usage, ensure that you add `<your-IP-address>` to the `noProxy` variable in `config.yaml`.
+
+Example `config.yaml` snippet to configure S3 compatible storage:
 
 ```yaml
 edp:
@@ -358,6 +360,8 @@ edp:
     internalUrl: "https://<your-IP-address>:9191"
     externalUrl: "https://<your-IP-address>:9191"
     bucketNameRegexFilter: ".*"
+    edpExternalCertVerify: false
+    edpInternalCertVerify: false
 ```
 
 Since this mock endpoint does not support event notifications, make sure scheduled synchronization is enabled as described in the [synchronization section](#storage-synchronization).

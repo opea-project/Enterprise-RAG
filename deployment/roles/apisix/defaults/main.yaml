@@ -19,3 +19,12 @@ apisix:
     secret_name: "apisix-secret"
 
   client_id: "EnterpriseRAG-oidc-backend"
+
+apisix_routes:
+  namespace: "auth-apisix"
+  helm:
+    chart_directory: "{{ playbook_dir }}/../components/apisix-routes"
+    chart_name: "apisix-routes"
+    chart_version: "1.3.0"
+    release_name: "auth-apisix-crds"
+    default_values_file: "{{ playbook_dir }}/../components/apisix-routes/values.yaml"

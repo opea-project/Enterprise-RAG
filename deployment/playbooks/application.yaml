@@ -12,91 +12,136 @@
     log_dir: "{{ deployment_dir }}/ansible-logs"
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
-  pre_tasks:
-    - name: Configure environment
-      include_role:
+  tasks:
+
+    # Pre-tasks section (initialization and configuration)
+    - name: Pre-configure environment role
+      ansible.builtin.include_role:
         name: configure
       tags:
         - configure
+
     - name: Build and push images
-      include_role:
+      ansible.builtin.include_role:
         name: images
       tags:
         - build-images
-    - name: Preinstall tasks
-      include_role:
+
+    - name: Pre-install role
+      ansible.builtin.include_role:
         name: pre_install
       tags:
         - install
         - uninstall
-    - name: Install Istio
-      include_role:
+
+    # Main roles section (core application components)
+
+    - name: Istio role
+      ansible.builtin.include_role:
         name: istio
       when: istio.enabled
       tags:
         - install
         - uninstall
-    - name: Run fingerprint role
-      include_role:
+
+    - name: Fingerprint role
+      ansible.builtin.include_role:
         name: fingerprint
       when: fingerprint.enabled
       tags:
         - install
         - uninstall
-    - name: Run pipeline role with items
-      include_role:
+
+    - name: Pipeline role
+      ansible.builtin.include_role:
         name: pipeline
       with_items: "{{ pipelines }}"
       tags:
         - install
         - uninstall
-  roles:
-    - { role: ingress, when: ingress.enabled }
-    - { role: keycloak, when: keycloak.enabled }
-    - { role: apisix, when: apisix.enabled }
-    - { role: ui, when: ui.enabled }
-    - { role: edp, when: edp.enabled }
-    - { role: telemetry, when: telemetry.enabled }
-  post_tasks:
-    - name: Install apisix routes
-      kubernetes.core.helm:
-        name: "auth-apisix-crds"
-        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
-        namespace: "auth-apisix"
-        state: present
-        force: true
+
+    - name: Ingress role
+      ansible.builtin.include_role:
+        name: ingress
+      when: ingress.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Keycloak role
+      ansible.builtin.include_role:
+        name: keycloak
+      when: keycloak.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Apisix role
+      ansible.builtin.include_role:
+        name: apisix
       when: apisix.enabled
       tags:
         - install
-        - update
+        - uninstall
+
+    - name: UI role
+      ansible.builtin.include_role:
+        name: ui
+      when: ui.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: EDP role
+      ansible.builtin.include_role:
+        name: edp
+      when: edp.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Telemetry role
+      ansible.builtin.include_role:
+        name: telemetry
+      when: telemetry.enabled
+      tags:
+        - install
+        - uninstall
+
     - name: Configure Istio
-      include_role:
+      ansible.builtin.include_role:
         name: istio
         tasks_from: configure.yaml
       when: istio.enabled
       tags:
-        - always
-    - name: Delete apisix routes
-      kubernetes.core.helm:
-        name: "auth-apisix-crds"
-        chart_ref: "{{ playbook_dir }}/../components/apisix-routes/"
-        namespace: "auth-apisix"
-        state: absent
+        - install
+        - uninstall
+
+    - name: Configure APISIX
+      ansible.builtin.include_role:
+        name: apisix
+        tasks_from: configure.yaml
       when: apisix.enabled
       tags:
+        - install
         - uninstall
+
+    # Post-tasks section (finalization and cleanup)
+
     - name: Remove log directory
       ansible.builtin.file:
         path: "{{ log_dir }}"
         state: absent
       tags:
         - uninstall
+
     - name: Verify if all pods are in desired state
-      include_role:
+      ansible.builtin.include_role:
         name: check_pods
       tags:
         - install
         - uninstall
+
     - name: Delete tmp directory
       ansible.builtin.file:
         path: "{{ item }}"

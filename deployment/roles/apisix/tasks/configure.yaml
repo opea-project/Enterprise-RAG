@@ -1,0 +1,23 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Install apisix routes
+  kubernetes.core.helm:
+    name: "{{ apisix_routes.helm.release_name }}"
+    chart_ref: "{{ apisix_routes.helm.chart_directory }}"
+    namespace: "{{ apisix_routes.namespace }}"
+    state: present
+    force: true
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Delete apisix routes
+  kubernetes.core.helm:
+    name: "{{ apisix_routes.helm.release_name }}"
+    chart_ref: "{{ apisix_routes.helm.chart_directory }}"
+    namespace: "{{ apisix_routes.namespace }}"
+    state: absent
+  when: apisix.enabled
+  tags:
+    - uninstall

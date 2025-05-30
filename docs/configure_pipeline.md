@@ -17,7 +17,7 @@ We want to modify our pipeline and change the LLM `MODEL_ID` from `mistralai/Mix
 llm_model_gaudi: &hpu_model "meta-llama/Meta-Llama-3-70B"
 ...
   vllm_gaudi:
-    envfile: "src/comps/llms/impl/model_server/vllm/docker/.env.hpu"
+    envfile: "src/comps/llms/impl/model_server/vllm/docker/hpu/.env"
     envs:
       LLM_VLLM_MODEL_NAME: *hpu_model
 ```

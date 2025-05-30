@@ -8,7 +8,7 @@ services:
   llm-vllm-fp8-model-server:
     build:
       context: .
-      dockerfile: Dockerfile.hpu
+      dockerfile: Dockerfile
     image: vllm:hpu
     container_name: llm-vllm-fp8-model-server
     ports:
@@ -46,7 +46,7 @@ services:
 
   llm_usvc:
     build:
-      context: ../../../../../../
+      context: ../../../../../../..
       dockerfile: ./comps/llms/impl/microservice/Dockerfile
     image: opea/llm:latest
     container_name: llm-vllm-microservice

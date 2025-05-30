@@ -398,7 +398,7 @@ for component in "${components_to_build[@]}"; do
 
         vllm-gaudi)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
-            dockerfile="docker/Dockerfile.hpu"
+            dockerfile="docker/hpu/Dockerfile"
             image=erag-vllm-gaudi
 
             if $if_gaudi_flag;then
@@ -411,7 +411,7 @@ for component in "${components_to_build[@]}"; do
 
         vllm-cpu)
             path="${repo_path}/src/comps/llms/impl/model_server/vllm"
-            dockerfile="docker/Dockerfile.cpu"
+            dockerfile="docker/cpu/Dockerfile"
             image=erag-vllm-cpu
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi

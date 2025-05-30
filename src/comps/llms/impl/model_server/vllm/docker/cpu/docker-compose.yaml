@@ -4,8 +4,8 @@
 services:
   llm-vllm-model-server:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile.cpu
+      context: ../../
+      dockerfile: docker/cpu/Dockerfile
       args:
         USER_UID: ${UID}
     image: vllm:cpu
@@ -33,7 +33,7 @@ services:
 
   llm_usvc:
     build:
-      context: ../../../../../../
+      context: ../../../../../../../
       dockerfile: ./comps/llms/impl/microservice/Dockerfile
     image: opea/llm:latest
     container_name: llm-vllm-microservice

@@ -1,13 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./LinkInput.scss";
-
-import classNames from "classnames";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ValidationError } from "yup";
 
 import IconButton from "@/components/ui/IconButton/IconButton";
+import TextInput from "@/components/ui/TextInput/TextInput";
 import { linkErrorMessage } from "@/features/admin-panel/data-ingestion/utils/constants";
 import { validateLinkInput } from "@/features/admin-panel/data-ingestion/validators/linkInput";
 import { sanitizeString } from "@/utils";
@@ -72,16 +70,18 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
   const addLinkBtnDisabled = !value || isInvalid;
 
   return (
-    <div className="link-input-wrapper">
-      <input
+    <div className="flex items-start gap-2">
+      <TextInput
         ref={inputRef}
+        type="url"
         value={value}
         name="link-input"
-        type="url"
+        isInvalid={isInvalid}
+        errorMessage={errorMessage}
         placeholder="Enter valid URL (starting with http:// or https://)"
-        className={classNames({ "input--invalid": isInvalid })}
         onChange={handleLinkInputChange}
         onKeyDown={handleLinkInputKeyDown}
+        className="w-full"
       />
       <IconButton
         icon="plus"
@@ -90,7 +90,6 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
         isDisabled={addLinkBtnDisabled}
         onPress={handleAddLinkBtnPress}
       />
-      {isInvalid && <p className="link-input-error-message">{errorMessage}</p>}
     </div>
   );
 };

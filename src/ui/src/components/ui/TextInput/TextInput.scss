@@ -1,0 +1,79 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.text-input {
+  @apply mb-2;
+
+  &__label-wrapper {
+    @apply mb-2 flex flex-row items-center gap-2;
+  }
+
+  &__label {
+    @apply mb-0;
+  }
+
+  &__input,
+  &__input:is(:-webkit-autofill, :autofill) {
+    @apply min-h-6 w-full px-4 py-2;
+    @apply rounded border border-light-border dark:border-dark-border;
+    @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+    @apply caret-light-text-primary dark:caret-dark-text-primary;
+
+    &[data-invalid] {
+      @apply border-light-status-error dark:border-dark-status-error;
+      @apply bg-light-status-error/10 dark:bg-dark-status-error/10;
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      @apply caret-light-status-error dark:caret-dark-status-error;
+    }
+
+    &:is(:disabled),
+    &[data-disabled] {
+      @apply border-light-border dark:border-dark-border;
+      @apply bg-light-bg-disabled dark:bg-dark-bg-disabled;
+      @apply text-light-text-disabled dark:text-dark-text-disabled;
+    }
+
+    &:is(:focus, :focus-within, :focus-visible),
+    &[data-focused][data-rac],
+    &[data-focus-visible][data-rac] {
+      @apply outline outline-2;
+      @apply outline-light-border dark:outline-dark-border;
+
+      &[data-invalid] {
+        @apply outline-light-status-error dark:outline-dark-status-error;
+      }
+    }
+
+    &:read-only,
+    &[read-only] {
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      @apply pointer-events-none cursor-default bg-transparent;
+    }
+
+    &::placeholder {
+      @apply italic;
+      @apply text-light-text-placeholder dark:text-dark-text-placeholder;
+    }
+  }
+
+  &__error {
+    @apply italic;
+    @apply text-light-text-error dark:text-dark-text-error;
+    @apply pl-4 text-sm;
+  }
+
+  &--sm {
+    .text-input__label-wrapper {
+      @apply gap-1 text-xs;
+    }
+
+    .text-input__input {
+      @apply px-2 py-1 text-xs;
+    }
+
+    .text-input__error {
+      @apply pl-2 text-xs;
+    }
+  }
+}

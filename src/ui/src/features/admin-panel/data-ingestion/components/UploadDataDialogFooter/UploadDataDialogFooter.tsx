@@ -11,7 +11,7 @@ import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
 interface UploadDataDialogFooterProps {
   uploadErrors: UploadErrors;
   toBeUploadedMessage: string;
-  uploadDisabled: boolean;
+  isUploadDisabled: boolean;
   isUploading: boolean;
   onSubmit: () => void;
 }
@@ -19,7 +19,7 @@ interface UploadDataDialogFooterProps {
 const UploadDataDialogFooter = ({
   uploadErrors,
   toBeUploadedMessage,
-  uploadDisabled,
+  isUploadDisabled,
   isUploading,
   onSubmit,
 }: UploadDataDialogFooterProps) => {
@@ -40,7 +40,7 @@ const UploadDataDialogFooter = ({
       )}
       <Button
         icon={uploadBtnIcon}
-        isDisabled={uploadDisabled}
+        isDisabled={isUploadDisabled}
         onPress={onSubmit}
       >
         {uploadBtnContent}

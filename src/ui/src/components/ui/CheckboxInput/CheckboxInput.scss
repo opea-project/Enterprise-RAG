@@ -1,53 +1,52 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.checkbox-input__wrapper {
+.checkbox-input {
   @apply my-4 flex items-center gap-3;
 
-  &--sm {
-    @apply my-3 gap-2;
-  }
-}
-
-.checkbox-input {
-  @apply m-0 h-4 w-4;
-  @apply text-base;
-  @apply flex items-center justify-center;
-  @apply rounded-sm border border-light-border dark:border-dark-border;
-  @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
-  @apply cursor-pointer;
-
-  &--sm {
-    @apply h-3.5 w-3.5;
-    @apply text-sm;
-  }
-
-  &[data-selected] {
-    @apply bg-light-primary dark:bg-dark-primary;
-    @apply text-light-text-inverse dark:text-dark-text-primary;
-  }
-
-  &[data-readonly],
-  &[data-disabled] {
-    @apply bg-transparent;
-    @apply text-light-primary dark:text-dark-primary;
-    @apply pointer-events-none;
-    @apply cursor-default;
+  &__input {
+    @apply relative m-0 h-4 w-4;
+    @apply text-base;
+    @apply flex items-center justify-center;
+    @apply rounded-sm border border-light-border dark:border-dark-border;
+    @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
+    @apply cursor-pointer;
 
     &[data-selected] {
+      @apply bg-light-primary dark:bg-dark-primary;
+      @apply text-light-text-inverse dark:text-dark-text-primary;
+    }
+
+    &[data-readonly],
+    &[data-disabled] {
       @apply bg-transparent;
+      @apply text-light-primary dark:text-dark-primary;
+      @apply pointer-events-none;
+      @apply cursor-default;
+
+      &[data-selected] {
+        @apply bg-transparent;
+      }
+    }
+
+    &[data-focused] {
+      @apply outline outline-2 outline-light-primary dark:outline-dark-primary;
     }
   }
 
-  &[data-focused] {
-    @apply outline outline-2 outline-light-primary dark:outline-dark-primary;
+  &__label {
+    @apply relative mb-0 flex flex-row items-center text-base;
   }
-}
-
-.checkbox-input__label {
-  @apply mb-0 flex flex-row items-center text-base;
 
   &--sm {
-    @apply text-xs;
+    @apply my-3 gap-2;
+
+    .checkbox-input__input {
+      @apply h-3.5 w-3.5;
+    }
+
+    .checkbox-input__label {
+      @apply text-xs;
+    }
   }
 }

@@ -11,28 +11,28 @@ export const useOnnx = {
 
 export const model = {
   name: "model",
-  nullable: true,
+  isNullable: true,
 };
 
 export const threshold = {
   name: "threshold",
-  nullable: true,
+  isNullable: true,
   range: { min: 0, max: 1 },
 };
 
 export const matchType = {
   name: "match_type",
-  nullable: true,
+  isNullable: true,
 };
 
 export const competitors = {
   name: "competitors",
-  commaSeparated: true,
+  isCommaSeparated: true,
 };
 
 export const substrings = {
   name: "substrings",
-  commaSeparated: true,
+  isCommaSeparated: true,
 };
 
 export const caseSensitive = {
@@ -49,10 +49,10 @@ export const containsAll = {
 
 export const validLanguages = {
   name: "valid_languages",
-  commaSeparated: true,
+  isCommaSeparated: true,
 };
 
 export const patterns = {
   name: "patterns",
-  commaSeparated: true,
+  isCommaSeparated: true,
 };

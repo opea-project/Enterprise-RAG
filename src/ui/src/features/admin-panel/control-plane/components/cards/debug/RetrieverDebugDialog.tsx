@@ -236,7 +236,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -247,7 +247,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.distance_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -258,7 +258,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.fetch_k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -269,7 +269,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.lambda_mult}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -280,7 +280,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.score_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       <p className="mb-2 mt-3">Reranker</p>
@@ -296,14 +296,14 @@ const RetrieverDebugParamsForm = ({
         initialValue={rerankerPreviousArgumentsValues.top_n}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.rerank_score_threshold}
         initialValue={rerankerPreviousArgumentsValues.rerank_score_threshold}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
     </>
   );

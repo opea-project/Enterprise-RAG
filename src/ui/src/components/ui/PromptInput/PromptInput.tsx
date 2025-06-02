@@ -11,6 +11,7 @@ import {
   useEffect,
   useRef,
 } from "react";
+import { TextArea, TextField } from "react-aria-components";
 
 import PromptInputButton from "@/components/ui/PromptInputButton/PromptInputButton";
 import { promptMaxHeight, promptMaxLength } from "@/config/promptInput";
@@ -138,16 +139,19 @@ const PromptInput = ({
 
   return (
     <form className="prompt-input__form" onSubmit={handleSubmit}>
-      <textarea
-        ref={promptInputRef}
-        value={prompt}
-        name="prompt-input"
-        placeholder="Enter your prompt..."
-        className="prompt-input"
-        rows={1}
-        onChange={onChange}
-        onKeyDown={handleKeyDown}
-      />
+      <TextField className="pt-1.5" aria-label="Your message">
+        <TextArea
+          ref={promptInputRef}
+          value={prompt}
+          name="prompt-input"
+          placeholder="Enter your prompt..."
+          maxLength={promptMaxLength}
+          rows={1}
+          className="prompt-input"
+          onChange={onChange}
+          onKeyDown={handleKeyDown}
+        />
+      </TextField>
       {getPromptInputButton()}
     </form>
   );

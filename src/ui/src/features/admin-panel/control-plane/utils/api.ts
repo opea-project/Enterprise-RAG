@@ -99,7 +99,8 @@ export const parseServiceDetailsResponseData = (
   const statusEntries = Object.entries(annotations)
     .filter(
       ([key]) =>
-        (key.startsWith("Deployment:apps/v1:") || key.startsWith("StatefulSet:apps/v1:")) &&
+        (key.startsWith("Deployment:apps/v1:") ||
+          key.startsWith("StatefulSet:apps/v1:")) &&
         !["fgp", "router"].includes(key), // Filter out fingerprint and router services
     )
     .map(([key, value]) => {

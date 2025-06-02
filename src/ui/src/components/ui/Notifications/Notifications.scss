@@ -5,7 +5,7 @@
   @apply absolute bottom-4 right-4 flex flex-col items-end gap-2;
 
   & .notification-toast {
-    @apply flex items-center gap-2 break-words rounded-lg pl-3 pr-1 py-0.5 text-sm shadow-md;
+    @apply flex items-center gap-2 break-words rounded-lg py-0.5 pl-3 pr-1 text-sm shadow-md;
     @apply text-light-text-inverse dark:text-dark-text-primary;
     word-wrap: break-word;
 

@@ -5,19 +5,19 @@ import { object, string } from "yup";
 
 import { noEmpty } from "@/utils/validators/functions/textInput";
 
-const createValidationSchema = (nullable?: boolean) =>
+const createValidationSchema = (isNullable?: boolean) =>
   object().shape({
     textInput: string().test(
       "no-empty",
       "This value cannot be empty",
-      noEmpty(nullable),
+      noEmpty(isNullable),
     ),
   });
 
 export const validateServiceArgumentTextInput = async (
   value: string,
-  nullable?: boolean,
+  isNullable?: boolean,
 ) => {
-  const validationSchema = createValidationSchema(nullable);
+  const validationSchema = createValidationSchema(isNullable);
   await validationSchema.validate({ textInput: value });
 };

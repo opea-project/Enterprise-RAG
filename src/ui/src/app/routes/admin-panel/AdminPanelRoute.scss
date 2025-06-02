@@ -20,10 +20,6 @@
   }
 
   & .admin-panel-tab-content {
-    @apply relative max-h-[calc(100vh-8rem)] overflow-y-auto;
-
-    &.data-ingestion-tab-content {
-      @apply max-h-[calc(100vh-8.5rem)] overflow-y-auto;
-    }
+    @apply relative max-h-[calc(100vh-8rem)];
   }
 }

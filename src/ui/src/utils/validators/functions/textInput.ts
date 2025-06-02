@@ -5,19 +5,19 @@ import { isPunycodeSafe } from "@/utils";
 import { containsNullCharacters } from "@/utils/validators/utils";
 
 export const noEmpty =
-  (emptyValueAllowed?: boolean) => (value: string | undefined) => {
+  (isEmptyValueAllowed?: boolean) => (value: string | undefined) => {
     if (value === undefined) {
       return false;
     } else {
       if (value === "") {
-        return emptyValueAllowed;
+        return isEmptyValueAllowed;
       } else {
         if (containsNullCharacters(value)) {
           return false;
         }
 
         const isValueEmpty = value.trim() === "";
-        return emptyValueAllowed ? true : !isValueEmpty;
+        return isEmptyValueAllowed ? true : !isValueEmpty;
       }
     }
   };

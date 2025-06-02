@@ -160,12 +160,6 @@ const UploadDataDialog = () => {
     selectedBucket,
     links,
   );
-  const uploadDisabled = isUploadDisabled(
-    files,
-    selectedBucket,
-    links,
-    isUploading,
-  );
 
   return (
     <Dialog
@@ -175,7 +169,12 @@ const UploadDataDialog = () => {
         <UploadDataDialogFooter
           uploadErrors={uploadErrors}
           toBeUploadedMessage={toBeUploadedMessage}
-          uploadDisabled={uploadDisabled}
+          isUploadDisabled={isUploadDisabled(
+            files,
+            selectedBucket,
+            links,
+            isUploading,
+          )}
           isUploading={isUploading}
           onSubmit={submitUploadData}
         />

@@ -31,23 +31,15 @@ const CheckboxInput = ({
 }: CheckboxInputProps) => {
   const inputId = useId();
 
-  const wrapperClassNames = classNames("checkbox-input__wrapper", {
-    "checkbox-input__wrapper--sm": size === "sm",
-  });
-
-  const checkboxClassNames = classNames("checkbox-input", {
-    "checkbox-input--sm": size === "sm",
-  });
-
-  const labelClassNames = classNames("checkbox-input__label", {
-    "checkbox-input__label--sm": size === "sm",
-  });
-
   return (
-    <div className={wrapperClassNames}>
+    <div
+      className={classNames("checkbox-input", {
+        "checkbox-input--sm": size === "sm",
+      })}
+    >
       <Checkbox
         id={inputId}
-        className={checkboxClassNames}
+        className="checkbox-input__input"
         onChange={onChange}
         aria-required={isRequired}
         {...restProps}
@@ -57,7 +49,7 @@ const CheckboxInput = ({
         }
       </Checkbox>
       <span>
-        <Label htmlFor={inputId} className={labelClassNames}>
+        <Label htmlFor={inputId} className="checkbox-input__label">
           {label}
         </Label>
         {tooltipText && (

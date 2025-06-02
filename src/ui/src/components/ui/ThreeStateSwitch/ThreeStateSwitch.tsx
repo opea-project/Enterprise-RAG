@@ -13,26 +13,26 @@ export type ThreeStateSwitchValue = boolean | null;
 export interface ThreeStateSwitchProps {
   initialValue?: ThreeStateSwitchValue;
   name: string;
-  readOnly?: boolean;
+  isReadOnly?: boolean;
   onChange?: (name: string, value: boolean | null) => void;
 }
 
 const ThreeStateSwitch = ({
   initialValue = null,
   name,
-  readOnly,
+  isReadOnly,
   onChange,
 }: ThreeStateSwitchProps) => {
   const [state, setState] = useState<ThreeStateSwitchValue>(initialValue);
 
   useEffect(() => {
-    if (readOnly) {
+    if (isReadOnly) {
       setState(initialValue);
     }
-  }, [readOnly, initialValue]);
+  }, [isReadOnly, initialValue]);
 
   const handleBtnPress = (newValue: ThreeStateSwitchValue) => {
-    if (!readOnly) {
+    if (!isReadOnly) {
       setState(newValue);
 
       if (onChange) {
@@ -55,7 +55,7 @@ const ThreeStateSwitch = ({
 
   const switchClassNames = classNames(
     {
-      "three-state-switch--read-only": readOnly,
+      "three-state-switch--read-only": isReadOnly,
     },
     "three-state-switch",
   );
@@ -72,7 +72,7 @@ const ThreeStateSwitch = ({
       </label>
       <ToggleButtonGroup
         aria-labelledby={switchId}
-        isDisabled={readOnly}
+        isDisabled={isReadOnly}
         className={switchClassNames}
       >
         <ToggleButton

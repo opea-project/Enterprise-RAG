@@ -32,7 +32,9 @@ const LinksIngestionPanel = ({ links, setLinks }: LinksIngestionPanelProps) => {
     <section>
       <h2>Links</h2>
       <p className="mb-2 text-xs">
-        Supported text-based links extensions: ADOC, PDF, HTML, TXT, DOC, DOCX, PPT, PPTX, MD, XML, JSON, JSONL, YAML, XLS, XLSX, CSV, TIFF, JPG, JPEG, PNG, SVG
+        Supported text-based links extensions: ADOC, PDF, HTML, TXT, DOC, DOCX,
+        PPT, PPTX, MD, XML, JSON, JSONL, YAML, XLS, XLSX, CSV, TIFF, JPG, JPEG,
+        PNG, SVG
       </p>
       <LinkInput addLinkToList={addLinkToList} />
       {links.length > 0 && (

@@ -1,15 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ServiceArgumentTextInput.scss";
-
-import classNames from "classnames";
 import { ChangeEvent, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { ValidationError } from "yup";
 
-import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
-import Tooltip from "@/components/ui/Tooltip/Tooltip";
+import TextInput from "@/components/ui/TextInput/TextInput";
 import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
@@ -25,8 +20,8 @@ interface ServiceArgumentTextInputProps {
   name: string;
   initialValue: ServiceArgumentTextInputValue;
   tooltipText?: string;
-  nullable?: boolean;
-  commaSeparated?: boolean;
+  isNullable?: boolean;
+  isCommaSeparated?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
@@ -35,34 +30,34 @@ const ServiceArgumentTextInput = ({
   name,
   initialValue,
   tooltipText,
-  nullable = false,
-  commaSeparated = false,
+  isNullable = false,
+  isCommaSeparated = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentTextInputProps) => {
   const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const readOnly = !isEditModeEnabled;
+  const isReadOnly = !isEditModeEnabled;
 
   const [value, setValue] = useState(initialValue ?? "");
   const [isInvalid, setIsInvalid] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (readOnly) {
+    if (isReadOnly) {
       setValue(initialValue ?? "");
       setIsInvalid(false);
     }
-  }, [readOnly, initialValue]);
+  }, [isReadOnly, initialValue]);
 
   const validateInput = async (value: string) => {
     try {
-      await validateServiceArgumentTextInput(value, nullable);
+      await validateServiceArgumentTextInput(value, isNullable);
       setIsInvalid(false);
-      setError("");
+      setErrorMessage("");
       return true;
     } catch (validationError) {
       setIsInvalid(true);
-      setError((validationError as ValidationError).message);
+      setErrorMessage((validationError as ValidationError).message);
       return false;
     }
   };
@@ -78,7 +73,7 @@ const ServiceArgumentTextInput = ({
       const isValueEmpty = newValue.trim() === "";
       let argumentValue = null;
       if (!isValueEmpty) {
-        argumentValue = commaSeparated
+        argumentValue = isCommaSeparated
           ? sanitizedValue.split(",").map((value) => value.trim())
           : sanitizedValue;
       }
@@ -86,38 +81,22 @@ const ServiceArgumentTextInput = ({
     }
   };
 
-  const inputClassNames = classNames({
-    "service-argument-text-input": true,
-    "input--invalid": isInvalid,
-  });
-
-  const inputId = `${name}-text-input-${uuidv4()}`;
-  const placeholder = commaSeparated ? "Enter values separated by comma" : "";
+  const placeholder = isCommaSeparated ? "Enter values separated by comma" : "";
 
   return (
-    <div className="service-argument-text-input__wrapper">
-      <label htmlFor={inputId} className="service-argument-text-input__label">
-        {tooltipText && (
-          <Tooltip
-            title={tooltipText}
-            trigger={<InfoIcon />}
-            placement="left"
-          />
-        )}
-        <span>{name}</span>
-      </label>
-      <input
-        className={inputClassNames}
-        type="text"
-        id={inputId}
-        name={inputId}
-        value={value}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        onChange={handleChange}
-      />
-      {isInvalid && <p className="error mt-1 pl-2 text-xs italic">{error}</p>}
-    </div>
+    <TextInput
+      name={name}
+      label={name}
+      value={value}
+      size="sm"
+      isInvalid={isInvalid}
+      isReadOnly={isReadOnly}
+      placeholder={placeholder}
+      tooltipText={tooltipText}
+      errorMessage={errorMessage}
+      isCommaSeparated={isCommaSeparated}
+      onChange={handleChange}
+    />
   );
 };
 

@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button/Button";
 import CheckboxInput from "@/components/ui/CheckboxInput/CheckboxInput";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
+import TextInput from "@/components/ui/TextInput/TextInput";
 import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
 import useDebug from "@/hooks/useDebug";
 
@@ -64,7 +65,7 @@ export const TextExtractionForm = ({
     onFormSubmit(formData, isFormEnabled);
   };
 
-  const formDisabled = isLoadingExtractedText || !isFormEnabled;
+  const isFormDisabled = isLoadingExtractedText || !isFormEnabled;
 
   return (
     <div className="text-extraction-dialog__content-form-column">
@@ -76,37 +77,27 @@ export const TextExtractionForm = ({
         onChange={handleEnableFormCheckboxChange}
       />
       <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="chunk_size">Chunk Size (0-9999)</label>
-          <input
-            type="number"
-            id="chunk_size"
-            name="chunk_size"
-            min={0}
-            max={9999}
-            value={formData.chunk_size}
-            readOnly={formDisabled}
-            onChange={handleRangeInputChange}
-          />
-        </div>
-        <div>
-          <label htmlFor="chunk_overlap">Chunk Overlap (0-9999)</label>
-          <input
-            type="number"
-            id="chunk_overlap"
-            name="chunk_overlap"
-            min={0}
-            max={9999}
-            value={formData.chunk_overlap}
-            readOnly={formDisabled}
-            onChange={handleRangeInputChange}
-          />
-        </div>
+        <TextInput
+          label="Chunk Size (0-9999)"
+          type="number"
+          name="chunk_size"
+          value={formData.chunk_size}
+          isDisabled={isFormDisabled}
+          onChange={handleRangeInputChange}
+        />
+        <TextInput
+          label="Chunk Overlap (0-9999)"
+          type="number"
+          name="chunk_overlap"
+          value={formData.chunk_overlap}
+          isDisabled={isFormDisabled}
+          onChange={handleRangeInputChange}
+        />
         <CheckboxInput
           label="Process Table"
           name="process_table"
           isSelected={formData.process_table}
-          isDisabled={formDisabled}
+          isDisabled={isFormDisabled}
           onChange={(isSelected) =>
             handleCheckboxInputChange("process_table", isSelected)
           }
@@ -115,7 +106,7 @@ export const TextExtractionForm = ({
           label="Table Strategy: Fast"
           name="table_strategy"
           isSelected={formData.table_strategy}
-          isDisabled={formDisabled}
+          isDisabled={isFormDisabled}
           onChange={(isSelected) =>
             handleCheckboxInputChange("table_strategy", isSelected)
           }

@@ -11,19 +11,15 @@ type GetFilePresignedUrlMethod = "GET" | "PUT" | "DELETE";
 
 export interface PostFileToExtractTextRequest {
   uuid: string;
-  queryParams?: PostFileToExtractTextQueryParams;
+  queryParams?: PostToExtractTextQueryParams;
 }
 
-export interface PostFileToExtractTextQueryParams
+export interface PostToExtractTextQueryParams
   extends Record<string, number | boolean | undefined | string> {
   chunk_size?: number;
   chunk_overlap?: number;
   process_table?: boolean;
   table_strategy?: string;
-}
-
-export interface PostLinkToExtractTextQueryParams
-  extends PostFileToExtractTextQueryParams {
 }
 
 export interface GetS3BucketsListResponseData {

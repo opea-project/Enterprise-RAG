@@ -31,3 +31,17 @@ auth:
 {% if keycloak.additional_values is defined %}
 {{ keycloak.additional_values | to_nice_yaml }}
 {% endif %}
+
+{% if httpProxy is defined and httpProxy != "" and
+      httpsProxy is defined and httpsProxy != "" and
+      noProxy is defined and noProxy != "" %}
+extraEnvVars:
+  - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
+    value: "true"
+  - name: http_proxy
+    value: "{{ httpProxy }}"
+  - name: https_proxy
+    value: "{{ httpsProxy }}"
+  - name: no_proxy
+    value: "{{ noProxy }}"
+{% endif %}

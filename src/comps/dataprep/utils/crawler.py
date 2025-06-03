@@ -48,14 +48,23 @@ class Crawler:
     def download_file(self, url, upload_folder):
         max_times = self.max_times
         while max_times:
-            if not url.startswith("http") or not url.startswith("https"):
-                url = "http://" + url
-            logger.info("start fetch %s...", url)
+            url = urlparse(url)
+            if url.scheme == "":
+                url = url._replace(scheme="http")
+
+            logger.info("start fetch %s...", urlunparse(url))
             try:
-                response = requests.get(url, headers=self.headers, verify=True, stream=True, timeout=(10, self.timeout))  # Tuple timeout: (connect, read)
+                response = requests.get(
+                    urlunparse(url),
+                    headers=self.headers,
+                    verify=True,
+                    allow_redirects=True,
+                    stream=True,
+                    timeout=(10, self.timeout) # Tuple timeout: (connect, read)
+                )
 
                 if response.status_code != 200:
-                    logger.error("fail to fetch %s, response status code: %s", url, response.status_code)
+                    logger.error("fail to fetch %s, response status code: %s", urlunparse(url), response.status_code)
                 else:  # Save file
                     filename = ""
                     if "Content-Disposition" in response.headers.keys():
@@ -64,7 +73,10 @@ class Crawler:
                             filename = match[0]
 
                     if filename == "":
-                        filename = url.split("/")[-1] or 'index.html' # safe default
+                        if url.path == "":
+                            filename = "index.html"
+                        else:
+                            filename = url.path.split("/")[-1] or 'index.html' # safe default
 
                     # Sanitize filename
                     filename = filename.replace('"', "")
@@ -87,20 +99,20 @@ class Crawler:
                                 if downloaded_size > self.max_file_size:
                                     f.close()
                                     file_path.unlink()
-                                    raise ValueError(f"Downloaded file exceeds the maximum allowed size of {self.max_file_size / (1024 * 1024):.0f} MB: {url}")
+                                    raise ValueError(f"Downloaded file exceeds the maximum allowed size of {self.max_file_size / (1024 * 1024):.0f} MB: {urlunparse(url)}")
                                 f.write(chunk)
 
-                    logger.info(f"Saved file {temp_filename} from {url}")
+                    logger.info(f"Saved file {temp_filename} from {urlunparse(url)}")
 
                     return {
-                        "url": url,
+                        "url": urlunparse(url),
                         "filename": filename,
                         "file_path": str(file_path.resolve()),
                         "content_type": content_type
                     }
 
             except Exception as e:
-                logger.exception(f"Failed to fetch {url}, caused by {e}")
+                logger.exception(f"Failed to fetch {urlunparse(url)}, caused by {e}")
                 raise Exception(e)
             max_times -= 1
 

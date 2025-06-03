@@ -38,8 +38,6 @@ class DocPath(BaseDoc):
     path: str
     chunk_size: int = 1500
     chunk_overlap: int = 100
-    process_table: bool = False
-    table_strategy: str = "fast"
 
 class EmbedDoc(BaseDoc):
     text: str
@@ -81,8 +79,6 @@ class DataPrepInput(BaseDoc):
     links: List[str] = []
     chunk_size: Optional[Any] = None
     chunk_overlap: Optional[Any] = None
-    process_table: Optional[Any] = None
-    table_strategy: Optional[Any] = None
     max_new_tokens: Optional[PositiveInt] = None
 
 class SearchedDoc(BaseDoc):

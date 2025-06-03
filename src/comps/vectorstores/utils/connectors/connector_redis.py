@@ -70,6 +70,10 @@ class ConnectorRedis(VectorStoreConnector):
                 "type": "text",
             },
             {
+                "name": "url",
+                "type": "text",
+            },
+            {
                 "name": "timestamp",
                 "type": "text",
             }

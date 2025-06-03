@@ -10,16 +10,16 @@ from langchain_community.document_loaders import UnstructuredImageLoader
 class LoadImage(AbstractLoader):
     def __init__(self, file_path):
         super().__init__(file_path)
-        nltk.download('punkt_tab')
-        nltk.download('averaged_perceptron_tagger')
-        nltk.download('averaged_perceptron_tagger_eng')
+        nltk.download('punkt_tab', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
 
     def extract_text(self):
         """Load the image file."""
         if self.file_type == "svg":
             self.convert_to_png(self.file_path)
 
-        loader = UnstructuredImageLoader(self.file_path)
+        loader = UnstructuredImageLoader(self.file_path, strategy="ocr_only", language=["eng"])
         text = loader.load()[0].page_content
         return text.strip()
 

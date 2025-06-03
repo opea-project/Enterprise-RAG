@@ -47,8 +47,6 @@ Configuration is currently done via environment variables.
 | `OPEA_LOGGER_LEVEL`              | `INFO`                    | Microservice logging output level                                                                |
 | `CHUNK_SIZE`                     | `1500`                    | Size of chunks that the data is split into for further processing                                |
 | `CHUNK_OVERLAP`                  | `100`                     | Size of chunks overlapping                                                                       |
-| `PROCESS_TABLE`                  | `False`                   | Choose if dataprep should process tables in PDF files                                            |
-| `PROCESS_TABLE_STRATEGY`         | `fast`                    | Choose the table processing strategy                                                             |
 | `USE_SEMANTIC_CHUNKING`          | `False`                   | Choose if semantic chunking should be used                                                       |
 | `EMBEDDING_MODEL_NAME`           | `BAAI/bge-large-en-v1.5`  | Embedding model name for semantic chunking                                                       |
 | `EMBEDDING_MODEL_SERVER`         | `torchserve`              | Model server for embeddings used in semantic chunking                                            |

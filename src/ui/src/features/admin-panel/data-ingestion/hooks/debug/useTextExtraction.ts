@@ -5,8 +5,7 @@ import {
   usePostFileToExtractTextMutation,
   usePostLinkToExtractTextMutation,
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
-import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
-import { createPostToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/utils/api";
+import { PostToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/types/api";
 import { getErrorMessage } from "@/utils/api";
 
 type PostToExtractTextMutationHook =
@@ -24,12 +23,12 @@ const useTextExtraction = (
   const onTriggerPress = () => {
     postExtract({ uuid });
   };
+
   const onFormSubmit = (
-    formData: ExtractTextQueryParamsFormData,
+    queryParams: PostToExtractTextQueryParams,
     isFormEnabled: boolean,
   ) => {
     if (isFormEnabled) {
-      const queryParams = createPostToExtractTextQueryParams(formData);
       postExtract({ uuid, queryParams });
     } else {
       postExtract({ uuid });

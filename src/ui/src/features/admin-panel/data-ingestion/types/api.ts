@@ -18,8 +18,6 @@ export interface PostToExtractTextQueryParams
   extends Record<string, number | boolean | undefined | string> {
   chunk_size?: number;
   chunk_overlap?: number;
-  process_table?: boolean;
-  table_strategy?: string;
 }
 
 export interface GetS3BucketsListResponseData {

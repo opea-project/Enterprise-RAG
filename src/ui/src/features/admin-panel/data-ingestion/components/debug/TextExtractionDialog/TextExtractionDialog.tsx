@@ -16,13 +16,13 @@ import CheckboxInput from "@/components/ui/CheckboxInput/CheckboxInput";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
 import TextInput from "@/components/ui/TextInput/TextInput";
-import { ExtractTextQueryParamsFormData } from "@/features/admin-panel/data-ingestion/types";
+import { PostToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/types/api";
 import useDebug from "@/hooks/useDebug";
 
 interface TextExtractionFormProps {
   isLoadingExtractedText: boolean;
   onFormSubmit: (
-    queryParams: ExtractTextQueryParamsFormData,
+    queryParams: PostToExtractTextQueryParams,
     isFormEnabled: boolean,
   ) => void;
 }
@@ -31,11 +31,9 @@ export const TextExtractionForm = ({
   isLoadingExtractedText,
   onFormSubmit,
 }: TextExtractionFormProps) => {
-  const [formData, setFormData] = useState<ExtractTextQueryParamsFormData>({
+  const [formData, setFormData] = useState<PostToExtractTextQueryParams>({
     chunk_size: 0,
     chunk_overlap: 0,
-    process_table: false,
-    table_strategy: false,
   });
   const [isFormEnabled, setIsFormEnabled] = useState<boolean>(false);
 
@@ -46,13 +44,6 @@ export const TextExtractionForm = ({
     setFormData((prevFormData) => ({
       ...prevFormData,
       [name]: Math.max(0, Math.min(Number(value), 9999)),
-    }));
-  };
-
-  const handleCheckboxInputChange = (name: string, isSelected: boolean) => {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: isSelected,
     }));
   };
 
@@ -92,24 +83,6 @@ export const TextExtractionForm = ({
           value={formData.chunk_overlap}
           isDisabled={isFormDisabled}
           onChange={handleRangeInputChange}
-        />
-        <CheckboxInput
-          label="Process Table"
-          name="process_table"
-          isSelected={formData.process_table}
-          isDisabled={isFormDisabled}
-          onChange={(isSelected) =>
-            handleCheckboxInputChange("process_table", isSelected)
-          }
-        />
-        <CheckboxInput
-          label="Table Strategy: Fast"
-          name="table_strategy"
-          isSelected={formData.table_strategy}
-          isDisabled={isFormDisabled}
-          onChange={(isSelected) =>
-            handleCheckboxInputChange("table_strategy", isSelected)
-          }
         />
         <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text
@@ -171,7 +144,7 @@ interface TextExtractionDialogProps {
   errorMessage?: string;
   onTriggerPress: () => void;
   onFormSubmit: (
-    queryParams: ExtractTextQueryParamsFormData,
+    queryParams: PostToExtractTextQueryParams,
     isFormEnabled: boolean,
   ) => void;
 }
@@ -236,7 +209,6 @@ const TextExtractionDialog = ({
           isLoadingExtractedText={isLoading}
           onFormSubmit={onFormSubmit}
         />
-
         {getContent()}
       </div>
     </Dialog>

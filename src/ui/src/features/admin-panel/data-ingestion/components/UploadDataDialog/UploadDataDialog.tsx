@@ -6,7 +6,7 @@ import "./UploadDataDialog.scss";
 import { useRef, useState } from "react";
 
 import Button from "@/components/ui/Button/Button";
-import Dialog from "@/components/ui/Dialog/Dialog";
+import Dialog, { DialogRef } from "@/components/ui/Dialog/Dialog";
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
 import {
   useGetFilePresignedUrlMutation,
@@ -43,13 +43,14 @@ const UploadDataDialog = () => {
   const [postFile] = usePostFileMutation();
   const [postLinks] = usePostLinksMutation();
 
-  const ref = useRef<HTMLDialogElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<LinkForIngestion[]>([]);
   const [selectedBucket, setSelectedBucket] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] =
     useState<UploadErrors>(initialUploadErrors);
+
+  const dialogRef = useRef<DialogRef>(null);
 
   const dispatch = useAppDispatch();
 
@@ -59,6 +60,13 @@ const UploadDataDialog = () => {
 
   const resetUploadErrors = () => {
     setUploadErrors(initialUploadErrors);
+  };
+
+  const onDialogClose = () => {
+    setFiles([]);
+    setLinks([]);
+    resetUploadErrors();
+    dialogRef.current?.close();
   };
 
   const submitUploadData = async () => {
@@ -121,7 +129,7 @@ const UploadDataDialog = () => {
       });
     } else {
       setUploadErrors(initialUploadErrors);
-      closeDialog();
+      onDialogClose();
       dispatch(
         addNotification({
           text: "Successful data upload!",
@@ -134,27 +142,6 @@ const UploadDataDialog = () => {
     setIsUploading(false);
   };
 
-  const closeDialog = () => {
-    if (ref.current) {
-      setFiles([]);
-      setLinks([]);
-      resetUploadErrors();
-      ref.current.close();
-    }
-  };
-
-  const showDialog = () => {
-    if (ref.current) {
-      ref.current.showModal();
-    }
-  };
-
-  const triggerButton = (
-    <Button icon="upload" onPress={showDialog}>
-      Upload
-    </Button>
-  );
-
   const toBeUploadedMessage = createToBeUploadedMessage(
     files,
     selectedBucket,
@@ -163,8 +150,8 @@ const UploadDataDialog = () => {
 
   return (
     <Dialog
-      ref={ref}
-      trigger={triggerButton}
+      ref={dialogRef}
+      trigger={<Button icon="upload">Upload</Button>}
       footer={
         <UploadDataDialogFooter
           uploadErrors={uploadErrors}
@@ -180,7 +167,7 @@ const UploadDataDialog = () => {
         />
       }
       title="Upload Data"
-      onClose={closeDialog}
+      onClose={onDialogClose}
     >
       <div className="upload-dialog__content">
         <BucketsDropdown

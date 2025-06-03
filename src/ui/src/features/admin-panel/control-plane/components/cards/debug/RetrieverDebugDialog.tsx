@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useRef, useState } from "react";
+import { ChangeEventHandler, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import Button from "@/components/ui/Button/Button";
@@ -52,16 +52,6 @@ const createCodeBlock = (text: string | object) => {
 
 const RetrieverDebugDialog = () => {
   const [postRetrieverQuery] = usePostRetrieverQueryMutation();
-
-  const ref = useRef<HTMLDialogElement>(null);
-  const handleClose = () => ref.current?.close();
-  const showDialog = () => ref.current?.showModal();
-
-  const trigger = (
-    <Button size="sm" className="absolute right-4 top-4" onPress={showDialog}>
-      Debug
-    </Button>
-  );
 
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
   const [conversationTurns, setConversationTurns] = useState<
@@ -155,13 +145,15 @@ const RetrieverDebugDialog = () => {
 
   return (
     <Dialog
-      ref={ref}
-      trigger={trigger}
+      trigger={
+        <Button size="sm" className="absolute right-4 top-4">
+          Debug
+        </Button>
+      }
       title="Retriever Debug"
-      onClose={handleClose}
     >
-      <div className="grid h-[calc(100vh-10rem)] grid-cols-[13rem_1fr] px-4 pt-4">
-        <div>
+      <div className="grid grid-cols-[14rem_1fr] px-3 py-3">
+        <div className="h-[calc(100vh-12rem)] overflow-y-auto pl-1 pr-3 [scrollbar-gutter:stable]">
           <RetrieverDebugParamsForm
             retrieverArgumentsForm={retrieverArgumentsForm}
             retrieverPreviousArgumentsValues={retrieverPreviousArgumentsValues}

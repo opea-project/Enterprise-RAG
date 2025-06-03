@@ -3,13 +3,7 @@
 
 import "./TextExtractionDialog.scss";
 
-import {
-  ChangeEventHandler,
-  FormEvent,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { ChangeEventHandler, FormEvent, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Button/Button";
 import CheckboxInput from "@/components/ui/CheckboxInput/CheckboxInput";
@@ -157,10 +151,6 @@ const TextExtractionDialog = ({
   onTriggerPress,
   onFormSubmit,
 }: TextExtractionDialogProps) => {
-  const ref = useRef<HTMLDialogElement>(null);
-  const handleClose = () => ref.current?.close();
-  const showDialog = () => ref.current?.showModal();
-
   const { isDebugEnabled } = useDebug();
 
   if (!isDebugEnabled) {
@@ -168,7 +158,6 @@ const TextExtractionDialog = ({
   }
 
   const handlePress = async () => {
-    showDialog();
     onTriggerPress();
   };
 
@@ -198,12 +187,7 @@ const TextExtractionDialog = ({
   };
 
   return (
-    <Dialog
-      ref={ref}
-      trigger={trigger}
-      title={dialogTitle}
-      onClose={handleClose}
-    >
+    <Dialog trigger={trigger} title={dialogTitle}>
       <div className="text-extraction-dialog__content">
         <TextExtractionForm
           isLoadingExtractedText={isLoading}

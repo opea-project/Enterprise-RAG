@@ -12,16 +12,16 @@ dependencies = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "prometheus-fastapi-instrumentator==7.0.0",
-    "numpy==1.26.4",
+    "numpy==2.1.0",
     "docarray[full]==0.40.0",
     "uvicorn==0.30.1",
     "beautifulsoup4==4.12.3",
     "docx2txt==0.8",
     "easyocr==1.7.1",
     "huggingface_hub==0.26.0",
-    "langchain==0.3.6",
-    "langchain-community==0.3.0",
-    "langchain-text-splitters==0.3.0",
+    "langchain==0.3.25",
+    "langchain-community==0.3.24",
+    "langchain-text-splitters==0.3.8",
     "langsmith==0.1.125",
     "markdown==3.0.0",
     "pandas==2.2.2",
@@ -45,6 +45,7 @@ dependencies = [
     "torchvision==0.22.0",
     "h11==0.16.0",
     "transformers==4.50.0",
+    "markitdown==0.1.2",
 ]
 
 [project.optional-dependencies]
@@ -57,6 +58,7 @@ test = [
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
+    "setuptools==80.9.0",
 ]
 
 [tool.uv.sources]

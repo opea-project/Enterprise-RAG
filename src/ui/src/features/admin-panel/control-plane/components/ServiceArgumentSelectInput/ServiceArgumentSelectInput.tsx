@@ -1,14 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ServiceArgumentSelectInput.scss";
+import { useEffect, useState } from "react";
 
-import classNames from "classnames";
-import { ChangeEvent, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
-
-import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
-import Tooltip from "@/components/ui/Tooltip/Tooltip";
+import SelectInput, {
+  SelectInputChangeHandler,
+} from "@/components/ui/SelectInput/SelectInput";
 import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { OnArgumentValueChangeHandler } from "@/features/admin-panel/control-plane/types";
 import { useAppSelector } from "@/store/hooks";
@@ -20,7 +17,7 @@ interface ServiceArgumentSelectInputProps {
   initialValue: ServiceArgumentSelectInputValue;
   options: string[];
   tooltipText?: string;
-  readOnlyDisabled?: boolean;
+  isReadOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
 }
 
@@ -29,63 +26,45 @@ const ServiceArgumentSelectInput = ({
   initialValue,
   options,
   tooltipText,
-  readOnlyDisabled = false,
+  isReadOnlyDisabled = false,
   onArgumentValueChange,
 }: ServiceArgumentSelectInputProps) => {
   const isGraphEditModeEnabled = useAppSelector(
     chatQnAGraphEditModeEnabledSelector,
   );
-  const isEditModeEnabled = readOnlyDisabled
-    ? readOnlyDisabled
+  const isEditModeEnabled = isReadOnlyDisabled
+    ? isReadOnlyDisabled
     : isGraphEditModeEnabled;
-  const readOnly = !isEditModeEnabled;
+  const isReadOnly = !isEditModeEnabled;
 
   const [value, setValue] =
     useState<ServiceArgumentSelectInputValue>(initialValue);
 
   useEffect(() => {
-    if (readOnly) {
+    if (isReadOnly) {
       setValue(initialValue);
     }
-  }, [readOnly, initialValue]);
+  }, [isReadOnly, initialValue]);
 
-  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setValue(event.target.value);
-    onArgumentValueChange(name, event.target.value);
+  const handleChange: SelectInputChangeHandler<
+    ServiceArgumentSelectInputValue
+  > = (item) => {
+    setValue(item);
+    onArgumentValueChange(name, item);
   };
 
-  const inputId = `${name}-select-input-${uuidv4()}`;
-  const inputClassNames = classNames([
-    "service-argument-select-input",
-    { "pointer-events-none": readOnly, "input--read-only": readOnly },
-  ]);
-
   return (
-    <>
-      <label htmlFor={inputId} className="service-argument-select-input__label">
-        {tooltipText && (
-          <Tooltip
-            title={tooltipText}
-            trigger={<InfoIcon />}
-            placement="left"
-          />
-        )}
-        <span>{name}</span>
-      </label>
-      <select
-        id={inputId}
-        name={name}
-        className={inputClassNames}
-        value={value}
-        onChange={handleChange}
-      >
-        {options.map((option, index) => (
-          <option key={inputId + index} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </>
+    <SelectInput
+      value={value}
+      items={options}
+      label={name}
+      name={name}
+      size="sm"
+      isDisabled={isReadOnly}
+      tooltipText={tooltipText}
+      fullWidth
+      onChange={handleChange}
+    />
   );
 };
 

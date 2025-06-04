@@ -1,0 +1,105 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.select-input {
+  @apply mb-3;
+
+  &__label-wrapper {
+    @apply mb-3 flex flex-row items-center gap-2;
+  }
+
+  &__label {
+    @apply mb-0 text-base;
+  }
+
+  button.select-input__button {
+    @apply text-base;
+    @apply py-0 pl-4 pr-2;
+
+    @apply flex items-center justify-between gap-3;
+    @apply rounded border border-light-border dark:border-dark-border;
+    @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+
+    &[data-disabled],
+    &[disabled] {
+      @apply border-light-border dark:border-dark-border;
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      @apply pointer-events-none cursor-default bg-transparent;
+    }
+
+    &:is(:focus, :focus-within, :focus-visible),
+    &[data-focused][data-rac],
+    &[data-focus-visible][data-rac] {
+      @apply outline outline-2;
+      @apply outline-light-border dark:outline-dark-border;
+    }
+  }
+
+  &__value {
+    @apply text-light-text-primary dark:text-dark-text-primary;
+
+    &[data-disabled],
+    &[disabled] {
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      @apply pointer-events-none cursor-default bg-transparent;
+    }
+  }
+
+  &__options-list {
+    // --trigger-width is value defined by React ARIA Popover component that indicates the width of the Popover trigger
+    @apply w-[--trigger-width] -translate-y-2;
+    @apply rounded border border-light-border dark:border-dark-border;
+    @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+
+    &-item {
+      @apply cursor-pointer px-4 py-1 text-base;
+      @apply hover:bg-light-bg-2 dark:hover:bg-dark-bg-2;
+      @apply first-of-type:rounded-t last-of-type:rounded-b;
+    }
+
+    &--sm {
+      .select-input__options-list-item {
+        @apply px-2 py-1 text-xs;
+      }
+    }
+  }
+
+  &[data-invalid] {
+    button.select-input__button {
+      @apply border-light-status-error dark:border-dark-status-error;
+      @apply text-light-text-error dark:text-dark-text-error;
+      @apply bg-light-status-error/10 dark:bg-dark-status-error/10;
+
+      &:is(:focus, :focus-within, :focus-visible),
+      &[data-focused][data-rac],
+      &[data-focus-visible][data-rac] {
+        @apply outline outline-2;
+
+        @apply outline-light-status-error dark:outline-dark-status-error;
+      }
+    }
+
+    .select-input__value {
+      @apply text-light-text-error dark:text-dark-text-error;
+    }
+  }
+
+  &--sm {
+    @apply mb-2;
+
+    .select-input__label-wrapper {
+      @apply mb-2 flex flex-row items-center gap-2;
+    }
+
+    .select-input__label {
+      @apply text-xs;
+    }
+
+    button.select-input__button {
+      @apply h-6 py-0 pl-2 pr-1;
+      @apply text-xs;
+    }
+  }
+}

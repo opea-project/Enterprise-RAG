@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 import Button from "@/components/ui/Button/Button";
 import Dialog, { DialogRef } from "@/components/ui/Dialog/Dialog";
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
+import { SelectInputChangeHandler } from "@/components/ui/SelectInput/SelectInput";
 import {
   useGetFilePresignedUrlMutation,
   useLazyGetFilesQuery,
@@ -54,8 +55,8 @@ const UploadDataDialog = () => {
 
   const dispatch = useAppDispatch();
 
-  const onBucketChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedBucket(event.target.value);
+  const onBucketChange: SelectInputChangeHandler<string> = (value) => {
+    setSelectedBucket(value);
   };
 
   const resetUploadErrors = () => {

@@ -1,11 +1,12 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import classNames from "classnames";
 import { useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
+import SelectInput, {
+  SelectInputChangeHandler,
+} from "@/components/ui/SelectInput/SelectInput";
 import { useGetS3BucketsListQuery } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { useAppDispatch } from "@/store/hooks";
@@ -14,7 +15,7 @@ import { getErrorMessage } from "@/utils/api";
 interface BucketsDropdownProps {
   selectedBucket: string;
   files: File[];
-  onBucketChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+  onBucketChange: SelectInputChangeHandler<string>;
 }
 
 const BucketsDropdown = ({
@@ -35,36 +36,21 @@ const BucketsDropdown = ({
     }
   }, [dispatch, error]);
 
-  const selectClassNames = classNames([
-    "mb-2",
-    {
-      "input--invalid": files.length > 0 && selectedBucket === "",
-    },
-  ]);
-
+  const isInvalid = files.length > 0 && !selectedBucket;
   const isDisabled = isFetching || !bucketsList || bucketsList.length === 0;
 
   return (
-    <div className="px-4 pt-3">
-      <label htmlFor="buckets-select" className="w-full">
-        S3 Bucket
-      </label>
-      <select
-        id="buckets-select"
-        name="buckets-select"
-        value={selectedBucket}
-        disabled={isDisabled}
-        className={selectClassNames}
-        onChange={onBucketChange}
-      >
-        <option value=""> Please select bucket to upload files </option>
-        {bucketsList?.map((bucket) => (
-          <option key={uuidv4()} value={bucket}>
-            {bucket}
-          </option>
-        ))}
-      </select>
-    </div>
+    <SelectInput
+      value={selectedBucket}
+      items={bucketsList}
+      name="s3-bucket"
+      label="S3 Bucket"
+      isDisabled={isDisabled}
+      isInvalid={isInvalid}
+      placeholder="Please select bucket to upload files"
+      className="px-4 pt-3"
+      onChange={onBucketChange}
+    />
   );
 };
 

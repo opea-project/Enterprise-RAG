@@ -220,7 +220,7 @@ const RetrieverDebugParamsForm = ({
         {...retrieverFormConfig.search_type}
         initialValue={retrieverPreviousArgumentsValues.search_type}
         onArgumentValueChange={onRetrieverArgumentValueChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
       {visibleRerankerArgumentInputs.includes(retrieverFormConfig.k.name) && (
         <ServiceArgumentNumberInput

@@ -1,0 +1,5 @@
+---
+dockerfile: "Dockerfile-otelcol-contrib-journalctl"
+docker_context: "./"
+dependencies:
+  - apt

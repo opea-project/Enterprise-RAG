@@ -1,0 +1,10 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "./"
+dependencies:
+  - gopkg
+container_distribution: DockerHub
+dockerfile_distribution: GitHub
+comments: ""
+gopkg:
+  file: ../go.mod

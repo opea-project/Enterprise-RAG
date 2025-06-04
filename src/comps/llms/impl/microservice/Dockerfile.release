@@ -1,0 +1,11 @@
+FROM llm-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/llms
+CMD ["python", "opea_llm_microservice.py"]

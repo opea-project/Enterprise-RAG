@@ -1,0 +1,11 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "../../../../../"
+dependencies:
+  - pip-uv
+  - apt
+  - spacy-manual
+spacy-manual:
+  packages:
+    - zh_core_web_sm
+    - en_core_web_sm

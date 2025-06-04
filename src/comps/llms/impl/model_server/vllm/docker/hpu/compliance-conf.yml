@@ -1,0 +1,10 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "./../../"
+dependencies:
+   - pip-manual
+pip-manual:
+  packages:
+    - optimum[habana]
+    - triton
+    - git/HabanaAI/vllm-fork

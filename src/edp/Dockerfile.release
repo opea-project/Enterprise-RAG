@@ -1,0 +1,11 @@
+FROM enhanced-dataprep-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/app
+CMD ["bash"]

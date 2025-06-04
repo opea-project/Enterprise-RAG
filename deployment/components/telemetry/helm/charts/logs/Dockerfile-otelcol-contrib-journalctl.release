@@ -1,0 +1,9 @@
+FROM otelcol-contrib-journalctl-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile-otelcol-contrib-journalctl .
+
+# CMD from base Dockerfile
+ENTRYPOINT ["/otelcol-contrib"]

@@ -54,7 +54,7 @@ spec:
                   done;
                 fi;
       {{- end }}
-      {{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
+      {{- if eq .Values.dataprep.name "erag-hierarchical_dataprep" }}
       initContainers:
         - name: wait-for-vllm-server
           image: alpine/curl

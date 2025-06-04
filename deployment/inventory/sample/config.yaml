@@ -25,6 +25,9 @@ hpaEnabled: false
 enforcePSS: false
 tdxEnabled: false
 
+llm_model: "casperhansen/llama-3-8b-instruct-awq"
+llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
+
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml
@@ -90,6 +93,11 @@ edp:
     internalUrl: "https://s3.example.com"
     externalUrl: "https://s3.example.com"
     bucketNameRegexFilter: ".*"
+  hierarchical_indices:
+    enabled: false
+    maxNewTokens: 100
+    kSummaries: 2
+    kChunks: 2
 
 fingerprint:
   enabled: true

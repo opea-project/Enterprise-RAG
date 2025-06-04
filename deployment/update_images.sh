@@ -309,7 +309,7 @@ for component in "${components_to_build[@]}"; do
         hierarchical-dataprep-usvc)
             path="${repo_path}/src"
             dockerfile="comps/hierarchical_dataprep/impl/microservice/Dockerfile"
-            image=hierarchical_dataprep
+            image=erag-hierarchical_dataprep
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi

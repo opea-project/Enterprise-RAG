@@ -630,7 +630,7 @@ vllm:
     ppSize: "1"
     maxModelLen: "4096"
   nameOverride: "edp-vllm"
-  name: "vllm-cpu"
+  name: "erag-vllm-cpu"
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always

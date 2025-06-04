@@ -16,6 +16,9 @@ common_registry: &repo {{ registry }}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+llm_model: &cpu_model {{ llm_model }}
+llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
+
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
@@ -71,6 +74,12 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
+{% if edp.hierarchical_indices.enabled is true %}
+    envs:
+      USE_HIERARCHICAL_INDICES: "True"
+      K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}
+      K_CHUNKS: {{ edp.hierarchical_indices.kChunks }}
+{% endif %}
   ingestion-usvc:
     image: "erag-ingestion"
     repository: *repo

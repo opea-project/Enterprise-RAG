@@ -15,7 +15,7 @@ data:
   EMBEDDING_MODEL_SERVER: {{ .Values.dataprep.config.embedding_model_server | quote }}
   EMBEDDING_MODEL_SERVER_ENDPOINT: {{ .Values.dataprep.config.embedding_model_server_endpoint | quote }}
 {{- end }}
-{{- if eq .Values.dataprep.name "hierarchical_dataprep" }}
+{{- if eq .Values.dataprep.name "erag-hierarchical_dataprep" }}
   VLLM_SERVER_ENDPOINT: {{ .Values.dataprep.config.vllm_server_endpoint | quote }}
   SUMMARY_MODEL_NAME: {{ .Values.dataprep.config.summary_model_name | quote }}
   MAX_NEW_TOKENS: {{ .Values.dataprep.config.max_new_tokens | quote }}

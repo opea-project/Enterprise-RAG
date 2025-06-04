@@ -856,13 +856,18 @@ function start_edp() {
         fi
     elif [[ "$edp_dataprep_type" == "hierarchical" ]]; then
         print_log "Enabling Hierarchical Dataprep"
-        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=hierarchical_dataprep --set ingestion.config.use_hierarchical_indices=True"
+        HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.name=erag-hierarchical_dataprep --set ingestion.config.use_hierarchical_indices=True"
 
         if [[ "$pipeline" == *"cpu"* ]]; then
             # Read llm_model value from gmc values.yaml
             summary_model_name=$(awk -F': ' '/llm_model:/ {gsub(/&cpu_model[ ]*/, "", $2); gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
 
             HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.vllm_server_endpoint=http://vllm-service-m.chatqa.svc:8000 --set dataprep.config.summary_model_name=$summary_model_name" # Use existing vllm-cpu server from chatqa
+        elif [[ "$pipeline" == *"hpu"* ]]; then
+            # Read llm_model_gaudi value from gmc values.yaml
+            summary_model_name=$(awk -F': ' '/llm_model_gaudi:/ {gsub(/&hpu_model[ ]*/, "", $2); gsub(/"/, "", $2); print $2}' "$gmc_path/values.yaml")
+
+            HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set dataprep.config.vllm_server_endpoint=http://vllm-gaudi-svc.chatqa.svc:80 --set dataprep.config.summary_model_name=$summary_model_name" # Use existing vllm-hpu server from chatqa
         else
             HELM_INSTALL_EDP_CONFIGURATION_ARGS="$HELM_INSTALL_EDP_CONFIGURATION_ARGS --set vllm.enabled=true" # Spin up new vllm-cpu server
         fi

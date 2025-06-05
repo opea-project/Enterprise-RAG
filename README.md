@@ -147,9 +147,6 @@ ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install
 
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
 
-> [!NOTE]
-> Alternatively, installation can be performed with [Bash deployment](deployment/README_bash.md).
-
 # Remove installation
 
 ```sh

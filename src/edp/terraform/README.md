@@ -25,8 +25,8 @@ After `terraform apply` completes, it outputs the access key and SQS queue URL. 
 terraform output secret_key
 ```
 
-### Passing Terraform Outputs to ERAG Ansible Deployment
-To use them in [Ansible-based deployment](../../../deployment/README.md), retrieve their values using the `terraform output -raw <output_name>` commands. Then, copy these output values and paste them into your config.yaml file under the appropriate fields before running the Ansible deployment.
+### Passing Terraform Outputs to ERAG Deployment
+To use them in [deployment](../../../deployment/README.md), retrieve their values using the `terraform output -raw <output_name>` commands. Then, copy these output values and paste them into your config.yaml file under the appropriate fields before running the deployment.
 
 For example, get the outputs with:
 
@@ -54,29 +54,6 @@ edp:
 Then run deployment as usual, an example for installation:
 ```bash
 ansible-playbook playbooks/application.yaml --tags install -e @path/to/your/config.yaml
-```
-
-### Passing Terraform Outputs to ERAG Bash-based Deployment
-To use Terraform outputs with the [bash-based install_chatqna.sh deployment](../../../deployment/README_bash.md), export the variables before running `install_chatqna.sh` as shown below.
-
-> Note: The `install_chatqna.sh` deployment script is deprecated and will be removed in version 1.3.0. It is recommended to use the Ansible-based deployment.
-
-```bash
-cd src/edp/terraform
-export edp_storage_type="s3"
-export s3_access_key=$(terraform output -raw access_key)
-export s3_secret_key=$(terraform output -raw secret_key)
-export s3_sqs_queue=$(terraform output -raw queue_url)
-export s3_region=$(terraform output -raw region)
-
-# Optional: regex pattern to filter S3 bucket names, so only matching buckets will be displayed in the Web UI
-export s3_bucket_name_regex_filter="your-regex-pattern-here"
-```
-
-Then run the deployment script, for example:
-```bash
-cd ../../../deployment
-./install_chatqna.sh --auth --deploy reference-cpu.yaml  --ui --kind
 ```
 
 ## Cleanup

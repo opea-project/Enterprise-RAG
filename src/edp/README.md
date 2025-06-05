@@ -2,10 +2,6 @@
 
 The OPEA ERAG Enhanced Data Preparation service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `MinIO`, `AWS S3`, and `S3-compatible` endpoints.
 
-Below you find how to configure the chosen storage backend for both Ansible-based deployment and install_chatqna.sh-based deployment (legacy).
-
->⚠️ The `install_chatqna.sh` script is deprecated and will be removed in version 1.3.0.
-
 ## Requirements
 
 - Python >=3.12 is required to run EDP.
@@ -24,7 +20,7 @@ Below you find how to configure the chosen storage backend for both Ansible-base
     - (optional) sqs - queue listener for S3 events if using AWS S3
 
 
-## Configuration in Ansible-based Deployment
+## Configuration
 
 ### Storage endpoints
 Use the config.yaml file to define the storage backend. Set the desired `storageType` under the edp section in your config.yaml, see [inventory/sample/config.yaml](../../deployment/inventory/sample/config.yaml). Then, configure the appropriate sub-section based on the selected type.
@@ -82,61 +78,6 @@ Optionally, the environment variables (using the same names as in the legacy bas
 Then deploy the application by following the instructions in [deployment/README.md](../../deployment/README.md). Example for installation:
 ```bash
 ansible-playbook playbooks/application.yaml --tags install -e @path/to/your/config.yaml
-```
-
-After successful deployment, upload files using either WebGUI or cURL:
-
-```bash
-curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k
-```
-
-## Configuration in Bash-based deployment (Legacy)
-
-For [bash-based install_chatqna.sh deployment](../../deployment/README_bash.md), the storage backends are configured only via environment variables.
-
-> Note: `install_chatqna.sh` is deprecated and will be removed in version 1.3.0.
-> Please migrate to the Ansible-based deployment.
-
-### Storage endpoints
-
-#### Internal MinIO Storage (default)
-If using minio storage, MinIO server will be automatically deployed and configured. MinIO is used if not overridden by `edp_storage_type` env variable while running `install_chatqna.sh`.
-
-#### AWS S3 Storage
-To connect to AWS S3, set the `edp_storage_type` environment variable to "s3" and provide the necessary configuration using the appropriate environment variables listed below. For example scripts that create the required AWS resources—such as S3 buckets and SQS queues—refer to the [terraform/README.md](terraform/README.md).
-
-```bash
-export edp_storage_type="s3"            # This will choose S3 as storage type for EDP
-export s3_access_key=""                 # IAM access key which will be used to communicate with AWS
-export s3_secret_key=""                 # IAM secret key which will be used to communicate with AWS
-export s3_sqs_queue=""                  # AWS SQS endpoint URI that will be used for retrieving bucket/object notificiations
-export s3_region="us-east-1"            # (optional) AWS Region for buckets
-export s3_bucket_name_regex_filter=".*" # (optional) Filter bucket names to display in WebUI
-
-cd deployment
-./install_chatqna.sh <command options>
-```
-
-#### S3 API Compatible Storage
-To use other storage server that is compatible with S3 API, follow similar steps as in the above AWS S3 storage with substitution to your s3-compatible endpoint settings. Set the `edp_storage_type` environment variable to "s3compatible" and provide the required configuration via additional environment variables:
-
-```bash
-export edp_storage_type="s3compatible"  # This will choose S3 as storage type for EDP
-export s3_access_key=                   # S3 compatible storage access key
-export s3_secret_key=                   # S3 compatible storage secret key
-export s3_compatible_endpoint=          # S3 compatible storage endpoint
-export s3_region=""                     # (optional) Region if it is required by the S3 compatible storage
-export s3_bucket_name_regex_filter=".*" # (optional) Filter bucket names to display in WebUI
-
-cd deployment
-./install_chatqna.sh <command options>
-```
-> Note: If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
-
-
-Then deploy using `install_chatqna.sh`. Example for development:
-```bash
-./install_chatqna.sh --auth --deploy reference-cpu.yaml  --ui --kind
 ```
 
 After successful deployment, upload files using either WebGUI or cURL:

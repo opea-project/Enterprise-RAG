@@ -28,10 +28,10 @@ redisUrl: "edp-redis-master:6379"
 redisUsername: "default"
 redisPassword: ""
 
-postgresDatabasePassword: "" # set by install_chatqna.sh
-postgresAdminPassword: "" # set by install_chatqna.sh
+postgresDatabasePassword: ""
+postgresAdminPassword: ""
 
-hfToken: "" # set by set_values.sh
+hfToken: ""
 
 minio:
   enabled: true

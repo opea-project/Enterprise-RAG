@@ -40,12 +40,6 @@ cd deployment/
 
 TAG=ts`date +%s`
 echo $TAG
-
-# no proxy version (use only on system without proxy)
-./set_values.sh -g $HF_TOKEN -t $TAG
-
-# proxy version
-./set_values.sh -p $http_proxy -u $https_proxy -n $no_proxy -g $HF_TOKEN -t $TAG
 ```
 
 Check your changes with following command:

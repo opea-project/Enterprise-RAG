@@ -1,3 +1,8 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
 istiod:
   global:
     imagePullPolicy: Always
@@ -17,8 +22,8 @@ istiod:
               - |
                 set -e
                 # List of registry domains to exclude from Istio proxying
-                domains=("docker.io" "index.docker.io" "production.cloudflare.docker.com" "quay.io" "cdn01.quay.io" "ghcr.io" "pkg-containers.githubusercontent.com")
-        
+                domains=("{{ (httpProxy.split('://')[1].split(':')[0] if httpProxy != '')}}" "docker.io" "index.docker.io" "production.cloudflare.docker.com" "quay.io" "cdn01.quay.io" "ghcr.io" "pkg-containers.githubusercontent.com")
+
                 # Build CIDR list from all domains
                 cidr_list=""
                 for domain in "${domains[@]}"; do
@@ -28,7 +33,7 @@ istiod:
                     cidr_list+="$cidr"
                   done
                 done
-        
+
                 # Configure Istio iptables
                 /usr/local/bin/pilot-agent istio-iptables \
                   -p "15001" \

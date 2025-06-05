@@ -4,7 +4,9 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    istio_helm_override_values_path: "{{ tmp_dir }}/{{ istio.helm.chart_name }}-override-values.yaml"
+    istio_custom_init_container_values: "{{ tmp_dir }}/{{ istio.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
@@ -46,12 +48,20 @@
   tags:
     - install
 
+- name: Generate custom init container
+  ansible.builtin.template:
+    src: "custom-init-container-values.yaml.j2"
+    dest: "{{ istio_custom_init_container_values }}"
+    mode: '0644'
+  tags:
+    - install
+
 - name: Set values_files list
   ansible.builtin.set_fact:
     values_files: >
       {{
         [istio.helm.default_values_file] +
-        ([istio.helm.custom_init_container_values_file] if (tdxEnabled is defined and tdxEnabled | bool) else [])
+        ([istio_custom_init_container_values] if (tdxEnabled is defined and tdxEnabled | bool) else [])
       }}
   tags:
     - install

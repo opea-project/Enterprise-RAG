@@ -53,16 +53,16 @@
 - name: Set facts for domain names if not defined
   ansible.builtin.set_fact:
     ui: >-
-      {{ ui | combine({'domainName': certs.commonName | default(ui.domainName)}) }}
+      {{ ui | combine({'domainName': FQDN | default(ui.domainName)}) }}
     keycloak: >-
-      {{ keycloak | combine({'domainName': 'auth.' + certs.commonName | default(keycloak.domainName)}) }}
+      {{ keycloak | combine({'domainName': 'auth.' + FQDN | default(keycloak.domainName)}) }}
     telemetry: >-
-      {{ telemetry | combine({'domainName': 'grafana.' + certs.commonName | default(telemetry.domainName)}) }}
+      {{ telemetry | combine({'domainName': 'grafana.' + FQDN | default(telemetry.domainName)}) }}
     edp: >-
       {{ edp | combine({
           'minio': edp.minio | default({}) | combine({
-            'domainName': 'minio.' + certs.commonName | default(edp.minio.domainName),
-            'apiDomainName': 's3.' + certs.commonName | default(edp.minio.apiDomainName)
+            'domainName': 'minio.' + FQDN | default(edp.minio.domainName),
+            'apiDomainName': 's3.' + FQDN | default(edp.minio.apiDomainName)
           })
         })
       }}

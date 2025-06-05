@@ -36,6 +36,7 @@ class LoadDoc(AbstractLoader):
         parsed_text = ""
         para_text = []
         for paragraph_content in paragraph.iter_inner_content():
+            para_inner = ""
             if isinstance(paragraph_content, docx.text.run.Run):
                 for int_cont in paragraph_content.iter_inner_content():
                     if isinstance(int_cont, docx.text.run.Drawing):
@@ -44,7 +45,7 @@ class LoadDoc(AbstractLoader):
                             img_path = self.save_image(int_cont, os.getenv("UPLOAD_PATH", "/tmp/opea_upload"))
                             logger.debug(f"[{self.file_path}] Extracted {img_path} for processing")
                             img_loader = LoadImage(img_path)
-                            para_text.append(img_loader.extract_text())
+                            para_inner += f" {img_loader.extract_text()} "
                             logger.info(f"[{self.file_path}] Processed image {img_path}")
                         except Exception as e:
                             logger.error(f"[{self.file_path}] Error parsing image: {e}. Ignoring...")
@@ -53,15 +54,12 @@ class LoadDoc(AbstractLoader):
                                 logger.debug(f"[{self.file_path}] Removed {img_path} after processing")
                                 os.remove(img_path)
                     if isinstance(int_cont, str):
-                        para_text.append(int_cont.strip())
+                        para_inner += int_cont
             if isinstance(paragraph_content, docx.text.hyperlink.Hyperlink):
-                para_text.append(f"{paragraph_content.text.strip()} ({paragraph_content.url})")
-        
-        cleaned = [str(item).strip() for item in para_text if item not in (None, "")]
-        if len(cleaned) > 0:
-            parsed_text += " ".join(cleaned)
-            parsed_text += "\n"
-        
+                para_inner += f" {paragraph_content.text} ({paragraph_content.url}) "
+            para_text.append(para_inner)
+        parsed_text += "".join(para_text)
+        parsed_text += "\n"
         return parsed_text
 
     def extract_text_from_table(self, table):
@@ -71,10 +69,8 @@ class LoadDoc(AbstractLoader):
                 cell_text = []
                 for paragraph in cell.paragraphs:
                     cell_text.append(self.extract_text_from_paragraph(paragraph))
-                cleaned = [str(item).strip() for item in cell_text if item not in (None, "")]
-                if len(cleaned) > 0:
-                    parsed_text += " ".join(cell_text)
-                    parsed_text += "\n"
+                parsed_text += "".join(cell_text)
+                parsed_text += "\n"
         return parsed_text
 
     def save_image(self, drawing, save_path="/tmp/opea_upload"):

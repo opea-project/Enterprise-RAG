@@ -13,6 +13,8 @@ from comps.dataprep.utils.file_loaders.load_md import LoadMd
 from comps.dataprep.utils.file_loaders.load_xls import LoadXls
 from comps.dataprep.utils.file_loaders.load_xml import LoadXml
 from comps.dataprep.utils.file_loaders.load_yaml import LoadYaml
+from comps.dataprep.utils.file_loaders.load_with_markitdown import LoadWithMarkitdown
+
 import os
 
 def abs_file_path(file_name):
@@ -130,3 +132,12 @@ def test_yaml_loader():
     text = loader.extract_text()
     assert text is not None
     assert len(text) > 0
+
+def test_load_with_markitdown():
+    extensions = ['adoc', 'txt', 'json', 'jsonl', 'csv', 'xlsx', 'xls', 'html', 'md', 'xml', 'yaml']
+    for extension in extensions:
+        file_name = f'test_dataprep.{extension}'
+        loader = LoadWithMarkitdown(abs_file_path(file_name))
+        text = loader.extract_text()
+        assert text is not None
+        assert len(text) > 0

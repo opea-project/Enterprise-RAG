@@ -82,9 +82,25 @@ backend:
 dataprep:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.hierarchical_indices.enabled is true %}
+  name: "erag-hierarchical_dataprep"
+  config:
+    max_new_tokens: {{ edp.hierarchical_indices.maxNewTokens }}
+{% if "cpu" in pipelines[0].samplePath %}
+    vllm_server_endpoint: "http://vllm-service-m.chatqa.svc:8000"
+    summary_model_name: {{ llm_model }}
+{% elif "hpu" in pipelines[0].samplePath %}
+    vllm_server_endpoint: "http://vllm-gaudi-svc.chatqa.svc:80"
+    summary_model_name: {{ llm_model_gaudi }}
+{% endif %}
+{% endif %}
 ingestion:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.hierarchical_indices.enabled is true %}
+  config:
+    use_hierarchical_indices: "True"
+{% endif %}
 embedding:
   enabled: false
   remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"

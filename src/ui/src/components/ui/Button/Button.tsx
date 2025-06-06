@@ -4,7 +4,11 @@
 import "./Button.scss";
 
 import classNames from "classnames";
-import { ButtonHTMLAttributes } from "react";
+import { forwardRef } from "react";
+import {
+  Button as ReactAriaButton,
+  ButtonProps as ReactAriaButtonProps,
+} from "react-aria-components";
 
 import { IconName, icons } from "@/components/icons";
 
@@ -12,7 +16,7 @@ type ButtonColors = "primary" | "error" | "success";
 type ButtonSizes = "sm";
 type ButtonVariants = "outlined";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ReactAriaButtonProps {
   color?: ButtonColors;
   size?: ButtonSizes;
   variant?: ButtonVariants;
@@ -20,46 +24,52 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: IconName;
 }
 
-const Button = ({
-  color = "primary",
-  size,
-  variant,
-  fullWidth,
-  icon,
-  className,
-  children,
-  ...props
-}: ButtonProps) => {
-  const buttonClassNames = classNames([
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
     {
-      "button--sm": size === "sm",
-      "button--success": color === "success",
-      "button--error": color === "error",
-      "button--outlined": variant === "outlined",
-      "button--outlined-primary": variant === "outlined" && color === "primary",
-      "button--outlined-error": variant === "outlined" && color === "error",
-      "button--with-icon": icon,
-      "w-full": fullWidth,
+      color = "primary",
+      size,
+      variant,
+      fullWidth,
+      icon,
+      className,
+      children,
+      ...props
     },
-    className,
-  ]);
+    ref,
+  ) => {
+    const buttonClassNames = classNames([
+      {
+        "button--sm": size === "sm",
+        "button--success": color === "success",
+        "button--error": color === "error",
+        "button--outlined": variant === "outlined",
+        "button--outlined-primary":
+          variant === "outlined" && color === "primary",
+        "button--outlined-error": variant === "outlined" && color === "error",
+        "button--with-icon": icon,
+        "w-full": fullWidth,
+      },
+      className,
+    ]);
 
-  let content = children;
-  if (icon) {
-    const IconComponent = icons[icon];
-    content = (
-      <>
-        <IconComponent />
-        {children}
-      </>
+    let content = children;
+    if (icon) {
+      const IconComponent = icons[icon];
+      content = (
+        <>
+          <IconComponent />
+          {children}
+        </>
+      );
+    }
+
+    return (
+      <ReactAriaButton {...props} ref={ref} className={buttonClassNames}>
+        {content}
+      </ReactAriaButton>
     );
-  }
-
-  return (
-    <button className={buttonClassNames} {...props}>
-      {content}
-    </button>
-  );
-};
+  },
+);
 
 export default Button;

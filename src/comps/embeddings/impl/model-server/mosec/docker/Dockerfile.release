@@ -1,0 +1,11 @@
+FROM mosec_embedding-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/
+CMD ["ipexrun", "cpu", "--nodes-list", "0", "--memory-allocator", "tcmalloc", "server-ipex.py"]

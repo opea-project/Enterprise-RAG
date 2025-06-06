@@ -828,9 +828,7 @@ def api_file_text_extract(file_uuid: str, request: Request):
             response = requests.post(DATAPREP_ENDPOINT, json={
                 'files': [ {'filename': file.object_name, 'data64': file_base64} ],
                 'chunk_size': request.query_params.get('chunk_size', 512),
-                'chunk_overlap': request.query_params.get('chunk_overlap', 0),
-                'process_table': request.query_params.get('process_table', 'false'),
-                'table_strategy': request.query_params.get('table_strategy', 'fast'),
+                'chunk_overlap': request.query_params.get('chunk_overlap', 0)
             })
 
             if response.status_code != 200:
@@ -860,9 +858,7 @@ def api_link_text_extract(link_uuid: str, request: Request):
             response = requests.post(DATAPREP_ENDPOINT, json={
                 'links': [ str(link.uri) ],
                 'chunk_size': request.query_params.get('chunk_size', 512),
-                'chunk_overlap': request.query_params.get('chunk_overlap', 0),
-                'process_table': request.query_params.get('process_table', 'false'),
-                'table_strategy': request.query_params.get('table_strategy', 'fast'),
+                'chunk_overlap': request.query_params.get('chunk_overlap', 0)
             })
 
             if response.status_code != 200:

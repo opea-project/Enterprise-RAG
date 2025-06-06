@@ -12,4 +12,9 @@
     @apply bg-light-bg-2 dark:bg-dark-bg-inverse/10;
     @apply text-light-text-primary dark:text-dark-text-primary;
   }
+
+  & .user-message__footer {
+    @apply h-11 self-end pt-2;
+    @apply mr-9 md:mr-0;
+  }
 }

@@ -15,20 +15,18 @@ def reset_singleton():
     OPEADataprep._instance = None
 
 def test_singleton_behavior(reset_singleton):
-    instance1 = OPEADataprep(chunk_size=100, chunk_overlap=10, process_table=True, table_strategy="simple", use_semantic_chunking=False)
-    instance2 = OPEADataprep(chunk_size=100, chunk_overlap=10, process_table=True, table_strategy="simple", use_semantic_chunking=False)
+    instance1 = OPEADataprep(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
+    instance2 = OPEADataprep(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
     assert instance1 is instance2
 
 def test_initialize_method(reset_singleton):
-    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, process_table=True, table_strategy="simple", use_semantic_chunking=False)
+    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
     assert dataprep.chunk_size == 100
     assert dataprep.chunk_overlap == 10
-    assert dataprep.process_table is True
-    assert dataprep.table_strategy == "simple"
 
 @patch('opea_dataprep.logging')
 async def test_dataprep_no_files_or_links(mock_logging, reset_singleton):
-    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, process_table=True, table_strategy="simple", use_semantic_chunking=False)
+    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
     input_data = DataPrepInput(files=[], links=[])
 
     with pytest.raises(HTTPException) as exc_info:
@@ -39,7 +37,7 @@ async def test_dataprep_no_files_or_links(mock_logging, reset_singleton):
 
 @patch('opea_dataprep.logging')
 async def test_dataprep_with_files(mock_logging, reset_singleton):
-    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, process_table=True, table_strategy="simple", use_semantic_chunking=False)
+    dataprep = OPEADataprep(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
     file_content = base64.b64encode(b"test content").decode('utf-8')
     input_data = DataPrepInput(files=[MagicMock(data64=file_content)], links=[])
 
@@ -66,8 +64,6 @@ async def test_dataprep_with_semantic_chunking(mock_semantic_splitter, reset_sin
     dataprep = OPEADataprep(
         chunk_size=100,
         chunk_overlap=10,
-        process_table=True,
-        table_strategy="simple",
         use_semantic_chunking=True
     )
 
@@ -83,7 +79,6 @@ async def test_dataprep_with_semantic_chunking(mock_semantic_splitter, reset_sin
     mock_semantic_splitter.assert_called_once_with(
         chunk_size=100,
         chunk_overlap=10,
-        table_strategy="simple",
         use_semantic_chunking=True
     )
 

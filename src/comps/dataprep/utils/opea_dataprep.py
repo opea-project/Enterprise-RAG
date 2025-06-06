@@ -20,26 +20,22 @@ class OPEADataprep:
 
     _instance = None
 
-    def __new__(cls, chunk_size, chunk_overlap, process_table, table_strategy, use_semantic_chunking):
+    def __new__(cls, chunk_size, chunk_overlap, use_semantic_chunking):
         if cls._instance is None:
             cls._instance = super(OPEADataprep, cls).__new__(cls)
             cls._instance._initialize(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                process_table=process_table,
-                table_strategy=table_strategy,
                 use_semantic_chunking=use_semantic_chunking
             )
         return cls._instance
 
-    def _initialize(self, chunk_size: int, chunk_overlap: int, process_table: bool, table_strategy: str, use_semantic_chunking: bool):
+    def _initialize(self, chunk_size: int, chunk_overlap: int, use_semantic_chunking: bool):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.process_table = process_table
-        self.table_strategy = table_strategy
         self.use_semantic_chunking = use_semantic_chunking
 
-    def dataprep(self, files: any, link_list: list, chunk_size: int = None, chunk_overlap: int = None, process_table: bool = False, table_strategy: str = None) -> List[TextDoc]:
+    def dataprep(self, files: any, link_list: list, chunk_size: int = None, chunk_overlap: int = None) -> List[TextDoc]:
 
         if not files and not link_list:
             raise ValueError("No links and/or files passed for data preparation.")
@@ -61,7 +57,6 @@ class OPEADataprep:
            splitter = SemanticSplitter(
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap,
-                table_strategy=self.table_strategy,
                 embedding_model_name=sanitize_env(os.getenv("EMBEDDING_MODEL_NAME")),
                 embedding_model_server=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER")),
                 embedding_model_server_endpoint=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT")),
@@ -70,8 +65,7 @@ class OPEADataprep:
         else:
             splitter = Splitter(
             chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            table_strategy=self.table_strategy
+            chunk_overlap=self.chunk_overlap
             )
 
         # Save files

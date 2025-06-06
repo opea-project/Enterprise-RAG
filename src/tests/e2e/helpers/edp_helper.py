@@ -154,7 +154,7 @@ class EdpHelper(ApiRequestHelper):
             for file in files:
                 if file.get("object_name") == filename:
                     file_found = True
-                    if file.get("status") == "error":
+                    if file.get("status") == "error" and desired_status != "error":
                         last_status_message = "no previous status known."
                         if file_status:
                             last_status_message = f"last known status {file_status}."

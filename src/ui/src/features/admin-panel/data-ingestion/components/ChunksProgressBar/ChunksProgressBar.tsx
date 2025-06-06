@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ChunksProgressBar.scss";
+import ProgressBar from "@/components/ui/ProgressBar/ProgressBar";
 
 interface ChunksProgressBarProps {
   processedChunks: number;
@@ -16,13 +16,9 @@ const ChunksProgressBar = ({
     totalChunks > 0 ? Math.round((processedChunks / totalChunks) * 100) : 0;
 
   return (
-    <div className="chunks-progress-bar__wrapper">
-      <progress
-        className="chunks-progress-bar"
-        value={processedChunks}
-        max={totalChunks}
-      ></progress>
-      <p className="chunks-progress-bar__text">
+    <div className="flex flex-nowrap items-center gap-2">
+      <ProgressBar value={processedChunks} maxValue={totalChunks} />
+      <p className="text-xs">
         {processedChunks}&nbsp;/&nbsp;{totalChunks}&nbsp;({percentValue}%)
       </p>
     </div>

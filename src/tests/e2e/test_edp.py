@@ -111,7 +111,7 @@ def test_edp_delete_file_during_ingestion(edp_helper):
 @allure.testcase("IEASG-T126")
 def test_edp_upload_unsupported_file(edp_helper):
     """Upload a file with an unsupported file type and check that it is in error state"""
-    file = "unsupported_filetype.adoc"
+    file = "HelloWorld.c"
     file_path = os.path.join(constants.TEST_FILES_DIR, file)
     response = edp_helper.generate_presigned_url(file)
     response = edp_helper.upload_file(file_path, response.json().get("url"))

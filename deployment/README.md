@@ -270,8 +270,8 @@ For Enhanced Dataprep Pipeline (EDP) configuration, please refer to the separate
 
 ### Skipping Warm-up for vLLM Deployment
 The `VLLM_SKIP_WARMUP` environment variable controls whether the model warm-up phase is skipped during initialization. To modify this setting, update the deployment configuration in:
-  - For vLLM running on Gaudi: [vllm/docker/.env.hpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.hpu)
-  - For vLLM running on CPU: [vllm/docker/.env.cpu](./../src/comps/llms/impl/model_server/vllm/docker/.env.cpu)
+  - For vLLM running on Gaudi: [vllm/docker/.env.hpu](../src/comps/llms/impl/model_server/vllm/docker/hpu/.env)
+  - For vLLM running on CPU: [vllm/docker/.env.cpu](../src/comps/llms/impl/model_server/vllm/docker/cpu/.env)
 
 > [!NOTE]
 > By default, `VLLM_SKIP_WARMUP` is set to True on Gaudi to reduce startup time.

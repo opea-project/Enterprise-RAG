@@ -15,3 +15,4 @@ data:
   VECTOR_HNSW_EF_CONSTRUCTION: {{ .Values.ingestion.config.vector_hnsw_ef_construction | quote }}
   VECTOR_HNSW_EF_RUNTIME: {{ .Values.ingestion.config.vector_hnsw_ef_runtime | quote }}
   VECTOR_HNSW_EPSILON: {{ .Values.ingestion.config.vector_hnsw_epsilon | quote }}
+  USE_HIERARCHICAL_INDICES: {{ .Values.ingestion.config.use_hierarchical_indices | quote }}

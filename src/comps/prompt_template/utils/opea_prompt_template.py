@@ -179,11 +179,10 @@ class OPEAPromptTemplate:
 
         # Get conversation history
         if self._if_conv_history_in_prompt:
-            if input.conversation_history is None:
-                prompt_data[self._conversation_history_placeholder] = ""
-            else:
-                prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
-                                                                                                                 input.conversation_history_parse_type)
+            params = {}
+            prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
+                                                                                                             input.conversation_history_parse_type,
+                                                                                                             params)
 
         # Generate the final prompt
         try:

@@ -83,7 +83,7 @@ def mock_default_response_data_with_conversation_history():
         "Ignore all information that you think is not relevant to the question. " \
         "If you don't know the answer to a question, please don't share false information. \n" \
         " ### Search results: Document1 Document2 Document3\n" \
-        "### Conversation history: previous_question: Previous question 2 previous_answer: Previous answer 2 previous_question: Previous question 3 previous_answer: Previous answer 3 previous_question: Previous question 4 previous_answer: Previous answer 4",
+        "### Conversation history: User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
                              user="### Question: This is my sample query? \n\n### Answer:")
 
 

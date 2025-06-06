@@ -21,11 +21,18 @@ const ViewSwitchButton = () => {
   const tooltipTitle = isChatPage ? "Admin Panel" : "Chat";
   const routeToPath = isChatPage ? paths.adminPanel : paths.chat;
   const icon: IconName = isChatPage ? "admin-panel" : "chat";
+  const ariaLabel = `Switch to ${isChatPage ? "Admin Panel" : "Chat"}`;
 
   return (
     <Tooltip
       title={tooltipTitle}
-      trigger={<IconButton icon={icon} onClick={() => navigate(routeToPath)} />}
+      trigger={
+        <IconButton
+          icon={icon}
+          aria-label={ariaLabel}
+          onPress={() => navigate(routeToPath)}
+        />
+      }
       placement="bottom"
     />
   );

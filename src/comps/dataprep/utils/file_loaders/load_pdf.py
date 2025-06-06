@@ -1,108 +1,85 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import easyocr
-import fitz
-import io
+import pymupdf
 import nltk
-import numpy
-from PIL import Image
+import time
+import os
 from comps.dataprep.utils.file_loaders.abstract_loader import AbstractLoader
+from comps.dataprep.utils.file_loaders.load_image import LoadImage
+from comps.cores.mega.logger import get_opea_logger
+
+logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class LoadPdf(AbstractLoader):
     def __init__(self, file_path):
         super().__init__(file_path)
-        nltk.download('punkt_tab')
-        nltk.download('averaged_perceptron_tagger')
-        nltk.download('averaged_perceptron_tagger_eng')
+        nltk.download('punkt_tab', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
 
     def extract_text(self):
         """Load the pdf file."""
-        doc = fitz.open(self.file_path)
-        reader = easyocr.Reader(["en"], gpu=False)
+        doc = pymupdf.open(self.file_path)
         result = ""
-        for i in range(doc.page_count):
+
+        logger.info(f"[{self.file_path}] Processing {doc.page_count} pages")
+
+        page_count = doc.page_count
+        for i in range(page_count):
+            start_time = time.time()
+
             page = doc.load_page(i)
+            page.clean_contents()
+            
             pagetext = page.get_text().strip()
             if pagetext:
                 if pagetext.endswith("!") or pagetext.endswith("?") or pagetext.endswith("."):
                     result = result + pagetext
                 else:
                     result = result + pagetext + "."
-            if len(doc.get_page_images(i)) > 0:
-                for img in doc.get_page_images(i):
-                    if img:
-                        pageimg = ""
-                        xref = img[0]
-                        img_data = doc.extract_image(xref)
-                        img_bytes = img_data["image"]
-                        pil_image = Image.open(io.BytesIO(img_bytes))
-                        img = numpy.array(pil_image)
-                        img_result = reader.readtext(img, paragraph=True, detail=0)
-                        pageimg = pageimg + ", ".join(img_result).strip()
-                        if pageimg.endswith("!") or pageimg.endswith("?") or pageimg.endswith("."):
-                            pass
-                        else:
-                            pageimg = pageimg + "."
-                    result = result + pageimg
+
+            # https://pymupdf.readthedocs.io/en/latest/page.html#description-of-get-links-entries
+            for link in page.links(): 
+                if link.get("uri"):
+                    result = result + f" {link.get('uri')}"
+
+            # https://pymupdf.readthedocs.io/en/latest/recipes-text.html#how-to-extract-table-content-from-documents
+            finder = page.find_tables()
+            for table in finder.tables:
+                logger.info(f"[{self.file_path}] Extracting table from page {i+1}")
+                table_data = table.extract()
+                if len(table_data) > 0:
+                    flattened_table_data = [str(item) for sublist in table_data for item in sublist]
+                    result += " ".join(flattened_table_data)
+
+            # https://pymupdf.readthedocs.io/en/latest/recipes-images.html#how-to-extract-images-pdf-documents
+            images = doc.get_page_images(i, full=False)
+            for img in images:
+                img_data = doc.extract_image(img[0])
+                img_path = ""
+                try:
+                    img_path = self.save_image(img_data)
+                    logger.debug(f"[{self.file_path}] Extracted {img_path} for processing")
+                    img_loader = LoadImage(img_path)
+                    result += img_loader.extract_text()
+                    logger.info(f"[{self.file_path}] Processed image {img_path}")
+                except Exception as e:
+                    logger.error(f"[{self.file_path}] Error parsing image {img_path}: {e}. Ignoring...")
+                finally:
+                    if img_path and img_path != "" and os.path.exists(img_path) and not os.path.isdir(img_path):
+                        logger.debug(f"[{self.file_path}] Removed {img_path} after processing")
+                        os.remove(img_path)
+
+            end_time = time.time()
+            logger.info(f"[{self.file_path}] Page {i+1}/{page_count} processed in {end_time - start_time:.2f} seconds")
         return result
 
-    def get_tables_result(self, table_strategy):
-        """Extract tables information from pdf file."""
-        if table_strategy == "fast":
-            return None
-
-        from unstructured.documents.elements import FigureCaption
-        from unstructured.partition.pdf import partition_pdf
-
-        tables_result = []
-        raw_pdf_elements = partition_pdf(
-            filename=self.file_path,
-            infer_table_structure=True,
-        )
-        tables = [el for el in raw_pdf_elements if el.category == "Table"]
-        for table in tables:
-            table_coords = table.metadata.coordinates.points
-            content = table.metadata.text_as_html
-            table_page_number = table.metadata.page_number
-            min_distance = float("inf")
-            table_summary = None
-            if table_strategy == "hq":
-                for element in raw_pdf_elements:
-                    if isinstance(element, FigureCaption) or element.text.startswith("Tab"):
-                        caption_page_number = element.metadata.page_number
-                        caption_coords = element.metadata.coordinates.points
-                        related, y_distance = self.get_relation(
-                            table_coords, caption_coords, table_page_number, caption_page_number
-                        )
-                        if related:
-                            if y_distance < min_distance:
-                                min_distance = y_distance
-                                table_summary = element.text
-                if table_summary is None:
-                    parent_id = table.metadata.parent_id
-                    for element in raw_pdf_elements:
-                        if element.id == parent_id:
-                            table_summary = element.text
-                            break
-            elif table_strategy is None:
-                table_summary = None
-            if table_summary is None:
-                text = f"[Table: {content}]"
-            else:
-                text = f"|Table: [Summary: {table_summary}], [Content: {content}]|"
-            tables_result.append(text)
-        return tables_result
-
-    def get_relation(self, table_coords, caption_coords, table_page_number, caption_page_number, threshold=100):
-        """Get the relation of a pair of table and caption."""
-        same_page = table_page_number == caption_page_number
-        x_overlap = (min(table_coords[2][0], caption_coords[2][0]) - max(table_coords[0][0], caption_coords[0][0])) > 0
-        if table_coords[0][1] - caption_coords[1][1] >= 0:
-            y_distance = table_coords[0][1] - caption_coords[1][1]
-        elif caption_coords[0][1] - table_coords[1][1] >= 0:
-            y_distance = caption_coords[0][1] - table_coords[1][1]
-        else:
-            y_distance = 0
-        y_close = y_distance < threshold
-        return same_page and x_overlap and y_close, y_distance
+    def save_image(self, data, save_path="/tmp/opea_upload"):
+        """Save image data to a file."""
+        import uuid
+        image_ext = data["ext"]
+        image_filename = os.path.join(save_path, f"{uuid.uuid4()}.{image_ext}")
+        with open(image_filename, "wb") as f:
+            f.write(data["image"])
+        return image_filename

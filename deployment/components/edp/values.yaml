@@ -28,10 +28,10 @@ redisUrl: "edp-redis-master:6379"
 redisUsername: "default"
 redisPassword: ""
 
-postgresDatabasePassword: "" # set by install_chatqna.sh
-postgresAdminPassword: "" # set by install_chatqna.sh
+postgresDatabasePassword: ""
+postgresAdminPassword: ""
 
-hfToken: "" # set by set_values.sh
+hfToken: ""
 
 minio:
   enabled: true
@@ -189,6 +189,15 @@ postgresql:
       cpu: "2"
       memory: "4Gi"
   primary:
+    resources:
+      requests:
+        cpu: "1"
+        ephemeral-storage: "50Mi"
+        memory: "2Gi"
+      limits:
+        cpu: "2"
+        ephemeral-storage: "1Gi"
+        memory: "4Gi"
     networkPolicy:
       extraIngress:
         - ports:
@@ -597,6 +606,8 @@ ingestion:
     vector_hnsw_ef_construction: "32"
     vector_hnsw_ef_runtime: "32"
     vector_hnsw_epsilon: "0.01"
+    # For hierarchical indices
+    use_hierarchical_indices: "False"
   pullPolicy: Always
   replicas: 1
   resources:
@@ -619,7 +630,7 @@ vllm:
     ppSize: "1"
     maxModelLen: "4096"
   nameOverride: "edp-vllm"
-  name: "vllm-cpu"
+  name: "erag-vllm-cpu"
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always

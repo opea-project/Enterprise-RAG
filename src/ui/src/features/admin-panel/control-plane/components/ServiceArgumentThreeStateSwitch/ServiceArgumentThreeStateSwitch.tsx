@@ -16,9 +16,9 @@ const ServiceArgumentThreeStateSwitch = (
   props: ServiceArgumentThreeStateSwitchProps,
 ) => {
   const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const readOnly = !isEditModeEnabled;
+  const isReadOnly = !isEditModeEnabled;
 
-  return <ThreeStateSwitch {...props} readOnly={readOnly} />;
+  return <ThreeStateSwitch {...props} isReadOnly={isReadOnly} />;
 };
 
 export default ServiceArgumentThreeStateSwitch;

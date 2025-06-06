@@ -29,7 +29,7 @@ export const retrieverFormConfig = {
   distance_threshold: {
     name: "distance_threshold",
     range: { min: 0.1, max: 1 },
-    nullable: true,
+    isNullable: true,
     tooltipText:
       "The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches.",
   },

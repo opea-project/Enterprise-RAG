@@ -1,15 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./ServiceArgumentNumberInput.scss";
-
-import classNames from "classnames";
 import { ChangeEvent, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { ValidationError } from "yup";
 
-import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
-import Tooltip from "@/components/ui/Tooltip/Tooltip";
+import TextInput from "@/components/ui/TextInput/TextInput";
 import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
@@ -31,8 +26,8 @@ interface ServiceArgumentNumberInputProps {
   initialValue: ServiceArgumentNumberInputValue;
   range: NumberInputRange;
   tooltipText?: string;
-  nullable?: boolean;
-  readOnlyDisabled?: boolean;
+  isNullable?: boolean;
+  isReadOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
@@ -42,39 +37,39 @@ const ServiceArgumentNumberInput = ({
   initialValue,
   range,
   tooltipText,
-  nullable = false,
-  readOnlyDisabled = false,
+  isNullable = false,
+  isReadOnlyDisabled = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
   const isGraphEditModeEnabled = useAppSelector(
     chatQnAGraphEditModeEnabledSelector,
   );
-  const isEditModeEnabled = readOnlyDisabled
-    ? readOnlyDisabled
+  const isEditModeEnabled = isReadOnlyDisabled
+    ? isReadOnlyDisabled
     : isGraphEditModeEnabled;
-  const readOnly = !isEditModeEnabled;
+  const isReadOnly = !isEditModeEnabled;
 
   const [value, setValue] = useState(initialValue || "");
   const [isInvalid, setIsInvalid] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (readOnly) {
+    if (isReadOnly) {
       setValue(initialValue ?? "");
       setIsInvalid(false);
     }
-  }, [readOnly, initialValue]);
+  }, [isReadOnly, initialValue]);
 
   const validateInput = async (value: string) => {
     try {
-      await validateServiceArgumentNumberInput(value, range, nullable);
+      await validateServiceArgumentNumberInput(value, range, isNullable);
       setIsInvalid(false);
-      setError("");
+      setErrorMessage("");
       return true;
     } catch (validationError) {
       setIsInvalid(true);
-      setError((validationError as ValidationError).message);
+      setErrorMessage((validationError as ValidationError).message);
       return false;
     }
   };
@@ -91,38 +86,21 @@ const ServiceArgumentNumberInput = ({
     }
   };
 
-  const inputClassNames = classNames({
-    "service-argument-number-input": true,
-    "input--invalid": isInvalid,
-  });
-
-  const inputId = `${name}-number-input-${uuidv4()}`;
   const placeholder = `Enter number between ${range.min} and ${range.max}`;
 
   return (
-    <div className="service-argument-number-input__wrapper">
-      <label htmlFor={inputId} className="service-argument-number-input__label">
-        {tooltipText && (
-          <Tooltip
-            title={tooltipText}
-            trigger={<InfoIcon />}
-            placement="left"
-          />
-        )}
-        <span>{name}</span>
-      </label>
-      <input
-        className={inputClassNames}
-        value={value}
-        id={inputId}
-        name={inputId}
-        type="text"
-        placeholder={placeholder}
-        readOnly={readOnly}
-        onChange={handleChange}
-      />
-      {isInvalid && <p className="error mt-1 pl-2 text-xs italic">{error}</p>}
-    </div>
+    <TextInput
+      name={name}
+      label={name}
+      value={value}
+      size="sm"
+      isInvalid={isInvalid}
+      isReadOnly={isReadOnly}
+      placeholder={placeholder}
+      tooltipText={tooltipText}
+      errorMessage={errorMessage}
+      onChange={handleChange}
+    />
   );
 };
 

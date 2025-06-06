@@ -9,9 +9,9 @@ from comps.dataprep.utils.file_loaders.abstract_loader import AbstractLoader
 class LoadXml(AbstractLoader):
     def __init__(self, file_path):
         super().__init__(file_path)
-        nltk.download('punkt_tab')
-        nltk.download('averaged_perceptron_tagger')
-        nltk.download('averaged_perceptron_tagger_eng')
+        nltk.download('punkt_tab', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+        nltk.download('averaged_perceptron_tagger_eng', quiet=True)
 
     def extract_text(self):
         """Load xml file."""

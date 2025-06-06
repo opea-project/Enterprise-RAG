@@ -4,7 +4,7 @@
 import "./CopyButton.scss";
 
 import classNames from "classnames";
-import { MouseEventHandler, useState } from "react";
+import { useState } from "react";
 
 import { IconName } from "@/components/icons";
 import IconButton from "@/components/ui/IconButton/IconButton";
@@ -25,7 +25,7 @@ const CopyButton = ({ textToCopy, show = true }: CopyButtonProps) => {
     return null;
   }
 
-  const handleClick: MouseEventHandler = () => {
+  const handlePress = () => {
     navigator.clipboard
       .writeText(textToCopy)
       .then(() => {
@@ -53,12 +53,13 @@ const CopyButton = ({ textToCopy, show = true }: CopyButtonProps) => {
     <Tooltip
       title="Copy"
       placement="bottom"
+      aria-label="Copy"
       trigger={
         <IconButton
           icon={icon}
           size="sm"
           className={className}
-          onClick={handleClick}
+          onPress={handlePress}
         />
       }
     />

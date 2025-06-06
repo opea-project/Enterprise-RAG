@@ -100,7 +100,7 @@ Additionally, you can pass `rerank_score_threshold` to filter received docs base
 ```bash
 curl http://localhost:8000/v1/reranking \
   -X POST \
-  -d '{"initial_query":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}], "top_n":1, "rerank_score_threshold": 0.02}' \
+  -d '{"user_prompt":"What is Deep Learning?", "retrieved_docs": [{"text":"Deep Learning is not..."}, {"text":"Deep learning is..."}], "top_n":1, "rerank_score_threshold": 0.02}' \
   -H 'Content-Type: application/json'
 ```
 
@@ -111,7 +111,7 @@ The reranking microservice outputs a JSON containing the original user question 
 {
   "id": "d5d4102b8dc9414866d9c2ee550c9229",
   "data": {
-    "initial_query": "What is Deep Learning?",
+    "user_prompt": "What is Deep Learning?",
     "reranked_docs": [
       {
         "downstream_black_list": [],

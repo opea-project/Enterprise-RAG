@@ -16,7 +16,7 @@ fi
 
 echo "Info: LLM_DEVICE is set to: $LLM_DEVICE"
 
-ENV_FILE=docker/.env.${LLM_DEVICE}
+ENV_FILE=docker/${LLM_DEVICE}/.env
 echo "Reading configuration from $ENV_FILE..."
 
 # Check if docker compose is available (prerequisite)
@@ -63,16 +63,16 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
     fi
 fi
 
-mkdir -p ./docker/data/
+mkdir -p ./docker/${LLM_DEVICE}/data/
 
 if [ "${LLM_DEVICE}" = "hpu" ]; then
     if [ "${IF_FP8_QUANTIZATION}" = "true" ]; then
         export QUANT_CONFIG=${QUANT_CONFIG:-/data/inc/$(basename $LLM_VLLM_MODEL_NAME)/maxabs_quant_g2.json}
-        docker compose -f docker/docker-compose-hpu-fp8.yaml up --build -d llm-vllm-fp8-model-server
+        docker compose -f docker/hpu/docker-compose-fp8.yaml up --build -d llm-vllm-fp8-model-server
     else
-        docker compose -f docker/docker-compose-hpu.yaml up --build -d llm-vllm-model-server
+        docker compose -f docker/hpu/docker-compose.yaml up --build -d llm-vllm-model-server
     fi
 else
     export UID
-    docker compose -f docker/docker-compose-cpu.yaml up --build llm-vllm-model-server
+    docker compose -f docker/cpu/docker-compose.yaml up --build llm-vllm-model-server
 fi

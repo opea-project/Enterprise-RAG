@@ -22,6 +22,7 @@ dependencies = [
     "python-dotenv==1.1.0",
     "pyyaml==6.0.2",
     "h11==0.16.0",
+    "setuptools == 80.9.0",
 ]
 
 [project.optional-dependencies]

@@ -22,6 +22,7 @@ dependencies = [
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "packaging==24.2",
+    "setuptools == 80.9.0",
 ]
 
 [tool.uv.sources]

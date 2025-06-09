@@ -14,8 +14,8 @@ alternateTagging: {{ use_alternate_tagging }}
 
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "minio" %}
 {% if storage == "minio" %}
-edpAccessKey: {{ edp_minio_access_key }}
-edpSecretKey: {{ edp_minio_secret_key }}
+edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
+edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
 edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}

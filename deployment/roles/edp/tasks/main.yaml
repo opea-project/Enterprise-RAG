@@ -104,7 +104,7 @@
 - name: Get client_secret_id keycloak
   vars:
     client_id: "{{ edp.client_id }}"
-  include_role:
+  ansible.builtin.include_role:
     name: keycloak
     tasks_from: get_secret_id
   tags:
@@ -117,11 +117,13 @@
   tags:
     - install
 
-- name: Generate random string for access key
-  ansible.builtin.set_fact:
-    edp_minio_access_key: "{{ lookup('password', '/dev/null length=10 chars=ascii_letters,digits,special') }}"
-    edp_minio_secret_key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,special') }}"
-  when: edp.storageType == "minio"
+- name: Generate random string for keys
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_key
+  loop:
+    - { name: EDP_MINIO_ACCESS_KEY }
+    - { name: EDP_MINIO_SECRET_KEY }
   no_log: "{{ secure_logs }}"
   tags:
     - install
@@ -129,7 +131,7 @@
 - name: Generate password
   ansible.builtin.include_role:
     name: generate_password
-    tasks_from: generate_password.yaml
+    tasks_from: generate_password
   loop:
     - { name: EDP_REDIS, user: "{{ edp.redis.auth.user.db_username }}" }
     - { name: EDP_POSTGRESQL, user: "{{ edp.postgresql.auth.user.db_username }}" }

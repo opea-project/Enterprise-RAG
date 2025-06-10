@@ -22,7 +22,7 @@ istiod:
               - |
                 set -e
                 # List of registry domains to exclude from Istio proxying
-                domains=("{{ (httpProxy.split('://')[1].split(':')[0] if httpProxy != '')}}" "docker.io" "index.docker.io" "production.cloudflare.docker.com" "quay.io" "cdn01.quay.io" "ghcr.io" "pkg-containers.githubusercontent.com")
+                domains=("{{ (httpProxy.split('://')[1].split(':')[0] if (httpProxy is defined and httpProxy != ''))}}" "docker.io" "index.docker.io" "production.cloudflare.docker.com" "quay.io" "cdn01.quay.io" "ghcr.io" "pkg-containers.githubusercontent.com")
 
                 # Build CIDR list from all domains
                 cidr_list=""

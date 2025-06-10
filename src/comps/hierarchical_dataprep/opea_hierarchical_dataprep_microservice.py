@@ -13,7 +13,7 @@ from pathvalidate import is_valid_filename
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.utils.utils import sanitize_env
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
-from comps.cores.proto.docarray import DataPrepInput, TextDocList
+from comps.cores.proto.docarray import HierarchicalDataPrepInput, TextDocList
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
 from comps.cores.mega.base_statistics import register_statistics, statistics_dict
 
@@ -68,13 +68,13 @@ pool = ProcessPoolExecutor(max_workers=1)
     endpoint=str(MegaServiceEndpoint.HIERARCHICAL_DATAPREP),
     host="0.0.0.0",
     port=int(os.getenv('HIERARCHICAL_DATAPREP_USVC_PORT', default=9399)),
-    input_datatype=DataPrepInput,
+    input_datatype=HierarchicalDataPrepInput,
     output_datatype=TextDocList,
 )
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-async def process(input: DataPrepInput) -> TextDocList:
+async def process(input: HierarchicalDataPrepInput) -> TextDocList:
     start = time.time()
 
     files = input.files

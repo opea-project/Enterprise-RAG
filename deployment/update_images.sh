@@ -9,7 +9,7 @@ _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "gmcRouter" "dataprep-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "langdtct-usvc" "edp-usvc" "dpguard-usvc" "hierarchical-dataprep-usvc")
+default_components=("gmcManager" "gmcRouter" "text-extractor-usvc" "text-compression-usvc" "text-splitter-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "langdtct-usvc" "edp-usvc" "dpguard-usvc" "hierarchical-dataprep-usvc")
 
 repo_path=$(realpath "$(pwd)/../")
 logs_dir="$repo_path/deployment/logs"
@@ -55,7 +55,7 @@ setup_local_registry() {
     # Check if the local registry container is already there
     if [ "$(docker ps -a -q -f name="$LOCAL_REGISTRY_NAME")" ]; then
         echo "Warning! $LOCAL_REGISTRY_NAME is already taken. Existing registry will be used."
-    else 
+    else
         echo "Starting $LOCAL_REGISTRY_NAME..."
         docker run -d -p $REGISTRY_PORT:$REGISTRY_PORT --name $LOCAL_REGISTRY_NAME $REGISTRY_IMAGE
     fi
@@ -297,15 +297,33 @@ for component in "${components_to_build[@]}"; do
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
             ;;
 
-        dataprep-usvc)
+        text-extractor-usvc)
             path="${repo_path}/src"
-            dockerfile="comps/dataprep/impl/microservice/Dockerfile"
-            image=erag-dataprep
+            dockerfile="comps/text_extractor/impl/microservice/Dockerfile"
+            image=erag-text-extractor
 
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
             ;;
-        
+
+        text-compression-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/text_compression/impl/microservice/Dockerfile"
+            image=erag-text-compression
+
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
+            ;;
+
+        text-splitter-usvc)
+            path="${repo_path}/src"
+            dockerfile="comps/text_splitter/impl/microservice/Dockerfile"
+            image=erag-text-splitter
+
+            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
+            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
+            ;;
+
         hierarchical-dataprep-usvc)
             path="${repo_path}/src"
             dockerfile="comps/hierarchical_dataprep/impl/microservice/Dockerfile"
@@ -386,7 +404,7 @@ for component in "${components_to_build[@]}"; do
             if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
             if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
             ;;
- 
+
         otelcol-contrib-journalctl)
             path="${repo_path}"
             dockerfile="deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"

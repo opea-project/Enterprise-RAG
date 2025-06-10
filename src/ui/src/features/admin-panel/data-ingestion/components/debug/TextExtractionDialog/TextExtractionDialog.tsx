@@ -28,6 +28,7 @@ export const TextExtractionForm = ({
   const [formData, setFormData] = useState<PostToExtractTextQueryParams>({
     chunk_size: 0,
     chunk_overlap: 0,
+    use_semantic_chunking: false,
   });
   const [isFormEnabled, setIsFormEnabled] = useState<boolean>(false);
 
@@ -38,6 +39,13 @@ export const TextExtractionForm = ({
     setFormData((prevFormData) => ({
       ...prevFormData,
       [name]: Math.max(0, Math.min(Number(value), 9999)),
+    }));
+  };
+
+  const handleCheckboxInputChange = (name: string, isSelected: boolean) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: isSelected,
     }));
   };
 
@@ -77,6 +85,15 @@ export const TextExtractionForm = ({
           value={formData.chunk_overlap}
           isDisabled={isFormDisabled}
           onChange={handleRangeInputChange}
+        />
+        <CheckboxInput
+          label="Use Semantic Chunking"
+          name="use_semantic_chunking"
+          isSelected={formData.use_semantic_chunking}
+          isDisabled={isFormDisabled}
+          onChange={(isSelected) =>
+            handleCheckboxInputChange("use_semantic_chunking", isSelected)
+          }
         />
         <Button type="submit" isDisabled={isLoadingExtractedText}>
           Extract Text

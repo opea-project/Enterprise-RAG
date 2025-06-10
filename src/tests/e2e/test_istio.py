@@ -29,7 +29,9 @@ http_endpoints = [
     # vllm endpoint name is different depending on the platform
     # "vllm-service-m.chatqa.svc.cluster.local:8000",
     # EDP endpoints
-    "edp-dataprep.edp.svc.cluster.local:9399",
+    "edp-text-extractor.edp.svc.cluster.local:9398",
+    "edp-text-compression.edp.svc.cluster.local:9397",
+    "edp-text-splitter.edp.svc.cluster.local:9399",
     "edp-ingestion.edp.svc.cluster.local:6120",
     "edp-backend.edp.svc.cluster.local:5000",
     "edp-celery.edp.svc.cluster.local:5000",

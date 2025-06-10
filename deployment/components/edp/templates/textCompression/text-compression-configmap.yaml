@@ -1,0 +1,12 @@
+{{- if not .Values.hierarchicalDataprep.enabled -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-text-compression-configmap
+  namespace: edp
+data:
+  DEFAULT_TEXT_COMPRESSION_METHODS: {{ .Values.textCompression.config.default_text_compression_methods | quote }}
+{{- end }}

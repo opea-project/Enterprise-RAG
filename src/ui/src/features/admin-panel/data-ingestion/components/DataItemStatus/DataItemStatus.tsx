@@ -24,7 +24,9 @@ const statusIconMap: Record<DataStatus, ReactNode> = {
   uploaded: <UploadIcon className="data-item-status__icon" />,
   error: <ErrorIcon className="data-item-status__icon" />,
   processing: <LoadingIcon className="data-item-status__icon" />,
-  dataprep: <DataPrepIcon className="data-item-status__icon" />,
+  text_extracting: <DataPrepIcon className="data-item-status__icon" />,
+  text_compression: <DataPrepIcon className="data-item-status__icon" />,
+  text_splitting: <DataPrepIcon className="data-item-status__icon" />,
   dpguard: <DPGuardIcon className="data-item-status__icon" />,
   embedding: <EmbeddingIcon className="data-item-status__icon" />,
   ingested: <SuccessIcon className="data-item-status__icon" />,
@@ -33,6 +35,12 @@ const statusIconMap: Record<DataStatus, ReactNode> = {
   blocked: <BlockedIcon className="data-item-status__icon" />,
 };
 
+const formatStatus = (status: DataStatus): string =>
+  status
+    .split("_")
+    .map((part) => titleCaseString(part))
+    .join(" ");
+
 interface DataItemStatusProps {
   status: DataStatus;
   statusMessage: string;
@@ -40,7 +48,7 @@ interface DataItemStatusProps {
 
 const DataItemStatus = ({ status, statusMessage }: DataItemStatusProps) => {
   const statusIcon = statusIconMap[status];
-  const statusText = titleCaseString(status);
+  const statusText = formatStatus(status);
   const isStatusMessageEmpty = statusMessage === "";
   const statusClassNames = classNames({
     "data-item-status": true,

@@ -129,7 +129,10 @@ If you want to utilize all functionality, depending on the application server yo
 |         | BUCKET_NAME_REGEX_FILTER   | Regex filter for filtering out available buckets by name |
 |         | CELERY_BROKER_URL          | URL for Celery broker |
 |         | CELERY_BACKEND_URL         | URL for Celery backend |
-|         | DATAPREP_ENDPOINT          | Endpoint for data preparation service |
+|         | HIERARCHICAL_DATAPREP_ENDPOINT | Endpoint for hierarchical dataprep service |
+|         | TEXT_EXTRACTOR_ENDPOINT       | Endpoint for text extractor service |
+|         | TEXT_COMPRESSION_ENDPOINT | Endpoint for token compression service |
+|         | TEXT_SPLITTER_ENDPOINT     | Endpoint for data splitter service |
 |         | EMBEDDING_ENDPOINT         | Endpoint for embedding service |
 |         | INGESTION_ENDPOINT         | Endpoint for ingestion service |
 |         | DATABASE_HOST              | Host for PostgreSQL database |

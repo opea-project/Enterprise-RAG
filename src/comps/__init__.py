@@ -35,6 +35,7 @@ from comps.cores.mega.orchestrator_with_yaml import ServiceOrchestratorWithYaml
 from comps.cores.proto.docarray import (
     Audio2TextDoc,
     Base64ByteStrDoc,
+    TextSplitterInput,
     DocPath,
     EmbedDoc,
     GeneratedDoc,
@@ -48,6 +49,7 @@ from comps.cores.proto.docarray import (
     PrevQuestionDetails,
     PromptTemplateInput,
     TextDoc,
+    TextCompressionInput,
     PromptCreate,
     PromptGet,
     PromptId,

@@ -79,10 +79,11 @@ flower:
 backend:
   tag: {{ tag }}
   repository: {{ registry }}
-dataprep:
+{% if edp.hierarchical_indices.enabled is true %}
+hierarchicalDataprep:
+  enabled: {{ edp.hierarchical_indices.enabled }}
   tag: {{ tag }}
   repository: {{ registry }}
-{% if edp.hierarchical_indices.enabled is true %}
   name: "erag-hierarchical_dataprep"
   config:
     max_new_tokens: {{ edp.hierarchical_indices.maxNewTokens }}
@@ -93,6 +94,16 @@ dataprep:
     vllm_server_endpoint: "http://vllm-gaudi-svc.chatqa.svc:80"
     summary_model_name: {{ llm_model_gaudi }}
 {% endif %}
+{% else %}
+textExtractor:
+  tag: {{ tag }}
+  repository: {{ registry }}
+textCompression:
+  tag: {{ tag }}
+  repository: {{ registry }}
+textSplitter:
+  tag: {{ tag }}
+  repository: {{ registry }}
 {% endif %}
 ingestion:
   tag: {{ tag }}

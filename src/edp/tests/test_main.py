@@ -31,7 +31,9 @@ def test_metrics(mock_get_db):
         assert 'edp_files_uploaded_total' in response.text
         assert 'edp_files_error_total' in response.text
         assert 'edp_files_processing_total' in response.text
-        assert 'edp_files_dataprep_total' in response.text
+        assert 'edp_files_text_extracting_total' in response.text
+        assert 'edp_files_text_compression_total' in response.text
+        assert 'edp_files_text_splitting_total' in response.text
         assert 'edp_files_embedding_total' in response.text
         assert 'edp_files_ingested_total' in response.text
         assert 'edp_files_deleting_total' in response.text
@@ -39,7 +41,9 @@ def test_metrics(mock_get_db):
         assert 'edp_links_uploaded_total' in response.text
         assert 'edp_links_error_total' in response.text
         assert 'edp_links_processing_total' in response.text
-        assert 'edp_links_dataprep_total' in response.text
+        assert 'edp_links_text_extracting_total' in response.text
+        assert 'edp_links_text_compression_total' in response.text
+        assert 'edp_links_text_splitting_total' in response.text
         assert 'edp_links_embedding_total' in response.text
         assert 'edp_celery_reserved_tasks_total' in response.text
         assert 'edp_celery_scheduled_tasks_total' in response.text
@@ -81,7 +85,7 @@ def test_add_new_file(mock_delete_existing_file, mock_process_file_task, mock_ge
     mock_get_db.return_value.__enter__.return_value = mock_db
     mock_process_file_task.delay.return_value = MagicMock(id="123e4567-e89b-12d3-a456-426614174000")
     mock_delete_existing_file.return_value = MagicMock()
-    
+
     bucket_name = "test-bucket"
     object_name = "test-object"
     etag = "test-etag"
@@ -156,7 +160,7 @@ def test_delete_existing_file_no_files(mock_get_db):
 
 def test_presigned_url():
     methods = ["GET", "PUT", "DELETE"]
-    for method in methods:  
+    for method in methods:
         payload = {
             "bucket_name": "my-bucket",
             "object_name": "my-object",
@@ -658,7 +662,7 @@ def test_minio_unknown_event():
             }
         ]
     }
-    
+
     response = client.post('/minio_event', json=payload)
     assert response.json() == {'detail': 'Event not implemented'}
     assert response.status_code == 501

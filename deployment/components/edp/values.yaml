@@ -269,11 +269,26 @@ celery:
         secretKeyRef:
           name: edp-celery-secrets
           key: CELERY_BACKEND_URL
-    - name: DATAPREP_ENDPOINT
+    - name: HIERARCHICAL_DATAPREP_ENDPOINT
       valueFrom:
         configMapKeyRef:
           name: edp-configmap
-          key: DATAPREP_ENDPOINT
+          key: HIERARCHICAL_DATAPREP_ENDPOINT
+    - name: TEXT_EXTRACTOR_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_EXTRACTOR_ENDPOINT
+    - name: TEXT_COMPRESSION_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_COMPRESSION_ENDPOINT
+    - name: TEXT_SPLITTER_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_SPLITTER_ENDPOINT
     - name: EMBEDDING_ENDPOINT
       valueFrom:
         configMapKeyRef:
@@ -462,11 +477,26 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: BUCKET_NAME_REGEX_FILTER
-    - name: "DATAPREP_ENDPOINT"
+    - name: HIERARCHICAL_DATAPREP_ENDPOINT
       valueFrom:
         configMapKeyRef:
           name: edp-configmap
-          key: DATAPREP_ENDPOINT
+          key: HIERARCHICAL_DATAPREP_ENDPOINT
+    - name: "TEXT_EXTRACTOR_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_EXTRACTOR_ENDPOINT
+    - name: "TEXT_COMPRESSION_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_COMPRESSION_ENDPOINT
+    - name: "TEXT_SPLITTER_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_SPLITTER_ENDPOINT
     - name: "EMBEDDING_ENDPOINT"
       valueFrom:
         configMapKeyRef:
@@ -497,10 +527,142 @@ backend:
       cpu: "2"
       memory: "2Gi"
 
-dataprep:
+hierarchicalDataprep:
+  enabled: false
+  nameOverride: "edp-hierarchical-dataprep"
+  name: "erag-hierarchical-dataprep"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  config:
+    chunk_size: "512"
+    chunk_overlap: "64"
+    vllm_server_endpoint: "http://edp-vllm:8008"
+    summary_model_name: "Intel/neural-chat-7b-v3-3"
+    max_new_tokens: "100"
+  resources:
+    requests:
+      cpu: "8"
+      memory: "16Gi"
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 4
+    targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textExtractor:
+  nameOverride: "edp-text-extractor"
+  name: "erag-text-extractor"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  resources:
+    requests:
+      cpu: "8"
+      memory: "16Gi"
+    limits:
+      cpu: "8"
+      memory: "16Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 4
+    targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textCompression:
+  nameOverride: "edp-text-compression"
+  name: "erag-text-compression"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  config:
+    default_text_compression_methods: ""
+  resources:
+    requests:
+      cpu: "2"
+      memory: "2Gi"
+    limits:
+      cpu: "4"
+      memory: "4Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 4
+    targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textSplitter:
   semantic_chunking_enabled: false
-  nameOverride: "edp-dataprep"
-  name: "erag-dataprep"
+  nameOverride: "edp-text-splitter"
+  name: "erag-text-splitter"
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
@@ -516,16 +678,13 @@ dataprep:
     embedding_model_name: "BAAI/bge-base-en-v1.5"
     embedding_model_server: "torchserve"
     embedding_model_server_endpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
-    vllm_server_endpoint: "http://edp-vllm:8008"
-    summary_model_name: "Intel/neural-chat-7b-v3-3"
-    max_new_tokens: "100"
   resources:
     requests:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "2"
+      memory: "2Gi"
     limits:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "4"
+      memory: "4Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 4

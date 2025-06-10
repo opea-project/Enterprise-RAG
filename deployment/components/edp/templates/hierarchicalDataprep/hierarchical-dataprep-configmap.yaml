@@ -1,0 +1,16 @@
+{{- if .Values.hierarchicalDataprep.enabled -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-hierarchical-dataprep-configmap
+  namespace: edp
+data:
+  CHUNK_SIZE: {{ .Values.hierarchicalDataprep.config.chunk_size | quote }}
+  CHUNK_OVERLAP: {{ .Values.hierarchicalDataprep.config.chunk_overlap | quote }}
+  VLLM_SERVER_ENDPOINT: {{ .Values.hierarchicalDataprep.config.vllm_server_endpoint | quote }}
+  SUMMARY_MODEL_NAME: {{ .Values.hierarchicalDataprep.config.summary_model_name | quote }}
+  MAX_NEW_TOKENS: {{ .Values.hierarchicalDataprep.config.max_new_tokens | quote }}
+{{- end }}

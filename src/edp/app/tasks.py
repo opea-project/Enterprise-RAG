@@ -31,7 +31,10 @@ celery = Celery(
     worker_prefetch_multiplier=1
 )
 
-DATAPREP_ENDPOINT  = os.environ.get('DATAPREP_ENDPOINT')
+HIERARCHICAL_DATAPREP_ENDPOINT  = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
+TEXT_EXTRACTOR_ENDPOINT  = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
+TEXT_COMPRESSION_ENDPOINT  = os.environ.get('TEXT_COMPRESSION_ENDPOINT')
+TEXT_SPLITTER_ENDPOINT  = os.environ.get('TEXT_SPLITTER_ENDPOINT')
 EMBEDDING_ENDPOINT = os.environ.get('EMBEDDING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
 
@@ -93,10 +96,10 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{file_db.id}] Deleted existing data related to file.")
 
-    # Step 1 - Prepare the file for dataprep request
-    file_db.dataprep_start = datetime.datetime.now()
-    file_db.status = 'dataprep'
-    file_db.job_message = 'Data preparation in progress.'
+    # Step 1 - Prepare the file for text_extractor request
+    file_db.text_extractor_start = datetime.datetime.now()
+    file_db.status = 'text_extracting'
+    file_db.job_message = 'Data loading in progress.'
     self.db.commit()
 
     minio_response = None
@@ -105,11 +108,11 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         minio_response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
         file_data = minio_response.read()
         file_base64 = base64.b64encode(file_data).decode('ascii')
-        logger.debug(f"[{file_db.id}] Retrievied file from S3 storage.")
+        logger.debug(f"[{file_db.id}] Retrieved file from S3 storage.")
     except S3Error as e:
         file_db.status = 'error'
         file_db.job_message = f"Error downloading file. {e}"
-        file_db.dataprep_end = datetime.datetime.now()
+        file_db.text_extractor_end = datetime.datetime.now()
         self.db.commit()
         raise Exception(f"Error downloading file. {e}")
     finally:
@@ -117,43 +120,132 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             minio_response.close()
             minio_response.release_conn()
 
-    # Step 2 - Call the data preparation service
+    # Step 2 - Call the text extractor service
     filename = file_db.object_name.split('/')[-1]
-    response = requests.post(DATAPREP_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
-    if response.status_code != 200:
-        file_db.status = 'error'
-        file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
-        file_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-        raise Exception(f"Error encountered while data preparation. {response_err(response)}")
-    logger.debug(f"[{file_db.id}] Data preparation completed.")
-
     dataprep_docs = []
-    try:
-        dataprep_docs = response.json()['docs']
-        if len(dataprep_docs) == 0:
-            logger.debug(f"[{file_db.id}] Data preparation returned 0 chunks.")
-            raise Exception('No text extracted from the file.')
+    if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
+        logger.info(f"[{file_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
+        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        if response.status_code != 200:
+            file_db.status = 'error'
+            file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data preparation. {response_err(response)}")
+        logger.debug(f"[{file_db.id}] Data preparation completed.")
 
-        file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
-        file_db.chunks_total = len(dataprep_docs) # Update chunks count
-        file_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-    except Exception as e:
-        file_db.status = 'error'
-        file_db.job_message = 'No text extracted from the file.'
-        file_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-        raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
+        try:
+            dataprep_docs = response.json()['docs']
+            if len(dataprep_docs) == 0:
+                logger.debug(f"[{file_db.id}] Data preparation returned 0 chunks.")
+                raise Exception('No text extracted from the file.')
 
-    # 2.1 Update the metadata info from database
+            file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
+            file_db.chunks_total = len(dataprep_docs) # Update chunks count
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = 'No text extracted from the file.'
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
+    else:
+        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        if response.status_code != 200:
+            file_db.status = 'error'
+            file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data loading. {response_err(response)}")
+        logger.debug(f"[{file_db.id}] Data loading completed.")
+
+        text_extractor_docs = []
+        try:
+            text_extractor_docs = response.json()['loaded_docs']
+            if len(text_extractor_docs) == 0:
+                logger.debug(f"[{file_db.id}] Data loading returned 0 documents.")
+                raise Exception('No text extracted from the file.')
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = 'No text extracted from the file.'
+            file_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
+
+        # Step 3 - Call the token compression service to compress the documents
+        file_db.text_compression_start = datetime.datetime.now()
+        file_db.status = 'text_compression'
+        file_db.job_message = 'Token compression in progress.'
+        self.db.commit()
+
+        response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
+        if response.status_code != 200:
+            file_db.status = 'error'
+            file_db.job_message = f"Error encountered while token compressing. {response_err(response)}"
+            file_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while token compressing. {response_err(response)}")
+        logger.debug(f"[{file_db.id}] Token compression completed.")
+
+        dataprep_compressed_docs = []
+        try:
+            dataprep_compressed_docs = response.json()['loaded_docs']
+            if len(dataprep_compressed_docs) == 0:
+                logger.debug(f"[{file_db.id}] Token compression returned 0 documents.")
+                raise Exception('No text compressed.')
+            file_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
+            file_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
+            file_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = 'No text compressed.'
+            file_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from token compression service. {e} {response.text}")
+
+        # Step 4 - Call the data splitter service to split the documents into smaller chunks
+        file_db.text_splitter_start = datetime.datetime.now()
+        file_db.status = 'text_splitting'
+        file_db.job_message = 'Data splitting in progress.'
+        self.db.commit()
+
+        response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs })
+        if response.status_code != 200:
+            file_db.status = 'error'
+            file_db.job_message = f"Error encountered while data splitting. {response_err(response)}"
+            file_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data splitting. {response_err(response)}")
+        logger.debug(f"[{file_db.id}] Data splitting completed.")
+
+        try:
+            dataprep_docs = response.json()['docs']
+            if len(dataprep_docs) == 0:
+                logger.debug(f"[{file_db.id}] Data splitting returned 0 chunks.")
+                raise Exception('No text extracted from the file.')
+            file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
+            file_db.chunks_total = len(dataprep_docs) # Update chunks count
+            file_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            file_db.status = 'error'
+            file_db.job_message = 'No text extracted from the file.'
+            file_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data splitting service. {e} {response.text}")
+
+    # 4.1 Update the metadata info from database
     for doc in dataprep_docs:
         doc['metadata']['etag'] = file_db.etag
         doc['metadata']['bucket_name'] = file_db.bucket_name
         doc['metadata']['object_name'] = file_db.object_name
         doc['metadata']['file_id'] = str(file_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
 
-    # Step 2.5 (Optional) - scan datapreped documents with Dataprep Guardrail
+    # Step 4.5 (Optional) - scan datapreped documents with Dataprep Guardrail
     dpguard_msg = ""
     dpguard_status = ""
     try:
@@ -185,19 +277,19 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         self.db.commit()
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
-    # Step 3 - Call the embedding service and ingestion service in batches
+    # Step 5 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)
     file_db.embedding_start = datetime.datetime.now()
     file_db.status = 'embedding'
     file_db.job_message = 'Data embedding in progress.'
     self.db.commit()
     for i in range(0, len(dataprep_docs), batch_size):
-        # Step 3.1 - send each chunk of text from dataprep to the embedding service
+        # Step 5.1 - send each chunk of text from dataprep to the embedding service
         docs_batch = dataprep_docs[i:i+batch_size]
         response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
         logger.debug(f"[{file_db.id}] Chunk {i} embedding completed.")
         if response.status_code == 200:
-            # Step 3.2 - save each chunk of text and embedding to the vector database
+            # Step 5.2 - save each chunk of text and embedding to the vector database
             response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
             logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:
@@ -273,45 +365,135 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{link_db.id}] Deleted existing data related to link.")
 
-    # Step 1 - Prepare the file for dataprep request
-    link_db.dataprep_start = datetime.datetime.now()
-    link_db.status = 'dataprep'
-    link_db.job_message = 'Data preparation in progress.'
+    # Step 1 - Prepare the file for text_extractor request
+    link_db.text_extractor_start = datetime.datetime.now()
+    link_db.status = 'text_extracting'
+    link_db.job_message = 'Data loading in progress.'
     self.db.commit()
 
-    # Step 2 - Call the data preparation service
-    response = requests.post(DATAPREP_ENDPOINT, json={ 'links': [link_db.uri] })
-    if response.status_code != 200:
-        link_db.status = 'error'
-        link_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
-        link_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-        raise Exception(f"Error encountered while data preparation. {response_err(response)}")
-    logger.debug(f"[{link_db.id}] Data preparation completed.")
-
+    # Step 2 - Call the text_extractor service
     dataprep_docs = []
-    try:
-        dataprep_docs = response.json()['docs']
-        if len(dataprep_docs) == 0:
-            logger.debug(f"[{link_db.id}] Data preparation returned 0 chunks.")
-            raise Exception('No text extracted from the file.')
+    if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
+        logger.info(f"[{link_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
+        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'links': [link_db.uri] })
+        if response.status_code != 200:
+            link_db.status = 'error'
+            link_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data preparation. {response_err(response)}")
+        logger.debug(f"[{link_db.id}] Data preparation completed.")
 
-        link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
-        link_db.chunks_total = len(dataprep_docs) # Update chunks count
-        link_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-    except Exception as e:
-        link_db.status = 'error'
-        link_db.job_message = 'No text extracted from the link.'
-        link_db.dataprep_end = datetime.datetime.now()
-        self.db.commit()
-        raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
+        try:
+            dataprep_docs = response.json()['docs']
+            if len(dataprep_docs) == 0:
+                logger.debug(f"[{link_db.id}] Data preparation returned 0 chunks.")
+                raise Exception('No text extracted from the file.')
 
-    # 2.1 Update the metadata info from database
+            link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
+            link_db.chunks_total = len(dataprep_docs) # Update chunks count
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = 'No text extracted from the link.'
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
+    else:
+        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'links': [link_db.uri] })
+        if response.status_code != 200:
+            link_db.status = 'error'
+            link_db.job_message = f"Error encountered while data loading. {response_err(response)}"
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data loading. {response_err(response)}")
+        logger.debug(f"[{link_db.id}] Data loading completed.")
+
+        text_extractor_docs = []
+        try:
+            text_extractor_docs = response.json()['loaded_docs']
+            if len(text_extractor_docs) == 0:
+                logger.debug(f"[{link_db.id}] Data loading returned 0 documents.")
+                raise Exception('No text extracted from the link.')
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = 'No text extracted from the link.'
+            link_db.text_extractor_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
+
+        # Step 3 - Call the token compression service to compress the documents
+        link_db.text_compression_start = datetime.datetime.now()
+        link_db.status = 'text_compression'
+        link_db.job_message = 'Token compression in progress.'
+        self.db.commit()
+
+        response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
+        if response.status_code != 200:
+            link_db.status = 'error'
+            link_db.job_message = f"Error encountered while token compressing. {response_err(response)}"
+            link_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while token compressing. {response_err(response)}")
+        logger.debug(f"[{link_db.id}] Token compression completed.")
+
+        dataprep_compressed_docs = []
+        try:
+            dataprep_compressed_docs = response.json()['loaded_docs']
+            if len(dataprep_compressed_docs) == 0:
+                logger.debug(f"[{link_db.id}] Token compression returned 0 documents.")
+                raise Exception('No text compressed.')
+            link_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
+            link_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
+            link_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = 'No text compressed.'
+            link_db.text_compression_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from token compression service. {e} {response.text}")
+
+        # Step 4 - Call the data splitter service to split the documents into smaller chunks
+        link_db.text_splitter_start = datetime.datetime.now()
+        link_db.status = 'text_splitting'
+        link_db.job_message = 'Data splitting in progress.'
+        self.db.commit()
+
+        response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs })
+        if response.status_code != 200:
+            link_db.status = 'error'
+            link_db.job_message = f"Error encountered while data splitting. {response_err(response)}"
+            link_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error encountered while data splitting. {response_err(response)}")
+        logger.debug(f"[{link_db.id}] Data splitting completed.")
+
+        dataprep_docs = []
+        try:
+            dataprep_docs = response.json()['docs']
+            if len(dataprep_docs) == 0:
+                logger.debug(f"[{link_db.id}] Data splitting returned 0 chunks.")
+                raise Exception('No text extracted from the file.')
+            link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
+            link_db.chunks_total = len(dataprep_docs) # Update chunks count
+            link_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+        except Exception as e:
+            link_db.status = 'error'
+            link_db.job_message = 'No text extracted from the file.'
+            link_db.text_splitter_end = datetime.datetime.now()
+            self.db.commit()
+            raise Exception(f"Error parsing response from data splitting service. {e} {response.text}")
+
+    # 4.1 Update the metadata info from database
     for doc in dataprep_docs:
         doc['metadata']['link_id'] = str(link_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
 
-    # Step 2.5 (Optional) - scan datapreped documents with Dataprep Guardrail
+    # Step 4.5 (Optional) - scan datapreped documents with Dataprep Guardrail
     dpguard_msg = ""
     dpguard_status = ""
     try:
@@ -343,19 +525,19 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         self.db.commit()
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
-    # Step 3 - Call the embedding service and ingestion service in batches
+    # Step 5 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)
     link_db.embedding_start = datetime.datetime.now()
     link_db.status = 'embedding'
     link_db.job_message = 'Data embedding in progress.'
     self.db.commit()
     for i in range(0, len(dataprep_docs), batch_size):
-        # Step 3.1 - send each chunk of text from dataprep to the embedding service
+        # Step 5.1 - send each chunk of text from dataprep to the embedding service
         docs_batch = dataprep_docs[i:i+batch_size]
         response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
         logger.debug(f"[{link_db.id}] Chunk {i} embedding completed.")
         if response.status_code == 200:
-            # Step 3.2 - save each chunk of text and embedding to the vector database
+            # Step 5.2 - save each chunk of text and embedding to the vector database
             response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
             logger.debug(f"[{link_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:

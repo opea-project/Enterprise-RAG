@@ -77,9 +77,28 @@ class DataPrepFile(BaseDoc):
 class DataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
     links: List[str] = []
-    chunk_size: Optional[Any] = None
-    chunk_overlap: Optional[Any] = None
+
+class HierarchicalDataPrepInput(BaseDoc):
+    files: List[DataPrepFile] = []
+    links: List[str] = []
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
     max_new_tokens: Optional[PositiveInt] = None
+
+class TextCompressionTechnique(BaseDoc):
+    name: str
+    parameters: Optional[Dict[str, Any]] = None
+
+class TextCompressionInput(BaseDoc):
+    loaded_docs: List[TextDoc]
+    compression_techniques: Optional[List[TextCompressionTechnique]] = None
+
+class TextSplitterInput(BaseDoc):
+    loaded_docs: List[TextDoc]
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
+    use_semantic_chunking: bool = False
+    semantic_chunk_params: Optional[Dict[str, Any]] = None
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]

@@ -97,7 +97,7 @@ async def metrics():
         gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
         gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
 
-        for obj_status in 'uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
+        for obj_status in 'uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
             file_count = files_statuses.get(obj_status, 0)
             file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
             file_gauge.set(file_count)
@@ -822,20 +822,58 @@ def api_file_text_extract(file_uuid: str, request: Request):
             minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
             file_data = minio_response.read()
             file_base64 = base64.b64encode(file_data).decode('ascii')
-            logger.debug(f"[{file.id}] Retrievied file from S3 storage.")
+            logger.debug(f"[{file.id}] Retrieved file from S3 storage.")
 
-            DATAPREP_ENDPOINT  = os.environ.get('DATAPREP_ENDPOINT')
-            response = requests.post(DATAPREP_ENDPOINT, json={
-                'files': [ {'filename': file.object_name, 'data64': file_base64} ],
-                'chunk_size': request.query_params.get('chunk_size', 512),
-                'chunk_overlap': request.query_params.get('chunk_overlap', 0)
-            })
+            HIERARCHICAL_DATAPREP_ENDPOINT = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
+            if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
+                response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={
+                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                    'chunk_size': request.query_params.get('chunk_size', 512),
+                    'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                })
 
-            if response.status_code != 200:
-                return JSONResponse(status_code=500, content={'details': f"Something went wrong: {response.text}"})
-            else:
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Hierarchical Data Preparation: {response.text}"})
+
+                logger.debug(f"[{file.id}] Hierarchical Data Preparation completed.")
                 return JSONResponse(content={'docs': response.json()})
-        except S3Error as e:
+            else:
+                TEXT_EXTRACTOR_ENDPOINT = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
+                response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={
+                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                })
+
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Data Loading: {response.text}"})
+
+                logger.debug(f"[{file.id}] Data loading completed.")
+                text_extractor_docs = response.json()['loaded_docs']
+                if len(text_extractor_docs) == 0:
+                    raise Exception(f'[{file.id}] No text extracted from the file.')
+
+                TEXT_COMPRESSION_ENDPOINT = os.environ.get('TEXT_COMPRESSION_ENDPOINT')
+                response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Text Compression: {response.text}"})
+
+                logger.debug(f"[{file.id}] Token compression completed.")
+                dataprep_compressed_docs = response.json()['loaded_docs']
+                if len(dataprep_compressed_docs) == 0:
+                    raise Exception(f'[{file.id}] No text compressed.')
+
+                TEXT_SPLITTER_ENDPOINT = os.environ.get('TEXT_SPLITTER_ENDPOINT')
+                response = requests.post(TEXT_SPLITTER_ENDPOINT, json={
+                                                                    'loaded_docs': dataprep_compressed_docs,
+                                                                    'chunk_size': request.query_params.get('chunk_size', 512),
+                                                                    'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                                                                    'use_semantic_chunking': request.query_params.get('use_semantic_chunking', 'false'),
+                                                                    })
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Data Splitting: {response.text}"})
+
+                logger.debug(f"[{file.id}] Data splitting completed.")
+                return JSONResponse(content={'docs': response.json()})
+        except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error downloading file. {e}")
         finally:
             minio_response.close()
@@ -854,17 +892,57 @@ def api_link_text_extract(link_uuid: str, request: Request):
         try:
             import requests
 
-            DATAPREP_ENDPOINT  = os.environ.get('DATAPREP_ENDPOINT')
-            response = requests.post(DATAPREP_ENDPOINT, json={
-                'links': [ str(link.uri) ],
-                'chunk_size': request.query_params.get('chunk_size', 512),
-                'chunk_overlap': request.query_params.get('chunk_overlap', 0)
-            })
+            HIERARCHICAL_DATAPREP_ENDPOINT = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
+            if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
+                response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={
+                    'links': [ str(link.uri) ],
+                    'chunk_size': request.query_params.get('chunk_size', 512),
+                    'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                })
 
-            if response.status_code != 200:
-                return JSONResponse(status_code=500, content={'details': f"Something went wrong: {response.text}"})
-            else:
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Hierarchical Data Preparation: {response.text}"})
+
+                logger.debug(f"[{link.id}] Hierarchical Data Preparation completed.")
                 return JSONResponse(content={'docs': response.json()})
+            else:
+                TEXT_EXTRACTOR_ENDPOINT = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
+                response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={
+                    'links': [ str(link.uri) ],
+                })
+
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Data Loading: {response.text}"})
+
+                logger.debug(f"[{link.id}] Data loading completed.")
+                text_extractor_docs = response.json()['loaded_docs']
+                if len(text_extractor_docs) == 0:
+                    raise Exception(f'[{link.id}] No text extracted from the link.')
+
+                TEXT_COMPRESSION_ENDPOINT = os.environ.get('TEXT_COMPRESSION_ENDPOINT')
+                response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Text Compression: {response.text}"})
+
+                logger.debug(f"[{link.id}] Token compression completed.")
+                dataprep_compressed_docs = response.json()['loaded_docs']
+                if len(dataprep_compressed_docs) == 0:
+                    raise Exception(f'[{link.id}] No text compressed.')
+
+                TEXT_SPLITTER_ENDPOINT = os.environ.get('TEXT_SPLITTER_ENDPOINT')
+                logger.info(request.query_params)
+                response = requests.post(TEXT_SPLITTER_ENDPOINT, json={
+                                                                    'loaded_docs': dataprep_compressed_docs,
+                                                                    'chunk_size': request.query_params.get('chunk_size', 512),
+                                                                    'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                                                                    'use_semantic_chunking': request.query_params.get('use_semantic_chunking', 'false'),
+                                                                    })
+                if response.status_code != 200:
+                    return JSONResponse(status_code=500, content={'details': f"Something went wrong during Data Splitting: {response.text}"})
+
+                logger.debug(f"[{link.id}] Data splitting completed.")
+                return JSONResponse(content={'docs': response.json()})
+
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error downloading link. {e}")
 

@@ -14,7 +14,7 @@ import time
 import uuid
 
 logger = logging.getLogger(__name__)
-IN_PROGRESS_STATUSES = ["uploaded", "processing", "dataprep", "embedding"]
+IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding"]
 
 
 @pytest.fixture(autouse=True)
@@ -287,19 +287,19 @@ def test_edp_delete_nonexistent_link(edp_helper):
 @allure.testcase("IEASG-T38")
 def test_edp_responsiveness_while_uploading_file(edp_helper):
     """
-    Upload a file and periodically call dataprep and edp health check APIs
+    Upload a file and periodically call text extractor and edp health check APIs
     Note: this test will take at least 2 minutes to complete
     """
     threshold = 120
-    file = edp_helper.upload_test_file(size=10, prefix=method_name(), status="dataprep", timeout=300)
+    file = edp_helper.upload_test_file(size=10, prefix=method_name(), status="text_extracting", timeout=300)
 
-    logger.info("Starting to periodically call dataprep /v1/health_check API and edp /health API")
+    logger.info("Starting to periodically call text extractor /v1/health_check API and edp /health API")
     counter = 0
     start_time = time.time()
     while time.time() < start_time + threshold:
         try:
-            response = edp_helper.call_health_check_api("edp", {"app.kubernetes.io/name": "edp-dataprep"}, 9399)
-            assert response.status_code == 200, "Got unexpected status code when calling dataprep health check API"
+            response = edp_helper.call_health_check_api("edp", {"app.kubernetes.io/name": "edp-text-extractor"}, 9398)
+            assert response.status_code == 200, "Got unexpected status code when calling text extractor health check API"
         except requests.exceptions.ReadTimeout:
             pytest.fail("Dataprep API is not responsive while the file is being uploaded")
         try:

@@ -104,12 +104,63 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: edp-dataprep
+  name: edp-hierarchical-dataprep
   namespace: edp
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: edp-dataprep
+      app.kubernetes.io/name: edp-hierarchical-dataprep
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-text-extractor
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-text-extractor
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-text-compression
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-text-compression
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: edp-text-splitter
+  namespace: edp
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edp-text-splitter
   action: DENY
   rules:
   - from:

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
-DATAPREP_STATUS_FLOW = ["uploaded", "processing", "dataprep", "embedding", "ingested"]
+DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "ingested"]
 
 
 class EdpHelper(ApiRequestHelper):

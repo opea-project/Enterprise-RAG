@@ -1,0 +1,1 @@
+Intel® AI for Enterprise RAG Text Compression Microservice for compressing text from loaded documents

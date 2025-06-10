@@ -104,10 +104,14 @@ images:
     image: "erag-vllm-gaudi"
     repository: *repo
     tag: *tag
+    envs:
+      LLM_VLLM_MODEL_NAME: *hpu_model
   vllm:
     image: "erag-vllm-cpu"
     repository: *repo
     tag: *tag
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
   langdtct-usvc:
     image: "erag-language_detection"
     repository: *repo

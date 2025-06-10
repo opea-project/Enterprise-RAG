@@ -1,0 +1,23 @@
+clusterpolicy:
+  driver:
+    driver_loader:
+      images:
+        rhel_8.6:
+          repository: habana-ai-operator/driver/rhel8.6/driver-installer
+          tag: 1.21.1-16
+        rhel_9.2:
+          repository: habana-ai-operator/driver/rhel9.2/driver-installer
+          tag: 1.21.1-16
+        rhel_9.4:
+          repository: habana-ai-operator/driver/rhel9.4/driver-installer
+          tag: 1.21.1-16
+        tencentos_3.1:
+          repository: habana-ai-operator/driver/tencentos3.1/driver-installer
+          tag: 1.21.1-16
+        ubuntu_22.04:
+          repository: habana-ai-operator/driver/ubuntu22.04/driver-installer
+          tag: 1.21.1-16
+        ubuntu_24.04:
+          repository: habana-ai-operator/driver/ubuntu24.04/driver-installer
+          tag: 1.21.1-16
+

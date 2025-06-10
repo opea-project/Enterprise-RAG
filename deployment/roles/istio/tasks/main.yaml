@@ -53,6 +53,7 @@
     src: "custom-init-container-values.yaml.j2"
     dest: "{{ istio_custom_init_container_values }}"
     mode: '0644'
+  when: tdxEnabled
   tags:
     - install
 

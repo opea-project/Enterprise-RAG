@@ -20,6 +20,21 @@
           pod-security.kubernetes.io/warn: privileged
   tags: install
 
+- name: Create proxy ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: proxy-config
+        namespace: habana-ai-operator
+      data:
+        http_proxy: "{{ httpProxy }}"
+        https_proxy: "{{ httpsProxy }}"
+        no_proxy: "{{ noProxy }}"
+  tags: install
+
 - name: Add and update Helm repo for Habana AI Operator
   kubernetes.core.helm_repository:
     name: gaudi-helm
@@ -38,6 +53,32 @@
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Wait for ClusterPolicy to be created
+  kubernetes.core.k8s_info:
+    api_version: habanalabs.habana.ai/v1
+    kind: ClusterPolicy
+  register: clusterpolicy_info
+  until: clusterpolicy_info.resources | selectattr('metadata.name', 'equalto', 'habana-ai') | list | length > 0
+  retries: 5
+  delay: 5
+  tags:
+    - install
+
+- name: Patch ClusterPolicy to set proxy config_map_name
+  kubernetes.core.k8s:
+    state: present
+    api_version: habanalabs.habana.ai/v1
+    kind: ClusterPolicy
+    name: habana-ai
+    definition:
+      metadata:
+        name: habana-ai
+      spec:
+        proxy:
+          config_map_name: proxy-config
   tags:
     - install
 

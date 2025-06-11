@@ -3,13 +3,13 @@
 
 import IconButton from "@/components/ui/IconButton/IconButton";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
-import { redirectToLogout } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import { resetStore } from "@/store/utils";
 
 const LogoutButton = () => {
   const handlePress = () => {
     resetStore();
-    redirectToLogout();
+    keycloakService.redirectToLogout();
   };
 
   return (

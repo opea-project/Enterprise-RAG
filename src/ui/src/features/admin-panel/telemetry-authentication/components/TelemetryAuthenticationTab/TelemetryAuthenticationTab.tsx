@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import AnchorCard from "@/components/ui/AnchorCard/AnchorCard";
+import { getAppEnv } from "@/utils";
 
-const grafanaDashboardUrl = import.meta.env.VITE_GRAFANA_DASHBOARD_URL;
-const keycloakAdminPanelUrl = import.meta.env.VITE_KEYCLOAK_ADMIN_PANEL_URL;
+const grafanaDashboardUrl = getAppEnv("GRAFANA_DASHBOARD_URL");
+const keycloakAdminPanelUrl = getAppEnv("KEYCLOAK_ADMIN_PANEL_URL");
 
 const TelemetryAuthenticationTab = () => (
   <div className="grid grid-cols-1 gap-4 px-16 py-8 md:grid-cols-2 lg:grid-cols-3">

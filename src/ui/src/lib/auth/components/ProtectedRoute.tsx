@@ -5,13 +5,13 @@ import { PropsWithChildren } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 import { paths } from "@/config/paths";
-import { isAdminUser } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 
 const ProtectedRoute = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isAdminPanelRoute = location.pathname === paths.adminPanel;
 
-  if (isAdminPanelRoute && !isAdminUser()) {
+  if (isAdminPanelRoute && !keycloakService.isAdminUser()) {
     return <Navigate to={paths.chat} replace />;
   } else {
     return children;

@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 import { toASCII } from "punycode";
 import { validate as isUuidValid } from "uuid";
 
+import { AppEnvKey } from "@/types";
 import { acronyms } from "@/utils/constants";
 
 const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
@@ -21,6 +22,14 @@ const formatSnakeCaseToTitleCase = (value: string) =>
     .split("_")
     .map((str) => (acronyms.includes(str) ? str : titleCaseString(str)))
     .join(" ");
+
+const getAppEnv = (envKey: AppEnvKey) => {
+  if (import.meta.env.PROD) {
+    return window.env?.[envKey] ?? "";
+  } else {
+    return import.meta.env[`VITE_${envKey}`];
+  }
+};
 
 const isSafeHref = (href: string | undefined) => {
   const sanitizedHref = sanitizeHref(href);
@@ -73,6 +82,7 @@ const titleCaseString = (value: string) =>
 export {
   constructUrlWithUuid,
   formatSnakeCaseToTitleCase,
+  getAppEnv,
   isPunycodeSafe,
   isSafeHref,
   sanitizeHref,

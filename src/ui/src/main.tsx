@@ -7,9 +7,9 @@ import { StrictMode } from "react";
 import { Container, createRoot } from "react-dom/client";
 
 import App from "@/app";
-import { initializeKeycloak } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 
-initializeKeycloak(() => {
+const renderApp = () => {
   const container = document.getElementById("root") as Container;
   const root = createRoot(container);
 
@@ -18,4 +18,23 @@ initializeKeycloak(() => {
       <App />
     </StrictMode>,
   );
-});
+};
+
+if (import.meta.env.PROD) {
+  fetch("/config.json")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch config.json: ${response.statusText}`);
+      }
+
+      return response.json();
+    })
+    .then((config) => {
+      window.env = config;
+      keycloakService.setup();
+      keycloakService.init(renderApp);
+    });
+} else {
+  keycloakService.setup();
+  keycloakService.init(renderApp);
+}

@@ -7,9 +7,9 @@ import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import Anchor from "@/components/ui/Anchor/Anchor";
 import Popup from "@/components/ui/Popup/Popup";
 import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
-import { titleCaseString } from "@/utils";
+import { getAppEnv, titleCaseString } from "@/utils";
 
-const s3Url = import.meta.env.VITE_S3_URL;
+const s3Url = getAppEnv("S3_URL");
 
 const UndeterminedNetworkErrorMessage = (
   <>

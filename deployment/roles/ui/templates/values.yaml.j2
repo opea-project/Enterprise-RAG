@@ -6,6 +6,15 @@ SPDX-License-Identifier: Apache-2.0
 domainName: &dname {{ ui.domainName }}
 tlsSecret: &tsecret {{ ui.tls.secret_name }}
 
+extraUiConfigVars:
+  keycloakDomainName: "{{ keycloak.domainName }}"
+  keycloakRealm: "{{ ui.extraUiConfigVars.keycloakRealm }}"
+  keycloakClientId: "{{ ui.extraUiConfigVars.keycloakClientId }}"
+  adminResourceRole: "{{ ui.extraUiConfigVars.adminResourceRole }}"
+  grafanaDomainName: "{{ telemetry.domainName }}"
+  keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
+  s3DomainName: "{{ edp.minio.apiDomainName }}"
+
 service:
   type: ClusterIP
   name: &svcName "ui-chart"

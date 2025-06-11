@@ -17,15 +17,15 @@ import {
   PostFileToExtractTextRequest,
 } from "@/features/admin-panel/data-ingestion/types/api";
 import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
-import { getToken, refreshToken } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import { constructUrlWithUuid } from "@/utils";
 import { onRefreshTokenFailed, transformErrorMessage } from "@/utils/api";
 
 const edpBaseQuery = fetchBaseQuery({
   baseUrl: API_ENDPOINTS.BASE_URL,
   prepareHeaders: async (headers) => {
-    await refreshToken(onRefreshTokenFailed);
-    headers.set("Authorization", `Bearer ${getToken()}`);
+    await keycloakService.refreshToken(onRefreshTokenFailed);
+    headers.set("Authorization", `Bearer ${keycloakService.getToken()}`);
     return headers;
   },
 });

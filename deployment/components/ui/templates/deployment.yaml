@@ -72,12 +72,18 @@ spec:
             - name: nginx-config-volume
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
+            - name: ui-env-config-volume
+              mountPath: /usr/share/nginx/html/config.json
+              subPath: config.json
       volumes:
         - name: nginx-config-volume
           configMap:
             name: nginx-config
         - name: nginx-cache
           emptyDir: {}
+        - name: ui-env-config-volume
+          configMap:
+            name: ui-env-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

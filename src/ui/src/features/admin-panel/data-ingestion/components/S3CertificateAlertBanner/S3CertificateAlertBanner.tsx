@@ -10,8 +10,9 @@ import {
   selectS3Api,
 } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getAppEnv } from "@/utils";
 
-const s3Url = import.meta.env.VITE_S3_URL;
+const s3Url = getAppEnv("S3_URL");
 
 const S3CertificateAlertBanner = () => {
   const [hasErrors, setHasErrors] = useState(false);

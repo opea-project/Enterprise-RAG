@@ -9,19 +9,28 @@
 }
 
 .preWrapper {
-  @apply mb-0 p-2;
-  @apply grid grid-cols-[auto_2rem] items-start gap-4;
-  @apply border border-solid border-light-border;
+  @apply mb-0;
 
   &:not(:last-child) {
     @apply mb-4;
   }
 
+  .preWrapper__header {
+    @apply pl-3;
+    @apply flex items-center justify-between rounded-t;
+    @apply bg-light-primary dark:bg-dark-primary;
+
+    .preWrapper__language {
+      @apply select-none text-xs text-white;
+    }
+  }
+
   .pre {
-    @apply whitespace-pre-wrap px-2 py-1;
+    @apply whitespace-pre-wrap py-2 pl-3 pr-2;
 
     .code {
-      @apply rounded-none bg-transparent p-0;
+      @apply m-0 bg-transparent p-0 !important;
+      @apply box-border max-w-full overflow-visible whitespace-pre-wrap break-words !important;
     }
   }
 }
@@ -33,8 +42,4 @@
 :global(.dark) .preWrapper,
 :global(.dark) .code {
   @apply bg-dark-bg-contrast text-dark-text-primary;
-}
-
-:global(.dark) .preWrapper {
-  @apply border-dark-border;
 }

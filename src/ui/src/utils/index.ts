@@ -77,7 +77,7 @@ const sanitizeString = (value: string) => {
 };
 
 const titleCaseString = (value: string) =>
-  `${value.slice(0, 1).toUpperCase()}${value.slice(1).toLowerCase()}`;
+  `${value.charAt(0).toUpperCase()}${value.slice(1).toLowerCase()}`;
 
 export {
   constructUrlWithUuid,

@@ -31,6 +31,14 @@ celery = Celery(
     worker_prefetch_multiplier=1
 )
 
+celery.conf.update(
+    redis_backend_health_check_interval=10,
+    redis_retry_on_timeout=True,
+    redis_max_connections=10,
+    redis_socket_timeout=30,
+    redis_socket_keepalive=True
+)
+
 HIERARCHICAL_DATAPREP_ENDPOINT  = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
 TEXT_EXTRACTOR_ENDPOINT  = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
 TEXT_COMPRESSION_ENDPOINT  = os.environ.get('TEXT_COMPRESSION_ENDPOINT')

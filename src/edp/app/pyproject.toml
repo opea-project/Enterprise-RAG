@@ -14,7 +14,7 @@ dependencies = [
     "minio==7.2.12",
     "psycopg2-binary==2.9.10",
     "PyJWT==2.10.1",
-    "celery==5.4.0",
+    "celery==5.5.3",
     "redis==5.2.1",
     "flower==2.0.1",
     "validators==0.34.0",

@@ -9,19 +9,18 @@ if [[ -z "$USER_ACCESS_TOKEN" ]] || [[ "$USER_ACCESS_TOKEN" == "null" ]]; then
 fi
 
 if [ -z "$1" ]; then
-	echo "Error: No max_new_tokens, provided"
+	echo "Error: No top_n, provided"
 	exit 1
 else
-	tokens=$1
+	top_n=$1
 fi
 
 url="https://${ERAG_DOMAIN_NAME:-erag.com}/v1/system_fingerprint/change_arguments"
 curl -H "Content-Type: application/json" -H "Authorization: Bearer ${USER_ACCESS_TOKEN}" -vkL ${url} -d '[
     {
-        "name": "llm",
+        "name": "reranker",
         "data": {
-            "max_new_tokens": '${tokens}',
-            "top_k": 10
+	    "top_n": '${top_n}'
         }
     }
 ]'

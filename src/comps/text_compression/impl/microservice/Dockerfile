@@ -32,8 +32,6 @@ COPY ./comps/text_compression/impl/microservice/uv.lock uv.lock
 RUN uv sync --locked --no-cache
 ENV PATH="/home/user/.venv/bin:$PATH"
 
-RUN python -m nltk.downloader punkt
-
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores
 COPY --chown=user:user ./comps/text_compression/utils ./comps/text_compression/utils

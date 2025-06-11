@@ -27,8 +27,8 @@ dependencies = [
     "openai==1.77.0",
     "shortuuid==1.0.13",
     "pathvalidate==3.2.2",
-    "torch==2.7.0",
-    "torchvision==0.22.0",
+    "torch==2.7.1",
+    "torchvision==0.22.1",
 ]
 
 [project.optional-dependencies]

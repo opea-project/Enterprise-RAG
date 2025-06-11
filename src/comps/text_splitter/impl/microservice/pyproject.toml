@@ -27,9 +27,10 @@ dependencies = [
     "starlette==0.40.0",
     "jinja2==3.1.6",
     "python-dotenv==1.1.0",
-    "torch==2.7.0",
+    "torch==2.7.1",
     "h11==0.16.0",
     "transformers==4.50.0",
+    "requests==2.32.4",
 ]
 
 [project.optional-dependencies]

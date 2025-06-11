@@ -20,7 +20,7 @@ dependencies = [
     "langsmith == 0.1.125",
     "huggingface_hub == 0.26.0",
     "llama-index-embeddings-text-embeddings-inference == 0.1.4",
-    "torch == 2.7.0",
+    "torch == 2.7.1",
     "transformers == 4.50.0",
     "setuptools == 80.9.0",
     "starlette == 0.40.0",

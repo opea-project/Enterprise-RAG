@@ -8,7 +8,7 @@ services:
   llm-vllm-model-server:
     build:
       context: ../../
-      dockerfile: Dockerfile
+      dockerfile: docker/hpu/Dockerfile
     image: vllm:hpu
     container_name: llm-vllm-model-server
     ports:

@@ -12,7 +12,7 @@ dependencies = [
     "torch==2.7.1",
     "jinja2 == 3.1.6",
     "MarkupSafe==3.0.2",
-    "setuptools == 80.9.0",
+    "setuptools == 80.9.0",     # security update
 ]
 
 [tool.uv.sources]

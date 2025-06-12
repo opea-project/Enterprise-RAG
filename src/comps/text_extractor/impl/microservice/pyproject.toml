@@ -44,7 +44,7 @@ dependencies = [
     "h11==0.16.0",
     "transformers==4.50.0",
     "markitdown==0.1.2",
-    "setuptools == 80.9.0",
+    "setuptools == 80.9.0",     # security update
 ]
 
 [project.optional-dependencies]

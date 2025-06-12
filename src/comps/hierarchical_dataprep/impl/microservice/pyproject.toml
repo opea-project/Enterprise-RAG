@@ -29,6 +29,7 @@ dependencies = [
     "pathvalidate==3.2.2",
     "torch==2.7.1",
     "torchvision==0.22.1",
+    "setuptools == 80.9.0",     # security update
 ]
 
 [project.optional-dependencies]

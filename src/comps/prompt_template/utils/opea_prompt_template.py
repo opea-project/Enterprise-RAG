@@ -53,7 +53,7 @@ class OPEAPromptTemplate:
         # Find all placeholders in the format {placeholder}
         system_placeholders_in_template = set(extract_placeholders_from_template(system_prompt_template))
         user_placeholders_in_template = set(extract_placeholders_from_template(user_prompt_template))
-        if not system_placeholders_in_template or not user_placeholders_in_template:
+        if not system_placeholders_in_template and not user_placeholders_in_template:
             raise ValueError("The prompt template does not contain any placeholders")
 
         if not placeholders:

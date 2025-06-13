@@ -13,6 +13,8 @@ apisix:
       apisix:
         serviceName: auth-apisix-admin
         serviceNamespace: auth-apisix
+    image:
+      tag: "1.8.4"
   etcd:
     replicaCount: 1
     persistence:

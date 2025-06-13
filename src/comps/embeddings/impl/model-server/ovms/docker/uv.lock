@@ -226,8 +226,9 @@ dependencies = [
     { name = "markupsafe" },
     { name = "openvino-tokenizers" },
     { name = "optimum-intel" },
-    { name = "torch", version = "2.7.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.7.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+    { name = "setuptools" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
 ]
 
 [package.metadata]
@@ -236,7 +237,8 @@ requires-dist = [
     { name = "markupsafe", specifier = "==3.0.2" },
     { name = "openvino-tokenizers", specifier = "==2025.0.0.0" },
     { name = "optimum-intel", specifier = "==1.22.0" },
-    { name = "torch", specifier = "==2.7.0", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "setuptools", specifier = "==80.9.0" },
+    { name = "torch", specifier = "==2.7.1", index = "https://download.pytorch.org/whl/cpu" },
 ]
 
 [[package]]
@@ -411,8 +413,8 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "numpy" },
     { name = "packaging" },
-    { name = "torch", version = "2.7.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.7.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
     { name = "transformers" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b1/8e/a607bf6aa0ebadc679bb585f08232f7e6b61d72a45cef539575c45fc1c19/optimum-1.24.0.tar.gz", hash = "sha256:b502a2afbf78bb73370ebb1eff07b93108a1b386116e87eb17e882d210150551", size = 349653 }
@@ -431,8 +433,8 @@ dependencies = [
     { name = "scipy" },
     { name = "sentencepiece" },
     { name = "setuptools" },
-    { name = "torch", version = "2.7.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
-    { name = "torch", version = "2.7.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
+    { name = "torch", version = "2.7.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
+    { name = "torch", version = "2.7.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
     { name = "transformers" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0a/c1/047f3fb160c2c28c1e167a711567e0268adda3bb76f8fbdeb203708d5962/optimum-intel-1.22.0.tar.gz", hash = "sha256:106a207bc43116601e93a725868cf5d174f555d761216a6225acc0bc6e3cf82e", size = 257766 }
@@ -660,11 +662,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "78.1.0"
+version = "80.9.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a9/5a/0db4da3bc908df06e5efae42b44e75c81dd52716e10192ff36d0c1c8e379/setuptools-78.1.0.tar.gz", hash = "sha256:18fd474d4a82a5f83dac888df697af65afa82dec7323d09c3e37d1f14288da54", size = 1367827 }
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/21/f43f0a1fa8b06b32812e0975981f4677d28e0f3271601dc88ac5a5b83220/setuptools-78.1.0-py3-none-any.whl", hash = "sha256:3e386e96793c8702ae83d17b853fb93d3e09ef82ec62722e61da5cd22376dcd8", size = 1256108 },
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486 },
 ]
 
 [[package]]
@@ -715,7 +717,7 @@ wheels = [
 
 [[package]]
 name = "torch"
-version = "2.7.0"
+version = "2.7.1"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
     "sys_platform == 'darwin'",
@@ -730,12 +732,12 @@ dependencies = [
     { name = "typing-extensions", marker = "sys_platform == 'darwin'" },
 ]
 wheels = [
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.0-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:30b7688a87239a7de83f269333651d8e582afffce6f591fff08c046f7787296e" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:7b4f8b2b83bd08f7d399025a9a7b323bdbb53d20566f1e0d584689bb92d82f9a" },
 ]
 
 [[package]]
 name = "torch"
-version = "2.7.0+cpu"
+version = "2.7.1+cpu"
 source = { registry = "https://download.pytorch.org/whl/cpu" }
 resolution-markers = [
     "sys_platform != 'darwin'",
@@ -750,10 +752,9 @@ dependencies = [
     { name = "typing-extensions", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.0%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl" },
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:64123c05615e27368c7a7816f6e39c6d219998693beabde0b0b9cedf91b5ed8b" },
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.0%2Bcpu-cp312-cp312-win_amd64.whl", hash = "sha256:69e25c973bdd7ea24b0fa9f9792114950afaeb8f819e5723819b923f50989175" },
-    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.0%2Bcpu-cp312-cp312-win_arm64.whl", hash = "sha256:1d7a6f33868276770a657beec7f77c7726b4da9d0739eff1b3ae64cc9a09d8e3" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:3bf2db5adf77b433844f080887ade049c4705ddf9fe1a32023ff84ff735aa5ad" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:8f8b3cfc53010a4b4a3c7ecb88c212e9decc4f5eeb6af75c3c803937d2d60947" },
+    { url = "https://download.pytorch.org/whl/cpu/torch-2.7.1%2Bcpu-cp312-cp312-win_amd64.whl", hash = "sha256:0bc887068772233f532b51a3e8c8cfc682ae62bef74bf4e0c53526c8b9e4138f" },
 ]
 
 [[package]]

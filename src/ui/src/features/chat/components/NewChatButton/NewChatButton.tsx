@@ -34,7 +34,7 @@ const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
       icon="plus"
       size="sm"
       className={className}
-      onClick={onNewChat}
+      onPress={onNewChat}
     >
       New chat
     </Button>

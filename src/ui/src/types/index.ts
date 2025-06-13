@@ -8,3 +8,13 @@ export interface ConversationTurn {
   error: string | null;
   isPending: boolean;
 }
+
+export type AppEnvKey =
+  | "API_URL"
+  | "KEYCLOAK_URL"
+  | "KEYCLOAK_REALM"
+  | "KEYCLOAK_CLIENT_ID"
+  | "ADMIN_RESOURCE_ROLE"
+  | "GRAFANA_DASHBOARD_URL"
+  | "KEYCLOAK_ADMIN_PANEL_URL"
+  | "S3_URL";

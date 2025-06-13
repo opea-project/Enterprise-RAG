@@ -26,8 +26,20 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.flower.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "helm-edp.dataprep.name" -}}
-{{- default .Chart.Name .Values.dataprep.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- define "helm-edp.textExtractor.name" -}}
+{{- default .Chart.Name .Values.textExtractor.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.textCompression.name" -}}
+{{- default .Chart.Name .Values.textCompression.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.textSplitter.name" -}}
+{{- default .Chart.Name .Values.textSplitter.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "helm-edp.hierarchicalDataprep.name" -}}
+{{- default .Chart.Name .Values.hierarchicalDataprep.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "helm-edp.dpguard.name" -}}
@@ -47,7 +59,7 @@ Expand the name of the chart.
 {{- end }}
 
 {{- define "helm-edp.noProxyWithContainers" -}}
-{{- printf "%s,edp-backend,edp-celery,edp-dataprep,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- printf "%s,edp-backend,edp-celery,edp-hierarchical-dataprep,edp-text-extractor,edp-text-compression,edp-text-splitter,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
 {{- define "helm-edp.awsSqs.name" -}}
@@ -156,10 +168,34 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-dataprep labels
+hierarchicalDataprep labels
 */}}
-{{- define "helm-edp.dataprep.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm-edp.dataprep.name" . }}
+{{- define "helm-edp.hierarchicalDataprep.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.hierarchicalDataprep.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+textExtractor labels
+*/}}
+{{- define "helm-edp.textExtractor.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.textExtractor.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+textCompression labels
+*/}}
+{{- define "helm-edp.textCompression.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.textCompression.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+textSplitter labels
+*/}}
+{{- define "helm-edp.textSplitter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.textSplitter.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
@@ -196,8 +232,14 @@ labels:
   {{- include "helm-edp.flower.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-backend" }}
   {{- include "helm-edp.backend.selectorLabels" $context | nindent 2 }}
-  {{- else if eq $deploymentName "edp-dataprep" }}
-  {{- include "helm-edp.dataprep.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-hierarchical-dataprep" }}
+  {{- include "helm-edp.hierarchicalDataprep.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-text-extractor" }}
+  {{- include "helm-edp.textExtractor.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-text-compression" }}
+  {{- include "helm-edp.textCompression.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-text-splitter" }}
+  {{- include "helm-edp.textSplitter.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-dpguard" }}
   {{- include "helm-edp.dpguard.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-embedding" }}

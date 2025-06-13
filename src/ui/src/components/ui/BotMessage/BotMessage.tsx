@@ -19,6 +19,7 @@ type BotMessageProps = Pick<ConversationTurn, "answer" | "error" | "isPending">;
 const BotMessage = memo(({ answer, error, isPending }: BotMessageProps) => {
   const isWaitingForAnswer = isPending && (answer === "" || error !== null);
   const sanitizedAnswer = sanitizeString(answer);
+  const showCopyButton = !isWaitingForAnswer && sanitizedAnswer !== "";
 
   const botResponse =
     error !== null ? (
@@ -30,7 +31,7 @@ const BotMessage = memo(({ answer, error, isPending }: BotMessageProps) => {
       <div className="bot-message__text">
         <MarkdownRenderer content={sanitizedAnswer} />
         <div className="bot-message__footer">
-          <CopyButton textToCopy={sanitizedAnswer} show={!isPending} />
+          <CopyButton textToCopy={sanitizedAnswer} show={showCopyButton} />
         </div>
       </div>
     );

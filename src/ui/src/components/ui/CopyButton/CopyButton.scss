@@ -3,7 +3,7 @@
 
 .copy-btn {
   @apply hover:bg-light-bg-2 dark:hover:bg-dark-bg-2;
-  @apply transition-all duration-300 ease-in-out;
+  @apply transition-colors duration-300 ease-in-out;
 
   &.invisible {
     @apply pointer-events-none opacity-0;
@@ -11,5 +11,11 @@
 
   &.visible {
     @apply pointer-events-auto opacity-100;
+  }
+
+  &.copy-btn--code-snippet {
+    // background color change on hover removed inside code snippets
+    @apply hover:bg-inherit dark:hover:bg-inherit;
+    @apply text-xs text-white;
   }
 }

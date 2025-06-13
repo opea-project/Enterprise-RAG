@@ -147,7 +147,13 @@ otelcol-logs:
               output: torchserve-severity-parser-a
             - expr: 'resource["k8s.container.name"] matches "^router-server$"'
               output: router-severity-parser
-            - expr: 'resource["k8s.container.name"] matches "^edp-dataprep$"'
+            - expr: 'resource["k8s.container.name"] matches "^edp-hierarchical-dataprep$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^edp-text-extractor$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^edp-text-compression$"'
+              output: python-severity-parser
+            - expr: 'resource["k8s.container.name"] matches "^edp-text-splitter$"'
               output: python-severity-parser
             - expr: 'resource["k8s.container.name"] matches "^llm-usvc$"'
               output: python-severity-parser
@@ -238,7 +244,7 @@ otelcol-logs:
             overwrite_text: true
         #### ROUTER
 
-        #### LLM RERANKING RETRIEVER DATAPREP
+        #### LLM RERANKING RETRIEVER TEXT_EXTRACTOR TEXT_COMPRESSION TEXT_SPLITTER
         - id: python-severity-parser
           type: regex_parser
           on_error: "send_quiet"
@@ -254,7 +260,7 @@ otelcol-logs:
               warn: WARN
               error: ERROR
               debug: DEBUG
-        #### LLM RERANKING RETRIEVER DATAPREP
+        #### LLM RERANKING RETRIEVER TEXT_EXTRACTOR TEXT_COMPRESSION TEXT_SPLITTER
 
         #### TEI TGI
         - id: tei-tgi-severity-parser

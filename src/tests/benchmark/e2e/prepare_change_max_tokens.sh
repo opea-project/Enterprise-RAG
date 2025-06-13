@@ -2,18 +2,21 @@
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-echo "generate uat.sh"
-source generate_uat.sh
-
-echo $USER_ACCESS_TOKEN
-if [ -z "$1" ]; then
-  echo "Error: No max_new_tokens, provided"
-  exit 1
-else
-  tokens=$1
+source generate_uat_to_file.sh "/dev/null" 1
+if [[ -z "$USER_ACCESS_TOKEN" ]] || [[ "$USER_ACCESS_TOKEN" == "null" ]]; then
+	echo "Error: failed to generate user access token"
+	exit 1
 fi
 
-curl -H "Content-Type: application/json" -H "Authorization: Bearer ${USER_ACCESS_TOKEN}" -vkL https://erag.com/v1/system_fingerprint/change_arguments -d '[
+if [ -z "$1" ]; then
+	echo "Error: No max_new_tokens, provided"
+	exit 1
+else
+	tokens=$1
+fi
+
+url="https://${ERAG_DOMAIN_NAME:-erag.com}/v1/system_fingerprint/change_arguments"
+curl -H "Content-Type: application/json" -H "Authorization: Bearer ${USER_ACCESS_TOKEN}" -vkL ${url} -d '[
     {
         "name": "llm",
         "data": {

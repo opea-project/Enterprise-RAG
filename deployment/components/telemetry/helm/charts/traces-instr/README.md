@@ -6,7 +6,7 @@ Traces instrumentation chart allows to deploy "OpenTelemetry collector" and inst
 
 ### Enabling instrumentation
 
-| **WARNING**   | 
+| **WARNING**   |
 | ------------- |
 |  Enabling tracing from all services is experimental **preview feature**, please check overhead of tracing under high load in testing controlled environment before enabling full tracing in production. |
 |  Tracing instrumentation is not working with Istio enabled. Please, disable this feature before using patches.|
@@ -44,7 +44,9 @@ kubectl patch -n chatqa deploy reranking-svc-deployment --patch-file patches/pat
 kubectl patch -n chatqa deploy retriever-svc-deployment --patch-file patches/patch-deploy-inject-us-chatqa-retriever.yaml
 
 # edp
-kubectl patch -n edp deploy edp-dataprep --patch-file patches/patch-deploy-inject-us-edp-dataprep.yaml
+kubectl patch -n edp deploy edp-text-extractor --patch-file patches/patch-deploy-inject-us-edp-text-extractor.yaml
+kubectl patch -n edp deploy edp-text-compression --patch-file patches/patch-deploy-inject-us-edp-text-compression.yaml
+kubectl patch -n edp deploy edp-text-splitter --patch-file patches/patch-deploy-inject-us-edp-text-splitter.yaml
 kubectl patch -n edp deploy edp-embedding --patch-file patches/patch-deploy-inject-us-edp-embedding.yaml
 kubectl patch -n edp deploy edp-ingestion --patch-file patches/patch-deploy-inject-us-edp-ingestion.yaml
 ```
@@ -73,4 +75,4 @@ kubectl patch -n chatqa deploy tgi-service-m-deployment --patch-file patches/pat
 Please follow upstream instructions for more description, for those components:
 
 - https://huggingface.co/docs/text-generation-inference/main/en/reference/launcher#otlpendpoint
-- https://github.com/huggingface/text-embeddings-inference?tab=readme-ov-file#docker (search for OTLP_ENDPOINT) 
+- https://github.com/huggingface/text-embeddings-inference?tab=readme-ov-file#docker (search for OTLP_ENDPOINT)

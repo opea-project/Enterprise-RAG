@@ -141,8 +141,18 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
-  dataprep-usvc:
-    image: "erag-dataprep"
+  text-extractor-usvc:
+    image: "erag-text-extractor"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  text-compression-usvc:
+    image: "erag-text-compression"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  text-splitter-usvc:
+    image: "erag-text-splitter"
     repository: *repo
     tag: *tag
     pullPolicy: Always

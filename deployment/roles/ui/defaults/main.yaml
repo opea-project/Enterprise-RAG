@@ -17,3 +17,8 @@ ui:
 
   tls:
     secret_name: "tls-secret"
+
+  extraUiConfigVars:
+    keycloakRealm: "EnterpriseRAG"
+    keycloakClientId: "EnterpriseRAG-oidc"
+    adminResourceRole: "ERAG-admin"

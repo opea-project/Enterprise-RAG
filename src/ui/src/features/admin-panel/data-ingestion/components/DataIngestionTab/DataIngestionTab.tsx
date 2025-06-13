@@ -39,8 +39,8 @@ const RefreshButton = () => {
     <Button
       variant="outlined"
       icon="refresh"
-      disabled={isDisabled}
-      onClick={refreshData}
+      isDisabled={isDisabled}
+      onPress={refreshData}
     >
       Refresh
     </Button>

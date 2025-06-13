@@ -15,16 +15,16 @@ import {
   handleChatStreamResponse,
   transformChatErrorResponse,
 } from "@/features/chat/utils/api";
-import { getToken, refreshToken } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import { onRefreshTokenFailed } from "@/utils/api";
 
 export const chatQnAApi = createApi({
   reducerPath: "chatQnAApi",
   baseQuery: fetchBaseQuery({
     prepareHeaders: async (headers: Headers) => {
-      await refreshToken(onRefreshTokenFailed);
+      await keycloakService.refreshToken(onRefreshTokenFailed);
 
-      headers.set("Authorization", `Bearer ${getToken()}`);
+      headers.set("Authorization", `Bearer ${keycloakService.getToken()}`);
       headers.set("Content-Type", "application/json");
 
       return headers;

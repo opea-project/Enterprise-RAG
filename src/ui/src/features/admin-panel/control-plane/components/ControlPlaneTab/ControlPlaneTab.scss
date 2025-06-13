@@ -1,12 +1,12 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.configure-services-panel {
+.control-plane-panel {
   @apply grid grid-cols-[1fr_22rem] bg-light-bg-1 dark:bg-dark-bg-1;
 }
 
 .chatqna-graph-wrapper {
-  @apply relative h-[calc(100vh-8.25rem)] w-full;
+  @apply relative h-[calc(100vh-8rem)] w-full;
 
   & .react-flow {
     @apply bg-light-bg-1;

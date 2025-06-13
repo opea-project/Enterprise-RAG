@@ -8,27 +8,28 @@
   tags:
     - install
 
-# Important: Loki and Tempo depend on correct DNS resolution to communicate with each other (via service discovery).
-# kind clusters typically use 'kube-dns' instead of 'coredns'.
-# Checks if we're running in a kind environment to decide whether to use kube-dns or coredns
-- name: Get node list
+# Important: Telemetry components require proper DNS resolution for service discovery.
+# Different Kubernetes distributions use different DNS services. Standard Kubernetes setups often use 'CoreDNS',
+# while others, such as kind clusters, typically use 'kube-dns'.
+# The following tasks detect which DNS service is available and configure it accordingly.
+- name: Get DNS services in kube-system namespace
   kubernetes.core.k8s_info:
     api_version: v1
-    kind: Node
-  register: node_list
+    kind: Service
+    namespace: kube-system
+  register: k8s_services
   tags:
     - install
 
-- name: Determine DNS service name based on environment
+- name: Determine DNS service name based on available services
   ansible.builtin.set_fact:
-    dns_service_name: "{{ 'kube-dns' if 'kind' in node_list.resources | map(attribute='metadata.name') | list | join(' ') else 'coredns' }}"
+    dns_service_name: "{{ 'kube-dns' if 'kube-dns' in k8s_services.resources | selectattr('metadata.namespace', 'equalto', 'kube-system') | map(attribute='metadata.name') | list else 'coredns' }}"
   tags:
     - install
 
-- name: Check kind environment
+- name: Display DNS service
   ansible.builtin.debug:
-    msg: "Kind environment detected. Using 'kube-dns' as the DNS service."
-  when: "'kube-dns' in dns_service_name"
+    msg: "Using '{{ dns_service_name }}' as the DNS service."
   tags:
     - install
 

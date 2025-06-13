@@ -103,7 +103,7 @@ const PromptTemplateCard = ({
           <Button
             size="sm"
             type="submit"
-            disabled={changePromptTemplateBtnDisabled}
+            isDisabled={changePromptTemplateBtnDisabled}
             fullWidth
           >
             Change Prompt Template

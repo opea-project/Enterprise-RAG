@@ -3,6 +3,6 @@
 
 pytest==7.4.4 # MIT
 allure-pytest==2.13.5 # Apache 2.0
-requests==2.32.3 # Apache 2.0
+requests==2.32.4 # Apache 2.0
 kr8s==0.17.4 # BSD 3-Clause License
 pytest-timeout==2.3.1 # MIT

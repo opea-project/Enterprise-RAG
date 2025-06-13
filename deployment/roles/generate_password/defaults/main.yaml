@@ -3,4 +3,3 @@
 
 ---
 password_file: "{{ log_dir }}/default_credentials.yaml"
-disable_vault: false

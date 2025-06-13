@@ -7,13 +7,13 @@ import { IconName } from "@/components/icons";
 import IconButton from "@/components/ui/IconButton/IconButton";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { paths } from "@/config/paths";
-import { isAdminUser } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 
 const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (!isAdminUser()) {
+  if (!keycloakService.isAdminUser()) {
     return null;
   }
 
@@ -21,11 +21,18 @@ const ViewSwitchButton = () => {
   const tooltipTitle = isChatPage ? "Admin Panel" : "Chat";
   const routeToPath = isChatPage ? paths.adminPanel : paths.chat;
   const icon: IconName = isChatPage ? "admin-panel" : "chat";
+  const ariaLabel = `Switch to ${isChatPage ? "Admin Panel" : "Chat"}`;
 
   return (
     <Tooltip
       title={tooltipTitle}
-      trigger={<IconButton icon={icon} onClick={() => navigate(routeToPath)} />}
+      trigger={
+        <IconButton
+          icon={icon}
+          aria-label={ariaLabel}
+          onPress={() => navigate(routeToPath)}
+        />
+      }
       placement="bottom"
     />
   );

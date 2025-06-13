@@ -1,0 +1,13 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "../"
+dependencies:
+  - pip-manual
+  - apt
+pip-manual:
+  packages:
+    - transformers
+    - oneccl_bind_pt
+    - torchserve
+    - torch-model-archiver
+    - packaging

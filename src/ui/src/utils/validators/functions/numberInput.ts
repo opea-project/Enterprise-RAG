@@ -8,19 +8,19 @@ export const isValidNumber = (value: string | undefined) =>
   !isNaN(Number(value));
 
 export const isInRange =
-  (range: NumberInputRange, nullable?: boolean) =>
+  (range: NumberInputRange, isNullable?: boolean) =>
   (value: string | undefined) => {
     if (value === undefined) {
       return false;
     } else {
       if (value === "") {
-        return nullable;
+        return isNullable;
       } else {
         if (containsNullCharacters(value)) {
           return false;
         }
 
-        if (!nullable && value && value.trim() === "") {
+        if (!isNullable && value && value.trim() === "") {
           return false;
         } else {
           if (isValidNumber(value)) {

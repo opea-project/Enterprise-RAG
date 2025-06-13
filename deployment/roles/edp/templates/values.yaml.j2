@@ -14,8 +14,8 @@ alternateTagging: {{ use_alternate_tagging }}
 
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "minio" %}
 {% if storage == "minio" %}
-edpAccessKey: {{ edp_minio_access_key }}
-edpSecretKey: {{ edp_minio_secret_key }}
+edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
+edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
 edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
@@ -79,12 +79,39 @@ flower:
 backend:
   tag: {{ tag }}
   repository: {{ registry }}
-dataprep:
+{% if edp.hierarchical_indices.enabled is true %}
+hierarchicalDataprep:
+  enabled: {{ edp.hierarchical_indices.enabled }}
   tag: {{ tag }}
   repository: {{ registry }}
+  name: "erag-hierarchical_dataprep"
+  config:
+    max_new_tokens: {{ edp.hierarchical_indices.maxNewTokens }}
+{% if "cpu" in pipelines[0].samplePath %}
+    vllm_server_endpoint: "http://vllm-service-m.chatqa.svc:8000"
+    summary_model_name: {{ llm_model }}
+{% elif "hpu" in pipelines[0].samplePath %}
+    vllm_server_endpoint: "http://vllm-gaudi-svc.chatqa.svc:80"
+    summary_model_name: {{ llm_model_gaudi }}
+{% endif %}
+{% else %}
+textExtractor:
+  tag: {{ tag }}
+  repository: {{ registry }}
+textCompression:
+  tag: {{ tag }}
+  repository: {{ registry }}
+textSplitter:
+  tag: {{ tag }}
+  repository: {{ registry }}
+{% endif %}
 ingestion:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.hierarchical_indices.enabled is true %}
+  config:
+    use_hierarchical_indices: "True"
+{% endif %}
 embedding:
   enabled: false
   remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"

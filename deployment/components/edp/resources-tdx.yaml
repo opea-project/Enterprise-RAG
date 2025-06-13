@@ -73,7 +73,34 @@ tdx:
         requests:
           cpu: 2
           memory: 4Gi
-    edp-dataprep:
+    edp-hierarchical-dataprep:
+      tdxEnabled: true
+      resources:
+        requests:
+          cpu: 8
+          memory: 16Gi
+        limits:
+          cpu: 8
+          memory: 16Gi
+    edp-text-extractor:
+      tdxEnabled: true
+      resources:
+        requests:
+          cpu: 8
+          memory: 16Gi
+        limits:
+          cpu: 8
+          memory: 16Gi
+    edp-text-compression:
+      tdxEnabled: true
+      resources:
+        requests:
+          cpu: 8
+          memory: 16Gi
+        limits:
+          cpu: 8
+          memory: 16Gi
+    edp-text-splitter:
       tdxEnabled: true
       resources:
         requests:

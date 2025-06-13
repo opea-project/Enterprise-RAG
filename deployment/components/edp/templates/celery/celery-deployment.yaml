@@ -130,23 +130,24 @@ spec:
               containerPort: 5000
               protocol: TCP
           livenessProbe:
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
             exec:
               command:
-              - "/bin/bash"
+              - "python3"
               - "-c"
-              - "celery inspect ping -d celery@$(hostname) | grep -q OK"
+              - "from app.tasks import celery;x=celery.control.ping();exit(0 if x and len(x) > 0 else 1)"
           readinessProbe:
             initialDelaySeconds: 5
-            periodSeconds: 5
+            periodSeconds: 10
             timeoutSeconds: 5
             exec:
               command:
-              - "/bin/bash"
+              - "python3"
               - "-c"
-              - "celery inspect ping -d celery@$(hostname) | grep -q OK"
+              - "from app.tasks import celery;x=celery.control.ping();exit(0 if x and len(x) > 0 else 1)"
           resources:
             {{- $defaultValues := toYaml .Values.celery.resources | nindent 12 -}}
             {{- include "manifest.getResource" (list .Values.celery.nameOverride $defaultValues .Values) | nindent 12 }}
@@ -162,4 +163,3 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-

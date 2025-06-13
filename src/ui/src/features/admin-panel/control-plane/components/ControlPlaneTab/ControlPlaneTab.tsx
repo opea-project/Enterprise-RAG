@@ -61,7 +61,7 @@ const ControlPlaneTab = () => {
   };
 
   return (
-    <div className="configure-services-panel">
+    <div className="control-plane-panel">
       <div className="chatqna-graph-wrapper">{getControlPlaneContent()}</div>
       <ServiceCard />
     </div>

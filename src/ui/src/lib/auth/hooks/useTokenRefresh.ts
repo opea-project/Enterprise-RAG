@@ -3,13 +3,13 @@
 
 import { useEffect } from "react";
 
-import { refreshToken } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import { onRefreshTokenFailed } from "@/utils/api";
 
 const useTokenRefresh = () => {
   useEffect(() => {
     const refreshTokenInterval = setInterval(() => {
-      refreshToken(onRefreshTokenFailed);
+      keycloakService.refreshToken(onRefreshTokenFailed);
     }, 60000);
     return () => clearInterval(refreshTokenInterval);
   }, []);

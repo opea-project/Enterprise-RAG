@@ -1,0 +1,19 @@
+{{- if not .Values.hierarchicalDataprep.enabled -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-text-splitter-configmap
+  namespace: edp
+data:
+  CHUNK_SIZE: {{ .Values.textSplitter.config.chunk_size | quote }}
+  CHUNK_OVERLAP: {{ .Values.textSplitter.config.chunk_overlap | quote }}
+{{- if .Values.textSplitter.semantic_chunking_enabled }}
+  USE_SEMANTIC_CHUNKING: "True"
+{{- end }}
+  EMBEDDING_MODEL_NAME: {{ .Values.textSplitter.config.embedding_model_name | quote }}
+  EMBEDDING_MODEL_SERVER: {{ .Values.textSplitter.config.embedding_model_server | quote }}
+  EMBEDDING_MODEL_SERVER_ENDPOINT: {{ .Values.textSplitter.config.embedding_model_server_endpoint | quote }}
+{{- end }}

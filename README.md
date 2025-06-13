@@ -95,7 +95,6 @@ Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instruc
 
 #### Additional Software Prerequisites when using Gaudi® AI Accelerator
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
--   **Prepared Gaudi Node**: Please refer to the [Gaudi Software Stack](./docs/prerequisites.md#gaudi-software-stack) section of the prerequisites section.
 
 # Pre-Installation
 
@@ -139,6 +138,15 @@ pipelines:
     type: chatqa
 ```
 
+# Install Gaudi software stack (For Gaudi nodes only)
+
+If your K8s cluster contains nodes with Gaudi® AI Accelerator, add bellow values to your inventory:
+
+```
+gaudi_operator: true # set to true when Gaudi operator is to be installed
+habana_driver_version: "1.21.1-16" # habana operator from https://vault.habana.ai/ui/native/habana-ai-operator/driver/
+```
+
 # Installation
 
 ```sh
@@ -146,9 +154,6 @@ ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install
 ```
 
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
-
-> [!NOTE]
-> Alternatively, installation can be performed with [Bash deployment](deployment/README_bash.md).
 
 # Remove installation
 

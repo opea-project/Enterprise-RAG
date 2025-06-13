@@ -84,6 +84,8 @@ spec:
             {{- toYaml .Values.ingestion.environment | nindent 12 }}
           {{- end }}
           envFrom:
+            - configMapRef:
+                name: edp-ingestion-configmap
             - secretRef:
                 name: vector-database-config
           securityContext:

@@ -3,8 +3,69 @@
 This Terraform configuration creates an S3 bucket and an SQS queue on AWS. It also sets up the S3 bucket to send notification events to the SQS queue.
 
 ## Prerequisites
- - Terraform installed to initialize, plan, and apply the infrastructure code.
- - Ensure your AWS credentials are configured in the `~/.aws/credentials` file with **sufficient IAM permissions to create and manage S3 buckets, SQS queues, and associated resources**. Make sure the credentials correspond to an IAM user or role with appropriate policies attached.
+ - **Terraform** must be installed to initialize, plan, and apply infrastructure as code.
+ - **AWS credentials** must be properly configured in your `~/.aws/credentials` file. Ensure they are associated with sufficient IAM permissions to create and manage S3 buckets, SQS queues, and associated resources.
+
+### Required IAM Permissions
+The following IAM policy outlines the minimum required permissions to successfully provision the infrastructure:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:CreateQueue",
+        "sqs:DeleteQueue",
+        "sqs:GetQueueAttributes",
+        "sqs:SetQueueAttributes",
+        "sqs:ListQueueTags",
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:PutBucketPolicy",
+        "s3:GetBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:GetBucketNotification",
+        "s3:PutBucketNotification",
+        "s3:GetBucketCORS",
+        "s3:PutBucketCORS",
+        "s3:ListBucket",
+        "s3:GetBucketLogging",
+        "s3:GetBucketTagging",
+        "s3:GetBucketAcl",
+        "s3:GetBucketWebsite",
+        "s3:GetBucketVersioning",
+        "s3:GetAccelerateConfiguration",
+        "s3:GetBucketRequestPayment",
+        "s3:GetReplicationConfiguration",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetBucketObjectLockConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "iam:CreateUser",
+        "iam:GetUser",
+        "iam:DeleteUser",
+        "iam:CreatePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:ListPolicyVersions",
+        "iam:DeletePolicy",
+        "iam:ListGroupsForUser",
+        "iam:AttachUserPolicy",
+        "iam:ListAttachedUserPolicies",
+        "iam:DetachUserPolicy",
+        "iam:CreateAccessKey",
+        "iam:ListAccessKeys",
+        "iam:DeleteAccessKey"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+✅ Tip: If possible, assign this policy to a dedicated IAM role or user specifically for infrastructure provisioning, to follow the principle of least privilege.
 
 ## Configuration
 To configure your bucket names or region, edit the `variables.tf` file or pass appropriate variables to `plan` and `apply` commands using `-var="key=value"` option.
@@ -25,8 +86,8 @@ After `terraform apply` completes, it outputs the access key and SQS queue URL. 
 terraform output secret_key
 ```
 
-### Passing Terraform Outputs to ERAG Ansible Deployment
-To use them in [Ansible-based deployment](../../../deployment/README.md), retrieve their values using the `terraform output -raw <output_name>` commands. Then, copy these output values and paste them into your config.yaml file under the appropriate fields before running the Ansible deployment.
+### Passing Terraform Outputs to ERAG Deployment
+To use them in [deployment](../../../deployment/README.md), retrieve their values using the `terraform output -raw <output_name>` commands. Then, copy these output values and paste them into your config.yaml file under the appropriate fields before running the deployment.
 
 For example, get the outputs with:
 
@@ -54,29 +115,6 @@ edp:
 Then run deployment as usual, an example for installation:
 ```bash
 ansible-playbook playbooks/application.yaml --tags install -e @path/to/your/config.yaml
-```
-
-### Passing Terraform Outputs to ERAG Bash-based Deployment
-To use Terraform outputs with the [bash-based install_chatqna.sh deployment](../../../deployment/README_bash.md), export the variables before running `install_chatqna.sh` as shown below.
-
-> Note: The `install_chatqna.sh` deployment script is deprecated and will be removed in version 1.3.0. It is recommended to use the Ansible-based deployment.
-
-```bash
-cd src/edp/terraform
-export edp_storage_type="s3"
-export s3_access_key=$(terraform output -raw access_key)
-export s3_secret_key=$(terraform output -raw secret_key)
-export s3_sqs_queue=$(terraform output -raw queue_url)
-export s3_region=$(terraform output -raw region)
-
-# Optional: regex pattern to filter S3 bucket names, so only matching buckets will be displayed in the Web UI
-export s3_bucket_name_regex_filter="your-regex-pattern-here"
-```
-
-Then run the deployment script, for example:
-```bash
-cd ../../../deployment
-./install_chatqna.sh --auth --deploy reference-cpu.yaml  --ui --kind
 ```
 
 ## Cleanup

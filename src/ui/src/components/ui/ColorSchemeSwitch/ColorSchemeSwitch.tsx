@@ -7,6 +7,7 @@ import classNames from "classnames";
 
 import DarkModeIcon from "@/components/icons/DarkModeIcon/DarkModeIcon";
 import LightModeIcon from "@/components/icons/LightModeIcon/LightModeIcon";
+import Button from "@/components/ui/Button/Button";
 import useColorScheme from "@/hooks/useColorScheme";
 
 const ColorSchemeSwitch = () => {
@@ -27,10 +28,10 @@ const ColorSchemeSwitch = () => {
   );
 
   return (
-    <button onClick={handleClick} className={colorSchemeSwitchClassNames}>
+    <Button className={colorSchemeSwitchClassNames} onPress={handleClick}>
       <div className="color-scheme-switch__thumb">{getModeIcon()}</div>
       <p className="color-scheme-switch__label">{getModeLabel()}</p>
-    </button>
+    </Button>
   );
 };
 

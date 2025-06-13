@@ -64,6 +64,10 @@ class VLLMConnector:
             error_message = f"Failed to stream from the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
             logger.error(error_message)
             raise RequestException(error_message)
+        except openai.BadRequestError as e:
+            error_message = f"Error streaming from VLLM:: {e}"
+            logger.error(error_message)
+            raise
         except Exception as e:
             logger.error(f"Error streaming from VLLM: {e}")
             raise Exception(f"Error streaming from VLLM: {e}")

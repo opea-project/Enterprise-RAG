@@ -134,6 +134,16 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
+    def extract_text(self, file_uuid):
+        """Extract text for the given file UUID"""
+        logger.info(f"Extracting text for file with id: {file_uuid}")
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            response = requests.post(
+                f"http://localhost:{pf.local_port}/api/file/{file_uuid}/extract",
+                headers=self.default_headers
+            )
+        return response
+
     def upload_file(self, file_path, presigned_url):
         """Upload a file using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,

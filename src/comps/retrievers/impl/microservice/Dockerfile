@@ -7,7 +7,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 
 RUN apt-get -y update && \
-    apt-get install --no-install-recommends --fix-missing -y nano && \
+    apt-get install --no-install-recommends --fix-missing -y nano git && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
@@ -37,6 +37,12 @@ COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/retrievers/utils ./comps/retrievers/utils
 COPY --chown=user:user ./comps/retrievers/impl/microservice/.env ./comps/retrievers/impl/microservice/.env
 COPY --chown=user:user ./comps/retrievers/opea_retriever_microservice.py ./comps/retrievers/opea_retriever_microservice.py
+
+WORKDIR /home/user/comps/retrievers/impl/microservice/.venv/lib/python3.11/site-packages
+COPY --chown=user:user ./comps/vectorstores/impl/issue-346-20250603_160239.patch /tmp/issue-346-20250603_160239.patch
+RUN git apply /tmp/issue-346-20250603_160239.patch
+COPY --chown=user:user ./comps/vectorstores/impl/issue-346-custom.patch /tmp/issue-346-custom.patch
+RUN git apply /tmp/issue-346-custom.patch
 
 WORKDIR /home/user/comps/retrievers
 CMD ["python", "opea_retriever_microservice.py"]

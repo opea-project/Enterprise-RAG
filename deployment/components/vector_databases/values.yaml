@@ -1,0 +1,62 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Set on the command line:
+vector_database_password:
+
+redis-cluster:
+  enabled: false
+  metrics:
+    enabled: true
+  existingSecret: "redis-cluster-secret"
+  existingSecretPasswordKey: "REDIS_PASSWORD"
+  cluster:
+    nodes: 3
+    replicas: 0
+  redis:
+    readinessProbe:
+      enabled: false
+      initialDelaySeconds: 180
+      periodSeconds: 10
+      timeoutSeconds: 10
+    livenessProbe:
+      enabled: false
+      initialDelaySeconds: 240
+      periodSeconds: 10
+      timeoutSeconds: 10
+    configmap: |-
+      loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
+      loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 16
+        memory: 16Gi
+  persistence:
+    size: "10Gi"
+
+redis:
+  enabled: false
+  metrics:
+    enabled: true
+  replica:
+    replicaCount: 0
+  auth:
+    enabled: true
+    existingSecret: "redis-secret"
+    existingSecretPasswordKey: "REDIS_PASSWORD"
+  commonConfiguration: |-
+    loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
+    loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 16
+      memory: 16Gi
+  persistence:
+    enabled: true
+    size: "10Gi"

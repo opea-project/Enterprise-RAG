@@ -8,6 +8,7 @@ Support for specific vector databases:
 | Vector Database    |  Status   |
 | -------------------| --------- |
 | [REDIS](#redis)    | &#x2713;  |
+| [REDIS-CLUSTER](#redis-cluster)    | &#x2713;  |
 
 ## Getting Started
 
@@ -27,6 +28,10 @@ cd impl/redis
 docker compose up -d
 ```
 To configure VectorStore to use Redis, please refer to [ConnectorRedis](#ConnectorRedis).
+
+#### Redis Cluster
+
+Configuration is exactly the same as for Redis
 
 ### VectorStore implementations
 
@@ -58,7 +63,7 @@ docker compose up -d
 ```
 
 ```bash
-export REDIS_URL='redis://localhst:6379'
+export REDIS_URL='redis://localhost:6379'
 ```
 
 ```python

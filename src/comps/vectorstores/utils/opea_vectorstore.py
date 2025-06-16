@@ -46,7 +46,8 @@ class OPEAVectorStore():
         self._vector_store_name = vector_store_name
 
         self._SUPPORTED_VECTOR_STORES = {
-            "redis": self._import_redis
+            "redis": self._import_redis,
+            "redis-cluster": self._import_redis
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:

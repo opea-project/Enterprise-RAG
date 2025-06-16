@@ -49,7 +49,6 @@ const (
 	TorchserveEmbedding      = "TorchserveEmbedding"
 	TorchserveEmbeddingGaudi = "TorchserveEmbeddingGaudi"
 	TorchserveReranking      = "TorchserveReranking"
-	VectorDB                 = "VectorDB"
 	Retriever                = "Retriever"
 	PromptTemplate           = "PromptTemplate"
 	Reranking                = "Reranking"
@@ -92,7 +91,6 @@ var yamlDict = map[string]string{
 	TorchserveEmbedding: yaml_dir + "torchserve_embedding.yaml",
 	TorchserveReranking: yaml_dir + "torchserve_reranking.yaml",
 	Embedding:           yaml_dir + "embedding-usvc.yaml",
-	VectorDB:            yaml_dir + "redis-vector-db.yaml",
 	Retriever:           yaml_dir + "retriever-usvc.yaml",
 	Reranking:           yaml_dir + "reranking-usvc.yaml",
 	PromptTemplate:      yaml_dir + "prompt-template-usvc.yaml",
@@ -585,11 +583,7 @@ func getDownstreamSvcEndpoint(graphNs string, dsName string, stepCfg *mcv1alpha3
 			altSvcName = svcName
 		}
 
-		if stepCfg.StepName == VectorDB {
-			return fmt.Sprintf("redis://%s.%s.svc:%d", altSvcName, altNs, port), nil
-		} else {
-			return fmt.Sprintf("http://%s.%s.svc:%d", altSvcName, altNs, port), nil
-		}
+		return fmt.Sprintf("http://%s.%s.svc:%d", altSvcName, altNs, port), nil
 	} else {
 		return "", errors.New(fmt.Sprintf("failed to get service details for %s: %v\n", dsName, err))
 	}

@@ -102,3 +102,8 @@ edp:
 fingerprint:
   enabled: true
   namespace: fingerprint
+
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis # Supported: redis, redis-cluster

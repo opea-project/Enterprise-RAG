@@ -20,7 +20,7 @@ http_endpoints = [
     # Output guards disabled
     # "output-scan-svc.chatqa.svc.cluster.local:8060",
     "prompt-template-svc.chatqa.svc.cluster.local:7900",
-    "redis-vector-db.chatqa.svc.cluster.local:6379",
+    #"redis-vector-db.chatqa.svc.cluster.local:6379",
     "reranking-svc.chatqa.svc.cluster.local:8000",
     "retriever-svc.chatqa.svc.cluster.local:6620",
     "router-service.chatqa.svc.cluster.local:8080",
@@ -75,7 +75,7 @@ http_endpoints = [
 ]
 
 redis_endpoints = [
-    "redis-vector-db.chatqa.svc.cluster.local:6379",
+    #"redis-vector-db.chatqa.svc.cluster.local:6379",
     "edp-redis-master.edp.svc.cluster.local:6379"
 ]
 

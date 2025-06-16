@@ -1,0 +1,27 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+vector_database_password: {{ REDIS_PASSWORD }}
+
+{% if vector_databases.vector_store == "redis" %}
+
+redis:
+  enabled: true
+  replicaCount: {{ vector_databases.redis.replicaCount | default(0) }}
+  auth:
+    password: {{ REDIS_PASSWORD }}
+
+{% endif %}
+
+{% if vector_databases.vector_store == "redis-cluster" %}
+
+redis-cluster:
+  password: {{ REDIS_PASSWORD }}
+  enabled: true
+  cluster:
+    nodes: {{ vector_databases["redis-cluster"].cluster.nodes | default(3) }}
+    replicas: {{ vector_databases["redis-cluster"].cluster.replicas | default(0) }}
+
+{% endif %}

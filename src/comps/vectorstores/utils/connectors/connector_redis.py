@@ -15,6 +15,7 @@ from redisvl.index import AsyncSearchIndex
 from redisvl.query import VectorQuery, VectorRangeQuery, FilterQuery
 from redisvl.redis.utils import array_to_buffer
 from redisvl.query.filter import FilterExpression, Text
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
@@ -139,8 +140,7 @@ class ConnectorRedis(VectorStoreConnector):
 
     async def _create_index(self, schema: IndexSchema, overwrite: bool=False) -> AsyncSearchIndex:
         logger.info(f"Creating index: {schema.index.name}")
-        index = AsyncSearchIndex(schema)
-        await index.connect(redis_url=ConnectorRedis.format_url_from_env())
+        index = AsyncSearchIndex(schema=schema, redis_url=ConnectorRedis.format_url_from_env())
         await index.create(overwrite=overwrite)
         return index
 
@@ -323,17 +323,47 @@ class ConnectorRedis(VectorStoreConnector):
             str: The formatted Redis URL.
         """
         redis_url = sanitize_env(os.getenv("REDIS_URL", None))
+        vector_store = sanitize_env(os.getenv("VECTOR_STORE", "")).lower()
+        should_be_cluster = True if vector_store == "redis-cluster" else False
+
         if redis_url:
-            return redis_url
+            parsed_url = urlparse(redis_url)
+            query_params = parse_qs(parsed_url.query)
+            # Get query parameter keys, make them lowercase, and ensure uniqueness
+            query_keys = {key.lower() for key in query_params.keys()}
+
+            # Check if "cluster" parameter exists and if required, append it
+            if "cluster" not in query_keys and should_be_cluster:
+                query_params["cluster"] = ["true"]
+
+            new_url = urlunparse((
+                parsed_url.scheme,
+                parsed_url.netloc,
+                "/" if parsed_url.path == "" else parsed_url.path,
+                parsed_url.params,
+                urlencode(query_params, doseq=True),
+                parsed_url.fragment
+            ))
+            return new_url
         else:
             host = sanitize_env(os.getenv("REDIS_HOST", 'localhost'))
             port = int(sanitize_env(os.getenv("REDIS_PORT", 6379)))
-
             using_ssl = get_boolean_env_var("REDIS_SSL", False)
             schema = "rediss" if using_ssl else "redis"
-
             username = sanitize_env(os.getenv("REDIS_USERNAME", "default"))
             password = sanitize_env(os.getenv("REDIS_PASSWORD", None))
-            credentials = "" if password is None else f"{username}:{password}@"
 
-            return f"{schema}://{credentials}{host}:{port}/"
+            query_params = {}
+            if should_be_cluster:
+                query_params["cluster"] = ["true"]
+
+            netloc = f"{username}:{password}@{host}:{port}" if password else f"{host}:{port}"
+            new_url = urlunparse((
+                schema,
+                netloc,
+                "/", # path
+                "", # params
+                urlencode(query_params, doseq=True), # query
+                "" # fragment
+            ))
+            return new_url

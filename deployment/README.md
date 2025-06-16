@@ -34,7 +34,8 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
     1. [Enabling Horizontal Pod Autoscaling](#enabling-horizontal-pod-autoscaling)
     2. [Enabling Pod Security Admission (PSA)](#enabling-pod-security-admission-psa)
     3. [Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)](#running-enterprise-rag-with-intel-trust-domain-extensions-intel-tdx)
-    4. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
+    4. [Redis Vector Database Performance Settings](#redis-vector-database-performance-settings)
+    5. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
 ---
 
 ## Verify System Status
@@ -246,7 +247,7 @@ You can expand the storage configuration for both the Vector Store and MinIO dep
 
 If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
 
-Similarly, for the selected Vector Store (for example `deployment/components/gmc/microservices-connector/manifests/redis-vector-db.yaml` manifest), you can increase the storage size under the PVC listing for `vector-store-data` PVC located in `deployment/microservices-connector/helm/values.yaml`. For example, set `size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+Similarly, for the selected Vector Store you can increase the persistent storage size. This configration is available in `deployment/compnents/vector_databases/values.yaml` For example, set `persistence.size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
 
 > [!NOTE]
 > The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
@@ -593,6 +594,58 @@ For deploying ChatQnA components with Intel® Trust Domain Extensions (Intel® T
 
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.
+
+### Redis Vector Database Performance Settings
+
+If you want to store more data resulting in >1M vectors, it is strongly encouraged to deploy the solution using `redis-cluster` vector store rather than plain `redis`. This allows horizontal partitioning over multiple redis instances. Number of instances is configurable via either the helm chart, or directly via `deployment/inventory/**/config.yaml` as follows:
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis-cluster
+  redis-cluster:
+    nodes: 3
+    replicas: 0
+```
+In addition, larger databases might benefit from different vector store index configuration, such as changing the search algorithm from `FLAT` to `HNSW`. This is configurable via `deployment/inventory/**/config.yaml` as follows:
+
+```yaml
+edp:
+  ingestion:
+    config:
+      vector_algorithm: "HNSW"
+      vector_datatype: "FLOAT32"
+      vector_distance_metric: "COSINE"
+      # For HNSW Algorithm additional settings are available
+      vector_hnsw_m: "32"
+      vector_hnsw_ef_construction: "32"
+      vector_hnsw_ef_runtime: "32"
+      vector_hnsw_epsilon: "0.01"
+```
+
+Please note that changing those settings requires additional RAM and storage for the vector database, since it creates additional indexes without removing the already existing ones. This operation might be time-consuming, depending on the amount of data already stored in the database.
+
+Please ensure the Redis instances have enough resources assigned, both from compute and storage. This is configurable via `deployment/inventory/**/config.yaml` as follows:
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis-cluster
+  redis-cluster:
+    persistence:
+      size: "30Gi"
+    resources:
+      requests:
+        cpu: 8
+        memory: 16Gi
+      limits:
+        cpu: 16
+        memory: 128Gi
+```
+
+In case of `redis-cluster`, all above settings are applied for each cluster node.
 
 ### Single Sign-On Integration Using Microsoft Entra ID (formerly Azure Active Directory)
 

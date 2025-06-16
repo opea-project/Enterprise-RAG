@@ -43,6 +43,14 @@
         - install
         - uninstall
 
+    - name: Run vector_databases role
+      include_role:
+        name: vector_databases
+      when: vector_databases.enabled
+      tags:
+        - install
+        - uninstall
+
     # Main roles section (core application components)
 
     - name: Istio role

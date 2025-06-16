@@ -18,9 +18,10 @@ Configuration is done by selecting the desired vector store type. In addition, t
 
 Support for specific vector databases:
 
-| Vector Database                             |  Status   |
-| --------------------------------------------| --------- |
-| [REDIS](../vectorstores/README.md#redis)    | &#x2713;  |
+| Vector Database                                          |  Status   |
+| -------------------------------------------------------- | --------- |
+| [REDIS](../vectorstores/README.md#redis)                 | &#x2713;  |
+| [REDIS-CLUSTER](../vectorstores/README.md#redis-cluster) | &#x2713;  |
 
 ## Getting started
 

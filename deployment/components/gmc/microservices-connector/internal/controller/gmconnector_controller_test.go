@@ -92,19 +92,6 @@ var _ = Describe("GMConnector Controller", func() {
 										},
 									},
 									{
-										StepName: VectorDB,
-										Executor: mcv1alpha3.Executor{
-											InternalService: mcv1alpha3.GMCTarget{
-												NameSpace:   "default",
-												ServiceName: "vector-service",
-												Config: map[string]string{
-													"endpoint": "/v1/vec",
-												},
-												IsDownstreamService: true,
-											},
-										},
-									},
-									{
 										StepName: Retriever,
 										Executor: mcv1alpha3.Executor{
 											InternalService: mcv1alpha3.GMCTarget{
@@ -439,19 +426,6 @@ var _ = Describe("GMConnector Controller", func() {
 									},
 								},
 								{
-									StepName: VectorDB,
-									Executor: mcv1alpha3.Executor{
-										InternalService: mcv1alpha3.GMCTarget{
-											NameSpace:   "default",
-											ServiceName: "vector-service",
-											Config: map[string]string{
-												"endpoint": "/v1/vec",
-											},
-											IsDownstreamService: true,
-										},
-									},
-								},
-								{
 									StepName: TeiReranking,
 									Executor: mcv1alpha3.Executor{
 										InternalService: mcv1alpha3.GMCTarget{
@@ -689,19 +663,6 @@ var _ = Describe("Predicate Functions", func() {
 										Config: map[string]string{
 											"endpoint": "/v1/tei-embeddings",
 											"MODEL_ID": "somemodel",
-										},
-										IsDownstreamService: true,
-									},
-								},
-							},
-							{
-								StepName: VectorDB,
-								Executor: mcv1alpha3.Executor{
-									InternalService: mcv1alpha3.GMCTarget{
-										NameSpace:   "default",
-										ServiceName: "vector-service",
-										Config: map[string]string{
-											"endpoint": "/v1/vec",
 										},
 										IsDownstreamService: true,
 									},

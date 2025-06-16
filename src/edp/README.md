@@ -6,7 +6,7 @@ The OPEA ERAG Enhanced Data Preparation service provides advanced document proce
 
 - Python >=3.12 is required to run EDP.
 - A stand alone `redis` server for task management is required.
-- A stand alone `redis search` server for VectorDB data is required.
+- A stand alone `redis search` server or Redis >= 8.0 for VectorDB data is required.
 - A stand alone `postgresql` server for storing file and link entries is required.
 - A S3 compatible storage (one of the following)
     - A stand alone `MinIO` server for storing files. This is included and optional.

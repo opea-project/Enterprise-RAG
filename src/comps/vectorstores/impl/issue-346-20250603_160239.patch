@@ -1,0 +1,101 @@
+From 9be7ff78a131942e6e842f356877aac36ac4f5e6 Mon Sep 17 00:00:00 2001
+From: "claude[bot]" <209825114+claude[bot]@users.noreply.github.com>
+Date: Tue, 3 Jun 2025 16:05:19 +0000
+Subject: [PATCH] fix: strip cluster parameter to prevent
+ AsyncRedisCluster.from_url() TypeError
+
+The cluster parameter needs to be stripped from both URL query string and kwargs
+before calling AsyncRedisCluster.from_url() because redis-py removed **kwargs
+support from AsyncRedisCluster.__init__().
+
+- Add _strip_cluster_from_url_and_kwargs() helper function
+- Update _get_aredis_connection() to use helper function
+- Update get_async_redis_cluster_connection() to use helper function
+
+Fixes #346
+
+Co-authored-by: abrookins <abrookins@users.noreply.github.com>
+---
+ redisvl/redis/connection.py | 50 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 47 insertions(+), 3 deletions(-)
+
+diff --git a/redisvl/redis/connection.py b/redisvl/redis/connection.py
+index 5ec562d0..eb22c335 100644
+--- a/redisvl/redis/connection.py
++++ b/redisvl/redis/connection.py
+@@ -1,5 +1,6 @@
+ import os
+-from typing import Any, Dict, List, Optional, Type
++from typing import Any, Dict, List, Optional, Tuple, Type
++from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+ from warnings import warn
+ 
+ from redis import Redis, RedisCluster
+@@ -20,6 +21,45 @@
+ from redisvl.version import __version__
+ 
+ 
++def _strip_cluster_from_url_and_kwargs(url: str, **kwargs) -> Tuple[str, Dict[str, Any]]:
++    """
++    Strip the 'cluster' parameter from URL query string and kwargs to prevent
++    TypeError when calling AsyncRedisCluster.from_url().
++
++    Args:
++        url (str): Redis connection URL
++        **kwargs: Additional keyword arguments
++
++    Returns:
++        Tuple[str, Dict[str, Any]]: Modified URL and kwargs with cluster parameter removed
++    """
++    # Create a copy of kwargs to avoid modifying the original
++    clean_kwargs = kwargs.copy()
++    clean_kwargs.pop("cluster", None)
++
++    # Parse the URL and remove cluster parameter from query string
++    parsed_url = urlparse(url)
++    query_params = parse_qs(parsed_url.query)
++
++    # Remove cluster parameter if present (case-insensitive)
++    query_params.pop("cluster", None)
++    query_params.pop("Cluster", None)
++    query_params.pop("CLUSTER", None)
++
++    # Rebuild the URL without cluster parameter
++    new_query = urlencode(query_params, doseq=True)
++    clean_url = urlunparse((
++        parsed_url.scheme,
++        parsed_url.netloc,
++        parsed_url.path,
++        parsed_url.params,
++        new_query,
++        parsed_url.fragment
++    ))
++
++    return clean_url, clean_kwargs
++
++
+ def compare_versions(version1: str, version2: str):
+     """
+     Compare two Redis version strings numerically.
+@@ -293,7 +333,9 @@ async def _get_aredis_connection(
+         url = url or get_address_from_env()
+ 
+         if is_cluster_url(url, **kwargs):
+-            client = AsyncRedisCluster.from_url(url, **kwargs)
++            # Strip cluster parameter to prevent TypeError in AsyncRedisCluster.from_url()
++            clean_url, clean_kwargs = _strip_cluster_from_url_and_kwargs(url, **kwargs)
++            client = AsyncRedisCluster.from_url(clean_url, **clean_kwargs)
+         else:
+             client = AsyncRedis.from_url(url, **kwargs)
+ 
+@@ -345,7 +387,9 @@ def get_async_redis_cluster_connection(
+     ) -> AsyncRedisCluster:
+         """Creates and returns an asynchronous Redis client for a Redis cluster."""
+         url = redis_url or get_address_from_env()
+-        return AsyncRedisCluster.from_url(url, **kwargs)
++        # Strip cluster parameter to prevent TypeError in AsyncRedisCluster.from_url()
++        clean_url, clean_kwargs = _strip_cluster_from_url_and_kwargs(url, **kwargs)
++        return AsyncRedisCluster.from_url(clean_url, **clean_kwargs)
+ 
+     @staticmethod
+     def sync_to_async_redis(

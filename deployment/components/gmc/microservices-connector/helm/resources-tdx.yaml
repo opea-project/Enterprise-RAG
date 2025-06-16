@@ -69,13 +69,6 @@ tdx:
           memory: 2Gi
         requests:
           memory: 2Gi
-    redis-vector-db:
-      tdxEnabled: true
-      resources:
-        limits:
-          memory: 4Gi
-        requests:
-          memory: 4Gi
     reranking-usvc:
       tdxEnabled: true
       resources:

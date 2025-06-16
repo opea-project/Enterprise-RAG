@@ -72,34 +72,6 @@
   tags:
     - install
 
-- name: Get the secret from the source namespace
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Secret
-    name: vector-database-config
-    namespace: "{{ chatqa_namespace }}"
-  register: secret_info
-  no_log: "{{ secure_logs }}"
-  tags:
-    - install
-
-- name: Create the secret in the target namespace
-  kubernetes.core.k8s:
-    api_version: v1
-    kind: Secret
-    name: vector-database-config
-    namespace: "{{ edp.namespace }}"
-    state: present
-    definition:
-      metadata:
-        name: "{{ secret_info.resources[0].metadata.name }}"
-        namespace: "{{ edp.namespace }}"
-      data: "{{ secret_info.resources[0].data }}"
-      type: "{{ secret_info.resources[0].type }}"
-  no_log: "{{ secure_logs }}"
-  tags:
-    - install
-
 # Creates client_secret_id
 - name: Get client_secret_id keycloak
   vars:

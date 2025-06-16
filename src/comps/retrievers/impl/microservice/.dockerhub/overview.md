@@ -11,9 +11,10 @@ The Retriever searches and fetches relevant information, documents, or data from
 
 Support for specific vector databases:
 
-| Vector Database |  Status   |
-| ----------------| --------- |
-| REDIS           | &#x2713;  |
+| Vector Database |  Status  |
+| --------------- | -------- |
+| REDIS           | &#x2713; |
+| REDIS-CLUSTER   | &#x2713; |
 
 ## License
 

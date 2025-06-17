@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from unittest.mock import MagicMock, Mock, patch
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker
 
@@ -59,11 +60,17 @@ def test_get_separators():
 def test_text_splitter():
     """Test split_text method for Splitter"""
     text = "Marry had a little lamb"
-    s = Splitter(chunk_size=5, chunk_overlap=3)
+    s = Splitter(chunk_size=10, chunk_overlap=3)
     splitted_text = s.split_text(text)
 
-    assert len(splitted_text) == 6
-    assert splitted_text == ['Marry', 'had', 'a', 'litt', 'ittle', 'lamb']
+    print(splitted_text)
+
+    assert len(splitted_text) == 3
+    assert splitted_text == [
+        Document(metadata={'start_index': 0}, page_content='Marry had'),
+        Document(metadata={'start_index': 10}, page_content='a little'),
+        Document(metadata={'start_index': 19}, page_content='lamb')
+        ]
 
 def test_split_text():
     """Test split_text method properly delegates to text_splitter"""
@@ -71,14 +78,14 @@ def test_split_text():
     test_text = "This is a sample text for testing the splitter functionality."
 
     # Create a mock for the text_splitter
-    mock_chunks = ["This is a sample", "sample text for testing", "testing the splitter functionality."]
+    mock_chunks = [Document(metadata={}, page_content='This is a sample text for testing the splitter functionality.')]
     splitter.text_splitter = Mock()
-    splitter.text_splitter.split_text.return_value = mock_chunks
+    splitter.text_splitter.split_documents.return_value = mock_chunks
 
     result = splitter.split_text(test_text)
 
     # Verify the method was called with correct parameters and returns expected result
-    splitter.text_splitter.split_text.assert_called_once_with(test_text)
+    splitter.text_splitter.split_documents.assert_called_once_with(mock_chunks)
     assert result == mock_chunks
 
 # Custom embedding class to simulate embeddings for semantic chunking

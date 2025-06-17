@@ -50,7 +50,7 @@ def mock_default_response_data():
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
         "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1 Document2 Document3\n### Conversation history:",
+        " ### Search results: Document1\n\nDocument2\n\nDocument3\n### Conversation history:",
                              user="### Question: This is my sample query? \n\n### Answer:")
 
 
@@ -82,7 +82,7 @@ def mock_default_response_data_with_conversation_history():
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
         "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1 Document2 Document3\n" \
+        " ### Search results: Document1\n\nDocument2\n\nDocument3\n" \
         "### Conversation history: User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
                              user="### Question: This is my sample query? \n\n### Answer:")
 

@@ -69,7 +69,7 @@ def test_search_method(mock_search):
     mock_search.assert_called_once_with(input=search_text)
 
 def test_search_types(mock_redis_vectorstore):
-    types = ['similarity', 'similarity_distance_threshold', 'mmr']
+    types = ['similarity', 'similarity_search_with_siblings', 'similarity_distance_threshold', 'mmr']
     search_text = EmbedDoc(text='Hello, how are you?', embedding=[0.1, 0.2, 0.3])
 
     for type in types:

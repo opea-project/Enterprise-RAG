@@ -134,7 +134,56 @@ class OPEAPromptTemplate:
 
         return system_prompt, user_prompt
 
+    def _parse_reranked_docs(self, reranked_docs: list) -> str:
+        """
+        Parse reranked documents and format them to display source and section information.
 
+        Args:
+            reranked_docs (list): List of document dictionaries containing metadata and text
+
+        Returns:
+            str: Output string with formatted document information including source and section headers.
+        """
+        formatted_docs = []
+
+        for doc in reranked_docs:
+            if isinstance(doc, dict) and "metadata" not in doc.keys() or \
+               isinstance(doc, TextDoc) and not doc.metadata:
+                if isinstance(doc, dict) and "text" in doc.keys():
+                    formatted_docs.append(doc["text"])
+                    continue
+                elif isinstance(doc, TextDoc) and hasattr(doc, "text"):
+                    formatted_docs.append(doc.text)
+                    continue
+                else:
+                    logger.error(f"Document {doc} does not contain metadata or text.")
+                    raise ValueError(f"Document {doc} does not contain metadata or text.")
+
+            metadata = doc["metadata"] if isinstance(doc, dict) else doc.metadata
+            text = doc["text"] if isinstance(doc, dict) else doc.text
+
+            file_info = "Unknown Source"
+            if "url" in metadata:
+                file_info = metadata["url"]
+            else:
+                file_info = metadata["object_name"]
+
+            # Collect header information if available
+            headers = []
+            for i in range(1, 8):  # Check for Header1 through Header7
+                header_key = f"Header{i}"
+                if header_key in metadata and metadata[header_key]:
+                    headers.append(metadata[header_key])
+
+            # Build the formatted string
+            header_part = ""
+            if headers:
+                header_part = f" | Section: {' > '.join(headers)}"
+
+            formatted_doc = f"[File: {file_info}{header_part}]\n{text}"
+            formatted_docs.append(formatted_doc)
+
+        return "\n\n".join(formatted_docs)
 
     async def run(self, input: PromptTemplateInput) -> LLMParamsDoc:
         """
@@ -174,7 +223,10 @@ class OPEAPromptTemplate:
         prompt_data = {}
 
         for key, value in input.data.items():
-            prompt_data[key] = extract_text_from_nested_dict(value)
+            if key == "reranked_docs":
+                prompt_data[key] = self._parse_reranked_docs(value)
+            else:
+                prompt_data[key] = extract_text_from_nested_dict(value)
             logger.debug(f"Extracted text for key {key}: {prompt_data[key]}")
 
         # Get conversation history

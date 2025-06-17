@@ -1,9 +1,11 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from langchain_core.documents import Document
+
 from comps.cores.proto.docarray import TextDoc
 from comps.cores.mega.logger import get_opea_logger
-from comps.text_splitter.utils.splitter import Splitter, SemanticSplitter
+from comps.text_splitter.utils.splitter import MarkdownSplitter, Splitter, SemanticSplitter
 from typing import List
 import os
 from comps.cores.utils.utils import sanitize_env
@@ -61,21 +63,45 @@ class OPEATextSplitter:
             except Exception as e:
                 logger.exception(f"An unexpected error occurred while initializing the splitter_semantic module: {e}")
                 raise
- 
-        else:
-            try:
-                splitter = Splitter(
-                    chunk_size=cur_chunk_size,
-                    chunk_overlap=cur_chunk_overlap,
-                )
-            except Exception as e:
-                logger.exception(f"An unexpected error occurred while initializing the splitter_recursive module: {e}")
-                raise
 
-        for doc in loaded_docs:
-            chunks = splitter.split_text(doc.text)
-            for chunk in chunks:
-                text_docs.append(TextDoc(text=chunk, metadata=doc.metadata))
+            for doc in loaded_docs:
+                chunks = splitter.split_text(doc.text)
+                for chunk in chunks:
+                    text_docs.append(TextDoc(text=chunk, metadata=doc.metadata))
+        else:
+            md_splitter = MarkdownSplitter(
+                chunk_size=cur_chunk_size,
+                chunk_overlap=cur_chunk_overlap,
+                )
+            default_splitter = Splitter(
+                chunk_size=cur_chunk_size,
+                chunk_overlap=cur_chunk_overlap,
+                )
+
+            for doc in loaded_docs:
+                extension = "" if "url" in doc.metadata else os.path.splitext(doc.metadata.get("filename", ""))[1].lower()
+                logger.info(f"Processing document: {doc.metadata} with extension: {extension}")
+                if extension in [".adoc", ".md", ".html"]:
+                    logger.info(f"Using MarkdownSplitter for document: {doc.metadata}")
+                    chunks = md_splitter.split_text(doc.text, extension)
+                else:
+                    chunks = default_splitter.split_text(doc.text)
+
+                for chunk in chunks:
+                    output = ""
+                    metadata = {}
+                    if isinstance(chunk, Document):
+                        output = chunk.page_content
+                        metadata = {**doc.metadata, **chunk.metadata}
+                    elif isinstance(chunk, str):
+                        output = chunk
+                        metadata = doc.metadata
+                    else:
+                        err_msg = f"Unexpected chunk type: {type(chunk)}. Expected Document or str."
+                        logger.error(err_msg)
+                        raise ValueError(err_msg)
+                    text_docs.append(TextDoc(text=output, metadata=metadata))
 
         logger.info(f"Done preprocessing. Created {len(text_docs)} chunks.")
+        logger.info(text_docs)
         return text_docs

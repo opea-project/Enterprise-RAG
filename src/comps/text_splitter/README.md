@@ -8,8 +8,9 @@ Supported splitter algorithms:
 
 | Algorithm | Class                                                                 |
 |----------------|------------------------------------------------------------------|
-| RecursiveCharacterTextSplitter   | [Splitter](./utils/splitter.py)                |
-| SemanticChunker                  | [SemanticSplitter](./utils/splitter.py)        |
+| default        | [Splitter](./utils/splitter.py)                   |
+| semantic_chunking  | [SemanticSplitter](./utils/splitter.py)        |
+| markdown_splitter | [MarkdownSplitter](./utils/splitter.py)        |
 
 
 ## Configuration options
@@ -19,7 +20,7 @@ Configuration is currently done via environment variables.
 | Environment Variable             | Default Value             | Description                                                                                      |
 |----------------------------------|---------------------------|--------------------------------------------------------------------------------------------------|
 | `OPEA_LOGGER_LEVEL`              | `INFO`                    | Microservice logging output level                                                                |
-| `TEXT_SPLITTER_USVC_PORT`        | `9399`                    | (Optional) Text Splitter microservice port                                                            |
+| `TEXT_SPLITTER_USVC_PORT`        | `9399`                    | (Optional) Text Splitter microservice port                                                       |
 | `CHUNK_SIZE`                     | `1500`                    | Size of chunks that the data is split into for further processing                                |
 | `CHUNK_OVERLAP`                  | `100`                     | Size of chunks overlapping                                                                       |
 | `USE_SEMANTIC_CHUNKING`          | `False`                   | Choose if semantic chunking should be used                                                       |

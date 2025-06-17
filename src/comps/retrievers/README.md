@@ -90,6 +90,7 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
+| `similarity_search_with_siblings` | `similarity_search_with_siblings`       | `k`, `distance_threshold`     |
 Additional search parameters that can be added to the query to configure the search:
 - `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
 - `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)

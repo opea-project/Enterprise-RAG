@@ -14,7 +14,7 @@ from redisvl.schema import IndexSchema
 from redisvl.index import AsyncSearchIndex
 from redisvl.query import VectorQuery, VectorRangeQuery, FilterQuery
 from redisvl.redis.utils import array_to_buffer
-from redisvl.query.filter import FilterExpression, Text
+from redisvl.query.filter import FilterExpression, Text, Num
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
@@ -53,47 +53,22 @@ class ConnectorRedis(VectorStoreConnector):
         return vector_schema
 
     def _metadata_schema(self):
-        metadata_schema = [
-            {
-                "name": "bucket_name",
-                "type": "text",
-            },
-            {
-                "name": "object_name",
-                "type": "text",
-            },
-            {
-                "name": "file_id",
-                "type": "text",
-            },
-            {
-                "name": "link_id",
-                "type": "text",
-            },
-            {
-                "name": "url",
-                "type": "text",
-            },
-            {
-                "name": "timestamp",
-                "type": "text",
-            }
+        base_fields = [
+            "id", "bucket_name", "object_name", "file_id", "link_id", "url", "timestamp",
+            "Header1", "Header2", "Header3", "Header4", "Header5", "Header6"
         ]
-        if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
-            metadata_schema.extend([
-                {
-                    "name": "doc_id",
-                    "type": "text",
-                },
-                {
-                    "name": "page",
-                    "type": "numeric",
-                },
-                {
-                    "name": "summary",
-                    "type": "numeric",
-                }
-            ])
+
+        metadata_schema = [{"name": field, "type": "text"} for field in base_fields]
+        metadata_schema.append({"name": "start_index", "type": "numeric"})
+
+        if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
+            hierarchical_fields = [
+                {"name": "doc_id", "type": "text"},
+                {"name": "page", "type": "numeric"},
+                {"name": "summary", "type": "numeric"},
+            ]
+            metadata_schema.extend(hierarchical_fields)
+
         return metadata_schema
 
     def _vector_schema(self, schema: dict, metadata_schema: Optional[dict]=None) -> IndexSchema:
@@ -314,6 +289,144 @@ class ConnectorRedis(VectorStoreConnector):
         except Exception as e:
             logger.exception("Error occured while searching by vector")
             raise e
+
+    def _convert_to_text_doc(self, doc):
+        """Helper method to convert a raw Redis result to a TextDoc"""
+        metadata = {}
+        for field in [VectorQuery.DISTANCE_ID] + [field['name'] for field in self._metadata_schema()]:
+            try:
+                metadata[field] = doc[field]
+            except (AttributeError, KeyError):
+                continue
+
+        return TextDoc(
+            text=doc[ConnectorRedis.CONTENT_FIELD_NAME],
+            metadata=metadata
+        )
+
+    async def similarity_search_with_siblings(self, input_text: str, embedding: List[float],
+                                              k: int,
+                                              distance_threshold: float = None,
+                                              filter_expression: Optional[Union[str, FilterExpression]] = None) -> SearchedDoc:
+        """
+        Performs a similarity search and retrieves sibling chunks based on document structure.
+
+        For chunks with headers: Retrieves 1 chunk before and 1 after with matching headers
+        For chunks without headers: Retrieves 1 chunk before and 1 after based on start_index
+
+        Args:
+            input_text: The user query text
+            embedding: The vector embedding for similarity search
+            k: Number of similar chunks to retrieve initially
+            distance_threshold: Optional threshold for similarity
+            filter_expression: Optional filters for the initial search
+
+        Returns:
+            SearchedDoc containing both the similar chunks and their siblings
+        """
+        # First get the k most similar chunks
+        initial_result = await self.similarity_search_by_vector(
+            input_text=input_text,
+            embedding=embedding,
+            k=k,
+            distance_threshold=distance_threshold,
+            filter_expression=filter_expression,
+            parse_result=False  # Get raw results to work with
+        )
+
+        # Get vector index to use for sibling queries
+        index = await self.vector_index()
+
+        # If no results or error, return empty result
+        if not hasattr(initial_result, 'docs') or not initial_result.docs:
+            return SearchedDoc(retrieved_docs=[], user_prompt=input_text)
+
+        # Process the main retrieved documents
+        primary_docs = []
+
+        for doc in initial_result.docs:
+            metadata = {}
+            for field in [VectorQuery.DISTANCE_ID] + [field['name'] for field in self._metadata_schema()]:
+                try:
+                    metadata[field] = doc[field]
+                except (AttributeError, KeyError):
+                    continue
+
+            primary_docs.append(
+                TextDoc(
+                    text=doc[ConnectorRedis.CONTENT_FIELD_NAME],
+                    metadata=metadata
+                )
+            )
+
+        logger.debug(f"Found {len(primary_docs)} primary documents for input: {input_text}")
+        all_sibling_docs = {}
+
+        for doc in initial_result.docs:
+            sibling_docs = []
+            if not hasattr(doc, 'object_name') or not hasattr(doc, 'start_index'):
+                continue
+
+            object_name = doc.object_name
+            start_index = doc.start_index
+
+            has_headers = False
+            header_filter = Text('object_name') == object_name
+
+            for i in range(1, 7):
+                header_key = f'Header{i}'
+                header_value = getattr(doc, header_key, None)
+                if header_value:
+                    has_headers = True
+                    header_value = header_value.replace(":", "")
+                    header_filter = header_filter & (Text(header_key) % str(header_value))
+
+            if has_headers:
+                # Case 1: Document has headers - get siblings with matching headers
+                header_query = FilterQuery(filter_expression=header_filter, num_results=100)
+                header_result = await index.search(header_query)
+                logger.debug(f"Retrieved header chunks: {len(header_result.docs)} for header_filter: {header_filter}")
+
+                if header_result.docs:
+                    sorted_chunks = sorted(header_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
+                    current_pos = -1
+                    for i, chunk in enumerate(sorted_chunks):
+                        if chunk.id == doc.id:
+                            current_pos = i
+                            break
+
+                    if current_pos != -1:
+                        if current_pos > 0:
+                            prev_chunk = sorted_chunks[current_pos - 1]
+                            sibling_docs.append(self._convert_to_text_doc(prev_chunk))
+
+                        if current_pos < len(sorted_chunks) - 1:
+                            next_chunk = sorted_chunks[current_pos + 1]
+                            sibling_docs.append(self._convert_to_text_doc(next_chunk))
+            else:
+                # Case 2: Document doesn't have headers - get nearest chunks by start_index
+                before_filter = (Text('object_name') == object_name) & (Num('start_index') < int(start_index))
+                before_query = FilterQuery(filter_expression=before_filter, num_results=100)
+                before_result = await index.search(before_query)
+
+                if before_result.docs:
+                    prev_chunk = max(before_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
+                    logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
+                    sibling_docs.append(self._convert_to_text_doc(prev_chunk))
+
+                after_filter = (Text('object_name') == object_name) & (Num('start_index') > int(start_index))
+                after_query = FilterQuery(filter_expression=after_filter, num_results=100)
+                after_result = await index.search(after_query)
+
+                if after_result.docs:
+                    next_chunk = min(after_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
+                    logger.debug(f"Retrieved next chunk: {next_chunk.id, next_chunk.start_index}")
+                    sibling_docs.append(self._convert_to_text_doc(next_chunk))
+
+            all_sibling_docs[doc.id] = sibling_docs
+
+        logger.debug(f"Final sibling docs: {all_sibling_docs}")
+        return SearchedDoc(retrieved_docs=primary_docs, sibling_docs=all_sibling_docs, user_prompt=input_text)
 
     @staticmethod
     def format_url_from_env():

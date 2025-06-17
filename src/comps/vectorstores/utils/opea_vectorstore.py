@@ -93,6 +93,8 @@ class OPEAVectorStore():
         search_res = None
         if input.search_type == "similarity":
             search_res = self.vector_store.similarity_search_by_vector(input.text, input.embedding, input.k, filter_expression=filter_expression)
+        elif input.search_type == "similarity_search_with_siblings":
+            search_res = self.vector_store.similarity_search_with_siblings(input.text, input.embedding, input.k, filter_expression=filter_expression)
         elif input.search_type == "similarity_distance_threshold":
             if input.distance_threshold is None:
                 raise ValueError("distance_threshold must be provided for similarity_distance_threshold retriever")

@@ -103,6 +103,7 @@ class TextSplitterInput(BaseDoc):
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
     user_prompt: str
+    sibling_docs: Optional[Dict[str, DocList[TextDoc]]] = None
     top_n: PositiveInt = 3
     rerank_score_threshold: Optional[float] = 0.02
     conversation_history: Optional[List[PrevQuestionDetails]] = None

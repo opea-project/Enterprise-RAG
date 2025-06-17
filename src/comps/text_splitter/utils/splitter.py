@@ -1,10 +1,11 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
+import re
 import json
 from typing import Dict, List, Optional
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from langchain_experimental.text_splitter import SemanticChunker
 
 from comps.text_splitter.utils.splitters.embedding_semantic import Embeddings
@@ -30,10 +31,10 @@ class AbstractSplitter:
     def split_text(self, text: str) -> List[str]:
         """
         Split input text into chunks using the configured text splitter.
-        
+
         Args:
             text: The text to split
-            
+
         Returns:
             List of text chunks
         """
@@ -47,7 +48,7 @@ class Splitter(AbstractSplitter):
     def __init__(self, chunk_size: int = 100, chunk_overlap: int = 10):
         """
         Initialize the splitter with the specified chunk size and overlap.
-        
+
         Args:
             chunk_size: Maximum size of each text chunk
             chunk_overlap: Amount of overlap between chunks
@@ -58,12 +59,17 @@ class Splitter(AbstractSplitter):
 
         super().__init__()
 
+    def split_text(self, text: str):
+        chunks = Document(page_content=text)
+        docs = self.text_splitter.split_documents([chunks])
+        return docs
+
     def get_text_splitter(self):
         """Create and return a RecursiveCharacterTextSplitter."""
         return RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,
-            add_start_index=False,
+            add_start_index=True,
             separators=self.separators
         )
 
@@ -71,7 +77,7 @@ class Splitter(AbstractSplitter):
     def get_separators() -> List[str]:
         """
         Get the list of separators for text splitting.
-        
+
         Returns:
             List of separator strings
         """
@@ -89,6 +95,74 @@ class Splitter(AbstractSplitter):
             "",
         ]
         return separators
+
+class MarkdownSplitter(AbstractSplitter):
+    def __init__(self, chunk_size: int = 100, chunk_overlap: int = 10):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.md_separators = self.get_md_separators()
+        self.char_separators = self.get_char_separators()
+
+        super().__init__()
+
+    def convert_markitdown_with_slide_headers(self, markdown_text: str) -> str:
+        # Step 1: Demote all existing headers by one level
+        # This ensures that original headers don't conflict with the new slide headers
+        markdown_text = re.sub(r'^(#{1,6})', r'#\1', markdown_text, flags=re.MULTILINE)
+
+        # Step 2: Convert slide number comments to Markdown headers
+        markdown_text = re.sub(r'<!-- Slide number: (\d+) -->', r'# Slide \1', markdown_text)
+
+        return markdown_text
+
+    def split_text(self, text, extension: Optional[str] = None):
+        splitters = self.text_splitter
+        if extension in [".pptx", ".ppt"]:
+            # Convert Markitdown output to Markdown with slide headers
+            text = self.convert_markitdown_with_slide_headers(text)
+
+        for splitter in splitters:
+            logger.info(f"Using splitter: {splitter.__class__.__name__}")
+            if isinstance(splitter, MarkdownHeaderTextSplitter):
+                text = splitter.split_text(text)
+            elif isinstance(splitter, RecursiveCharacterTextSplitter):
+                text = splitter.split_documents(text)
+            else:
+                raise ValueError(f"Unsupported splitter type: {splitter.__class__.__name__}")
+        return text
+
+    def get_text_splitter(self):
+        md_splitter = MarkdownHeaderTextSplitter(
+            self.md_separators,
+            strip_headers=False
+        )
+
+        char_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            separators=self.char_separators,
+            add_start_index=True,
+        )
+        return [md_splitter, char_splitter]
+
+    def get_char_separators(self):
+        separators = [
+            "\n\n",
+            "\n",
+            " ",
+            ".",
+            ",",
+            "\u200b",  # Zero-width space
+            "\uff0c",  # Fullwidth comma
+            "\u3001",  # Ideographic comma
+            "\uff0e",  # Fullwidth full stop
+            "\u3002",  # Ideographic full stop
+            "",
+        ]
+        return separators
+
+    def get_md_separators(self):
+        return [(f"{'#' * i}", f"Header{i}") for i in range(1, 8)]
 
 class SemanticSplitter(AbstractSplitter):
     """Text splitter that uses semantic meaning to determine chunk boundaries."""

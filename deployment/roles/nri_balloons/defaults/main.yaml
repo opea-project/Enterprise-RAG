@@ -1,0 +1,14 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+nri_balloons:
+  enabled: false
+  namespace: "kube-system"
+  helm:
+    repo_url: "https://containers.github.io/nri-plugins"
+    repo_name: "nri-plugins"
+    chart_name: "nri-resource-policy-balloons"
+    release_name: "nri-balloons"
+    default_values_file: "{{ playbook_dir }}/../components/nri-plugin/values.yaml"
+    reset_values_file: "{{ playbook_dir }}/../components/nri-plugin/reset-values.yaml"

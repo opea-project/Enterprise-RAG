@@ -79,7 +79,7 @@ spec:
     spec:
       {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
-        {{- toYaml .Values.vllmSecurityContext | nindent 8 }}
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: vllm
@@ -114,14 +114,24 @@ spec:
             - bash
             - -c
             - |
+                {{- if not .Values.balloons.enabled }}
                 source assign_cores.sh
+                {{- end }}
+                {{- if .Values.balloons.enabled }}
+                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
+                {{- end }}
                 {{ join " " $cmd }}
           {{- else }}
           command:
             - bash
             - -c
             - |
+                {{- if not .Values.balloons.enabled }}
                 source assign_cores.sh
+                {{- end }}
+                {{- if .Values.balloons.enabled }}
+                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
+                {{- end }}
                 python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"
           {{- end }}
           volumeMounts:

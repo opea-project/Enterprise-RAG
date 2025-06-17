@@ -29,6 +29,11 @@ tdx:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
+{% if balloons.enabled is defined %}
+balloons:
+  enabled: {{ balloons.enabled }}
+{% endif %}
+
 images:
   gmcManager:
     image: "erag-gmcmanager"

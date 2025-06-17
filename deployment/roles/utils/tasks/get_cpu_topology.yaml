@@ -1,0 +1,121 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Create a topology discovery daemonset
+  kubernetes.core.k8s:
+    state: present
+    namespace: kube-system
+    definition:
+      apiVersion: apps/v1
+      kind: DaemonSet
+      metadata:
+        name: node-topology-debugger
+        namespace: kube-system
+      spec:
+        selector:
+          matchLabels:
+            app: node-topology-debugger
+        template:
+          metadata:
+            labels:
+              app: node-topology-debugger
+          spec:
+            securityContext:
+              fsGroup: 2000
+              runAsGroup: 3000
+              runAsNonRoot: true
+              runAsUser: 1000
+              seccompProfile:
+                type: RuntimeDefault
+            containers:
+            - name: ubuntu
+              image: ubuntu
+              command: [ "sleep", "infinity" ]
+            restartPolicy: Always
+  tags:
+    - install
+
+- name: Wait for node-topology-debugger pods to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: kube-system
+    label_selectors:
+      - app=node-topology-debugger
+  register: pods_info
+  until: pods_info.resources | length > 0 and pods_info.resources[0].status.phase == "Running"
+  retries: 10
+  delay: 5
+  tags:
+    - install
+
+- name: Get the first running pod name
+  ansible.builtin.set_fact:
+    debug_pod_name: "{{ pods_info.resources[0].metadata.name }}"
+  tags:
+    - install
+
+- name: Get CPU to NUMA node mapping
+  kubernetes.core.k8s_exec:
+    pod: "{{ debug_pod_name }}"
+    container: ubuntu
+    namespace: kube-system
+    command: lscpu -p=NODE,CPU
+  register: cpu_numa_mapping
+  tags:
+    - install
+
+- name: Count CPUs per NUMA node
+  ansible.builtin.shell: |
+    echo "{{ cpu_numa_mapping.stdout }}" | grep -v '^#' | sed '/^\s*$/d' | awk -F, '{count[$1]++} END {for(i in count) print i" "count[i]}'
+  register: cpu_counts_per_node
+  tags:
+    - install
+
+- name: Extract CPU counts
+  ansible.builtin.shell: |
+    echo "{{ cpu_counts_per_node.stdout }}" | awk '{print $2}'
+  register: cpu_counts_raw
+  tags:
+    - install
+
+- name: Set CPU counts
+  ansible.builtin.set_fact:
+    cpu_counts: "{{ cpu_counts_raw.stdout_lines | map('int') | list }}"
+  tags:
+    - install
+
+- name: Set CPUs per NUMA node to first value
+  ansible.builtin.set_fact:
+    numa_node_cpus_result: "{{ cpu_counts[0] }}"
+  tags:
+    - install
+
+- name: Get number of NUMA nodes
+  ansible.builtin.shell: |
+    echo "{{ cpu_counts_per_node.stdout }}" | wc -l
+  register: numa_nodes_result
+  tags:
+    - install
+
+- name: Set NUMA balance status
+  ansible.builtin.set_fact:
+    numa_balanced: "{{ (cpu_counts | unique | length) == 1 }}"
+  tags:
+    - install
+
+- name: Display warning if NUMA nodes are imbalanced
+  ansible.builtin.debug:
+    msg: "WARNING: NUMA nodes have uneven CPU distribution {{ cpu_counts }}. This is unusual and balloon policy may not be optimized for this topology."
+  when: not numa_balanced
+  tags:
+    - install
+
+- name: Delete node-topology-debugger daemonset
+  kubernetes.core.k8s:
+    state: absent
+    kind: DaemonSet
+    name: node-topology-debugger
+    namespace: kube-system
+  tags:
+    - install

@@ -229,7 +229,7 @@ services:
       maxReplicas: 2
         # setting max replicas to 2 as to get good performance numbers we need either to:
         #  use multinode and spread vllm instances accross the nodes or to pin the cores/memory to socket
-      targetValue: 150m
+      targetValue: 100m
       # average processing time of single token
       # 1/target value would mean tokens/sec
       # depends on used LLM model and hardware platform used
@@ -243,7 +243,7 @@ services:
             periodSeconds: 90
         scaleUp:
           selectPolicy: Max
-          stabilizationWindowSeconds: 120
+          stabilizationWindowSeconds: 60
           policies:
           - type: Pods
             value: 1

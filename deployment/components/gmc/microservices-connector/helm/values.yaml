@@ -56,12 +56,6 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
-vllmSecurityContext:
-  fsGroup: 2000
-  runAsGroup: 3000
-  runAsNonRoot: true
-  runAsUser: 1000
-
 securityContext:
   capabilities:
     drop:
@@ -76,6 +70,9 @@ resources:
   requests:
     cpu: 500m
     memory: 64Mi
+
+balloons:
+  enabled: false
 
 livenessProbe:
   httpGet:

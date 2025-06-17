@@ -1,0 +1,20 @@
+{#
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+config:
+  balloonTypes:
+    - name: vllm-balloon
+      minCPUs: 32
+      maxCPUs: 32
+      maxBalloons: {{ (NUMANodes | int) * ((NUMANodeSize | int) // 64) }}
+      allocatorTopologyBalancing: true
+      preferNewBalloons: true
+      loads:
+        - llm-inference
+      matchExpressions:
+        - key: name
+          operator: In
+          values:
+            - vllm

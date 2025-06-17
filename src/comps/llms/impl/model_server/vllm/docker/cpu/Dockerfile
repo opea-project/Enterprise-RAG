@@ -31,7 +31,10 @@ ENV PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
 # VLLM doesn't share any prebuilt CPU packages (https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html#pre-built-wheels)
 # So it is impossible to easily freeze the whole vllm environment with uv
 ENV VLLM_TARGET_DEVICE="cpu"
-RUN pip install -v git+https://github.com/vllm-project/vllm@v0.8.5.post1
+RUN git clone --branch v0.8.5.post1 https://github.com/vllm-project/vllm.git /home/user/vllm
+COPY docker/vllm_patch.patch /home/user/vllm/
+RUN cd /home/user/vllm && git apply vllm_patch.patch
+RUN pip install -v /home/user/vllm && rm -rf /home/user/vllm
 RUN pip install intel_extension_for_pytorch==2.6.0
 
 COPY docker/assign_cores.sh .

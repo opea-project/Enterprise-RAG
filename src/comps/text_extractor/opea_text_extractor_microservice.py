@@ -52,7 +52,7 @@ def run_text_extractor(files, links):
 # https://github.com/fastapi/fastapi/issues/3725#issuecomment-902629033
 # https://luis-sena.medium.com/how-to-optimize-fastapi-for-ml-model-serving-6f75fb9e040d
 
-pool = ProcessPoolExecutor(max_workers=1)
+pool = ProcessPoolExecutor(max_workers=6)
 
 # Register the microservice with the specified configuration.
 @register_microservice(

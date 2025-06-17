@@ -51,9 +51,9 @@ def test_process_file_task_success():
         # Configure mock_post to return different responses for different calls
         mock_post.side_effect = [
             delete_response,           # Delete existing data
-            text_extractor_response,      # Data loader
-            text_compression_response, # Token compression
-            text_splitter_response,    # Data splitter
+            text_extractor_response,   # Text extractor
+            text_compression_response, # Text compression
+            text_splitter_response,    # Text splitter
             embedding_response,        # First embedding batch
             ingestion_response         # First ingestion batch
         ]
@@ -125,9 +125,9 @@ def test_process_link_task_success():
         # Configure mock_post to return different responses for different calls
         mock_post.side_effect = [
             delete_response,           # Delete existing data
-            text_extractor_response,      # Data loader
-            text_compression_response, # Token compression
-            text_splitter_response,    # Data splitter
+            text_extractor_response,   # Text extractor
+            text_compression_response, # Text compression
+            text_splitter_response,    # Text splitter
             embedding_response,        # First embedding batch
             ingestion_response         # First ingestion batch
         ]

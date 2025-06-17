@@ -587,20 +587,24 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
+    - name: OMP_THREAD_LIMIT
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
   resources:
     requests:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "1"
+      memory: "1Gi"
     limits:
-      cpu: "8"
-      memory: "16Gi"
+      cpu: "4"
+      memory: "8Gi"
   hpa:
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
-    targetValue: 2
+    targetValue: 4
     behavior:
       scaleDown:
-        stabilizationWindowSeconds: 60
+        stabilizationWindowSeconds: 600
         policies:
         - type: Percent
           value: 25
@@ -629,21 +633,21 @@ textCompression:
         resourceFieldRef:
           resource: limits.cpu
   config:
-    default_text_compression_methods: ""
+    default_text_compression_methods: "header_footer_stripper"
   resources:
     requests:
-      cpu: "2"
-      memory: "2Gi"
+      cpu: "0.5"
+      memory: "64Mi"
     limits:
-      cpu: "4"
-      memory: "4Gi"
+      cpu: "2"
+      memory: "1Gi"
   hpa:
     minReplicas: 1
-    maxReplicas: 4
-    targetValue: 2
+    maxReplicas: 1
+    targetValue: 4
     behavior:
       scaleDown:
-        stabilizationWindowSeconds: 60
+        stabilizationWindowSeconds: 300
         policies:
         - type: Percent
           value: 25
@@ -680,15 +684,15 @@ textSplitter:
     embedding_model_server_endpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
   resources:
     requests:
-      cpu: "2"
-      memory: "2Gi"
+      cpu: "0.5"
+      memory: "64Mi"
     limits:
-      cpu: "4"
-      memory: "4Gi"
+      cpu: "2"
+      memory: "1Gi"
   hpa:
     minReplicas: 1
-    maxReplicas: 4
-    targetValue: 2
+    maxReplicas: 1
+    targetValue: 4
     behavior:
       scaleDown:
         stabilizationWindowSeconds: 60

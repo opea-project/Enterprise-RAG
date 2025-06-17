@@ -9,7 +9,7 @@ class Compressor(ABC):
     Abstract Compressor class.
     """
     @abstractmethod
-    def compress_text(self, txt: str, **kwargs: Any) -> str:
+    async def compress_text(self, txt: str, file_info: str, **kwargs: Any) -> str:
         """
         Compress the given text.
 

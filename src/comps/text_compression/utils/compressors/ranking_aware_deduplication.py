@@ -90,14 +90,16 @@ class RankedDeduplicator(Compressor):
 
     def deduplicate(self,
                 segments: List[str],
-                overlap_threshold: float = 0.7,
-                rank_function: Optional[Callable] = None) -> List[str]:
+                overlap_threshold: float = 0.95,
+                rank_function: Optional[Callable] = None,
+                file_info: str = None) -> List[str]:
         """
         Deduplicate segments considering their ranking.
         Higher ranked segments are kept in case of duplicates.
         """
-        logger.info(f"Starting deduplication with {len(segments)} segments")
+        logger.info(f"[{file_info}] Starting deduplication with {len(segments)} segments")
         if len(segments) <= 1:
+            logger.info(f"[{file_info}] Only one segment provided, no deduplication needed")
             return segments
 
         # Rank all segments
@@ -129,7 +131,8 @@ class RankedDeduplicator(Compressor):
 
                 # Remove lower-ranked duplicates from consideration
                 if overlap > overlap_threshold and segment_rank >= other_rank:
-                    logger.info(f"Removing duplicate segment {orig_j} (overlap: {overlap:.2f})")
+                    logger.debug(f"[{file_info}] Removing segment {segment} (overlap: {overlap:.2f}) in favor of {other_segment}")
+                    logger.info(f"[{file_info}] Removing duplicate segment {orig_j} (overlap: {overlap:.2f})")
                     keep_indices.remove(orig_j)
 
         # Return kept segments in their original order
@@ -137,11 +140,12 @@ class RankedDeduplicator(Compressor):
         logger.info(f"Kept {len(kept_segments)}/{len(segments)} segments after deduplication")
         return kept_segments
 
-    def compress_text(self,
-                      text: str,
-                      segment_type: str = "paragraph",
-                      overlap_threshold: float = 0.95,
-                      rank_function: Optional[Callable] = None) -> str:
+    async def compress_text(self,
+                            text: str,
+                            file_info: str = None,
+                            segment_type: str = "paragraph",
+                            overlap_threshold: float = 0.95,
+                            rank_function: Optional[Callable] = None) -> str:
         """
         Compress text by deduplicating content while preserving higher-ranked segments.
 
@@ -163,7 +167,7 @@ class RankedDeduplicator(Compressor):
             segments = [p for p in re.split(r'\n\s*\n', text) if p.strip()]
 
         # Deduplicate segments
-        kept_segments = self.deduplicate(segments, overlap_threshold, rank_function)
+        kept_segments = self.deduplicate(segments, overlap_threshold, rank_function, file_info)
 
         # Reconstruct text with appropriate separator
         if segment_type.lower() == "paragraph":

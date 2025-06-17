@@ -856,7 +856,7 @@ def api_file_text_extract(file_uuid: str, request: Request):
                 if response.status_code != 200:
                     return JSONResponse(status_code=500, content={'details': f"Something went wrong during Text Compression: {response.text}"})
 
-                logger.debug(f"[{file.id}] Token compression completed.")
+                logger.debug(f"[{file.id}] Text compression completed.")
                 dataprep_compressed_docs = response.json()['loaded_docs']
                 if len(dataprep_compressed_docs) == 0:
                     raise Exception(f'[{file.id}] No text compressed.')
@@ -924,7 +924,7 @@ def api_link_text_extract(link_uuid: str, request: Request):
                 if response.status_code != 200:
                     return JSONResponse(status_code=500, content={'details': f"Something went wrong during Text Compression: {response.text}"})
 
-                logger.debug(f"[{link.id}] Token compression completed.")
+                logger.debug(f"[{link.id}] Text compression completed.")
                 dataprep_compressed_docs = response.json()['loaded_docs']
                 if len(dataprep_compressed_docs) == 0:
                     raise Exception(f'[{link.id}] No text compressed.')

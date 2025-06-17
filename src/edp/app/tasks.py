@@ -183,26 +183,26 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             self.db.commit()
             raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
 
-        # Step 3 - Call the token compression service to compress the documents
+        # Step 3 - Call the text compression service to compress the documents
         file_db.text_compression_start = datetime.datetime.now()
         file_db.status = 'text_compression'
-        file_db.job_message = 'Token compression in progress.'
+        file_db.job_message = 'Text compression in progress.'
         self.db.commit()
 
         response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
         if response.status_code != 200:
             file_db.status = 'error'
-            file_db.job_message = f"Error encountered while token compressing. {response_err(response)}"
+            file_db.job_message = f"Error encountered while text compressing. {response_err(response)}"
             file_db.text_compression_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error encountered while token compressing. {response_err(response)}")
-        logger.debug(f"[{file_db.id}] Token compression completed.")
+            raise Exception(f"Error encountered while text compressing. {response_err(response)}")
+        logger.debug(f"[{file_db.id}] Text compression completed.")
 
         dataprep_compressed_docs = []
         try:
             dataprep_compressed_docs = response.json()['loaded_docs']
             if len(dataprep_compressed_docs) == 0:
-                logger.debug(f"[{file_db.id}] Token compression returned 0 documents.")
+                logger.debug(f"[{file_db.id}] Text compression returned 0 documents.")
                 raise Exception('No text compressed.')
             file_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
             file_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
@@ -213,7 +213,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.job_message = 'No text compressed.'
             file_db.text_compression_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error parsing response from token compression service. {e} {response.text}")
+            raise Exception(f"Error parsing response from text compression service. {e} {response.text}")
 
         # Step 4 - Call the data splitter service to split the documents into smaller chunks
         file_db.text_splitter_start = datetime.datetime.now()
@@ -433,26 +433,26 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             self.db.commit()
             raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
 
-        # Step 3 - Call the token compression service to compress the documents
+        # Step 3 - Call the text compression service to compress the documents
         link_db.text_compression_start = datetime.datetime.now()
         link_db.status = 'text_compression'
-        link_db.job_message = 'Token compression in progress.'
+        link_db.job_message = 'Text compression in progress.'
         self.db.commit()
 
         response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
         if response.status_code != 200:
             link_db.status = 'error'
-            link_db.job_message = f"Error encountered while token compressing. {response_err(response)}"
+            link_db.job_message = f"Error encountered while text compressing. {response_err(response)}"
             link_db.text_compression_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error encountered while token compressing. {response_err(response)}")
-        logger.debug(f"[{link_db.id}] Token compression completed.")
+            raise Exception(f"Error encountered while text compressing. {response_err(response)}")
+        logger.debug(f"[{link_db.id}] Text compression completed.")
 
         dataprep_compressed_docs = []
         try:
             dataprep_compressed_docs = response.json()['loaded_docs']
             if len(dataprep_compressed_docs) == 0:
-                logger.debug(f"[{link_db.id}] Token compression returned 0 documents.")
+                logger.debug(f"[{link_db.id}] Text compression returned 0 documents.")
                 raise Exception('No text compressed.')
             link_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
             link_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
@@ -463,7 +463,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.job_message = 'No text compressed.'
             link_db.text_compression_end = datetime.datetime.now()
             self.db.commit()
-            raise Exception(f"Error parsing response from token compression service. {e} {response.text}")
+            raise Exception(f"Error parsing response from text compression service. {e} {response.text}")
 
         # Step 4 - Call the data splitter service to split the documents into smaller chunks
         link_db.text_splitter_start = datetime.datetime.now()

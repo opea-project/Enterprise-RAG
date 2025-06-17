@@ -8,20 +8,20 @@ Supported files that Text Extractor can extract data from:
 
 | File Extension | Loader Class                                                                 |
 |----------------|------------------------------------------------------------------------------|
-| AsciiDoc       | [LoadAsciiDoc](./utils/file_loaders/load_adoc.py)                            |
+| AsciiDoc       | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
 | doc            | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
 | docx           | [LoadDoc](./utils/file_loaders/load_doc.py)                                  |
-| txt            | [LoadTxt](./utils/file_loaders/load_txt.py)                                  |
-| json           | [LoadJson](./utils/file_loaders/load_json.py)                                |
-| jsonl          | [LoadJson](./utils/file_loaders/load_json.py)                                |
-| csv            | [LoadCsv](./utils/file_loaders/load_csv.py)                                  |
-| xlsx           | [LoadXls](./utils/file_loaders/load_xls.py)                                  |
-| xls            | [LoadXls](./utils/file_loaders/load_xls.py)                                  |
+| txt            | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| json           | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| jsonl          | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| csv            | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| xlsx           | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| xls            | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
 | pdf            | [LoadPdf](./utils/file_loaders/load_pdf.py)                                  |
-| html           | [LoadHtml](./utils/file_loaders/load_html.py)                                |
-| md             | [LoadMd](./utils/file_loaders/load_md.py)                                    |
-| xml            | [LoadXml](./utils/file_loaders/load_xml.py)                                  |
-| yaml           | [LoadYaml](./utils/file_loaders/load_yaml.py)                                |
+| html           | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| md             | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| xml            | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
+| yaml           | [LoadWithMarkitdown](./utils/file_loaders/load_with_markitdown.py)           |
 | ppt            | [LoadPpt](./utils/file_loaders/load_ppt.py)                                  |
 | pptx           | [LoadPpt](./utils/file_loaders/load_ppt.py)                                  |
 | tiff           | [LoadImage](./utils/file_loaders/load_image.py)                              |

@@ -131,8 +131,8 @@ If you want to utilize all functionality, depending on the application server yo
 |         | CELERY_BACKEND_URL         | URL for Celery backend |
 |         | HIERARCHICAL_DATAPREP_ENDPOINT | Endpoint for hierarchical dataprep service |
 |         | TEXT_EXTRACTOR_ENDPOINT       | Endpoint for text extractor service |
-|         | TEXT_COMPRESSION_ENDPOINT | Endpoint for token compression service |
-|         | TEXT_SPLITTER_ENDPOINT     | Endpoint for data splitter service |
+|         | TEXT_COMPRESSION_ENDPOINT | Endpoint for text compression service |
+|         | TEXT_SPLITTER_ENDPOINT     | Endpoint for text splitter service |
 |         | EMBEDDING_ENDPOINT         | Endpoint for embedding service |
 |         | INGESTION_ENDPOINT         | Endpoint for ingestion service |
 |         | DATABASE_HOST              | Host for PostgreSQL database |

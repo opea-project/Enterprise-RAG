@@ -35,7 +35,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEATextCompressor class with environment variables.
-opea_token_compressor = OPEATextCompressor(default_techniques=sanitize_env(os.getenv("DEFAULT_TEXT_COMPRESSION_METHODS")))
+opea_text_compressor = OPEATextCompressor(default_techniques=sanitize_env(os.getenv("DEFAULT_TEXT_COMPRESSION_METHODS")))
 
 # Register the microservice with the specified configuration.
 @register_microservice(
@@ -52,7 +52,7 @@ opea_token_compressor = OPEATextCompressor(default_techniques=sanitize_env(os.ge
 # Its input and output data types must comply with the registered ones above.
 async def invoke(input: TextCompressionInput) -> TextSplitterInput:
     """
-    Process the input text through token compression.
+    Process the input text through text compression.
 
     Args:
         input (InputText): The input containing text documents to be compressed.
@@ -75,8 +75,8 @@ async def invoke(input: TextCompressionInput) -> TextSplitterInput:
             logger.warning("No documents provided for compression")
             return TextSplitterInput(loaded_docs=[])
 
-        # Call the token compressor to compress the documents
-        compressed_docs = await opea_token_compressor.compress_docs(
+        # Call the text compressor to compress the documents
+        compressed_docs = await opea_text_compressor.compress_docs(
             docs=input.loaded_docs,
             techniques=compression_techniques,
         )

@@ -685,7 +685,7 @@ wheels = [
 ]
 
 [[package]]
-name = "intel-enterprise-rag-token-compression-microservice"
+name = "intel-enterprise-rag-text-compression-microservice"
 version = "1.0.1"
 source = { virtual = "." }
 dependencies = [

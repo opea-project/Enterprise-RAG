@@ -9,19 +9,19 @@ The Text Extractor microservice is designed to extract text from data sent for p
 ### Supported File Types
 
 | File Extension | Loader Class |
-|----------------|-------------|
-| AsciiDoc       | LoadAsciiDoc |
-| doc, docx      | LoadDoc      |
-| txt            | LoadTxt      |
-| json, jsonl    | LoadJson     |
-| csv            | LoadCsv      |
-| xlsx, xls      | LoadXls      |
-| pdf            | LoadPdf      |
-| html           | LoadHtml     |
-| md             | LoadMd       |
-| xml            | LoadXml      |
-| yaml           | LoadYaml     |
-| ppt, pptx      | LoadPpt      |
+|----------------|--------------------|
+| AsciiDoc       | LoadWithMarkitdown |
+| doc, docx      | LoadDoc            |
+| txt            | LoadWithMarkitdown |
+| json, jsonl    | LoadWithMarkitdown |
+| csv            | LoadWithMarkitdown |
+| xlsx, xls      | LoadWithMarkitdown |
+| pdf            | LoadPdf            |
+| html           | LoadWithMarkitdown |
+| md             | LoadWithMarkitdown |
+| xml            | LoadWithMarkitdown |
+| yaml           | LoadWithMarkitdown |
+| ppt, pptx      | LoadPpt            |
 | tiff, jpg, jpeg, png, svg | LoadImage |
 
 ## 🔗 Related Components

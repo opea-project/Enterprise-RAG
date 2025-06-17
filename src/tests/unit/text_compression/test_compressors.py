@@ -16,7 +16,7 @@ def test_header_footer_stripper_initialization():
     compressor = HeaderFooterStripper()
     assert isinstance(compressor, HeaderFooterStripper)
 
-def test_header_footer_stripper_strip_header():
+async def test_header_footer_stripper_strip_header():
     """Test that the header is correctly stripped."""
     text = """Header line 1
 Header line 2
@@ -25,7 +25,7 @@ Main content line 1
 Main content line 2"""
 
     compressor = HeaderFooterStripper()
-    compressed_text = compressor.compress_text(text, header_patterns=["---"])
+    compressed_text = await compressor.compress_text(text, header_patterns=["---"])
 
     assert "Header line 1" in compressed_text
     assert "Header line 2" in compressed_text
@@ -33,7 +33,7 @@ Main content line 2"""
     assert "Main content line 1" in compressed_text
     assert "Main content line 2" in compressed_text
 
-def test_header_footer_stripper_strip_header_and_footer():
+async def test_header_footer_stripper_strip_header_and_footer():
     """Test that both header and footer are correctly stripped."""
     text = """Header line 1
 Header line 2
@@ -45,7 +45,7 @@ Footer line 1
 Footer line 2"""
 
     compressor = HeaderFooterStripper()
-    compressed_text = compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
+    compressed_text = await compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
 
     assert "Header line" in compressed_text
     assert "---START---" not in compressed_text
@@ -53,14 +53,14 @@ Footer line 2"""
     assert "---END---" not in compressed_text
     assert "Footer line" in compressed_text
 
-def test_header_footer_stripper_no_delimiters_found():
+async def test_header_footer_stripper_no_delimiters_found():
     """Test behavior when delimiters aren't found in the text."""
     text = """This is some text
 with no delimiters
 so it should remain unchanged."""
 
     compressor = HeaderFooterStripper()
-    compressed_text = compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
+    compressed_text = await compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
 
     assert compressed_text == text
 
@@ -72,7 +72,7 @@ def deduplicator():
     return RankedDeduplicator()
 
 @patch('nltk.sent_tokenize')
-def test_ranking_aware_deduplication_compress_text_sentences(mock_sent_tokenize, deduplicator):
+async def test_ranking_aware_deduplication_compress_text_sentences(mock_sent_tokenize, deduplicator):
     """Test compress_text with sentence segmentation."""
     mock_sent_tokenize.return_value = [
         "This is the first sentence.",
@@ -84,19 +84,19 @@ def test_ranking_aware_deduplication_compress_text_sentences(mock_sent_tokenize,
     text = "This is the first sentence. This is a duplicate sentence. " \
             "This is a duplicate sentence. This is the final sentence."
 
-    result = deduplicator.compress_text(text, segment_type="sentence")
+    result = await deduplicator.compress_text(text, segment_type="sentence")
 
     # Should contain 3 sentences (deduplicated)
     mock_sent_tokenize.assert_called_once_with(text)
     assert "This is a duplicate sentence." in result
     assert result.count("This is a duplicate sentence.") == 1
 
-def test_ranking_aware_deduplication_compress_text_paragraphs(deduplicator):
+async def test_ranking_aware_deduplication_compress_text_paragraphs(deduplicator):
     """Test compress_text with paragraph segmentation."""
     text = "First paragraph.\n\nDuplicate paragraph.\n\n" \
             "Duplicate paragraph.\n\nLast paragraph."
 
-    result = deduplicator.compress_text(text, segment_type="paragraph")
+    result = await deduplicator.compress_text(text, segment_type="paragraph")
 
     # Should contain 3 paragraphs (deduplicated)
     assert "First paragraph." in result
@@ -105,25 +105,25 @@ def test_ranking_aware_deduplication_compress_text_paragraphs(deduplicator):
     assert result.count("Duplicate paragraph.") == 1
 
 @patch('comps.text_compression.utils.compressors.ranking_aware_deduplication.logger')
-def test_ranking_aware_deduplication_compress_text_invalid_segment_type(mock_logger_instance, deduplicator):
+async def test_ranking_aware_deduplication_compress_text_invalid_segment_type(mock_logger_instance, deduplicator):
     """Test compress_text with invalid segment type."""
     text = "Some text."
 
-    deduplicator.compress_text(text, segment_type="invalid")
+    await deduplicator.compress_text(text, segment_type="invalid")
 
     # Verify warning was logged
     mock_logger_instance.warning.assert_called_with(
         "Unknown segment_type: invalid. Using paragraph."
     )
 
-def test_ranking_aware_deduplication_compress_text_integration(deduplicator):
+async def test_ranking_aware_deduplication_compress_text_integration(deduplicator):
     """Integration test for compress_text."""
     text = "First paragraph with important content.\n\n" \
             "Second paragraph has duplicate content.\n\n" \
             "This paragraph has duplicate content.\n\n" \
             "Last paragraph with unique information."
 
-    result = deduplicator.compress_text(
+    result = await deduplicator.compress_text(
         text,
         segment_type="paragraph",
         overlap_threshold=0.3

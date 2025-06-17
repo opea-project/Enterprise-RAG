@@ -36,9 +36,10 @@ class HeaderFooterStripper(Compressor):
             r'\n+--\s*\n.*$',  # Email signature separator
         ]
 
-    def compress_text(self, text: str,
-                     header_patterns: Optional[List[str]] = None,
-                     footer_patterns: Optional[List[str]] = None) -> str:
+    async def compress_text(self, text: str,
+                            file_info: str = None,
+                            header_patterns: Optional[List[str]] = None,
+                            footer_patterns: Optional[List[str]] = None) -> str:
         """
         Compress text by removing headers and footers.
 

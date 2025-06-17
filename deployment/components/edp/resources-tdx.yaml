@@ -95,20 +95,20 @@ tdx:
       tdxEnabled: true
       resources:
         requests:
-          cpu: 8
-          memory: 16Gi
+          cpu: 0.5
+          memory: 64Mi
         limits:
-          cpu: 8
-          memory: 16Gi
+          cpu: 2
+          memory: 1Gi
     edp-text-splitter:
       tdxEnabled: true
       resources:
         requests:
-          cpu: 8
-          memory: 16Gi
+          cpu: 0.5
+          memory: 64Mi
         limits:
-          cpu: 8
-          memory: 16Gi
+          cpu: 2
+          memory: 1Gi
     edp-flower:
       tdxEnabled: true
       resources:

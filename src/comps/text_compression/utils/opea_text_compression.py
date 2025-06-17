@@ -10,7 +10,7 @@ from comps.text_compression.utils.compressors import header_footer_stripper_comp
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEATextCompressor:
-    """Singleton class for handling token compression using various techniques."""
+    """Singleton class for handling text compression using various techniques."""
     _instance = None
 
     def __new__(cls, default_techniques: str = None):
@@ -27,7 +27,7 @@ class OPEATextCompressor:
 
     def _initialize(self, default_techniques: str = None):
         """
-        Initialize the token compressor.
+        Initialize the text compressor.
         """
         self.default_techniques_str = default_techniques
         self.default_techniques = [item.strip() for item in default_techniques.split(',')] if default_techniques else []
@@ -83,8 +83,17 @@ class OPEATextCompressor:
             if doc.text.strip() == "":
                 compressed_doc = TextDoc(text="", metadata=doc.metadata)
             else:
-                # Apply compression technique
-                compressed_text = await self.compress(doc.text, techniques)
+                metadata = doc.metadata
+                file_info = ""
+                if "url" in metadata:
+                    file_info = metadata["url"]
+                elif "filename" in metadata:
+                    file_info = metadata["filename"]
+                else:
+                    file_info = "unknown"
+
+                logger.info(f"Compressing document from {file_info} with {len(doc.text)} characters.")
+                compressed_text = await self.compress(doc.text, techniques, file_info)
 
                 compressed_doc = TextDoc(
                     text=compressed_text,
@@ -104,7 +113,7 @@ class OPEATextCompressor:
 
         return compressed_docs
 
-    async def compress(self, text: str, techniques: Optional[List[TextCompressionTechnique]] = None) -> str:
+    async def compress(self, text: str, techniques: Optional[List[TextCompressionTechnique]] = None, file_info: Optional[str] = None) -> str:
         """
         Compress the given text using the specified technique.
 
@@ -121,21 +130,22 @@ class OPEATextCompressor:
 
         if techniques is not None:
             techniques_str = ", ".join(technique.name for technique in techniques)
-            logger.info(f"Requested compression techniques: {techniques_str}")
+            logger.info(f"[{file_info}] Requested compression techniques: {techniques_str}")
             for technique in techniques:
                 if technique.name not in self.initialized_techniques:
                     err_msg = f"Unknown compression technique: {technique.name}. Available techniques: {list(self._SUPPORTED_TECHNIQUES.keys())}"
                     logger.error(err_msg)
                     raise ValueError(err_msg)
 
-                logger.info(f" - {technique.name}: {self.initialized_techniques[technique.name]}")
+                logger.info(f"[{file_info}] Applying compression technique: {technique.name}")
                 try:
                     params = technique.parameters if technique.parameters else {}
-                    text = self.initialized_techniques[technique.name].compress_text(text, **params)
+                    text = await self.initialized_techniques[technique.name].compress_text(text, file_info, **params)
                 except Exception as e:
                     err_msg = f"Error applying compression technique {technique}: {e}"
                     logger.error(err_msg)
                     raise Exception(err_msg)
+                logger.info(f"[{file_info}] Applied compression techniques: {technique.name}")
             return text
         else:
             logger.info(f"No specific compression technique requested. Using default: {self.default_techniques}.")
@@ -146,12 +156,10 @@ class OPEATextCompressor:
                 return text
 
             for c_name in self.default_techniques:
-                print(f" - {c_name}: {self.initialized_techniques[c_name]}")
-
                 try:
-                    logger.info(f"Applying compression technique: {c_name}")
-                    text = self.initialized_techniques[c_name].compress_text(text)
-                    logger.info(f"Applied compression technique: {c_name}")
+                    logger.info(f"[{file_info}] Applying compression technique: {c_name}")
+                    text = await self.initialized_techniques[c_name].compress_text(text, file_info)
+                    logger.info(f"[{file_info}] Applied compression technique: {c_name}")
                 except Exception as e:
                     err_msg = f"Error applying compression techniques {self.default_techniques_str}: {e}"
                     logger.error(err_msg)

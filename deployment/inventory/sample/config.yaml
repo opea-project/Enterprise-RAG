@@ -102,6 +102,8 @@ edp:
     maxNewTokens: 100
     kSummaries: 2
     kChunks: 2
+  semantic_chunking:
+    enabled: false
 
 fingerprint:
   enabled: true

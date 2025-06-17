@@ -10,10 +10,6 @@ metadata:
 data:
   CHUNK_SIZE: {{ .Values.textSplitter.config.chunk_size | quote }}
   CHUNK_OVERLAP: {{ .Values.textSplitter.config.chunk_overlap | quote }}
-{{- if .Values.textSplitter.semantic_chunking_enabled }}
-  USE_SEMANTIC_CHUNKING: "True"
-{{- end }}
-  EMBEDDING_MODEL_NAME: {{ .Values.textSplitter.config.embedding_model_name | quote }}
-  EMBEDDING_MODEL_SERVER: {{ .Values.textSplitter.config.embedding_model_server | quote }}
-  EMBEDDING_MODEL_SERVER_ENDPOINT: {{ .Values.textSplitter.config.embedding_model_server_endpoint | quote }}
+  EMBEDDING_SERVICE_ENDPOINT: {{ .Values.textSplitter.config.embedding_service_endpoint | quote }}
+  USE_SEMANTIC_CHUNKING: {{ .Values.textSplitter.config.use_semantic_chunking | quote }}
 {{- end }}

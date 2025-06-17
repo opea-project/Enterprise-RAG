@@ -122,9 +122,7 @@ def test_semantic_splitter():
 
         with patch.object(SemanticSplitter, 'get_text_splitter', mock_get_text_splitter):
             semantic_splitter = SemanticSplitter(
-                embedding_model_server="mock",
-                embedding_model_server_endpoint="http://mock-endpoint",
-                embedding_model_name="mock-model"
+                embedding_service_endpoint="http://mock-endpoint:1234/v1/embeddings",
             )
 
             chunks = semantic_splitter.split_text(text)
@@ -134,7 +132,7 @@ def test_semantic_splitter():
             assert chunks[0].strip().startswith("The"), f"First chunk doesn't start with 'The'. First chunk: {chunks[0].strip()}"
             assert chunks[-1].strip().endswith("gence."), f"Last chunk doesn't end with 'gence.'. Last chunk: {chunks[-1].strip()}"
 
-def test_initialization_with_invalid_params():
+def test_initialization_with_invalid_chunk_params():
     """Test SemanticSplitter raises ValueError with invalid parameters."""
-    with pytest.raises(ValueError, match="embedding_model_server_endpoint must be provided"):
-        SemanticSplitter(embedding_model_server_endpoint="")
+    with pytest.raises(ValueError, match="Invalid semantic_chunk_params format"):
+        SemanticSplitter(semantic_chunk_params_str="expected json not string")

@@ -19,16 +19,13 @@ Configuration is currently done via environment variables.
 | Environment Variable             | Default Value             | Description                                                                                      |
 |----------------------------------|---------------------------|--------------------------------------------------------------------------------------------------|
 | `OPEA_LOGGER_LEVEL`              | `INFO`                    | Microservice logging output level                                                                |
-| `TEXT_SPLITTER_USVC_PORT`             | `9399`                    | (Optional) Text Splitter microservice port                                                            |
+| `TEXT_SPLITTER_USVC_PORT`        | `9399`                    | (Optional) Text Splitter microservice port                                                            |
 | `CHUNK_SIZE`                     | `1500`                    | Size of chunks that the data is split into for further processing                                |
 | `CHUNK_OVERLAP`                  | `100`                     | Size of chunks overlapping                                                                       |
 | `USE_SEMANTIC_CHUNKING`          | `False`                   | Choose if semantic chunking should be used                                                       |
-| `EMBEDDING_MODEL_NAME`           | `BAAI/bge-large-en-v1.5`  | Embedding model name for semantic chunking                                                       |
-| `EMBEDDING_MODEL_SERVER`         | `torchserve`              | Model server for embeddings used in semantic chunking                                            |
-| `EMBEDDING_MODEL_SERVER_ENDPOINT`| `http://localhost:8090`   | Model server endpoint for embeddings used in semantic chunking                                   |
+| `EMBEDDING_SERVICE_ENDPOINT`     | `http://embedding-svc.chatqa.svc:6000/v1/embeddings`  | Endpoint of the embedding microservice used for semantic chunking. For more details about the microservice, see [src/comps/embedding/README.md](../embeddings/README.md)                                  |
 | `SEMANTIC_CHUNK_PARAMS`          | `{}`                      | Add semantic chunking parameters such as buffer_size, add_start_index, etc. Check Langchain documentation for SemanticChunker for reference. |
 
-For semantic chunking, we are using TorchServe embeddings by default, but you can set it to one of your choice. To enable this functionality, you'll need to set up a separate [Embeddings](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/tree/main/src/comps/embeddings/impl/model-server) instance and configure the following environment variables: `EMBEDDING_MODEL_NAME, EMBEDDING_MODEL_SERVER, EMBEDDING_MODEL_SERVER_ENDPOINT`. Once `use_semantic_chunking` is set to `True`, the text_splitter microservice will automatically connect to this instance using the configured endpoint to generate embeddings for semantic chunking operations.
 
 ## Getting started
 

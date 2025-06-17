@@ -97,7 +97,7 @@ class TextSplitterInput(BaseDoc):
     loaded_docs: List[TextDoc]
     chunk_size: Optional[int] = None
     chunk_overlap: Optional[int] = None
-    use_semantic_chunking: bool = False
+    use_semantic_chunking: Optional[bool] = None
     semantic_chunk_params: Optional[Dict[str, Any]] = None
 
 class SearchedDoc(BaseDoc):

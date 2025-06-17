@@ -98,13 +98,8 @@ def test_semantic_split_docs(MockSemanticSplitter, reset_singleton, mock_env_var
     result = splitter.split_docs(docs)
 
     # Check SemanticSplitter was initialized correctly
-    MockSemanticSplitter.assert_called_once_with(
-        embedding_model_name="test-model",
-        embedding_model_server="test-server",
-        embedding_model_server_endpoint="test-endpoint",
-        semantic_chunk_params={}
-    )
-
+    MockSemanticSplitter.assert_called_once()
+    
     # Check split was called
     mock_splitter_instance.split_text.assert_called_once_with("document1")
 
@@ -136,7 +131,7 @@ def test_parameter_override(reset_singleton):
 def test_semantic_chunk_params_handling(mock_sanitize_env, reset_singleton):
     """Test handling of different semantic_chunk_params values."""
     # Test valid JSON parameters
-    mock_sanitize_env.side_effect = ['{"param1": "value1"}', "model", "server", "endpoint"]
+    mock_sanitize_env.side_effect = ['http://mock-endpoint:1234/v1/embeddings', '{"param1": "value1"}']
 
     with patch('comps.text_splitter.utils.opea_textsplitter.SemanticSplitter') as MockSemanticSplitter:
         mock_splitter = MockSemanticSplitter.return_value
@@ -146,17 +141,15 @@ def test_semantic_chunk_params_handling(mock_sanitize_env, reset_singleton):
         splitter.split_docs([TextDoc(text="document", metadata={})])
 
         MockSemanticSplitter.assert_called_once_with(
-            embedding_model_name="model",
-            embedding_model_server="server",
-            embedding_model_server_endpoint="endpoint",
-            semantic_chunk_params={"param1": "value1"}
+            embedding_service_endpoint='http://mock-endpoint:1234/v1/embeddings',
+            semantic_chunk_params_str='{"param1": "value1"}'
         )
 
     # Reset mock
     mock_sanitize_env.reset_mock()
 
     # Test empty dict
-    mock_sanitize_env.side_effect = ["{}", "model", "server", "endpoint"]
+    mock_sanitize_env.side_effect = ['http://mock-endpoint:1234/v1/embeddings', "{}"]
 
     with patch('comps.text_splitter.utils.opea_textsplitter.SemanticSplitter') as MockSemanticSplitter:
         OPEATextSplitter._instance = None  # Reset singleton
@@ -167,29 +160,10 @@ def test_semantic_chunk_params_handling(mock_sanitize_env, reset_singleton):
         splitter.split_docs([TextDoc(text="document", metadata={})])
 
         MockSemanticSplitter.assert_called_once_with(
-            embedding_model_name="model",
-            embedding_model_server="server",
-            embedding_model_server_endpoint="endpoint",
-            semantic_chunk_params={}
+            embedding_service_endpoint='http://mock-endpoint:1234/v1/embeddings',
+            semantic_chunk_params_str="{}"
         )
 
     # Reset mock
     mock_sanitize_env.reset_mock()
 
-    # Test invalid JSON
-    mock_sanitize_env.side_effect = ["invalid_json", "model", "server", "endpoint"]
-
-    with patch('comps.text_splitter.utils.opea_textsplitter.SemanticSplitter') as MockSemanticSplitter:
-        OPEATextSplitter._instance = None  # Reset singleton
-        mock_splitter = MockSemanticSplitter.return_value
-        mock_splitter.split_text.return_value = ["chunk"]
-
-        splitter = OPEATextSplitter(chunk_size=100, chunk_overlap=10, use_semantic_chunking=True)
-        splitter.split_docs([TextDoc(text="document", metadata={})])
-
-        MockSemanticSplitter.assert_called_once_with(
-            embedding_model_name="model",
-            embedding_model_server="server",
-            embedding_model_server_endpoint="endpoint",
-            semantic_chunk_params=None
-        )

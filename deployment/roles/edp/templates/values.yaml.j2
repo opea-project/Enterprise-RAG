@@ -104,6 +104,10 @@ textCompression:
 textSplitter:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.semantic_chunking.enabled is true %}
+  config:
+    use_semantic_chunking: "True"
+{% endif %}
 {% endif %}
 ingestion:
   tag: {{ tag }}

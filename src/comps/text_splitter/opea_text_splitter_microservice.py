@@ -77,11 +77,7 @@ async def process(input: TextSplitterInput) -> TextDocList:
 
     chunk_size = int(sanitize_env(str(input.chunk_size) if input.chunk_size else os.getenv("CHUNK_SIZE")))
     chunk_overlap = int(sanitize_env(str(input.chunk_overlap) if input.chunk_overlap else os.getenv("CHUNK_OVERLAP")))
-    use_semantic_chunking = sanitize_env(str(input.use_semantic_chunking) if input.use_semantic_chunking else os.getenv("USE_SEMANTIC_CHUNKING")).lower() == "true"
-
-    logger.debug(f"Chunk size: {chunk_size}")
-    logger.debug(f"Chunk overlap: {chunk_overlap}")
-    logger.debug(f"Use semantic chunking: {use_semantic_chunking}")
+    use_semantic_chunking = sanitize_env(str(input.use_semantic_chunking) if input.use_semantic_chunking is not None else os.getenv("USE_SEMANTIC_CHUNKING")).lower() == "true"
 
     logger.debug(f"Dataprep loaded docs: {loaded_docs}")
 

@@ -7,7 +7,6 @@ from comps.text_splitter.utils.splitter import Splitter, SemanticSplitter
 from typing import List
 import os
 from comps.cores.utils.utils import sanitize_env
-import json
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
@@ -45,29 +44,33 @@ class OPEATextSplitter:
 
         text_docs: List[TextDoc] = []
 
-        # Convert semantic_chunk_params to dict
-        semantic_chunk_params_str = sanitize_env(os.getenv("SEMANTIC_CHUNK_PARAMS"))
-        if semantic_chunk_params_str == "{}":
-            semantic_chunk_params = {}
-        else:
-            try:
-                semantic_chunk_params = json.loads(semantic_chunk_params_str)
-            except (TypeError, json.JSONDecodeError):
-                semantic_chunk_params = None
-
         # Use SemanticSplitter if use_semantic_chunking  is set to true
         if cur_use_semantic_chunking:
-           splitter = SemanticSplitter(
-                embedding_model_name=sanitize_env(os.getenv("EMBEDDING_MODEL_NAME")),
-                embedding_model_server=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER")),
-                embedding_model_server_endpoint=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT")),
-                semantic_chunk_params=semantic_chunk_params
+            if chunk_size is not None or chunk_overlap is not None:
+                logger.warning(
+                    "Semantic chunking does not use 'chunk_size' or 'chunk_overlap' parameters. "
+                    "These values will be ignored."
                 )
+
+            try:
+                splitter = SemanticSplitter(
+                    embedding_service_endpoint=sanitize_env(os.getenv("EMBEDDING_SERVICE_ENDPOINT")),
+                    semantic_chunk_params_str=sanitize_env(os.getenv("SEMANTIC_CHUNK_PARAMS"))
+                    )
+
+            except Exception as e:
+                logger.exception(f"An unexpected error occurred while initializing the splitter_semantic module: {e}")
+                raise
+ 
         else:
-            splitter = Splitter(
-            chunk_size=cur_chunk_size,
-            chunk_overlap=cur_chunk_overlap,
-            )
+            try:
+                splitter = Splitter(
+                    chunk_size=cur_chunk_size,
+                    chunk_overlap=cur_chunk_overlap,
+                )
+            except Exception as e:
+                logger.exception(f"An unexpected error occurred while initializing the splitter_recursive module: {e}")
+                raise
 
         for doc in loaded_docs:
             chunks = splitter.split_text(doc.text)

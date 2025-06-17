@@ -664,7 +664,6 @@ textCompression:
           periodSeconds: 15
 
 textSplitter:
-  semantic_chunking_enabled: false
   nameOverride: "edp-text-splitter"
   name: "erag-text-splitter"
   repository: "docker.io/opea"
@@ -679,9 +678,9 @@ textSplitter:
   config:
     chunk_size: "512"
     chunk_overlap: "64"
-    embedding_model_name: "BAAI/bge-base-en-v1.5"
-    embedding_model_server: "torchserve"
-    embedding_model_server_endpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
+    # For semantic chunking
+    use_semantic_chunking: "False"
+    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
   resources:
     requests:
       cpu: "0.5"

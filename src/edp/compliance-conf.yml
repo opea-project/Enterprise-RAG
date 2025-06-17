@@ -1,0 +1,7 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "../"
+dependencies:
+  - pip-uv
+pip-uv:
+  file: "app/uv.lock"

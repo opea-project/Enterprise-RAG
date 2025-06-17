@@ -43,10 +43,6 @@ spec:
           serviceName: retriever-svc
           config:
             endpoint: /v1/retrieval
-      - name: VectorDB
-        internalService:
-          serviceName: redis-vector-db
-          isDownstreamService: true
       - name: Reranking
         data: $response
         internalService:

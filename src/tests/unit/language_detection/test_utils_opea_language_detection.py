@@ -57,14 +57,15 @@ def test_run_succeeds(test_class, mock_input_data):
 
     # Assert that the constructed query is correct
     assert result.system_prompt_template == """
-            Translate this from {source_lang} to {target_lang}:
-            {source_lang}:
+            You are a language translation assistant. Your task is to translate text from one language to another.
+            You will be provided with the source language, target language, and the text to translate.
         """
     assert result.user_prompt_template == """
-            {text}
-
+            Translate this from {source_lang} to {target_lang}:
+            {source_lang}: {text}
             {target_lang}:
         """
+
     assert result.data["text"] == "Hi. I am doing fine."
     assert result.data["source_lang"] == "English"
     assert result.data["target_lang"] == "Chinese"
@@ -75,15 +76,12 @@ def test_run_suceeds_standalone(test_class_standalone, mock_input_data_standalon
     assert isinstance(result, PromptTemplateInput), "Method did not return PromptTemplateInput object"
 
     # Assert that the constructed query is correct
-    assert result.system_prompt_template == """
-            Translate this from {source_lang} to {target_lang}:
-            {source_lang}:
-        """
     assert result.user_prompt_template == """
-            {text}
-
+            Translate this from {source_lang} to {target_lang}:
+            {source_lang}: {text}
             {target_lang}:
         """
+
     assert result.data["text"] == "Hi. I am doing fine."
     assert result.data["source_lang"] == "English"
     assert result.data["target_lang"] == "German"

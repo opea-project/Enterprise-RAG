@@ -1,0 +1,183 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    vector_databases_helm_override_values_path: "{{ tmp_dir }}/{{ vector_databases.helm.release_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Ensure Helm repository is present
+  kubernetes.core.helm_repository:
+    name: "{{ vector_databases.helm.repo_name }}"
+    repo_url: "{{ vector_databases.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+
+- name: Build Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency build
+    chdir: "{{ vector_databases.helm.chart_directory }}"
+  tags:
+    - install
+
+- name: Generate password
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_password.yaml
+  loop:
+    - { name: 'REDIS', user: "default" }
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ vector_databases.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Generate user connection details for vector store
+  ansible.builtin.set_fact:
+    vector_database_connection_username: 'default'
+  tags:
+    - install
+
+- name: Generate port connection details for vector store
+  ansible.builtin.set_fact:
+    vector_database_connection_port: "6379"
+  tags:
+    - install
+
+- name: Generate host connection details for vector store
+  ansible.builtin.set_fact:
+    vector_database_connection_host: >-
+      {{
+        vector_databases.namespace + '-' + vector_databases.vector_store +
+        '-headless' + '.' + vector_databases.namespace + '.svc'
+      }}
+  tags:
+    - install
+
+- name: Generate uri connection details for vector store
+  ansible.builtin.set_fact:
+    vector_database_connection_host_with_auth: >-
+      {{
+        "redis://" + vector_database_connection_username + ':' + REDIS_PASSWORD + '@' + vector_database_connection_host  + ':' + vector_database_connection_port
+      }}
+  tags:
+    - install
+
+- name: Get pipelines namespaces
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: get_pipelines_namespaces.yaml
+  tags:
+    - install
+
+- name: Create namespace list for creating vector db connection details
+  ansible.builtin.set_fact:
+    vector_db_connection_detail_namespaces: >-
+      {{
+        (
+          [pipeline_namespaces] +
+          ([edp.namespace] if edp.enabled else []) +
+          ([telemetry.monitoring.namespace] if telemetry.enabled else [])
+        ) | flatten
+      }}
+  tags:
+    - install
+
+- name: Ensure required namespaces exist for vector store configs
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
+  ignore_errors: true
+  tags:
+    - install
+
+- name: Create vector store configs for services in namespaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item }}"
+      data:
+        VECTOR_STORE: "{{ vector_databases.vector_store | b64encode }}"
+        REDIS_URL: "{{ vector_database_connection_host_with_auth | b64encode }}"
+        REDIS_HOST: "{{ vector_database_connection_host | b64encode }}"
+        REDIS_PORT: "{{ vector_database_connection_port | b64encode }}"
+        REDIS_USERNAME: "{{ vector_database_connection_username | b64encode }}"
+        REDIS_PASSWORD: '{{ REDIS_PASSWORD | b64encode }}'
+  when: vector_databases.vector_store == 'redis' or vector_databases.vector_store == 'redis-cluster'
+  no_log: "{{ secure_logs }}"
+  loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ vector_databases_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [vector_databases.helm.default_values_file] +
+        [vector_databases_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ vector_databases.helm.release_name }}"
+    chart_ref: "{{ vector_databases.helm.chart_directory }}"
+    namespace: "{{ vector_databases.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+  register: helm_result
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ vector_databases.helm.release_name }}"
+    namespace: "{{ vector_databases.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ vector_databases.namespace }}"
+  tags:
+    - uninstall

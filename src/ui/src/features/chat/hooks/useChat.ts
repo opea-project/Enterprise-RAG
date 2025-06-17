@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useRef } from "react";
+import { ChangeEventHandler } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { usePostPromptMutation } from "@/features/chat/api";
@@ -10,7 +10,9 @@ import {
   addNewConversationTurn,
   resetConversationFeedSlice,
   selectConversationTurns,
+  selectIsChatResponsePending,
   selectUserInput,
+  setIsChatResponsePending,
   setUserInput,
   updateAnswer,
   updateError,
@@ -25,14 +27,15 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { ConversationTurn } from "@/types";
 import { sanitizeString } from "@/utils";
 
+let abortController: AbortController | null = null;
+
 const useChat = () => {
-  const [postPrompt, { isLoading: isChatResponsePending }] =
-    usePostPromptMutation();
+  const [postPrompt] = usePostPromptMutation();
   const dispatch = useAppDispatch();
-  const abortController = useRef(new AbortController());
 
   const userInput = useAppSelector(selectUserInput);
   const conversationTurns = useAppSelector(selectConversationTurns);
+  const isChatResponsePending = useAppSelector(selectIsChatResponsePending);
 
   const onPromptChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     dispatch(setUserInput(event.target.value));
@@ -50,20 +53,21 @@ const useChat = () => {
       }),
     );
 
-    const conversationHistory = getValidConversationHistory(conversationTurns);
+    dispatch(setIsChatResponsePending(true));
 
-    const newAbortController = new AbortController();
-    abortController.current = newAbortController;
+    abortController = new AbortController();
+    const conversationHistory = getValidConversationHistory(conversationTurns);
 
     const { error } = await postPrompt({
       prompt: sanitizedUserInput,
       conversationHistory,
-      signal: abortController.current.signal,
+      signal: abortController.signal,
       onAnswerUpdate: (answer: ConversationTurn["answer"]) => {
         dispatch(updateAnswer(answer));
       },
     }).finally(() => {
       dispatch(updateIsPending(false));
+      dispatch(setIsChatResponsePending(false));
     });
 
     if (
@@ -83,7 +87,11 @@ const useChat = () => {
   };
 
   const onRequestAbort = () => {
-    abortController.current.abort(ABORT_ERROR_MESSAGE);
+    if (!abortController) {
+      return;
+    }
+    abortController.abort(ABORT_ERROR_MESSAGE);
+    dispatch(setIsChatResponsePending(false));
   };
 
   const onNewChat = () => {

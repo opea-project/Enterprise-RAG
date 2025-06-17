@@ -112,15 +112,6 @@ services:
       limits:
         cpu: 4
         memory: 2Gi
-  redis-vector-db:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 1
-        memory: 2Gi
-      limits:
-        cpu: 4
-        memory: 100Gi
   reranking-usvc:
     replicas: 1
     resources:

@@ -5,7 +5,7 @@
   @apply rounded-[1.875rem] shadow-[0_0_0.5rem_0];
   @apply grid grid-cols-[1fr_auto] gap-2.5;
   @apply mx-4 md:mx-auto;
-  @apply py-2.5 pl-12 pr-2.5;
+  @apply py-2.5 pl-11 pr-2.5;
   @apply z-10 w-[calc(100%_-_2rem)] md:w-[46rem];
   @apply bg-light-bg-2 dark:bg-dark-bg-contrast;
   @apply shadow-light-border/40 dark:shadow-dark-border/80;
@@ -15,20 +15,19 @@
 }
 
 .prompt-input {
-  @apply my-2 resize-none self-center bg-transparent text-base font-normal;
+  @apply w-full resize-none self-center bg-transparent text-base font-normal;
   @apply text-light-text-primary dark:text-dark-text-primary;
   @apply caret-light-text-primary dark:caret-dark-text-primary;
-  min-height: 1.5rem;
-  max-height: 15rem;
+  @apply resize-none;
+  @apply max-h-[15rem] min-h-6;
   @apply transition-[height] duration-300 ease-in-out;
 
-  // reset regular input styles
-  @apply rounded-none border-none p-0;
-  background: transparent !important;
-
-  &:focus-visible {
-    outline: none;
+  &[data-focused][data-rac],
+  &[data-focus-visible][data-rac] {
+    @apply outline-none outline-0 outline-transparent;
   }
+
+  @apply focus-visible:outline-none focus-visible:outline-0 focus-visible:outline-transparent;
 
   &::placeholder {
     @apply not-italic text-light-text-placeholder dark:text-dark-text-placeholder;

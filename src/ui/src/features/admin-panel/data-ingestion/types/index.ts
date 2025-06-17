@@ -10,7 +10,9 @@ export type DataStatus =
   | "uploaded"
   | "error"
   | "processing"
-  | "dataprep"
+  | "text_extracting"
+  | "text_compression"
+  | "text_splitting"
   | "dpguard"
   | "embedding"
   | "ingested"
@@ -31,7 +33,9 @@ export interface FileDataItem {
   status: DataStatus;
   job_name: string;
   job_message: string;
-  dataprep_duration: number;
+  text_extractor_duration: number;
+  text_compression_duration: number;
+  text_splitter_duration: number;
   embedding_duration: number;
   processing_duration: number;
 }
@@ -46,7 +50,9 @@ export interface LinkDataItem {
   status: DataStatus;
   job_name: string;
   job_message: string;
-  dataprep_duration: number;
+  text_extractor_duration: number;
+  text_compression_duration: number;
+  text_splitter_duration: number;
   embedding_duration: number;
   processing_duration: number;
 }
@@ -54,12 +60,4 @@ export interface LinkDataItem {
 export interface UploadErrors {
   files: string;
   links: string;
-}
-
-export interface ExtractTextQueryParamsFormData
-  extends Record<string, number | boolean | undefined | string> {
-  chunk_size?: number;
-  chunk_overlap?: number;
-  process_table?: boolean;
-  table_strategy?: boolean;
 }

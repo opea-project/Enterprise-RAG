@@ -21,7 +21,9 @@
   }
 
   &--embedding,
-  &--dataprep,
+  &--text_extracting,
+  &--text_compression,
+  &--text_splitting,
   &--ingested {
     @apply text-light-accent dark:text-dark-accent;
   }

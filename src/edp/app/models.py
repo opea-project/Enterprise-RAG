@@ -120,7 +120,9 @@ class FileResponse(BaseModel):
     status: str
     job_name: str
     job_message: str
-    dataprep_duration: int
+    text_extractor_duration: int
+    text_compression_duration: int
+    text_splitter_duration: int
     dpguard_duration: int
     embedding_duration: int
     processing_duration: int
@@ -135,7 +137,9 @@ class LinkResponse(BaseModel):
     status: str
     job_name: str
     job_message: str
-    dataprep_duration: int
+    text_extractor_duration: int
+    text_compression_duration: int
+    text_splitter_duration: int
     dpguard_duration: int
     embedding_duration: int
     processing_duration: int
@@ -151,16 +155,20 @@ class FileStatus(Base):
     content_type = Column(String, index=False)
     size = Column(Integer, index=False)
 
-    status = Column(String, index=False) # uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, canceled, blocked
+    status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked
     job_name = Column(String, index=False) # file_processing_job, file_deleting_job
     job_message = Column(String, index=False)
-    
+
     chunk_size = Column(Integer, index=False, default=0)
     chunks_total = Column(Integer, index=False, default=0)
     chunks_processed = Column(Integer, index=False, default=0)
-    
-    dataprep_start = Column(DateTime, index=False)
-    dataprep_end = Column(DateTime, index=False)
+
+    text_extractor_start = Column(DateTime, index=False)
+    text_extractor_end = Column(DateTime, index=False)
+    text_compression_start = Column(DateTime, index=False)
+    text_compression_end = Column(DateTime, index=False)
+    text_splitter_start = Column(DateTime, index=False)
+    text_splitter_end = Column(DateTime, index=False)
     dpguard_start = Column(DateTime, index=False)
     dpguard_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
@@ -170,7 +178,9 @@ class FileStatus(Base):
     marked_for_deletion = Column(Boolean, index=False, default=False)
 
     def to_response(self):
-        dataprep_duration = int((self.dataprep_end - self.dataprep_start).total_seconds()) if self.dataprep_end and self.dataprep_start else 0
+        text_extractor_duration = int((self.text_extractor_end - self.text_extractor_start).total_seconds()) if self.text_extractor_end and self.text_extractor_start else 0
+        text_compression_duration = int((self.text_compression_end - self.text_compression_start).total_seconds()) if self.text_compression_end and self.text_compression_start else 0
+        text_splitter_duration = int((self.text_splitter_end - self.text_splitter_start).total_seconds()) if self.text_splitter_end and self.text_splitter_start else 0
         dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
         embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
         return FileResponse(
@@ -186,10 +196,12 @@ class FileStatus(Base):
             status=self.status or "",
             job_name=self.job_name or "",
             job_message=self.job_message or "",
-            dataprep_duration=dataprep_duration,
+            text_extractor_duration=text_extractor_duration,
+            text_compression_duration=text_compression_duration,
+            text_splitter_duration=text_splitter_duration,
             dpguard_duration=dpguard_duration,
             embedding_duration=embedding_duration,
-            processing_duration=dataprep_duration+embedding_duration
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration
         )
 
 class LinkStatus(Base):
@@ -199,7 +211,7 @@ class LinkStatus(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     uri = Column(String, index=True)
 
-    status = Column(String, index=False) # uploaded, error, processing, dataprep, dpguard, embedding, ingested, deleting, blocked
+    status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, blocked
     job_name = Column(String, index=False) # link_processing_job, link_deleting_job
     job_message = Column(String, index=False)
 
@@ -207,8 +219,12 @@ class LinkStatus(Base):
     chunks_total = Column(Integer, index=False, default=0)
     chunks_processed = Column(Integer, index=False, default=0)
 
-    dataprep_start = Column(DateTime, index=False)
-    dataprep_end = Column(DateTime, index=False)
+    text_extractor_start = Column(DateTime, index=False)
+    text_extractor_end = Column(DateTime, index=False)
+    text_compression_start = Column(DateTime, index=False)
+    text_compression_end = Column(DateTime, index=False)
+    text_splitter_start = Column(DateTime, index=False)
+    text_splitter_end = Column(DateTime, index=False)
     dpguard_start = Column(DateTime, index=False)
     dpguard_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
@@ -218,7 +234,9 @@ class LinkStatus(Base):
     marked_for_deletion = Column(Boolean, index=False, default=False)
 
     def to_response(self):
-      dataprep_duration = int((self.dataprep_end - self.dataprep_start).total_seconds()) if self.dataprep_end and self.dataprep_start else 0
+      text_extractor_duration = int((self.text_extractor_end - self.text_extractor_start).total_seconds()) if self.text_extractor_end and self.text_extractor_start else 0
+      text_compression_duration = int((self.text_compression_end - self.text_compression_start).total_seconds()) if self.text_compression_end and self.text_compression_start else 0
+      text_splitter_duration = int((self.text_splitter_end - self.text_splitter_start).total_seconds()) if self.text_splitter_end and self.text_splitter_start else 0
       dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
       embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
 
@@ -232,8 +250,10 @@ class LinkStatus(Base):
             status=self.status or "",
             job_name=self.job_name or "",
             job_message=self.job_message or "",
-            dataprep_duration=dataprep_duration,
+            text_extractor_duration=text_extractor_duration,
+            text_compression_duration=text_compression_duration,
+            text_splitter_duration=text_splitter_duration,
             dpguard_duration=dpguard_duration,
             embedding_duration=embedding_duration,
-            processing_duration=dataprep_duration+embedding_duration
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration
         )

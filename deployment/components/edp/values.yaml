@@ -28,10 +28,10 @@ redisUrl: "edp-redis-master:6379"
 redisUsername: "default"
 redisPassword: ""
 
-postgresDatabasePassword: "" # set by install_chatqna.sh
-postgresAdminPassword: "" # set by install_chatqna.sh
+postgresDatabasePassword: ""
+postgresAdminPassword: ""
 
-hfToken: "" # set by set_values.sh
+hfToken: ""
 
 minio:
   enabled: true
@@ -189,6 +189,15 @@ postgresql:
       cpu: "2"
       memory: "4Gi"
   primary:
+    resources:
+      requests:
+        cpu: "1"
+        ephemeral-storage: "50Mi"
+        memory: "2Gi"
+      limits:
+        cpu: "2"
+        ephemeral-storage: "1Gi"
+        memory: "4Gi"
     networkPolicy:
       extraIngress:
         - ports:
@@ -260,11 +269,26 @@ celery:
         secretKeyRef:
           name: edp-celery-secrets
           key: CELERY_BACKEND_URL
-    - name: DATAPREP_ENDPOINT
+    - name: HIERARCHICAL_DATAPREP_ENDPOINT
       valueFrom:
         configMapKeyRef:
           name: edp-configmap
-          key: DATAPREP_ENDPOINT
+          key: HIERARCHICAL_DATAPREP_ENDPOINT
+    - name: TEXT_EXTRACTOR_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_EXTRACTOR_ENDPOINT
+    - name: TEXT_COMPRESSION_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_COMPRESSION_ENDPOINT
+    - name: TEXT_SPLITTER_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_SPLITTER_ENDPOINT
     - name: EMBEDDING_ENDPOINT
       valueFrom:
         configMapKeyRef:
@@ -453,11 +477,26 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: BUCKET_NAME_REGEX_FILTER
-    - name: "DATAPREP_ENDPOINT"
+    - name: HIERARCHICAL_DATAPREP_ENDPOINT
       valueFrom:
         configMapKeyRef:
           name: edp-configmap
-          key: DATAPREP_ENDPOINT
+          key: HIERARCHICAL_DATAPREP_ENDPOINT
+    - name: "TEXT_EXTRACTOR_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_EXTRACTOR_ENDPOINT
+    - name: "TEXT_COMPRESSION_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_COMPRESSION_ENDPOINT
+    - name: "TEXT_SPLITTER_ENDPOINT"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: TEXT_SPLITTER_ENDPOINT
     - name: "EMBEDDING_ENDPOINT"
       valueFrom:
         configMapKeyRef:
@@ -488,10 +527,10 @@ backend:
       cpu: "2"
       memory: "2Gi"
 
-dataprep:
-  semantic_chunking_enabled: false
-  nameOverride: "edp-dataprep"
-  name: "erag-dataprep"
+hierarchicalDataprep:
+  enabled: false
+  nameOverride: "edp-hierarchical-dataprep"
+  name: "erag-hierarchical-dataprep"
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
@@ -504,9 +543,6 @@ dataprep:
   config:
     chunk_size: "512"
     chunk_overlap: "64"
-    embedding_model_name: "BAAI/bge-base-en-v1.5"
-    embedding_model_server: "torchserve"
-    embedding_model_server_endpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
     vllm_server_endpoint: "http://edp-vllm:8008"
     summary_model_name: "Intel/neural-chat-7b-v3-3"
     max_new_tokens: "100"
@@ -521,6 +557,141 @@ dataprep:
     minReplicas: 1
     maxReplicas: 4
     targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textExtractor:
+  nameOverride: "edp-text-extractor"
+  name: "erag-text-extractor"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: OMP_THREAD_LIMIT
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 4
+    targetValue: 4
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 600
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textCompression:
+  nameOverride: "edp-text-compression"
+  name: "erag-text-compression"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  config:
+    default_text_compression_methods: "header_footer_stripper"
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "64Mi"
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
+    targetValue: 4
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
+textSplitter:
+  nameOverride: "edp-text-splitter"
+  name: "erag-text-splitter"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  config:
+    chunk_size: "512"
+    chunk_overlap: "64"
+    # For semantic chunking
+    use_semantic_chunking: "False"
+    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "64Mi"
+    limits:
+      cpu: "2"
+      memory: "1Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 1
+    targetValue: 4
     behavior:
       scaleDown:
         stabilizationWindowSeconds: 60
@@ -597,6 +768,8 @@ ingestion:
     vector_hnsw_ef_construction: "32"
     vector_hnsw_ef_runtime: "32"
     vector_hnsw_epsilon: "0.01"
+    # For hierarchical indices
+    use_hierarchical_indices: "False"
   pullPolicy: Always
   replicas: 1
   resources:
@@ -619,7 +792,7 @@ vllm:
     ppSize: "1"
     maxModelLen: "4096"
   nameOverride: "edp-vllm"
-  name: "vllm-cpu"
+  name: "erag-vllm-cpu"
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always

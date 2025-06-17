@@ -29,7 +29,6 @@ var (
 		"TeiEmbedding",
 		"TeiEmbeddingGaudi",
 		"Embedding",
-		"VectorDB",
 		"Retriever",
 		"Reranking",
 		"TeiReranking",

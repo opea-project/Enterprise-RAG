@@ -22,6 +22,15 @@ extraNginxVars:
   statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   dataprepClientMaxBodySize: "64m"
 
+extraUiConfigVars:
+  keycloakDomainName: "auth.erag.com"
+  keycloakRealm: "EnterpriseRAG"
+  keycloakClientId: "EnterpriseRAG-oidc"
+  adminResourceRole: "ERAG-admin"
+  grafanaDomainName: "grafana.erag.com"
+  keycloakAdminPanelDomainName: "auth.erag.com"
+  s3DomainName: "s3.erag.com"
+
 image:
   ui:
     repository: "docker.io/opea"

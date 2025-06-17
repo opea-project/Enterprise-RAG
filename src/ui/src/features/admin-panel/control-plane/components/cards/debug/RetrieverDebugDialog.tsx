@@ -1,10 +1,13 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useRef, useState } from "react";
+import { ChangeEventHandler, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import Button from "@/components/ui/Button/Button";
+import CheckboxInput, {
+  CheckboxInputChangeHandler,
+} from "@/components/ui/CheckboxInput/CheckboxInput";
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import Dialog from "@/components/ui/Dialog/Dialog";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
@@ -50,16 +53,6 @@ const createCodeBlock = (text: string | object) => {
 const RetrieverDebugDialog = () => {
   const [postRetrieverQuery] = usePostRetrieverQueryMutation();
 
-  const ref = useRef<HTMLDialogElement>(null);
-  const handleClose = () => ref.current?.close();
-  const showDialog = () => ref.current?.showModal();
-
-  const trigger = (
-    <Button size="sm" className="absolute right-4 top-4" onClick={showDialog}>
-      Debug
-    </Button>
-  );
-
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
   const [conversationTurns, setConversationTurns] = useState<
     ConversationTurn[]
@@ -94,10 +87,10 @@ const RetrieverDebugDialog = () => {
     onArgumentValidityChange: onRerankerArgumentValidityChange,
   } = useServiceCard<RerankerArgs>("reranker", rerankerArgs);
 
-  const handleRerankerEnabledCheckboxChange: ChangeEventHandler<
-    HTMLInputElement
-  > = (event) => {
-    setIsRerankerEnabled(event.target.checked);
+  const handleRerankerEnabledCheckboxChange: CheckboxInputChangeHandler = (
+    isSelected,
+  ) => {
+    setIsRerankerEnabled(isSelected);
   };
 
   const handleSubmitQuery = async (query: string) => {
@@ -152,13 +145,15 @@ const RetrieverDebugDialog = () => {
 
   return (
     <Dialog
-      ref={ref}
-      trigger={trigger}
+      trigger={
+        <Button size="sm" className="absolute right-4 top-4">
+          Debug
+        </Button>
+      }
       title="Retriever Debug"
-      onClose={handleClose}
     >
-      <div className="grid h-[calc(100vh-10rem)] grid-cols-[13rem_1fr] px-4 pt-4">
-        <div>
+      <div className="grid grid-cols-[14rem_1fr] px-3 py-3">
+        <div className="h-[calc(100vh-12rem)] overflow-y-auto pl-1 pr-3 [scrollbar-gutter:stable]">
           <RetrieverDebugParamsForm
             retrieverArgumentsForm={retrieverArgumentsForm}
             retrieverPreviousArgumentsValues={retrieverPreviousArgumentsValues}
@@ -170,7 +165,7 @@ const RetrieverDebugDialog = () => {
             onRerankerArgumentValueChange={onRerankerArgumentValueChange}
             onRerankerArgumentValidityChange={onRerankerArgumentValidityChange}
             isRerankerEnabled={isRerankerEnabled}
-            handleRerankerEnabledCheckboxChange={
+            onRerankerEnabledCheckboxChange={
               handleRerankerEnabledCheckboxChange
             }
           />
@@ -199,7 +194,7 @@ interface RetrieverDebugParamsFormProps {
   onRerankerArgumentValueChange: OnArgumentValueChangeHandler;
   onRerankerArgumentValidityChange: OnArgumentValidityChangeHandler;
   isRerankerEnabled: boolean;
-  handleRerankerEnabledCheckboxChange: ChangeEventHandler<HTMLInputElement>;
+  onRerankerEnabledCheckboxChange: CheckboxInputChangeHandler;
 }
 
 const RetrieverDebugParamsForm = ({
@@ -211,7 +206,7 @@ const RetrieverDebugParamsForm = ({
   onRerankerArgumentValueChange,
   onRerankerArgumentValidityChange,
   isRerankerEnabled,
-  handleRerankerEnabledCheckboxChange,
+  onRerankerEnabledCheckboxChange,
 }: RetrieverDebugParamsFormProps) => {
   const visibleRerankerArgumentInputs = retrieverArgumentsForm?.search_type
     ? searchTypesArgsMap[retrieverArgumentsForm.search_type]
@@ -225,7 +220,7 @@ const RetrieverDebugParamsForm = ({
         {...retrieverFormConfig.search_type}
         initialValue={retrieverPreviousArgumentsValues.search_type}
         onArgumentValueChange={onRetrieverArgumentValueChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
       {visibleRerankerArgumentInputs.includes(retrieverFormConfig.k.name) && (
         <ServiceArgumentNumberInput
@@ -233,7 +228,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -244,7 +239,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.distance_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -255,7 +250,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.fetch_k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -266,7 +261,7 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.lambda_mult}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       {visibleRerankerArgumentInputs.includes(
@@ -277,35 +272,30 @@ const RetrieverDebugParamsForm = ({
           initialValue={retrieverPreviousArgumentsValues.score_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
-          readOnlyDisabled
+          isReadOnlyDisabled
         />
       )}
       <p className="mb-2 mt-3">Reranker</p>
-      <div className="my-2 flex w-full items-center gap-2">
-        <input
-          type="checkbox"
-          checked={isRerankerEnabled}
-          name="reranker-enabled"
-          id="reranker-enabled"
-          onChange={handleRerankerEnabledCheckboxChange}
-        />
-        <label htmlFor="reranker-enabled" className="mb-0 text-xs">
-          Enable Reranker
-        </label>
-      </div>
+      <CheckboxInput
+        label="Enable Reranker"
+        size="sm"
+        name="reranker-enabled"
+        isSelected={isRerankerEnabled}
+        onChange={onRerankerEnabledCheckboxChange}
+      />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
         initialValue={rerankerPreviousArgumentsValues.top_n}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.rerank_score_threshold}
         initialValue={rerankerPreviousArgumentsValues.rerank_score_threshold}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
-        readOnlyDisabled
+        isReadOnlyDisabled
       />
     </>
   );

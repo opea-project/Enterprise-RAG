@@ -31,12 +31,12 @@ language_dict = {
 def get_prompt_template() -> str:
     """Returns a tuple containing prompt system_prompt_template and user_prompt_template."""
     system_prompt_template = """
-            Translate this from {source_lang} to {target_lang}:
-            {source_lang}:
+            You are a language translation assistant. Your task is to translate text from one language to another.
+            You will be provided with the source language, target language, and the text to translate.
         """
     user_prompt_template = """
-            {text}
-
+            Translate this from {source_lang} to {target_lang}:
+            {source_lang}: {text}
             {target_lang}:
         """
 

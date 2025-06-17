@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
-DATAPREP_STATUS_FLOW = ["uploaded", "processing", "dataprep", "embedding", "ingested"]
+DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "ingested"]
 
 
 class EdpHelper(ApiRequestHelper):
@@ -134,6 +134,16 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
+    def extract_text(self, file_uuid):
+        """Extract text for the given file UUID"""
+        logger.info(f"Extracting text for file with id: {file_uuid}")
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            response = requests.post(
+                f"http://localhost:{pf.local_port}/api/file/{file_uuid}/extract",
+                headers=self.default_headers
+            )
+        return response
+
     def upload_file(self, file_path, presigned_url):
         """Upload a file using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
@@ -154,7 +164,7 @@ class EdpHelper(ApiRequestHelper):
             for file in files:
                 if file.get("object_name") == filename:
                     file_found = True
-                    if file.get("status") == "error":
+                    if file.get("status") == "error" and desired_status != "error":
                         last_status_message = "no previous status known."
                         if file_status:
                             last_status_message = f"last known status {file_status}."

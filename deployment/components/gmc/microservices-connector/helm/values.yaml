@@ -56,12 +56,6 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
-vllmSecurityContext:
-  fsGroup: 2000
-  runAsGroup: 3000
-  runAsNonRoot: true
-  runAsUser: 1000
-
 securityContext:
   capabilities:
     drop:
@@ -76,6 +70,9 @@ resources:
   requests:
     cpu: 500m
     memory: 64Mi
+
+balloons:
+  enabled: false
 
 livenessProbe:
   httpGet:
@@ -141,8 +138,18 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
-  dataprep-usvc:
-    image: "erag-dataprep"
+  text-extractor-usvc:
+    image: "erag-text-extractor"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  text-compression-usvc:
+    image: "erag-text-compression"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  text-splitter-usvc:
+    image: "erag-text-splitter"
     repository: *repo
     tag: *tag
     pullPolicy: Always

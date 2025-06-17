@@ -1,0 +1,78 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    nri_balloons_helm_override_values_path: "{{ tmp_dir }}/{{ nri_balloons.helm.release_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Gather NUMA topology info
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: get_cpu_topology.yaml
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ nri_balloons_helm_override_values_path }}"
+    mode: '0644'
+  vars:
+    NUMANodes: "{{ numa_nodes_result.stdout | int }}"
+    NUMANodeSize: "{{ numa_node_cpus_result }}"
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [nri_balloons.helm.default_values_file] +
+        [nri_balloons_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Set values file for Helm install/uninstall
+  set_fact:
+    nri_balloons_helm_values_file: "{{ nri_balloons.helm.reset_values_file if 'uninstall' in ansible_run_tags else values_files }}"
+  tags:
+    - always
+
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ nri_balloons.helm.repo_name }}"
+    repo_url: "{{ nri_balloons.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+
+- name: Apply nri-resource-policy-balloons chart
+  kubernetes.core.helm:
+    name: "{{ nri_balloons.helm.release_name }}"
+    chart_ref: "{{ nri_balloons.helm.repo_name }}/{{ nri_balloons.helm.chart_name }}"
+    namespace: "{{ nri_balloons.namespace }}"
+    create_namespace: false
+    values_files: "{{ nri_balloons_helm_values_file }}"
+    state: present
+  tags:
+    - install
+    - uninstall
+
+- name: Remove nri-resource-policy-balloons chart
+  kubernetes.core.helm:
+    name: "{{ nri_balloons.helm.release_name }}"
+    namespace: "{{ nri_balloons.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Remove nri-plugins Helm repo
+  kubernetes.core.helm_repository:
+    name: "{{ nri_balloons.helm.repo_name }}"
+    state: absent
+  tags:
+    - uninstall

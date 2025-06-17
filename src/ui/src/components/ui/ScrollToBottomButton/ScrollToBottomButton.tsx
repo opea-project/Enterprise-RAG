@@ -4,12 +4,13 @@
 import "./ScrollToBottomButton.scss";
 
 import classNames from "classnames";
-import { ButtonHTMLAttributes } from "react";
 
-import IconButton from "@/components/ui/IconButton/IconButton";
+import IconButton, {
+  IconButtonProps,
+} from "@/components/ui/IconButton/IconButton";
 
 interface ScrollToBottomButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
+  extends Omit<IconButtonProps, "color" | "icon"> {
   show: boolean;
 }
 
@@ -18,7 +19,9 @@ const ScrollToBottomButton = ({
   ...props
 }: ScrollToBottomButtonProps) => (
   <IconButton
+    {...props}
     icon="scroll-to-bottom"
+    aria-label="Scroll to bottom"
     className={classNames([
       {
         visible: show,
@@ -26,7 +29,6 @@ const ScrollToBottomButton = ({
       },
       "scroll-to-bottom-button",
     ])}
-    {...props}
   />
 );
 

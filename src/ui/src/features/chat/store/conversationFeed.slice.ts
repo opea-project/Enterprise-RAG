@@ -10,12 +10,16 @@ interface ConversationState {
   userInput: string;
   conversationTurns: ConversationTurn[];
   currentConversationTurnId: string | null;
+  isChatResponsePending: boolean;
+  hasActiveRequest: boolean;
 }
 
 const initialState: ConversationState = {
   userInput: "",
   conversationTurns: [],
   currentConversationTurnId: null,
+  isChatResponsePending: false,
+  hasActiveRequest: false,
 };
 
 export const conversationFeedSlice = createSlice({
@@ -77,6 +81,10 @@ export const conversationFeedSlice = createSlice({
           : turn,
       );
     },
+    setIsChatResponsePending: (state, action: PayloadAction<boolean>) => {
+      state.isChatResponsePending = action.payload;
+      state.hasActiveRequest = action.payload;
+    },
     resetConversationFeedSlice: () => initialState,
   },
 });
@@ -87,6 +95,7 @@ export const {
   updateAnswer,
   updateError,
   updateIsPending,
+  setIsChatResponsePending,
   resetConversationFeedSlice,
 } = conversationFeedSlice.actions;
 
@@ -94,4 +103,6 @@ export const selectUserInput = (state: RootState) =>
   state.conversationFeed.userInput;
 export const selectConversationTurns = (state: RootState) =>
   state.conversationFeed.conversationTurns;
+export const selectIsChatResponsePending = (state: RootState) =>
+  state.conversationFeed.isChatResponsePending;
 export default conversationFeedSlice.reducer;

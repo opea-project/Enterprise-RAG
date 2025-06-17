@@ -29,3 +29,25 @@ kube-prometheus-stack:
 {% if telemetry.additional_values is defined %}
 {{ telemetry.additional_values | to_nice_yaml }}
 {% endif %}
+
+{% if vector_databases.vector_store == "redis" %}
+prometheus-redis-exporter:
+  enabled: true
+  redisAddress: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
+  serviceMonitor:
+    enabled: true
+    targets:
+      - url: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
+        name: redis-vector-db
+{% endif %}
+
+{% if vector_databases.vector_store == "redis-cluster" %}
+prometheus-redis-exporter:
+  enabled: true
+  redisAddress: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
+  serviceMonitor:
+    enabled: true
+    targets:
+      - url: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
+        name: redis-vector-db
+{% endif %}

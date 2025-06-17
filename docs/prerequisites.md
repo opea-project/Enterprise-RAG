@@ -114,7 +114,7 @@ For more detailed info on cluster setup you can check [kubespray/getting-started
 >[!WARNING]
 >Ensure passwordless SSH for Ansible host nodes (from `hosts.ini`):
 > - Generate keys (ssh-keygen) and copy the public key (ssh-copy-id user@node-ip).
-> - Verify permissions: Ensure the ~/.ssh directory is set to `700` and the authorized_keys file to `600` on the remote host to maintain secure access.
+> - Verify permissions (chmod): Ensure ~/.ssh directory permissions are set to `700` and authorized_keys file permissions are set to `600` on the remote host to maintain secure access.
 > - Create a ~/.ssh/config file (if doesn't exist) and add a field for the remote machine. Example field might look as follows:
 >
 > ```bash
@@ -181,6 +181,12 @@ ansible-playbook -i inventory/mycluster/hosts.ini --become --become-user=root -e
 ```
 >[!NOTE]
 > If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
+
+Answer `yes` to the prompt:
+```bash
+[Reset Confirmation]
+Are you sure you want to reset cluster state? Type 'yes' to reset your cluster.:
+```
 
 A similar output can be seen after a successful reset:
 ```bash
@@ -276,99 +282,6 @@ kube-system          kube-scheduler-node1                       1/1     Running 
 kube-system          nodelocaldns-nltqf                         1/1     Running   0          4m43s
 local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running   0          4m52s
 ```
-# Gaudi-Specific Prerequisites (Required for Xeon + Gaudi Deployments)
-
->[!NOTE]
-> **For Xeon Users:**
-> If you are deploying on Xeon hardware only, you can safely **skip this section and all subsequent steps** related to Gaudi setup.
-
->[!IMPORTANT]
-> Make sure that supported Gaudi driver is installed. To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
-
->[!IMPORTANT]
-> Sometimes a Gaudi firmware might not upgrade together with the driver. To check if Firmware's version matches driver's version and to upgrade the firmware, check [following page](https://docs.habana.ai/en/latest/Installation_Guide/Firmware_Upgrade.html)
-
-## Gaudi Software Stack
-
-To fully utilize the Enterprise RAG solution, it is recommended to run LLMs on Gaudi accelerator hardware, which requires proper setup and preparation prior to use. The following steps should be performed after successful installation and testing of the K8s cluster.
-
-Install Habana Container Runtime:
-```bash
-sudo apt install -y habanalabs-container-runtime
-```
-
-Setup `/etc/containerd/config.toml` to point to habana-container-runtime:
->[!IMPORTANT]
-> Execute the following command directly in the terminal. Do not manually edit the `/etc/containerd/config.toml` file. This ensures that the configuration is set correctly without formatting issues.
-
-```
-sudo tee /etc/containerd/config.toml <<EOF
-disabled_plugins = []
-version = 2
-
-[plugins]
-  [plugins."io.containerd.grpc.v1.cri"]
-    [plugins."io.containerd.grpc.v1.cri".containerd]
-      default_runtime_name = "habana"
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana]
-          runtime_type = "io.containerd.runc.v2"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.habana.options]
-            BinaryName = "/usr/bin/habana-container-runtime"
-  [plugins."io.containerd.runtime.v1.linux"]
-    runtime = "habana-container-runtime"
-EOF
-```
-Restart the containerd service and verify that the status is `active`:
-```bash
-sudo systemctl restart containerd
-sudo systemctl status containerd
-```
-
-Uncomment the following lines in `/etc/habana-container-runtime/config.toml` and set to `false` if `true`:
-
-```
-#mount_accelerators = false
-.
-.
-.
-#visible_devices_all_as_default = false
-
-```
-
-## Install K8s Plugin
-
-Follow the instructions in [Intel Gaudi Device Plugin for Kubernetes](https://docs.habana.ai/en/latest/Installation_Guide/Additional_Installation/Kubernetes_Installation/index.html#intel-gaudi-device-plugin-for-kubernetes ) under the `Deploying Intel Gaudi Device Plugin for Kubernetes` section to install the device plugin.
-
-Verify that the plugin is installed successfully by running `kubectl get pods -A`:
-```
-NAMESPACE            NAME                                       READY   STATUS    RESTARTS   AGE
-habana-system        habanalabs-device-plugin-daemonset-gjs67   1/1     Running   0          67s
-kube-system          calico-kube-controllers-68485cbf9c-dr9vd   1/1     Running   0          46m
-kube-system          calico-node-gnxk9                          1/1     Running   0          47m
-kube-system          coredns-69db55dd76-4zq74                   1/1     Running   0          46m
-kube-system          dns-autoscaler-6d5984c657-b7724            1/1     Running   0          46m
-kube-system          kube-apiserver-node1                       1/1     Running   1          47m
-kube-system          kube-controller-manager-node1              1/1     Running   2          47m
-kube-system          kube-proxy-qt4c4                           1/1     Running   0          47m
-kube-system          kube-scheduler-node1                       1/1     Running   1          47m
-kube-system          nodelocaldns-nltqf                         1/1     Running   0          46m
-local-path-storage   local-path-provisioner-f78b6cbbc-qfkmd     1/1     Running   0          46m
-```
-You should see a new namespace called `habana-system`.
-
-To check is to verify if Gaudi resources are available on the node, run:
-```bash
-kubectl describe node node1 | grep habana.ai/gaudi
-```
-You should see the following output. The first value shows the capacity of gaudi devices on your machine. The second one describes allocatable Gaudi devices and the third one shows allocated ones.
-```
-habana.ai/gaudi: 8
-habana.ai/gaudi: 8
-habana.ai/gaudi 0 0
-```
-
-You have successfully installed and verified the prerequisites on your system. Proceed to the [Deployment Guide](../deployment/README.md) to learn how to deploy and configure the Enterprise RAG Solution.
 
 ## Helpful tools
 

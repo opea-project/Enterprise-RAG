@@ -8,6 +8,7 @@ Support for specific vector databases:
 | Vector Database    |  Status   |
 | -------------------| --------- |
 | [REDIS](#redis)    | &#x2713;  |
+| [REDIS-CLUSTER](#redis-cluster)    | &#x2713;  |
 
 ## Getting Started
 
@@ -27,6 +28,10 @@ cd impl/redis
 docker compose up -d
 ```
 To configure VectorStore to use Redis, please refer to [ConnectorRedis](#ConnectorRedis).
+
+#### Redis Cluster
+
+Configuration is exactly the same as for Redis
 
 ### VectorStore implementations
 
@@ -58,7 +63,7 @@ docker compose up -d
 ```
 
 ```bash
-export REDIS_URL='redis://localhst:6379'
+export REDIS_URL='redis://localhost:6379'
 ```
 
 ```python
@@ -84,6 +89,7 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
+| `similarity_search_with_siblings` | `similarity_search_with_siblings`        | `k`, `distance_threshold`     |
 
 Additional search parameters that can be added to the query to configure the search:
 - `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)

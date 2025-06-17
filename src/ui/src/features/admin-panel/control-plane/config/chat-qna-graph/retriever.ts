@@ -6,6 +6,7 @@ import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/
 
 export const searchTypesArgsMap = {
   similarity: ["k"],
+  similarity_search_with_siblings: ["k", "distance_threshold"],
   similarity_distance_threshold: ["k", "distance_threshold"],
   // similarity_score_threshold: ["k", "score_threshold"],
   // mmr: ["k", "fetch_k", "lambda_mult"],
@@ -29,7 +30,7 @@ export const retrieverFormConfig = {
   distance_threshold: {
     name: "distance_threshold",
     range: { min: 0.1, max: 1 },
-    nullable: true,
+    isNullable: true,
     tooltipText:
       "The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches.",
   },

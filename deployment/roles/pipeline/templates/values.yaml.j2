@@ -16,6 +16,9 @@ common_registry: &repo {{ registry }}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+llm_model: &cpu_model {{ llm_model }}
+llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
+
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
@@ -24,6 +27,11 @@ hpaEnabled: {{ hpaEnabled }}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}
+{% endif %}
+
+{% if balloons.enabled is defined %}
+balloons:
+  enabled: {{ balloons.enabled }}
 {% endif %}
 
 images:
@@ -35,8 +43,16 @@ images:
     image: "erag-gmcrouter"
     repository: *repo
     tag: *tag
-  dataprep-usvc:
-    image: "erag-dataprep"
+  text-extractor-usvc:
+    image: "erag-text-extractor"
+    repository: *repo
+    tag: *tag
+  text-compression-usvc:
+    image: "erag-text-compression"
+    repository: *repo
+    tag: *tag
+  text-splitter-usvc:
+    image: "erag-text-splitter"
     repository: *repo
     tag: *tag
   embedding-usvc:
@@ -71,6 +87,12 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
+{% if edp.hierarchical_indices.enabled is true %}
+    envs:
+      USE_HIERARCHICAL_INDICES: "True"
+      K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}
+      K_CHUNKS: {{ edp.hierarchical_indices.kChunks }}
+{% endif %}
   ingestion-usvc:
     image: "erag-ingestion"
     repository: *repo
@@ -95,10 +117,14 @@ images:
     image: "erag-vllm-gaudi"
     repository: *repo
     tag: *tag
+    envs:
+      LLM_VLLM_MODEL_NAME: *hpu_model
   vllm:
     image: "erag-vllm-cpu"
     repository: *repo
     tag: *tag
+    envs:
+      LLM_VLLM_MODEL_NAME: *cpu_model
   langdtct-usvc:
     image: "erag-language_detection"
     repository: *repo

@@ -8,7 +8,7 @@ import { ReactNode } from "react";
 import ColorSchemeSwitch from "@/components/ui/ColorSchemeSwitch/ColorSchemeSwitch";
 import LogoutButton from "@/components/ui/LogoutButton/LogoutButton";
 import ViewSwitchButton from "@/components/ui/ViewSwitchButton/ViewSwitchButton";
-import { getUsername } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 
 interface AppHeaderProps {
   extraActions?: ReactNode;
@@ -19,9 +19,9 @@ const AppHeader = ({ extraActions }: AppHeaderProps) => (
     <p className="app-header__app-name">Intel AI&reg; for Enterprise RAG</p>
     <div className="app-header__actions">
       {extraActions}
-      <ViewSwitchButton />
+      {keycloakService.isAdminUser() && <ViewSwitchButton />}
       <ColorSchemeSwitch />
-      <p className="app-header__username">{getUsername()}</p>
+      <p className="app-header__username">{keycloakService.getUsername()}</p>
       <LogoutButton />
     </div>
   </header>

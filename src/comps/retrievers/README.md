@@ -12,14 +12,16 @@ Configuration is done by selecting the desired vector store type. In addition, t
 |-------------------------|-------------------|--------------------------------------------------------------------------------------------------|
 | `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
 | `RETRIEVER_USVC_PORT`          | `6620`           | (Optional) Retriever microservice port         |
+| `USE_HIERARCHICAL_INDICES` | `False`        | Enable/disable Hierarchical Indices Advanced RAG Technique         |
 
 ### Vector Store Support Matrix
 
 Support for specific vector databases:
 
-| Vector Database                             |  Status   |
-| --------------------------------------------| --------- |
-| [REDIS](../vectorstores/README.md#redis)    | &#x2713;  |
+| Vector Database                                          |  Status   |
+| -------------------------------------------------------- | --------- |
+| [REDIS](../vectorstores/README.md#redis)                 | &#x2713;  |
+| [REDIS-CLUSTER](../vectorstores/README.md#redis-cluster) | &#x2713;  |
 
 ## Getting started
 
@@ -88,6 +90,7 @@ Based on the selected `search_type` method, additional arguments should be passe
 | -------------------------------- | ----------------------------------------- | ----------------------------- |
 | `similarity`                     | `similarity_search_by_vector`             | `k`                           |
 | `similarity_distance_threshold`  | `similarity_search_by_vector`             | `k`, `distance_threshold`     |
+| `similarity_search_with_siblings` | `similarity_search_with_siblings`       | `k`, `distance_threshold`     |
 Additional search parameters that can be added to the query to configure the search:
 - `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
 - `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)

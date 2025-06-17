@@ -80,6 +80,25 @@
         - install
         - uninstall
 
+    - name: Identify containers with "not ready" status
+      set_fact:
+        not_ready_containers: >-
+          {%- set result = [] -%}
+          {%- for pod in pods_info.results |
+                selectattr('resources', 'defined') |
+                rejectattr('resources', 'equalto', []) |
+                map(attribute='resources') | flatten |
+                selectattr('status.phase', 'equalto', 'Running') -%}
+            {%- for container in pod.status.containerStatuses | default([]) -%}
+              {%- if not container.ready -%}
+                {%- set _ = result.append({'pod': pod.metadata.name, 'container': container.name}) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ result }}
+      tags:
+        - install
+
     - name: Verify pods based on operation_mode
       set_fact:
         undesirable_pods: >-
@@ -105,20 +124,21 @@
       fail:
         msg: >-
           {{
-            "The following pods are not in running or succeeded state:" ~ undesirable_pods
-            if operation_mode == 'install' and undesirable_pods | length > 0 else
-            "The following pods are still present in the cluster:" ~ undesirable_pods
-            if operation_mode == 'uninstall' and undesirable_pods | length > 0 else ""
+            (
+              ("The following pods contain not ready containers:" ~ not_ready_containers
+              if operation_mode == 'install' and not_ready_containers | length > 0 else "") +
+              ("The following pods are not in running or succeeded state:" ~ undesirable_pods
+              if operation_mode == 'install' and undesirable_pods | length > 0 else
+              "The following pods are still present in the cluster:" ~ undesirable_pods
+              if operation_mode == 'uninstall' and undesirable_pods | length > 0 else "") +
+              ("The following namespaces have zero pods and are not terminated:" ~ empty_namespaces
+              if empty_namespaces | length > 0 else "") +
+              ("The following namespaces are missing:" ~ missing_namespaces
+              if operation_mode == 'install' and missing_namespaces | length > 0 else "")
+            ) | trim
           }}
-          {{
-            "The following namespaces have zero pods and are not terminated:" ~ empty_namespaces
-            if empty_namespaces | length > 0 else ""
-          }}
-          {{
-            "The following namespaces are missing:" ~ missing_namespaces
-            if operation_mode == 'install' and missing_namespaces | length > 0 else ""
-          }}
-      when: (operation_mode == 'install' and undesirable_pods | length > 0) or
+      when: (operation_mode == 'install' and not_ready_containers | length > 0) or
+            (operation_mode == 'install' and undesirable_pods | length > 0) or
             (operation_mode == 'uninstall' and undesirable_pods | length > 0) or
             (operation_mode == 'install' and missing_namespaces | length > 0) or
             (empty_namespaces | length > 0)

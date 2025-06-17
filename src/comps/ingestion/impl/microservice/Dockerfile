@@ -7,7 +7,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 
 RUN apt-get -y update && \
-    apt-get install --no-install-recommends --fix-missing -y nano && \
+    apt-get install --no-install-recommends --fix-missing -y nano git && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
 RUN rm -rf /usr/local/lib/python3.11/site-packages/*
@@ -35,6 +35,12 @@ COPY --chown=user:user ./comps/vectorstores ./comps/vectorstores
 COPY --chown=user:user ./comps/ingestion/utils ./comps/ingestion/utils
 COPY --chown=user:user ./comps/ingestion/impl/microservice/.env ./comps/ingestion/impl/microservice/.env
 COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
+
+WORKDIR /home/user/comps/ingestion/impl/microservice/.venv/lib/python3.11/site-packages
+COPY --chown=user:user ./comps/vectorstores/impl/issue-346-20250603_160239.patch /tmp/issue-346-20250603_160239.patch
+RUN git apply /tmp/issue-346-20250603_160239.patch
+COPY --chown=user:user ./comps/vectorstores/impl/issue-346-custom.patch /tmp/issue-346-custom.patch
+RUN git apply /tmp/issue-346-custom.patch
 
 WORKDIR /home/user/comps/ingestion
 CMD ["python", "opea_ingestion_microservice.py"]

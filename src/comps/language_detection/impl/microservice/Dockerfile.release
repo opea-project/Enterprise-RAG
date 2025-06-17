@@ -1,0 +1,11 @@
+FROM language-detection-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/language_detection
+CMD ["python", "opea_language_detection_microservice.py"]

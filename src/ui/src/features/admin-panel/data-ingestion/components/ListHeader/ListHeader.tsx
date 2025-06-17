@@ -9,10 +9,10 @@ import Button from "@/components/ui/Button/Button";
 
 interface ListHeaderProps {
   title?: string;
-  onClearListBtnClick: () => void;
+  onClearListBtnPress: () => void;
 }
 
-const ListHeader = ({ title, onClearListBtnClick }: ListHeaderProps) => (
+const ListHeader = ({ title, onClearListBtnPress }: ListHeaderProps) => (
   <header
     className={classNames({
       "list-header": true,
@@ -20,7 +20,7 @@ const ListHeader = ({ title, onClearListBtnClick }: ListHeaderProps) => (
     })}
   >
     {title && <h3>{title}</h3>}
-    <Button color="error" size="sm" onClick={onClearListBtnClick}>
+    <Button color="error" size="sm" onPress={onClearListBtnPress}>
       Delete All
     </Button>
   </header>

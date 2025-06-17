@@ -3,7 +3,7 @@
 
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 
-import { redirectToLogout } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import { resetStore } from "@/store/utils";
 
 const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
@@ -45,7 +45,7 @@ const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
 
 const onRefreshTokenFailed = () => {
   resetStore();
-  redirectToLogout();
+  keycloakService.redirectToLogout();
 };
 
 const transformErrorMessage = (

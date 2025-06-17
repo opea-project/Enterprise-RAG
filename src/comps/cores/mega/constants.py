@@ -36,6 +36,9 @@ class ServiceType(Enum):
     PROMPT_TEMPLATE = 19
     LLM_GUARD_DATAPREP_SCANNER = 20
     HIERARCHICAL_DATAPREP = 21
+    TEXT_EXTRACTOR = 22
+    TEXT_COMPRESSION = 23
+    TEXT_SPLITTER = 24
 
 
 class MegaServiceEndpoint(Enum):
@@ -71,6 +74,9 @@ class MegaServiceEndpoint(Enum):
     SYSTEM_FINGERPRINT = '/v1/system_fingerprint'
     LLM_GUARD_DATAPREP_SCANNER = "/v1/llmguarddataprep"
     HIERARCHICAL_DATAPREP = "/v1/hierarchical_dataprep"
+    TEXT_EXTRACTOR = "/v1/text_extractor"
+    TEXT_COMPRESSION = "/v1/text_compression"
+    TEXT_SPLITTER = "/v1/text_splitter"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

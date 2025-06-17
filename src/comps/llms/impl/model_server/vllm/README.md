@@ -31,7 +31,7 @@ export LLM_DEVICE='cpu'
 chmod +x run_vllm.sh
 ./run_vllm.sh
 ```
-The script initiates a Docker container with the vLLM model server running on port `LLM_VLLM_PORT` (default: **8008**). Configuration settings are specified in the environment configuration files [docker/.env.hpu](docker/.env.hpu) and [docker/.env.cpu](docker/.env.cpu) files. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
+The script initiates a Docker container with the vLLM model server running on port `LLM_VLLM_PORT` (default: **8008**). Configuration settings are specified in the environment configuration files [docker/hpu/.env](docker/hpu/.env) and [docker/cpu/.env](docker/cpu/.env) files. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
 
 #### 1.2. Verify the vLLM Service
 Below examples are presented for hpu device.
@@ -140,14 +140,19 @@ VLLM_TP_SIZE=1
 To build and start the services using Docker Compose
 
 ```bash
-cd docker
-
 # for CPU device
-export UID && docker compose --env-file=.env.cpu -f docker-compose-cpu.yaml up --build -d
+cd docker/cpu
+mkdir -p data
+export UID && docker compose --env-file=.env -f docker-compose.yaml up --build -d
 
 # for HPU device (Gaudi)
-docker compose --env-file=.env.hpu -f docker-compose-hpu.yaml up --build -d
+cd docker/hpu
+mkdir -p data
+docker compose --env-file=.env -f docker-compose.yaml up --build -d
 ```
+
+Note: Due to secure container best practises, main process is started as non-priviledged user.
+Due to the fact it uses volume mounts, the volume directory `data/` must be created beforehand.
 
 #### 2.3. Verify the Services
 
@@ -251,7 +256,7 @@ In order to work with a fp8 quantized model, you need to do the following:
 
     ```bash
     cd model_server/vllm/fp8_vllm
-    docker compose -f docker-compose.yaml --env-file ../docker/.env.hpu up --build
+    docker compose -f docker-compose.yaml --env-file ../docker/hpu/.env up --build
     ```
 
    After the quantization command concludes the hots model data directory will include subdirectory with quantization outcome, e.g.:

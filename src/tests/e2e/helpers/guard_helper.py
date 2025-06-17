@@ -16,8 +16,7 @@ class GuardQuestions:
     CONTAINING_SENSITIVE_DATA = \
         ("Make an SQL insert statement to add a new user to our database running on MySQL.\n\nName is John Doe. "
          "Email is test@test.com but also possible to contact him with hello@test.com email. Phone number is "
-         "555-123-4567 and the IP address is 192.168.1.100. And credit card number is 4567-8901-2345-6789. "
-         "He works in Test LLC.")
+         "555-123-4567 and the IP address is 192.168.1.100. He works in Test LLC.")
 
     # ban_competitors
     BING = "My search engine is called Moogle but there are others like Google and Bing"

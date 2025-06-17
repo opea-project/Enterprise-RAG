@@ -73,6 +73,11 @@ spec:
                 secretKeyRef:
                   name: vector-database-config
                   key: REDIS_URL
+            - name: VECTOR_STORE
+              valueFrom:
+                secretKeyRef:
+                  name: vector-database-config
+                  key: VECTOR_STORE
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           command:
@@ -83,8 +88,9 @@ spec:
                   echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
                   exit 1
                 else
+                  REDIS_CLUSTER_FLAG=$([ "$VECTOR_STORE" = "redis-cluster" ] && echo "-c" || echo "")
                   REDIS_URL_OBFUSCATED=$(echo $REDIS_URL | sed -e 's|//.*:.*@|//********:********@|')
-                  until redis-cli -u $REDIS_URL ping | grep -q PONG; do
+                  until redis-cli $REDIS_CLUSTER_FLAG -u $REDIS_URL ping | grep -q PONG; do
                     echo "waiting for redis server $REDIS_URL_OBFUSCATED to be ready...";
                     sleep 2;
                   done;

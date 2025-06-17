@@ -38,8 +38,6 @@ class DocPath(BaseDoc):
     path: str
     chunk_size: int = 1500
     chunk_overlap: int = 100
-    process_table: bool = False
-    table_strategy: str = "fast"
 
 class EmbedDoc(BaseDoc):
     text: str
@@ -79,15 +77,33 @@ class DataPrepFile(BaseDoc):
 class DataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
     links: List[str] = []
-    chunk_size: Optional[Any] = None
-    chunk_overlap: Optional[Any] = None
-    process_table: Optional[Any] = None
-    table_strategy: Optional[Any] = None
+
+class HierarchicalDataPrepInput(BaseDoc):
+    files: List[DataPrepFile] = []
+    links: List[str] = []
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
     max_new_tokens: Optional[PositiveInt] = None
+
+class TextCompressionTechnique(BaseDoc):
+    name: str
+    parameters: Optional[Dict[str, Any]] = None
+
+class TextCompressionInput(BaseDoc):
+    loaded_docs: List[TextDoc]
+    compression_techniques: Optional[List[TextCompressionTechnique]] = None
+
+class TextSplitterInput(BaseDoc):
+    loaded_docs: List[TextDoc]
+    chunk_size: Optional[int] = None
+    chunk_overlap: Optional[int] = None
+    use_semantic_chunking: Optional[bool] = None
+    semantic_chunk_params: Optional[Dict[str, Any]] = None
 
 class SearchedDoc(BaseDoc):
     retrieved_docs: DocList[TextDoc]
     user_prompt: str
+    sibling_docs: Optional[Dict[str, DocList[TextDoc]]] = None
     top_n: PositiveInt = 3
     rerank_score_threshold: Optional[float] = 0.02
     conversation_history: Optional[List[PrevQuestionDetails]] = None

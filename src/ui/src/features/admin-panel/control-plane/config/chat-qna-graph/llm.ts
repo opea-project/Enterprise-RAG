@@ -24,7 +24,7 @@ export const llmFormConfig = {
   },
   temperature: {
     name: "temperature",
-    range: { min: 0.1, max: 1 },
+    range: { min: 0.01, max: 1 },
   },
   repetition_penalty: {
     name: "repetition_penalty",

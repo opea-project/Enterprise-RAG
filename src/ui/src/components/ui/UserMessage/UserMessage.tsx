@@ -32,7 +32,7 @@ const UserMessage = memo(({ question }: UserMessageProps) => {
         <div className="user-message__text">
           <MarkdownRenderer content={question} />
         </div>
-        <div className="user-message__footer h-11 self-end pt-2">
+        <div className="user-message__footer">
           <CopyButton textToCopy={question} show={showCopyBtn} />
         </div>
       </div>

@@ -13,7 +13,7 @@
       Proceeding may result in failures during dependency installation or unexpected behavior.
     success_msg: >
       [INFO]: This system is running {{ ansible_distribution }} {{ ansible_distribution_version }}
-  ignore_errors: yes
+  ignore_errors: true
   tags:
     - configure
 
@@ -61,7 +61,6 @@
     dest: /usr/local/bin/kubectl
     mode: '0755'
     owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
   when: kubectl_check.rc != 0
   tags:
     - configure
@@ -100,7 +99,6 @@
   ansible.builtin.file:
     path: /usr/local/bin/helm
     owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     mode: '0755'
   tags:
     - configure

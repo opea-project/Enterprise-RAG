@@ -10,9 +10,12 @@ import {
   Node,
   NodeTypes,
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
 } from "@xyflow/react";
 import { NodeChange } from "@xyflow/system";
-import { useCallback } from "react";
+import debounce from "lodash.debounce";
+import { useCallback, useEffect, useMemo } from "react";
 
 import ServiceNode from "@/features/admin-panel/control-plane/components/ServiceNode/ServiceNode";
 import {
@@ -39,12 +42,13 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 const nodeTypes: NodeTypes = { serviceNode: ServiceNode };
 
-const ChatQnAGraph = () => {
+const ChatQnAGraphFlow = () => {
   const dispatch = useAppDispatch();
   const nodes = useAppSelector(chatQnAGraphNodesSelector);
   const edges = useAppSelector(chatQnAGraphEdgesSelector);
 
   const { colorScheme } = useColorScheme();
+  const reactFlowInstance = useReactFlow();
 
   const handleSelectionChange = useCallback(
     ({ nodes }: { nodes: Node[] }) => {
@@ -60,9 +64,27 @@ const ChatQnAGraph = () => {
     dispatch(onChatQnAGraphNodesChange(changes));
   };
 
-  const fitViewOptions: FitViewOptions = {
-    padding: nodes.length > 9 ? 0.25 : 0.5,
-  };
+  const fitViewOptions: FitViewOptions = useMemo(
+    () => ({
+      padding: nodes.length > 9 ? 0.25 : 0.5,
+    }),
+    [nodes.length],
+  );
+
+  useEffect(() => {
+    const handleResize = debounce(() => {
+      if (reactFlowInstance) {
+        reactFlowInstance.fitView(fitViewOptions);
+      }
+    }, 300);
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      handleResize.cancel();
+    };
+  }, [fitViewOptions, reactFlowInstance]);
 
   return (
     <ReactFlow
@@ -95,5 +117,12 @@ const ChatQnAGraph = () => {
     </ReactFlow>
   );
 };
+
+// Wrapping ChatQnAGraphFlow in ReactFlowProvider must be done outside of the component
+const ChatQnAGraph = () => (
+  <ReactFlowProvider>
+    <ChatQnAGraphFlow />
+  </ReactFlowProvider>
+);
 
 export default ChatQnAGraph;

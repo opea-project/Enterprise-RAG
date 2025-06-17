@@ -5,7 +5,8 @@ import asyncio
 import heapq
 import json
 import requests
-from typing import List, TypedDict
+from docarray import DocList
+from typing import List, TypedDict, Dict
 import aiohttp
 
 from asyncio import TimeoutError
@@ -14,6 +15,7 @@ from requests.exceptions import HTTPError, RequestException, Timeout
 
 from comps import (
     SearchedDoc,
+    TextDoc,
     PromptTemplateInput,
     get_opea_logger,
 )
@@ -140,9 +142,48 @@ class OPEAReranker:
             logger.warning("No retrieved documents found")
             reranked_docs = []
 
-        cleaned_reranked_docs = [doc.text for doc in reranked_docs]
-        return PromptTemplateInput(data={"user_prompt": input.user_prompt.strip(), "reranked_docs": cleaned_reranked_docs})
+        if input.sibling_docs:
+            final_reranked_docs = self._combine_sibling_docs(reranked_docs, input.sibling_docs)
+        else:
+            final_reranked_docs = reranked_docs
+        return PromptTemplateInput(data={"user_prompt": input.user_prompt.strip(), "reranked_docs": final_reranked_docs})
 
+    def _combine_sibling_docs(self, reranked_docs: DocList[TextDoc], sibling_docs: Dict[str, DocList[TextDoc]]) -> List[SearchedDoc]:
+        """
+        Combines reranked documents with their sibling documents.
+        Args:
+            reranked_docs (List[str]): The list of reranked document texts.
+            sibling_docs (List[SearchedDoc]): The list of sibling documents.
+        Returns:
+            List[SearchedDoc]: The combined list of reranked documents with their siblings.
+        """
+        all_combined_docs = []
+        for doc in reranked_docs:
+            combined_docs = [doc]
+            if doc.metadata["id"] in sibling_docs:
+                siblings = sibling_docs[doc.metadata["id"]]
+                combined_docs.extend(siblings)
+                combined_docs = sorted(combined_docs, key=lambda x: int(x.metadata.get("start_index", 0)))
+                # Combine all texts
+                combined_text = " ".join(e.text for e in combined_docs)
+
+                found = any(combined_text == d["text"] for d in all_combined_docs)
+                if found:
+                    logger.info(f"Skipping duplicate sibling documents for {doc.metadata['id']}")
+                    continue
+
+                # Copy metadata from the first element
+                combined_metadata = combined_docs[0].metadata.copy()
+
+                # Final result
+                combined_element = {
+                    "text": combined_text,
+                    "metadata": combined_metadata
+                }
+                all_combined_docs.append(combined_element)
+            else:
+                all_combined_docs.append(doc)
+        return all_combined_docs
 
     async def _async_call_reranker(
         self,

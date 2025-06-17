@@ -1,0 +1,11 @@
+FROM retriever-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/retrievers
+CMD ["python", "opea_retriever_microservice.py"]

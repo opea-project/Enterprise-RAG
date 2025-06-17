@@ -29,7 +29,7 @@ import {
   parseServiceDetailsResponseData,
   parseServicesParameters,
 } from "@/features/admin-panel/control-plane/utils/api";
-import { getToken, refreshToken } from "@/lib/auth";
+import { keycloakService } from "@/lib/auth";
 import {
   getErrorMessage,
   onRefreshTokenFailed,
@@ -38,7 +38,7 @@ import {
 
 const controlPlaneBaseQuery = fetchBaseQuery({
   prepareHeaders: async (headers) => {
-    await refreshToken(onRefreshTokenFailed);
+    await keycloakService.refreshToken(onRefreshTokenFailed);
     return headers;
   },
 });
@@ -56,14 +56,14 @@ export const controlPlaneApi = createApi({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${getToken()}`,
+              Authorization: `Bearer ${keycloakService.getToken()}`,
             },
             body: JSON.stringify({ text: "" }),
           }),
           fetchWithBQ({
             url: API_ENDPOINTS.GET_SERVICES_DETAILS,
             headers: {
-              Authorization: getToken(),
+              Authorization: keycloakService.getToken(),
             },
           }),
         ]);
@@ -130,7 +130,7 @@ export const controlPlaneApi = createApi({
         body: JSON.stringify(requestBody),
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${keycloakService.getToken()}`,
         },
       }),
       onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
@@ -157,7 +157,7 @@ export const controlPlaneApi = createApi({
         body: JSON.stringify(requestBody),
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${keycloakService.getToken()}`,
         },
         responseHandler: async (response) => await response.text(),
       }),

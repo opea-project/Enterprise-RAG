@@ -10,9 +10,10 @@ The OPEA ERAG Ingestion service allows multiple services to ingest data into a v
 
 Support for specific vector databases:
 
-| Vector Database  |  Status   |
-| -----------------| --------- |
-| REDIS            | &#x2713;  |
+| Vector Database |  Status  |
+| --------------- | -------- |
+| REDIS           | &#x2713; |
+| REDIS-CLUSTER   | &#x2713; |
 
 ## 🔗 Related Components
 

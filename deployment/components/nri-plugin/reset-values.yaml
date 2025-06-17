@@ -1,0 +1,13 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+nri:
+  runtime:
+    patchConfig: true
+
+config:
+  balloonTypes:
+    - name: reserved
+      namespaces:
+        - '*'
+      shareIdleCPUsInSame: system

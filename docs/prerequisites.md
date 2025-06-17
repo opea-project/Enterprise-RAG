@@ -114,7 +114,7 @@ For more detailed info on cluster setup you can check [kubespray/getting-started
 >[!WARNING]
 >Ensure passwordless SSH for Ansible host nodes (from `hosts.ini`):
 > - Generate keys (ssh-keygen) and copy the public key (ssh-copy-id user@node-ip).
-> - Verify permissions: Ensure the ~/.ssh directory is set to `700` and the authorized_keys file to `600` on the remote host to maintain secure access.
+> - Verify permissions (chmod): Ensure ~/.ssh directory permissions are set to `700` and authorized_keys file permissions are set to `600` on the remote host to maintain secure access.
 > - Create a ~/.ssh/config file (if doesn't exist) and add a field for the remote machine. Example field might look as follows:
 >
 > ```bash
@@ -181,6 +181,12 @@ ansible-playbook -i inventory/mycluster/hosts.ini --become --become-user=root -e
 ```
 >[!NOTE]
 > If you want to skip being prompted for passwords, remove the `-kK` options. The `-kK` flags prompt for the SSH password (`-k`) and the sudo password (`-K`). If you choose to skip passwords, ensure that passwordless access to both the root and user accounts is configured on the localhost.
+
+Answer `yes` to the prompt:
+```bash
+[Reset Confirmation]
+Are you sure you want to reset cluster state? Type 'yes' to reset your cluster.:
+```
 
 A similar output can be seen after a successful reset:
 ```bash

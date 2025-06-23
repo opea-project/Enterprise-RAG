@@ -1,7 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
-
-name: Unit tests
+name: "Unit tests"
 
 on:
   pull_request:
@@ -24,107 +21,118 @@ on:
 
 jobs:
   unit-tests:
-    if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
-    name: Unit tests
-    runs-on: ubuntu-22.04
+    name: Run unit tests
+    runs-on: [innersource.prod.amr.dind]
     defaults:
       run:
         shell: bash
+    container: cache-registry.caas.intel.com/cache/library/python:3.11
     permissions:
       contents: read
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Clean up disk space
-      run: |
-        sudo rm -rf \
-          /usr/local/lib/android \
-          /usr/share/dotnet \
-          "$AGENT_TOOLSDIRECTORY"
-        df -h /
+      - name: Install test prerequisites
+        run: apt-get update && apt-get -y install libgl1-mesa-glx tox sudo
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+      - name: Checkout code to folder
+        uses: actions/checkout@v4
+        with:
+          path: repo
 
-    - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1 libglx-mesa0 tox
+      - name: Ingestion unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: ingestion_unit_tests
 
-    - name: Checkout code to folder
-      uses: actions/checkout@v4
-      with:
-        path: repo
+      - name: Prompt registry unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: prompt_registry_unit_tests
 
-    - name: Ingestion unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: ingestion_unit_tests
+      - name: Prompt template unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: prompt_template_unit_tests
 
-    - name: Prompt registry unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: prompt_registry_unit_tests
+      - name: Retrievers unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: retrievers_unit_tests
 
-    - name: Retrievers unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: retrievers_unit_tests
+      - name: Vectorstores unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: vectorstores_unit_tests
 
-    - name: Vectorstores unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: vectorstores_unit_tests
+      - name: Reranks unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: reranks_unit_tests
 
-    - name: Reranks unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: reranks_unit_tests
+      - name: Embeddings unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: embeddings_unit_tests
 
-    - name: Embeddings unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: embeddings_unit_tests
+      - name: Text Extractor unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: text_extractor_unit_tests
 
-    - name: Dataprep unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: dataprep_unit_tests
+      - name: Text Compression unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: text_compression_unit_tests
 
-    - name: LLMs unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: llms_unit_tests
+      - name: Text Splitter unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: text_splitter_unit_tests
 
-    - name: Guardrails input unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: llm_guard_input_guardrail_unit_tests
+      - name: LLMs unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: llms_unit_tests
 
-    - name: Guardrails output unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: llm_guard_output_guardrail_unit_tests
+      - name: Guardrails input unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: llm_guard_input_guardrail_unit_tests
 
-    - name: Language detection unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: language_detection_unit_tests
+      - name: Guardrails output unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: llm_guard_output_guardrail_unit_tests
 
-    - name: EDP unit tests
-      if: success() || failure()
-      uses: ./.github/actions/unit-tests
-      with:
-        test-name: edp_unit_tests
+      - name: Language detection unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: language_detection_unit_tests
+
+      - name: EDP unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: edp_unit_tests
+
+      - name: Hierarchical dataprep unit tests
+        if: success() || failure()
+        uses: ./.github/actions/unit-tests
+        with:
+          test-name: hierarchical_dataprep_unit_tests

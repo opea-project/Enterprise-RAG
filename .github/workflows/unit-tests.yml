@@ -93,11 +93,23 @@ jobs:
       with:
         test-name: embeddings_unit_tests
 
-    - name: Dataprep unit tests
+    - name: Text Extractor unit tests
       if: success() || failure()
       uses: ./.github/actions/unit-tests
       with:
-        test-name: dataprep_unit_tests
+        test-name: text_extractor_unit_tests
+
+    - name: Text Compression unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: text_compression_unit_tests
+
+    - name: Text Splitter unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: text_splitter_unit_tests
 
     - name: LLMs unit tests
       if: success() || failure()

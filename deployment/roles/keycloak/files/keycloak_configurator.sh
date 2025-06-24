@@ -551,6 +551,114 @@ function map_role_to_group() {
     fi
 }
 
+function map_client_role_to_group() {
+    local realm_name=$1
+    local group_name=$2
+    local client_name=$3
+    local role_name=$4
+    local group_id=""
+    local client_id=""
+    local role_id=""
+
+    client_id=$(get_client_id "$realm_name" "$client_name")
+    group_id=$(get_group_id  "$realm_name" "$group_name")
+    role_id=$(get_client_role_id "$realm_name" "$role_name" "$client_name")
+
+    local url="$KEYCLOAK_URL/admin/realms/$realm_name/groups/$group_id/role-mappings/clients/$client_id"
+
+    NEW_ROLE_MAPPING_JSON='[{
+        "id": "'$role_id'",
+        "name": "'$role_name'"
+    }]'
+
+    if curl_keycloak "$url" "$NEW_ROLE_MAPPING_JSON"; then
+        print_log "Client role '$role_name' mapped to group '$group_name' successfully"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "Client role '$role_name' already mapped to group '$group_name'"
+    else
+        print_log "Failed to map client role '$role_name' to group '$group_name' on '$realm_name' with $HTTP_CODE"
+    fi
+}
+
+function create_oidc_config() {
+    local realm_name=$1
+    local endpoint=$2
+    local oidc_alias=$3
+    local oidc_display_name=$4
+    local oidc_client_id=$5
+    local oidc_client_secret=$6
+
+    # Retrieve OIDC URLs from endpoint
+    local oidc_metadata=$(curl -s -X GET "${endpoint}")
+    local oidc_authorization_url="$(echo $oidc_metadata | jq -r .authorization_endpoint)"
+    local oidc_token_url="$(echo $oidc_metadata | jq -r .token_endpoint)"
+    local oidc_logout_url="$(echo $oidc_metadata | jq -r .end_session_endpoint)"
+    local oidc_user_info_url="$(echo $oidc_metadata | jq -r .userinfo_endpoint)"
+    local oidc_issuer="$(echo $oidc_metadata | jq -r .issuer)"
+    local oidc_metadata_descriptor_url="$endpoint"
+    local oidc_jwks_url="$(echo $oidc_metadata | jq -r .jwks_uri)"
+
+    local url="$KEYCLOAK_URL/admin/realms/$realm_name/identity-provider/instances"
+
+    NEW_IDENTITY_PROVIDER='{
+        "alias": "'$oidc_alias'",
+        "displayName": "'$oidc_display_name'",
+        "config": {
+            "guiOrder": "",
+            "authorizationUrl": "'$oidc_authorization_url'",
+            "tokenUrl": "'$oidc_token_url'",
+            "logoutUrl": "'$oidc_logout_url'",
+            "userInfoUrl": "'$oidc_user_info_url'",
+            "issuer": "'$oidc_issuer'",
+            "validateSignature": "true",
+            "pkceEnabled": "false",
+            "clientAuthMethod": "client_secret_post",
+            "clientId": "'$oidc_client_id'",
+            "clientSecret": "'$oidc_client_secret'",
+            "clientAssertionSigningAlg": "",
+            "metadataDescriptorUrl": "'$oidc_metadata_descriptor_url'",
+            "jwksUrl": "'$oidc_jwks_url'",
+            "useJwksUrl": "true"
+        },
+        "providerId": "oidc"
+    }'
+
+    if curl_keycloak "$url" "$NEW_IDENTITY_PROVIDER"; then
+        print_log "Identity provider created successfully"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "Identity provider already exists"
+    else
+        print_log "Failed to add an identity provider with $HTTP_CODE"
+    fi
+}
+
+function create_oidc_mapper() {
+    local realm_name=$1
+    local oidc_alias=$2
+    local mapper_name=$3
+    local group_name=$4
+
+    local url="$KEYCLOAK_URL/admin/realms/$realm_name/identity-provider/instances/$oidc_alias/mappers"
+
+    NEW_MAPPER='{
+        "config": {
+            "group": "/erag-admin-group",
+            "syncMode": "INHERIT"
+        },
+        "identityProviderAlias": "'$oidc_alias'",
+        "identityProviderMapper": "oidc-hardcoded-group-idp-mapper",
+        "name": "'$mapper_name'"
+    }'
+
+	if curl_keycloak "$url" "$NEW_MAPPER"; then
+        print_log "Identity provider mapper created successfully"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "Identity provider mapper already exists"
+    else
+        print_log "Failed to add an identity provider mapper with $HTTP_CODE"
+    fi
+}
+
 function create_user() {
     local realm_name=$1
     local username=$2
@@ -721,6 +829,7 @@ function add_client_scope_mapper() {
     local client_name=$3
     local token_claim_name=$4
     local mapper_name=$5
+    local mapper_client_name=$6
 
     local client_id=""
     local scope_id=""
@@ -746,7 +855,7 @@ function add_client_scope_mapper() {
 				"access.token.claim": "true",
 				"claim.name": "'$token_claim_name'",
 				"jsonType.label": "String",
-				"usermodel.clientRoleMapping.clientId": "'$client_name'"
+				"usermodel.clientRoleMapping.clientId": "'$mapper_client_name'"
 			}
 		  }
 		]'
@@ -859,14 +968,39 @@ set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 
 # Minio
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://$minio_domain' baseUrl='https://$minio_domain' redirectUris='https://$minio_domain/oauth_callback'"
-create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
-create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readonly"
-create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
+# create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
+# create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readonly"
+# create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-admin-group"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-user-group"
 
-add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio-dedicated" "EnterpriseRAG-oidc-minio" "minio_roles" "client roles"
+add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio-dedicated" "EnterpriseRAG-oidc-minio" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
+add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-dedicated" "EnterpriseRAG-oidc" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
 
-assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "consoleAdmin" "EnterpriseRAG-oidc-minio"
-assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "readonly" "EnterpriseRAG-oidc-minio"
+#assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "consoleAdmin" "EnterpriseRAG-oidc-minio"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "erag-admin-group" "EnterpriseRAG-oidc-minio"
+#assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "readonly" "EnterpriseRAG-oidc-minio"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "erag-user-group" "EnterpriseRAG-oidc-minio"
+
+# groups
+create_group "$KEYCLOAK_REALM" "erag-user-group"
+create_group "$KEYCLOAK_REALM" "erag-admin-group"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc" "ERAG-admin"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc-backend" "ERAG-admin"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc-minio" "consoleAdmin"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-user-group" "EnterpriseRAG-oidc" "ERAG-user"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-user-group" "EnterpriseRAG-oidc-backend" "ERAG-user"
+
+# oidc
+if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
+    create_oidc_config "$KEYCLOAK_REALM" "$OIDC_ENDPOINT" "$OIDC_ALIAS" "Enterprise SSO Login" "$OIDC_CLIENT_ID" "$OIDC_CLIENT_SECRET"
+    if [[ -n "$OIDC_ADMIN_GID" ]]; then
+        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_ADMIN_GID" "erag-admin-group"
+    fi
+    if [[ -n "$OIDC_ADMIN_GID" ]]; then
+        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_USER_GID" "erag-user-group"
+    fi
+fi
 
 # RBAC
 create_client_resource "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin" "admin-access"
@@ -875,3 +1009,4 @@ create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin-polic
 create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-policy" "ERAG-user"
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin-permission" "admin" "admin-policy"
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-permission" "user" "user-policy"
+

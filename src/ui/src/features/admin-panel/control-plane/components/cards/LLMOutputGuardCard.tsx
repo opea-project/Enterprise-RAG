@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
-import BanCompetitorsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/BanCompetitorsScannerInputs";
 import BanSubstringsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/BanSubstringsScannerInputs";
 import BiasScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/BiasScannerInputs";
 import CodeScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/CodeScannerInputs";
-import LanguageScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/LanguageScannerInputs";
 import MaliciousURLsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/MaliciousURLsScannerInputs";
 import RelevanceScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/RelevanceScannerInputs";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
@@ -48,16 +46,6 @@ const LLMOutputGuardCard = ({
       <RelevanceScannerInputs
         config={llmOutputGuardFormConfig.relevance}
         previousArgumentsValues={previousArgumentsValues.relevance}
-        handlers={handlers}
-      />
-      <BanCompetitorsScannerInputs
-        config={llmOutputGuardFormConfig.ban_competitors}
-        previousArgumentsValues={previousArgumentsValues.ban_competitors}
-        handlers={handlers}
-      />
-      <LanguageScannerInputs
-        config={llmOutputGuardFormConfig.language}
-        previousArgumentsValues={previousArgumentsValues.language}
         handlers={handlers}
       />
       <MaliciousURLsScannerInputs

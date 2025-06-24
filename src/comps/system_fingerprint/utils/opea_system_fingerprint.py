@@ -19,16 +19,13 @@ from comps.system_fingerprint.utils.object_document_mapper import (
     ComponentTopology,
     LLMGuardInputGuardrailParams,
     LLMGuardOutputGuardrailParams,
+    LLMGuardDataprepGuardrailParams,
     PackedParams,
     AnonymizeModel,
-    BanCodeModel,
-    BanCompetitorsModel,
     BanSubstringsModel,
     BanTopicsModel,
     CodeModel,
-    GibberishModel,
     InvisibleText,
-    LanguageModel,
     PromptInjectionModel,
     RegexModel,
     SecretsModel,
@@ -37,7 +34,6 @@ from comps.system_fingerprint.utils.object_document_mapper import (
     ToxicityModel,
     BiasModel,
     JSONModel,
-    LanguageSameModel,
     MaliciousURLsModel,
     NoRefusalModel,
     NoRefusalLightModel,
@@ -54,11 +50,11 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 document_models = [
     RetrieverParams, RerankerParams, PromptTemplateParams, ComponentDetails, Fingerprint, Argument,
     ComponentConfiguration, ComponentTopology, LLMGuardInputGuardrailParams,
-    LLMGuardOutputGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
-    BanCodeModel, BanCompetitorsModel, BanSubstringsModel, BanTopicsModel,
-    CodeModel, GibberishModel, InvisibleText, LanguageModel,
+    LLMGuardOutputGuardrailParams, LLMGuardDataprepGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
+    BanSubstringsModel, BanTopicsModel,
+    CodeModel, InvisibleText,
     PromptInjectionModel, RegexModel, SecretsModel, SentimentModel,
-    TokenLimitModel, ToxicityModel, BiasModel, JSONModel, LanguageSameModel,
+    TokenLimitModel, ToxicityModel, BiasModel, JSONModel,
     MaliciousURLsModel, NoRefusalModel, NoRefusalLightModel, ReadingTimeModel,
     FactualConsistencyModel, RelevanceModel, SensitiveModel,
     URLReachabilityModel, DeanonymizeModel
@@ -216,14 +212,10 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     prompt_template=PromptTemplateParams(),
                     input_guard=LLMGuardInputGuardrailParams(
                         anonymize=AnonymizeModel(),
-                        ban_code=BanCodeModel(),
-                        ban_competitors=BanCompetitorsModel(),
                         ban_substrings=BanSubstringsModel(),
                         ban_topics=BanTopicsModel(),
                         code=CodeModel(),
-                        gibberish=GibberishModel(),
                         invisible_text=InvisibleText(),
-                        language=LanguageModel(),
                         prompt_injection=PromptInjectionModel(),
                         regex=RegexModel(),
                         secrets=SecretsModel(),
@@ -232,28 +224,35 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                         toxicity=ToxicityModel()
                     ),
                     output_guard=LLMGuardOutputGuardrailParams(
-                        ban_code=BanCodeModel(),
-                        ban_competitors=BanCompetitorsModel(),
                         ban_substrings=BanSubstringsModel(),
                         ban_topics=BanTopicsModel(),
                         bias=BiasModel(),
                         code=CodeModel(),
                         deanonymize=DeanonymizeModel(),
                         json_scanner=JSONModel(),
-                        language=LanguageModel(),
-                        language_same=LanguageSameModel(),
                         malicious_urls=MaliciousURLsModel(),
                         no_refusal=NoRefusalModel(),
                         no_refusal_light=NoRefusalLightModel(),
                         reading_time=ReadingTimeModel(),
                         factual_consistency=FactualConsistencyModel(),
-                        gibberish=GibberishModel(),
                         regex=RegexModel(),
                         relevance=RelevanceModel(),
                         sensitive=SensitiveModel(),
                         sentiment=SentimentModel(),
                         toxicity=ToxicityModel(),
                         url_reachability=URLReachabilityModel()
+                    ),
+                    dataprep_guard=LLMGuardDataprepGuardrailParams(
+                        ban_substrings=BanSubstringsModel(),
+                        ban_topics=BanTopicsModel(),
+                        code=CodeModel(),
+                        invisible_text=InvisibleText(),
+                        prompt_injection=PromptInjectionModel(),
+                        regex=RegexModel(),
+                        secrets=SecretsModel(),
+                        sentiment=SentimentModel(),
+                        token_limit=TokenLimitModel(),
+                        toxicity=ToxicityModel()
                     )
                 )
             )
@@ -445,12 +444,6 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     if k == "anonymize":
                         self.current_arguments.parameters.input_guard.anonymize = AnonymizeModel(
                             **v)
-                    elif k == "ban_code":
-                        self.current_arguments.parameters.input_guard.ban_code = BanCodeModel(
-                            **v)
-                    elif k == "ban_competitors":
-                        self.current_arguments.parameters.input_guard.ban_competitors = BanCompetitorsModel(
-                            **v)
                     elif k == "ban_substrings":
                         self.current_arguments.parameters.input_guard.ban_substrings = BanSubstringsModel(
                             **v)
@@ -460,14 +453,8 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     elif k == "code":
                         self.current_arguments.parameters.input_guard.code = CodeModel(
                             **v)
-                    elif k == "gibberish":
-                        self.current_arguments.parameters.input_guard.gibberish = GibberishModel(
-                            **v)
                     elif k == "invisible_text":
                         self.current_arguments.parameters.input_guard.invisible_text = InvisibleText(
-                            **v)
-                    elif k == "language":
-                        self.current_arguments.parameters.input_guard.language = LanguageModel(
                             **v)
                     elif k == "prompt_injection":
                         self.current_arguments.parameters.input_guard.prompt_injection = PromptInjectionModel(
@@ -489,13 +476,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                             **v)
             elif param[0] == "output_guard" and param[1] is not None:
                 for k, v in param[1].items():
-                    if k == "ban_code":
-                        self.current_arguments.parameters.output_guard.ban_code = BanCodeModel(
-                            **v)
-                    elif k == "ban_competitors":
-                        self.current_arguments.parameters.output_guard.ban_competitors = BanCompetitorsModel(
-                            **v)
-                    elif k == "ban_substrings":
+                    if k == "ban_substrings":
                         self.current_arguments.parameters.output_guard.ban_substrings = BanSubstringsModel(
                             **v)
                     elif k == "ban_topics":
@@ -513,12 +494,6 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     elif k == "json_scanner":
                         self.current_arguments.parameters.output_guard.json_scanner = JSONModel(
                             **v)
-                    elif k == "language":
-                        self.current_arguments.parameters.output_guard.language = LanguageModel(
-                            **v)
-                    elif k == "language_same":
-                        self.current_arguments.parameters.output_guard.language_same = LanguageSameModel(
-                            **v)
                     elif k == "malicious_urls":
                         self.current_arguments.parameters.output_guard.malicious_urls = MaliciousURLsModel(
                             **v)
@@ -533,9 +508,6 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                             **v)
                     elif k == "factual_consistency":
                         self.current_arguments.parameters.output_guard.factual_consistency = FactualConsistencyModel(
-                            **v)
-                    elif k == "gibberish":
-                        self.current_arguments.parameters.output_guard.gibberish = GibberishModel(
                             **v)
                     elif k == "regex":
                         self.current_arguments.parameters.output_guard.regex = RegexModel(
@@ -554,6 +526,38 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                             **v)
                     elif k == "url_reachability":
                         self.current_arguments.parameters.output_guard.url_reachability = URLReachabilityModel(
+                            **v)
+            elif param[0] == "dataprep_guard" and param[1] is not None:
+                for k, v in param[1].items():
+                    if k == "ban_substrings":
+                        self.current_arguments.parameters.dataprep_guard.ban_substrings = BanSubstringsModel(
+                            **v)
+                    elif k == "ban_topics":
+                        self.current_arguments.parameters.dataprep_guard.ban_topics = BanTopicsModel(
+                            **v)
+                    elif k == "code":
+                        self.current_arguments.parameters.dataprep_guard.code = CodeModel(
+                            **v)
+                    elif k == "invisible_text":
+                        self.current_arguments.parameters.dataprep_guard.invisible_text = InvisibleText(
+                            **v)
+                    elif k == "prompt_injection":
+                        self.current_arguments.parameters.dataprep_guard.prompt_injection = PromptInjectionModel(
+                            **v)
+                    elif k == "regex":
+                        self.current_arguments.parameters.dataprep_guard.regex = RegexModel(
+                            **v)
+                    elif k == "secrets":
+                        self.current_arguments.parameters.dataprep_guard.secrets = SecretsModel(
+                            **v)
+                    elif k == "sentiment":
+                        self.current_arguments.parameters.dataprep_guard.sentiment = SentimentModel(
+                            **v)
+                    elif k == "token_limit":
+                        self.current_arguments.parameters.dataprep_guard.token_limit = TokenLimitModel(
+                            **v)
+                    elif k == "toxicity":
+                        self.current_arguments.parameters.dataprep_guard.toxicity = ToxicityModel(
                             **v)
 
         return Argument(
@@ -598,4 +602,6 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
              })
         packed_parameters.update({"output_guardrail_params": remove_id(
             self.current_arguments.parameters.output_guard.model_dump())})
+        packed_parameters.update({"dataprep_guardrail_params": remove_id(
+            self.current_arguments.parameters.dataprep_guard.model_dump())})
         return {"parameters": packed_parameters}

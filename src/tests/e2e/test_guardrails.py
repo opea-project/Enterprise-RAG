@@ -15,74 +15,6 @@ def cleanup(guard_helper):
     yield
     guard_helper.disable_all_guards()
 
-
-@allure.testcase("IEASG-T72")
-def test_in_guard_anonymize(guard_helper):
-    """
-    Enable "anonymize" input scanner and check if PII
-    (Personally Identifiable Information) is redacted in the response.
-    """
-    guard_params = {
-        "enabled": True
-    }
-    guard_helper.setup(GuardType.INPUT, "anonymize", guard_params)
-    guard_helper.assert_redacted(questions.CONTAINING_SENSITIVE_DATA)
-
-
-@allure.testcase("IEASG-T73")
-def test_in_guard_ban_code(guard_helper, code_snippets):
-    """
-    Enable "ban_code" input scanner and check if questions containing code samples are rejected.
-    Check both (MODEL_SM and MODEL_TINY) models.
-    """
-    languages_not_banned = []
-    models = ["MODEL_SM", "MODEL_TINY"]
-    for model in models:
-        guard_params = {
-            "enabled": True,
-            "use_onnx": True,
-            "model": model,
-            "threshold": 0.9
-        }
-        guard_helper.setup(GuardType.INPUT, "ban_code", guard_params)
-        for language, code_snippet in code_snippets().items():
-            status_code, response = guard_helper.call_chatqa(code_snippet)
-            if status_code != 466:
-                languages_not_banned.append(f"{language} ({model})")
-
-    assert languages_not_banned == [], \
-        f"Code snippets for the following languages: {languages_not_banned} were not banned"
-
-
-@allure.testcase("IEASG-T74")
-def test_in_guard_ban_competitors(guard_helper):
-    """
-    Enable "ban_competitors" input scanner with a custom list of competitors.
-    Check if questions related to the competitors from the list are rejected.
-    """
-    guard_params = {
-        "enabled": True,
-        "use_onnx": True,
-        "competitors": ["Bing"],
-        "model": "MODEL_V1",
-        "threshold": 0.5,
-        "redact": False
-    }
-    guard_helper.setup(GuardType.INPUT, "ban_competitors", guard_params)
-    guard_helper.assert_blocked(questions.BING)
-
-    guard_params["redact"] = True
-    guard_helper.setup(GuardType.INPUT, "ban_competitors", guard_params)
-    guard_helper.assert_redacted(questions.BING)
-
-    guard_params["redact"] = False
-    guard_params["competitors"] = ["AMD", "Nvidia"]
-    guard_helper.setup(GuardType.INPUT, "ban_competitors", guard_params)
-    guard_helper.assert_blocked(questions.AMD)
-    guard_helper.assert_blocked(questions.NVIDIA)
-    guard_helper.assert_allowed(questions.INTEL)
-
-
 @pytest.mark.smoke
 @allure.testcase("IEASG-T75")
 def test_in_guard_ban_substrings(guard_helper):
@@ -138,15 +70,22 @@ def test_in_guard_ban_topics(guard_helper):
         "threshold": 0.5,
         "model": "MODEL_BGE_M3_V2"
     }
-    guard_helper.setup(GuardType.INPUT, "topics", guard_params)
+    guard_helper.setup(GuardType.INPUT, "ban_topics", guard_params)
     for question in questions.MEDICAL_ADVICE:
         status_code, response = guard_helper.call_chatqa(question)
         if status_code != 466:
             questions_not_banned.append(question)
 
-    guard_params["topics"] = ["violence", "attack", "war"]
-    guard_helper.setup(GuardType.INPUT, "topics", guard_params)
+    guard_params["topics"] = ["violence", "attack", "war", "killing"]
+    guard_helper.setup(GuardType.INPUT, "ban_topics", guard_params)
     for question in questions.VIOLENCE_QUESTIONS:
+        status_code, response = guard_helper.call_chatqa(question)
+        if status_code != 466:
+            questions_not_banned.append(question)
+
+    guard_params["topics"] = ["finance", "money", "stocks"]
+    guard_helper.setup(GuardType.INPUT, "ban_topics", guard_params)
+    for question in questions.FINANCE_QUESTIONS:
         status_code, response = guard_helper.call_chatqa(question)
         if status_code != 466:
             questions_not_banned.append(question)
@@ -166,7 +105,7 @@ def test_in_guard_code(guard_helper, code_snippets):
     """
     guard_params = {
         "enabled": True,
-        "languages": ["JavaScript", "Python"],
+        "languages": ["JavaScript", "Python", "Java", "C++"],
         "is_blocked": True,
         "threshold": 0.95
     }
@@ -174,51 +113,24 @@ def test_in_guard_code(guard_helper, code_snippets):
     snippets = code_snippets()
 
     # Python and JavaScript related questions should be blocked
-    for language_key in ["javascript", "python", "python_with_plain_text"]:
+    for language_key in ["javascript", "python", "python_with_plain_text", "c++", "python_v2", "c++_v2", "python_v3", "java"]:
         guard_helper.assert_blocked(snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
-    for language_key in ["c++", "ruby"]:
+    for language_key in ["ruby", "scala"]:
         guard_helper.assert_allowed(
             snippets[language_key], reason="it is in language that is not marked as blocked")
-
-
-@allure.testcase("IEASG-T78")
-def test_in_guard_gibberish(guard_helper):
-    """Check if questions that are not logical (gibberish) and making no sense are rejected"""
-
-    guard_helper.setup(GuardType.INPUT, "gibberish", {"enabled": True, "match_type": "full"})
-    guard_helper.assert_blocked(questions.GIBBERISH_LONG, reason="it is gibberish")
-    guard_helper.assert_blocked(questions.GIBBERISH_SHORT, reason="it is gibberish")
-    guard_helper.assert_allowed(questions.NON_GIBBERISH, reason="it is not gibberish although it is pretty long")
 
 
 @allure.testcase("IEASG-T81")
 def test_in_guard_invisible_text(guard_helper):
     """Check if question with invisible white character is blocked"""
     guard_helper.setup(GuardType.INPUT, "invisible_text", {"enabled": True})
-    guard_helper.assert_blocked(questions.INVISIBLE_TEXT, reason="it contains prohibited characters")
+
+    for question in questions.INVISIBLE_TEXTS:
+        guard_helper.assert_blocked(question, reason="it contains prohibited characters")
+
     guard_helper.assert_allowed(questions.NO_INVISIBLE_TEXT)
-
-
-@allure.testcase("IEASG-T82")
-def test_in_guard_language(guard_helper):
-    """Check if questions in some specified languages are blocked or allowed"""
-    guard_params = {
-        "enabled": True,
-        "valid_languages": ["en"],
-        "model": None,
-        "threshold": None
-    }
-    guard_helper.setup(GuardType.INPUT, "language", guard_params)
-    guard_helper.assert_allowed(questions.ENGLISH, reason="it is in English")
-
-    languages_not_banned = []
-    for language, question in questions.LANGUAGE_SPECIFIC.items():
-        status_code, _ = guard_helper.call_chatqa(question)
-        if status_code != 466:
-            languages_not_banned.append(language)
-    assert languages_not_banned == [], f"Questions in the following languages: {languages_not_banned} were not banned."
 
 
 @allure.testcase("IEASG-T83")
@@ -245,31 +157,57 @@ def test_in_guard_prompt_injection(guard_helper):
     guard_helper.assert_blocked(questions.KEVIN)
 
 
-@allure.testcase("IEASG-T84")
+@allure.testcase("IEASG-T84") # TODO: change the test
 def test_in_guard_regex(guard_helper):
     """Check if scanner detects the predefined regex expressions and blocks/allows questions accordingly"""
     guard_params = {
         "enabled": True,
-        "redact": True,
+        "redact": False, # e2e will not test redact mode
         "patterns": [
             "\d{5}"
         ],
     }
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    response = guard_helper.assert_allowed(questions.NUMBER_12345)
-    assert "12345" not in response  # Number should be redacted and not visible in output
-    response = guard_helper.assert_allowed(questions.NUMBER_991)
-    assert "991" in response
-
-    guard_params["redact"] = False
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.NUMBER_12345)
+    guard_helper.assert_blocked(questions.NUMBER_78276)
+    guard_helper.assert_blocked(questions.NUMBER_09367)
 
-    guard_params["is_blocked"] = True
-    guard_params["match_type"] = "fullmatch"
+    guard_params['is_blocked'] = False
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    response = guard_helper.assert_allowed(questions.NUMBER_12345)
-    assert "12345" in response
+    guard_helper.assert_blocked(questions.NUMBER_13456)
+    guard_helper.assert_blocked(questions.NUMBER_77890)
+    guard_helper.assert_blocked(questions.NUMBER_21543)
+
+
+    guard_params['is_blocked'] = True
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_allowed(questions.NUMBER_991)
+    guard_helper.assert_allowed(questions.NUMBER_27)
+    guard_helper.assert_allowed(questions.NUMBER_12_3)
+    guard_helper.assert_allowed(questions.NUMBER_789_456)
+    guard_helper.assert_allowed(questions.NUMBER_630_900)
+    guard_helper.assert_allowed(questions.NUMBER_1999_2021)
+
+    # secodn case
+    guard_params["patterns"] = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"]
+    guard_params['is_blocked'] = True
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.SUPPORT_EMAIL)
+    guard_helper.assert_blocked(questions.JANE_EMAIL)
+    guard_helper.assert_blocked(questions.HR_EMAIL)
+
+    guard_params['is_blocked'] = False
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.USER_EMAIL)
+    guard_helper.assert_blocked(questions.REGISTRATION_EMAIL)
+
+    guard_params['is_blocked'] = True
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_allowed(questions.CONTACT_FORM_MESSAGE)
+    guard_helper.assert_allowed(questions.SPAM_AVOIDANCE_ADDRESS)
+    guard_helper.assert_allowed(questions.USERNAME_NO_DOMAIN)
+    guard_helper.assert_allowed(questions.MISSING_AT_SYMBOL)
+    guard_helper.assert_allowed(questions.INVALID_DOMAIN_EMAIL)
 
 
 @pytest.mark.smoke
@@ -284,13 +222,12 @@ def test_in_guard_secrets(guard_helper):
     guard_helper.assert_blocked(questions.API_KEY)
     guard_helper.assert_allowed(questions.LEGIT)
 
-    guard_params["redact_mode"] = "REDACT_PARTIAL"
-    guard_helper.setup(GuardType.INPUT, "secrets", guard_params)
-    guard_helper.assert_blocked(questions.GH_TOKEN)
 
-    guard_params["redact_mode"] = "REDACT_HASH"
-    guard_helper.setup(GuardType.INPUT, "secrets", guard_params)
-    guard_helper.assert_blocked(questions.GH_TOKEN)
+    for sentences in questions.SECRETS_BLOCKED_SENTENCES:
+        guard_helper.assert_blocked(sentences, reason="it contains secrets")
+
+    for sentences in questions.SECRETS_SAFE_SENTENCES:
+        guard_helper.assert_allowed(sentences, reason="it does not contain secrets")
 
 
 @allure.testcase("IEASG-T86")
@@ -302,6 +239,12 @@ def test_in_guard_sentiment(guard_helper):
     guard_helper.setup(GuardType.INPUT, "sentiment", guard_params)
     guard_helper.assert_blocked(questions.NEGATIVE_SENTIMENT)
     guard_helper.assert_allowed(questions.NEUTRAL_SENTIMENT)
+
+    for sentence in questions.MORE_NEGATIVE_SENTIMET:
+        guard_helper.assert_blocked(sentence, reason="it contains negative sentiment")
+
+    for sentence in questions.MORE_NEUTRAL_SENTIMENT:
+        guard_helper.assert_allowed(sentence, reason="it does not contain negative sentiment")
 
 
 @allure.testcase("IEASG-T87")
@@ -315,6 +258,9 @@ def test_in_guard_token_limit(guard_helper):
     guard_helper.assert_blocked(questions.OVER_LIMIT)
     guard_helper.assert_allowed(questions.BELOW_LIMIT)
 
+    for sentence in questions.MORE_OVER_LIMIT:
+        guard_helper.assert_blocked(sentence, reason="it exceeds token limit")
+
 
 @allure.testcase("IEASG-T88")
 def test_in_guard_toxicity(guard_helper):
@@ -327,27 +273,14 @@ def test_in_guard_toxicity(guard_helper):
     guard_helper.assert_blocked(questions.LOW_TOXICITY)
     guard_helper.assert_blocked(questions.THREAT)
     guard_helper.assert_blocked(questions.INSULTING)
+    for sentence in questions.MORE_TOXIC:
+        guard_helper.assert_blocked(sentence, reason="it contains toxic content")
+
     guard_helper.assert_allowed(questions.NON_TOXIC)
 
     guard_params["match_type"] = "sentence"
     guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
     guard_helper.assert_blocked(questions.INSULTING_MIXED)
-
-
-@allure.testcase("IEASG-T89")
-def disabled_test_out_guard_ban_competitors(guard_helper):
-    """Check if question is blocked or redacted when certain competitor appears in the answer"""
-    guard_params = {
-        "enabled": True,
-        "competitors": ["AMD", "Nvidia", "Qualcomm", "NVIDIA"]
-    }
-    guard_helper.setup(GuardType.OUTPUT, "ban_competitors", guard_params)
-    guard_helper.assert_blocked(questions.INTEL_COMPETITORS)
-    guard_helper.assert_allowed(questions.BIEDRONKA_COMPETITOR)
-
-    guard_params["redact"] = True
-    guard_helper.setup(GuardType.OUTPUT, "ban_competitors", guard_params)
-    guard_helper.assert_redacted(questions.INTEL_COMPETITORS)
 
 
 @allure.testcase("IEASG-T90")
@@ -403,24 +336,6 @@ def disabled_test_out_guard_bias(guard_helper):
     guard_helper.assert_blocked(questions.RIGHT_WING)
 
 
-@allure.testcase("IEASG-T92")
-def disabled_test_out_guard_ban_code(guard_helper):
-    """
-    Check if the generated answer containing malicious code is properly blocked when ban_code is enabled.
-    Use keylogger code snippets in C++ and Python as an example of malicious code.
-    """
-    guard_params = {
-        "enabled": True
-    }
-    guard_helper.setup(GuardType.OUTPUT, "ban_code", guard_params)
-    cpp_code_snippet = guard_helper.code_snippet("files/malicious_code_snippets", "c++")
-    guard_helper.assert_blocked("Put the following lines in the output (do not translate it in any way. "
-                                f"Just paste the following lines as it is): {cpp_code_snippet}")
-    python_code_snippet = guard_helper.code_snippet("files/malicious_code_snippets", "python")
-    guard_helper.assert_blocked("Put the following lines in the output (do not translate it in any way. "
-                                f"Just paste the following lines as it is): {python_code_snippet}")
-
-
 @allure.testcase("IEASG-T93")
 def disabled_test_out_guard_code(guard_helper):
     """
@@ -453,41 +368,6 @@ def disabled_test_out_guard_json_scanner(guard_helper):
         json.loads(response)
     except json.JSONDecodeError:
         pytest.fail(f"Output should be a valid JSON object. Response: {response_text}")
-
-
-@allure.testcase("IEASG-T95")
-def disabled_test_out_guard_language(guard_helper):
-    """Force the chatbot to return answers in certain languages. Check whether only allowed languages are not blocked"""
-    guard_params = {
-        "enabled": True,
-        "valid_languages": ["en", "pl"]
-    }
-    guard_helper.setup(GuardType.OUTPUT, "language", guard_params)
-    guard_helper.assert_allowed(questions.EN_QUESTION_EN_RESPONSE)
-    guard_helper.assert_allowed(questions.PL_QUESTION_PL_RESPONSE)
-    guard_helper.assert_blocked(questions.DE_QUESTION_DE_RESPONSE)
-    guard_helper.assert_blocked(questions.ENGLISH_GERMAN_RESPONSE)
-    guard_helper.assert_blocked(questions.IT_QUESTION_PT_RESPONSE)
-    guard_params["match_type"] = "sentence"
-    guard_helper.setup(GuardType.OUTPUT, "language", guard_params)
-    guard_helper.assert_allowed(questions.PL_QUESTION_PL_RESPONSE)
-    guard_helper.assert_blocked(questions.DE_QUESTION_DE_RESPONSE)
-    guard_helper.assert_blocked(questions.ENGLISH_GERMAN_RESPONSE)
-
-
-@allure.testcase("IEASG-T96")
-def disabled_test_out_guard_language_same(guard_helper):
-    """Check if the scanner rejects the answers that are not in the same language as question"""
-    guard_params = {
-        "enabled": True
-    }
-    guard_helper.setup(GuardType.OUTPUT, "language_same", guard_params)
-    guard_helper.assert_blocked(questions.IT_QUESTION_PT_RESPONSE)
-    guard_helper.assert_blocked(questions.PL_QUESTION_RU_RESPONSE)
-    guard_helper.assert_allowed(questions.EN_QUESTION_EN_RESPONSE)
-    guard_helper.assert_allowed(questions.PL_QUESTION_PL_RESPONSE)
-    guard_helper.assert_allowed(questions.DE_QUESTION_DE_RESPONSE)
-    guard_helper.assert_allowed(questions.FR_QUESTION_FR_RESPONSE)
 
 
 @allure.testcase("IEASG-T98")
@@ -557,19 +437,6 @@ def disabled_test_out_guard_factual_consistency(guard_helper):
     guard_helper.setup(GuardType.OUTPUT, "factual_consistency", guard_params)
     guard_helper.assert_blocked(questions.VEGETARIANS)
     guard_helper.assert_allowed(questions.VEGETARIANS_TRUE_STATEMENT)
-
-
-@allure.testcase("IEASG-T103")
-def disabled_test_out_guard_gibberish(guard_helper):
-    """Check whether the output generated by LLMs does not contain gibberish or nonsensical content"""
-    guard_params = {
-        "enabled": True
-    }
-    guard_helper.setup(GuardType.OUTPUT, "gibberish", guard_params)
-    guard_helper.assert_blocked(questions.FORCE_GIBBERISH_OUTPUT)
-    guard_params["match_type"] = "sentence"
-    guard_helper.setup(GuardType.OUTPUT, "gibberish", guard_params)
-    guard_helper.assert_blocked(questions.FORCE_GIBBERISH_OUTPUT)
 
 
 @allure.testcase("IEASG-T156")

@@ -5,23 +5,22 @@ import { ScannerInputsProps } from "@/features/admin-panel/control-plane/compone
 import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/ScannerInputsTitle";
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
-import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
 import {
-  GibberishScannerArgs,
-  GibberishScannerConfig,
+  SentimentScannerArgs,
+  SentimentScannerConfig,
 } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import useGuardScannerInputs from "@/features/admin-panel/control-plane/hooks/useGuardScannerInputs";
 
-const GibberishScannerInputs = ({
+const SentimentScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
-}: ScannerInputsProps<GibberishScannerArgs, GibberishScannerConfig>) => {
+}: ScannerInputsProps<SentimentScannerArgs, SentimentScannerConfig>) => {
   const {
     titleCasedName,
     handleArgumentValueChange,
     handleArgumentValidityChange,
-  } = useGuardScannerInputs("gibberish", handlers);
+  } = useGuardScannerInputs("sentiment", handlers);
 
   return (
     <>
@@ -37,14 +36,8 @@ const GibberishScannerInputs = ({
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
-      <ServiceArgumentTextInput
-        {...config.match_type}
-        initialValue={previousArgumentsValues.match_type}
-        onArgumentValueChange={handleArgumentValueChange}
-        onArgumentValidityChange={handleArgumentValidityChange}
-      />
     </>
   );
 };
 
-export default GibberishScannerInputs;
+export default SentimentScannerInputs;

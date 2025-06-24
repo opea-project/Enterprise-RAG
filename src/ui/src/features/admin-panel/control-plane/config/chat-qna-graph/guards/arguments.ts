@@ -20,15 +20,11 @@ export const threshold = {
   range: { min: 0, max: 1 },
 };
 
-export const matchType = {
+export const matchType = (options?: string[]) => ({
   name: "match_type",
   isNullable: true,
-};
-
-export const competitors = {
-  name: "competitors",
-  isCommaSeparated: true,
-};
+  options: options || [],
+});
 
 export const substrings = {
   name: "substrings",
@@ -54,5 +50,27 @@ export const validLanguages = {
 
 export const patterns = {
   name: "patterns",
+  isCommaSeparated: true,
+};
+
+export const topics = {
+  name: "topics",
+  isCommaSeparated: true,
+};
+
+export const redactMode = (options?: string[]) => ({
+  name: "redact_mode",
+  isNullable: true,
+  options: options || [],
+});
+
+export const limit = {
+  name: "limit",
+  isNullable: true,
+  range: { min: 0, max: 1000000000 },
+};
+
+export const languages = {
+  name: "languages",
   isCommaSeparated: true,
 };

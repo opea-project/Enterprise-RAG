@@ -1,0 +1,137 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set roles facts
+  ansible.builtin.set_fact:
+    velero_helm_override_values_path: "{{ tmp_dir }}/{{ velero.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
+- name: Ensure Helm repositories
+  kubernetes.core.helm_repository:
+    name: "{{ velero.helm.repo_name }}"
+    repo_url: "{{ velero.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+
+- name: Build Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency build
+    chdir: "{{ velero.helm.chart_directory }}"
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ velero.namespace }}"
+  tags:
+    - install
+
+# - name: Enforce PSS
+#   kubernetes.core.k8s:
+#     state: present
+#     definition:
+#       apiVersion: v1
+#       kind: Namespace
+#       metadata:
+#         name: "{{ velero.namespace }}"
+#         labels:
+#           pod-security.kubernetes.io/enforce: "restricted"
+#   when: enforcePSS
+#   tags:
+#     - install
+
+- name: Create TLS secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ velero.tls.secret_name }}"
+        namespace: "{{ velero.namespace }}"
+      data:
+        tls.crt: "{{ lookup('file', pathToCert) | b64encode }}"
+        tls.key: "{{ lookup('file', pathToKey) | b64encode }}"
+      type: kubernetes.io/tls
+  tags:
+    - install
+
+- name: Generate random string for keys
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_key
+  loop:
+    - { name: VELERO_MINIO_ACCESS_KEY }
+    - { name: VELERO_MINIO_SECRET_KEY }
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Generate password
+  ansible.builtin.include_role:
+    name: generate_password
+    tasks_from: generate_password
+  loop:
+    - { name: MINIO_ADMIN, user: "{{ velero.minio.auth.admin_username }}" }
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ velero_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Set values_files list
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [velero.helm.default_values_file] +
+        [velero_helm_override_values_path]
+      }}
+  tags:
+    - install
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ velero.helm.release_name }}"
+    chart_ref: "{{ velero.helm.chart_directory }}"
+    namespace: "{{ velero.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    dependency_update: true
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+    wait: true
+  tags:
+    - install
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ velero.helm.release_name }}"
+    namespace: "{{ velero.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ velero.namespace }}"
+  tags:
+    - uninstall

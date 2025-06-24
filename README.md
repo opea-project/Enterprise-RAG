@@ -45,7 +45,7 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 
 | Category            | Details                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
-| Operating System    | Ubuntu 20.04/22.04                                                                                                |
+| Operating System    | Ubuntu 22.04/24.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
 | Gaudi Firmware Version | 1.21.0                                                                                                          |
@@ -84,13 +84,7 @@ To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® 
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 ### Software Prerequisites
-
-Refer to the [prerequisites](./docs/prerequisites.md) guide for detailed instructions to install the components mentioned below:
-
--   **Kubernetes Cluster**: Access to a Kubernetes v1.29-v1.31 cluster
--   **CSI Driver**: The K8s cluster must have the CSI driver installed. Users can define their own CSI driver that will be used during EnterpriseRAG install; however StorageClass provided by CSI driver should support ReadWriteMany(RWX) in case of using a multi-node cluster.
-- Current solution was tested on a single node using the CSI driver [local-path-provisioner](https://github.com/rancher/local-path-provisioner), with  `local_path_provisioner_claim_root`  set to  `/mnt`. For an example of how to set up Kubernetes via Kubespray, refer to the prerequisites guide:  [CSI Driver](./docs/prerequisites.md#csi-driver).
--   **Operating System**: Ubuntu 20.04/22.04
+-   **Operating System**: Ubuntu 22.04/24.04
 -   **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. This default model used is `Mixtral-8x7B` for which access needs to be requested. Visit  [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) to apply for access.
 
 #### Additional Software Prerequisites when using Gaudi® AI Accelerator
@@ -110,43 +104,133 @@ pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
 
-# Configuration file
+# Configuration File
 
-To prepare configuration file create a copy of examplary one:
+To prepare the configuration file, create a copy of the sample:
 
 ```sh
 cd deployment
 cp -r inventory/sample inventory/test-cluster
 ```
 
-Fill proper variables at `inventory/test-cluster/config.yaml`
+## Simplified Kubernetes Cluster Deployment
 
+> **Note:** If you already have a Kubernetes cluster prepared, you can skip directly to the [Application Deployment on a Custom Cluster](#application-deployment-on-a-custom-cluster) section.
+
+1. **Edit the inventory file:**
+   - Open `inventory/test-cluster/inventory.ini`.
+   - Replace `LOCAL_USER`, `REMOTE_USER`, `MACHINE_HOSTNAME`, and `MACHINE_IP` with your actual values.
+
+Example `inventory.ini` for a single-node cluster:
+```ini
+# Kubernetes Cluster Inventory
+[local]
+localhost ansible_connection=local ansible_user=LOCAL_USER
+
+[all]
+# Control plane nodes
+MACHINE_HOSTNAME ansible_host=MACHINE_IP
+
+# Define node groups
+[kube_control_plane]
+MACHINE_HOSTNAME
+
+[kube_node]
+MACHINE_HOSTNAME
+
+[etcd:children]
+kube_control_plane
+
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+
+# Vars
+[k8s_cluster:vars]
+ansible_become=true
+ansible_user=REMOTE_USER
+ansible_connection=ssh
+```
+
+For more information on preparing an Ansible inventory, see the [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
+
+2. **Edit the configuration file:**
+   - Open `inventory/test-cluster/config.yaml`.
+   - Fill in the required values for your environment.
+
+Example `config.yaml` for deploying a new Kubernetes cluster:
 ```yaml
-huggingToken: FILL_HERE # Provide your Hugging Face token here
-kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
+# Uses kubespray to deploy Kubernetes cluster and install required components
+deploy_k8s: true
+# Local path provisioner works only with kubespray deployment, so deploy_k8s must be true to install it.
+install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
 
-# proxy settings are optional
-httpProxy:
-httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field with the following:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-[...]
-pipelines:
-  - namespace: chatqa
-    samplePath: chatqa/reference-cpu.yaml # for hpu deployment we set chatqa/reference-hpu.yaml
-    resourcesPath: chatqa/resources-reference-cpu.yaml # for hpu deployment we set chatqa/resources-reference-hpu.yaml
-    type: chatqa
-```
-
-# Install Gaudi software stack (For Gaudi nodes only)
-
-If your K8s cluster contains nodes with Gaudi® AI Accelerator, add bellow values to your inventory:
-
-```
 gaudi_operator: true # set to true when Gaudi operator is to be installed
 habana_driver_version: "1.21.1-16" # habana operator from https://vault.habana.ai/ui/native/habana-ai-operator/driver/
+
+huggingToken: FILL_HERE # Provide your Hugging Face token here
+kubeconfig: FILL_HERE # Provide the absolute path to the kubeconfig file generated by kubespray, e.g. /home/user/code/ERAG/deployment/inventory/test-cluster/artifacts/admin.conf
+
+# Proxy settings are optional
+httpProxy:
+httpsProxy:
+# If HTTP/HTTPS proxy is set, update the noProxy field as needed:
+noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+# ...
+pipelines:
+  - namespace: chatqa
+    samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
+    resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
+    type: chatqa
+```
+3. **Prepare variables:**
+
+```sh
+ansible-playbook -K playbooks/setup.yaml --tags prepare-vars,configure -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
 ```
 
+4. **Deploy the cluster:**
+
+```sh
+ansible-playbook -K playbooks/infrastructure.yaml --tags install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+```
+
+### Cluster Deletion
+
+To remove the cluster, run:
+
+```sh
+ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+```
+
+## Application Deployment on a Custom Cluster
+
+1. **Edit the configuration file:**
+   - Open `inventory/test-cluster/config.yaml`.
+   - Set `deploy_k8s: false` and update the other fields as needed for your environment.
+
+Example `config.yaml` for deploying on an existing cluster:
+```yaml
+# Uses kubespray to deploy Kubernetes cluster and install required components
+deploy_k8s: false
+# Local path provisioner works only with kubespray deployment, so deploy_k8s must be true to install it.
+install_csi: "" # available options: "local-path-provisioner"
+
+huggingToken: FILL_HERE # Provide your Hugging Face token here
+kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
+
+# Proxy settings are optional
+httpProxy:
+httpsProxy:
+# If HTTP/HTTPS proxy is set, update the noProxy field as needed:
+noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+# ...
+pipelines:
+  - namespace: chatqa
+    samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
+    resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
+    type: chatqa
+```
 # Installation
 
 ```sh

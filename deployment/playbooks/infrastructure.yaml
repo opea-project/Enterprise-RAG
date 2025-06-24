@@ -1,0 +1,59 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Additional gather facts for Kubespray
+  hosts: k8s_cluster
+  tags:
+    - always
+  tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+        gather_subset:
+          - all
+
+- name: Install Kubernetes cluster
+  tags:
+    - install
+    - never
+  when:
+    - deploy_k8s
+    - '"install" in ansible_run_tags'
+  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
+
+- name: Post-installation tasks
+  become: false
+  gather_facts: false
+  hosts: local
+  vars:
+    helm_timeout: 15m0s
+    secure_logs: true
+  tasks:
+    - name: Include post-installation tasks
+      ansible.builtin.include_role:
+        name: cluster
+        tasks_from: post_installation
+      tags:
+        - install
+        - delete
+
+- name: Remove Kubernetes cluster
+  tags:
+    - delete
+    - never
+  when:
+    - deploy_k8s
+    - '"delete" in ansible_run_tags'
+  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.reset
+
+- name: Remove Kubernetes cluster artifacts
+  become: false
+  hosts: local
+  tags:
+    - delete
+    - never
+  tasks:
+    - name: Remove Kubernetes cluster artifacts
+      ansible.builtin.include_role:
+        name: cluster
+        tasks_from: cleanup_artifacts
+      when: deploy_k8s

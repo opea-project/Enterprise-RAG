@@ -7,14 +7,10 @@ Part of the Intel® AI for Enterprise RAG (ERAG) ecosystem.
 The OPEA ERAG Dataprep Guardrail microservice runs scanners on incoming documents and links destined for the dataprep pipeline. It ensures data safety by checking inputs before they proceed to the next stage (e.g., vector database ingestion), informing users whether their uploaded documents or links have passed the scan or have been blocked by the guard. Acting as a protective layer, it prevents invalid or harmful data from propagating downstream in the system.
 
 This microservice implements [LLM Guard](https://llm-guard.com/) scanners, including:
-- [BanCode](https://llm-guard.com/input_scanners/ban_code/)
-- [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
 - [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
 - [BanTopics](https://llm-guard.com/input_scanners/ban_topics/)
 - [Code](https://llm-guard.com/input_scanners/code/)
-- [Gibberish](https://llm-guard.com/input_scanners/gibberish/)
 - [InvisibleText](https://llm-guard.com/input_scanners/invisible_text/)
-- [Language](https://llm-guard.com/input_scanners/language/)
 - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
 - [Regex](https://llm-guard.com/input_scanners/regex/)
 - [Secrets](https://llm-guard.com/input_scanners/secrets/)

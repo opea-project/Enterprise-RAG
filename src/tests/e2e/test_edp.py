@@ -362,15 +362,23 @@ def test_edp_list_buckets(edp_helper):
 
 
 @allure.testcase("IEASG-T188")
-def test_edp_upload_file_with_text_in_image(edp_helper):
+def test_edp_upload_docx_file_with_text_in_image(edp_helper):
     """Upload DOCX file with text in image and check that the text is extracted correctly"""
     file = "text_in_image.docx"
     text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    file_path = os.path.join(constants.TEST_FILES_DIR, file)
-    response = edp_helper.generate_presigned_url(file)
-    response = edp_helper.upload_file(file_path, response.json().get("url"))
-    assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
-    edp_file = edp_helper.wait_for_file_upload(file, "ingested", timeout=60)
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+
+    response = edp_helper.extract_text(edp_file["id"])
+    text_from_image = response.json().get("docs").get("docs")[0].get("text")
+    assert text_from_image == text_in_image
+
+
+@allure.testcase("IEASG-T189")
+def test_edp_upload_pptx_file_with_text_in_image(edp_helper):
+    """Upload PPTX file with text in image and check that the text is extracted correctly"""
+    file = "text_in_image.pptx"
+    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
 
     response = edp_helper.extract_text(edp_file["id"])
     text_from_image = response.json().get("docs").get("docs")[0].get("text")

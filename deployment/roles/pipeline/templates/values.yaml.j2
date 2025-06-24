@@ -87,16 +87,15 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
-{% if edp.hierarchical_indices.enabled is true %}
     envs:
+{% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}
       K_CHUNKS: {{ edp.hierarchical_indices.kChunks }}
 {% endif %}
-  ingestion-usvc:
-    image: "erag-ingestion"
-    repository: *repo
-    tag: *tag
+{% if edp.rbac is defined and edp.rbac.enabled is true %}
+      VECTOR_DB_RBAC: "true"
+{% endif %}
   llm-usvc:
     image: "erag-llm"
     repository: *repo

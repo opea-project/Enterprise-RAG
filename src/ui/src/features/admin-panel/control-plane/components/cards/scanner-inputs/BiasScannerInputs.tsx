@@ -5,7 +5,7 @@ import { ScannerInputsProps } from "@/features/admin-panel/control-plane/compone
 import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/ScannerInputsTitle";
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
-import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
+import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import {
   BiasScannerArgs,
   BiasScannerConfig,
@@ -37,11 +37,10 @@ const BiasScannerInputs = ({
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
-      <ServiceArgumentTextInput
+      <ServiceArgumentSelectInput
         {...config.match_type}
         initialValue={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
-        onArgumentValidityChange={handleArgumentValidityChange}
       />
     </>
   );

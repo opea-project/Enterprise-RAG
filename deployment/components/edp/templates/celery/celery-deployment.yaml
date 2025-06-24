@@ -130,6 +130,8 @@ spec:
             - name: EDP_SYNC_TASK_TIME_SECONDS
               value: {{ .Values.celery.config.scheduledSync.syncPeriodSeconds | quote }}
           {{- end }}
+            - name: OPEA_LOGGER_LEVEL
+              value: {{ .Values.celery.config.opeaLoggerLevel | quote }}
           {{- toYaml .Values.celery.environment | nindent 12 }}
           ports:
             - name: http

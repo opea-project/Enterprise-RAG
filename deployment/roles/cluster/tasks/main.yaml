@@ -1,0 +1,87 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Clone Kubespray repository
+  ansible.builtin.git:
+    repo: "{{ kubespray_repo }}"
+    dest: "{{ kubespray_dir }}"
+    version: "{{ kubespray_version }}"
+    depth: 1
+  tags:
+    - prepare-vars
+
+- name: Ensure group_vars directories exist
+  ansible.builtin.file:
+    path: "{{ inventory_dir }}/group_vars/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "all"
+    - "k8s_cluster"
+    - "etcd"
+    - "kube_control_plane"
+    - "kube_node"
+  tags:
+    - prepare-vars
+
+- name: Copy default group_vars from Kubespray repository
+  ansible.builtin.copy:
+    src: "{{ kubespray_dir }}/inventory/sample/group_vars/"
+    dest: "{{ inventory_dir }}/group_vars/"
+    mode: preserve
+    force: false
+  tags:
+    - prepare-vars
+
+- name: Collect only master node IP addresses for SSL certificates
+  ansible.builtin.set_fact:
+    ssl_master_host_ips: "{{ ['10.233.0.1', hostvars[item].ansible_host] }}"
+  loop: "{{ groups['kube_control_plane'] }}"
+  tags:
+    - prepare-vars
+
+- name: Configure certificate settings value
+  ansible.builtin.lineinfile:
+    path: "{{ inventory_dir }}/group_vars/k8s_cluster/k8s-cluster.yml"
+    regexp: "^supplementary_addresses_in_ssl_keys:.*"
+    line: 'supplementary_addresses_in_ssl_keys: {{ ssl_master_host_ips | default([]) | to_json }}'
+  tags:
+    - prepare-vars
+
+- name: Configure local-path-provisioner
+  ansible.builtin.lineinfile:
+    path: "{{ inventory_dir }}/group_vars/k8s_cluster/addons.yml"
+    regexp: "^#?local_path_provisioner_enabled:.*"
+    line: "local_path_provisioner_enabled: true"
+  when: install_csi == 'local-path-provisioner'
+  tags:
+    - prepare-vars
+
+- name: Configure proxy settings
+  ansible.builtin.blockinfile:
+    path: "{{ inventory_dir }}/group_vars/all/all.yml"
+    block: |
+      # Proxy configuration
+      http_proxy: "{{ httpProxy }}"
+      https_proxy: "{{ httpsProxy }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - proxy settings"
+  when: httpProxy is defined and httpsProxy is defined and (httpProxy != '' or httpsProxy != '')
+  tags:
+    - prepare-vars
+
+- name: Configure kubeconfig local settings value
+  ansible.builtin.lineinfile:
+    path: "{{ inventory_dir }}/group_vars/k8s_cluster/k8s-cluster.yml"
+    regexp: "^#?kubeconfig_localhost:.*"
+    line: "kubeconfig_localhost: true"
+  tags:
+    - prepare-vars
+
+- name: Configure k8s version value
+  ansible.builtin.lineinfile:
+    path: "{{ inventory_dir }}/group_vars/k8s_cluster/k8s-cluster.yml"
+    regexp: "^#?kube_version:.*"
+    line: "kube_version: {{ k8s_version }}"
+  tags:
+    - prepare-vars

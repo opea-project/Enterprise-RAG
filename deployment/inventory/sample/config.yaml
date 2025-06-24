@@ -1,6 +1,11 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# uses kubespray to deploy Kubernetes cluster and install required components
+deploy_k8s: false
+# local path provisioner works only with kubespray deployment, so deploy_k8s needs to be true to install it.
+install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
+
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
 
@@ -33,7 +38,7 @@ tdxEnabled: false
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
-# CPUs pinning for vllm (CPU platforms only)
+# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
 balloons:
   enabled: false
 
@@ -65,6 +70,11 @@ istio:
   enabled: true
   namespace: istio-system
 
+velero:
+  enabled: false
+  namespace: velero
+  storageType: minio
+
 telemetry:
   enabled: true
   monitoring:
@@ -80,6 +90,8 @@ edp:
   enabled: true
   namespace: edp
   dpGuard:
+    enabled: false
+  rbac:
     enabled: false
   storageType: minio
   minio:

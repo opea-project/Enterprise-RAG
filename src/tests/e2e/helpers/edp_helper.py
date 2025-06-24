@@ -3,7 +3,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR
+from constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, TEST_FILES_DIR
 import logging
 import os
 import requests
@@ -168,7 +168,7 @@ class EdpHelper(ApiRequestHelper):
                         last_status_message = "no previous status known."
                         if file_status:
                             last_status_message = f"last known status {file_status}."
-                        raise FileStatusException(f"File {filename} has status {file.get("status")}, {last_status_message}")
+                        raise FileStatusException(f"File {filename} has status {file.get('status')}, {last_status_message}")
                     file_status = file.get("status")
                     if self._status_reached(file_status, desired_status):
                         logger.info(f"File {filename} has status {desired_status}. "
@@ -184,6 +184,13 @@ class EdpHelper(ApiRequestHelper):
 
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
+
+    def upload_file_and_wait_for_ingestion(self, file):
+        file_path = os.path.join(TEST_FILES_DIR, file)
+        response = self.generate_presigned_url(file)
+        response = self.upload_file(file_path, response.json().get("url"))
+        assert response.status_code == 200
+        return self.wait_for_file_upload(file, "ingested", timeout=180)
 
     def delete_file(self, presigned_url):
         """Delete a file using the presigned URL"""

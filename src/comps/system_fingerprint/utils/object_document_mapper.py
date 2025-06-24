@@ -21,26 +21,10 @@ class AnonymizeModel(Document):
     language: Optional[str] = None
 
 
-class BanCodeModel(Document):
-    enabled: bool = False
-    use_onnx: bool = False
-    model: Optional[str] = None
-    threshold: Optional[float] = None
-
-
-class BanCompetitorsModel(Document):
-    enabled: bool = False
-    use_onnx: bool = False
-    competitors: List[str] = ["Competitor1", "Competitor2", "Competitor3"]
-    model: Optional[str] = None
-    threshold: Optional[float] = None
-    redact: Optional[bool] = None
-
-
 class BanSubstringsModel(Document):
     enabled: bool = False
     substrings: List[str] = ["backdoor", "malware", "virus"]
-    match_type: Optional[str] = None
+    match_type: Optional[str] = "str"
     case_sensitive: bool = False
     redact: Optional[bool] = None
     contains_all: Optional[bool] = None
@@ -50,7 +34,7 @@ class BanTopicsModel(Document):
     enabled: bool = False
     use_onnx: bool = False
     topics: List[str] = ["violence", "attack", "war"]
-    threshold: Optional[float] = None
+    threshold: Optional[float] = 0.6
     model: Optional[str] = None
 
 
@@ -60,61 +44,44 @@ class CodeModel(Document):
     languages: List[str] = ["Java", "Python"]
     model: Optional[str] = None
     is_blocked: Optional[bool] = None
-    threshold: Optional[float] = None
-
-
-class GibberishModel(Document):
-    enabled: bool = False
-    use_onnx: bool = False
-    model: Optional[str] = None
-    threshold: Optional[float] = None
-    match_type: Optional[str] = None
+    threshold: Optional[float] = 0.5
 
 
 class InvisibleText(Document):
     enabled: bool = False
 
 
-class LanguageModel(Document):
-    enabled: bool = False
-    use_onnx: bool = False
-    valid_languages: List[str] = ["en", "es"]
-    model: Optional[str] = None
-    threshold: Optional[float] = None
-    match_type: Optional[str] = None
-
-
 class PromptInjectionModel(Document):
     enabled: bool = False
     use_onnx: bool = False
     model: Optional[str] = None
-    threshold: Optional[float] = None
-    match_type: Optional[str] = None
+    threshold: Optional[float] = 0.92
+    match_type: Optional[str] = "full"
 
 
 class RegexModel(Document):
     enabled: bool = False
     patterns: List[str] = ["Bearer [A-Za-z0-9-._~+/]+"]
     is_blocked: Optional[bool] = None
-    match_type: Optional[str] = None
+    match_type: Optional[str] = "all"
     redact: Optional[bool] = None
 
 
 class SecretsModel(Document):
     enabled: bool = False
-    redact_mode: Optional[str] = None
+    redact_mode: Optional[str] = "all"
 
 
 class SentimentModel(Document):
     enabled: bool = False
-    threshold: Optional[float] = None
+    threshold: Optional[float] = -0.3
     lexicon: Optional[str] = None
 
 
 class TokenLimitModel(Document):
     enabled: bool = False
-    limit: Optional[int] = None
-    encoding_name: Optional[str] = None
+    limit: Optional[int] = 4096
+    encoding_name: Optional[str] = "cl100k_base"
     model_name: Optional[str] = None
 
 
@@ -122,8 +89,8 @@ class ToxicityModel(Document):
     enabled: bool = False
     use_onnx: bool = False
     model: Optional[str] = None
-    threshold: Optional[float] = None
-    match_type: Optional[str] = None
+    threshold: Optional[float] = 0.5
+    match_type: Optional[str] = "full"
 
 
 class BiasModel(Document):
@@ -143,13 +110,6 @@ class JSONModel(Document):
     enabled: bool = False
     required_elements: Optional[int] = None
     repair: Optional[bool] = None
-
-
-class LanguageSameModel(Document):
-    enabled: bool = False
-    use_onnx: bool = False
-    model: Optional[str] = None
-    threshold: Optional[float] = None
 
 
 class MaliciousURLsModel(Document):
@@ -209,14 +169,10 @@ class URLReachabilityModel(Document):
 
 class LLMGuardInputGuardrailParams(Document):
     anonymize: AnonymizeModel = None
-    ban_code: BanCodeModel = None
-    ban_competitors: BanCompetitorsModel = None
     ban_substrings: BanSubstringsModel = None
     ban_topics: BanTopicsModel = None
     code: CodeModel = None
-    gibberish: GibberishModel = None
     invisible_text: InvisibleText = None
-    language: LanguageModel = None
     prompt_injection: PromptInjectionModel = None
     regex: RegexModel = None
     secrets: SecretsModel = None
@@ -226,28 +182,35 @@ class LLMGuardInputGuardrailParams(Document):
 
 
 class LLMGuardOutputGuardrailParams(Document):
-    ban_code: BanCodeModel = None
-    ban_competitors: BanCompetitorsModel = None
     ban_substrings: BanSubstringsModel = None
     ban_topics: BanTopicsModel = None
     bias: BiasModel = None
     code: CodeModel = None
     deanonymize: DeanonymizeModel = None
     json_scanner: JSONModel = None
-    language: LanguageModel = None
-    language_same: LanguageSameModel = None
     malicious_urls: MaliciousURLsModel = None
     no_refusal: NoRefusalModel = None
     no_refusal_light: NoRefusalLightModel = None
     reading_time: ReadingTimeModel = None
     factual_consistency: FactualConsistencyModel = None
-    gibberish: GibberishModel = None
     regex: RegexModel = None
     relevance: RelevanceModel = None
     sensitive: SensitiveModel = None
     sentiment: SentimentModel = None
     toxicity: ToxicityModel = None
     url_reachability: URLReachabilityModel = None
+
+class LLMGuardDataprepGuardrailParams(Document):
+    ban_substrings: BanSubstringsModel = None
+    ban_topics: BanTopicsModel = None
+    code: CodeModel = None
+    invisible_text: InvisibleText = None
+    prompt_injection: PromptInjectionModel = None
+    regex: RegexModel = None
+    secrets: SecretsModel = None
+    sentiment: SentimentModel = None
+    token_limit: TokenLimitModel = None
+    toxicity: ToxicityModel = None
 
 class PromptTemplateParams(Document):
     system_prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
@@ -290,6 +253,7 @@ class PackedParams(Document):
     reranker: RerankerParams = None
     input_guard: LLMGuardInputGuardrailParams = None
     output_guard: LLMGuardOutputGuardrailParams = None
+    dataprep_guard: LLMGuardDataprepGuardrailParams = None
     prompt_template: PromptTemplateParams = None
 
 

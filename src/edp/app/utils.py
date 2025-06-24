@@ -1,20 +1,38 @@
 import os
-
+import re
 import urllib3
 from urllib3 import Retry
 from urllib3.util import Timeout
 from minio import Minio
-from minio.credentials import EnvMinioProvider
+from minio.credentials import EnvMinioProvider, WebIdentityProvider
 from minio.signer import presign_v4
 from datetime import datetime, timedelta
 from urllib.parse import urlunsplit
 from urllib3.util.url import parse_url
+
+from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
+
+# Initialize the logger for the microservice
+logger = get_opea_logger("edp_microservice")
+change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 def get_local_minio_client():
     endpoint = os.getenv('EDP_INTERNAL_URL', 'http://edp-minio:9000')
     cert_check = str(os.getenv('EDP_INTERNAL_CERT_VERIFY', True))
     region = os.getenv('EDP_BASE_REGION', 'us-east-1')
     return get_minio_client(endpoint, region, cert_check)
+
+def get_local_minio_client_using_token_credentials(jwt_token, verify=False):
+    endpoint = os.getenv('EDP_INTERNAL_URL', 'minio:9000')
+    cert_check = str(os.getenv('EDP_EXTERNAL_CERT_VERIFY', True))
+    region = os.getenv('EDP_BASE_REGION', 'us-east-1')
+    if jwt_token.get('access_token', None) is None:
+        raise ValueError("JWT token does not contain access_token")
+    credentials = WebIdentityProvider(
+        jwt_provider_func=lambda: jwt_token,
+        sts_endpoint=os.getenv('EDP_STS_ENDPOINT', endpoint)
+    )
+    return get_minio_client(endpoint, region, cert_check, credentials)
 
 def get_remote_minio_client():
     endpoint = os.getenv('EDP_EXTERNAL_URL', 'http://edp-minio:9000')
@@ -67,15 +85,16 @@ def get_http_client(endpoint, cert_check=True):
             retries=retries
         )
 
-def get_minio_client(endpoint=None, region=None, cert_check=True):
+def get_minio_client(endpoint=None, region=None, cert_check=True, credentials=None):
     cert_check = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
-
+    if not credentials:
+        credentials = EnvMinioProvider()
     endpoint = parse_url(endpoint)
     http_client = get_http_client(endpoint, cert_check)
     # pass only host and port to minio
     minio = Minio(
         endpoint._replace(scheme=None, path=None, query=None, fragment=None).url,
-        credentials=EnvMinioProvider(),
+        credentials=credentials,
         secure=True if endpoint.scheme == 'https' else False,
         region=region,
         http_client=http_client,
@@ -116,3 +135,13 @@ def generate_presigned_url(client, method, bucket_name, object_name, expires = t
     )
 
     return urlunsplit(presigned_url)
+
+def filtered_list_bucket(client):
+    buckets = client.list_buckets()
+    bucket_names = [bucket.name for bucket in buckets]
+    regex_filter = str(os.getenv('BUCKET_NAME_REGEX_FILTER', ''))
+    if len(regex_filter) > 0:
+        bucket_names = [name for name in bucket_names if re.match(regex_filter, name)]
+        logger.debug(f"Displaying {len(bucket_names)}/{len(buckets)} buckets after applying regex filter: {regex_filter}")
+
+    return bucket_names

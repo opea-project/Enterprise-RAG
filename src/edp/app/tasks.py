@@ -253,7 +253,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         doc['metadata']['object_name'] = file_db.object_name
         doc['metadata']['file_id'] = str(file_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
 
-    # Step 4.5 (Optional) - scan datapreped documents with Dataprep Guardrail
+    # Step 4.5 (Optional) - scan datapreped documents with Dataprep Guardrail, after calling fingerprint for configuration
     dpguard_msg = ""
     dpguard_status = ""
     try:
@@ -264,10 +264,19 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.status = 'dpguard'
             file_db.job_message = 'Data Preparation Guardrail in progress.'
             self.db.commit()
+
+            # Step 4.5.1 - call fingerprint for configuration
+            fingerprint_endpoint   = os.environ.get('FINGERPRINT_ENDPOINT')
+            logger.info(f"fingerprint_endpoint: {fingerprint_endpoint}")
+            logger.info("Reaching to fingerprint for dataprep guard configuration.")
+            fprint_response = requests.post(fingerprint_endpoint, json={ 'text': "" })
+            dpguard_params = fprint_response.json().get("parameters")['dataprep_guardrail_params']
+
             dpguard_endpoint   = os.environ.get('DPGUARD_ENDPOINT')
-            logger.info(f"dpguard_endpoint: {dpguard_endpoint}")
+            logger.debug(f"Reaching dataprep guard endpoint: {dpguard_endpoint} with dataprep guardrail params: {dpguard_params}")
             logger.info("Dataprep Guardrail enabled. Scanning the documents.")
-            response = requests.post(dpguard_endpoint, json={ 'docs': dataprep_docs })
+            response = requests.post(dpguard_endpoint,
+                                     json={ 'docs': dataprep_docs, 'dataprep_guardrail_params': dpguard_params })
             if response.status_code != 200:
                 dpguard_msg = 'Dataprep Guardrail failed.'
                 dpguard_status = 'error'

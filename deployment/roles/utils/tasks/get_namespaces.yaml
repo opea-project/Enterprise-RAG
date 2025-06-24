@@ -22,7 +22,8 @@
           telemetry.traces.namespace if telemetry.enabled else None,
           ui.namespace if ui.enabled else None,
           edp.namespace if edp.enabled else None,
-          fingerprint.namespace if fingerprint.enabled else None
+          fingerprint.namespace if fingerprint.enabled else None,
+          velero.namespace if velero.enabled else None
         ]
         | select('defined') | select('truthy') | list
         +

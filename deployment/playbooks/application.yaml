@@ -21,15 +21,6 @@
       tags:
         - configure
 
-    # Pre-tasks section for Gaudi  (install Gaudi via Operator)
-    - name: Gaudi operator role
-      when: gaudi_operator
-      ansible.builtin.include_role:
-        name: gaudi_operator
-      tags:
-        - install
-        - uninstall
-
     - name: Build and push images
       ansible.builtin.include_role:
         name: images
@@ -129,6 +120,14 @@
       ansible.builtin.include_role:
         name: telemetry
       when: telemetry.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Velero role
+      ansible.builtin.include_role:
+        name: velero
+      when: velero.enabled
       tags:
         - install
         - uninstall

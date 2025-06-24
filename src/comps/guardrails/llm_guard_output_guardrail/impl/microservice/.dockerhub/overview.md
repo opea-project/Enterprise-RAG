@@ -7,22 +7,17 @@ Part of the Intel® AI for Enterprise RAG (ERAG) ecosystem.
 The OPEA ERAG Output Guardrail service provides content filtering and and privacy-related capabilities for LLM-generated responses in the Enterprise RAG system. This microservice ensures all output content adheres to content policies, preventing potentially harmful, inappropriate, or inaccurate responses from reaching end users.
 
 This microservice implements [LLM Guard](https://llm-guard.com/) Output Scanners, including:
-- [BanCode](https://llm-guard.com/output_scanners/ban_code/)
-- [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
 - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
 - [BanTopics](https://llm-guard.com/output_scanners/ban_topics/)
 - [Bias](https://llm-guard.com/output_scanners/bias/)
 - [Code](https://llm-guard.com/output_scanners/code/)
 - [Deanonymize](https://llm-guard.com/output_scanners/deanonymize/)
 - [JSON](https://llm-guard.com/output_scanners/json/)
-- [Language](https://llm-guard.com/output_scanners/language/)
-- [LanguageSame](https://llm-guard.com/output_scanners/language_same/)
 - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
 - [NoRefusal](https://llm-guard.com/output_scanners/no_refusal/)
 - [NoRefusalLight](https://llm-guard.com/output_scanners/no_refusal_light/)
 - [ReadingTime](https://llm-guard.com/output_scanners/reading_time/)
 - [FactualConsistency](https://llm-guard.com/output_scanners/factual_consistency/)
-- [Gibberish](https://llm-guard.com/output_scanners/gibberish/)
 - [Regex](https://llm-guard.com/output_scanners/regex/)
 - [Relevance](https://llm-guard.com/output_scanners/relevance/)
 - [Sensitive](https://llm-guard.com/output_scanners/sensitive/)

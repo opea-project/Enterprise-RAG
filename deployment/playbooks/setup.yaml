@@ -1,0 +1,22 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Pre-setup tasks
+  become: false
+  gather_facts: true
+  hosts: local
+  tasks:
+    - name: Pre-configure environment role
+      ansible.builtin.include_role:
+        name: configure
+      tags:
+        - configure
+        - never
+
+    - name: Prepare kubespray variables
+      ansible.builtin.include_role:
+        name: cluster
+      when: deploy_k8s
+      tags:
+        - prepare-vars
+        - never

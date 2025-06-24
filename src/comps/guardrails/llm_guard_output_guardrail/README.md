@@ -1,21 +1,16 @@
 # LLM Guard Output Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.14) Output Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
- - [BanCode](https://llm-guard.com/output_scanners/ban_code/)
- - [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
+This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.16) Output Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
  - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
  - [BanTopics](https://llm-guard.com/output_scanners/ban_topics/)
  - [Bias](https://llm-guard.com/output_scanners/bias/)
  - [Code](https://llm-guard.com/output_scanners/code/)
  - [Deanonymize](https://llm-guard.com/output_scanners/deanonymize/)
  - [JSON](https://llm-guard.com/output_scanners/json/)
- - [Language](https://llm-guard.com/output_scanners/language/)
- - [LanguageSame](https://llm-guard.com/output_scanners/language_same/)
  - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
  - [NoRefusal](https://llm-guard.com/output_scanners/no_refusal/)
  - [NoRefusalLight](https://llm-guard.com/output_scanners/no_refusal_light/)
  - [ReadingTime](https://llm-guard.com/output_scanners/reading_time/)
  - [FactualConsistency](https://llm-guard.com/output_scanners/factual_consistency/)
- - [Gibberish](https://llm-guard.com/output_scanners/gibberish/)
  - [Regex](https://llm-guard.com/output_scanners/regex/)
  - [Relevance](https://llm-guard.com/output_scanners/relevance/)
  - [Sensitive](https://llm-guard.com/output_scanners/sensitive/)
@@ -34,32 +29,10 @@ Scanners currently configurable from UI, from Admin Panel:
  - [Code](https://llm-guard.com/output_scanners/code/)
  - [Bias](https://llm-guard.com/output_scanners/bias/)
  - [Relevance](https://llm-guard.com/output_scanners/relevance/)
- - [BanCompetitors](https://llm-guard.com/output_scanners/ban_competitors/)
- - [Language](https://llm-guard.com/output_scanners/language/)
  - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
 
 ### Configuration via environmental variables
 The LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
-
-### BanCode scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for BanCode scanner](https://llm-guard.com/output_scanners/ban_code/)
-| Environment Variable       | Description                                                | Type   | Default in LLM Guard  | Required / Optional |
-|----------------------------|------------------------------------------------------------|--------|-----------------------|---------------------|
-| `BAN_CODE_ENABLED`         | Enables BanCode scanner.                                   | bool   | false               | Required            |
-| `BAN_CODE_USE_ONNX`        | Enables usage of ONNX optimized model for BanCode scanner. | bool   | false                | Required            |
-| `BAN_CODE_MODEL`           | Model to be used for BanCode scanner.                      | string | "MODEL_SM"            | Optional            |
-| `BAN_CODE_THRESHOLD`       | Threshold for BanCode scanner.                             | float  | 0.97                  | Optional            |
-
-### BanCompetitors scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for BanCompetitors scanner](https://llm-guard.com/output_scanners/ban_competitors/)
-| Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
-|----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
-| `BAN_COMPETITORS_ENABLED`  | Enables BanCompetitors scanner.                                               | bool   | false               | Required            |
-| `BAN_COMPETITORS_USE_ONNX` | Enables usage of ONNX optimized model for BanCompetitors scanner.             | bool   | false                | Required            |
-| `BAN_COMPETITORS_COMPETITORS` | List of competitors to be banned.                                          | string | "Competitor1,Competitor2,Competitor3" | Required |
-| `BAN_COMPETITORS_THRESHOLD`| Threshold for BanCompetitors scanner.                                         | float  | 0.5                   | Optional            |
-| `BAN_COMPETITORS_REDACT`   | Enables redaction of banned competitors.                                      | bool   | false                | Optional            |
-| `BAN_COMPETITORS_MODEL`    | Model to be used for BanCompetitors scanner.                                  | string | "MODEL_V1"            | Optional            |
 
 ### BanSubstrings scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for BanSubstrings scanner](https://llm-guard.com/output_scanners/ban_substrings/)
@@ -124,28 +97,6 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `JSON_SCANNER_REQUIRED_ELEMENTS` | The minimum number of JSON elements.                                    | int    | 0                     | Optional            |
 | `JSON_SCANNER_REPAIR`      | Enables repair of JSON.                                                       | bool   | false               | Optional            |
 
-### Language scanner
-
-Detailed description of the scanner can be found in [LLM Guard documentation for Language scanner](https://llm-guard.com/output_scanners/language/)
-| Environment Variable                | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
-|-------------------------------------|--------------------------------------------------------------|--------|-----------------------|---------------------|
-| `LANGUAGE_ENABLED`                  | Enables Language scanner.                                    | bool   | false               | Required            |
-| `LANGUAGE_USE_ONNX`                 | Enables usage of ONNX optimized model for Language scanner.  | bool   | false                | Required            |
-| `LANGUAGE_VALID_LANGUAGES`          | List of supported languages for the Language scanner.        | string | "en,es"               | required            |
-| `LANGUAGE_MODEL`                    | Model to be used for Language scanner.                       | string | "DEFAULT_MODEL"       | Optional            |
-| `LANGUAGE_THRESHOLD`                | Threshold for Language scanner.                              | float  | 0.6                   | Optional            |
-| `LANGUAGE_MATCH_TYPE`               | Match type for language detection (e.g., full, partial).     | string | "full"                | Optional            |
-
-### LanguageSame scanner
-
-Detailed description of the scanner can be found in [LLM Guard documentation for LanguageSame scanner](https://llm-guard.com/output_scanners/language_same/)
-| Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
-|--------------------------- |-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
-| `LANGUAGE_SAME_ENABLED`    | Enables LanguageSame scanner.                                                 | bool   | false               | Required            |
-| `LANGUAGE_SAME_USE_ONNX`   | Enables usage of ONNX optimized model for LanguageSame scanner.               | bool   | false                | Required            |
-| `LANGUAGE_SAME_MODEL`      | Model to be used for LanguageSame scanner.                                    | string | "DEFAULT_MODEL"       | Optional            |
-| `LANGUAGE_SAME_THRESHOLD`  | Threshold for LanguageSame scanner.                                           | float  | 0.1                   | Optional            |
-
 ### MaliciousURLs scanner
 
 Detailed description of the scanner can be found in [LLM Guard documentation for MaliciousURLs scanner](https://llm-guard.com/output_scanners/malicious_urls/)
@@ -191,17 +142,6 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `FACTUAL_CONSISTENCY_USE_ONNX` | Enables usage of ONNX optimized model for FactualConsistency scanner.     | bool   | false                 | Required            |
 | `FACTUAL_CONSISTENCY_MODEL` | Model to be used for FactualConsistency scanner.                             | string | "MODEL_DEBERTA_BASE_V2"| Optional            |
 | `FACTUAL_CONSISTENCY_MINIMUM_SCORE` | Minimum score for FactualConsistency scanner.                        | float  | 0.75                   | Optional            |
-
-### Gibberish scanner
-
-Detailed description of the scanner can be found in [LLM Guard documentation for Gibberish scanner](https://llm-guard.com/output_scanners/gibberish/)
-| Environment Variable       | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
-|----------------------------|--------------------------------------------------------------|--------|-----------------------|---------------------|
-| `GIBBERISH_ENABLED`        | Enables Gibberish scanner.                                   | bool   | false               | Required            |
-| `GIBBERISH_USE_ONNX`       | Enables usage of ONNX optimized model for Gibberish scanner. | bool   | false                | Required            |
-| `GIBBERISH_MODEL`          | Model to be used for Gibberish scanner.                      | string | "DEFAULT_MODEL"       | Optional            |
-| `GIBBERISH_THRESHOLD`      | Threshold for Gibberish scanner.                             | float  | 0.5                   | Optional            |
-| `GIBBERISH_MATCH_TYPE`     | Whether to match the full text or individual sentences.      | string | "full"                | Optional            |
 
 ### Regex scanner
 

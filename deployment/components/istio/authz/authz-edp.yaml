@@ -65,6 +65,7 @@ spec:
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/edp/sa/edp-minio
         - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/chatqa/sa/retriever-usvc
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 apiVersion: security.istio.io/v1

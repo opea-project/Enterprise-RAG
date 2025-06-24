@@ -1,0 +1,97 @@
+{#
+Copyright (C) 2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+proxy:
+  httpProxy: {{ httpProxy }}
+  httpsProxy: {{ httpsProxy }}
+  noProxy: {{ noProxy }}
+
+{% set storage = velero.storageType if velero.storageType is defined else "minio" %}
+{% if storage == "minio" %}
+veleroAccessKey: "{{ VELERO_MINIO_ACCESS_KEY }}"
+veleroSecretKey: "{{ VELERO_MINIO_SECRET_KEY }}"
+minioAdminUser: "{{ velero.minio.auth.admin_username }}"
+minioAdminPassword: "{{ MINIO_ADMIN_PASSWORD }}"
+
+minioApiDomain: &minioApiDomain "{{ velero.minio.apiDomainName }}"
+minioBrowserDomain: &minioBrowserDomain "{{ velero.minio.domainName }}"
+{% endif %}
+
+minio:
+  enabled: {{ storage == "minio" }}
+{% if storage == "minio" %}
+  persistence:
+    enabled: true
+    # consider using dedicated storageClass for backup storage
+    # storageClass: ""
+    size: 500Gi
+  resources: {}
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostname: *minioBrowserDomain
+    path: /
+    tls: true
+    extraTls:
+    - hosts:
+        - *minioBrowserDomain
+      secretName: tls-secret
+  apiIngress:
+    enabled: true
+    ingressClassName: "nginx"
+    hostname: *minioApiDomain
+    path: /
+    tls: true
+    extraTls:
+    - hosts:
+        - *minioApiDomain
+    annotations:
+      nginx.ingress.kubernetes.io/enable-cors: "true"
+      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+      nginx.ingress.kubernetes.io/cors-allow-headers: "Access-Control-Allow-Origin,DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+  extraEnvVars:
+    - name: "MINIO_DOMAIN"
+      value: *minioApiDomain
+  extraVolumes:
+    - name: tls-secret-volume
+      secret:
+        secretName: {{ velero.tls.secret_name }}
+{% endif %}
+velero:
+  resources: {}
+  # requests:
+  #   cpu: 500m
+  #   memory: 128Mi
+  # limits:
+  #   cpu: 1000m
+  #   memory: 512Mi
+  initContainers:
+    - name: velero-plugin-for-aws
+      image: velero/velero-plugin-for-aws:v1.12.1
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - mountPath: /target
+          name: plugins
+  credentials:
+    useSecret: true
+    existingSecret: velero-minio-access-secrets
+  configuration:
+    features: EnableCSI
+    snapshotsEnabled: false
+    uploaderType: kopia
+    defaultItemOperationTimeout: 30m
+    backupStorageLocation:
+      - name: default
+        provider: aws
+        bucket: velero
+        default: true
+        config:
+          region:
+          s3ForcePathStyle: "true"
+          s3Url: http://velero-minio.velero.svc:9000
+    volumeSnapshotLocation: []
+    extraEnvVars:
+      - name: "NO_PROXY"
+        value: "velero-minio.velero.svc"

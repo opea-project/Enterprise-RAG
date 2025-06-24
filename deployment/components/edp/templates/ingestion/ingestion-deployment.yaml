@@ -81,6 +81,8 @@ spec:
             - name: no_proxy
               value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
           {{- end }}
+            - name: OPEA_LOGGER_LEVEL
+              value: {{ .Values.celery.config.opeaLoggerLevel | quote }}
           {{- if .Values.ingestion.environment }}
             {{- toYaml .Values.ingestion.environment | nindent 12 }}
           {{- end }}

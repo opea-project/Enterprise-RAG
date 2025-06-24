@@ -73,14 +73,6 @@ def test_get_deanonymize_config_from_env(output_scanners_config_instance):
     config = output_scanners_config_instance._get_deanonymize_config_from_env({"DEANONYMIZE_ENABLED": "false"})
     assert config == {"deanonymize": {"enabled": False}}
 
-def test_get_language_config_from_env(output_scanners_config_instance):
-    config = output_scanners_config_instance._get_language_config_from_env({"LANGUAGE_ENABLED": "false"})
-    assert config == {"language": {"enabled": False}}
-
-def test_get_language_same_config_from_env(output_scanners_config_instance):
-    config = output_scanners_config_instance._get_language_same_config_from_env({"LANGUAGE_SAME_ENABLED": "false"})
-    assert config == {"language_same": {"enabled": False}}
-
 def test_get_malicious_urls_config_from_env(output_scanners_config_instance):
     config = output_scanners_config_instance._get_malicious_urls_config_from_env({"MALICIOUS_URLS_ENABLED": "false"})
     assert config == {"malicious_urls": {"enabled": False}}
@@ -100,10 +92,6 @@ def test_get_reading_time_config_from_env(output_scanners_config_instance):
 def test_get_factual_consistency_config_from_env(output_scanners_config_instance):
     config = output_scanners_config_instance._get_factual_consistency_config_from_env({"FACTUAL_CONSISTENCY_ENABLED": "false"})
     assert config == {"factual_consistency": {"enabled": False}}
-
-def test_get_gibberish_config_from_env(output_scanners_config_instance):
-    config = output_scanners_config_instance._get_gibberish_config_from_env({"GIBBERISH_ENABLED": "false"})
-    assert config == {"gibberish": {"enabled": False}}
 
 def test_get_relevance_config_from_env(output_scanners_config_instance):
     config = output_scanners_config_instance._get_relevance_config_from_env({"RELEVANCE_ENABLED": "false"})

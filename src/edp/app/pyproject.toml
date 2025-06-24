@@ -26,6 +26,7 @@ dependencies = [
     "pyyaml==6.0.2",
     "h11==0.16.0",
     "tornado==6.5.1",
+    "pyjwt==2.10.1"
 ]
 
 [project.optional-dependencies]

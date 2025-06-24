@@ -18,6 +18,8 @@ spec:
   portLevelMtls:
     443:
       mode: PERMISSIVE
+    8443:
+      mode: PERMISSIVE
 {% elif item == "monitoring" and hpaEnabled %}
   selector:
     matchLabels:

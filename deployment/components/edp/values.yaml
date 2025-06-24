@@ -143,6 +143,27 @@ minio:
       - name: 'secondary'
         policy: 'none'
         purge: 'false'
+      - name: 'only-admin'
+        policy: 'none'
+        purge: 'false'
+    policies:
+      - name: 'erag-admin-group'
+        statements:
+          - effect: 'Allow'
+            actions:
+              - "s3:*"
+            resources:
+              - 'arn:aws:s3:::*'
+      - name: 'erag-user-group'
+        statements:
+          - effect: 'Allow'
+            actions:
+              - "s3:*"
+            resources:
+              - 'arn:aws:s3:::default'
+              - 'arn:aws:s3:::default/*'
+              - 'arn:aws:s3:::secondary'
+              - 'arn:aws:s3:::secondary/*'
     extraCommands:
         - mc admin accesskey rm provisioning $EDP_ACCESS_KEY || true
         - mc admin accesskey create provisioning --access-key "${EDP_ACCESS_KEY}" --secret-key "${EDP_SECRET_KEY}" --name "${EDP_NAME_KEY}" --description "Credentials for EDP Backend Service"
@@ -150,6 +171,8 @@ minio:
         - mc event add --event "put,delete" provisioning/default arn:minio:sqs::EDP:webhook
         - mc event rm --event "put,delete" provisioning/secondary arn:minio:sqs::EDP:webhook || true
         - mc event add --event "put,delete" provisioning/secondary arn:minio:sqs::EDP:webhook
+        - mc event rm --event "put,delete" provisioning/only-admin arn:minio:sqs::EDP:webhook || true
+        - mc event add --event "put,delete" provisioning/only-admin arn:minio:sqs::EDP:webhook
 
 redis:
   networkPolicy:
@@ -215,6 +238,7 @@ celery:
   config:
     concurrency: "6"
     logLevel: "info"
+    opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     scheduledSync:
       enabled: false
       syncPeriodSeconds: "60"
@@ -304,6 +328,11 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: DPGUARD_ENDPOINT
+    - name: FINGERPRINT_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: FINGERPRINT_ENDPOINT
     - name: DATABASE_HOST
       valueFrom:
         secretKeyRef:
@@ -512,6 +541,16 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: RERANKER_ENDPOINT
+  config:
+    opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+    rbac:
+      enabled: false
+      validationType: "ALWAYS" # "NONE", "ALWAYS", "CACHED", "STATIC"
+      cacheExpiration: "600" # in seconds
+      staticConfig: |
+        [
+          "default"
+        ]
   nameOverride: "edp-backend"
   name: "erag-enhanced-dataprep"
   repository: "docker.io/opea"
@@ -758,6 +797,7 @@ ingestion:
   repository: "docker.io/opea"
   tag: latest
   config:
+    opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     # Vector Algorithm configuration
     vector_algorithm: "FLAT" # "FLAT", "HNSW"
     vector_dims: "768" # Depends on model used in embedding. For example bge-large-en-v1.5=768, bge-large-en-v1.5=1024

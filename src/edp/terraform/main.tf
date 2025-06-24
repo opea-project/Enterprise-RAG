@@ -1,18 +1,24 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+resource "random_string" "suffix" {
+  length = 8
+  special = false
+  upper = false
+}
+
 resource "aws_s3_bucket" "edp_buckets" {
   count  = length(var.bucket_names)
-  bucket = var.bucket_names[count.index]
+  bucket = "${var.bucket_names[count.index]}-${random_string.suffix.result}"
 }
 
 resource "aws_sqs_queue" "edp_queue_1" {
-  name = var.queue_name
+  name = "${var.queue_name}-${random_string.suffix.result}"
   sqs_managed_sse_enabled = true
 }
 
 resource "aws_iam_user" "edp_user" {
-  name = "edp-iam-user"
+  name = "edp-iam-user-${random_string.suffix.result}"
 }
 
 resource "aws_iam_access_key" "edp_access_key" {
@@ -20,7 +26,7 @@ resource "aws_iam_access_key" "edp_access_key" {
 }
 
 resource "aws_iam_policy" "list_all_buckets" {
-  name        = "list-all-buckets-policy"
+  name        = "list-all-buckets-policy-${random_string.suffix.result}"
   description = "Policy for listing all S3 buckets"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -50,7 +56,7 @@ resource "aws_iam_user_policy_attachment" "list_all_buckets_policy" {
 }
 
 resource "aws_iam_policy" "receive_message_queue" {
-  name        = "receive-message-queue-policy"
+  name        = "receive-message-queue-policy-${random_string.suffix.result}"
   description = "Policy for receiving messages from the SQS queue"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -70,7 +76,7 @@ resource "aws_iam_user_policy_attachment" "receive_message_queue_policy" {
 }
 
 resource "aws_iam_policy" "read_only_bucket" {
-  name        = "read-bucket1-policy"
+  name        = "read-bucket1-policy-${random_string.suffix.result}"
   description = "Policy for read access to the first bucket"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -95,7 +101,7 @@ resource "aws_iam_policy" "read_only_bucket" {
 }
 
 resource "aws_iam_policy" "read_write_bucket_1" {
-  name        = "read-write-bucket1-policy"
+  name        = "read-write-bucket1-policy-${random_string.suffix.result}"
   description = "Policy for read-write access to the first bucket"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -120,7 +126,7 @@ resource "aws_iam_policy" "read_write_bucket_1" {
 }
 
 resource "aws_iam_policy" "read_write_bucket_2" {
-  name        = "read-write-bucket2-policy"
+  name        = "read-write-bucket2-policy-${random_string.suffix.result}"
   description = "Policy for read-write access to the second bucket"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -222,4 +228,8 @@ output "secret_key" {
 
 output "region" {
   value = var.region
+}
+
+output "suffix" {
+  value = random_string.suffix.result
 }

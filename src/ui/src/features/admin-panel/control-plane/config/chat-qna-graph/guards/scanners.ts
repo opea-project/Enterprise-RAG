@@ -3,33 +3,29 @@
 
 import { ServiceArgumentCheckboxValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import { ServiceArgumentNumberInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
+import { ServiceArgumentSelectInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import { ServiceArgumentTextInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
 import { ServiceArgumentThreeStateSwitchValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import {
   caseSensitive,
-  competitors,
   containsAll,
   enabled,
+  languages,
+  limit,
   matchType,
   patterns,
   redact,
+  redactMode,
   substrings,
   threshold,
-  validLanguages,
+  topics,
 } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/arguments";
 import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/types";
-
-export const banCompetitorsScanner = {
-  enabled,
-  competitors,
-  redact,
-  threshold,
-};
 
 export const banSubstringsScanner = {
   enabled,
   substrings,
-  match_type: matchType,
+  match_type: matchType(["str", "word"]),
   case_sensitive: caseSensitive,
   redact,
   contains_all: containsAll,
@@ -38,46 +34,68 @@ export const banSubstringsScanner = {
 export const biasScanner = {
   enabled,
   threshold,
-  match_type: matchType,
-};
-
-export const gibberishScanner = {
-  enabled,
-  threshold,
-  match_type: matchType,
-};
-
-export const languageScanner = {
-  enabled,
-  valid_languages: validLanguages,
-  threshold,
-  match_type: matchType,
+  match_type: matchType(["sentence", "full"]),
 };
 
 export const promptInjectionScanner = {
   enabled,
   threshold,
-  match_type: matchType,
+  match_type: matchType([
+    "sentence",
+    "full",
+    "truncate_token_head_tail",
+    "truncate_head_tail",
+    "chunks",
+  ]),
 };
 
 export const relevanceScanner = { enabled, threshold };
 
-export const codeScanner = { enabled, threshold };
+export const codeScanner = { enabled, threshold, languages };
+
+export const invisibleTextScanner = { enabled };
 
 export const regexScanner = {
   enabled,
   patterns,
-  match_type: matchType,
+  match_type: matchType(["search", "fullmatch", "all"]),
   redact,
 };
 
 export const maliciousUrlScanner = { enabled, threshold };
 
+export const banTopicsScanner = {
+  enabled,
+  threshold,
+  topics,
+};
+
+export const secretsScanner = {
+  enabled,
+  redact_mode: redactMode(["partial", "all", "hash"]),
+};
+
+export const sentimentScanner = {
+  enabled,
+  threshold,
+};
+
+export const tokenLimitScanner = {
+  enabled,
+  limit,
+};
+
+export const toxicityScanner = {
+  enabled,
+  threshold,
+  match_type: matchType(["sentence", "full"]),
+};
+
 export interface BanSubstringsScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   substrings: ServiceArgumentTextInputValue;
-  match_type: ServiceArgumentTextInputValue;
+  match_type: ServiceArgumentSelectInputValue;
   case_sensitive: ServiceArgumentCheckboxValue;
   redact: ServiceArgumentThreeStateSwitchValue;
   contains_all: ServiceArgumentThreeStateSwitchValue;
@@ -87,35 +105,30 @@ export interface CodeScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   threshold: ServiceArgumentNumberInputValue;
+  languages: ServiceArgumentTextInputValue;
+}
+
+export interface InvisibleTextScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
+}
+
+export interface InvisibleTextScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
 }
 
 export interface BiasScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   threshold: ServiceArgumentNumberInputValue;
-  match_type: ServiceArgumentTextInputValue;
+  match_type: ServiceArgumentSelectInputValue;
 }
 
 export interface RelevanceScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   threshold: ServiceArgumentNumberInputValue;
-}
-
-export interface BanCompetitorsScannerArgs
-  extends Record<string, ServiceArgumentInputValue> {
-  enabled: ServiceArgumentCheckboxValue;
-  competitors: ServiceArgumentTextInputValue;
-  redact: ServiceArgumentThreeStateSwitchValue;
-  threshold: ServiceArgumentNumberInputValue;
-}
-
-export interface LanguageScannerArgs
-  extends Record<string, ServiceArgumentInputValue> {
-  enabled: ServiceArgumentCheckboxValue;
-  valid_languages: ServiceArgumentTextInputValue;
-  threshold: ServiceArgumentNumberInputValue;
-  match_type: ServiceArgumentTextInputValue;
 }
 
 export interface MaliciousURLsScannerArgs
@@ -128,31 +141,59 @@ export interface PromptInjectionScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   threshold: ServiceArgumentNumberInputValue;
-  match_type: ServiceArgumentTextInputValue;
+  match_type: ServiceArgumentSelectInputValue;
 }
 
 export interface RegexScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   patterns: ServiceArgumentTextInputValue;
-  match_type: ServiceArgumentTextInputValue;
+  match_type: ServiceArgumentSelectInputValue;
   redact: ServiceArgumentThreeStateSwitchValue;
 }
 
-export interface GibberishScannerArgs
+export interface BanTopicsScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
+  topics: ServiceArgumentTextInputValue;
+  threshold: ServiceArgumentNumberInputValue;
+}
+
+export interface SecretsScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
+  redact_mode: ServiceArgumentSelectInputValue;
+}
+
+export interface SentimentScannerArgs
   extends Record<string, ServiceArgumentInputValue> {
   enabled: ServiceArgumentCheckboxValue;
   threshold: ServiceArgumentNumberInputValue;
-  match_type: ServiceArgumentTextInputValue;
 }
 
-export type BanCompetitorsScannerConfig = typeof banCompetitorsScanner;
+export interface TokenLimitScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
+  limit: ServiceArgumentNumberInputValue;
+}
+
+export interface ToxicityScannerArgs
+  extends Record<string, ServiceArgumentInputValue> {
+  enabled: ServiceArgumentCheckboxValue;
+  threshold: ServiceArgumentNumberInputValue;
+  match_type: ServiceArgumentSelectInputValue;
+}
+
 export type BanSubstringsScannerConfig = typeof banSubstringsScanner;
 export type BiasScannerConfig = typeof biasScanner;
-export type GibberishScannerConfig = typeof gibberishScanner;
-export type LanguageScannerConfig = typeof languageScanner;
 export type PromptInjectionScannerConfig = typeof promptInjectionScanner;
 export type RelevanceScannerConfig = typeof relevanceScanner;
 export type CodeScannerConfig = typeof codeScanner;
+export type InvisibleTextScannerConfig = typeof invisibleTextScanner;
 export type RegexScannerConfig = typeof regexScanner;
 export type MaliciousURLsScannerConfig = typeof maliciousUrlScanner;
+export type BanTopicsScannerConfig = typeof banTopicsScanner;
+export type SecretsScannerConfig = typeof secretsScanner;
+export type SentimentScannerConfig = typeof sentimentScanner;
+export type TokenLimitScannerConfig = typeof tokenLimitScanner;
+export type ToxicityScannerConfig = typeof toxicityScanner;

@@ -1,7 +1,7 @@
 # vLLM CPUs Allocation Based on Balloons Policy and System Topology
 
 > ℹ️ **Info:**  
-> This is **preview** feature and intended only for Intel Xeon platforms. It is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> This is **preview** feature and intended only for Intel Xeon platforms **with each NUMA node >= 64 CPUs**. It is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
 
 ## Table of Contents
 
@@ -82,6 +82,7 @@ This allows for multiple vLLM balloons per NUMA node when resources permit.
 ## Limitations
 
 - **Xeon only:** Unsupported on Gaudi or non-NUMA platforms.
+- **NUMA node size:** Only supported on systems where each NUMA node has **at least 64 CPUs**.
 - **Single-node only:** Currently, this feature is designed for single-node Kubernetes clusters.
 
 ## Reset Balloons Policy Manually

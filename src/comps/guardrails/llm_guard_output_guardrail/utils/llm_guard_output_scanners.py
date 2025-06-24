@@ -3,21 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 from llm_guard.vault import Vault
 from llm_guard.output_scanners import (
-    BanCode,
-    BanCompetitors,
     BanTopics,
     Bias,
     Code,
     Deanonymize,
     JSON,
-    Language,
-    LanguageSame,
     MaliciousURLs,
     NoRefusal,
     NoRefusalLight,
     ReadingTime,
     FactualConsistency,
-    Gibberish,
     Relevance,
     Sensitive,
     Sentiment,
@@ -26,15 +21,6 @@ from llm_guard.output_scanners import (
 )
 
 # import models definition
-from llm_guard.input_scanners.ban_code import ( #input, becasue the same scanner to input and output
-    MODEL_SM as BANCODE_MODEL_SM,
-    MODEL_TINY as BANCODE_MODEL_TINY
-)
-
-from llm_guard.input_scanners.ban_competitors import ( #input, becasue the same scanner to input and output
-    MODEL_V1 as BANCOMPETITORS_MODEL_V1
-)
-
 from llm_guard.input_scanners.ban_topics import (  #input, becasue the same scanner to input and output
     MODEL_DEBERTA_LARGE_V2 as BANTOPICS_MODEL_DEBERTA_LARGE_V2,
     MODEL_DEBERTA_BASE_V2 as BANTOPICS_MODEL_DEBERTA_BASE_V2,
@@ -49,14 +35,6 @@ from llm_guard.output_scanners.bias import (
 
 from llm_guard.input_scanners.code import (
     DEFAULT_MODEL as CODE_DEFAULT_MODEL
-)
-
-from llm_guard.input_scanners.gibberish import (
-    DEFAULT_MODEL as GIBBERISH_DEFAULT_MODEL
-)
-
-from llm_guard.input_scanners.language import (
-    DEFAULT_MODEL as LANGUAGE_DEFAULT_MODEL,
 )
 
 from llm_guard.output_scanners.malicious_urls import (
@@ -78,22 +56,17 @@ from llm_guard.input_scanners.toxicity import (
 )
 
 ENABLED_SCANNERS = [
-    'ban_code',
-    'ban_competitors',
     'ban_substrings',
     'ban_topics',
     'bias',
     'code',
     'deanonymize',
     'json_scanner',
-    'language',
-    'language_same',
     'malicious_urls',
     'no_refusal',
     'no_refusal_light',
     'reading_time',
     'factual_consistency',
-    'gibberish',
     'regex',
     'relevance',
     'sensitive',
@@ -109,22 +82,17 @@ logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 class OutputScannersConfig:
     def __init__(self, config_dict):
         self._output_scanners_config = {
-            **self._get_ban_code_config_from_env(config_dict),
-            **self._get_ban_competitors_config_from_env(config_dict),
             **self._get_ban_substrings_config_from_env(config_dict),
             **self._get_ban_topics_config_from_env(config_dict),
             **self._get_bias_config_from_env(config_dict),
             **self._get_code_config_from_env(config_dict),
             **self._get_deanonymize_config_from_env(config_dict),
             **self._get_json_scanner_config_from_env(config_dict),
-            **self._get_language_config_from_env(config_dict),
-            **self._get_language_same_config_from_env(config_dict),
             **self._get_malicious_urls_config_from_env(config_dict),
             **self._get_no_refusal_config_from_env(config_dict),
             **self._get_no_refusal_light_config_from_env(config_dict),
             **self._get_reading_time_config_from_env(config_dict),
             **self._get_factual_consistency_config_from_env(config_dict),
-            **self._get_gibberish_config_from_env(config_dict),
             **self._get_regex_config_from_env(config_dict),
             **self._get_relevance_config_from_env(config_dict),
             **self._get_sensitive_config_from_env(config_dict),
@@ -155,40 +123,6 @@ class OutputScannersConfig:
         elif value.lower() == "false":
             return False
         return value
-
-    def _get_ban_code_config_from_env(self, config_dict):
-        """
-        Get the BanCode scanner configuration from the environment.
-
-        Args:
-            config_dict (dict): The configuration dictionary.
-
-        Returns:
-            dict: The BanCode scanner configuration.
-        """
-        return {
-            "ban_code": {
-                k.replace("BAN_CODE_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BAN_CODE_")
-            }
-        }
-
-    def _get_ban_competitors_config_from_env(self, config_dict):
-        """
-        Get the BanCompetitors scanner configuration from the environment.
-
-        Args:
-            config_dict (dict): The configuration dictionary.
-
-        Returns:
-            dict: The BanCompetitors scanner configuration.
-        """
-        return {
-            "ban_competitors": {
-                k.replace("BAN_COMPETITORS_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("BAN_COMPETITORS_")
-            }
-        }
 
     def _get_ban_substrings_config_from_env(self, config_dict):
         """
@@ -292,40 +226,6 @@ class OutputScannersConfig:
             }
         }
 
-    def _get_language_config_from_env(self, config_dict):
-        """
-        Get the Language scanner configuration from the environment.
-
-        Args:
-            config_dict (dict): The configuration dictionary.
-
-        Returns:
-            dict: The Language scanner configuration.
-        """
-        return {
-            "language": {
-                k.replace("LANGUAGE_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("LANGUAGE_")
-            }
-        }
-
-    def _get_language_same_config_from_env(self, config_dict):
-        """
-        Get the LanguageSame scanner configuration from the environment.
-
-        Args:
-            config_dict (dict): The configuration dictionary.
-
-        Returns:
-            dict: The LanguageSame scanner configuration.
-        """
-        return {
-            "language_same": {
-                k.replace("LANGUAGE_SAME_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("LANGUAGE_SAME_")
-            }
-        }
-
     def _get_malicious_urls_config_from_env(self, config_dict):
         """
         Get the MaliciousURLs scanner configuration from the environment.
@@ -408,23 +308,6 @@ class OutputScannersConfig:
             "factual_consistency": {
                 k.replace("FACTUAL_CONSISTENCY_", "").lower(): self._validate_value(v)
                 for k, v in config_dict.items() if k.startswith("FACTUAL_CONSISTENCY_")
-            }
-        }
-
-    def _get_gibberish_config_from_env(self, config_dict):
-        """
-        Get the Gibberish scanner configuration from the environment.
-
-        Args:
-            config_dict (dict): The configuration dictionary.
-
-        Returns:
-            dict: The Gibberish scanner configuration.
-        """
-        return {
-            "gibberish": {
-                k.replace("GIBBERISH_", "").lower(): self._validate_value(v)
-                for k, v in config_dict.items() if k.startswith("GIBBERISH_")
             }
         }
 
@@ -531,66 +414,6 @@ class OutputScannersConfig:
         }
 
 #### METHODS FOR CREATING SCANNERS
-
-    def _create_ban_code_scanner(self, scanner_config):
-        enabled_models = {'MODEL_SM': BANCODE_MODEL_SM, 'MODEL_TINY': BANCODE_MODEL_TINY}
-        bancode_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we don't want to use onnx
-
-        model_name = scanner_config.get('model', None)
-        threshold = scanner_config.get('threshold', None)
-
-        if model_name is not None:
-            if model_name in enabled_models:
-                logger.info(f"Using selected model for BanCode scanner: {model_name}")
-                bancode_params['model'] = enabled_models[model_name] # Model class from LLM Guard
-            else:
-                err_msg = f"Model name is not valid for BanCode scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
-                logger.error(err_msg)
-                raise ValueError(err_msg)
-        if threshold is not None:
-            bancode_params['threshold'] = threshold
-        logger.info(f"Creating BanCode scanner with params: {bancode_params}")
-        return BanCode(**bancode_params)
-
-    def _create_ban_competitors_scanner(self, scanner_config):
-        enabled_models = {'MODEL_V1': BANCOMPETITORS_MODEL_V1}
-        ban_competitors_params = {'use_onnx': scanner_config.get('use_onnx', False)} # by default we want don't to use onnx
-
-        competitors = scanner_config.get('competitors', None)
-        threshold = scanner_config.get('threshold', None)
-        redact = scanner_config.get('redact', None)
-        model_name = scanner_config.get('model', None)
-
-        if isinstance(competitors, str):
-            competitors = sanitize_env(competitors)
-
-        if competitors:
-            if isinstance(competitors, str):
-                artifacts = set([',', '', '.'])
-                ban_competitors_params['competitors'] = list(set(competitors.split(',')) - artifacts)
-            elif isinstance(competitors, list):
-                ban_competitors_params['competitors'] = competitors
-            else:
-                logger.error("Provided type is not valid for BanCompetitors scanner")
-                raise ValueError("Provided type is not valid for BanCompetitors scanner")
-        else:
-            logger.error("Competitors list is required for BanCompetitors scanner. Please provide a list of competitors.")
-            raise TypeError("Competitors list is required for BanCompetitors scanner. Please provide a list of competitors.")
-        if threshold is not None:
-            ban_competitors_params['threshold'] = threshold
-        if redact is not None:
-            ban_competitors_params['redact'] = redact
-        if model_name is not None:
-            if model_name in enabled_models:
-                logger.info(f"Using selected model for BanCompetitors scanner: {model_name}")
-                ban_competitors_params['model'] = enabled_models[model_name]
-            else:
-                err_msg = f"Model name is not valid for BanCompetitors scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
-                logger.error(err_msg)
-                raise ValueError(err_msg)
-        logger.info(f"Creating BanCompetitors scanner with params: {ban_competitors_params}")
-        return BanCompetitors(**ban_competitors_params)
-
     def _create_ban_substrings_scanner(self, scanner_config):
         available_match_types = ['str', 'word']
         ban_substrings_params = {}
@@ -759,67 +582,6 @@ class OutputScannersConfig:
         logger.info(f"Creating JSON scanner with params: {json_scanner_params}")
         return JSON(**json_scanner_params)
 
-    def _create_language_scanner(self, scanner_config):
-        enabled_models = {'DEFAULT_MODEL': LANGUAGE_DEFAULT_MODEL}
-        enabled_match_types = ['sentence', 'full']
-        language_params = {'use_onnx': scanner_config.get('use_onnx', False)}
-
-        valid_languages = scanner_config.get('valid_languages', None)
-        model_name = scanner_config.get('model', None)
-        threshold = scanner_config.get('threshold', None)
-        match_type = scanner_config.get('match_type', None)
-
-        if isinstance(valid_languages, str):
-            valid_languages = sanitize_env(valid_languages)
-
-        if valid_languages:
-            if isinstance(valid_languages, str):
-                artifacts = set([',', '', '.'])
-                language_params['valid_languages'] = list(set(valid_languages.split(',')) - artifacts)
-            elif isinstance(valid_languages, list):
-                language_params['valid_languages'] = valid_languages
-            else:
-                logger.error("Provided type is not valid for Language scanner")
-                raise ValueError("Provided type is not valid for Language scanner")
-        else:
-            logger.error("Valid languages list is required for Language scanner")
-            raise TypeError("Valid languages list is required for Language scanner")
-        if model_name is not None:
-            if model_name in enabled_models:
-                logger.info(f"Using selected model for Language scanner: {model_name}")
-                language_params['model'] = enabled_models[model_name]
-            else:
-                err_msg = f"Model name is not valid for Language scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
-                logger.error(err_msg)
-                raise ValueError(err_msg)
-        if threshold is not None:
-            language_params['threshold'] = threshold
-        if match_type is not None and match_type in enabled_match_types:
-            language_params['match_type'] = match_type
-        logger.info(f"Creating Language scanner with params: {language_params}")
-        return Language(**language_params)
-
-    def _create_language_same_scanner(self, scanner_config):
-        enabled_models = {'DEFAULT_MODEL': LANGUAGE_DEFAULT_MODEL}
-        language_same_params = {'use_onnx': scanner_config.get('use_onnx', False)}
-
-        model_name = scanner_config.get('model', None)
-        threshold = scanner_config.get('threshold', None)
-
-        if model_name is not None:
-            if model_name in enabled_models:
-                logger.info(f"Using selected model for LanguageSame scanner: {model_name}")
-                language_same_params['model'] = enabled_models[model_name]
-            else:
-                err_msg = f"Model name is not valid for LanguageSame scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
-                logger.error(err_msg)
-                raise ValueError(err_msg)
-        if threshold is not None:
-            language_same_params['threshold'] = threshold
-
-        logger.info(f"Creating LanguageSame scanner with params: {language_same_params}")
-        return LanguageSame(**language_same_params)
-
     def _create_malicious_urls_scanner(self, scanner_config):
         enabled_models = {'DEFAULT_MODEL': MALICIOUS_URLS_DEFAULT_MODEL}
         malicious_urls_params = {'use_onnx': scanner_config.get('use_onnx', False)}
@@ -908,35 +670,6 @@ class OutputScannersConfig:
         logger.info(f"Creating FactualConsistency scanner with params: {factual_consistency_params}")
         return FactualConsistency(**factual_consistency_params)
 
-    def _create_gibberish_scanner(self, scanner_config):
-        enabled_models = {'DEFAULT_MODEL': GIBBERISH_DEFAULT_MODEL}
-        enabled_match_types = ['sentence', 'full']
-        gibberish_params = {'use_onnx': scanner_config.get('use_onnx', False)}
-
-        model_name = scanner_config.get('model', None)
-        threshold = scanner_config.get('threshold', None)
-        match_type = scanner_config.get('match_type', None)
-
-        if match_type == "sentence":
-            import nltk
-            nltk.download('punkt_tab')
-
-        if threshold is not None:
-            gibberish_params['threshold'] = threshold
-        if model_name is not None:
-            if model_name in enabled_models:
-                logger.info(f"Using selected model for Gibberish scanner: {model_name}")
-                gibberish_params['model'] = enabled_models[model_name]
-            else:
-                err_msg = f"Model name is not valid for Gibberish scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
-                logger.error(err_msg)
-                raise ValueError(err_msg)
-        if match_type is not None and match_type in enabled_match_types:
-            gibberish_params['match_type'] = match_type
-
-        logger.info(f"Creating Gibberish scanner with params: {gibberish_params}")
-        return Gibberish(**gibberish_params)
-
     def _create_regex_scanner(self, scanner_config):
         enabled_match_types = ['search', 'fullmatch']
         regex_params = {}
@@ -982,7 +715,7 @@ class OutputScannersConfig:
 
         if model_name is not None:
             if model_name in enabled_models:
-                logger.info(f"Using selected model for Gibberish scanner: {model_name}")
+                logger.info(f"Using selected model for Relevance scanner: {model_name}")
                 relevance_params['model'] = enabled_models[model_name]
             else:
                 err_msg = f"Model name is not valid for Relevance scanner. Please provide a valid model name. Provided model: {model_name}. Enabled models: {list(enabled_models.keys())}"
@@ -1087,8 +820,8 @@ class OutputScannersConfig:
             elif isinstance(success_status_codes, list):
                 url_reachability_params['success_status_codes'] = success_status_codes
             else:
-                logger.error("Provided type is not valid for Language scanner")
-                raise ValueError("Provided type is not valid for Language scanner")
+                logger.error("Provided type is not valid for Url Reachability scanner")
+                raise ValueError("Provided type is not valid for Url Reachability scanner")
         if timeout is not None:
             url_reachability_params['timeout'] = timeout
 
@@ -1099,11 +832,7 @@ class OutputScannersConfig:
         if scanner_name not in ENABLED_SCANNERS:
             logger.error(f"Scanner {scanner_name} is not supported")
             raise Exception(f"Scanner {scanner_name} is not supported. Enabled scanners are: {ENABLED_SCANNERS}")
-        if scanner_name == "ban_code":
-            return self._create_ban_code_scanner(scanner_config)
-        elif scanner_name == "ban_competitors":
-            return self._create_ban_competitors_scanner(scanner_config)
-        elif scanner_name == "ban_substrings":
+        if scanner_name == "ban_substrings":
             return self._create_ban_substrings_scanner(scanner_config)
         elif scanner_name == "ban_topics":
             return self._create_ban_topics_scanner(scanner_config)
@@ -1115,10 +844,6 @@ class OutputScannersConfig:
             return self._create_deanonymize_scanner(scanner_config, vault)
         elif scanner_name == "json_scanner":
             return self._create_json_scanner(scanner_config)
-        elif scanner_name == "language":
-            return self._create_language_scanner(scanner_config)
-        elif scanner_name == "language_same":
-            return self._create_language_same_scanner(scanner_config)
         elif scanner_name == "malicious_urls":
             return self._create_malicious_urls_scanner(scanner_config)
         elif scanner_name == "no_refusal":
@@ -1129,8 +854,6 @@ class OutputScannersConfig:
             return self._create_reading_time_scanner(scanner_config)
         elif scanner_name == "factual_consistency":
             return self._create_factual_consistency_scanner(scanner_config)
-        elif scanner_name == "gibberish":
-            return self._create_gibberish_scanner(scanner_config)
         elif scanner_name == "regex":
             return self._create_regex_scanner(scanner_config)
         elif scanner_name == "relevance":

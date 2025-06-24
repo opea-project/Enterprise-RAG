@@ -1,0 +1,21 @@
+import java.util.*;
+import java.util.stream.*;
+
+public class FunctionalExample {
+    public static void main(String[] args) {
+        List<Integer> numbers = IntStream.rangeClosed(1, 20)
+                                         .boxed()
+                                         .collect(Collectors.toList());
+
+        List<Integer> evenSquares = numbers.stream()
+                                           .filter(n -> n % 2 == 0)
+                                           .map(n -> n * n)
+                                           .collect(Collectors.toList());
+
+        int sum = evenSquares.stream()
+                             .reduce(0, Integer::sum);
+
+        System.out.println("Even squares: " + evenSquares);
+        System.out.println("Sum: " + sum);
+    }
+}

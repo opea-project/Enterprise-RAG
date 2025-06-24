@@ -5,7 +5,7 @@ import os
 import time
 from typing import Union
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.utils.utils import sanitize_env
 from utils import opea_retriever
@@ -42,8 +42,11 @@ retriever = opea_retriever.OPEARetriever(
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
+async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> SearchedDoc:
     start = time.time()
+
+    filter_by_rbac = str(os.getenv('VECTOR_DB_RBAC')).lower() in ['true', '1', 't', 'y', 'yes']
+    search_detail = retriever.filter_expression_for_rbac(request) if filter_by_rbac else {}
 
     vector = []
     if isinstance(input, EmbedDocList):
@@ -59,9 +62,9 @@ async def process(input: Union[EmbedDoc, EmbedDocList]) -> SearchedDoc:
         if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
             k_summaries = int(sanitize_env(os.getenv("K_SUMMARIES")))
             k_chunks = int(sanitize_env(os.getenv("K_CHUNKS")))
-            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks)
+            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks, search_by=search_detail)
         else:
-            result_vectors = await retriever.retrieve(vector)
+            result_vectors = await retriever.retrieve(input=vector, search_by=search_detail)
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,

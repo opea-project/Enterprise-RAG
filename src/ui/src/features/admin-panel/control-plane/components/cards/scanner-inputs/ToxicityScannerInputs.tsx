@@ -5,23 +5,23 @@ import { ScannerInputsProps } from "@/features/admin-panel/control-plane/compone
 import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/ScannerInputsTitle";
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
-import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
+import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import {
-  LanguageScannerArgs,
-  LanguageScannerConfig,
+  ToxicityScannerArgs,
+  ToxicityScannerConfig,
 } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import useGuardScannerInputs from "@/features/admin-panel/control-plane/hooks/useGuardScannerInputs";
 
-const LanguageScannerInputs = ({
+const ToxicityScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
-}: ScannerInputsProps<LanguageScannerArgs, LanguageScannerConfig>) => {
+}: ScannerInputsProps<ToxicityScannerArgs, ToxicityScannerConfig>) => {
   const {
     titleCasedName,
     handleArgumentValueChange,
     handleArgumentValidityChange,
-  } = useGuardScannerInputs("language", handlers);
+  } = useGuardScannerInputs("toxicity", handlers);
 
   return (
     <>
@@ -31,26 +31,19 @@ const LanguageScannerInputs = ({
         initialValue={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
-      <ServiceArgumentTextInput
-        {...config.valid_languages}
-        initialValue={previousArgumentsValues.valid_languages}
-        onArgumentValueChange={handleArgumentValueChange}
-        onArgumentValidityChange={handleArgumentValidityChange}
-      />
       <ServiceArgumentNumberInput
         {...config.threshold}
         initialValue={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
-      <ServiceArgumentTextInput
+      <ServiceArgumentSelectInput
         {...config.match_type}
         initialValue={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
-        onArgumentValidityChange={handleArgumentValidityChange}
       />
     </>
   );
 };
 
-export default LanguageScannerInputs;
+export default ToxicityScannerInputs;

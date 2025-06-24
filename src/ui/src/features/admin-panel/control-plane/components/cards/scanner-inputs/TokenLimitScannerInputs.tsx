@@ -5,27 +5,22 @@ import { ScannerInputsProps } from "@/features/admin-panel/control-plane/compone
 import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/ScannerInputsTitle";
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
-import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import ServiceArgumentThreeStateSwitch from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import {
-  BanCompetitorsScannerArgs,
-  BanCompetitorsScannerConfig,
+  TokenLimitScannerArgs,
+  TokenLimitScannerConfig,
 } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/scanners";
 import useGuardScannerInputs from "@/features/admin-panel/control-plane/hooks/useGuardScannerInputs";
 
-const BanCompetitorsScannerInputs = ({
+const TokenLimitScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
-}: ScannerInputsProps<
-  BanCompetitorsScannerArgs,
-  BanCompetitorsScannerConfig
->) => {
+}: ScannerInputsProps<TokenLimitScannerArgs, TokenLimitScannerConfig>) => {
   const {
     titleCasedName,
     handleArgumentValueChange,
     handleArgumentValidityChange,
-  } = useGuardScannerInputs("ban_competitors", handlers);
+  } = useGuardScannerInputs("token_limit", handlers);
 
   return (
     <>
@@ -35,20 +30,9 @@ const BanCompetitorsScannerInputs = ({
         initialValue={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
-      <ServiceArgumentTextInput
-        {...config.competitors}
-        initialValue={previousArgumentsValues.competitors}
-        onArgumentValueChange={handleArgumentValueChange}
-        onArgumentValidityChange={handleArgumentValidityChange}
-      />
-      <ServiceArgumentThreeStateSwitch
-        {...config.redact}
-        initialValue={previousArgumentsValues.redact}
-        onChange={handleArgumentValueChange}
-      />
       <ServiceArgumentNumberInput
-        {...config.threshold}
-        initialValue={previousArgumentsValues.threshold}
+        {...config.limit}
+        initialValue={previousArgumentsValues.limit}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
@@ -56,4 +40,4 @@ const BanCompetitorsScannerInputs = ({
   );
 };
 
-export default BanCompetitorsScannerInputs;
+export default TokenLimitScannerInputs;

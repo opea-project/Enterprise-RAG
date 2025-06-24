@@ -1,0 +1,25 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+velero:
+  enabled: false
+  namespace: "velero"
+  helm:
+    repo_name: "velero-tanzu"
+    repo_url: "https://vmware-tanzu.github.io/helm-charts/"
+    chart_name: "velero"
+    chart_version: "10.0.5"
+    release_name: "velero"
+    default_values_file: "{{ playbook_dir }}/../components/velero/values.yaml"
+    chart_directory: "{{ playbook_dir }}/../components/velero"
+
+  tls:
+    secret_name: "tls-secret"
+
+  storageType: minio
+  minio:
+    apiDomainName: velero-s3.erag.com
+    domainName: velero-minio.erag.com
+    auth:
+      admin_username: admin

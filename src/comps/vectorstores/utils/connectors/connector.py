@@ -115,3 +115,12 @@ class VectorStoreConnector(ABC):
 
     def max_marginal_relevance_search(self, input_text: str, embedding: List, k: int, fetch_k: float, lambda_mult: float) -> SearchedDoc:
         raise NotImplementedError
+
+    def empty_filter_expression(self):
+        raise NotImplementedError
+
+    def get_bucket_name_filter_expression(self, bucket_names: List[str]):
+        raise NotImplementedError
+
+    def get_object_name_filter_expression(self, bucket_name: str, object_name: str):
+        raise NotImplementedError

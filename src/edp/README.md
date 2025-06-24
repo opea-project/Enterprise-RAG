@@ -109,6 +109,85 @@ You can also manually schedule the synchronization task. To run the synchronizat
 - `POST /api/files/sync/` to backend container form within the cluster.
 - `POST /api/v1/edp/files/sync` to WebUI - this requires passing `Authorization` token.
 
+## RBAC (Role-Based Access Control)
+
+RBAC in EDP (Enterprise Data Platform) is implemented to manage and restrict access to data based on roles and permissions. The following outlines four distinct RBAC modes, each with its own approach to access control:
+
+### 1. None
+- **Description**: No access control policies are enforced.
+- **Implementation**: This mode bypasses RBAC entirely, granting unrestricted access to all data.
+- **Use Case**: Suitable for scenarios where data access restrictions are unnecessary, such as testing or environments where security is not a concern.
+
+### 2. Always
+- **Description**: Access is verified for every request.
+- **Implementation**:
+  - Every data access request is sent to an external security provider for validation.
+  - The security provider checks the user's role and permissions against the latest mappings.
+- **Trade-offs**:
+  - **Pros**: Ensures the most up-to-date access control.
+  - **Cons**: Adds latency to the data pipeline due to frequent external requests.
+- **Use Case**: Ideal for environments requiring strict and real-time access control.
+
+### 3. Cached
+- **Description**: Combines external validation with caching for improved performance.
+- **Implementation**:
+  - The first request for a resource is validated by the external security provider.
+  - Subsequent requests use cached responses, with a Time-To-Live (TTL) expiration to ensure periodic updates.
+- **Trade-offs**:
+  - **Pros**: Reduces latency for repeated requests.
+  - **Cons**: Permission changes on the security provider may take time to reflect due to caching.
+- **Use Case**: Suitable for balancing security and performance in high-traffic environments.
+
+### 4. Static
+- **Description**: Uses predefined mappings for access control. This is configured by setting the VECTOR_DB_RBAC_STATIC_CONFIG environment variable. It has to be in JSON format. It can be an array - limiting to a static list of buckets, or a dict mapped as key=user_id, value=array_of_buckets.
+- **Implementation**:
+  - Access is determined by static mappings of groups or buckets.
+  - No external security provider is involved, and changes require manual updates.
+- **Trade-offs**:
+  - **Pros**: Simple and independent of external systems.
+  - **Cons**: No synchronization with external changes; requires manual intervention for updates.
+- **Use Case**: Best for environments with stable and predictable access requirements.
+
+Each RBAC mode in EDP offers a different balance between security, performance, and flexibility. The choice of mode depends on the specific requirements of the environment, such as latency tolerance, frequency of permission changes, and reliance on external security providers.
+
+RBAC usage is optional and even though configured, retrieval services are not required to use it. This provides only additional API to select limited list of bucket access.
+
+The storage itself acts as the source of truth for access validation. This ensures that requests are validated directly against the storage's access control policies, providing a robust and consistent mechanism for enforcing permissions.
+
+A graph showing the validation flow should look as follows:
+
+```
+   ┌───────────────┐                                                                           
+   │               │                                                                           
+   │ Authorization │                               ┌───────────────┐                           
+   │               │                               │               │                           
+   └───────┬───────┘                               │   Vector DB   │                           
+           │                                       │               │                           
+ Authorization Header                              └───────▲───────┘                           
+           │                                               │                                   
+           │                                               │6                                  
+   ┌───────▼───────┐       ┌───────────────┐       ┌───────┴───────┐        ┌───────────────┐  
+   │               │  ...  │               │   1   │               │   7    │               │  
+   │    Step 1     ├───────►    Step 2     ├───────►   Retrieval   ├────────►    Step N     │  
+   │               │       │               │       │               │        │               │  
+   └───────────────┘       └───────────────┘       └───┬───────▲───┘        └───────────────┘  
+                                                       │       │                               
+                                                      2│       │5                              
+                                                       │       │                               
+                           ┌───────────────┐       ┌───▼───────┴───┐   4    ┌───────────────┐  
+                           │     Cache     ◄───────┤               ◄────────┤               │  
+                           │               │       │  EDP Backend  │        │  Storage API  │  
+                           │  (Optional)   ├───────►               ├────────►               │  
+                           └───────────────┘       └───────────────┘   3    └───────────────┘  
+```
+
+1. Request to retrieval pipeline step. If VECTOR_DB_RBAC is disabled on retriever, skip to step 7.
+2. Retrieve bucket list using with read access using current Authorization header.
+3. Call storage API using service key for list of available buckets. Limit it using built in regex filter. 
+4. For each bucket check if user can read a random file within in that bucket using credentials based on passed Authorization header.
+5. Respond with a list containing all buckets with read permission using user permissions.
+6. Limit vector query scope to elements belonging to retrieved bucket list.
+7. Pass filtered results further down the pipeline
 
 ## Setup
 
@@ -162,6 +241,9 @@ If you want to utilize all functionality, depending on the application server yo
 |         | MINIO_ACCESS_KEY           | Access key either to MinIO or S3 IAM user |
 |         | MINIO_SECRET_KEY           | Secret key either to MinIO or S3 IAM user |
 |         | BUCKET_NAME_REGEX_FILTER   | Regex filter for filtering out available buckets by name |
+|         | VECTOR_DB_RBAC                  | Set the type of RBAC bucket filtering |
+|         | VECTOR_DB_RBAC_STATIC_CONFIG    | Configuration of STATIC rbac settings |
+|         | VECTOR_DB_RBAC_CACHE_EXPIRATION | Configuration of entry TTL for CACHED rbac settings |
 | Sqs     | AWS_SQS_EVENT_QUEUE_URL    | AWS SQS Queue url to listen for S3 events |
 |         | EDP_BACKEND_ENDPOINT       | Endpoint to backend service |
 |         | AWS_DEFAULT_REGION         | Base region for EDP S3 buckets |

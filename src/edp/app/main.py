@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import re
 from typing import List, Union
 import uuid
 import validators
@@ -15,10 +14,11 @@ from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 from minio.error import S3Error
 from urllib.parse import unquote_plus
-from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client
+from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket
 from app.database import get_db, init_db
 from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
+from app.rbac import RBACFactory
 from celery.result import AsyncResult
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -199,6 +199,39 @@ def list_buckets():
     bucket_names = filtered_list_bucket(minio_internal)
     return JSONResponse(content={'buckets': bucket_names})
 
+# -------------- Permission retrieval ------------
+
+@app.get('/api/list_bucket_with_permissions')
+def list_bucket_with_permissions(request: Request):
+    """
+    List all buckets that the user has read permissions to based on the RBAC configuration.
+    Returns:
+        Response: A JSON response containing a list of buckets that the users has read permission.
+    """
+    bucket_names = []
+
+    rbac_type = os.getenv('VECTOR_DB_RBAC', None)
+    if rbac_type and rbac_type != "":
+        access_token = request.headers.get('Authorization')
+        if not access_token:
+            raise HTTPException(status_code=401, detail="Authorization header missing when using RBAC.")
+        access_token = access_token.replace('Bearer ', '')
+        token = { "access_token": access_token }
+        logger.debug(f"Using RBAC type: {rbac_type}")
+        try:
+            rbac = RBACFactory(rbac_type=rbac_type, jwt_token=token)
+            bucket_names = rbac.get_buckets()
+        except ValueError as e:
+            logger.error(f"ValueError {e}")
+            raise HTTPException(status_code=401, detail="Error when using RBAC, please check your configuration or contact the administrator.")
+    else:
+        logger.debug("No bucket permission validation is set.")
+        bucket_names = filtered_list_bucket(minio_internal)
+
+    logger.debug(f"User has access to {len(bucket_names)} buckets.")
+    logger.debug(f"List: {bucket_names}")
+    return JSONResponse(content={'buckets': bucket_names})
+
 # -------------- Event processing ------------
 
 
@@ -365,17 +398,7 @@ def delete_existing_link(uri):
                 db.commit()
                 logger.debug(f"Link {link_status.id} deletion task enqueued with id {task.id}")
 
-def filtered_list_bucket(client):
-    buckets = client.list_buckets()
-    bucket_names = [bucket.name for bucket in buckets]
-    regex_filter = str(os.getenv('BUCKET_NAME_REGEX_FILTER', ''))
-    if len(regex_filter) > 0:
-        bucket_names = [name for name in bucket_names if re.match(regex_filter, name)]
-        logger.debug(f"Displaying {len(bucket_names)}/{len(buckets)} buckets after applying regex filter: {regex_filter}")
-
-    return bucket_names
-
-def sync_files(minio_client, add_file_func, update_file_func, delete_file_func, skip_file_func=None):
+def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_file_func=None):
     """
     Synchronizes files between MinIO storage and the database.
     This function performs the following steps:
@@ -390,13 +413,13 @@ def sync_files(minio_client, add_file_func, update_file_func, delete_file_func, 
         Response: A JSON response with a message indicating the result of the synchronization process.
     """
 
-    bucket_names = filtered_list_bucket(minio_client)
+    bucket_names = filtered_list_bucket(client)
 
     with get_db() as db:
         try:
             for bucket_name in bucket_names:
-                minio_files = minio_client.list_objects(bucket_name)
-                for obj in minio_files:
+                files = client.list_objects(bucket_name)
+                for obj in files:
                     file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == obj.object_name).first()
                     if file_status:
                         if file_status.etag != obj.etag or file_status.size != obj.size:
@@ -421,9 +444,9 @@ def sync_files(minio_client, add_file_func, update_file_func, delete_file_func, 
     with get_db() as db:
         try:
             for bucket_name in bucket_names:
-                minio_files = minio_client.list_objects(bucket_name)
-                minio_objects = [obj.object_name for obj in minio_files]
-                files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name.notin_(minio_objects)).all()
+                files = client.list_objects(bucket_name)
+                objects = [obj.object_name for obj in files]
+                files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name.notin_(objects)).all()
 
                 for obj in files_in_db_but_not_in_minio:
                     if callable(delete_file_func):

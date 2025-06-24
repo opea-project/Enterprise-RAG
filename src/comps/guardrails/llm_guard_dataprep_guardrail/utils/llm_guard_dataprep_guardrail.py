@@ -30,6 +30,11 @@ class OPEALLMGuardDataprepGuardrail:
     
     def scan_dataprep_docs(self, dataprep_docs: TextDocList) -> TextDocList:
         try:
+            if dataprep_docs.dataprep_guardrail_params is not None:
+                if self._scanners_config.changed(dataprep_docs.dataprep_guardrail_params.dict()):
+                    self._scanners = self._scanners_config.create_enabled_dataprep_scanners()
+            else:
+                logger.warning("Input guardrail params not found in dataprep request.")
             if self._scanners:
                 for doc in dataprep_docs.docs:
                     sanitized_text, results_valid, results_score = scan_prompt(self._scanners, doc.text)

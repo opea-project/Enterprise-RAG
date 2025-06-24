@@ -8,14 +8,10 @@ The OPEA ERAG Input Guardrail service provides content filtering and safety vali
 
 This microservice implements [LLM Guard](https://llm-guard.com/) Input Scanners, including:
 - [Anonymize](https://llm-guard.com/input_scanners/anonymize/)
-- [BanCode](https://llm-guard.com/input_scanners/ban_code/)
-- [BanCompetitors](https://llm-guard.com/input_scanners/ban_competitors/)
 - [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
 - [BanTopics](https://llm-guard.com/input_scanners/ban_topics/)
 - [Code](https://llm-guard.com/input_scanners/code/)
-- [Gibberish](https://llm-guard.com/input_scanners/gibberish/)
 - [InvisibleText](https://llm-guard.com/input_scanners/invisible_text/)
-- [Language](https://llm-guard.com/input_scanners/language/)
 - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
 - [Regex](https://llm-guard.com/input_scanners/regex/)
 - [Secrets](https://llm-guard.com/input_scanners/secrets/)

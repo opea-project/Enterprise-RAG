@@ -1,0 +1,11 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Gaudi operator role
+  when: gaudi_operator
+  ansible.builtin.include_role:
+    name: gaudi_operator
+  tags:
+    - install
+    - delete

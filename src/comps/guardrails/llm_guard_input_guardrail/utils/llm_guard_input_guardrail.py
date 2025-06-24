@@ -68,7 +68,7 @@ class OPEALLMGuardInputGuardrail:
 
     def _analyze_scan_outputs(self, prompt, results_valid, results_score):
         filtered_results_valid_no_redacted = {}
-        scanners_with_redact = ["BanCompetitors", "BanSubstrings", "OPEABanSubstrings", "Regex", "OPEARegexScanner"]
+        scanners_with_redact = ["BanSubstrings", "OPEABanSubstrings", "Regex", "OPEARegexScanner"]
 
         for key, value in results_valid.items():
             if_redacted = False

@@ -18,3 +18,4 @@ data:
   BUCKET_NAME_REGEX_FILTER: {{ .Values.bucketNameRegexFilter | quote }}
   DPGUARD_ENDPOINT: {{ if .Values.dpguard.enabled }}{{ print "http://" .Values.dpguard.nameOverride ":8070/v1/llmguarddataprep" | quote }}{{ else }}""{{ end }}
   DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}
+  FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"

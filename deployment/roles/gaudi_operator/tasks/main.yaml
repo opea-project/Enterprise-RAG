@@ -93,7 +93,7 @@
   delay: 15
   tags: install
 
-- name: Wait until all init containers in habana-ai-driver pod are successfully completed
+- name: Wait until habana-ai-driver pod is ready
   vars:
     pod_name: "{{ driver_pods.resources | selectattr('metadata.name', 'search', 'habana-ai-driver') | map(attribute='metadata.name') | first }}"
   kubernetes.core.k8s_info:
@@ -102,13 +102,15 @@
     name: "{{ pod_name }}"
   register: current_driver_pod
   until: >
-    current_driver_pod.resources[0].status.initContainerStatuses is defined and
-    current_driver_pod.resources[0].status.initContainerStatuses
-    | selectattr('state.terminated', 'defined')
-    | selectattr('state.terminated.exitCode', 'equalto', 0)
-    | list | length ==
-    current_driver_pod.resources[0].status.initContainerStatuses | length
-  retries: 60
+    current_driver_pod.resources[0].status.conditions is defined and
+    (
+      current_driver_pod.resources[0].status.conditions
+      | selectattr('type', 'equalto', 'Ready')
+      | selectattr('status', 'equalto', 'True')
+      | list
+      | length
+    ) > 0
+  retries: 35
   delay: 15
   tags: install
 
@@ -219,7 +221,7 @@
     name: habana-ai-operator
     release_namespace: habana-ai-operator
     state: absent
-  tags: uninstall
+  tags: delete
 
 - name: Remove pod security labels from habana-ai-operator namespace
   kubernetes.core.k8s:
@@ -232,7 +234,7 @@
           pod-security.kubernetes.io/enforce: null
           pod-security.kubernetes.io/audit: null
           pod-security.kubernetes.io/warn: null
-  tags: uninstall
+  tags: delete
 
 - name: Delete namespace habana-ai-operator
   kubernetes.core.k8s:
@@ -240,5 +242,4 @@
     kind: Namespace
     name: habana-ai-operator
     state: absent
-  tags: uninstall
-
+  tags: delete

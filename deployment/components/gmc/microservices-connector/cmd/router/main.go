@@ -116,9 +116,9 @@ type ErrorResponse struct {
 }
 
 type Detail struct {
-	Type  string   	  `json:"type"`
+	Type  string      `json:"type"`
 	Loc   interface{} `json:"loc"`
-	Msg   string   	  `json:"msg"`
+	Msg   string      `json:"msg"`
 	Input interface{} `json:"input"`
 	Ctx   struct {
 		Gt int `json:"gt"`
@@ -452,6 +452,9 @@ func callService(
 
 	if val := req.Header.Get("Content-Type"); val == "" {
 		req.Header.Add("Content-Type", "application/json")
+	}
+	if val := headers.Get("Authorization"); val != "" {
+		req.Header.Add("Authorization", val)
 	}
 	// normal client
 	// callClient := http.Client{

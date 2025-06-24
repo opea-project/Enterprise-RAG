@@ -79,6 +79,14 @@ flower:
 backend:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.rbac is defined and edp.rbac.enabled is true %}
+  config:
+    rbac:
+      enabled: "{{ edp.rbac.enabled }}"
+      validationType: "{{ edp.rbac.validationType | default('ALWAYS') }}"
+      cacheExpiration: "{{ edp.rbac.cacheExpiration | default('600') }}"
+      staticConfig: "{{ edp.rbac.staticConfig | default('') }}"
+{% endif %}
 {% if edp.hierarchical_indices.enabled is true %}
 hierarchicalDataprep:
   enabled: {{ edp.hierarchical_indices.enabled }}

@@ -125,6 +125,16 @@ spec:
           {{- if .Values.backend.environment }}
             {{- toYaml .Values.backend.environment | nindent 12 }}
           {{- end }}
+            - name: OPEA_LOGGER_LEVEL
+              value: {{ .Values.backend.config.opeaLoggerLevel | quote }}
+          {{- if .Values.backend.config.rbac.enabled }}
+            - name: VECTOR_DB_RBAC
+              value: {{ .Values.backend.config.rbac.validationType | quote }}
+            - name: VECTOR_DB_RBAC_STATIC_CONFIG
+              value: {{ .Values.backend.config.rbac.staticConfig | quote }}
+            - name: VECTOR_DB_RBAC_CACHE_EXPIRATION
+              value: {{ .Values.backend.config.rbac.cacheExpiration | quote }}
+          {{- end }}
           ports:
             - name: http
               containerPort: 5000

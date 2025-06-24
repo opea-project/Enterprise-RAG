@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
-import BanCompetitorsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/BanCompetitorsScannerInputs";
 import BanSubstringsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/BanSubstringsScannerInputs";
 import CodeScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/CodeScannerInputs";
-import GibberishScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/GibberishScannerInputs";
-import LanguageScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/LanguageScannerInputs";
+import InvisibleTextScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/InvisibleTextScannerInputs";
 import PromptInjectionScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/PromptInjectionScannerInputs";
 import RegexScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/RegexScannerInputs";
+import SecretsScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/SecretsScannerInputs";
+import SentimentScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/SentimentScannerInputs";
+import TokenLimitScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/TokenLimitScannerInputs";
+import ToxicityScannerInputs from "@/features/admin-panel/control-plane/components/cards/scanner-inputs/ToxicityScannerInputs";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
 import {
   LLMInputGuardArgs,
@@ -45,24 +47,34 @@ const LLMInputGuardCard = ({
         previousArgumentsValues={previousArgumentsValues.code}
         handlers={handlers}
       />
+      <InvisibleTextScannerInputs
+        config={llmInputGuardFormConfig.invisible_text}
+        previousArgumentsValues={previousArgumentsValues.invisible_text}
+        handlers={handlers}
+      />
       <RegexScannerInputs
         config={llmInputGuardFormConfig.regex}
         previousArgumentsValues={previousArgumentsValues.regex}
         handlers={handlers}
       />
-      <GibberishScannerInputs
-        config={llmInputGuardFormConfig.gibberish}
-        previousArgumentsValues={previousArgumentsValues.gibberish}
+      <SecretsScannerInputs
+        config={llmInputGuardFormConfig.secrets}
+        previousArgumentsValues={previousArgumentsValues.secrets}
         handlers={handlers}
       />
-      <LanguageScannerInputs
-        config={llmInputGuardFormConfig.language}
-        previousArgumentsValues={previousArgumentsValues.language}
+      <SentimentScannerInputs
+        config={llmInputGuardFormConfig.sentiment}
+        previousArgumentsValues={previousArgumentsValues.sentiment}
         handlers={handlers}
       />
-      <BanCompetitorsScannerInputs
-        config={llmInputGuardFormConfig.ban_competitors}
-        previousArgumentsValues={previousArgumentsValues.ban_competitors}
+      <TokenLimitScannerInputs
+        config={llmInputGuardFormConfig.token_limit}
+        previousArgumentsValues={previousArgumentsValues.token_limit}
+        handlers={handlers}
+      />
+      <ToxicityScannerInputs
+        config={llmInputGuardFormConfig.toxicity}
+        previousArgumentsValues={previousArgumentsValues.toxicity}
         handlers={handlers}
       />
     </SelectedServiceCard>

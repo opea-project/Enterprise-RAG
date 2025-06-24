@@ -215,6 +215,8 @@ class ConnectorRedis(VectorStoreConnector):
         filter_expression: Optional[Union[str, FilterExpression]] = None,
         return_fields: Optional[List[str]]=None
     ):
+        logger.info(f"Building vector query with k={k}, distance_threshold={distance_threshold}, dtype={dtype}, filter_expression={filter_expression}, return_fields={return_fields}")
+
         if distance_threshold is not None:
             return VectorRangeQuery(
                 vector=vector,
@@ -289,6 +291,57 @@ class ConnectorRedis(VectorStoreConnector):
         except Exception as e:
             logger.exception("Error occured while searching by vector")
             raise e
+
+    def empty_filter_expression(self) -> FilterExpression:
+        """
+        Returns:
+            FilterExpression: An empty filter expression equivalent to None.
+        """
+        return (Text("") == None)  # noqa: E711
+
+    def get_bucket_name_filter_expression(self, bucket_names: List[str]) -> FilterExpression:
+        logger.debug(f"Bucket names in filter expression: {bucket_names}")
+        if len(bucket_names) == 0:
+            raise ValueError("Bucket names list cannot be empty")
+        bucket_name_filter = Text("bucket_name") == bucket_names[0]
+        for bucket_name in bucket_names[1:]:
+            bucket_name_filter |= Text("bucket_name") == bucket_name
+
+        logger.debug(f"Filter expression for bucket names: {str(bucket_name_filter)}")
+        return bucket_name_filter
+
+    def get_object_name_filter_expression(self, bucket_name: str, object_name: str) -> FilterExpression:
+        if len(bucket_name) == 0 or len(object_name) == 0:
+            raise ValueError("Bucket name and object name cannot be empty")
+        bucket_name_filter = Text("bucket_name") == bucket_name
+        object_name_filter = Text("object_name") == object_name
+
+        bucket_object_filter = bucket_name_filter & object_name_filter
+        logger.debug(f"Filter expression for bucket name and object name: {str(bucket_object_filter)}")
+        return bucket_object_filter
+
+    def get_hierarchical_summary_filter_expression(self):
+        """
+        Constructs a filter expression for hierarchical indices to retrieve summaries.
+        Returns:
+            FilterExpression: The filter expression for the hierarchical index.
+        """
+        return Num("summary") == 1
+
+    def get_hierarchical_chunk_filter_expression(self, doc_id, page):
+        """
+        Constructs a filter expression for hierarchical indices based on doc_id and page.
+        Args:
+            doc_id (str): The document ID.
+            page (int): The page number.
+        Returns:
+            FilterExpression: The filter expression for the hierarchical index.
+        """
+        return (
+            Text("doc_id") == doc_id
+            & Num("page") == page
+            & Num("summary") == 0
+        )
 
     def _convert_to_text_doc(self, doc):
         """Helper method to convert a raw Redis result to a TextDoc"""

@@ -385,5 +385,19 @@ def test_edp_upload_pptx_file_with_text_in_image(edp_helper):
     assert text_from_image == text_in_image
 
 
+@allure.testcase("IEASG-T190")
+def test_edp_upload_pdf_file_with_links(edp_helper):
+    """Upload PDF file with links and check that the links are extracted correctly"""
+    file = "links.pdf"
+    links = ["www.SomeMadeUpSiteOne.com", "https://SomeMadeUpSiteTwo.org", "http://SomeMadeUpSiteThree.net",
+             "https://SomeMadeUpSiteFour.pl", "http://bamboozlingwebsite.pl"]
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+
+    response = edp_helper.extract_text(edp_file["id"])
+    text_from_image = response.json().get("docs").get("docs")[0].get("text")
+    for link in links:
+        assert link in text_from_image
+
+
 def method_name():
     return f"{inspect.stack()[1].function}_"

@@ -149,6 +149,10 @@ tdxEnabled: false # enables Intel® Trust Domain Extensions
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
+# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
+balloons:
+  enabled: false # this is not supported on Gaudi/multi-node cluster
+
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml
@@ -220,6 +224,11 @@ fingerprint:
   namespace: fingerprint
 
 ```
+
+> [!NOTE]
+> Baloons policy is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> For more informations regarding baloons policy refer [here](components/nri-plugin/README.md)
+
 > [!NOTE]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.

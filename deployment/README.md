@@ -660,28 +660,18 @@ In case of `redis-cluster`, all above settings are applied for each cluster node
 
 ### Vector Database RBAC support
 
-Configuration is split into two parts:
-  - Configuration of RBAC validation type - this is done in EDP. Defines what validation configuration should be loaded and performed. EDP backend is responsible for processing the request and returning validated buckets accesses for requests
-  - Configuration for RBAC usage - this is done in pipeline's retriever. If enabled - additional query filtering is applied. If not enabled, no additional request for filters is performed.
+EDP backend is responsible for processing the request and returning validated buckets accesses for pipeline requests. By enabling it in edp, pipeline retriever's config-map is also updated to enable this feature. Depending of the validation type selected, storage endpoint is queried validated for current user's storage access to buckets. Storage endpoint is used as the source of truth for user access.
 
-This is configurable via `deployment/inventory/**/config.yaml`, for example:
+Enabling of RBAC is configurable via `deployment/inventory/**/config.yaml`, for example to enable most strict validation (validate on each request) use:
 
 ```yaml
-backend:
-  config:
-    rbac:
-      enabled: true
-      validationType: "CACHED" # "NONE", "ALWAYS", "CACHED", "STATIC"
-      cacheExpiration: "60" # in seconds
+edp:
+  rbac:
+    enabled: true
+    validationType: "ALWAYS"
 ```
 
-Above configuration shows a sample config to enable cached validated bucket list retrieval. Available validation types are:
-- "NONE" - transparent validation, the default unrestricted list of buckets is returned
-- "ALWAYS" - each request accesses storage to filter buckets that the user has access to
-- "CACHED" - similar to "ALWAYS" but the responses are cached with a configurable TTL to reduce latency
-- "STATIC" - static map of bucket restrictions. Configurable as a bucket list array, or as a dict of user_id's mapped arrays of buckets.
-
-For more details refer to [EDP's documentation](../src/edp/README.md).
+For more detail and configuration options refer to [EDP's documentation](../src/edp/README.md).
 
 ### Single Sign-On Integration Using Microsoft Entra ID (formerly Azure Active Directory)
 

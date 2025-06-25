@@ -123,6 +123,9 @@ class OPEAVectorStore():
             raise ValueError(f"Invalid search type: {input.search_type}")
         return search_res
 
+    def get_links_filter_expression(self):
+        return self.vector_store.get_links_filter_expression()
+
     def empty_filter_expression(self):
         return self.vector_store.empty_filter_expression()
 

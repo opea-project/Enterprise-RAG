@@ -61,6 +61,12 @@ class ConnectorRedis(VectorStoreConnector):
         metadata_schema = [{"name": field, "type": "text"} for field in base_fields]
         metadata_schema.append({"name": "start_index", "type": "numeric"})
 
+        # Find and update the bucket_name field to include index_missing attribute
+        for field in metadata_schema:
+            if field["name"] == "bucket_name":
+                field["attrs"] = {"index_missing": True}
+                break
+
         if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
             hierarchical_fields = [
                 {"name": "doc_id", "type": "text"},
@@ -298,6 +304,10 @@ class ConnectorRedis(VectorStoreConnector):
             FilterExpression: An empty filter expression equivalent to None.
         """
         return (Text("") == None)  # noqa: E711
+
+    def get_links_filter_expression(self) -> FilterExpression:
+        logger.debug("Adding links filter expression")
+        return Text("bucket_name").is_missing()
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]) -> FilterExpression:
         logger.debug(f"Bucket names in filter expression: {bucket_names}")

@@ -27,46 +27,42 @@ class OPEARetriever:
     def _initialize(self, vector_store: str):
         self.vector_store = OPEAVectorStore(vector_store)
 
-    def filter_expression_from_search_by(self, search_by: dict):
-        filter_expression = self.vector_store.empty_filter_expression()
+    def filter_expression_from_search_by(self, search_by: dict, skip_links=False):
+        filter_expression = None
         if search_by:
             if 'object_name' in search_by and 'bucket_name' in search_by:
                 try:
                     filter_expression = self.vector_store.get_object_name_filter_expression(bucket_name=search_by['bucket_name'], object_name=search_by['object_name'])
                     logger.debug(f"Searching by bucket name and object_name {search_by['bucket_name']} {search_by['object_name']}")
                 except ValueError:
-                    logger.warning("Empty bucket name or object name, returning 0 documents")
-                    return None
+                    logger.warning("Empty bucket name and/or object name")
             if 'bucket_names' in search_by:
                 try:
                     filter_expression = self.vector_store.get_bucket_name_filter_expression(bucket_names=search_by['bucket_names'])
                     logger.debug(f"Searching by bucket names {search_by['bucket_names']}")
                 except ValueError:
-                    logger.warning("Empty bucket names, returning 0 documents")
-                    return None
+                    logger.warning("Empty bucket names list")
             # Feature: add from<->to document created date range filtering
             # Feature: file extensions filtering
-        return filter_expression
+        if filter_expression is None:
+            logger.debug("No search_by provided, using empty filter expression")
+            filter_expression = self.vector_store.empty_filter_expression()
+
+        if skip_links:
+            return filter_expression
+        else:
+            return filter_expression | self.vector_store.get_links_filter_expression()
 
     async def retrieve(self, input: EmbedDoc, search_by: dict = None) -> SearchedDoc:
         filter_expression = self.filter_expression_from_search_by(search_by)
-        if search_by and not filter_expression:
-            logger.warning("No valid filter expression generated from search_by, returning 0 documents")
-            return SearchedDoc(retrieved_docs=[], user_prompt=input.text)
-
         return await self.vector_store.search(input=input, filter_expression=filter_expression)
 
     async def hierarchical_retrieve(self, input: EmbedDoc, k_summaries: int, k_chunks: int, search_by: dict = None) -> SearchedDoc:
-        filter_expression = self.filter_expression_from_search_by(search_by)
-        if search_by and not filter_expression:
-            logger.warning("No valid filter expression generated from search_by, returning 0 documents")
-            return SearchedDoc(retrieved_docs=[], user_prompt=input.text)
+        filter_expression = self.filter_expression_from_search_by(search_by=search_by, skip_links=True)
 
         # Fetch summaries using filter expression
         summary_expression = self.vector_store.get_hierarchical_summary_filter_expression()
-        if filter_expression is None:
-            filter_expression = self.vector_store.empty_filter_expression()
-        summary_vectors = await self.vector_store.search(input=input, filter_expression=filter_expression & summary_expression)
+        summary_vectors = await self.vector_store.search(input=input, filter_expression=(filter_expression & summary_expression) | self.vector_store.get_links_filter_expression())
 
         # Choose first k_summaries summary vectors
         docid_page_list = []
@@ -77,9 +73,7 @@ class OPEARetriever:
         retrieved_docs = []
         for doc_id, page in docid_page_list:
             chunk_expression = self.vector_store.get_hierarchical_chunk_filter_expression(doc_id, page)
-            if filter_expression is None:
-                filter_expression = self.vector_store.empty_filter_expression()
-            chunk_vectors = await self.vector_store.search(input=input, filter_expression=filter_expression & chunk_expression)
+            chunk_vectors = await self.vector_store.search(input=input, filter_expression=(filter_expression & chunk_expression) | self.vector_store.get_links_filter_expression())
             # Choose first k_chunks chunk vectors for each summary/page
             retrieved_docs.extend(chunk_vectors.retrieved_docs[:k_chunks])
 

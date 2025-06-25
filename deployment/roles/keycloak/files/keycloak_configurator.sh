@@ -968,7 +968,7 @@ set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 
 # Minio
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://$minio_domain' baseUrl='https://$minio_domain' redirectUris='https://$minio_domain/oauth_callback'"
-# create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 # create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readonly"
 # create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-admin-group"
@@ -977,7 +977,7 @@ create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-user-group
 add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio-dedicated" "EnterpriseRAG-oidc-minio" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
 add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-dedicated" "EnterpriseRAG-oidc" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
 
-#assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "consoleAdmin" "EnterpriseRAG-oidc-minio"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "consoleAdmin" "EnterpriseRAG-oidc-minio"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "erag-admin-group" "EnterpriseRAG-oidc-minio"
 #assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "readonly" "EnterpriseRAG-oidc-minio"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "erag-user-group" "EnterpriseRAG-oidc-minio"

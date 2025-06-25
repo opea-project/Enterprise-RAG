@@ -31,13 +31,6 @@ class LoadPdf(AbstractLoader):
 
             page = doc.load_page(i)
             page.clean_contents()
-            
-            pagetext = page.get_text().strip()
-            if pagetext:
-                if pagetext.endswith("!") or pagetext.endswith("?") or pagetext.endswith("."):
-                    result = result + pagetext
-                else:
-                    result = result + pagetext + "."
 
             # https://pymupdf.readthedocs.io/en/latest/page.html#description-of-get-links-entries
             for link in page.links(): 
@@ -52,6 +45,23 @@ class LoadPdf(AbstractLoader):
                 if len(table_data) > 0:
                     flattened_table_data = [str(item) for sublist in table_data for item in sublist]
                     result += " ".join(flattened_table_data)
+
+            # https://pymupdf.readthedocs.io/en/latest/recipes-text.html#how-to-extract-text-from-pdf-documents
+            # simple page.get_text() does extact text, but it includes text from tables. skip table bounding boxes from the text extraction
+            try:
+                non_table_text = []
+                text_dict = page.get_text("dict")
+                table_rects = [pymupdf.Rect(table.bbox) for table in finder.tables]
+                for block in text_dict["blocks"]:
+                    block_rect = pymupdf.Rect(block["bbox"])
+                    if not any(block_rect.intersects(table_rect) for table_rect in table_rects):
+                        if "lines" in block:
+                            for line in block["lines"]:
+                                for span in line["spans"]:
+                                    non_table_text.append(span["text"])
+                result += " ".join(non_table_text)
+            except Exception:
+                result += page.get_text().strip()
 
             # https://pymupdf.readthedocs.io/en/latest/recipes-images.html#how-to-extract-images-pdf-documents
             images = doc.get_page_images(i, full=False)

@@ -226,8 +226,8 @@ fingerprint:
 ```
 
 > [!NOTE]
-> Baloons policy is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
-> For more informations regarding baloons policy refer [here](components/nri-plugin/README.md)
+> Balloons policy is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> For more informations regarding balloons policy refer [here](components/nri-plugin/README.md)
 
 > [!NOTE]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.

@@ -45,9 +45,7 @@ retriever = opea_retriever.OPEARetriever(
 async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> SearchedDoc:
     start = time.time()
 
-    filter_by_rbac = str(os.getenv('VECTOR_DB_RBAC')).lower() in ['true', '1', 't', 'y', 'yes']
-    search_detail = retriever.filter_expression_for_rbac(request) if filter_by_rbac else {}
-
+    search_detail = retriever.filter_expression_for_rbac(request)
     vector = []
     if isinstance(input, EmbedDocList):
         logger.warning("Only one document is allowed for retrieval. Using the first document.")

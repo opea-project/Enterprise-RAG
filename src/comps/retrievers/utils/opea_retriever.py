@@ -29,7 +29,9 @@ class OPEARetriever:
 
     def filter_expression_from_search_by(self, search_by: dict, skip_links=False):
         filter_expression = None
-        if search_by:
+        if search_by is None:
+            return filter_expression
+        else:
             if 'object_name' in search_by and 'bucket_name' in search_by:
                 try:
                     filter_expression = self.vector_store.get_object_name_filter_expression(bucket_name=search_by['bucket_name'], object_name=search_by['object_name'])
@@ -44,14 +46,15 @@ class OPEARetriever:
                     logger.warning("Empty bucket names list")
             # Feature: add from<->to document created date range filtering
             # Feature: file extensions filtering
-        if filter_expression is None:
-            logger.debug("No search_by provided, using empty filter expression")
-            filter_expression = self.vector_store.empty_filter_expression()
 
-        if skip_links:
-            return filter_expression
-        else:
-            return filter_expression | self.vector_store.get_links_filter_expression()
+            if filter_expression is None:
+                logger.debug("No search_by filter matched, using empty filter expression")
+                filter_expression = self.vector_store.empty_filter_expression()
+
+            if skip_links:
+                return filter_expression
+            else:
+                return filter_expression | self.vector_store.get_links_filter_expression()
 
     async def retrieve(self, input: EmbedDoc, search_by: dict = None) -> SearchedDoc:
         filter_expression = self.filter_expression_from_search_by(search_by)
@@ -59,6 +62,10 @@ class OPEARetriever:
 
     async def hierarchical_retrieve(self, input: EmbedDoc, k_summaries: int, k_chunks: int, search_by: dict = None) -> SearchedDoc:
         filter_expression = self.filter_expression_from_search_by(search_by=search_by, skip_links=True)
+
+        if filter_expression is None:
+            logger.debug("No search_by provided, using empty filter expression")
+            filter_expression = self.vector_store.empty_filter_expression()
 
         # Fetch summaries using filter expression
         summary_expression = self.vector_store.get_hierarchical_summary_filter_expression()
@@ -80,6 +87,11 @@ class OPEARetriever:
         return SearchedDoc(retrieved_docs=retrieved_docs, user_prompt=input.text)
 
     def filter_expression_for_rbac(self, request: Request) -> dict:
+        filter_by_rbac = str(os.getenv('VECTOR_DB_RBAC')).lower() in ['true', '1', 't', 'y', 'yes']
+        if not filter_by_rbac:
+            logger.debug("RBAC is disabled, returning None filter expression")
+            return None
+    
         try:
             items = retrieve_bucket_list(request.headers.get("Authorization", None))
             logger.debug(f"Retrieved bucket list: {items}")

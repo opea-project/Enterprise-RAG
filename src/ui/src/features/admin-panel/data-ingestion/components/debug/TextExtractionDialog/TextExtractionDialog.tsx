@@ -3,6 +3,7 @@
 
 import "./TextExtractionDialog.scss";
 
+import classNames from "classnames";
 import { ChangeEventHandler, FormEvent, useMemo, useState } from "react";
 
 import Button from "@/components/ui/Button/Button";
@@ -105,15 +106,17 @@ export const TextExtractionForm = ({
 
 interface ExtractedTextProps {
   extractedText: string;
+  isError?: boolean;
 }
 
-const ExtractedText = ({ extractedText }: ExtractedTextProps) => {
+const ExtractedText = ({ extractedText, isError }: ExtractedTextProps) => {
   const linesPerPage = 40;
   const [visibleTextOffset, setVisibleTextOffset] = useState(linesPerPage);
 
   const formattedExtractedText = useMemo(
-    () => JSON.stringify(extractedText ?? "", null, 2),
-    [extractedText],
+    () =>
+      isError ? extractedText : JSON.stringify(extractedText ?? "", null, 2),
+    [extractedText, isError],
   );
   const maxVisibleTextOffset = formattedExtractedText.split("\n").length;
 
@@ -131,9 +134,13 @@ const ExtractedText = ({ extractedText }: ExtractedTextProps) => {
     setVisibleTextOffset((prevOffset) => prevOffset + linesPerPage);
   };
 
+  const preClassNames = classNames({
+    "error-message": isError,
+  });
+
   return (
     <div className="extracted-text">
-      <pre>{visibleFormattedExtractedText}</pre>
+      <pre className={preClassNames}>{visibleFormattedExtractedText}</pre>
       {isLoadMoreButtonVisible && (
         <Button
           size="sm"
@@ -195,7 +202,7 @@ const TextExtractionDialog = ({
 
     if (extractedText === undefined) {
       if (errorMessage) {
-        return <p className="error">{errorMessage}</p>;
+        return <ExtractedText extractedText={errorMessage} isError />;
       }
       return <p>No text extracted from the file</p>;
     }

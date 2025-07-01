@@ -12,6 +12,7 @@ import {
   LinkDataItem,
 } from "@/features/admin-panel/data-ingestion/types";
 import {
+  FileSyncDataItem,
   GetFilePresignedUrlRequest,
   GetS3BucketsListResponseData,
   PostFileToExtractTextRequest,
@@ -81,12 +82,12 @@ export const edpApi = createApi({
         method: "POST",
       }),
       transformErrorResponse: (error) =>
-        transformErrorMessage(error, ERROR_MESSAGES.RETRY_LINK_ACTION),
+        transformErrorMessage(error, ERROR_MESSAGES.RETRY_FILE_ACTION),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         await handleOnQueryStarted(
           queryFulfilled,
           dispatch,
-          ERROR_MESSAGES.RETRY_LINK_ACTION,
+          ERROR_MESSAGES.RETRY_FILE_ACTION,
         );
       },
       invalidatesTags: ["Files"],
@@ -116,6 +117,33 @@ export const edpApi = createApi({
         method: "POST",
         params: queryParams,
       }),
+    }),
+    getFilesSync: builder.query<FileSyncDataItem[], void>({
+      query: () => API_ENDPOINTS.GET_FILES_SYNC,
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.GET_FILES_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.GET_FILES_SYNC,
+        );
+      },
+    }),
+    postFilesSync: builder.mutation<void, void>({
+      query: () => ({
+        url: API_ENDPOINTS.POST_FILES_SYNC,
+        method: "POST",
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_FILES_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.POST_FILES_SYNC,
+        );
+      },
     }),
     getLinks: builder.query<LinkDataItem[], void>({
       query: () => API_ENDPOINTS.GET_LINKS,
@@ -205,6 +233,9 @@ export const {
   useRetryFileActionMutation,
   usePostFileToExtractTextMutation,
   usePostLinkToExtractTextMutation,
+  useGetFilesSyncQuery,
+  useLazyGetFilesSyncQuery,
+  usePostFilesSyncMutation,
   useGetLinksQuery,
   useLazyGetLinksQuery,
   usePostLinksMutation,

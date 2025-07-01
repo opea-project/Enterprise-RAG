@@ -7,6 +7,7 @@ import { Handle } from "@xyflow/react";
 import classNames from "classnames";
 import { memo } from "react";
 
+import ConfigurableServiceIcon from "@/components/icons/ConfigurableServiceIcon/ConfigurableServiceIcon";
 import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
 import { ServiceData } from "@/features/admin-panel/control-plane/types";
 
@@ -25,6 +26,7 @@ const ServiceNode = ({
     additionalSourceId,
     selected,
     status,
+    configurable,
   },
 }: ServiceNodeProps) => {
   const serviceNodeClassNames = classNames({
@@ -42,7 +44,10 @@ const ServiceNode = ({
         />
       )}
       <div className={serviceNodeClassNames}>
-        <ServiceStatusIndicator status={status} forNode />
+        {configurable && (
+          <ConfigurableServiceIcon className="service-node__icon" />
+        )}
+        <ServiceStatusIndicator status={status} forNode noTooltip />
         <div className="service-node__label">
           <p>{displayName}</p>
         </div>

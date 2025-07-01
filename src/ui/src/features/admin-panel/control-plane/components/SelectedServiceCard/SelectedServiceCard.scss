@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .selected-service-card {
+  @apply relative;
   @apply bg-light-bg-2 dark:bg-dark-bg-2;
   @apply border-l border-l-light-border dark:border-l-dark-border;
 
   & .selected-service-card__wrapper {
-    @apply grid grid-rows-[1fr_3rem];
+    @apply [scrollbar-gutter:stable];
 
     & .selected-service-card__header {
       @apply relative px-4 pt-4;
@@ -18,7 +19,7 @@
     }
 
     & .selected-service-card__content {
-      @apply mr-2 overflow-y-auto px-4 pb-2;
+      @apply mr-2 overflow-y-auto pl-4 pr-2 pb-2;
 
       & .service-details-grid {
         @apply mt-2 grid auto-rows-[1.75rem] grid-cols-2 items-center justify-items-start;
@@ -37,10 +38,9 @@
     }
 
     & .selected-service-card__footer {
-      @apply px-4 py-3;
-      @apply bg-light-bg-2 dark:bg-dark-bg-2;
+      @apply absolute bottom-0 w-full;
+      @apply px-4 pb-3;
       @apply flex items-center justify-between gap-4;
-      @apply border-t border-t-light-border dark:border-t-dark-border;
     }
   }
 }

@@ -5,10 +5,11 @@ import "./UploadDataDialog.scss";
 
 import { useRef, useState } from "react";
 
-import Button from "@/components/ui/Button/Button";
 import Dialog, { DialogRef } from "@/components/ui/Dialog/Dialog";
+import IconButton from "@/components/ui/IconButton/IconButton";
 import { addNotification } from "@/components/ui/Notifications/notifications.slice";
 import { SelectInputChangeHandler } from "@/components/ui/SelectInput/SelectInput";
+import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import {
   useGetFilePresignedUrlMutation,
   useLazyGetFilesQuery,
@@ -152,7 +153,12 @@ const UploadDataDialog = () => {
   return (
     <Dialog
       ref={dialogRef}
-      trigger={<Button icon="upload">Upload</Button>}
+      trigger={
+        <Tooltip
+          title="Upload Data"
+          trigger={<IconButton icon="upload" variant="contained" />}
+        />
+      }
       footer={
         <UploadDataDialogFooter
           uploadErrors={uploadErrors}

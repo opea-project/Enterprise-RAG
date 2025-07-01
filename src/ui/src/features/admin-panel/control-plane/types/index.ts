@@ -62,4 +62,5 @@ export interface ServiceData extends Record<string, unknown> {
   additionalSourceId?: string;
   selected?: boolean;
   status?: ServiceStatus;
+  configurable?: boolean;
 }

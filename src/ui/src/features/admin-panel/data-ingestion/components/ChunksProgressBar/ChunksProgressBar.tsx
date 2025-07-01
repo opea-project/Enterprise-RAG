@@ -17,7 +17,11 @@ const ChunksProgressBar = ({
 
   return (
     <div className="flex flex-nowrap items-center gap-2">
-      <ProgressBar value={processedChunks} maxValue={totalChunks} />
+      <ProgressBar
+        value={processedChunks}
+        maxValue={totalChunks}
+        aria-label="Processed Chunks"
+      />
       <p className="text-xs">
         {processedChunks}&nbsp;/&nbsp;{totalChunks}&nbsp;({percentValue}%)
       </p>

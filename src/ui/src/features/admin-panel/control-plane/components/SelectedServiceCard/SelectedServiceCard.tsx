@@ -35,28 +35,26 @@ const SelectedServiceCard = ({
   const contentClassNames = classNames([
     "selected-service-card__content",
     {
-      "h-[calc(100vh-11.5rem)]": !footerProps,
-      "h-[calc(100vh-13.75rem)]": footerProps,
+      "h-[calc(100vh-10.75rem)]": !footerProps,
+      "h-[calc(100vh-12.75rem)]": footerProps,
     },
   ]);
 
   return (
     <div className="selected-service-card">
       <div className="selected-service-card__wrapper">
-        <div>
-          <header className="selected-service-card__header">
-            <ServiceStatusIndicator status={serviceStatus} />
-            <p className="selected-service-card__header__service-name">
-              {serviceName}
-            </p>
-            {DebugDialog}
-          </header>
-          <div className={contentClassNames}>
-            {serviceDetails && (
-              <ServiceDetailsGrid serviceDetails={serviceDetails} />
-            )}
-            {children}
-          </div>
+        <header className="selected-service-card__header">
+          <ServiceStatusIndicator status={serviceStatus} />
+          <p className="selected-service-card__header__service-name">
+            {serviceName}
+          </p>
+          {DebugDialog}
+        </header>
+        <div className={contentClassNames}>
+          {serviceDetails && (
+            <ServiceDetailsGrid serviceDetails={serviceDetails} />
+          )}
+          {children}
         </div>
         {footerProps && <SelectedServiceCardFooter {...footerProps} />}
       </div>

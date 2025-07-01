@@ -43,7 +43,7 @@ body {
 
 *::selection {
   @apply bg-light-primary text-light-text-inverse;
-  @apply dark:bg-dark-primary dark:text-dark-text-inverse;
+  @apply dark:bg-dark-primary dark:text-dark-text-primary;
 }
 
 *:focus-visible {

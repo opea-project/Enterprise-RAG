@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
   RETRY_FILE_ACTION: "/file/{uuid}/retry",
   POST_FILE_TO_EXTRACT_TEXT: "/file/{uuid}/extract",
   POST_LINK_TO_EXTRACT_TEXT: "/link/{uuid}/extract",
+  GET_FILES_SYNC: "/files/sync",
+  POST_FILES_SYNC: "/files/sync",
 
   GET_LINKS: "/links",
   POST_LINKS: "/links",
@@ -27,6 +29,8 @@ export const ERROR_MESSAGES = {
   DELETE_FILE: "Failed to delete file",
   POST_FILE_TO_EXTRACT_TEXT: "Failed to extract text from the file",
   POST_LINK_TO_EXTRACT_TEXT: "Failed to extract text from the link",
+  GET_FILES_SYNC: "Failed to fetch files synchronization status",
+  POST_FILES_SYNC: "Failed to synchronize files",
 
   GET_LINKS: "Failed to fetch links",
   POST_LINKS: "Failed to upload links",

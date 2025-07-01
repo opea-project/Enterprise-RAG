@@ -1,4 +1,4 @@
-FROM dataprep-base:latest
+FROM text-extractor-base:latest
 
 COPY compliance /compliance
 
@@ -7,5 +7,5 @@ COPY Dockerfile .
 COPY uv.lock .
 
 # CMD from base Dockerfile
-WORKDIR /home/user/comps/dataprep
-CMD ["python", "opea_dataprep_microservice.py"]
+WORKDIR /home/user/comps/text_extractor
+CMD ["python", "opea_text_extractor_microservice.py"]

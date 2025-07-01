@@ -372,6 +372,52 @@ def test_adoc_substitutions(edp_helper, chatqa_api_helper):
     assert "zumbleflick" in response.lower(), UNRELATED_RESPONSE_MSG
 
 
+@allure.testcase("IEASG-T196")
+def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper):
+    """
+    This tests checks if chatbot can connect large pieces of information (events) to another one (events' days)
+    This lightway part of the tests ask simple questions about event or time to see if information
+    was identified and classified correctly.
+    """
+    edp_helper.upload_file_and_wait_for_ingestion("long-agenda.txt")
+
+    with (allure.step("Ask about time of event")):
+        question = "When is the lunch break on Day 2?"
+        response = ask_question(chatqa_api_helper, question)
+        assert chatqa_api_helper.words_in_response(
+            [
+                "12:00 PM - 01:00 PM",
+                "from 12:00 PM to 01:00 PM",
+            ],
+            response), UNRELATED_RESPONSE_MSG
+
+    with allure.step("Ask about event happening once"):
+        question = "When are awards ceremony"
+        response = ask_question(chatqa_api_helper, question)
+        assert chatqa_api_helper.all_words_in_response(["day 2", "07:00 PM", "08:30 PM"], response), UNRELATED_RESPONSE_MSG
+
+    with allure.step("Ask about event happening both days"):
+        question = "When are Scrimmage Games?"
+        response = ask_question(chatqa_api_helper, question)
+        assert chatqa_api_helper.all_words_in_response(["day 1", "day 2"], response), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T200")
+def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper):
+    """
+        This tests checks if chatbot can connect large pieces of information (events) to another one (events' days)
+        This test verifies if chatbot can summarize all information related to a given day.
+        """
+    edp_helper.upload_file_and_wait_for_ingestion("long-agenda.txt")
+    with allure.step("Summarize question about a day"):
+        required_mentions = ["registration", "welcome", "warm-up", "stretching", "skill development",
+                             "lunch", "team building", "scrimmage", "cool down", "dinner", "entertainment", "wind down",
+                             "bedtime"]
+        question = "What happens on day 1?"
+        response = ask_question(chatqa_api_helper, question)
+        assert chatqa_api_helper.all_words_in_response(required_mentions, response), UNRELATED_RESPONSE_MSG
+
+
 def delete_and_ask_question(edp_helper, chatqa_api_helper, file, question):
     response = edp_helper.generate_presigned_url(file, "DELETE")
     edp_helper.delete_file(response.json().get("url"))

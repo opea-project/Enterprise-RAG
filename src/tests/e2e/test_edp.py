@@ -399,5 +399,36 @@ def test_edp_upload_pdf_file_with_links(edp_helper):
         assert link in text_from_image
 
 
+@allure.testcase("IEASG-T197")
+def test_edp_upload_pdf_file_with_table(edp_helper):
+    """Upload PDF file with table and check that the text inside is extracted correctly"""
+    file = "schedule.pdf"
+    column_tags = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    time_stamps = ["6:00", "8:00", "8:30", "10:00", "11:05", "13:00", "14:00", "15:00", "15:05", "16:30"]
+    subjects = {
+        "Math" : 9,
+        "Philosophy" : 1,
+        "Swimming" : 1,
+        "Theology" : 1,
+        "Physics" : 4,
+        "PE" : 1,
+        "Computer" : 1,
+        "Science" : 1,
+        "Art" : 1,
+        "Biology" : 1,
+        "Chemistry" : 1
+    }
+
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+    response = edp_helper.extract_text(edp_file["id"])
+    text_from_image = response.json().get("docs").get("docs")[0].get("text")
+
+    assert all(day in text_from_image for day in column_tags)
+    assert all(hours in text_from_image for hours in time_stamps)
+    for subject in subjects:
+        subject_number = text_from_image.count(subject)
+        assert subject_number == subjects[subject]
+
+
 def method_name():
     return f"{inspect.stack()[1].function}_"

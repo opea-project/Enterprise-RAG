@@ -227,7 +227,6 @@ def test_docx_tables(edp_helper, chatqa_api_helper):
     assert chatqa_api_helper.words_in_response(["kren", "talweir"], response), UNRELATED_RESPONSE_MSG
 
 
-@pytest.mark.smoke
 @allure.testcase("IEASG-T165")
 def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     """*.docx file learning capabilities (with formatted text inside the file)"""
@@ -246,7 +245,7 @@ def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     # 4. Test underline text
     question = "What did people call Lunibelle Lucifelle, and why?"
     response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["sound", "girl"], response), UNRELATED_RESPONSE_MSG
+    assert chatqa_api_helper.words_in_response(["sound girl"], response), UNRELATED_RESPONSE_MSG
     # 5. Test color text
     question = "What did Lunibelle Lucifelle do when she reached the center of the square?"
     response = ask_question(chatqa_api_helper, question)

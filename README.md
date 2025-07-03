@@ -35,6 +35,7 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 - [Support](#support)
 - [License](#license)
 - [Security](#security)
+- [Contributing](#contributing)
 - [Trademark Information](#trademark-information)
 
 # Documentation
@@ -267,6 +268,10 @@ Intel is committed to respecting human rights and avoiding causing or contributi
 # Model Card Guidance
 
 You, not Intel, are responsible for determining model suitability for your use case. For information regarding model limitations, safety considerations, biases, or other information consult the model cards (if any) for models you use, typically found in the repository where the model is available for download. Contact the model provider with questions. Intel does not provide model cards for third party models.
+
+# Contributing
+
+If you want to contribute to the project, please refer to the guide in [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
 # Trademark Information
 

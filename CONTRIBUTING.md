@@ -2,14 +2,19 @@
 
 ## Table of Contents
 1. [License](#license)
-2. [Sign your work](#sign-your-work)
-3. [Local linting](#local-linting)
+2. [Getting started](#getting-started)
+3. [Sign your work](#sign-your-work)
+4. [Local linting](#local-linting)
 
 ### License
 
 Intel(R) AI for Enterprise RAG is licensed under the terms in [LICENSE](LICENSE). 
 By contributing to the project, you agree to the license and copyright terms therein
 and release your contribution under these terms.
+
+### Getting started
+
+Use the `main` branch as the starting point. Fork the repository and start contribution with following sections in mind.
 
 ### Sign your work
 
@@ -93,3 +98,8 @@ docker run \
 ```
 
 For more information on running Super-Linter locally, follow [link](https://github.com/super-linter/super-linter/blob/main/docs/run-linter-locally.md).
+
+### Create pull request
+
+When you are ready, simply create new pull request. We will contact you via comments
+if any changes are required.

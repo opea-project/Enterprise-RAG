@@ -430,5 +430,18 @@ def test_edp_upload_pdf_file_with_table(edp_helper):
         assert subject_number == subjects[subject]
 
 
+@allure.testcase("IEASG-T198")
+def test_edp_upload_docx_file_with_text_in_image_inside_table(edp_helper):
+    """Upload DOCX file with text in image inside a table and check that the text is extracted correctly"""
+    file = "table_text_in_image.docx"
+    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+
+    response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, "Failed to extract text."
+    text_from_image = response.json()["docs"]["docs"][0]["text"]
+    assert text_from_image == text_in_image, f"Extracted text '{text_from_image}' does not match expected text '{text_in_image}'"
+
+
 def method_name():
     return f"{inspect.stack()[1].function}_"

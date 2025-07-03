@@ -3,6 +3,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 {{- $modelName := required "Please specify a valid llm_model name in your Helm chart values" .Values.llm_model }}
+{{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default .Values.defaultModelConfigs.modelChatTemplate }}
 {{- $port := "8000" }}
 
 apiVersion: v1
@@ -24,6 +25,18 @@ data:
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
+---
+{{- if $modelChatTemplate }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-chat-template
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+   chat_template.jinja: |
+{{ $modelChatTemplate | indent 4 }}
+{{- end }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -112,6 +125,9 @@ spec:
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
           {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--port" $port) }}
+          {{- if $modelChatTemplate }}
+            {{- $cmd = concat $cmd (list "--chat-template" "/etc/vllm/chat_template.jinja") }}
+          {{- end }}
           command:
             - bash
             - -c
@@ -134,7 +150,7 @@ spec:
                 {{- if .Values.balloons.enabled }}
                 export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
                 {{- end }}
-                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"
+                python3 -m "vllm.entrypoints.openai.api_server" --model $LLM_VLLM_MODEL_NAME --device "cpu" --tensor-parallel-size $VLLM_TP_SIZE --pipeline-parallel-size $VLLM_PP_SIZE --dtype $VLLM_DTYPE --max_model_len $VLLM_MAX_MODEL_LEN --max-num-seqs $VLLM_MAX_NUM_SEQS --disable-log-requests --download-dir "/data"{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}
           {{- end }}
           volumeMounts:
             - mountPath: /data
@@ -147,6 +163,10 @@ spec:
               name: cache
             - mountPath: /home/user/.config
               name: config
+            {{- if $modelChatTemplate }}
+            - mountPath: /etc/vllm
+              name: chat-template-volume
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ $port }}
@@ -188,6 +208,11 @@ spec:
           emptyDir: {}
         - name: config
           emptyDir: {}
+        {{- if $modelChatTemplate }}
+        - name: chat-template-volume
+          configMap:
+            name: vllm-chat-template
+        {{- end }}
 ---
 {{- if .Values.hpaEnabled }}
 apiVersion: autoscaling/v2

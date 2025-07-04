@@ -1,11 +1,87 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
+- name: Gather existing namespaces
+  kubernetes.core.k8s_info:
+    kind: Namespace
+  register: k8s_namespaces
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Set list of existing namespace names
+  ansible.builtin.set_fact:
+    existing_namespaces: "{{ k8s_namespaces.resources | map(attribute='metadata.name') | list }}"
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Load default values from apisix routes values.yaml
+  include_vars:
+    file: "{{ apisix_routes.helm.default_values_file }}"
+    name: apisix_routes_raw_config
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Filter endpoints with existing namespaces
+  ansible.builtin.set_fact:
+    filtered_endpoints: >-
+      {{
+        apisix_routes_raw_config.endpoints | selectattr("namespace", "in", existing_namespaces) | list
+      }}
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Write override values to enable only endpoints in existing namespaces
+  copy:
+    dest: "{{ apisix_routes_helm_override_values_path }}"
+    content: |
+      endpoints:
+      {% for item in apisix_routes_raw_config.endpoints %}
+        - name: {{ item.name }}
+          enabled: {{ 'true' if item.namespace in existing_namespaces else 'false' }}
+      {% endfor %}
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Deep merge default and override endpoints by name
+  ansible.builtin.set_fact:
+    merged_endpoints: "{{ merged_endpoints | default([]) + [updated_endpoint] }}"
+  vars:
+    default_endpoints: "{{ (lookup('file', apisix_routes.helm.default_values_file) | from_yaml).endpoints }}"
+    override_map: >-
+      {{
+        (lookup('file', apisix_routes_helm_override_values_path) | from_yaml)
+        .endpoints | default([]) | items2dict(key_name='name', value_name='enabled')
+      }}
+    updated_endpoint: "{{ item | combine({'enabled': override_map[item.name] | default(item.enabled)}) }}"
+  loop: "{{ default_endpoints }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: apisix.enabled
+  tags:
+    - install
+
+- name: Merge full values structure with updated endpoints
+  set_fact:
+    merged_apisix_values: >-
+      {{
+        (lookup('file', apisix_routes.helm.default_values_file) | from_yaml)
+        | combine({'endpoints': merged_endpoints}, recursive=True)
+      }}
+  when: apisix.enabled
+  tags:
+    - install
+
 - name: Install apisix routes
   kubernetes.core.helm:
     name: "{{ apisix_routes.helm.release_name }}"
     chart_ref: "{{ apisix_routes.helm.chart_directory }}"
     namespace: "{{ apisix_routes.namespace }}"
+    values: "{{ merged_apisix_values }}"
     state: present
     force: true
   when: apisix.enabled

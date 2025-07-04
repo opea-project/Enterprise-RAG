@@ -111,7 +111,16 @@ def test_chatqa_through_apisix(chatqa_api_helper, fingerprint_api_helper, keyclo
                "exists or default_credentials.txt is present in default directory.")
         pytest.skip(msg)
     response = chatqa_api_helper.call_chatqa_through_apisix(token, question)
-    assert response.streaming_duration > 0.1, \
+
+    line_number = 0
+    for line in response.iter_lines(decode_unicode=True):
+        if line_number == 0:
+            first_line_start_time = time.time()
+        line_number += 1
+        logger.debug(line)
+    streaming_duration = time.time() - first_line_start_time
+
+    assert streaming_duration > 0.1, \
         ("Time between first and last line of the response is less than 0.1 second. "
          "Looks like streaming is set but not working properly.")
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"

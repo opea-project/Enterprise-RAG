@@ -63,11 +63,10 @@ class ApiResponse:
     Wrapper class for the response from 'requests' library
     """
 
-    def __init__(self, response, response_time, exception=None, streaming_duration=None):
+    def __init__(self, response, response_time, exception=None):
         self._response = response
         self._response_time = response_time
         self._exception = exception
-        self._streaming_duration = streaming_duration
 
     def __getattr__(self, name):
         return getattr(self._response, name)
@@ -75,10 +74,6 @@ class ApiResponse:
     @property
     def response_time(self):
         return self._response_time
-
-    @property
-    def streaming_duration(self):
-        return self._streaming_duration
 
     @property
     def exception(self):
@@ -136,9 +131,9 @@ class ApiRequestHelper:
             headers=self.default_headers,
             json=request_body
         )
-        duration = round(time.time() - start_time, 2)
-        logger.info(f"ChatQA API call duration: {duration}")
-        return ApiResponse(response, duration)
+        api_call_duration = round(time.time() - start_time, 2)
+        logger.info(f"ChatQA API call duration: {api_call_duration}")
+        return ApiResponse(response, api_call_duration)
 
     def call_chatqa_through_apisix(self, token, question):
         """
@@ -146,8 +141,6 @@ class ApiRequestHelper:
 
         This method does not port-forwarding router-server. Instead, it does port-forwarding of nginx-controller
         in order to reach it in case of Kind deployment.
-
-        Also, streaming duration is calculated and passed as an additional parameter in the response.
         """
         url = f"{ERAG_DOMAIN}/api/v1/chatqna"
         payload = {"text": question}
@@ -165,17 +158,9 @@ class ApiRequestHelper:
                 stream=True,
                 verify=False
             )
-            line_number = 0
-            for line in response.iter_lines(decode_unicode=True):
-                if line_number == 0:
-                    first_line_start_time = time.time()
-                line_number += 1
-                logger.debug(line)
-
-        streaming_duration = time.time() - first_line_start_time
-        duration = round(time.time() - start_time, 2)
-        logger.info(f"ChatQA API call duration: {duration}")
-        return ApiResponse(response, duration, streaming_duration=streaming_duration)
+        api_call_duration = round(time.time() - start_time, 2)
+        logger.info(f"ChatQA API call duration: {api_call_duration}")
+        return ApiResponse(response, api_call_duration)
 
     def format_response(self, response):
         """

@@ -722,11 +722,11 @@ textSplitter:
     embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
   resources:
     requests:
-      cpu: "0.5"
-      memory: "64Mi"
+      cpu: "1"
+      memory: "512Mi"
     limits:
       cpu: "2"
-      memory: "1Gi"
+      memory: "4Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 1

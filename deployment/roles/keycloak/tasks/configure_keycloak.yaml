@@ -4,7 +4,7 @@
 ---
 - name: Set up port forwarding for Keycloak service
   ansible.builtin.command: >
-    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80
+    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80
   async: 180
   poll: 0
   register: port_forward_job
@@ -15,7 +15,7 @@
 
 - name: Wait for port forwarding to be established
   ansible.builtin.wait_for:
-    port: 1234
+    port: "{{ keycloak.fport }}"
     host: localhost
     delay: 5
     timeout: 30
@@ -26,6 +26,7 @@
   ansible.builtin.command: >
     bash {{ role_path }}/files/keycloak_configurator.sh {{ KEYCLOAK_REALM_ADMIN_PASSWORD }} {{ edp.minio.domainName }}
   environment:
+    KEYCLOAK_FPORT: "{{ keycloak.fport }}"
     OIDC_ENDPOINT: "{{ keycloak.oidc.endpoint | default('') }}"
     OIDC_ALIAS: "{{ keycloak.oidc.alias | default('') }}"
     OIDC_CLIENT_ID: "{{ keycloak.oidc.client_id | default('') }}"
@@ -38,6 +39,6 @@
 
 - name: Stop port forwarding
   ansible.builtin.command: >
-    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} 1234:80"
+    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80"
   tags:
     - install

@@ -121,6 +121,8 @@ fingerprint:
   enabled: true
   namespace: fingerprint
 
+# It is recommented to change the default resources for vector database nodes
+# For examples, check deployment/components/vector_databases/values.yaml
 vector_databases:
   enabled: true
   namespace: vdb

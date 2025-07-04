@@ -16,7 +16,6 @@ import {
   DialogTrigger,
   Heading,
   Modal,
-  Pressable,
 } from "react-aria-components";
 import { createPortal } from "react-dom";
 
@@ -52,7 +51,7 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
 
     return (
       <DialogTrigger>
-        <Pressable>{trigger}</Pressable>
+        {trigger}
         {createPortal(
           <Modal className="dialog" isDismissable>
             <div className="dialog__wrapper">
@@ -66,12 +65,10 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
                   closeRef.current = close;
                   return (
                     <>
-                      <Heading
-                        slot="title"
-                        className="dialog__header"
-                        id={headingId}
-                      >
-                        <h3>{title}</h3>
+                      <header className="dialog__header">
+                        <Heading slot="title" id={headingId}>
+                          {title}
+                        </Heading>
                         <IconButton
                           icon="close"
                           aria-label="Close dialog"
@@ -80,7 +77,7 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
                             close();
                           }}
                         />
-                      </Heading>
+                      </header>
                       <section className="dialog__content">{children}</section>
                       {footer && (
                         <footer className="dialog__actions">{footer}</footer>

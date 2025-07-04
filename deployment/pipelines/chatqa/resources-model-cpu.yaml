@@ -54,6 +54,21 @@ modelConfigs:
   "hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4":
     <<: *generic_base_awq_cpu
 
+  "haoranxu/ALMA-7B-R":
+    <<: *generic_base_cpu
+    modelChatTemplate: |
+      {%- for message in messages if message['role'] != 'system' -%}
+        {%- if message['role'] == 'user' -%}
+          {{- "<s>[INST] " + message['content'].strip() + " [/INST]" -}}
+        {%- elif message['role'] == 'assistant' -%}
+          {{- " " + message['content'].strip() + " </s>" -}}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if add_generation_prompt -%}
+        <s>[INST]
+      {%- endif -%}
+
+
 
 # Default arguments if the model ID is not found
 defaultModelConfigs:
@@ -61,4 +76,6 @@ defaultModelConfigs:
     OMPI_MCA_btl_vader_single_copy_mechanism: none
     VLLM_CPU_KVCACHE_SPACE: "40"
   extraCmdArgs: ["--block-size", "128", "--dtype", "bfloat16", "--max-model-len", "5196"]
+  modelChatTemplate: ""     # default is empty
   tensor_parallel_size: "1" # not applied on CPU
+

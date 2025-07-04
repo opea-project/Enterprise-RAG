@@ -9,6 +9,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import classNames from "classnames";
 import { useEffect, useState } from "react";
 
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
@@ -17,12 +18,14 @@ interface DataTableProps<T extends object> {
   defaultData: T[];
   columns: ColumnDef<T>[];
   isDataLoading: boolean;
+  dense?: boolean;
 }
 
 const DataTable = <T extends object>({
   defaultData,
   columns,
   isDataLoading,
+  dense,
 }: DataTableProps<T>) => {
   const [data, setData] = useState<T[]>([]);
 
@@ -71,9 +74,13 @@ const DataTable = <T extends object>({
     }
   };
 
+  const tableClassNames = classNames("data-table", {
+    "data-table--dense": dense,
+  });
+
   return (
     <div>
-      <table>
+      <table className={tableClassNames}>
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>

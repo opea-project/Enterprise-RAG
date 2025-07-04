@@ -41,8 +41,6 @@ redis:
   enabled: false
   metrics:
     enabled: true
-  replica:
-    replicaCount: 0
   auth:
     enabled: true
     existingSecret: "redis-secret"
@@ -50,13 +48,26 @@ redis:
   commonConfiguration: |-
     loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
     loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
-  resources:
-    requests:
-      cpu: 2
-      memory: 4Gi
-    limits:
-      cpu: 16
-      memory: 16Gi
-  persistence:
-    enabled: true
-    size: "10Gi"
+  master:
+    persistence:
+      enabled: true
+      size: "10Gi"
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 16
+        memory: 16Gi
+  replica:
+    replicaCount: 0
+    persistence:
+      enabled: true
+      size: "10Gi"
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 16
+        memory: 16Gi

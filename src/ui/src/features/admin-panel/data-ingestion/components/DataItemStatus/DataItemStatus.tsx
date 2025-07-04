@@ -21,18 +21,18 @@ import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
 import { titleCaseString } from "@/utils";
 
 const statusIconMap: Record<DataStatus, ReactNode> = {
-  uploaded: <UploadIcon className="data-item-status__icon" />,
-  error: <ErrorIcon className="data-item-status__icon" />,
-  processing: <LoadingIcon className="data-item-status__icon" />,
-  text_extracting: <DataPrepIcon className="data-item-status__icon" />,
-  text_compression: <DataPrepIcon className="data-item-status__icon" />,
-  text_splitting: <DataPrepIcon className="data-item-status__icon" />,
-  dpguard: <DPGuardIcon className="data-item-status__icon" />,
-  embedding: <EmbeddingIcon className="data-item-status__icon" />,
-  ingested: <SuccessIcon className="data-item-status__icon" />,
-  deleting: <DeleteIcon className="data-item-status__icon" />,
-  canceled: <CanceledIcon className="data-item-status__icon" />,
-  blocked: <BlockedIcon className="data-item-status__icon" />,
+  uploaded: <UploadIcon />,
+  error: <ErrorIcon />,
+  processing: <LoadingIcon />,
+  text_extracting: <DataPrepIcon />,
+  text_compression: <DataPrepIcon />,
+  text_splitting: <DataPrepIcon />,
+  dpguard: <DPGuardIcon />,
+  embedding: <EmbeddingIcon />,
+  ingested: <SuccessIcon />,
+  deleting: <DeleteIcon />,
+  canceled: <CanceledIcon />,
+  blocked: <BlockedIcon />,
 };
 
 const formatStatus = (status: DataStatus): string =>

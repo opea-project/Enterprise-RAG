@@ -51,8 +51,8 @@ def connector_redis():
 )
 def test_format_url_from_env(connector_redis, env_vars, expected_url_template):
     # Generate a random password for each test run
-    password_chars = string.ascii_letters + string.digits + string.punctuation
-    password = ''.join(random.choice(password_chars) for _ in range(12))
+    password_chars = string.ascii_letters + string.digits + string.punctuation # nosec B311
+    password = ''.join(random.choice(password_chars) for _ in range(12)) # nosec B311
     
     # Replace password placeholder in env_vars and expected_url if needed
     for key in env_vars:

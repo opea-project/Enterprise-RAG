@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import shutil
 
 from constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, TEST_FILES_DIR
 import logging
@@ -191,6 +192,27 @@ class EdpHelper(ApiRequestHelper):
         response = self.upload_file(file_path, response.json().get("url"))
         assert response.status_code == 200
         return self.wait_for_file_upload(file, "ingested", timeout=180)
+
+    @contextmanager
+    def substitute_file(self, to_substitute, substitution):
+        """Temporarily substitute file and yield. Rollback file after context manager exits."""
+
+        file_path_to_substitute = os.path.join(TEST_FILES_DIR, to_substitute)
+        file_path_substitution = os.path.join(TEST_FILES_DIR, substitution)
+        backup_path = file_path_to_substitute + ".backup"
+        try:
+            # Rename the original file to create a backup
+            os.rename(file_path_to_substitute, backup_path)
+
+            # Copy the substitution file to the original file's path
+            shutil.copy(str(file_path_substitution), str(file_path_to_substitute))
+
+            yield
+
+        finally:
+            os.remove(file_path_to_substitute)
+            shutil.copy(str(backup_path), str(file_path_to_substitute))
+            os.remove(backup_path)
 
     def delete_file(self, presigned_url):
         """Delete a file using the presigned URL"""

@@ -421,6 +421,43 @@ def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper, access_tok
         response = ask_question(chatqa_api_helper, access_token, question)
         assert chatqa_api_helper.all_words_in_response(required_mentions, response), UNRELATED_RESPONSE_MSG
 
+@allure.testcase("IEASG-T199")
+def test_updated_file(edp_helper, chatqa_api_helper, access_token):
+    question_1 = "Who is Alex?"
+    expected_1_before = ["sloth"]
+    expected_1_after = ["fox"]
+
+    question_2 = "Where does Alex live?"
+    expected_2_before = ["rainforest", "Amazon", "america", "south"]
+    expected_2_after = ["cold", "tundra", "arctic", "north"]
+
+    question_3 = "What does Alex eat?"
+    expected_3_before = ["leaves", "shoots", "fruits"]
+    expected_3_after = ["carnivor", "fish", "birds"]
+
+    edp_helper.upload_file_and_wait_for_ingestion("test_updated_document.txt")
+
+    response_1_before = ask_question(chatqa_api_helper, access_token, question_1)
+    assert chatqa_api_helper.words_in_response(expected_1_before, response_1_before), UNRELATED_RESPONSE_MSG
+
+    response_2_before = ask_question(chatqa_api_helper, access_token, question_2)
+    assert chatqa_api_helper.words_in_response(expected_2_before, response_2_before), UNRELATED_RESPONSE_MSG
+
+    response_3_before = ask_question(chatqa_api_helper, access_token, question_3)
+    assert chatqa_api_helper.words_in_response(expected_3_before, response_3_before), UNRELATED_RESPONSE_MSG
+
+    with edp_helper.substitute_file("test_updated_document.txt", "test_updated_document-updated.txt"):
+        edp_helper.upload_file_and_wait_for_ingestion("test_updated_document.txt")
+
+        response_1_after = ask_question(chatqa_api_helper, access_token, question_1)
+        assert chatqa_api_helper.words_in_response(expected_1_after, response_1_after), UNRELATED_RESPONSE_MSG
+
+        response_2_after = ask_question(chatqa_api_helper, access_token, question_2)
+        assert chatqa_api_helper.words_in_response(expected_2_after, response_2_after), UNRELATED_RESPONSE_MSG
+
+        response_3_after = ask_question(chatqa_api_helper, access_token, question_3)
+        assert chatqa_api_helper.words_in_response(expected_3_after, response_3_after), UNRELATED_RESPONSE_MSG
+
 
 def delete_and_ask_question(edp_helper, chatqa_api_helper, file, token="", question=""):
     response = edp_helper.generate_presigned_url(file, "DELETE")

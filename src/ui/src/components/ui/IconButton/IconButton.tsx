@@ -51,7 +51,7 @@ const IconButton = ({
   const IconComponent = icons[icon];
 
   return (
-    <ReactAriaButton {...props} className={iconButtonClassNames}>
+    <ReactAriaButton className={iconButtonClassNames} {...props}>
       <IconComponent />
     </ReactAriaButton>
   );

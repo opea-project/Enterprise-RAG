@@ -107,35 +107,8 @@ const PromptInput = ({
     }
   };
 
-  const getPromptInputButton = () => {
-    if (onRequestAbort) {
-      return isChatResponsePending ? (
-        <PromptInputButton
-          icon="prompt-stop"
-          type="button"
-          aria-label="Stop response"
-          onPress={handleStopBtnPress}
-          onKeyDown={handleStopBtnKeyDown}
-        />
-      ) : (
-        <PromptInputButton
-          icon="prompt-send"
-          type="submit"
-          aria-label="Send prompt"
-          isDisabled={isSubmitDisabled()}
-        />
-      );
-    } else {
-      return (
-        <PromptInputButton
-          icon="prompt-send"
-          type="submit"
-          aria-label="Send prompt"
-          isDisabled={isSubmitDisabled()}
-        />
-      );
-    }
-  };
+  const showStopButton = onRequestAbort && isChatResponsePending;
+  const showSendButton = !showStopButton;
 
   return (
     <form className="prompt-input__form" onSubmit={handleSubmit}>
@@ -152,7 +125,23 @@ const PromptInput = ({
           onKeyDown={handleKeyDown}
         />
       </TextField>
-      {getPromptInputButton()}
+      {showStopButton && (
+        <PromptInputButton
+          icon="prompt-stop"
+          type="button"
+          aria-label="Stop response"
+          onPress={handleStopBtnPress}
+          onKeyDown={handleStopBtnKeyDown}
+        />
+      )}
+      {showSendButton && (
+        <PromptInputButton
+          icon="prompt-send"
+          type="submit"
+          aria-label="Send prompt"
+          isDisabled={isSubmitDisabled()}
+        />
+      )}
     </form>
   );
 };

@@ -134,6 +134,27 @@ minio:
     - name: tls-secret-volume
       mountPath: "/certs/CAs"
       readOnly: true
+  initContainers:
+    - name: wait-for-oidc-config
+      image: alpine/curl
+      env:
+        - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
+          valueFrom:
+            secretKeyRef:
+              name: edp-access-secret
+              key: EDP_OIDC_CONFIG_URL
+      command:
+        - sh
+        - -c
+        - |
+            if [ -z "$MINIO_IDENTITY_OPENID_CONFIG_URL" ]; then
+              echo "Environment variable MINIO_IDENTITY_OPENID_CONFIG_URL is not set. Skipping the init container.";
+            else
+              until curl -m 5 -sS -o /dev/null $MINIO_IDENTITY_OPENID_CONFIG_URL; do
+                echo "waiting for OpenID config endpoint $MINIO_IDENTITY_OPENID_CONFIG_URL to become available...";
+                sleep 2;
+              done;
+            fi
   provisioning:
     enabled: true
     buckets:

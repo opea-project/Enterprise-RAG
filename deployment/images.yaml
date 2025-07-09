@@ -1,0 +1,93 @@
+images:
+  dpguardUsvc:
+    image_name: dpguard
+    dockerfile_path: src/comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile
+    docker_context: src
+  edpUsvc:
+    image_name: enhanced-dataprep
+    dockerfile_path: src/edp/Dockerfile
+    docker_context: src
+  embeddingUsvc:
+    image_name: embedding
+    dockerfile_path: src/comps/embeddings/impl/microservice/Dockerfile
+    docker_context: src
+  fingerprintUsvc:
+    image_name: system-fingerprint
+    dockerfile_path: src/comps/system_fingerprint/impl/microservice/Dockerfile
+    docker_context: src
+  gmcManager:
+    image_name: gmcmanager
+    dockerfile_path: deployment/components/gmc/microservices-connector/manager/Dockerfile
+    docker_context: deployment/components/gmc/microservices-connector
+  gmcRouter:
+    image_name: gmcrouter
+    dockerfile_path: deployment/components/gmc/microservices-connector/router/Dockerfile
+    docker_context: deployment/components/gmc/microservices-connector
+  hierarchicalDataprepUsvc:
+    image_name: hierarchical_dataprep
+    dockerfile_path: src/comps/hierarchical_dataprep/impl/microservice/Dockerfile
+    docker_context: src
+  ingestionUsvc:
+    image_name: ingestion
+    dockerfile_path: src/comps/ingestion/impl/microservice/Dockerfile
+    docker_context: src
+  inGuardUsvc:
+    image_name: in-guard
+    dockerfile_path: src/comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile
+    docker_context: src
+  langdtctUsvc:
+    image_name: language-detection
+    dockerfile_path: src/comps/language_detection/impl/microservice/Dockerfile
+    docker_context: src
+  llmUsvc:
+    image_name: llm
+    dockerfile_path: src/comps/llms/impl/microservice/Dockerfile
+    docker_context: src
+  otelcolContribJournalctl:
+    image_name: otelcol-contrib-journalctl
+    dockerfile_path: Dockerfile-otelcol-contrib-journalctl
+    docker_context: deployment/components/telemetry/helm/charts/logs
+  outGuardUsvc:
+    image_name: out-guard
+    dockerfile_path: src/comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile
+    docker_context: src
+  promptTemplateUsvc:
+    image_name: prompt_template
+    dockerfile_path: src/comps/prompt_template/impl/microservice/Dockerfile
+    docker_context: src
+  rerankingUsvc:
+    image_name: reranking
+    dockerfile_path: src/comps/reranks/impl/microservice/Dockerfile
+    docker_context: src
+  retrieverUsvc:
+    image_name: retriever
+    dockerfile_path: src/comps/retrievers/impl/microservice/Dockerfile
+    docker_context: src
+  textCompressionUsvc:
+    image_name: text-compression
+    dockerfile_path: src/comps/text_compression/impl/microservice/Dockerfile
+    docker_context: src
+  textExtractorUsvc:
+    image_name: text-extractor
+    dockerfile_path: src/comps/text_extractor/impl/microservice/Dockerfile
+    docker_context: src
+  textSplitterUsvc:
+    image_name: text-splitter
+    dockerfile_path: src/comps/text_splitter/impl/microservice/Dockerfile
+    docker_context: src
+  torchserveEmbedding:
+    image_name: torchserve_embedding
+    dockerfile_path: src/comps/embeddings/impl/model-server/torchserve/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model-server/torchserve
+  torchserveReranking:
+    image_name: torchserve_reranking
+    dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
+    docker_context: src/comps/reranks/impl/model_server/torchserve
+  uiUsvc:
+    image_name: chatqna-conversation-ui
+    dockerfile_path: src/ui/Dockerfile
+    docker_context: src
+  vllmCpu:
+    image_name: vllm-cpu
+    dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/cpu/Dockerfile
+    docker_context: src/comps/llms/impl/model_server/vllm

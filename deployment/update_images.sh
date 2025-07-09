@@ -5,15 +5,32 @@
 REGISTRY_NAME=localhost:5000
 REGISTRY_PATH=erag
 TAG=latest
+IMAGE_PREFIX="erag-"
 _max_parallel_jobs=4
 
 components_to_build=()
 
-default_components=("gmcManager" "gmcRouter" "text-extractor-usvc" "text-compression-usvc" "text-splitter-usvc" "embedding-usvc" "reranking-usvc" "prompt-template-usvc" "torchserve-embedding" "torchserve-reranking" "retriever-usvc" "ingestion-usvc" "llm-usvc" "in-guard-usvc" "out-guard-usvc" "ui-usvc" "otelcol-contrib-journalctl" "fingerprint-usvc" "vllm-gaudi" "vllm-cpu" "langdtct-usvc" "edp-usvc" "dpguard-usvc" "hierarchical-dataprep-usvc")
-
 repo_path=$(realpath "$(pwd)/../")
+images_yaml="$repo_path/deployment/images.yaml"
 logs_dir="$repo_path/deployment/logs"
 mkdir -p $logs_dir
+
+if ! command -v yq &> /dev/null; then
+    echo "Error: 'yq' is not installed."
+    echo "Please install yq using one of the following commands:"
+    echo -e "\tsudo apt install yq\t\t# Ubuntu"
+    echo -e "\tpip install yq     \t\t# python version"
+    exit 1
+fi
+
+if [ ! -f "$images_yaml" ]; then
+    echo "Error: images.yaml not found at $images_yaml"
+    echo "Please check out it from the repository."
+    exit 1
+fi
+
+images_yaml_content="$(cat "$images_yaml")"
+default_components=($(echo "$images_yaml_content" | yq -r '.images | keys | .[]'))
 
 # only owner - read, write, and execute
 chmod 700 $logs_dir
@@ -125,7 +142,7 @@ build_component() {
     fi
 
     local component_path=$1
-    local dockerfile_path=$2
+    local dockerfile_path=${2#$component_path/}
     local repo_name=$3
     local image=$4
     local build_args=${5:-""}
@@ -137,7 +154,7 @@ build_component() {
         full_image_name="${repo_name}/${image}:${TAG}"
     fi
 
-    cd "${component_path}"
+    cd "${repo_path}/${component_path}"
     docker build -t ${full_image_name} ${use_proxy} -f ${dockerfile_path} . ${build_args} ${no_cache} --progress=plain &> ${logs_dir}/build_$(basename ${full_image_name}).log
 
     if [ $? -eq 0 ]; then
@@ -146,6 +163,17 @@ build_component() {
         echo "Build failed. Please check the logs at ${logs_dir}/build_$(basename ${full_image_name}).log for more details."
         return 1
     fi
+}
+
+get_content() {
+    local component="$1"
+    local field="$2"
+    local value
+
+    value=$(echo "$images_yaml_content" | yq -r '.images["'"$component"'"].'"$field" 2>/dev/null)
+    [[ "$value" == "null" ]] && value=""
+
+    echo "$value"
 }
 
 do_build_flag=false
@@ -199,7 +227,12 @@ while [ $# -gt 0 ]; do
             exit 0
             ;;
         *)
-            components_to_build+=("$1")
+            # Check if $1 is in default_components
+            if [[ " ${default_components[*]} " == *" $1 "* ]]; then
+                components_to_build+=("$1")
+            else
+                echo "Warning: '$1' is not a valid component and it will be ignored. Run '$0 --help' to see available components."
+            fi
             ;;
     esac
     shift
@@ -230,230 +263,34 @@ fi
 count_current_jobs=0
 
 for component in "${components_to_build[@]}"; do
+    if [[ "$if_gaudi_flag" == false && "${component,,}" =~ "gaudi" ]]; then
+        echo "Skipping '$component' as it is not supported on this platform."
+        continue
+    fi
+
     echo "processing the ${component}..."
+
     (
-    case $component in
-        gmcManager)
-            path="${repo_path}/deployment/components/gmc/microservices-connector"
-            dockerfile="manager/Dockerfile"
-            image=erag-gmcmanager
+        docker_context=$(get_content "$component" "docker_context")
+        dockerfile_path=$(get_content "$component" "dockerfile_path")
+        image_name=$(get_content "$component" "image_name")
 
-            if $do_build_flag; then build_component $path $dockerfile $REGISTRY_PATH $image; fi
-            if $do_push_flag; then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image; fi
-            ;;
+        if [[ -z "$docker_context" || -z "$dockerfile_path" || -z "$image_name" ]]; then
+            echo "Error: Required field is missing for component '$component' in ${images_yaml#$repo_path/}. Current values:"
+            echo -e "\tdocker_context: $docker_context"
+            echo -e "\tdockerfile_path: $dockerfile_path"
+            echo -e "\timage_name: $image_name"
+            exit 1
+        fi
 
-        gmcRouter)
-            path="${repo_path}/deployment/components/gmc/microservices-connector"
-            dockerfile="router/Dockerfile"
-            image=erag-gmcrouter
+        image_name="${IMAGE_PREFIX}${image_name}"
 
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        embedding-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/embeddings/impl/microservice/Dockerfile"
-            image=erag-embedding
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        torchserve-embedding)
-            path="${repo_path}/src/comps/embeddings/impl/model-server/torchserve"
-            dockerfile="docker/Dockerfile"
-            image=erag-torchserve_embedding
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        torchserve-reranking)
-            path="${repo_path}/src/comps/reranks/impl/model_server/torchserve"
-            dockerfile="docker/Dockerfile"
-            image=erag-torchserve_reranking
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-
-        reranking-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/reranks/impl/microservice/Dockerfile"
-            image=erag-reranking
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        prompt-template-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/prompt_template/impl/microservice/Dockerfile"
-            image=erag-prompt_template
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        text-extractor-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/text_extractor/impl/microservice/Dockerfile"
-            image=erag-text-extractor
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        text-compression-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/text_compression/impl/microservice/Dockerfile"
-            image=erag-text-compression
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        text-splitter-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/text_splitter/impl/microservice/Dockerfile"
-            image=erag-text-splitter
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        hierarchical-dataprep-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/hierarchical_dataprep/impl/microservice/Dockerfile"
-            image=erag-hierarchical_dataprep
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        retriever-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/retrievers/impl/microservice/Dockerfile"
-            image=erag-retriever
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        ingestion-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/ingestion/impl/microservice/Dockerfile"
-            image=erag-ingestion
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        llm-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/llms/impl/microservice/Dockerfile"
-            image=erag-llm
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        in-guard-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile"
-            image=erag-in-guard
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        out-guard-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile"
-            image=erag-out-guard
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        dpguard-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile"
-            image=erag-dpguard
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        ui-usvc)
-            path="${repo_path}/src"
-            dockerfile="ui/Dockerfile"
-            image=erag-chatqna-conversation-ui
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        fingerprint-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/system_fingerprint/impl/microservice/Dockerfile"
-            image=erag-system-fingerprint
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        otelcol-contrib-journalctl)
-            path="${repo_path}"
-            dockerfile="deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl"
-            image=erag-otelcol-contrib-journalctl
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        vllm-gaudi)
-            path="${repo_path}/src/comps/llms/impl/model_server/vllm"
-            dockerfile="docker/hpu/Dockerfile"
-            image=erag-vllm-gaudi
-
-            if $if_gaudi_flag;then
-                if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-                if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            else
-                echo "Skipping $component as it is not supported on this platform"
-            fi
-            ;;
-
-        vllm-cpu)
-            path="${repo_path}/src/comps/llms/impl/model_server/vllm"
-            dockerfile="docker/cpu/Dockerfile"
-            image=erag-vllm-cpu
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        langdtct-usvc)
-            path="${repo_path}/src"
-            dockerfile="comps/language_detection/impl/microservice/Dockerfile"
-            image=erag-language-detection
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-
-        edp-usvc)
-            path="${repo_path}/src"
-            dockerfile="edp/Dockerfile"
-            image=erag-enhanced-dataprep
-
-            if $do_build_flag;then build_component $path $dockerfile $REGISTRY_PATH $image;fi
-            if $do_push_flag;then tag_and_push $REGISTRY_NAME $REGISTRY_PATH $image;fi
-            ;;
-    esac
+        if $do_build_flag; then
+            build_component "${docker_context}" "$dockerfile_path" "$REGISTRY_PATH" "$image_name"
+        fi
+        if $do_push_flag; then
+            tag_and_push "$REGISTRY_NAME" "$REGISTRY_PATH" "$image_name"
+        fi
     ) &
 
     count_current_jobs=$((count_current_jobs + 1))

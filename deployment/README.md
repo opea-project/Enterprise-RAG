@@ -38,6 +38,8 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
     5. [Vector Database RBAC support](#vector-database-rbac-support)
     6. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
     7. [Backup Functionality with VMWare Velero](#backup-functionality-with-vmware-velero)
+11. [Additional Pipelines](#additional-pipelines)
+    1. [Language Translation Pipeline](#language-translation-pipeline)
 ---
 
 ## Verify System Status
@@ -913,10 +915,28 @@ Right after that you may review status of the restore -
 - either with `kubectl describe restore.velero.io/userdata-250617-210655-20250617173441 -n velero`
 - or with cli: `velero restore describe userdata-250617-210655-20250617173441 --details`.
 
-```
-
 
 #### Backup Links
 
 - [Kubernetes CSI Documentation](https://kubernetes-csi.github.io/docs/)
 - [Velero documentation](https://velero.io/docs/)
+
+
+### Additional Pipelines
+
+#### Language Translation Pipeline
+
+> [!NOTE] ⚠️ **Preview Status – not integrated into UI**  
+> This is a preview pipeline and is currently in active development. While core functionality is in place, it is not yet integrated into the RAG UI, and development and validation efforts are still ongoing.
+
+This pipeline provides language translation capabilities using advanced Language Models from the ALMA family, where:
+
+- ALMA-7B-R model - recommended for CPU-based execution
+- ALMA-13B-R model - recomended for Gaudi-based (Habana) acceleration
+
+To test the translation pipeline, first deploy it by following the instructions in [Deployment Options → Installation](#installation), using a configuration file based on [inventory/sample/config_language_translation.yaml](inventory/sample/config_language_translation.yaml).
+
+Once deployed, run the provided shell script:
+```bash
+./scripts/test_translation.sh
+```

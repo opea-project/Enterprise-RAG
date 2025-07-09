@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# recourse-cpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
+# resources-reference-cpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
 
 services:
   embedding-usvc:

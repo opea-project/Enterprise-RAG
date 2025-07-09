@@ -322,4 +322,5 @@ defaultModelConfigs:
     PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
     VLLM_CPU_KVCACHE_SPACE: "40"
   extraCmdArgs: ["--block-size", "128", "--dtype", "bfloat16", "--max-model-len","5196"]
+  modelChatTemplate: ""     # default is empty
   tensor_parallel_size: "1"

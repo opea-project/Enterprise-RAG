@@ -18,6 +18,7 @@ interface CheckboxInputProps extends CheckboxProps {
   label: string;
   size?: CheckboxInputSize;
   tooltipText?: string;
+  dense?: boolean;
   onChange: CheckboxInputChangeHandler;
 }
 
@@ -25,6 +26,7 @@ const CheckboxInput = ({
   label,
   size,
   tooltipText,
+  dense,
   onChange,
   isRequired,
   ...restProps
@@ -35,6 +37,7 @@ const CheckboxInput = ({
     <div
       className={classNames("checkbox-input", {
         "checkbox-input--sm": size === "sm",
+        "checkbox-input--dense": dense,
       })}
     >
       <Checkbox

@@ -107,54 +107,40 @@ class LinkRequest(BaseModel):
 class PresignedResponse(BaseModel):
    url: str
 
-class FileResponse(BaseModel):
+class ObjectResponse(BaseModel):
+    id: str
+    created_at: datetime
+    chunk_size: int
+    chunks_total: int
+    chunks_processed: int
+    status: str
+    job_name: str
+    job_message: str
+    job_start_time: int
+    text_extractor_duration: int
+    text_compression_duration: int
+    text_splitter_duration: int
+    dpguard_duration: int
+    embedding_duration: int
+    ingestion_duration: int
+    processing_duration: int
+
+class FileResponse(ObjectResponse):
     id: str
     bucket_name: str
     object_name: str
     size: int
     etag: str
-    created_at: datetime
-    chunk_size: int
-    chunks_total: int
-    chunks_processed: int
-    status: str
-    job_name: str
-    job_message: str
-    text_extractor_duration: int
-    text_compression_duration: int
-    text_splitter_duration: int
-    dpguard_duration: int
-    embedding_duration: int
-    processing_duration: int
 
-class LinkResponse(BaseModel):
+class LinkResponse(ObjectResponse):
     id: str
     uri: str
-    created_at: datetime
-    chunk_size: int
-    chunks_total: int
-    chunks_processed: int
-    status: str
-    job_name: str
-    job_message: str
-    text_extractor_duration: int
-    text_compression_duration: int
-    text_splitter_duration: int
-    dpguard_duration: int
-    embedding_duration: int
-    processing_duration: int
 
-class FileStatus(Base):
-    __tablename__ = "files"
+class ObjectStatus(Base):
+    __abstract__ = True # SQLAlchemy skip table creation
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    bucket_name = Column(String, index=True)
-    object_name = Column(String, index=True)
-    etag = Column(String, index=False)
-    content_type = Column(String, index=False)
-    size = Column(Integer, index=False)
-
     status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked
     job_name = Column(String, index=False) # file_processing_job, file_deleting_job
     job_message = Column(String, index=False)
@@ -173,22 +159,31 @@ class FileStatus(Base):
     dpguard_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
     embedding_end = Column(DateTime, index=False)
+    ingestion_start = Column(DateTime, index=False)
+    ingestion_end = Column(DateTime, index=False)
 
     task_id = Column(String, index=False)
     marked_for_deletion = Column(Boolean, index=False, default=False)
 
-    def to_response(self):
-        text_extractor_duration = int((self.text_extractor_end - self.text_extractor_start).total_seconds()) if self.text_extractor_end and self.text_extractor_start else 0
-        text_compression_duration = int((self.text_compression_end - self.text_compression_start).total_seconds()) if self.text_compression_end and self.text_compression_start else 0
-        text_splitter_duration = int((self.text_splitter_end - self.text_splitter_start).total_seconds()) if self.text_splitter_end and self.text_splitter_start else 0
-        dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
-        embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
-        return FileResponse(
+    def to_response(self, class_type, **kwargs):
+        def format_duration(start, end, multiplier=1_000):
+            # multiplier 1_000_000 for microseconds, 1_000 for milliseconds, 1 for seconds
+            if end and start:
+                return int((end - start).total_seconds() * multiplier)
+            return 0
+        def format_timestamp(datetime, multipier=1):
+            # multiplier 1_000_000 for microseconds, 1_000 for milliseconds, 1 for seconds
+            if datetime:
+                return int(datetime.timestamp() * multipier)
+            return "?"
+        text_extractor_duration = format_duration(self.text_extractor_start, self.text_extractor_end)
+        text_compression_duration = format_duration(self.text_compression_start, self.text_compression_end)
+        text_splitter_duration = format_duration(self.text_splitter_start, self.text_splitter_end)
+        dpguard_duration = format_duration(self.dpguard_start, self.dpguard_end)
+        embedding_duration = format_duration(self.embedding_start, self.embedding_end)
+        ingestion_duration = format_duration(self.ingestion_start, self.ingestion_end)
+        return class_type(
             id=str(self.id),
-            bucket_name=self.bucket_name,
-            object_name=self.object_name,
-            etag=self.etag or "",
-            size=self.size or 0,
             created_at=self.created_at or datetime.now(timezone.utc),
             chunk_size=self.chunk_size or 0,
             chunks_total=self.chunks_total or 0,
@@ -196,64 +191,44 @@ class FileStatus(Base):
             status=self.status or "",
             job_name=self.job_name or "",
             job_message=self.job_message or "",
+            job_start_time=format_timestamp(self.text_extractor_start),
             text_extractor_duration=text_extractor_duration,
             text_compression_duration=text_compression_duration,
             text_splitter_duration=text_splitter_duration,
             dpguard_duration=dpguard_duration,
             embedding_duration=embedding_duration,
-            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration
+            ingestion_duration=ingestion_duration,
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+ingestion_duration,
+            **kwargs
         )
 
-class LinkStatus(Base):
+class FileStatus(ObjectStatus):
+    __tablename__ = "files"
+
+    bucket_name = Column(String, index=True)
+    object_name = Column(String, index=True)
+    etag = Column(String, index=False)
+    content_type = Column(String, index=False)
+    size = Column(Integer, index=False)
+
+    def to_response(self):
+      obj = super().to_response(
+        FileResponse,
+        bucket_name = self.bucket_name,
+        object_name = self.object_name,
+        etag = self.etag or "",
+        size = self.size or 0,
+      )
+      return obj
+
+class LinkStatus(ObjectStatus):
     __tablename__ = "links"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     uri = Column(String, index=True)
 
-    status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, blocked
-    job_name = Column(String, index=False) # link_processing_job, link_deleting_job
-    job_message = Column(String, index=False)
-
-    chunk_size = Column(Integer, index=False, default=0)
-    chunks_total = Column(Integer, index=False, default=0)
-    chunks_processed = Column(Integer, index=False, default=0)
-
-    text_extractor_start = Column(DateTime, index=False)
-    text_extractor_end = Column(DateTime, index=False)
-    text_compression_start = Column(DateTime, index=False)
-    text_compression_end = Column(DateTime, index=False)
-    text_splitter_start = Column(DateTime, index=False)
-    text_splitter_end = Column(DateTime, index=False)
-    dpguard_start = Column(DateTime, index=False)
-    dpguard_end = Column(DateTime, index=False)
-    embedding_start = Column(DateTime, index=False)
-    embedding_end = Column(DateTime, index=False)
-
-    task_id = Column(String, index=False)
-    marked_for_deletion = Column(Boolean, index=False, default=False)
-
     def to_response(self):
-      text_extractor_duration = int((self.text_extractor_end - self.text_extractor_start).total_seconds()) if self.text_extractor_end and self.text_extractor_start else 0
-      text_compression_duration = int((self.text_compression_end - self.text_compression_start).total_seconds()) if self.text_compression_end and self.text_compression_start else 0
-      text_splitter_duration = int((self.text_splitter_end - self.text_splitter_start).total_seconds()) if self.text_splitter_end and self.text_splitter_start else 0
-      dpguard_duration = int((self.dpguard_end - self.dpguard_start).total_seconds()) if self.dpguard_end and self.dpguard_start else 0
-      embedding_duration = int((self.embedding_end - self.embedding_start).total_seconds()) if self.embedding_end and self.embedding_start else 0
-
-      return LinkResponse(
-            id=str(self.id),
-            uri=self.uri,
-            created_at=self.created_at or datetime.now(timezone.utc),
-            chunk_size=self.chunk_size or 0,
-            chunks_total=self.chunks_total or 0,
-            chunks_processed=self.chunks_processed or 0,
-            status=self.status or "",
-            job_name=self.job_name or "",
-            job_message=self.job_message or "",
-            text_extractor_duration=text_extractor_duration,
-            text_compression_duration=text_compression_duration,
-            text_splitter_duration=text_splitter_duration,
-            dpguard_duration=dpguard_duration,
-            embedding_duration=embedding_duration,
-            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration
-        )
+      obj = super().to_response(
+        LinkResponse,
+        uri = self.uri
+      )
+      return obj

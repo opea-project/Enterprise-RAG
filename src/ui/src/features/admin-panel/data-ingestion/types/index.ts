@@ -22,27 +22,29 @@ export type DataStatus =
 
 export interface FileDataItem {
   id: string;
+  created_at: string;
+  chunk_size: number;
+  chunks_total: number;
+  chunks_processed: number;
+  status: DataStatus;
+  job_name: string;
+  job_message: string;
+  job_start_time: number;
+  text_extractor_duration: number;
+  text_compression_duration: number;
+  text_splitter_duration: number;
+  dpguard_duration: number;
+  embedding_duration: number;
+  ingestion_duration: number;
+  processing_duration: number;
   bucket_name: string;
   object_name: string;
   size: number;
   etag: string;
-  created_at: string;
-  chunk_size: number;
-  chunks_total: number;
-  chunks_processed: number;
-  status: DataStatus;
-  job_name: string;
-  job_message: string;
-  text_extractor_duration: number;
-  text_compression_duration: number;
-  text_splitter_duration: number;
-  embedding_duration: number;
-  processing_duration: number;
 }
 
 export interface LinkDataItem {
   id: string;
-  uri: string;
   created_at: string;
   chunk_size: number;
   chunks_total: number;
@@ -50,11 +52,15 @@ export interface LinkDataItem {
   status: DataStatus;
   job_name: string;
   job_message: string;
+  job_start_time: number;
   text_extractor_duration: number;
   text_compression_duration: number;
   text_splitter_duration: number;
+  dpguard_duration: number;
   embedding_duration: number;
+  ingestion_duration: number;
   processing_duration: number;
+  uri: string;
 }
 
 export interface UploadErrors {

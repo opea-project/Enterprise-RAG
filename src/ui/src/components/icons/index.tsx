@@ -26,6 +26,7 @@ import PromptSendIcon from "@/components/icons/PromptSendIcon/PromptSendIcon";
 import PromptStopIcon from "@/components/icons/PromptStopIcon/PromptStopIcon";
 import RefreshIcon from "@/components/icons/RefreshIcon/RefreshIcon";
 import ScrollToBottomIcon from "@/components/icons/ScrollToBottomIcon/ScrollToBottomIcon";
+import SettingsIcon from "@/components/icons/SettingsIcon/SettingsIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import TelemetryIcon from "@/components/icons/TelemetryIcon/TelemetryIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
@@ -56,6 +57,7 @@ export const icons = {
   "prompt-stop": PromptStopIcon,
   refresh: RefreshIcon,
   "scroll-to-bottom": ScrollToBottomIcon,
+  settings: SettingsIcon,
   success: SuccessIcon,
   telemetry: TelemetryIcon,
   upload: UploadIcon,

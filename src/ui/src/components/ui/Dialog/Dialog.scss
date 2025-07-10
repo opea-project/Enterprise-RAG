@@ -9,6 +9,10 @@
     @apply flex min-h-full w-full items-start justify-center p-4;
   }
 
+  & .dialog__wrapper--centered {
+    @apply mx-auto items-center justify-center;
+  }
+
   & .dialog__box {
     @apply relative w-full rounded-md;
     @apply bg-light-bg-1 dark:bg-dark-bg-1;
@@ -22,6 +26,11 @@
 
       & h2 {
         @apply mb-0 text-lg;
+
+        &::selection {
+          @apply bg-light-text-inverse dark:bg-dark-bg-inverse;
+          @apply text-light-primary dark:text-dark-primary;
+        }
       }
 
       & button {

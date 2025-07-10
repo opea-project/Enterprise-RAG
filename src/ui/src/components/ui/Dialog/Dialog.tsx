@@ -3,6 +3,7 @@
 
 import "./Dialog.scss";
 
+import classNames from "classnames";
 import {
   forwardRef,
   PropsWithChildren,
@@ -27,14 +28,25 @@ export interface DialogRef {
 
 interface DialogProps extends PropsWithChildren {
   trigger: JSX.Element;
-  footer?: ReactNode;
   title: string;
+  footer?: ReactNode;
+  maxWidth?: number;
+  isCentered?: boolean;
   onClose?: () => void;
 }
 
 const Dialog = forwardRef<DialogRef, DialogProps>(
   (
-    { trigger, footer, title, onClose, children, ...restProps }: DialogProps,
+    {
+      trigger,
+      title,
+      footer,
+      maxWidth,
+      isCentered,
+      onClose,
+      children,
+      ...restProps
+    }: DialogProps,
     forwardedRef,
   ) => {
     const closeRef = useRef<(() => void) | null>(null);
@@ -49,12 +61,16 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
 
     const headingId = useId();
 
+    const dialogWrapperClassName = classNames("dialog__wrapper", {
+      "dialog__wrapper--centered": isCentered,
+    });
+
     return (
       <DialogTrigger>
         {trigger}
         {createPortal(
           <Modal className="dialog" isDismissable>
-            <div className="dialog__wrapper">
+            <div className={dialogWrapperClassName} style={{ maxWidth }}>
               <AriaDialog
                 role="dialog"
                 className="dialog__box"

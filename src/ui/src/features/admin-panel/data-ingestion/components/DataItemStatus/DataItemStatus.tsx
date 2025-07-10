@@ -48,7 +48,7 @@ interface DataItemStatusProps {
 
 const DataItemStatus = ({ status, statusMessage }: DataItemStatusProps) => {
   const statusIcon = statusIconMap[status];
-  const statusText = formatStatus(status);
+  const statusText = !status ? "Unknown" : formatStatus(status);
   const isStatusMessageEmpty = statusMessage === "";
   const statusClassNames = classNames({
     "data-item-status": true,

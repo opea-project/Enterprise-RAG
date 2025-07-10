@@ -7,8 +7,8 @@ import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
 import LinkTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/LinkTextExtractionDialog/LinkTextExtractionDialog";
+import ProcessingTimePopup from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopup/ProcessingTimePopup";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
-import { formatProcessingTimePeriod } from "@/features/admin-panel/data-ingestion/utils";
 
 interface LinkActionsHandlers {
   retryHandler: (id: string) => void;
@@ -62,9 +62,31 @@ export const getLinksTableColumns = ({
     header: "Processing Time",
     cell: ({
       row: {
-        original: { processing_duration },
+        original: {
+          text_extractor_duration,
+          text_compression_duration,
+          text_splitter_duration,
+          dpguard_duration,
+          embedding_duration,
+          ingestion_duration,
+          processing_duration,
+          job_start_time,
+          status,
+        },
       },
-    }) => formatProcessingTimePeriod(processing_duration),
+    }) => (
+      <ProcessingTimePopup
+        textExtractorDuration={text_extractor_duration}
+        textCompressionDuration={text_compression_duration}
+        textSplitterDuration={text_splitter_duration}
+        dpguardDuration={dpguard_duration}
+        embeddingDuration={embedding_duration}
+        ingestionDuration={ingestion_duration}
+        processingDuration={processing_duration}
+        jobStartTime={job_start_time}
+        dataStatus={status}
+      />
+    ),
   },
   {
     id: "actions",

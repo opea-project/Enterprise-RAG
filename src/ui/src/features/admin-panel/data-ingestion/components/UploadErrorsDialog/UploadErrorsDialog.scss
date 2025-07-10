@@ -18,6 +18,7 @@
   @apply max-w-80 rounded p-3 shadow-lg;
   @apply bg-light-status-error text-xs dark:bg-dark-status-error;
   @apply text-light-text-inverse dark:text-dark-text-primary;
+  @apply [overflow-wrap:anywhere];
 
   &:not(:last-child) {
     @apply mb-4;

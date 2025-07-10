@@ -1,8 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.data-ingestion-panel {
-  @apply h-[calc(100vh-8rem)] overflow-y-auto px-16 pt-6;
+.data-ingestion-tab {
+  @apply max-h-[calc(100vh-8rem)] overflow-y-auto px-16 pt-6;
 
   & > header {
     @apply mb-2 flex items-center justify-between;
@@ -11,7 +11,7 @@
       @apply mb-0 text-xl;
     }
 
-    & > .data-ingestion-panel__actions {
+    & > .data-ingestion-tab__actions {
       @apply flex items-center justify-between gap-3;
     }
   }

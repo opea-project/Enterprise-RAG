@@ -17,6 +17,7 @@ module.exports = {
           focus: "#3D447F",
           "focus-inverse": "#F2F3FF",
           border: "#3D447F",
+          "border-2": "#6A6F78",
           text: {
             primary: "#2B2C30",
             disabled: "#B2B3B9",
@@ -45,6 +46,7 @@ module.exports = {
           accent: "#FFFFFF",
           focus: "#FEF0D3",
           border: "#4850B8",
+          "border-2": "#6A6F78",
           text: {
             primary: "#FFFFFF",
             disabled: "#6B6E76",

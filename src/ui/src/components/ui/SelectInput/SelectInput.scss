@@ -48,7 +48,7 @@
 
   &__options-list {
     // --trigger-width is value defined by React ARIA Popover component that indicates the width of the Popover trigger
-    @apply w-[--trigger-width] -translate-y-2;
+    @apply min-w-[--trigger-width] -translate-y-2;
     @apply rounded border border-light-border dark:border-dark-border;
     @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
     @apply text-light-text-primary dark:text-dark-text-primary;

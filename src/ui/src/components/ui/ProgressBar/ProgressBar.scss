@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .progress-bar {
-  @apply rounded-sm border;
+  @apply rounded-sm;
   @apply overflow-hidden;
   @apply h-3 w-32;
   @apply relative;
+  @apply border border-light-border dark:border-dark-border;
 
   &__bar {
     @apply bg-light-bg-1 dark:bg-dark-bg-1;

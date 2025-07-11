@@ -3,6 +3,7 @@
 
 ---
 keycloak:
+  fport: 1234
   enabled: false
   namespace: "auth"
   domainName: auth.erag.com

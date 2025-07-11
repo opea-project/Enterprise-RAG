@@ -6,7 +6,6 @@ import { ValidationError } from "yup";
 
 import IconButton from "@/components/ui/IconButton/IconButton";
 import TextInput from "@/components/ui/TextInput/TextInput";
-import { linkErrorMessage } from "@/features/admin-panel/data-ingestion/utils/constants";
 import { validateLinkInput } from "@/features/admin-panel/data-ingestion/validators/linkInput";
 import { sanitizeString } from "@/utils";
 
@@ -23,12 +22,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
   useEffect(() => {
     const checkValidity = async (value: string) => {
       try {
-        const sanitizedValue = sanitizeString(value);
-        if (value !== sanitizedValue) {
-          throw new Error(linkErrorMessage);
-        }
-
-        await validateLinkInput(sanitizedValue);
+        await validateLinkInput(value);
         setIsInvalid(false);
         setErrorMessage("");
       } catch (error) {

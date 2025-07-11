@@ -3,6 +3,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 {{- $modelName := required "Please specify a valid llm_model_gaudi name in your Helm chart values" .Values.llm_model_gaudi }}
+{{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default .Values.defaultModelConfigs.modelChatTemplate }}
 {{- $port := "8000" }}
 
 apiVersion: v1
@@ -24,6 +25,18 @@ data:
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
+---
+{{- if $modelChatTemplate }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-chat-template
+  labels:
+    {{- include "manifest.labels" (list .filename .) | nindent 4 }}
+data:
+   chat_template.jinja: |
+{{ $modelChatTemplate | indent 4 }}
+{{- end }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -108,10 +121,13 @@ spec:
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
-          {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
+            {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
+            {{- if $modelChatTemplate }}
+              {{- $cmd = concat $cmd (list "--chat-template" "/etc/vllm/chat_template.jinja") }}
+            {{- end }}
           command: ["/bin/bash", "-c", {{ join " " $cmd | quote }} ]
           {{- else }}
-          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data" ]
+          command: ["/bin/bash", "-c", "python3 -m vllm.entrypoints.openai.api_server --model $(LLM_VLLM_MODEL_NAME) --max-num-seq $(VLLM_MAX_NUM_SEQS) --block-size $(VLLM_BLOCK_SIZE) --device $(LLM_DEVICE) --tensor-parallel-size $(VLLM_TP_SIZE) --pipeline-parallel-size 1 --dtype $(VLLM_DTYPE) --host 0.0.0.0 --port $(PORT) --disable-log-requests --download-dir /data{{- if $modelChatTemplate }} --chat-template /etc/vllm/chat_template.jinja{{- end }}" ]
           {{- end }}
           imagePullPolicy: Always
           volumeMounts:
@@ -125,6 +141,10 @@ spec:
               name: config
             - mountPath: /var/log
               name: var-log
+            {{- if $modelChatTemplate }}
+            - mountPath: /etc/vllm
+              name: chat-template-volume
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ $port }}
@@ -155,6 +175,11 @@ spec:
           emptyDir: {}
         - name: var-log
           emptyDir: {}
+        {{- if $modelChatTemplate }}
+        - name: chat-template-volume
+          configMap:
+            name: vllm-chat-template
+        {{- end }}
 ---
 {{- if .Values.hpaEnabled }}
 apiVersion: autoscaling/v2

@@ -11,10 +11,13 @@ import {
   useDeleteFileMutation,
   useLazyDownloadFileQuery,
 } from "@/features/admin-panel/data-ingestion/api/s3Api";
+import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { getFilesTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/files";
 
 const FilesDataTable = () => {
-  const { data: files, isLoading } = useGetFilesQuery();
+  const { data: files, refetch, isLoading } = useGetFilesQuery();
+  useConditionalPolling(files, refetch);
+
   const [downloadFile] = useLazyDownloadFileQuery();
   const [retryFileAction] = useRetryFileActionMutation();
   const [deleteFile] = useDeleteFileMutation();

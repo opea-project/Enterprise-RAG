@@ -5,8 +5,10 @@
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
     apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix.helm.chart_name }}-override-values.yaml"
+    apisix_routes_helm_override_values_path: "{{ log_dir }}/{{ apisix_routes.helm.chart_name }}-override-values.yaml"
   tags:
     - install
+
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:

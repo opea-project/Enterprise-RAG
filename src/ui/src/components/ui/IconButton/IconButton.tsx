@@ -30,7 +30,7 @@ const IconButton = ({
   className,
   ...props
 }: IconButtonProps) => {
-  const iconButtonClassNames = classNames([
+  const iconButtonClassNames = classNames(
     "icon-button",
     {
       "icon-button--error": !variant && color === "error",
@@ -46,12 +46,12 @@ const IconButton = ({
         variant === "outlined" && color === "success",
     },
     className,
-  ]);
+  );
 
   const IconComponent = icons[icon];
 
   return (
-    <ReactAriaButton {...props} className={iconButtonClassNames}>
+    <ReactAriaButton className={iconButtonClassNames} {...props}>
       <IconComponent />
     </ReactAriaButton>
   );

@@ -9,6 +9,14 @@ export interface GetFilePresignedUrlRequest {
 
 type GetFilePresignedUrlMethod = "GET" | "PUT" | "DELETE";
 
+export type FileSyncAction = "add" | "no action" | "delete" | "update";
+
+export interface FileSyncDataItem {
+  action: FileSyncAction;
+  bucket_name: string;
+  object_name: string;
+}
+
 export interface PostFileToExtractTextRequest {
   uuid: string;
   queryParams?: PostToExtractTextQueryParams;

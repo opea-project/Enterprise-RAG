@@ -1,4 +1,5 @@
 {{- range .Values.endpoints }}
+{{- if .enabled }}
 apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
@@ -47,4 +48,5 @@ spec:
           - {{ . }}
           {{- end }}
 ---
+{{- end }}
 {{- end }}

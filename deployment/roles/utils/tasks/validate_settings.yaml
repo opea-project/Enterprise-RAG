@@ -2,6 +2,73 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+- name: Fail if jq not installed
+  ansible.builtin.command:
+    cmd: jq --version
+  register: jq_check
+  failed_when: jq_check.rc != 0
+  changed_when: false
+  tags:
+    - install
+  ignore_errors: true
+
+- name: Handle jq not installed
+  ansible.builtin.fail:
+    msg: "jq is required but not installed. Please install jq before continuing."
+  when: jq_check.rc != 0
+  tags:
+    - install
+
+- name: Check if curl is installed
+  ansible.builtin.command:
+    cmd: curl --version
+  register: curl_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+
+- name: Fail if curl not installed
+  ansible.builtin.fail:
+    msg: "curl is required but not installed on the control node. Please install curl before continuing."
+  when: curl_check.rc != 0
+  tags:
+    - install
+
+- name: Check if helm is installed
+  ansible.builtin.command:
+    cmd: helm version --short
+  register: helm_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+    - uninstall
+
+- name: Fail if helm not installed
+  ansible.builtin.fail:
+    msg: "helm is required but not installed on the control node. Please install helm before continuing."
+  when: helm_check.rc != 0
+  tags:
+    - install
+    - uninstall
+
+- name: Check if kubectl is installed
+  ansible.builtin.command:
+    cmd: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+
+- name: Fail if kubectl not installed
+  ansible.builtin.fail:
+    msg: "kubectl is required but not installed on the control node. Please install kubectl before continuing."
+  when: kubectl_check.rc != 0
+  tags:
+    - install
+
 - name: Validate if kubeconfig file exists
   ansible.builtin.stat:
     path: "{{ kubeconfig }}"

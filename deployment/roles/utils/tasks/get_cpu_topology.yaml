@@ -111,6 +111,36 @@
   tags:
     - install
 
+- name: Check for AMX support
+  kubernetes.core.k8s_exec:
+    pod: "{{ debug_pod_name }}"
+    container: ubuntu
+    namespace: kube-system
+    command: bash -c "lscpu | grep -i amx"
+  register: amx_check
+  ignore_errors: true
+  tags:
+    - install
+
+- name: Get all pods in all namespaces
+  kubernetes.core.k8s_info:
+    kind: Pod
+  register: all_pods
+  tags:
+    - install
+
+- name: Check if any pod name contains "habanalabs-device-plugin"
+  set_fact:
+    habana_plugin_present: >-
+      {{
+        all_pods.resources
+        | selectattr('metadata.name', 'search', 'habanalabs-device-plugin')
+        | list
+        | length > 0
+      }}
+  tags:
+    - install
+
 - name: Delete node-topology-debugger daemonset
   kubernetes.core.k8s:
     state: absent
@@ -119,3 +149,13 @@
     namespace: kube-system
   tags:
     - install
+
+- name: Fail if neither AMX nor Habana plugin pod is present
+  fail:
+    msg: "Your node does not support AMX and no habanalabs-device-plugin pod is running. One of these is required."
+  when:
+    - (amx_check is not defined or amx_check.rc is not defined or amx_check.rc != 0)
+    - not habana_plugin_present
+  tags:
+    - install
+

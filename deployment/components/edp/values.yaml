@@ -577,7 +577,6 @@ backend:
   repository: "docker.io/opea"
   tag: latest
   pullPolicy: Always
-  command: "python main.py"
   replicas: 1
   resources:
     requests:

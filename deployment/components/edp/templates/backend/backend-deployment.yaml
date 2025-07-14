@@ -105,10 +105,6 @@ spec:
           image: {{ .Values.backend.repository }}/{{ .Values.backend.name }}:{{ .Values.backend.tag | default .Chart.AppVersion }}
           {{ end }}
           imagePullPolicy: {{ .Values.backend.pullPolicy }}
-          command:
-            {{- range $index, $element := splitList " " .Values.backend.command }}
-            - {{ $element | quote }}
-            {{- end }}
           env:
           {{- if .Values.proxy.httpProxy }}
             - name: http_proxy

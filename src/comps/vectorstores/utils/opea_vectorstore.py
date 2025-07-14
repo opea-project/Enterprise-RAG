@@ -126,14 +126,20 @@ class OPEAVectorStore():
     def get_links_filter_expression(self):
         return self.vector_store.get_links_filter_expression()
 
-    def empty_filter_expression(self):
-        return self.vector_store.empty_filter_expression()
+    def get_files_filter_expression(self):
+        return self.vector_store.get_files_filter_expression()
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]):
         return self.vector_store.get_bucket_name_filter_expression(bucket_names)
 
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str):
         return self.vector_store.get_object_name_filter_expression(bucket_name, object_name)
+
+    def get_hierarchical_summary_filter_expression(self):
+        return self.vector_store.get_hierarchical_summary_filter_expression()
+
+    def get_hierarchical_chunk_filter_expression(self, doc_id, page):
+        return self.vector_store.get_hierarchical_chunk_filter_expression(doc_id, page)
 
     def _import_redis(self):
         """

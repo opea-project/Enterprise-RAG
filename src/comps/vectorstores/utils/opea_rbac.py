@@ -10,8 +10,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 def retrieve_bucket_list(auth_header: str) -> list:
     edp_backend = os.getenv("EDP_BACKEND_ENDPOINT", "http://edp-backend.edp.svc:5000")
     if not auth_header or auth_header == "":
-        logger.error("Authorization header is missing.")
-        raise ValueError("Authorization header is missing while using VECTOR_DB_RBAC.")
+        raise ValueError("Authorization header is missing or empty while retrieving RBAC bucket list")
 
     r = requests.get(f"{edp_backend}/api/list_bucket_with_permissions", headers={ "Authorization": auth_header })
     if r.status_code != 200:

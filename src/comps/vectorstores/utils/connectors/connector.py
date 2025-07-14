@@ -116,8 +116,11 @@ class VectorStoreConnector(ABC):
     def max_marginal_relevance_search(self, input_text: str, embedding: List, k: int, fetch_k: float, lambda_mult: float) -> SearchedDoc:
         raise NotImplementedError
 
-    def empty_filter_expression(self):
+    def get_files_filter_expression(self):
         raise NotImplementedError
+    
+    def get_links_filter_expression(self):
+        return NotImplementedError
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]):
         raise NotImplementedError

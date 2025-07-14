@@ -12,22 +12,57 @@ import sys
 import threading
 import time
 import linecache
+import random
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from queue import Empty, Queue
 import requests
+import urllib3
 from transformers import AutoTokenizer
 
 class QueryPool:
-    def __init__(self, file_path=None):
+    def __init__(self, file_path, n_tokens, tokenizer):
         self.lock = threading.Lock()
         self.next = 0
         self.questions = []
+        self.tokenizer = tokenizer
         if file_path:
             with open(file_path, "r") as f:
-                self.questions = [line.strip() for line in f if line.strip()]
+                self.questions = self.__fix_questions([line.strip() for line in f if line.strip()], n_tokens)
         else:
-            self.questions = ["What is the total revenue of Intel in 2023?"]
+            self.questions = self.__fix_questions(["What is the total revenue of Intel in 2023?"], n_tokens)
+        random.shuffle(self.questions)
+
+    def __fix_questions(self, questions, n_tokens):
+        if n_tokens == 0:
+            return questions
+
+        new_questions = []
+        for question in questions:
+            new_questions.append(self.__fix_tokens(question, n_tokens))
+        return new_questions
+
+    def __fix_tokens(self, question, n_tokens):
+        text = question
+        max_retries = 5
+
+        for i in range(0, max_retries):
+            input_ids = self.tokenizer.encode(text, add_special_tokens=False)
+            current_length = len(input_ids)
+
+            if current_length < n_tokens:
+                pad_ids = self.tokenizer.encode("There is also something else which I wanted to ask, but I can't remind myself. Let me think. ",
+                                                add_special_tokens=False)
+                while len(input_ids) < n_tokens:
+                    input_ids.extend(pad_ids)
+
+            extended_ids = input_ids[:n_tokens]
+            text = self.tokenizer.decode(extended_ids, clean_up_tokenization_spaces=True)
+
+            if len(self.tokenizer.encode(text, add_special_tokens=False)) == n_tokens:
+                break
+
+        return text
 
     def get(self):
         with self.lock:
@@ -54,6 +89,7 @@ def parse_args():
     parser.add_argument("-m", type=str, default="BAAI/bge-base-en-v1.5", help="tokenizer model")
     parser.add_argument("-e", type=int, default=200, help="Failures allowed before quitting")
     parser.add_argument("-b", type=str, default="uat.txt", help="Path to file with UAT")
+    parser.add_argument("-x", type=int, default=0, help="Fix length of input query to X tokens (0 means no fixing)")
     return parser.parse_args()
 
 def duration_to_seconds(duration_str):
@@ -95,13 +131,15 @@ def call_chatqa(url, question, wid, tokenizer, bearer):
     data = json.dumps({"text": question})
 
     res = Result()
-    input_tokens = tokenizer.encode(question)
+    input_tokens = tokenizer.encode(question, add_special_tokens=False)
     res.question_len = len(input_tokens)
 
     start = time.time()
     try:
-        response = requests.post(url, headers=headers, data=data, stream=True,
-                                 verify="/etc/ssl/certs/ca-certificates.crt")
+        with urllib3.warnings.catch_warnings():
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            response = requests.post(url, headers=headers, data=data,
+                                     stream=True, verify=False)
         res.code = response.status_code
         answer = ""
         lines = ""
@@ -118,7 +156,7 @@ def call_chatqa(url, question, wid, tokenizer, bearer):
                         res.first_chunk = time.time() - start
                     logging.debug(f"[{wid}] A: {line}")
             res.overall = time.time() - start
-            output_tokens = tokenizer.encode(answer)
+            output_tokens = tokenizer.encode(answer, add_special_tokens=False)
             res.answer_len = len(output_tokens)
             if res.answer_len == 1:
                 logging.error(f"[{wid}] unexpected output {lines}")
@@ -150,7 +188,7 @@ def main():
     stop_event = threading.Event()
     signal.signal(signal.SIGINT, lambda s, f: stop_event.set())
 
-    pool = QueryPool(args.f)
+    pool = QueryPool(args.f, args.x, tokenizer)
     num_workers = args.c
     duration = duration_to_seconds(args.d)
     delay_unit = duration_to_seconds(args.u)

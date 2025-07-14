@@ -52,18 +52,25 @@ To run the test, you need to generate a file with valid User Access Tokens. Ther
 ./generate_uat_to_file.sh /tmp/uat.txt 32
 ```
 After that, you can run the benchmark. You need to specify the following parameters:
-* input file with test questions `-f questions-long.csv`
+* input file with test questions `-f questions-pubmed.csv`
 * length of the test `-d 30m`
 * number of parallel connections `-c 32`
 * location of file with tokens `-b /tmp/uat.txt`
 * the tokenizer model for benchmark, which would be the same as eRAG LLM model `-m meta-llama/Llama-3.1-8B-Instruct`
+* (if you want to test with fixed number of input question tokens) specify the expected number of tokens `-x 512`
 * (if you are running domain different than 'erag.com') specify the eRAG url `-s "https://${ERAG_DOMAIN_NAME}/api/v1/chatqna"`
 ```bash
-python3 benchmark.py -f questions-long.csv -d 30m -c 32 -b /tmp/uat.txt -m meta-llama/Llama-3.1-8B-Instruct
+python3 benchmark.py -f questions-pubmed.csv -d 30m -c 32 -b /tmp/uat.txt -m meta-llama/Llama-3.1-8B-Instruct
 ```
 When the test (or multiple tests for different parameters) are completed, detailed results for all the queries are saved into `bench_*.csv` files. You can parse them using the provided tool:
 ```bash
 python3 parse.py .
+```
+
+### Regenerating questions from PubMed data
+By default `questions-pubmed.csv` file contains 1024 randomly generated questions based on [pubmed23n0001](https://huggingface.co/datasets/MedRAG/pubmed/tree/main/chunk) data. If you want to generate different set of questions based on that dataset, there is a script to do so. More details are described in help of it.
+```bash
+python3 generate_pubmed_questions.py --help
 ```
 
 ### Helpers for configuring eRAG

@@ -1,3 +1,23 @@
+# Intel® AI for Enterprise RAG E2E benchmark
+### Deploy Enterprise RAG and Adjust the parameters
+Before running the E2E benchmark you need to deploy Enterprise RAG and set the parameters of the components(e.g. reranker or retriever) to best suit the use case you want to test.
+
+#### Deploy Enterprise RAG
+Deploy the pipeline by using the instructions provided in [deployment's README.md](../../../../deployment/README.md). However, you might need to modify following elements to best suit your use cases or achieve best performance:
+ * To modify llm model, change the `llm_model` in [config.yaml](../../../../deployment/inventory/sample/config.yaml) before deploying the pipeline. To see all supported LLM models, check out [here](../../../../deployment/pipelines/chatqa/resources-model-cpu.yaml).
+ * For benchmarking big databases with e.g. 1M vectors in the database it is advisable to use `redis-cluster` instead of redis. To change it, modify `vector_store` parameter in [config.yaml](../../../../deployment/inventory/sample/config.yaml).
+ * Usually, 1 replica for `teirerank` is not enough and it might be beneficial to set the number of teirerank's replicas to the number of sockets on the machine, e.g. if there're 2 sockets, set the number of the number of teirerank's replicas to 2. To change it, adjust the parameters in [resources-reference-cpu.yaml](../../../../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
+ * It might be also beneficial to adjust number of replicas for `vllm`. If the number of physical cores per socket is <=64, keep 1 replica per socket (so total 2, if there're 2 sockets). If it is higher (for example, 96 or 128), set the number of replicas to 2 per socket (so total 4, if there're 2 sockets). To change it, adjust the parameters in [resources-reference-cpu.yaml](../../../../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
+ * Consider also turning on SNC (sub-numa clustering) in BIOS for better performance for vllm.
+
+
+#### Adjust components parameters
+In order to modify the parameters of the particular microservices, e.g. top_k for reranker or max_new_tokens for llm, you need to either access Admin Panel via UI and modify particular elements or utilize scripts mentioned [below](#helpers-for-configuring-erag). If you prefer UI approach, check out [UI_features.md](../../../../docs/UI_features.md#admin-panel).
+
+> [!WARNING]
+> Only parameters that don't require a microservice to be restarted can be adjusted this way.
+> Additionally, to configure input token size or concurrency levels, follow [Test execution instructions](#test-execution).
+
 ### Test prerequisites
 In order to be able to run the e2e performance benchmark you need to:
 * install necessary python packages
@@ -54,7 +74,7 @@ To run the test, you need to generate a file with valid User Access Tokens. Ther
 After that, you can run the benchmark. You need to specify the following parameters:
 * input file with test questions `-f questions-pubmed.csv`
 * length of the test `-d 30m`
-* number of parallel connections `-c 32`
+* number of parallel connections(Concurrency levels) `-c 32`
 * location of file with tokens `-b /tmp/uat.txt`
 * the tokenizer model for benchmark, which would be the same as eRAG LLM model `-m meta-llama/Llama-3.1-8B-Instruct`
 * (if you want to test with fixed number of input question tokens) specify the expected number of tokens `-x 512`

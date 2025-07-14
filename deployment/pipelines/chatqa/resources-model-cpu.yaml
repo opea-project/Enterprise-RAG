@@ -27,7 +27,7 @@ modelConfigs:
       OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
+    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq", "--enforce-eager"]
     tensor_parallel_size: "1" # not applied on CPU
 
   "TechxGenus/Meta-Llama-3-8B-Instruct-AWQ":
@@ -68,7 +68,40 @@ modelConfigs:
         <s>[INST]
       {%- endif -%}
 
+  "Qwen/Qwen3-14B":
+    <<: *generic_base_cpu
 
+  "Qwen/Qwen3-14B-AWQ":
+    <<: *generic_base_awq_cpu
+
+  "mistralai/Mistral-7B-Instruct-v0.3":
+    <<: *generic_base_cpu
+
+  "solidrust/Mistral-7B-Instruct-v0.3-AWQ":
+    <<: *generic_base_awq_cpu
+    modelChatTemplate: |
+      {%- if messages[0]['role'] == 'system' %}
+        {%- set system_message = messages[0]['content'] %}
+        {%- set loop_messages = messages[1:] %}\n{%- else %}
+        {%- set loop_messages = messages %}
+      {%- endif %}
+      {{- bos_token }}
+      {%- for message in loop_messages %}
+        {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}
+          {{- raise_exception('After the optional system message, conversation roles must alternate user/assistant/user/assistant/...') }}
+        {%- endif %}
+        {%- if message['role'] == 'user' %}
+          {%- if loop.first and system_message is defined %}
+            {{- ' [INST] ' + system_message + '\\n\\n' + message['content'] + ' [/INST]' }}
+          {%- else %}
+            {{- ' [INST] ' + message['content'] + ' [/INST]' }}
+          {%- endif %}
+        {%- elif message['role'] == 'assistant' %}
+          {{- ' ' + message['content'] + eos_token}}
+      {%- else %}
+        {{- raise_exception('Only user and assistant roles are supported, with the exception of an initial optional system message!') }}
+      {%- endif %}
+      {%- endfor %}
 
 # Default arguments if the model ID is not found
 defaultModelConfigs:

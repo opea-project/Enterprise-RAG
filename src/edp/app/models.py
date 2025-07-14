@@ -175,7 +175,7 @@ class ObjectStatus(Base):
             # multiplier 1_000_000 for microseconds, 1_000 for milliseconds, 1 for seconds
             if datetime:
                 return int(datetime.timestamp() * multipier)
-            return "?"
+            return 0
         text_extractor_duration = format_duration(self.text_extractor_start, self.text_extractor_end)
         text_compression_duration = format_duration(self.text_compression_start, self.text_compression_end)
         text_splitter_duration = format_duration(self.text_splitter_start, self.text_splitter_end)

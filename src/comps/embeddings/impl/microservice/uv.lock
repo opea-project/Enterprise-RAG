@@ -706,7 +706,7 @@ wheels = [
 
 [[package]]
 name = "huggingface-hub"
-version = "0.26.0"
+version = "0.30.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -717,9 +717,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/dd/7269e0bedd685898a17a16375c2e4a5db8b58b17ac241e4f5d739fd261d0/huggingface_hub-0.26.0.tar.gz", hash = "sha256:524fe9281b015b76aa73ff1a83bf1cbe8cab851c9ac5ae5fcd2a25d5173ce629", size = 375459 }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/b1/b6a403e31a806d3b2560adf73b60881330b954d4000fdfb6b0e3beac5f90/huggingface_hub-0.30.0.tar.gz", hash = "sha256:21ac16bc79c950dc058fad6f25e6e13444d878cc504e386d3a9b83096b3851cb", size = 400791 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/1f/21e2fb9564b53122105866c26daeb239911b003d1df3867dd113cf5a7694/huggingface_hub-0.26.0-py3-none-any.whl", hash = "sha256:e43b8f36042b2103b48dea822535e08f5f089c4aa7013a067fca7b4ebf7f85a3", size = 447434 },
+    { url = "https://files.pythonhosted.org/packages/05/54/ab179a3cbc6cb285b34dfb1686176db4c3e7d9634b23cabf5aff0d00c776/huggingface_hub-0.30.0-py3-none-any.whl", hash = "sha256:17470b2b0f902209beb0344d659a18c48b69bc202af27c1cfc814d637807322f", size = 481128 },
 ]
 
 [package.optional-dependencies]
@@ -804,7 +804,7 @@ requires-dist = [
     { name = "fastapi", specifier = "==0.115.12" },
     { name = "fastapi", marker = "extra == 'test'", specifier = "==0.115.12" },
     { name = "h11", specifier = "==0.16.0" },
-    { name = "huggingface-hub", specifier = "==0.26.0" },
+    { name = "huggingface-hub", specifier = "==0.30.0" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "langchain", specifier = "==0.3.6" },
     { name = "langchain-huggingface", specifier = "==0.1.2" },
@@ -825,7 +825,7 @@ requires-dist = [
     { name = "shortuuid", specifier = "==1.0.13" },
     { name = "starlette", specifier = "==0.40.0" },
     { name = "torch", specifier = "==2.7.1", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "transformers", specifier = "==4.50.0" },
+    { name = "transformers", specifier = "==4.52.1" },
     { name = "uvicorn", specifier = "==0.30.1" },
 ]
 provides-extras = ["test"]
@@ -2936,7 +2936,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.50.0"
+version = "4.52.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -2950,9 +2950,9 @@ dependencies = [
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/71/164c42d5b4fde92d3637113c7c846b147f8b4c1a3ea486d35a19b069c11e/transformers-4.50.0.tar.gz", hash = "sha256:d4b0f587ec88825981103fee0a1e80230d956ecc8a7f3feeaafbe49a233c88b8", size = 8770757 }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/de/f3f3a0649dc522aeff55a5739e06e132c875c53701307a2ddd7ce7528ec5/transformers-4.52.1.tar.gz", hash = "sha256:c380d583ed9c7ebe3e30ca5e55ec1249db39eb9ee277f8e74dab1abc6a03c938", size = 8944009 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/75/b9/093543d741ddb7ccaeb655c8800968bd5cb42e26a51560287b00b4aa748b/transformers-4.50.0-py3-none-any.whl", hash = "sha256:d75465d523a28bcfef0028c671f682edee29418ab9a5a15cf8a05171e7c54cb7", size = 10183482 },
+    { url = "https://files.pythonhosted.org/packages/b8/1e/2b00e5021c3545d4a0ae32f3d332ae29e62a6259092f1468976e7b9d4adb/transformers-4.52.1-py3-none-any.whl", hash = "sha256:604b2bb357c480dc5883b7944e8562c967f6b06f63dfb6a1c4665d13d067148f", size = 10459023 },
 ]
 
 [[package]]

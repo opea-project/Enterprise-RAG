@@ -9,3 +9,11 @@
   tags:
     - install
     - delete
+
+- name: NFS Server CSI role
+  when: install_csi == "nfs"
+  ansible.builtin.include_role:
+    name: nfs_server_csi_setup
+  tags:
+    - install
+    - delete

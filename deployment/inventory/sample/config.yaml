@@ -1,10 +1,22 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# uses kubespray to deploy Kubernetes cluster and install required components
+# Uses Kubespray to deploy Kubernetes cluster and install required components
 deploy_k8s: false
-# local path provisioner works only with kubespray deployment, so deploy_k8s needs to be true to install it.
-install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
+
+# Available options:
+# - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+# - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+install_csi: "local-path-provisioner"
+
+# Setup when install_csi is "nfs"
+# Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+# Setting nfs_server_enabled to true will install NFS server together with CSI driver
+# and set nfs_csi_storage_class as the default one.
+nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+nfs_csi_driver_version: "4.11.0"
+nfs_csi_storage_class: "nfs-csi"
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)

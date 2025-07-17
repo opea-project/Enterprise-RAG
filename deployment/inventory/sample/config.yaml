@@ -26,7 +26,7 @@ certs:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.3.0"
+tag: "1.3.1"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"

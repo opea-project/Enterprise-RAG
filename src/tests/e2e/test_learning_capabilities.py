@@ -7,6 +7,9 @@ import allure
 import logging
 import pytest
 import time
+import os
+
+from constants import TEST_FILES_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -383,7 +386,8 @@ def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper, access_toke
     This lightway part of the tests ask simple questions about event or time to see if information
     was identified and classified correctly.
     """
-    edp_helper.upload_file_and_wait_for_ingestion("long-agenda.txt")
+    file = "long-agenda.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     with (allure.step("Ask about time of event")):
         question = "When is the lunch break on Day 2?"
@@ -412,7 +416,8 @@ def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper, access_tok
         This tests checks if chatbot can connect large pieces of information (events) to another one (events' days)
         This test verifies if chatbot can summarize all information related to a given day.
         """
-    edp_helper.upload_file_and_wait_for_ingestion("long-agenda.txt")
+    file = "long-agenda.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
     with allure.step("Summarize question about a day"):
         required_mentions = ["registration", "welcome", "warm-up", "stretching", "skill development",
                              "lunch", "team building", "scrimmage", "cool down", "dinner", "entertainment", "wind down",
@@ -435,7 +440,8 @@ def test_updated_file(edp_helper, chatqa_api_helper, access_token):
     expected_3_before = ["leaves", "shoots", "fruits"]
     expected_3_after = ["carnivor", "fish", "birds"]
 
-    edp_helper.upload_file_and_wait_for_ingestion("test_updated_document.txt")
+    file = "test_updated_document.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response_1_before = ask_question(chatqa_api_helper, access_token, question_1)
     assert chatqa_api_helper.words_in_response(expected_1_before, response_1_before), UNRELATED_RESPONSE_MSG
@@ -447,7 +453,7 @@ def test_updated_file(edp_helper, chatqa_api_helper, access_token):
     assert chatqa_api_helper.words_in_response(expected_3_before, response_3_before), UNRELATED_RESPONSE_MSG
 
     with edp_helper.substitute_file("test_updated_document.txt", "test_updated_document-updated.txt"):
-        edp_helper.upload_file_and_wait_for_ingestion("test_updated_document.txt")
+        edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
         response_1_after = ask_question(chatqa_api_helper, access_token, question_1)
         assert chatqa_api_helper.words_in_response(expected_1_after, response_1_after), UNRELATED_RESPONSE_MSG
@@ -466,7 +472,7 @@ def delete_and_ask_question(edp_helper, chatqa_api_helper, file, token="", quest
 
 
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, token="", question=""):
-    edp_helper.upload_file_and_wait_for_ingestion(file)
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
     return ask_question(chatqa_api_helper, token, question)
 
 

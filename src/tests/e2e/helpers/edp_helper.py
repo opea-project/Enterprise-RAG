@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-import shutil
-
-from constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, TEST_FILES_DIR
 import logging
 import os
 import requests
+import shutil
 import time
-from helpers.api_request_helper import ApiRequestHelper, CustomPortForward
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+
+from tests.e2e.constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, TEST_FILES_DIR
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper, CustomPortForward
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +23,22 @@ DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compr
 
 class EdpHelper(ApiRequestHelper):
 
-    def __init__(self, namespace, label_selector, api_port):
+    def __init__(self, namespace, label_selector, api_port, bucket_name=None):
         super().__init__(namespace=namespace, label_selector=label_selector, api_port=api_port)
         self.default_headers = {
             "Content-Type": "application/json"
         }
         self.remote_port_fw = 443
         self.local_port_fw = 443
-        self.available_buckets = self.list_buckets().json().get("buckets")
-        # Use the first bucket that is not read-only as the default bucket
-        self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
-        logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
-                     f"{self.available_buckets}")
+
+        if bucket_name:
+            self.default_bucket = bucket_name
+        else:
+            self.available_buckets = self.list_buckets().json().get("buckets")
+            # Use the first bucket that is not read-only as the default bucket
+            self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
+            logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
+                        f"{self.available_buckets}")
 
     def list_buckets(self):
         """Call /api/list_buckets endpoint"""
@@ -186,12 +190,11 @@ class EdpHelper(ApiRequestHelper):
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
 
-    def upload_file_and_wait_for_ingestion(self, file):
-        file_path = os.path.join(TEST_FILES_DIR, file)
-        response = self.generate_presigned_url(file)
+    def upload_file_and_wait_for_ingestion(self, file_path):
+        response = self.generate_presigned_url(file_path)
         response = self.upload_file(file_path, response.json().get("url"))
         assert response.status_code == 200
-        return self.wait_for_file_upload(file, "ingested", timeout=180)
+        return self.wait_for_file_upload(file_path, "ingested", timeout=180)
 
     @contextmanager
     def substitute_file(self, to_substitute, substitution):
@@ -268,4 +271,8 @@ class FileStatusException(Exception):
 
 
 class UploadTimeoutException(Exception):
+    pass
+
+
+class UploadFailedException(Exception):
     pass

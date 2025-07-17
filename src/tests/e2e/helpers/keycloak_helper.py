@@ -4,16 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-from constants import ERAG_AUTH_DOMAIN, INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID
-from helpers.api_request_helper import CustomPortForward
 import kr8s
 import logging
 import os
 import requests
 
-logger = logging.getLogger(__name__)
+from tests.e2e.constants import ERAG_AUTH_DOMAIN, INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, VITE_KEYCLOAK_REALM, VITE_KEYCLOAK_CLIENT_ID
+from tests.e2e.helpers.api_request_helper import CustomPortForward
+
 DEFAULT_CREDENTIALS_PATH = "../../deployment/ansible-logs/default_credentials.txt"
 
+logger = logging.getLogger(__name__)
 
 class CredentialsNotFound(Exception):
     pass

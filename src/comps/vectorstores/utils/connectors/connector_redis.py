@@ -63,9 +63,10 @@ class ConnectorRedis(VectorStoreConnector):
 
         # Find and update the bucket_name field to include index_missing attribute
         for field in metadata_schema:
-            if field["name"] == "bucket_name":
+            if field["name"] == "file_id":
                 field["attrs"] = {"index_missing": True}
-                break
+            if field["name"] == "link_id":
+                field["attrs"] = {"index_missing": True}  
 
         if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
             hierarchical_fields = [
@@ -298,18 +299,32 @@ class ConnectorRedis(VectorStoreConnector):
             logger.exception("Error occured while searching by vector")
             raise e
 
-    def empty_filter_expression(self) -> FilterExpression:
+    def get_files_filter_expression(self) -> FilterExpression:
         """
+        Use is_missing operator for link_id to filter out links and return only files.
         Returns:
-            FilterExpression: An empty filter expression equivalent to None.
+            FilterExpression: Returns a filter expression matching only files.
         """
-        return (Text("") == None)  # noqa: E711
+        logger.debug("Adding files filter expression")
+        return Text("link_id").is_missing()
 
     def get_links_filter_expression(self) -> FilterExpression:
+        """
+        Use is_missing operator for file_id to filter out files and return only links.
+        Returns:
+            FilterExpression: Returns a filter expression to query only links.
+        """
         logger.debug("Adding links filter expression")
-        return Text("bucket_name").is_missing()
+        return Text("file_id").is_missing()
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]) -> FilterExpression:
+        """
+        Constructs a filter expression for bucket names.
+        Args:
+            bucket_names (List[str]): List of bucket names to filter by.
+        Returns:
+            FilterExpression: The filter expression for the bucket names.
+        """
         logger.debug(f"Bucket names in filter expression: {bucket_names}")
         if len(bucket_names) == 0:
             raise ValueError("Bucket names list cannot be empty")
@@ -321,6 +336,16 @@ class ConnectorRedis(VectorStoreConnector):
         return bucket_name_filter
 
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str) -> FilterExpression:
+        """
+        Constructs a filter expression for bucket name and object name.
+        Args:
+            bucket_name (str): The name of the bucket.
+            object_name (str): The name of the object.
+        Returns:
+            FilterExpression: The filter expression for the bucket names.
+        Raises:
+            ValueError: If bucket_name and/or object_name is empty.
+        """
         if len(bucket_name) == 0 or len(object_name) == 0:
             raise ValueError("Bucket name and object name cannot be empty")
         bucket_name_filter = Text("bucket_name") == bucket_name
@@ -347,11 +372,10 @@ class ConnectorRedis(VectorStoreConnector):
         Returns:
             FilterExpression: The filter expression for the hierarchical index.
         """
-        return (
-            Text("doc_id") == doc_id
-            & Num("page") == page
-            & Num("summary") == 0
-        )
+        doc = Text("doc_id") == doc_id
+        page = Num("page") == page
+        summary = Num("summary") == 0
+        return doc & page & summary
 
     def _convert_to_text_doc(self, doc):
         """Helper method to convert a raw Redis result to a TextDoc"""

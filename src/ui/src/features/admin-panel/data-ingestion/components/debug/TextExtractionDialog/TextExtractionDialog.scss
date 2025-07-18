@@ -25,6 +25,10 @@
       @apply w-full text-wrap p-3 text-sm;
       @apply text-light-text-primary dark:text-dark-text-primary;
       overflow-wrap: anywhere;
+
+      &.error-message {
+       @apply text-light-text-error dark:text-dark-text-error
+      }
     }
   }
 }

@@ -31,7 +31,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "aiohttp==3.11.12",
+    "aiohttp==3.12.14",
     "shortuuid==1.0.13",
     "pytest==8.3.4",
     "pytest-asyncio==0.24.0",

@@ -7,10 +7,13 @@ import {
   useGetLinksQuery,
   useRetryLinkActionMutation,
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
+import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { getLinksTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/links";
 
 const LinksDataTable = () => {
-  const { data: links, isLoading } = useGetLinksQuery();
+  const { data: links, refetch, isLoading } = useGetLinksQuery();
+  useConditionalPolling(links, refetch);
+
   const [deleteLink] = useDeleteLinkMutation();
   const [retryLinkAction] = useRetryLinkActionMutation();
 

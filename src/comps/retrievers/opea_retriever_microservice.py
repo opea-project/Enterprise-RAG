@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException, Request
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from comps.cores.utils.utils import sanitize_env
-from utils import opea_retriever
+from comps.retrievers.utils import opea_retriever
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, SearchedDoc
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
@@ -27,7 +27,8 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 # Initialize an instance of the OPEARetriever class with environment variables.
 
 retriever = opea_retriever.OPEARetriever(
-    vector_store=sanitize_env(os.getenv("VECTOR_STORE"))
+    vector_store=sanitize_env(os.getenv("VECTOR_STORE")),
+    rbac_enabled=str(os.getenv('VECTOR_DB_RBAC')).lower() in ['true', '1', 't', 'y', 'yes']
 )
 
 @register_microservice(
@@ -45,7 +46,6 @@ retriever = opea_retriever.OPEARetriever(
 async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> SearchedDoc:
     start = time.time()
 
-    search_detail = retriever.filter_expression_for_rbac(request)
     vector = []
     if isinstance(input, EmbedDocList):
         logger.warning("Only one document is allowed for retrieval. Using the first document.")
@@ -55,14 +55,17 @@ async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> Sea
 
     logger.info(f"Retrieving documents for input: {vector.text}. K={vector.k}, Search Type={vector.search_type}")
 
+    req_data = await request.json()
+    search_by = retriever.generate_search_by(req_data)
+    rbac_by = retriever.generate_rbac(request.headers.get("Authorization")) if retriever.rbac_enabled else None
     result_vectors = None
     try:
         if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
             k_summaries = int(sanitize_env(os.getenv("K_SUMMARIES")))
             k_chunks = int(sanitize_env(os.getenv("K_CHUNKS")))
-            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks, search_by=search_detail)
+            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks, search_by=search_by, rbac_by=rbac_by)
         else:
-            result_vectors = await retriever.retrieve(input=vector, search_by=search_detail)
+            result_vectors = await retriever.retrieve(input=vector, search_by=search_by, rbac_by=rbac_by)
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,

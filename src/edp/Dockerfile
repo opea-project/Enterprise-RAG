@@ -31,5 +31,6 @@ EXPOSE 5000
 
 # Set workdir
 WORKDIR /home/user/app
-# Define the command to run the application
-CMD ["bash"]
+COPY --chown=user:user ./edp/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

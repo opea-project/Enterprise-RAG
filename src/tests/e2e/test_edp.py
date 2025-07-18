@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
-import constants
 import inspect
 import logging
 import pytest
@@ -12,6 +11,8 @@ import requests
 import os
 import time
 import uuid
+
+from tests.e2e.constants import TEST_FILES_DIR
 
 logger = logging.getLogger(__name__)
 IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding"]
@@ -112,7 +113,7 @@ def test_edp_delete_file_during_ingestion(edp_helper):
 def test_edp_upload_unsupported_file(edp_helper):
     """Upload a file with an unsupported file type and check that it is in error state"""
     file = "HelloWorld.c"
-    file_path = os.path.join(constants.TEST_FILES_DIR, file)
+    file_path = os.path.join(TEST_FILES_DIR, file)
     response = edp_helper.generate_presigned_url(file)
     response = edp_helper.upload_file(file_path, response.json().get("url"))
     assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
@@ -366,7 +367,7 @@ def test_edp_upload_docx_file_with_text_in_image(edp_helper):
     """Upload DOCX file with text in image and check that the text is extracted correctly"""
     file = "text_in_image.docx"
     text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
@@ -378,7 +379,7 @@ def test_edp_upload_pptx_file_with_text_in_image(edp_helper):
     """Upload PPTX file with text in image and check that the text is extracted correctly"""
     file = "text_in_image.pptx"
     text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
@@ -391,12 +392,56 @@ def test_edp_upload_pdf_file_with_links(edp_helper):
     file = "links.pdf"
     links = ["www.SomeMadeUpSiteOne.com", "https://SomeMadeUpSiteTwo.org", "http://SomeMadeUpSiteThree.net",
              "https://SomeMadeUpSiteFour.pl", "http://bamboozlingwebsite.pl"]
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(file)
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
     for link in links:
         assert link in text_from_image
+
+
+@allure.testcase("IEASG-T197")
+def test_edp_upload_pdf_file_with_table(edp_helper):
+    """Upload PDF file with table and check that the text inside is extracted correctly"""
+    file = "schedule.pdf"
+    column_tags = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    time_stamps = ["6:00", "8:00", "8:30", "10:00", "11:05", "13:00", "14:00", "15:00", "15:05", "16:30"]
+    subjects = {
+        "Math" : 9,
+        "Philosophy" : 1,
+        "Swimming" : 1,
+        "Theology" : 1,
+        "Physics" : 4,
+        "PE" : 1,
+        "Computer" : 1,
+        "Science" : 1,
+        "Art" : 1,
+        "Biology" : 1,
+        "Chemistry" : 1
+    }
+
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    response = edp_helper.extract_text(edp_file["id"])
+    text_from_image = response.json().get("docs").get("docs")[0].get("text")
+
+    assert all(day in text_from_image for day in column_tags)
+    assert all(hours in text_from_image for hours in time_stamps)
+    for subject in subjects:
+        subject_number = text_from_image.count(subject)
+        assert subject_number == subjects[subject]
+
+
+@allure.testcase("IEASG-T198")
+def test_edp_upload_docx_file_with_text_in_image_inside_table(edp_helper):
+    """Upload DOCX file with text in image inside a table and check that the text is extracted correctly"""
+    file = "table_text_in_image.docx"
+    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
+    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+
+    response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, "Failed to extract text."
+    text_from_image = response.json()["docs"]["docs"][0]["text"]
+    assert text_from_image == text_in_image, f"Extracted text '{text_from_image}' does not match expected text '{text_in_image}'"
 
 
 def method_name():

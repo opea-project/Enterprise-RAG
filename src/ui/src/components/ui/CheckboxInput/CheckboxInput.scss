@@ -49,4 +49,8 @@
       @apply text-xs;
     }
   }
+
+  &--dense {
+    @apply my-0;
+  }
 }

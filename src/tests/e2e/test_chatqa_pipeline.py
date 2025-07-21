@@ -331,9 +331,9 @@ def test_follow_up_questions_long_history(chatqa_api_helper, code_snippets):
     question = "In which programming languages have I prepared a TODO list application?"
     snippets = code_snippets("files/code_snippets_long")
     history = {"conversation_history": [
-        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": "ok"},
-        {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": "ok"},
-        {"question": f"This is a third version of TODO list application: {snippets['python']}", "answer": "ok"},
+        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok"},
+        {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": f"The code {snippets['js']} looks ok"},
+        {"question": f"This is a third version of TODO list application: {snippets['python']}", "answer": f"The code: {snippets['python']} looks ok"},
     ]}
     response = chatqa_api_helper.call_chatqa(question, **history)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"

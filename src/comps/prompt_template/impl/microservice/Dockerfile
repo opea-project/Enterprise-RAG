@@ -5,7 +5,7 @@
 # This Dockerfile is used to build the container image for the RAG reranking microservice.
 
 FROM python:3.11-slim
-COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 
 RUN apt-get update -y && \

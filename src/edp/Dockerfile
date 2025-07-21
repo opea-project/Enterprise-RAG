@@ -3,7 +3,7 @@
 
 # Use the official Python image from the Docker Hub
 FROM python:3.12-slim
-COPY --from=ghcr.io/astral-sh/uv:0.5.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 # Add non-root user
 RUN useradd -m -s /bin/bash user

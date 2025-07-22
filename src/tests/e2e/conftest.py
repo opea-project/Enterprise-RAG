@@ -12,12 +12,12 @@ import pytest
 import tarfile
 import urllib3
 
-from tests.e2e.helpers.api_request_helper import ApiRequestHelper
-from tests.e2e.helpers.edp_helper import EdpHelper
-from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
-from tests.e2e.helpers.guard_helper import GuardHelper
-from tests.e2e.helpers.istio_helper import IstioHelper
-from tests.e2e.helpers.keycloak_helper import KeycloakHelper
+from helpers.api_request_helper import ApiRequestHelper
+from helpers.edp_helper import EdpHelper
+from helpers.fingerprint_api_helper import FingerprintApiHelper
+from helpers.guard_helper import GuardHelper
+from helpers.istio_helper import IstioHelper
+from helpers.keycloak_helper import KeycloakHelper
 
 NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
 TEST_LOGS_DIR = "test_logs"

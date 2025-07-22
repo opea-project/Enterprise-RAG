@@ -2,16 +2,20 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import concurrent
 import logging
 import os
-import requests
 import shutil
 import time
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
-from tests.e2e.constants import INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, TEST_FILES_DIR
-from tests.e2e.helpers.api_request_helper import ApiRequestHelper, CustomPortForward
+import requests
+from tests.e2e.helpers.api_request_helper import (ApiRequestHelper,
+                                                  CustomPortForward)
+from tests.e2e.validation.constants import (
+    INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR,
+    TEST_FILES_DIR)
 
 logger = logging.getLogger(__name__)
 
@@ -149,14 +153,49 @@ class EdpHelper(ApiRequestHelper):
             )
         return response
 
+    def _open_and_send_file(self, file_path, presigned_url) :
+        logger.debug(f"Attempting to upload file {file_path} using presigned URL")
+        try:
+            with open(file_path, 'rb') as f:
+                response = requests.put(presigned_url, data=f, verify=False)
+            logger.info("Upload complete")
+            return response
+        except FileNotFoundError:
+            logger.error(f"Not found the file {file_path}")
+            raise
+
     def upload_file(self, file_path, presigned_url):
         """Upload a file using the presigned URL"""
         with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
                                INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            logger.info(f"Attempting to upload file {file_path} using presigned URL")
-            with open(file_path, 'rb') as f:
-                response = requests.put(presigned_url, data=f, verify=False)
-            return response
+            return self._open_and_send_file(file_path, presigned_url)
+
+    def upload_files_in_parallel(self, files_dir, file_names):
+        files_info = []
+        for name in file_names:
+            file_path = os.path.join(files_dir, name)
+            file_presigned_url = self.generate_presigned_url(name).json().get("url")
+            file_data = {"path": file_path, "presigned_url": file_presigned_url}
+            files_info.append(file_data)
+
+        results = []
+        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
+                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
+            logger.debug(f"Start {len(file_names)} threads for file uploading.")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(file_names)) as executor:
+                futures = [executor.submit(self._open_and_send_file, file_info['path'], file_info['presigned_url']) for file_info in files_info]
+
+                try:
+                    for future in concurrent.futures.as_completed(futures):
+                        results.append(future.result())
+                except Exception as e:
+                    msg = f"Caugh an exception in a thread during file upload: {str(e)}"
+                    for f in futures:
+                        f.cancel()
+                    logger.critical(msg)
+                    raise RuntimeError(msg)
+
+        return results
 
     def wait_for_file_upload(self, filename, desired_status, timeout=FILE_UPLOAD_TIMEOUT_S):
         """Wait for the file to be uploaded and have the desired status"""

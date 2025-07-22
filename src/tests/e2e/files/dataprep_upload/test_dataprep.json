@@ -1,0 +1,75 @@
+{
+  "library": {
+    "name": "City Central Library",
+    "location": "123 Main St, Anytown, USA",
+    "established": 1990,
+    "collection": [
+      {
+        "title": "To Kill a Mockingbird",
+        "author": "Harper Lee",
+        "genre": "Fiction",
+        "publishedYear": 1960,
+        "ISBN": "978-0-06-112008-4",
+        "availableCopies": 3
+      },
+      {
+        "title": "1984",
+        "author": "George Orwell",
+        "genre": "Dystopian",
+        "publishedYear": 1949,
+        "ISBN": "978-0-452-28423-4",
+        "availableCopies": 5
+      },
+      {
+        "title": "The Great Gatsby",
+        "author": "F. Scott Fitzgerald",
+        "genre": "Classic",
+        "publishedYear": 1925,
+        "ISBN": "978-0-7432-7356-5",
+        "availableCopies": 2
+      },
+      {
+        "title": "Moby Dick",
+        "author": "Herman Melville",
+        "genre": "Adventure",
+        "publishedYear": 1851,
+        "ISBN": "978-0-14-243724-7",
+        "availableCopies": 4
+      },
+      {
+        "title": "Pride and Prejudice",
+        "author": "Jane Austen",
+        "genre": "Romance",
+        "publishedYear": 1813,
+        "ISBN": "978-0-14-310542-8",
+        "availableCopies": 6
+      }
+    ],
+    "staff": [
+      {
+        "name": "Alice Johnson",
+        "position": "Librarian",
+        "yearsOfExperience": 10
+      },
+      {
+        "name": "Bob Smith",
+        "position": "Assistant Librarian",
+        "yearsOfExperience": 5
+      }
+    ],
+    "events": [
+      {
+        "eventName": "Book Club",
+        "date": "2023-11-15",
+        "time": "18:00",
+        "participants": 12
+      },
+      {
+        "eventName": "Story Time for Kids",
+        "date": "2023-11-20",
+        "time": "10:00",
+        "participants": 20
+      }
+    ]
+  }
+}

@@ -1,3 +1,7 @@
+> [!WARNING]
+> Microservices benchmarks are currently not working due to microservices validation lack of support.
+
+
 ### Supported benchmarking
 
 - Gaudi

@@ -15,7 +15,7 @@ from comps import (
     get_opea_logger
 )
 
-from tests.evals.evaluation.rag_eval import Evaluator
+from tests.e2e.evals.evaluation.rag_eval import Evaluator
 
 logger = get_opea_logger("RAG Evaluator Multihop")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))

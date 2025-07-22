@@ -27,7 +27,7 @@ MAX_RUNNING_QUERIES = 8 # how many query pods can be actively tracked at the sam
 DEF_LOOP_INTERVAL_SEC = 0.5
 MAX_RETRY_COUNT = 2 # number of retries allowed for query after first TIMEOUT or ERROR state
 RETRY_BACKOFF_SEC = 2 # time before query in RETRY state is restored to NEW state
-
+FILES_DIR = "e2e/files"
 
 class ConnectionType(Enum):
     HTTP = "http"
@@ -110,7 +110,7 @@ class TestNamespace():
             self.enable_peer_authentication()
 
     def enable_peer_authentication(self):
-        yaml_file_path = "files/istio_peer_auth.yaml"
+        yaml_file_path = f"{FILES_DIR}/istio_peer_auth.yaml"
         resources = objects_from_files(yaml_file_path)
         for resource in resources:
             resource.metadata.namespace = self.namespace_name

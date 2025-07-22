@@ -52,6 +52,6 @@ deployment/default_credentials.txt
 .venv/
 
 # Test evaluation datatsets
-src/tests/evals/evaluation/rag_eval/examples/multihop_dataset/
-src/tests/evals/evaluation/rag_eval/examples/output/
-src/tests/evals/evaluation/rag_eval/examples/tmp_corpus.txt
+src/tests/e2e/evals/evaluation/rag_eval/examples/multihop_dataset/
+src/tests/e2e/evals/evaluation/rag_eval/examples/output/
+src/tests/e2e/evals/evaluation/rag_eval/examples/tmp_corpus.txt

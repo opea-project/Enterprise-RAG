@@ -4,15 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import concurrent
-import kr8s
 import logging
-import requests
 import secrets
 import socket
 import time
 from urllib.parse import urljoin
 
-from tests.e2e.constants import ERAG_DOMAIN, INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR
+import kr8s
+import requests
+from tests.e2e.validation.constants import (
+    ERAG_DOMAIN, INGRESS_NGINX_CONTROLLER_NS,
+    INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR)
 
 logger = logging.getLogger(__name__)
 

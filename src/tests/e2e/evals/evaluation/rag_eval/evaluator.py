@@ -11,7 +11,7 @@ from comps import (
     get_opea_logger
 )
 
-from tests.evals.metrics import bleu_score, rougeL_score
+from tests.e2e.evals.metrics import bleu_score, rougeL_score
 
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper
 from tests.e2e.helpers.edp_helper import EdpHelper

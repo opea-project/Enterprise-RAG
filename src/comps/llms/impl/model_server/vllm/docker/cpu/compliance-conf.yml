@@ -3,10 +3,8 @@ dockerfile: "Dockerfile"
 docker_context: "./../../"
 dependencies:
   - apt
-  - pip-manual
-pip-manual:
-  packages:
-    - pip
-    - intel-openmp
-    - intel_extension_for_pytorch
-    - git/vllm-project/vllm
+base-image:
+  override:
+  - "ubuntu:22.04"
+apt:
+  base-image-override: "ubuntu:22.04"

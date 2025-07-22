@@ -115,3 +115,16 @@
   tags:
     - delete
 
+- name: Remove the NFS node label
+  tags:
+    - delete
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Node
+    name: "{{ nfs_node_name }}"
+    definition:
+      metadata:
+        labels:
+          nfs-node: null
+    state: patched
+

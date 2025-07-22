@@ -35,6 +35,8 @@ spec:
       labels:
         app: nfs-server
     spec:
+      nodeSelector:
+        nfs-node: "true"
       containers:
         - name: nfs-server
           image: {{ nfs_server_image }}

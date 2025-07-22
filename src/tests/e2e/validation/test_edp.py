@@ -370,6 +370,7 @@ def test_edp_upload_docx_file_with_text_in_image(edp_helper):
     edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
     assert text_from_image == text_in_image
 
@@ -382,6 +383,7 @@ def test_edp_upload_pptx_file_with_text_in_image(edp_helper):
     edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
     assert text_from_image == text_in_image
 
@@ -395,6 +397,7 @@ def test_edp_upload_pdf_file_with_links(edp_helper):
     edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
     for link in links:
         assert link in text_from_image
@@ -422,6 +425,7 @@ def test_edp_upload_pdf_file_with_table(edp_helper):
 
     edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
     response = edp_helper.extract_text(edp_file["id"])
+    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
     text_from_image = response.json().get("docs").get("docs")[0].get("text")
 
     assert all(day in text_from_image for day in column_tags)
@@ -439,7 +443,7 @@ def test_edp_upload_docx_file_with_text_in_image_inside_table(edp_helper):
     edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
 
     response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, "Failed to extract text."
+    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
     text_from_image = response.json()["docs"]["docs"][0]["text"]
     assert text_from_image == text_in_image, f"Extracted text '{text_from_image}' does not match expected text '{text_in_image}'"
 

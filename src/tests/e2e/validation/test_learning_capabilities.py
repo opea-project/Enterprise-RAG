@@ -271,7 +271,7 @@ def test_docx_formatted_text(edp_helper, chatqa_api_helper, access_token):
 @allure.testcase("IEASG-T167")
 def test_docx_with_hyperlink(edp_helper, chatqa_api_helper, access_token):
     """*.docx file learning capabilities (with hyperlinks inside the file)"""
-    question = "Give me a link to a top secret webstite called AAAFFFGGGKKK"
+    question = "Give me a link to a website called AAAFFFGGGKKK"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_with_hyperlink.docx", access_token, question)
     assert "aaafffgggkkk-top-secret.com" in response.lower(), UNRELATED_RESPONSE_MSG
 

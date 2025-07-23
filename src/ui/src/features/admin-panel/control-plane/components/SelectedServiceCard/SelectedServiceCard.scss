@@ -19,7 +19,7 @@
     }
 
     & .selected-service-card__content {
-      @apply mr-2 overflow-y-auto pl-4 pr-2 pb-2;
+      @apply mr-2 overflow-y-auto pb-2 pl-4 pr-2;
 
       & .service-details-grid {
         @apply mt-2 grid auto-rows-[1.75rem] grid-cols-2 items-center justify-items-start;

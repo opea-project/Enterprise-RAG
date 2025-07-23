@@ -3,21 +3,51 @@
 
 import "./PageLayout.scss";
 
+import classNames from "classnames";
 import { PropsWithChildren, ReactNode } from "react";
 
-import AppHeader from "@/components/ui/AppHeader/AppHeader";
+import AppHeader, { AppHeaderProps } from "@/components/ui/AppHeader/AppHeader";
 
 interface PageLayoutProps extends PropsWithChildren {
-  appHeaderExtraActions?: ReactNode;
+  appHeaderProps?: AppHeaderProps;
+  leftSideMenu?: {
+    component?: ReactNode;
+    isOpen?: boolean;
+  };
+  rightSideMenu?: {
+    component?: ReactNode;
+    isOpen?: boolean;
+  };
 }
 
-const PageLayout = ({ appHeaderExtraActions, children }: PageLayoutProps) => (
-  <div className="page-layout__root">
-    <div className="page-layout__content">
-      <AppHeader extraActions={appHeaderExtraActions} />
-      <main className="page-layout__main-outlet">{children}</main>
+const PageLayout = ({
+  appHeaderProps,
+  leftSideMenu,
+  rightSideMenu,
+  children,
+}: PageLayoutProps) => {
+  const { component: LeftSideMenu, isOpen: isLeftSideMenuOpen } =
+    leftSideMenu ?? {};
+  const { component: RightSideMenu, isOpen: isRightSideMenuOpen } =
+    rightSideMenu ?? {};
+
+  return (
+    <div className="page-layout__root">
+      <div
+        className={classNames("page-layout__content", {
+          "page-layout__content--left-side-menu-open": isLeftSideMenuOpen,
+          "page-layout__content--right-side-menu-open": isRightSideMenuOpen,
+        })}
+      >
+        <AppHeader {...appHeaderProps} />
+        <main className="page-layout__main-outlet" id="main">
+          {children}
+        </main>
+      </div>
+      {isLeftSideMenuOpen && LeftSideMenu}
+      {isRightSideMenuOpen && RightSideMenu}
     </div>
-  </div>
-);
+  );
+};
 
 export default PageLayout;

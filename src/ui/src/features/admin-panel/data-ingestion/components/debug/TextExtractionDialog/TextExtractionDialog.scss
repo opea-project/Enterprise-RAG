@@ -27,7 +27,7 @@
       overflow-wrap: anywhere;
 
       &.error-message {
-       @apply text-light-text-error dark:text-dark-text-error
+        @apply text-light-text-error dark:text-dark-text-error;
       }
     }
   }

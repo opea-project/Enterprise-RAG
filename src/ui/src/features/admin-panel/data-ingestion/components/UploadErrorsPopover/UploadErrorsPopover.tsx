@@ -1,11 +1,12 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./UploadErrorsDialog.scss";
+import "./UploadErrorsPopover.scss";
 
 import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import Anchor from "@/components/ui/Anchor/Anchor";
-import Popup from "@/components/ui/Popup/Popup";
+import Popover from "@/components/ui/Popover/Popover";
+import usePopover from "@/components/ui/Popover/usePopover";
 import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
 import { getAppEnv, titleCaseString } from "@/utils";
 
@@ -19,24 +20,19 @@ const UndeterminedNetworkErrorMessage = (
     </p>
     <p>
       If you are using self-signed or custom certificate, open the URL below and
-      accept the certificate. After doing this, click outside this popup and
+      accept the certificate. After doing this, click outside this popover and
       retry upload.
     </p>
     <Anchor href={s3Url}>{s3Url}</Anchor>
   </>
 );
 
-interface UploadErrorsDialogProps {
+interface UploadErrorsPopoverProps {
   uploadErrors: UploadErrors;
 }
 
-const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
-  const trigger = (
-    <div className="upload-errors-dialog__trigger">
-      <ErrorIcon className="upload-errors-dialog__trigger--icon" />
-      <p className="upload-errors-dialog__trigger--text">Error during upload</p>
-    </div>
-  );
+const UploadErrorsPopover = ({ uploadErrors }: UploadErrorsPopoverProps) => {
+  const { triggerRef, isOpen, togglePopover } = usePopover<HTMLDivElement>();
 
   const getUploadErrors = (dataType: "links" | "files") => {
     if (uploadErrors[dataType] === "") {
@@ -49,7 +45,7 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
     const sectionTitle = titleCaseString(dataType);
 
     return (
-      <section className="upload-errors-dialog__section">
+      <section className="upload-errors-popover__section">
         <h4>{sectionTitle}</h4>
         <p>{uploadErrors[dataType]}</p>
         {isUndeterminedNetworkError && UndeterminedNetworkErrorMessage}
@@ -58,11 +54,29 @@ const UploadErrorsDialog = ({ uploadErrors }: UploadErrorsDialogProps) => {
   };
 
   return (
-    <Popup popupTrigger={trigger} placement="top end">
-      {getUploadErrors("files")}
-      {getUploadErrors("links")}
-    </Popup>
+    <>
+      <div
+        ref={triggerRef}
+        className="upload-errors-popover__trigger"
+        onClick={togglePopover}
+      >
+        <ErrorIcon className="upload-errors-popover__trigger--icon" />
+        <p className="upload-errors-popover__trigger--text">
+          Error during upload
+        </p>
+      </div>
+      <Popover
+        isOpen={isOpen}
+        triggerRef={triggerRef}
+        placement="top end"
+        ariaLabel="Upload Errors"
+        onOpenChange={togglePopover}
+      >
+        {getUploadErrors("files")}
+        {getUploadErrors("links")}
+      </Popover>
+    </>
   );
 };
 
-export default UploadErrorsDialog;
+export default UploadErrorsPopover;

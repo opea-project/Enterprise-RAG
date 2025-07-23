@@ -45,7 +45,7 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
       isCentered,
       onClose,
       children,
-      ...restProps
+      ...rest
     }: DialogProps,
     forwardedRef,
   ) => {
@@ -75,7 +75,7 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
                 role="dialog"
                 className="dialog__box"
                 aria-labelledby={headingId}
-                {...restProps}
+                {...rest}
               >
                 {({ close }) => {
                   closeRef.current = close;

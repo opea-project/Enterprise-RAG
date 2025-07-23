@@ -35,7 +35,7 @@ const TextAreaInput = ({
   isInvalid,
   placeholder,
   tooltipText,
-  ...restProps
+  ...rest
 }: TextAreaInputProps) => {
   const id = useId();
   const inputId = `${id}-textarea-input`;
@@ -69,7 +69,7 @@ const TextAreaInput = ({
         placeholder={placeholder}
         className="textarea-input__input"
         aria-invalid={isInvalid}
-        {...restProps}
+        {...rest}
       />
     </TextField>
   );

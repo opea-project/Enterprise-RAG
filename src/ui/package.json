@@ -38,6 +38,7 @@
     "@eslint/compat": "^1.1.1",
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.7.0",
+    "@react-types/menu": "^3.10.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/luxon": "^3.6.2",
     "@types/node": "^22.5.2",

@@ -22,7 +22,7 @@ const Anchor = ({
   target = "_blank",
   className,
   onPress,
-  ...props
+  ...rest
 }: AnchorProps) => {
   const isSafe = isSafeHref(href);
   const safeHref = isSafe ? sanitizeHref(href) : undefined;
@@ -37,7 +37,7 @@ const Anchor = ({
 
   return (
     <Link
-      {...props}
+      {...rest}
       href={safeHref}
       target={target}
       rel={rel}

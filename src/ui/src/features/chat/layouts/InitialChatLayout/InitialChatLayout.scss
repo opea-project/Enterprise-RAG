@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .initial-chat-layout {
-  @apply relative mx-auto mb-32 h-full;
+  @apply relative mx-auto mb-24 h-full;
   @apply flex flex-col items-center justify-center;
-  @apply w-full md:w-[48rem];
+  @apply w-full max-w-[calc(100%_-_8rem)];
 
   & .initial-chat-layout__greeting {
     @apply mb-9 text-center text-[2.5rem] font-semibold leading-[3rem];

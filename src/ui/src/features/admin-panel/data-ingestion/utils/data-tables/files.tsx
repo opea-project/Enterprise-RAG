@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
 import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
-import ProcessingTimePopup from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopup/ProcessingTimePopup";
+import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatFileSize } from "@/features/admin-panel/data-ingestion/utils";
 
@@ -87,7 +87,7 @@ export const getFilesTableColumns = ({
         },
       },
     }) => (
-      <ProcessingTimePopup
+      <ProcessingTimePopover
         textExtractorDuration={text_extractor_duration}
         textCompressionDuration={text_compression_duration}
         textSplitterDuration={text_splitter_duration}

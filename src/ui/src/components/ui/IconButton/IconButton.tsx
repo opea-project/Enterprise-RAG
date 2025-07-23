@@ -4,6 +4,7 @@
 import "./IconButton.scss";
 
 import classNames from "classnames";
+import { forwardRef } from "react";
 import {
   Button as ReactAriaButton,
   ButtonProps as ReactAriaButtonProps,
@@ -22,39 +23,34 @@ export interface IconButtonProps extends ReactAriaButtonProps {
   variant?: IconButtonVariants;
 }
 
-const IconButton = ({
-  icon,
-  color = "primary",
-  size,
-  variant,
-  className,
-  ...props
-}: IconButtonProps) => {
-  const iconButtonClassNames = classNames(
-    "icon-button",
-    {
-      "icon-button--error": !variant && color === "error",
-      "icon-button--success": !variant && color === "success",
-      "icon-button--sm": size === "sm",
-      "icon-button--outlined": variant === "outlined",
-      "icon-button--contained": variant === "contained",
-      "icon-button--outlined-primary":
-        variant === "outlined" && color === "primary",
-      "icon-button--outlined-error":
-        variant === "outlined" && color === "error",
-      "icon-button--outlined-success":
-        variant === "outlined" && color === "success",
-    },
-    className,
-  );
+const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+  ({ icon, color = "primary", size, variant, className, ...rest }, ref) => {
+    const iconButtonClassNames = classNames(
+      "icon-button",
+      {
+        "icon-button--error": !variant && color === "error",
+        "icon-button--success": !variant && color === "success",
+        "icon-button--sm": size === "sm",
+        "icon-button--outlined": variant === "outlined",
+        "icon-button--contained": variant === "contained",
+        "icon-button--outlined-primary":
+          variant === "outlined" && color === "primary",
+        "icon-button--outlined-error":
+          variant === "outlined" && color === "error",
+        "icon-button--outlined-success":
+          variant === "outlined" && color === "success",
+      },
+      className,
+    );
 
-  const IconComponent = icons[icon];
+    const IconComponent = icons[icon];
 
-  return (
-    <ReactAriaButton className={iconButtonClassNames} {...props}>
-      <IconComponent />
-    </ReactAriaButton>
-  );
-};
+    return (
+      <ReactAriaButton {...rest} className={iconButtonClassNames} ref={ref}>
+        <IconComponent />
+      </ReactAriaButton>
+    );
+  },
+);
 
 export default IconButton;

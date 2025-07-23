@@ -1,12 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.processing-time-popup {
-  @apply rounded;
-  @apply shadow shadow-black/50;
+.processing-time-popover {
   @apply w-80 p-3;
-  @apply bg-light-bg-2 dark:bg-dark-bg-2;
-  @apply text-sm text-light-text-primary dark:text-dark-text-primary;
 
   &__header {
     @apply grid grid-cols-[1fr_5rem] font-medium;
@@ -33,38 +29,38 @@
     }
   }
 
-  & .processing-time-popup__time {
+  & .processing-time-popover__time {
     @apply text-right;
   }
 }
 
-.processing-time-popup__trigger {
+.processing-time-popover__trigger {
   @apply text-xs text-light-text-primary underline dark:text-dark-text-primary;
   @apply cursor-pointer;
   @apply h-auto p-0;
   @apply bg-transparent dark:bg-transparent;
 }
 
-span.processing-time-popup--text-extractor {
+span.processing-time-popover--text-extractor {
   @apply bg-red-600 dark:bg-red-400;
 }
 
-span.processing-time-popup--text-compression {
+span.processing-time-popover--text-compression {
   @apply bg-amber-600 dark:bg-amber-400;
 }
 
-span.processing-time-popup--text-splitter {
+span.processing-time-popover--text-splitter {
   @apply bg-green-600 dark:bg-green-400;
 }
 
-span.processing-time-popup--embedding {
+span.processing-time-popover--embedding {
   @apply bg-sky-600 dark:bg-sky-400;
 }
 
-span.processing-time-popup--ingestion {
+span.processing-time-popover--ingestion {
   @apply bg-purple-600 dark:bg-purple-400;
 }
 
-span.processing-time-popup--dpguard {
+span.processing-time-popover--dpguard {
   @apply bg-fuchsia-600 dark:bg-fuchsia-400;
 }

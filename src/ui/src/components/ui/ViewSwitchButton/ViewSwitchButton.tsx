@@ -9,6 +9,21 @@ import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { paths } from "@/config/paths";
 import { keycloakService } from "@/lib/auth";
 
+const options = {
+  chat: {
+    tooltip: "Switch to Admin Panel",
+    routePath: paths.adminPanel,
+    icon: "admin-panel" as IconName,
+    ariaLabel: "Switch to Admin Panel",
+  },
+  "admin-panel": {
+    tooltip: "Switch to Chat",
+    routePath: paths.chat,
+    icon: "chat" as IconName,
+    ariaLabel: "Switch to Chat",
+  },
+} as const;
+
 const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,20 +32,23 @@ const ViewSwitchButton = () => {
     return null;
   }
 
-  const isChatPage = location.pathname === paths.chat;
-  const tooltipTitle = isChatPage ? "Admin Panel" : "Chat";
-  const routeToPath = isChatPage ? paths.adminPanel : paths.chat;
-  const icon: IconName = isChatPage ? "admin-panel" : "chat";
-  const ariaLabel = `Switch to ${isChatPage ? "Admin Panel" : "Chat"}`;
+  const isChatPage = location.pathname.startsWith(paths.chat);
+  const isAdminPanelPage = location.pathname.startsWith(paths.adminPanel);
+
+  if (!isChatPage && !isAdminPanelPage) {
+    return null;
+  }
+
+  const currentView = isChatPage ? "chat" : "admin-panel";
 
   return (
     <Tooltip
-      title={tooltipTitle}
+      title={options[currentView].tooltip}
       trigger={
         <IconButton
-          icon={icon}
-          aria-label={ariaLabel}
-          onPress={() => navigate(routeToPath)}
+          icon={options[currentView].icon}
+          aria-label={options[currentView].ariaLabel}
+          onPress={() => navigate(options[currentView].routePath)}
         />
       }
       placement="bottom"

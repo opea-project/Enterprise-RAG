@@ -29,7 +29,7 @@ const CheckboxInput = ({
   dense,
   onChange,
   isRequired,
-  ...restProps
+  ...rest
 }: CheckboxInputProps) => {
   const inputId = useId();
 
@@ -45,7 +45,7 @@ const CheckboxInput = ({
         className="checkbox-input__input"
         onChange={onChange}
         aria-required={isRequired}
-        {...restProps}
+        {...rest}
       >
         {({ isSelected }) =>
           isSelected ? <BsCheck aria-hidden="true" /> : null

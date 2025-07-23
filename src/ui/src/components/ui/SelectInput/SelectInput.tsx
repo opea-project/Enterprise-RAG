@@ -49,7 +49,7 @@ const SelectInput = <T extends Key = Key>({
   className,
   value,
   onChange,
-  ...restProps
+  ...rest
 }: SelectInputProps<T>) => {
   const inputId = useId();
 
@@ -72,7 +72,7 @@ const SelectInput = <T extends Key = Key>({
       isDisabled={isDisabled}
       isInvalid={isInvalid}
       selectedKey={value}
-      onSelectionChange={onChange as (key: Key) => void}
+      onSelectionChange={onChange as (key: Key | null) => void}
       className={classNames(
         "select-input",
         {
@@ -80,7 +80,7 @@ const SelectInput = <T extends Key = Key>({
         },
         className,
       )}
-      {...restProps}
+      {...rest}
     >
       {({ isOpen }) => (
         <>

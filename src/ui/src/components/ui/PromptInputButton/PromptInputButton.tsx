@@ -12,8 +12,16 @@ interface PromptInputButtonProps extends Omit<IconButtonProps, "color"> {
   icon: IconName;
 }
 
-const PromptInputButton = ({ icon, ...props }: PromptInputButtonProps) => (
-  <IconButton icon={icon} className="prompt-input__button" {...props} />
+const PromptInputButton = ({
+  icon,
+  className,
+  ...rest
+}: PromptInputButtonProps) => (
+  <IconButton
+    {...rest}
+    icon={icon}
+    className={`prompt-input__button ${className}`}
+  />
 );
 
 export default PromptInputButton;

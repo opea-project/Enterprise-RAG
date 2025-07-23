@@ -8,8 +8,8 @@ import {
   SwitchProps as AriaSwitchProps,
 } from "react-aria-components";
 
-const Switch = (props: AriaSwitchProps) => (
-  <AriaSwitch className="switch" {...props}>
+const Switch = ({ className, ...rest }: AriaSwitchProps) => (
+  <AriaSwitch {...rest} className={`switch ${className}`}>
     <div className="switch__indicator" />
   </AriaSwitch>
 );

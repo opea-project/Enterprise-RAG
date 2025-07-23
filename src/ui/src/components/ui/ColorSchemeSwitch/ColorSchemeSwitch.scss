@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-.color-scheme-switch {
+.button.color-scheme-switch {
   @apply flex h-6 w-[3.688rem] items-center rounded-xl border-[0.03125rem] border-solid p-0.5;
   @apply rounded-xl border-[0.03125rem] border-solid border-light-accent dark:border-dark-accent;
   @apply bg-light-bg-1 dark:bg-dark-bg-1;

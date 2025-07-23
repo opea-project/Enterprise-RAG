@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button/Button";
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
 import DataItemStatus from "@/features/admin-panel/data-ingestion/components/DataItemStatus/DataItemStatus";
 import LinkTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/LinkTextExtractionDialog/LinkTextExtractionDialog";
-import ProcessingTimePopup from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopup/ProcessingTimePopup";
+import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
 
 interface LinkActionsHandlers {
@@ -75,7 +75,7 @@ export const getLinksTableColumns = ({
         },
       },
     }) => (
-      <ProcessingTimePopup
+      <ProcessingTimePopover
         textExtractorDuration={text_extractor_duration}
         textCompressionDuration={text_compression_duration}
         textSplitterDuration={text_splitter_duration}

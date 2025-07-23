@@ -5,7 +5,7 @@ import "./UploadDataDialogFooter.scss";
 
 import { IconName } from "@/components/icons";
 import Button from "@/components/ui/Button/Button";
-import UploadErrorsDialog from "@/features/admin-panel/data-ingestion/components/UploadErrorsDialog/UploadErrorsDialog";
+import UploadErrorsPopover from "@/features/admin-panel/data-ingestion/components/UploadErrorsPopover/UploadErrorsPopover";
 import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
 
 interface UploadDataDialogFooterProps {
@@ -34,7 +34,7 @@ const UploadDataDialogFooter = ({
   return (
     <div className="upload-dialog__footer">
       {hasUploadErrors ? (
-        <UploadErrorsDialog uploadErrors={uploadErrors} />
+        <UploadErrorsPopover uploadErrors={uploadErrors} />
       ) : (
         toBeUploadedMessage
       )}

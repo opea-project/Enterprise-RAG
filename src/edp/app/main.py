@@ -844,12 +844,13 @@ def api_file_text_extract(file_uuid: str, request: Request):
             minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
             file_data = minio_response.read()
             file_base64 = base64.b64encode(file_data).decode('ascii')
+            file_name = os.path.basename(file.object_name)
             logger.debug(f"[{file.id}] Retrieved file from S3 storage.")
 
             HIERARCHICAL_DATAPREP_ENDPOINT = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
             if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
                 response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={
-                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                    'files': [ {'filename': file_name, 'data64': file_base64} ],
                     'chunk_size': request.query_params.get('chunk_size', 512),
                     'chunk_overlap': request.query_params.get('chunk_overlap', 0),
                 })
@@ -862,7 +863,7 @@ def api_file_text_extract(file_uuid: str, request: Request):
             else:
                 TEXT_EXTRACTOR_ENDPOINT = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
                 response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={
-                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                    'files': [ {'filename': file_name, 'data64': file_base64} ],
                 })
 
                 if response.status_code != 200:

@@ -129,11 +129,11 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             minio_response.release_conn()
 
     # Step 2 - Call the text extractor service
-    filename = file_db.object_name.split('/')[-1]
+    file_name = os.path.basename(file_db.object_name)
     dataprep_docs = []
     if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
         logger.info(f"[{file_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
-        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
@@ -159,7 +159,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             self.db.commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
-        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data loading. {response_err(response)}"

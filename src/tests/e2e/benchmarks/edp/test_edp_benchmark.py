@@ -55,12 +55,7 @@ def test_edp_benchmark(edp_helper, label, dataset):
     )
     edp_results = edp_helper.list_files().json()
     for file in dataset:
-        info = FileInfo(file_name=file)
-        kpi = get_file_edp_data(edp_results, file)
-        file_processing = FileProcessing(
-             file_info=info,
-             timing=kpi
-        )
+        file_processing = get_file_edp_data(edp_results, file)
         series.records.append(file_processing)
     benchmark_record = EdpRecord(
         timing_series=series
@@ -87,6 +82,13 @@ def get_file_edp_data(edp_results, filename):
         for file in edp_results:
             if file.get("object_name") == filename:
                 file_found = True
+                file_size = file.get("size")
+                total_chunks = file.get("chunks_total")
+                file_info = FileInfo(
+                    file_name=filename,
+                    file_size=file_size,
+                    total_chunks=total_chunks
+                )
                 data = ProcessingKpi(
                     extraction=file.get("text_extractor_duration"),
                     compression=file.get("text_compression_duration"),
@@ -96,7 +98,11 @@ def get_file_edp_data(edp_results, filename):
                     ingestion=file.get("ingestion_duration"),
                     total=file.get("processing_duration"),
                 )
-                return data
+                file_processing = FileProcessing(
+                file_info=file_info,
+                timing=data
+                )
+                return file_processing
 
         if not file_found:
             print(f"File {filename} is not present in the list of files")

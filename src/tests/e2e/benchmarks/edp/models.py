@@ -27,7 +27,8 @@ class ProcessingKpi(BaseModel):
 
 class FileInfo(BaseModel):
     file_name: str
-    # file_size: int
+    file_size: int # BYTES
+    total_chunks: int
 
 class FileProcessing(BaseModel):
     file_info: FileInfo
@@ -63,6 +64,8 @@ class EdpRecord(BaseModel):
         for rec in self.timing_series.records:
             row = {
                 "file_name": rec.file_info.file_name,
+                "file_size": rec.file_info.file_size,
+                "total_chunks": rec.file_info.total_chunks,
                 "extraction": rec.timing.extraction,
                 "compression": rec.timing.compression,
                 "splitting": rec.timing.splitting,

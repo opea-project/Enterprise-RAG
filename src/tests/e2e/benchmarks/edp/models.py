@@ -1,5 +1,6 @@
 import csv
 import json
+import subprocess  # nosec B404: subprocess is used with controlled input for git commands
 from enum import Enum
 
 from pydantic import BaseModel, Field, computed_field, field_serializer
@@ -44,9 +45,86 @@ class FilesProcessingSeries(BaseModel):
     def n(self) -> int:
         return len(self.records)
 
+class CommitInfo(BaseModel):
+    sha: str = Field(default_factory=lambda: CommitInfo._get_sha(), frozen=True)
+    date_time: datetime.datetime = Field(default_factory=lambda: CommitInfo._get_datetime(), frozen=True)
+    branch: str = Field(default_factory=lambda: CommitInfo._get_branch(), frozen=True)
+    author_name: str = Field(default_factory=lambda: CommitInfo._get_author_name(), frozen=True)
+    author_email: str = Field(default_factory=lambda: CommitInfo._get_author_email(), frozen=True)
+
+    @staticmethod
+    def _get_sha() -> str:
+        result = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            raise RuntimeError(
+                f"Command to get current commit SHA failed with return code {result.returncode}.\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    @staticmethod
+    def _get_datetime() -> datetime.datetime:
+        result = subprocess.run(
+            ['git', 'show', '-s', '--format=%cI', 'HEAD'],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            raw_output = result.stdout.strip()
+            return datetime.datetime.fromisoformat(raw_output)
+        else:
+            raise RuntimeError(
+                f"Command to get current commit datetime failed with return code {result.returncode}.\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    @staticmethod
+    def _get_branch() -> str:
+        result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            raise RuntimeError(
+                f"Command to get current branch failed with return code {result.returncode}.\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    @staticmethod
+    def _get_author_name() -> str:
+        result = subprocess.run(['git', 'show', '-s', '--format=%an', 'HEAD'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            raise RuntimeError(
+                f"Command to get current commit author failed with return code {result.returncode}.\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    @staticmethod
+    def _get_author_email() -> str:
+        result = subprocess.run(['git', 'show', '-s', '--format=%ae', 'HEAD'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            raise RuntimeError(
+                f"Command to get current commit author email failed with return code {result.returncode}.\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+    @field_serializer('date_time')
+    def serialize_date_time(self, dt: datetime.datetime, _info):
+        return dt.isoformat()
+
+
 class EdpRecord(BaseModel):
     timing_series: FilesProcessingSeries
     date_time: datetime.datetime = Field(default_factory=lambda: datetime.datetime.now(datetime.UTC))
+    commit_info: CommitInfo = Field(default_factory=CommitInfo, frozen=True)
 
     @field_serializer('date_time')
     def serialize_date_time(self, dt: datetime.datetime, _info):

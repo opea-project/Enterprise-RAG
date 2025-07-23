@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 
-import FileInputIcon from "@/components/icons/FileInputIcon/FileInputIcon";
+import FileIcon from "@/components/icons/FileIcon/FileIcon";
 import Button from "@/components/ui/Button/Button";
 import { sanitizeFiles } from "@/features/admin-panel/data-ingestion/utils";
 import { supportedFileExtensions } from "@/features/admin-panel/data-ingestion/utils/constants";
@@ -89,7 +89,7 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
         onDragOver={handleFileInputDragOver}
         onDrop={handleFileInputDrop}
       >
-        <FileInputIcon fontSize={20} />
+        <FileIcon fontSize={20} />
         <p>Drag and Drop Files Here</p>
         <p className="text-xs">or</p>
         <Button size="sm" onPress={handleBrowseFilesButtonPress}>

@@ -14,19 +14,27 @@ import CopySuccessIcon from "@/components/icons/CopySuccessIcon/CopySuccessIcon"
 import DarkModeIcon from "@/components/icons/DarkModeIcon/DarkModeIcon";
 import DataPrepIcon from "@/components/icons/DataPrepIcon/DataPrepIcon";
 import DeleteIcon from "@/components/icons/DeleteIcon/DeleteIcon";
+import DownloadIcon from "@/components/icons/DownloadIcon/DownloadIcon";
+import EditIcon from "@/components/icons/EditIcon/EditIcon";
 import EmbeddingIcon from "@/components/icons/EmbeddingIcon/EmbeddingIcon";
-import FileInputIcon from "@/components/icons/FileInputIcon/FileInputIcon";
+import ExportIcon from "@/components/icons/ExportIcon/ExportIcon";
+import FileIcon from "@/components/icons/FileIcon/FileIcon";
+import HideSideMenuIcon from "@/components/icons/HideSideMenuIcon/HideSideMenuIcon";
 import IdentityProviderIcon from "@/components/icons/IdentityProviderIcon/IdentityProviderIcon";
 import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
 import LightModeIcon from "@/components/icons/LightModeIcon/LightModeIcon";
+import LinkIcon from "@/components/icons/LinkIcon/LinkIcon";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import LogoutIcon from "@/components/icons/LogoutIcon/LogoutIcon";
+import NewChatIcon from "@/components/icons/NewChatIcon/NewChatIcon";
+import OptionsIcon from "@/components/icons/OptionsIcon/OptionsIcon";
 import PlusIcon from "@/components/icons/PlusIcon/PlusIcon";
 import PromptSendIcon from "@/components/icons/PromptSendIcon/PromptSendIcon";
 import PromptStopIcon from "@/components/icons/PromptStopIcon/PromptStopIcon";
 import RefreshIcon from "@/components/icons/RefreshIcon/RefreshIcon";
 import ScrollToBottomIcon from "@/components/icons/ScrollToBottomIcon/ScrollToBottomIcon";
 import SettingsIcon from "@/components/icons/SettingsIcon/SettingsIcon";
+import SideMenuIcon from "@/components/icons/SideMenuIcon/SideMenuIcon";
 import SuccessIcon from "@/components/icons/SuccessIcon/SuccessIcon";
 import TelemetryIcon from "@/components/icons/TelemetryIcon/TelemetryIcon";
 import UploadIcon from "@/components/icons/UploadIcon/UploadIcon";
@@ -45,17 +53,25 @@ export const icons = {
   "dark-mode": DarkModeIcon,
   "data-prep": DataPrepIcon,
   delete: DeleteIcon,
+  download: DownloadIcon,
+  edit: EditIcon,
   embedding: EmbeddingIcon,
-  "file-input": FileInputIcon,
+  export: ExportIcon,
+  file: FileIcon,
+  "hide-side-menu": HideSideMenuIcon,
   "identity-provider": IdentityProviderIcon,
   info: InfoIcon,
   "light-mode": LightModeIcon,
+  link: LinkIcon,
   loading: LoadingIcon,
   logout: LogoutIcon,
+  options: OptionsIcon,
+  "new-chat": NewChatIcon,
   plus: PlusIcon,
   "prompt-send": PromptSendIcon,
   "prompt-stop": PromptStopIcon,
   refresh: RefreshIcon,
+  "side-menu": SideMenuIcon,
   "scroll-to-bottom": ScrollToBottomIcon,
   settings: SettingsIcon,
   success: SuccessIcon,

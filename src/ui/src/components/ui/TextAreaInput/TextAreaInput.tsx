@@ -4,15 +4,20 @@
 import "./TextAreaInput.scss";
 
 import classNames from "classnames";
-import { HTMLAttributes, useId } from "react";
-import { Label, TextArea, TextField } from "react-aria-components";
+import { useId } from "react";
+import {
+  Label,
+  TextArea,
+  TextAreaProps,
+  TextField,
+} from "react-aria-components";
 
 import InfoIcon from "@/components/icons/InfoIcon/InfoIcon";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 
 type TextAreaInputSize = "sm";
 
-interface TextAreaInputProps extends HTMLAttributes<HTMLTextAreaElement> {
+interface TextAreaInputProps extends TextAreaProps {
   name: string;
   value: string;
   label?: string;

@@ -4,6 +4,6 @@
 import { IconBaseProps } from "react-icons";
 import { BsFileEarmark } from "react-icons/bs";
 
-const FileInputIcon = (props: IconBaseProps) => <BsFileEarmark {...props} />;
+const FileIcon = (props: IconBaseProps) => <BsFileEarmark {...props} />;
 
-export default FileInputIcon;
+export default FileIcon;

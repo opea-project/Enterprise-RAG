@@ -44,7 +44,11 @@ const ChatRoute = () => {
   };
 
   return (
-    <PageLayout appHeaderExtraActions={<NewChatButton onNewChat={onNewChat} />}>
+    <PageLayout
+      appHeaderProps={{
+        extraActions: <NewChatButton onNewChat={onNewChat} />,
+      }}
+    >
       {getChatLayout()}
     </PageLayout>
   );

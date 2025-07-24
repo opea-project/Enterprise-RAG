@@ -10,4 +10,3 @@
     - "{{ inventory_dir }}/group_vars"
     - "{{ inventory_dir }}/artifacts"
     - "{{ inventory_dir }}/credentials"
-    - "{{ kubespray_dir }}"

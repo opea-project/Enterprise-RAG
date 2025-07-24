@@ -2,9 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-kubespray_repo: "https://github.com/kubernetes-sigs/kubespray.git"
-kubespray_version: "v2.28.0"
-kubespray_dir: "/tmp/kubespray-repo"
 deploy_k8s: false
 k8s_version: "1.31.9"
 install_csi: ""
@@ -18,4 +15,3 @@ nfs_server_image: "docker.io/adnanhodzic/nfs-server-k8s"
 nfs_server_ip: "nfs-server.nfs-server.svc"
 nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
-

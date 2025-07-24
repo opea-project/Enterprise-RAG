@@ -5,7 +5,9 @@
     kind: Namespace
     name: habana-ai-operator
     state: present
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Label namespace with pod security policies
   kubernetes.core.k8s:
@@ -18,7 +20,9 @@
           pod-security.kubernetes.io/enforce: privileged
           pod-security.kubernetes.io/audit: privileged
           pod-security.kubernetes.io/warn: privileged
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Create proxy ConfigMap
   kubernetes.core.k8s:
@@ -33,14 +37,18 @@
         http_proxy: "{{ httpProxy }}"
         https_proxy: "{{ httpsProxy }}"
         no_proxy: "{{ noProxy }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Add and update Helm repo for Habana AI Operator
   kubernetes.core.helm_repository:
     name: gaudi-helm
     repo_url: https://vault.habana.ai/artifactory/api/helm/gaudi-helm
     state: present
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Install or upgrade Habana AI Operator using Helm with values file
   kubernetes.core.helm:
@@ -55,6 +63,7 @@
     timeout: "{{ helm_timeout }}"
   tags:
     - install
+    - post-install
 
 - name: Wait for ClusterPolicy to be created
   kubernetes.core.k8s_info:
@@ -66,6 +75,7 @@
   delay: 5
   tags:
     - install
+    - post-install
 
 - name: Patch ClusterPolicy to set proxy config_map_name
   kubernetes.core.k8s:
@@ -81,6 +91,7 @@
           config_map_name: proxy-config
   tags:
     - install
+    - post-install
 
 - name: Wait for habana-ai-driver pod to be created
   kubernetes.core.k8s_info:
@@ -91,7 +102,9 @@
     driver_pods.resources | selectattr('metadata.name', 'search', 'habana-ai-driver') | list | length > 0
   retries: 60
   delay: 15
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Wait until habana-ai-driver pod is ready
   vars:
@@ -112,7 +125,9 @@
     ) > 0
   retries: 35
   delay: 15
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Wait for habana-ai-device-plugin pod to be created
   kubernetes.core.k8s_info:
@@ -123,19 +138,25 @@
     plugin_pods.resources | selectattr('metadata.name', 'search', 'habana-ai-device-plugin') | list | length > 0
   retries: 10
   delay: 5
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Get all pods in the habana-ai-operator namespace
   kubernetes.core.k8s_info:
     kind: Pod
     namespace: habana-ai-operator
   register: all_pods
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Initialize unready pod list
   set_fact:
     unready_pods: []
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Identify unready pods
   set_fact:
@@ -150,18 +171,24 @@
       )
     )
   no_log: "{{ secure_logs }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Get all nodes
   kubernetes.core.k8s_info:
     kind: Node
   register: habana_nodes
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Initialize Gaudi node list
   set_fact:
     gaudi_nodes: []
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Identify Gaudi nodes manually
   set_fact:
@@ -171,12 +198,16 @@
         item.metadata.labels['habana.ai/device.family'] is defined and
         item.metadata.labels['habana.ai/device.family'] == 'gaudi'
   no_log: "{{ secure_logs }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Print number of Gaudi nodes
   debug:
     msg: "Number of Gaudi nodes: {{ gaudi_nodes | length }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Count total Gaudi cards manually
   set_fact:
@@ -184,12 +215,16 @@
   loop: "{{ gaudi_nodes }}"
   when: item.status.capacity is defined and item.status.capacity['habana.ai/gaudi'] is defined
   no_log: "{{ secure_logs }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Print total number of Gaudi cards
   debug:
     msg: "Total number of Gaudi cards: {{ total_gaudi_cards }}"
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Find nodes with incorrect Habana Gaudi capacity
   set_fact:
@@ -201,7 +236,9 @@
         | map(attribute="metadata.name")
         | list
       }}
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Fail if any Gaudi node has incorrect capacity
   fail:
@@ -214,14 +251,17 @@
       {% endfor %}
       {% set message = gaudi_nodes | selectattr("metadata.name", "in", invalid_nodes") %}
   when: invalid_nodes | length > 0
-  tags: install
+  tags:
+    - install
+    - post-install
 
 - name: Uninstall Habana AI Operator Helm release
   kubernetes.core.helm:
     name: habana-ai-operator
     release_namespace: habana-ai-operator
     state: absent
-  tags: delete
+  tags:
+    - delete
 
 - name: Remove pod security labels from habana-ai-operator namespace
   kubernetes.core.k8s:
@@ -234,7 +274,8 @@
           pod-security.kubernetes.io/enforce: null
           pod-security.kubernetes.io/audit: null
           pod-security.kubernetes.io/warn: null
-  tags: delete
+  tags:
+    - delete
 
 - name: Delete namespace habana-ai-operator
   kubernetes.core.k8s:
@@ -242,4 +283,5 @@
     kind: Namespace
     name: habana-ai-operator
     state: absent
-  tags: delete
+  tags:
+    - delete

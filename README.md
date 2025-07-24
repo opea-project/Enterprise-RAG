@@ -199,18 +199,12 @@ pipelines:
 ```
 > **Note:** The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.  
 > Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
-> Set `nfs_server_enabled: true` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.
+> Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.
 
-3. **Prepare variables:**
-
-```sh
-ansible-playbook -K playbooks/setup.yaml --tags prepare-vars,configure -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-```
-
-4. **Deploy the cluster:**
+3. **Deploy the cluster:**
 
 ```sh
-ansible-playbook -K playbooks/infrastructure.yaml --tags install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
 ```
 
 ### Cluster Deletion

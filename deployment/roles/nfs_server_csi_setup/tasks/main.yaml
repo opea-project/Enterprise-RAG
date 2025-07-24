@@ -1,7 +1,5 @@
 # INSTALL TASKS
 - name: Label the user-defined node for NFS scheduling
-  tags:
-    - install
   kubernetes.core.k8s:
     api_version: v1
     kind: Node
@@ -11,6 +9,9 @@
         labels:
           nfs-node: "true"
     state: patched
+  tags:
+    - install
+    - post-install
 
 - name: Create NFS namespace
   kubernetes.core.k8s:
@@ -20,13 +21,15 @@
     state: present
   tags:
     - install
+    - post-install
 
 - name: Create NFS export directory on the labeled node using a Kubernetes Job
-  tags:
-    - install
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'nfs-init-job.yaml.j2') }}"
+  tags:
+    - install
+    - post-install
 
 - name: Deploy NFS server deployment and service
   kubernetes.core.k8s:
@@ -34,17 +37,17 @@
     definition: "{{ lookup('template', 'nfs-server.yaml.j2') }}"
   tags:
     - install
+    - post-install
 
 - name: Add CSI driver Helm repo
-  tags:
-    - install
   kubernetes.core.helm_repository:
     name: csi-driver-nfs
     repo_url: https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
-
-- name: Install CSI NFS driver via Helm
   tags:
     - install
+    - post-install
+
+- name: Install CSI NFS driver via Helm
   kubernetes.core.helm:
     name: csi-driver-nfs
     chart_ref: csi-driver-nfs/csi-driver-nfs
@@ -67,6 +70,9 @@
         volumeBindingMode: "WaitForFirstConsumer"
         mountOptions:
           - "nfsvers=4"
+  tags:
+    - install
+    - post-install
 
 - name: Get all StorageClasses
   kubernetes.core.k8s_info:
@@ -75,6 +81,7 @@
   register: sc_list
   tags:
     - install
+    - post-install
 
 - name: Remove default annotation from non-nfs-csi StorageClasses
   kubernetes.core.k8s_json_patch:
@@ -86,27 +93,28 @@
         path: /metadata/annotations/storageclass.kubernetes.io~1is-default-class
   loop: "{{ sc_list.resources }}"
   when:
-    - item.metadata.name != "{{ nfs_csi_storage_class }}"
+    - item.metadata.name != nfs_csi_storage_class
     - item.metadata.annotations is defined
     - item.metadata.annotations['storageclass.kubernetes.io/is-default-class'] is defined
   tags:
     - install
+    - post-install
 
 # DELETE TASKS
 - name: Uninstall CSI NFS driver
-  tags:
-    - delete
   kubernetes.core.helm:
     name: csi-driver-nfs
     release_namespace: kube-system
     state: absent
-
-- name: Remove NFS export directory on the labeled node using a Kubernetes Job
   tags:
     - delete
+
+- name: Remove NFS export directory on the labeled node using a Kubernetes Job
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'nfs-cleanup-job.yaml.j2') }}"
+  tags:
+    - delete
 
 - name: Delete NFS server deployment and service
   kubernetes.core.k8s:
@@ -116,8 +124,6 @@
     - delete
 
 - name: Remove the NFS node label
-  tags:
-    - delete
   kubernetes.core.k8s:
     api_version: v1
     kind: Node
@@ -127,4 +133,5 @@
         labels:
           nfs-node: null
     state: patched
-
+  tags:
+    - delete

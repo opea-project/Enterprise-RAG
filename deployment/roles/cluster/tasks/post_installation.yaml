@@ -8,6 +8,7 @@
     name: gaudi_operator
   tags:
     - install
+    - post-install
     - delete
 
 - name: NFS Server CSI role
@@ -16,4 +17,5 @@
     name: nfs_server_csi_setup
   tags:
     - install
+    - post-install
     - delete

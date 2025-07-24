@@ -11,15 +11,44 @@
         gather_subset:
           - all
 
+- name: Set facts for kubespray deployment
+  hosts: k8s_cluster
+  tags:
+    - install
+    - delete
+  tasks:
+    - name: Set proxy facts
+      ansible.builtin.set_fact:
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+
+    - name: Set Kubernetes configuration facts
+      ansible.builtin.set_fact:
+        local_path_provisioner_enabled: "{{ install_csi == 'local-path-provisioner' }}"
+        kubeconfig_localhost: true
+        kube_version: "{{ k8s_version | default('1.31.9') }}"
+        supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + groups['kube_control_plane'] | map('extract', hostvars, ['ansible_host']) | list }}"
+
+- name: Pre-setup tasks
+  become: false
+  hosts: local
+  tasks:
+    - name: Pre-configure environment role
+      ansible.builtin.include_role:
+        name: configure
+      tags:
+        - configure
+        - never
+
 - name: Install Kubernetes cluster
   tags:
     - install
     - never
   when:
     - deploy_k8s
-    - '"install" in ansible_run_tags'
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
 
+# Post-installation tasks - can be run independently with post-install tag
 - name: Post-installation tasks
   become: false
   gather_facts: false
@@ -34,7 +63,9 @@
         tasks_from: post_installation
       tags:
         - install
+        - post-install
         - delete
+        - never
 
 - name: Remove Kubernetes cluster
   tags:
@@ -42,7 +73,6 @@
     - never
   when:
     - deploy_k8s
-    - '"delete" in ansible_run_tags'
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.reset
 
 - name: Remove Kubernetes cluster artifacts

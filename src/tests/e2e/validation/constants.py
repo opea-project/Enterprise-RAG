@@ -6,6 +6,7 @@
 CHUNK_SIZE = 512
 CHUNK_OVERLAPPING = 64
 TEST_FILES_DIR = "e2e/files/dataprep_upload"
+CODE_SNIPPETS_DIR = "e2e/files"
 ERAG_DOMAIN = "https://erag.com"
 ERAG_AUTH_DOMAIN = "https://auth.erag.com"
 VITE_KEYCLOAK_REALM = "EnterpriseRAG"

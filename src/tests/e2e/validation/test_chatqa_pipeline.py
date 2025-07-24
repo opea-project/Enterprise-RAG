@@ -329,7 +329,7 @@ def test_follow_up_questions_long_history(chatqa_api_helper, code_snippets):
     is longer than the model's token limit. Expect it not to fail in such case.
     """
     question = "In which programming languages have I prepared a TODO list application?"
-    snippets = code_snippets("files/code_snippets_long")
+    snippets = code_snippets("code_snippets_long")
     history = {"conversation_history": [
         {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok"},
         {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": f"The code {snippets['js']} looks ok"},

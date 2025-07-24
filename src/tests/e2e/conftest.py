@@ -12,6 +12,7 @@ import pytest
 import tarfile
 import urllib3
 
+from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
@@ -133,11 +134,10 @@ def code_snippets():
     a dictionary mapping each snippet's name (without the file extension)
     to its content.
     """
-    def _code_snippets(snippets_dir=None):
+    def _code_snippets(snippets_dir="code_snippets"):
         code_snippets = {}
-        if snippets_dir is None:
-            snippets_dir = "files/code_snippets"
 
+        snippets_dir = f"{CODE_SNIPPETS_DIR}/{snippets_dir}"
         for filename in os.listdir(snippets_dir):
             file_path = os.path.join(snippets_dir, filename)
             with open(file_path, 'r') as file:

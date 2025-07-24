@@ -15,3 +15,19 @@ gmc:
     default_resources_file: "{{ pipelines_dir }}/chatqa/resources-reference-cpu.yaml"
     default_model_config_file: "{{ pipelines_dir }}/chatqa/resources-model-cpu.yaml"
     tdx_resources_file: "{{ pipelines_dir }}/../components/gmc/microservices-connector/helm/resources-tdx.yaml"
+  pvc:
+    accessMode: ReadWriteOnce
+    models:
+      modelLlm:
+        name: model-volume-llm
+        storage: 100Gi
+      modelEmbedding:
+        name: model-volume-embedding
+        storage: 20Gi
+      modelReranker:
+        name: model-volume-reranker
+        storage: 10Gi
+
+llm_model: "casperhansen/llama-3-8b-instruct-awq"
+llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
+embedding_model_name: "BAAI/bge-base-en-v1.5"

@@ -22,8 +22,10 @@
 - name: Gather NUMA topology info
   ansible.builtin.include_role:
     name: utils
-    tasks_from: get_cpu_topology.yaml
-  when: balloons is defined and (balloons.enabled | bool)
+    tasks_from: get_nodes_topology.yaml
+  when:
+    - balloons is defined and (balloons.enabled | bool)
+    - cpu_topology_per_node is not defined
   tags:
     - install
 
@@ -33,8 +35,13 @@
     dest: "{{ helm_override_resources_path }}"
     mode: '0644'
   vars:
-    NUMANodes: "{{ numa_nodes_result.stdout | int }}"
-    NUMANodeSize: "{{ numa_node_cpus_result }}"
+    maxReplicas: >-
+      {{
+        cpu_topology_per_node.values()
+        | selectattr('amx_supported', 'equalto', true)
+        | map(attribute='maxBalloons')
+        | sum
+      }}
   when: balloons is defined and (balloons.enabled | bool)
   tags:
     - install

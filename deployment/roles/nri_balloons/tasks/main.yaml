@@ -2,77 +2,166 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Set override_values.yaml path
-  ansible.builtin.set_fact:
-    nri_balloons_helm_override_values_path: "{{ tmp_dir }}/{{ nri_balloons.helm.release_name }}-override-values.yaml"
+- name: Ensure Helm repository is added
+  kubernetes.core.helm_repository:
+    name: "{{ balloons.helm.repo_name }}"
+    repo_url: "{{ balloons.helm.repo_url }}"
+    state: present
   tags:
     - install
+    - uninstall
+
+- name: Get all BalloonsPolicies
+  kubernetes.core.k8s_info:
+    api_version: config.nri/v1alpha1
+    kind: BalloonsPolicy
+    namespace: "{{ balloons.namespace }}"
+  register: balloons_policies
+  tags:
+    - install
+    - uninstall
+
+- name: Remove all BalloonsPolicies
+  kubernetes.core.k8s:
+    api_version: config.nri/v1alpha1
+    kind: BalloonsPolicy
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ balloons.namespace }}"
+    state: absent
+  loop: "{{ balloons_policies.resources }}"
+  tags:
+    - install
+    - uninstall
 
 - name: Gather NUMA topology info
   ansible.builtin.include_role:
     name: utils
-    tasks_from: get_cpu_topology.yaml
+    tasks_from: get_nodes_topology.yaml
+  when: cpu_topology_per_node is not defined
   tags:
     - install
 
-- name: Generate override values file from template
-  ansible.builtin.template:
-    src: "values.yaml.j2"
-    dest: "{{ nri_balloons_helm_override_values_path }}"
-    mode: '0644'
-  vars:
-    NUMANodes: "{{ numa_nodes_result.stdout | int }}"
-    NUMANodeSize: "{{ numa_node_cpus_result }}"
-  tags:
-    - install
-
-- name: Set values_files list
-  ansible.builtin.set_fact:
-    values_files: >
-      {{
-        [nri_balloons.helm.default_values_file] +
-        [nri_balloons_helm_override_values_path]
-      }}
-  tags:
-    - install
-
-- name: Set values file for Helm install/uninstall
-  set_fact:
-    nri_balloons_helm_values_file: "{{ nri_balloons.helm.reset_values_file if 'uninstall' in ansible_run_tags else values_files }}"
-  tags:
-    - always
-
-- name: Ensure Helm repository is added
-  kubernetes.core.helm_repository:
-    name: "{{ nri_balloons.helm.repo_name }}"
-    repo_url: "{{ nri_balloons.helm.repo_url }}"
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
     state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ balloons.namespace }}"
+  when: balloons.namespace != 'kube-system'
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ balloons.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when:
+    - enforcePSS
+    - balloons.namespace != 'kube-system'
   tags:
     - install
 
 - name: Apply nri-resource-policy-balloons chart
   kubernetes.core.helm:
-    name: "{{ nri_balloons.helm.release_name }}"
-    chart_ref: "{{ nri_balloons.helm.repo_name }}/{{ nri_balloons.helm.chart_name }}"
-    namespace: "{{ nri_balloons.namespace }}"
+    name: "{{ balloons.helm.release_name }}"
+    chart_ref: "{{ balloons.helm.repo_name }}/{{ balloons.helm.chart_name }}"
+    namespace: "{{ balloons.namespace }}"
     create_namespace: false
-    values_files: "{{ nri_balloons_helm_values_file }}"
+    values_files: "{{ balloons.helm.reset_values_file }}"
     state: present
+    wait: true
+    timeout: "{{ helm_timeout }}"
+  when: gaudi_detected is defined and not gaudi_detected
   tags:
     - install
     - uninstall
 
+- name: Apply balloons/labels/taints for each node
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: apply_scheduling_strategy.yaml
+  loop: "{{ cpu_topology_per_node | dict2items }}"
+  loop_control:
+    loop_var: item
+  when: gaudi_detected is defined and not gaudi_detected
+  tags:
+    - install
+
 - name: Remove nri-resource-policy-balloons chart
   kubernetes.core.helm:
-    name: "{{ nri_balloons.helm.release_name }}"
-    namespace: "{{ nri_balloons.namespace }}"
+    name: "{{ balloons.helm.release_name }}"
+    namespace: "{{ balloons.namespace }}"
     state: absent
   tags:
     - uninstall
 
-- name: Remove nri-plugins Helm repo
-  kubernetes.core.helm_repository:
-    name: "{{ nri_balloons.helm.repo_name }}"
+- name: Remove balloons namespace
+  kubernetes.core.k8s:
     state: absent
+    kind: Namespace
+    api_version: v1
+    name: "{{ balloons.namespace }}"
+  when: balloons.namespace != 'kube-system'
+  tags:
+    - uninstall
+
+- name: Gather nodes info
+  kubernetes.core.k8s_info:
+    kind: Node
+    api_version: v1
+  register: all_nodes
+  tags:
+    - uninstall
+
+- name: Remove inference-eligible label from each node
+  kubernetes.core.k8s:
+    state: present
+    kind: Node
+    api_version: v1
+    name: "{{ node.metadata.name }}"
+    definition:
+      metadata:
+        labels:
+          inference-eligible: null
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
+  tags:
+    - uninstall
+
+- name: Remove NodeResourceTopologies from each node
+  kubernetes.core.k8s:
+    api_version: topology.node.k8s.io/v1alpha1
+    kind: NodeResourceTopology
+    name: "{{ node.metadata.name }}"
+    state: absent
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Remove inference_eligible taint from each node
+  kubernetes.core.k8s:
+    state: present
+    kind: Node
+    api_version: v1
+    name: "{{ node.metadata.name }}"
+    definition:
+      spec:
+        taints: >-
+          {{ node.spec.taints | rejectattr('key', 'equalto', 'inference_eligible') | list if node.spec.taints is defined else [] }}
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
   tags:
     - uninstall

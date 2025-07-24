@@ -2,19 +2,57 @@
 Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
-
-config:
+apiVersion: config.nri/v1alpha1
+kind: BalloonsPolicy
+metadata:
+  name: node.{{ nodeName }}
+  namespace: {{ balloons.namespace | default('kube-system') }}
+spec:
+  agent:
+    nodeResourceTopology: true
+  allocatorTopologyBalancing: true
+  preserve:
+    matchExpressions:
+    - key: name
+      operator: NotIn
+      values:
+      - vllm
+      - edp-vllm
   balloonTypes:
-    - name: vllm-balloon
-      minCPUs: 32
-      maxCPUs: 32
-      maxBalloons: {{ (NUMANodes | int) * ((NUMANodeSize | int) // 64) }}
-      allocatorTopologyBalancing: true
-      preferNewBalloons: true
-      loads:
-        - llm-inference
-      matchExpressions:
-        - key: name
-          operator: In
-          values:
-            - vllm
+  - name: vllm-balloon
+    minCPUs: {{ vllm_cpus if amx_supported and maxBalloons != 0 else -1 }}
+    maxCPUs: {{ vllm_cpus if amx_supported and maxBalloons != 0 else -1 }}
+    maxBalloons: {{ maxBalloons }}
+    allocatorTopologyBalancing: true
+    preferNewBalloons: true
+    loads:
+    - llm-inference
+    matchExpressions:
+    - key: name
+      operator: In
+      values:
+      - vllm
+      - edp-vllm
+  instrumentation:
+    httpEndpoint: :8891
+    metrics:
+      enabled:
+        - policy
+        - buildinfo
+    prometheusExport: false
+    reportPeriod: 60s
+    samplingRatePerMillion: 0
+  log:
+    source: true
+    debug:
+      - policy
+  pinCPU: true
+  pinMemory: true
+  reservedPoolNamespaces:
+    - kube-system
+  reservedResources:
+    cpu: "2"
+  loadClasses:
+  - name: llm-inference
+    level: core
+    overloadsLevelInBalloon: true

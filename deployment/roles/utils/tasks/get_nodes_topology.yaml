@@ -1,0 +1,144 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Ensure topology-discovery namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: topology-discovery
+  tags:
+    - install
+
+- name: Create a topology discovery daemonset
+  kubernetes.core.k8s:
+    state: present
+    namespace: topology-discovery
+    definition:
+      apiVersion: apps/v1
+      kind: DaemonSet
+      metadata:
+        name: node-topology-debugger
+        namespace: topology-discovery
+      spec:
+        selector:
+          matchLabels:
+            app: node-topology-debugger
+        template:
+          metadata:
+            labels:
+              app: node-topology-debugger
+          spec:
+            securityContext:
+              fsGroup: 2000
+              runAsGroup: 3000
+              runAsNonRoot: true
+              runAsUser: 1000
+              seccompProfile:
+                type: RuntimeDefault
+            tolerations:
+              - operator: "Exists"
+            containers:
+            - name: ubuntu
+              image: ubuntu
+              command: [ "sleep", "infinity" ]
+            restartPolicy: Always
+  tags:
+    - install
+
+- name: Wait for node-topology-debugger pods to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: topology-discovery
+    label_selectors:
+      - app=node-topology-debugger
+  register: pods_info
+  until: pods_info.resources | length > 0 and (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length)
+  retries: 10
+  delay: 5
+  tags:
+    - install
+
+- name: Initialize cpu_topology_per_node dict
+  set_fact:
+    cpu_topology_per_node: {}
+  tags:
+    - install
+
+- name: Set VLLM_CPUS from resources reference file
+  set_fact:
+    VLLM_CPUS: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'equalto', 'chatqa')
+              | map(attribute='resourcesPath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          )
+          | default({})
+        ).get('services', {}).get('vllm', {}).get('resources', {}).get('requests', {}).get('cpu', 32)
+        | int
+      }}
+  tags:
+    - install
+
+- name: Gather CPU/NUMA/AMX info for each node
+  include_tasks: get_single_node_topology.yaml
+  vars:
+    node_name: "{{ item.spec.nodeName }}"
+    pod_name: "{{ item.metadata.name }}"
+  loop: "{{ pods_info.resources }}"
+  loop_control:
+    label: "{{ item.spec.nodeName }}"
+  tags:
+    - install
+
+- name: Check if any node is Gaudi
+  set_fact:
+    gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
+  tags:
+    - install
+
+- name: Display warning and pause if Gaudi detected
+  ansible.builtin.pause:
+    prompt: "WARNING: At least one node has Habana Gaudi hardware. Balloons policy is not supported and installation will be skipped. Press Enter to continue or wait 30 seconds..."
+    echo: true
+    seconds: 30
+  when:
+    - gaudi_detected
+    - balloons.enabled
+  tags:
+    - install
+
+- name: Delete node-topology-debugger daemonset
+  kubernetes.core.k8s:
+    state: absent
+    kind: DaemonSet
+    name: node-topology-debugger
+    namespace: topology-discovery
+  tags:
+    - install
+
+- name: Delete topology-discovery namespace
+  kubernetes.core.k8s:
+    state: absent
+    kind: Namespace
+    name: topology-discovery
+  tags:
+    - install
+
+- name: Verify if cluster have AMX or Gaudi support
+  fail:
+    msg: "No node with AMX support detected and no node with Gaudi hardware present. At least one node must support AMX or Gaudi."
+  when:
+    - cpu_topology_per_node.values() | selectattr('amx_supported', 'equalto', true) | list | length == 0
+    - not gaudi_detected
+  tags:
+    - install

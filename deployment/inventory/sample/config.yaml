@@ -50,9 +50,9 @@ tdxEnabled: false
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
-# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
 balloons:
   enabled: false
+  namespace: kube-system
 
 pipelines:
   - namespace: chatqa

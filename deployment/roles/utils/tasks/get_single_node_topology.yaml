@@ -1,0 +1,108 @@
+- name: Get CPU to NUMA node mapping
+  kubernetes.core.k8s_exec:
+    pod: "{{ pod_name }}"
+    container: ubuntu
+    namespace: topology-discovery
+    command: lscpu -p=NODE,CPU
+  register: cpu_numa_mapping
+  tags:
+    - install
+
+- name: Count CPUs per NUMA node
+  ansible.builtin.shell: |
+    echo "{{ cpu_numa_mapping.stdout }}" | grep -v '^#' | sed '/^\s*$/d' | awk -F, '{count[$1]++} END {for(i in count) print i" "count[i]}'
+  register: cpu_counts_per_node
+  tags:
+    - install
+
+- name: Extract CPU counts
+  ansible.builtin.shell: |
+    echo "{{ cpu_counts_per_node.stdout }}" | awk '{print $2}'
+  register: cpu_counts_raw
+  tags:
+    - install
+
+- name: Set CPU counts list
+  set_fact:
+    cpu_counts_list: "{{ cpu_counts_raw.stdout_lines | map('int') | list }}"
+  tags:
+    - install
+
+- name: Check if NUMA nodes are balanced
+  set_fact:
+    numa_balanced: "{{ cpu_counts_list | unique | length == 1 }}"
+  tags:
+    - install
+
+- name: Display warning if NUMA nodes are imbalanced
+  ansible.builtin.debug:
+    msg: >
+      WARNING: Node {{ node_name }} NUMA nodes have uneven CPU distribution {{ cpu_counts_list }}.
+      This is unusual and balloon policy may not be optimized for this topology.
+      The smallest CPU per NUMA node will be taken for further calculations.
+  when: not numa_balanced
+  tags:
+    - install
+
+- name: Get number of NUMA nodes
+  ansible.builtin.shell: |
+    echo "{{ cpu_counts_per_node.stdout }}" | wc -l
+  register: numa_nodes_result
+  tags:
+    - install
+
+- name: Check for AMX support
+  kubernetes.core.k8s_exec:
+    pod: "{{ pod_name }}"
+    container: ubuntu
+    namespace: topology-discovery
+    command: bash -c "lscpu | grep -i amx"
+  register: amx_check
+  ignore_errors: true
+  tags:
+    - install
+
+- name: Calculate maxBalloons
+  set_fact:
+    maxBalloons: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((VLLM_CPUS | int) * 2))) }}"
+  tags:
+    - install
+
+- name: Get all pods scheduled on this node
+  kubernetes.core.k8s_info:
+    kind: Pod
+    field_selectors:
+      - spec.nodeName={{ node_name }}
+  register: pods_info
+  tags:
+    - install
+
+- name: Check if any pod name contains "habanalabs-device-plugin"
+  set_fact:
+    habana_plugin_present: >-
+      {{
+        pods_info.resources
+        | selectattr('metadata.name', 'search', 'habanalabs-device-plugin')
+        | list
+        | length > 0
+      }}
+  tags:
+    - install
+
+- name: Update cpu_topology_per_node dict
+  set_fact:
+    cpu_topology_per_node: >-
+      {{
+        cpu_topology_per_node | combine({
+          node_name: {
+            'numa_nodes': (numa_nodes_result.stdout | int),
+            'cpus_per_numa_node': (cpu_counts_list | min),
+            'amx_supported': (amx_check.rc == 0),
+            'numa_balanced': numa_balanced,
+            'maxBalloons': (maxBalloons | int),
+            'gaudi': habana_plugin_present
+          }
+        })
+      }}
+  tags:
+    - install

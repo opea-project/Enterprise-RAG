@@ -19,18 +19,11 @@ class HeaderFooterStripper(Compressor):
     def _initialize(self):
         """Initialize the header and footer stripper."""
         # Common patterns for headers and footers
-        self.header_patterns = [
-            r'^[^\n]*confidential[^\n]*\n',
-            r'^[^\n]*proprietary[^\n]*\n',
-            r'^[^\n]*copyright[^\n]*\n',
-            r'^[^\n]*all rights reserved[^\n]*\n',
-        ]
-
-        self.footer_patterns = [
-            r'\n[^\n]*confidential[^\n]*$',
-            r'\n[^\n]*proprietary[^\n]*$',
-            r'\n[^\n]*copyright[^\n]*$',
-            r'\n[^\n]*all rights reserved[^\n]*$',
+        self.patterns = [
+            r'^\s*confidential\s*$',
+            r'^\s*proprietary\s*$',
+            r'(?i)\b(copyright|©|\(c\))\b.{0,100}?(?:19\d{2}|20\d{2})(?:\s*[-–—]\s*(?:19\d{2}|20\d{2}))?', # matches copyright statements only with years/year ranges
+            r'(?i)^\s*all rights reserved\b\s*', # matches "All rights reserved" only at the start of a line
             r'\n+\s*Sent from my.*?$',
             r'\.{5,}',  # Remove long dot runs
             r'\n+--\s*\n.*$',  # Email signature separator
@@ -38,37 +31,24 @@ class HeaderFooterStripper(Compressor):
 
     async def compress_text(self, text: str,
                             file_info: str = None,
-                            header_patterns: Optional[List[str]] = None,
-                            footer_patterns: Optional[List[str]] = None) -> str:
+                            custom_patterns: Optional[List[str]] = None) -> str:
         """
         Compress text by removing headers and footers.
 
         Args:
             text (str): The text to compress.
-            custom_header_patterns: Additional header patterns to remove.
-            custom_footer_patterns: Additional footer patterns to remove.
+            custom_patterns: Additional patterns to remove.
 
         Returns:
             str: The compressed text.
         """
 
-        # Process headers first
-        patterns = self.header_patterns.copy()
-        if header_patterns:
-            patterns.extend(header_patterns)
+        patterns = self.patterns.copy()
+        if custom_patterns:
+            patterns.extend(custom_patterns)
 
         for pattern in patterns:
             text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.MULTILINE)
-        text = text.lstrip()
-
-        # Then process footers
-        patterns = self.footer_patterns.copy()
-        if footer_patterns:
-            patterns.extend(footer_patterns)
-
-        for pattern in patterns:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.MULTILINE)
-        text = text.rstrip()
 
         return text
 

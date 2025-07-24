@@ -16,6 +16,7 @@ def test_header_footer_stripper_initialization():
     compressor = HeaderFooterStripper()
     assert isinstance(compressor, HeaderFooterStripper)
 
+@pytest.mark.asyncio
 async def test_header_footer_stripper_strip_header():
     """Test that the header is correctly stripped."""
     text = """Header line 1
@@ -25,7 +26,7 @@ Main content line 1
 Main content line 2"""
 
     compressor = HeaderFooterStripper()
-    compressed_text = await compressor.compress_text(text, header_patterns=["---"])
+    compressed_text = await compressor.compress_text(text, custom_patterns=["---"])
 
     assert "Header line 1" in compressed_text
     assert "Header line 2" in compressed_text
@@ -33,6 +34,7 @@ Main content line 2"""
     assert "Main content line 1" in compressed_text
     assert "Main content line 2" in compressed_text
 
+@pytest.mark.asyncio
 async def test_header_footer_stripper_strip_header_and_footer():
     """Test that both header and footer are correctly stripped."""
     text = """Header line 1
@@ -45,7 +47,7 @@ Footer line 1
 Footer line 2"""
 
     compressor = HeaderFooterStripper()
-    compressed_text = await compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
+    compressed_text = await compressor.compress_text(text, custom_patterns=["---START---", "---END---"])
 
     assert "Header line" in compressed_text
     assert "---START---" not in compressed_text
@@ -53,6 +55,7 @@ Footer line 2"""
     assert "---END---" not in compressed_text
     assert "Footer line" in compressed_text
 
+@pytest.mark.asyncio
 async def test_header_footer_stripper_no_delimiters_found():
     """Test behavior when delimiters aren't found in the text."""
     text = """This is some text
@@ -60,7 +63,56 @@ with no delimiters
 so it should remain unchanged."""
 
     compressor = HeaderFooterStripper()
-    compressed_text = await compressor.compress_text(text, header_patterns=["---START---"], footer_patterns=["---END---"])
+    compressed_text = await compressor.compress_text(text, custom_patterns=["---START---", "---END---"])
+
+    assert compressed_text == text
+
+@pytest.mark.asyncio
+async def test_header_footer_stripper_copyright_pattern():
+    """Test that copyright patterns are stripped correctly."""
+    text = """This is some text.\ninternal use only Copyright: © 2024-2025 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
+
+    compressor = HeaderFooterStripper()
+    compressed_text = await compressor.compress_text(text)
+
+    assert "This is some text." in compressed_text
+    assert "Copyright: © 2024-2025" not in compressed_text
+    assert "SPDX-License-Identifier: Apache-2.0" in compressed_text
+    assert "This is the main content." in compressed_text
+
+@pytest.mark.asyncio
+async def test_header_footer_stripper_copyright_pattern_without_new_lines():
+    """Test that copyright patterns are stripped correctly."""
+    text = """This is some text. Copyright (C) 2024-2025 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
+
+    compressor = HeaderFooterStripper()
+    compressed_text = await compressor.compress_text(text)
+
+    assert "This is some text." in compressed_text
+    assert "Copyright: © 2024-2025" not in compressed_text
+    assert "SPDX-License-Identifier: Apache-2.0" in compressed_text
+    assert "This is the main content." in compressed_text
+
+@pytest.mark.asyncio
+async def test_header_footer_stripper_all_rights_reserved_pattern():
+    """Test that copyright patterns are stripped correctly."""
+    text= """This is some text.\nAll rights reserved. 2024-2025 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
+
+    compressor = HeaderFooterStripper()
+    compressed_text = await compressor.compress_text(text)
+
+    assert "This is some text." in compressed_text
+    assert "All rights reserved" not in compressed_text
+    assert "SPDX-License-Identifier: Apache-2.0" in compressed_text
+    assert "This is the main content." in compressed_text
+
+@pytest.mark.asyncio
+async def test_header_footer_stripper_all_rights_reserved_pattern_without_new_lines():
+    """Test that copyright patterns are stripped correctly."""
+    text = """This is some text. All rights reserved 2024-2025 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
+
+    compressor = HeaderFooterStripper()
+    compressed_text = await compressor.compress_text(text)
 
     assert compressed_text == text
 
@@ -71,6 +123,7 @@ def deduplicator():
     # This will return the singleton instance
     return RankedDeduplicator()
 
+@pytest.mark.asyncio
 @patch('nltk.sent_tokenize')
 async def test_ranking_aware_deduplication_compress_text_sentences(mock_sent_tokenize, deduplicator):
     """Test compress_text with sentence segmentation."""
@@ -91,6 +144,7 @@ async def test_ranking_aware_deduplication_compress_text_sentences(mock_sent_tok
     assert "This is a duplicate sentence." in result
     assert result.count("This is a duplicate sentence.") == 1
 
+@pytest.mark.asyncio
 async def test_ranking_aware_deduplication_compress_text_paragraphs(deduplicator):
     """Test compress_text with paragraph segmentation."""
     text = "First paragraph.\n\nDuplicate paragraph.\n\n" \
@@ -104,6 +158,7 @@ async def test_ranking_aware_deduplication_compress_text_paragraphs(deduplicator
     assert "Last paragraph." in result
     assert result.count("Duplicate paragraph.") == 1
 
+@pytest.mark.asyncio
 @patch('comps.text_compression.utils.compressors.ranking_aware_deduplication.logger')
 async def test_ranking_aware_deduplication_compress_text_invalid_segment_type(mock_logger_instance, deduplicator):
     """Test compress_text with invalid segment type."""
@@ -116,6 +171,7 @@ async def test_ranking_aware_deduplication_compress_text_invalid_segment_type(mo
         "Unknown segment_type: invalid. Using paragraph."
     )
 
+@pytest.mark.asyncio
 async def test_ranking_aware_deduplication_compress_text_integration(deduplicator):
     """Integration test for compress_text."""
     text = "First paragraph with important content.\n\n" \

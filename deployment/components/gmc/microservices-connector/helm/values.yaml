@@ -122,10 +122,6 @@ pvc:
     name: model-volume-reranker
     accessMode: ReadWriteOnce
     storage: 10Gi
-  vectorStore:
-    name: vector-store-data
-    accessMode: ReadWriteOnce
-    storage: 20Gi
 
 images:
   gmcManager:

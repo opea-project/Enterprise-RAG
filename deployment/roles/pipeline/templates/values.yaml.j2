@@ -18,6 +18,7 @@ alternateTagging: {{ use_alternate_tagging }}
 
 llm_model: &cpu_model {{ llm_model }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
+embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
@@ -32,6 +33,16 @@ tdx:
 {% if balloons.enabled is defined %}
 balloons:
   enabled: {{ balloons.enabled }}
+{% endif %}
+
+{% if gmc.pvc is defined and gmc.pvc.models is defined %}
+pvc:
+{% for key, val in gmc.pvc.models.items() %}
+  {{ key }}:
+    name: {{ val.name }}
+    storage: {{ val.storage }}
+    accessMode: {{ val.accessMode if val.accessMode is defined else gmc.pvc.accessMode }}
+{% endfor %}
 {% endif %}
 
 images:
@@ -59,6 +70,8 @@ images:
     image: "erag-embedding"
     repository: *repo
     tag: *tag
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
   reranking-usvc:
     image: "erag-reranking"
     repository: *repo
@@ -79,6 +92,11 @@ images:
     image: "erag-torchserve_embedding"
     repository: *repo
     tag: *tag
+    envs:
+      TORCHSERVE_MODEL_NAME: *embedding_model_name
+  tei:
+    envs:
+      MODEL_ID: *embedding_model_name
   torchserve_reranking:
     image: "erag-torchserve_reranking"
     repository: *repo

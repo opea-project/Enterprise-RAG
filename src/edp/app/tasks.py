@@ -129,11 +129,11 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             minio_response.release_conn()
 
     # Step 2 - Call the text extractor service
-    filename = file_db.object_name.split('/')[-1]
+    file_name = os.path.basename(file_db.object_name)
     dataprep_docs = []
     if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
         logger.info(f"[{file_db.id}] Hierarchical Dataprep endpoint is set. Using it for dataprep.")
-        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
@@ -159,7 +159,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             self.db.commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
-        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': filename, 'data64': file_base64}] })
+        response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
@@ -297,17 +297,26 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     # Step 5 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)
     file_db.embedding_start = datetime.datetime.now()
+    file_db.ingestion_start = file_db.embedding_start
     file_db.status = 'embedding'
     file_db.job_message = 'Data embedding in progress.'
     self.db.commit()
+    total_embedding_duration = datetime.timedelta()
+    total_ingestion_duration = datetime.timedelta()
     for i in range(0, len(dataprep_docs), batch_size):
         # Step 5.1 - send each chunk of text from dataprep to the embedding service
         docs_batch = dataprep_docs[i:i+batch_size]
+        start_embedding_time = datetime.datetime.now()
         response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
+        end_embedding_time = datetime.datetime.now()
+        total_embedding_duration += (end_embedding_time - start_embedding_time)
         logger.debug(f"[{file_db.id}] Chunk {i} embedding completed.")
         if response.status_code == 200:
             # Step 5.2 - save each chunk of text and embedding to the vector database
+            start_ingestion_time = datetime.datetime.now()
             response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
+            end_ingestion_time = datetime.datetime.now()
+            total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
             logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:
                 file_db.status = 'error'
@@ -324,10 +333,12 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
 
         # Update the pipeline progress
         file_db.chunks_processed = i + len(docs_batch)
+        file_db.embedding_end = file_db.embedding_start + total_embedding_duration
+        file_db.ingestion_start = file_db.embedding_end
+        file_db.ingestion_end = file_db.embedding_end + total_ingestion_duration
         self.db.commit()
 
     # Update the processing time
-    file_db.embedding_end = datetime.datetime.now()
     file_db.status = 'ingested'
     file_db.job_message = 'Data ingestion completed.'
     file_db.task_id = ""
@@ -521,7 +532,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.status = 'dpguard'
             link_db.job_message = 'Data Preparation Guardrail in progress.'
             self.db.commit()
-            dpguard_endpoint   = os.environ.get('DPGUARD_ENDPOINT')
+            dpguard_endpoint = os.environ.get('DPGUARD_ENDPOINT')
             logger.info(f"dpguard_endpoint: {dpguard_endpoint}")
             logger.info("Dataprep Guardrail enabled. Scanning the documents.")
             response = requests.post(dpguard_endpoint, json={ 'docs': dataprep_docs })
@@ -545,17 +556,26 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     # Step 5 - Call the embedding service and ingestion service in batches
     batch_size = os.getenv('BATCH_SIZE', 128)
     link_db.embedding_start = datetime.datetime.now()
+    link_db.ingestion_start = link_db.embedding_start
     link_db.status = 'embedding'
     link_db.job_message = 'Data embedding in progress.'
     self.db.commit()
+    total_embedding_duration = datetime.timedelta()
+    total_ingestion_duration = datetime.timedelta()
     for i in range(0, len(dataprep_docs), batch_size):
         # Step 5.1 - send each chunk of text from dataprep to the embedding service
         docs_batch = dataprep_docs[i:i+batch_size]
+        start_embedding_time = datetime.datetime.now()
         response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
+        end_embedding_time = datetime.datetime.now()
+        total_embedding_duration += (end_embedding_time - start_embedding_time)
         logger.debug(f"[{link_db.id}] Chunk {i} embedding completed.")
         if response.status_code == 200:
             # Step 5.2 - save each chunk of text and embedding to the vector database
+            start_ingestion_time = datetime.datetime.now()
             response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
+            end_ingestion_time = datetime.datetime.now()
+            total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
             logger.debug(f"[{link_db.id}] Chunk {i} ingestion completed.")
             if response.status_code != 200:
                 link_db.status = 'error'
@@ -572,10 +592,12 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
 
         # Update the pipeline progress
         link_db.chunks_processed = i + len(docs_batch)
+        link_db.embedding_end = link_db.embedding_start + total_embedding_duration
+        link_db.ingestion_start = link_db.embedding_end
+        link_db.ingestion_end = link_db.embedding_end + total_ingestion_duration
         self.db.commit()
 
     # Update the processing time
-    link_db.embedding_end = datetime.datetime.now()
     link_db.status = 'ingested'
     link_db.job_message = 'Data ingestion completed.'
     link_db.task_id = ""

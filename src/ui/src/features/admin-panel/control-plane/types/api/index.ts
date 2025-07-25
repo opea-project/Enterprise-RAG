@@ -89,4 +89,5 @@ export type ChangeArgumentsRequestData =
 export interface PostRetrieverQueryRequest extends RetrieverArgs, RerankerArgs {
   query: string;
   reranker: boolean;
+  search_by?: string;
 }

@@ -16,14 +16,14 @@ interface TooltipProps extends Omit<ReactAriaTooltipProps, "children"> {
   trigger: ReactNode;
 }
 
-const Tooltip = ({ trigger, title, ...props }: TooltipProps) => (
+const Tooltip = ({ trigger, title, ...rest }: TooltipProps) => (
   <TooltipTrigger delay={200} closeDelay={200}>
     <Focusable>
       <span role="button" tabIndex={-1}>
         {trigger}
       </span>
     </Focusable>
-    <ReactAriaTooltip {...props} offset={8} className="tooltip">
+    <ReactAriaTooltip {...rest} offset={8} className="tooltip">
       {title}
     </ReactAriaTooltip>
   </TooltipTrigger>

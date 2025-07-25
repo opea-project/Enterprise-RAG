@@ -9,6 +9,7 @@ import { noInvalidCharacters } from "@/utils/validators/functions/textInput";
 const validationSchema = string()
   .required(linkErrorMessage)
   .url(linkErrorMessage)
+  .matches(new RegExp("^https?://"), linkErrorMessage)
   .test(
     "no-invalid-characters",
     "URL contains invalid characters. Please try again.",

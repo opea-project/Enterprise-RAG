@@ -3,57 +3,23 @@
 
 import "./DataIngestionTab.scss";
 
-import Button from "@/components/ui/Button/Button";
-import {
-  useLazyGetFilesQuery,
-  useLazyGetLinksQuery,
-  useLazyGetS3BucketsListQuery,
-} from "@/features/admin-panel/data-ingestion/api/edpApi";
+import BucketSynchronizationDialog from "@/features/admin-panel/data-ingestion/components/BucketSynchronizationDialog/BucketSynchronizationDialog";
+import DataIngestionSettingsDialog from "@/features/admin-panel/data-ingestion/components/DataIngestionSettingsDialog/DataIngestionSettingsDialog";
 import FilesDataTable from "@/features/admin-panel/data-ingestion/components/FilesDataTable/FilesDataTable";
 import LinksDataTable from "@/features/admin-panel/data-ingestion/components/LinksDataTable/LinksDataTable";
+import RefreshButton from "@/features/admin-panel/data-ingestion/components/RefreshButton/RefreshButton";
 import S3CertificateAlertBanner from "@/features/admin-panel/data-ingestion/components/S3CertificateAlertBanner/S3CertificateAlertBanner";
 import UploadDataDialog from "@/features/admin-panel/data-ingestion/components/UploadDataDialog/UploadDataDialog";
 
-const RefreshButton = () => {
-  const [getFiles, { isFetching: isGetFilesQueryFetching }] =
-    useLazyGetFilesQuery();
-  const [getLinks, { isFetching: isGetLinksQueryFetching }] =
-    useLazyGetLinksQuery();
-  const [getS3BucketsList, { isFetching: isGetS3BucketsListQueryFetching }] =
-    useLazyGetS3BucketsListQuery();
-
-  const refreshData = () => {
-    Promise.all([
-      getFiles().refetch(),
-      getLinks().refetch(),
-      getS3BucketsList().refetch(),
-    ]);
-  };
-
-  const isDisabled =
-    isGetFilesQueryFetching ||
-    isGetLinksQueryFetching ||
-    isGetS3BucketsListQueryFetching;
-
-  return (
-    <Button
-      variant="outlined"
-      icon="refresh"
-      isDisabled={isDisabled}
-      onPress={refreshData}
-    >
-      Refresh
-    </Button>
-  );
-};
-
 const DataIngestionTab = () => (
-  <div className="data-ingestion-panel">
+  <div className="data-ingestion-tab">
     <S3CertificateAlertBanner />
     <header>
       <h2>Stored Data</h2>
-      <div className="data-ingestion-panel__actions">
+      <div className="data-ingestion-tab__actions">
+        <DataIngestionSettingsDialog />
         <RefreshButton />
+        <BucketSynchronizationDialog />
         <UploadDataDialog />
       </div>
     </header>

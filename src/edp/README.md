@@ -283,10 +283,15 @@ python src/edp/app/main.py
 
 To run the application servers run the following commands:
 
+
 ```bash
-docker run -d --name edp-backend -p 5000:5000 opea/enhanced_dataprep python main.py
-docker run -d --name edp-celery opea/enhanced_dataprep celery -A app.tasks.celery worker --loglevel=debug --concurrency=2
-docker run -d --name edp-flower -p 5555:5555 opea/enhanced_dataprep celery -A tasks.celery flower
+docker network create edp-network
+docker run -d --network edp-network --name edp-postgres -e POSTGRES_USER=edp -e POSTGRES_DB=enhanced_dataprep -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17
+docker run -d --network edp-network --name edp-redis redis:8
+docker run --rm -it --network edp-network --name edp-backend -p 5000:5000 -e DATABASE_HOST=edp-postgres -e DATABASE_USER=edp -e CELERY_BROKER_URL=redis://edp-redis:6379/0 -e CELERY_BACKEND_URL=redis://edp-redis:6379/0 opea/enhanced_dataprep
+docker run -d --network edp-network --name edp-celery opea/enhanced_dataprep celery -A app.tasks.celery worker --loglevel=debug --concurrency=2
+# (optional)
+docker run -d --network edp-network --name edp-flower -p 5555:5555 opea/enhanced_dataprep celery -A tasks.celery flower
 ```
 
 Remember to attach proper .env values for each container and ensure that you have other required services running and discoverable on network.

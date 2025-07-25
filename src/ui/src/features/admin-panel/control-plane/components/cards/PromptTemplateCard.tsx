@@ -81,7 +81,7 @@ const PromptTemplateCard = ({
   return (
     <SelectedServiceCard serviceStatus={status} serviceName={displayName}>
       <form
-        className="grid h-full grid-rows-[1fr_1fr_auto] gap-4 pt-2 text-xs"
+        className="grid h-full grid-rows-[1fr_1fr_auto] gap-4 pt-4 text-xs"
         onSubmit={handlePromptTemplateArgsSubmit}
       >
         <ServiceArgumentTextArea
@@ -99,7 +99,7 @@ const PromptTemplateCard = ({
           inputConfig={promptTemplateFormConfig.user_prompt_template}
         />
         <div>
-          <p className="error mb-2 min-h-14 text-xs italic">{error}</p>
+          <p className="error mb-3 min-h-14 text-xs italic">{error}</p>
           <Button
             size="sm"
             type="submit"

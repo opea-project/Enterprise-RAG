@@ -42,7 +42,10 @@ const AdminPanelRoute = () => {
     }
   }, [location.pathname, navigate]);
 
-  const handleTabBtnClick = (path: Key) => {
+  const handleTabBtnClick = (path: Key | null) => {
+    if (path === null) {
+      return;
+    }
     setSelectedTab(path);
     const queryParams = location.search;
     let to = `/admin-panel/${path}`;

@@ -24,24 +24,6 @@ const formatFileSize = (fileSize: number) => {
   return `${size} ${unit}`;
 };
 
-const formatProcessingTimePeriod = (processingDuration: number) => {
-  if (processingDuration < 0) {
-    return "N/A";
-  }
-
-  const hours = Math.floor(processingDuration / 3600);
-  const minutes = Math.floor((processingDuration % 3600) / 60);
-  const seconds = processingDuration % 60;
-
-  const formattedDuration = [
-    hours.toString().padStart(2, "0"),
-    minutes.toString().padStart(2, "0"),
-    seconds.toString().padStart(2, "0"),
-  ].join(":");
-
-  return formattedDuration;
-};
-
 const createToBeUploadedMessage = (
   files: File[],
   selectedBucket: string,
@@ -100,7 +82,6 @@ const sanitizeFiles = (files: File[]): File[] =>
 export {
   createToBeUploadedMessage,
   formatFileSize,
-  formatProcessingTimePeriod,
   isUploadDisabled,
   sanitizeFiles,
 };

@@ -29,6 +29,21 @@ spec:
       serviceAccountName: {{ include "helm-edp.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: inference-eligible
+                    operator: In
+                    values:
+                      - "true"
+      tolerations:
+        - key: "inference_eligible"
+          operator: "Equal"
+          value: "true"
+          effect: "PreferNoSchedule"
       containers:
         - name: {{ .Values.vllm.nameOverride }}
           securityContext:

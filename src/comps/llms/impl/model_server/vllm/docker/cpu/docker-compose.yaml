@@ -3,18 +3,12 @@
 
 services:
   llm-vllm-model-server:
-    build:
-      context: ../../
-      dockerfile: docker/cpu/Dockerfile
-      args:
-        USER_UID: ${UID}
-    image: vllm:cpu
+    image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.9.2
     container_name: llm-vllm-model-server
     ports:
       - "${LLM_VLLM_PORT}:80"
     volumes:
       - "./data:/data"
-    user: "${UID}:${UID}"
     environment:
       HF_TOKEN: ${HF_TOKEN}
       HTTP_PROXY: ${HTTP_PROXY}

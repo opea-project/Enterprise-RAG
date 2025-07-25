@@ -50,7 +50,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
       errorMessage,
       onChange,
       onKeyDown,
-      ...restProps
+      ...rest
     },
     ref,
   ) => {
@@ -107,7 +107,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           aria-label={name}
           aria-readonly={isReadOnly}
           className="text-input__input"
-          {...restProps}
+          {...rest}
         />
         {isInvalid && (
           <FieldError id={errorId} className="text-input__error">

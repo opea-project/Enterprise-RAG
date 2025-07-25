@@ -17,7 +17,7 @@ from comps.text_extractor.utils.file_loaders.load_with_markitdown import LoadWit
 import os
 
 def abs_file_path(file_name):
-    file_path = '../../files/dataprep_upload/'
+    file_path = '../../e2e/files/dataprep_upload/'
     return os.path.join(os.path.dirname(__file__), file_path, file_name)
 
 def test_adoc_loader():

@@ -3,6 +3,7 @@
 
 import "./Dialog.scss";
 
+import classNames from "classnames";
 import {
   forwardRef,
   PropsWithChildren,
@@ -16,7 +17,6 @@ import {
   DialogTrigger,
   Heading,
   Modal,
-  Pressable,
 } from "react-aria-components";
 import { createPortal } from "react-dom";
 
@@ -28,14 +28,25 @@ export interface DialogRef {
 
 interface DialogProps extends PropsWithChildren {
   trigger: JSX.Element;
-  footer?: ReactNode;
   title: string;
+  footer?: ReactNode;
+  maxWidth?: number;
+  isCentered?: boolean;
   onClose?: () => void;
 }
 
 const Dialog = forwardRef<DialogRef, DialogProps>(
   (
-    { trigger, footer, title, onClose, children, ...restProps }: DialogProps,
+    {
+      trigger,
+      title,
+      footer,
+      maxWidth,
+      isCentered,
+      onClose,
+      children,
+      ...rest
+    }: DialogProps,
     forwardedRef,
   ) => {
     const closeRef = useRef<(() => void) | null>(null);
@@ -50,28 +61,30 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
 
     const headingId = useId();
 
+    const dialogWrapperClassName = classNames("dialog__wrapper", {
+      "dialog__wrapper--centered": isCentered,
+    });
+
     return (
       <DialogTrigger>
-        <Pressable>{trigger}</Pressable>
+        {trigger}
         {createPortal(
           <Modal className="dialog" isDismissable>
-            <div className="dialog__wrapper">
+            <div className={dialogWrapperClassName} style={{ maxWidth }}>
               <AriaDialog
                 role="dialog"
                 className="dialog__box"
                 aria-labelledby={headingId}
-                {...restProps}
+                {...rest}
               >
                 {({ close }) => {
                   closeRef.current = close;
                   return (
                     <>
-                      <Heading
-                        slot="title"
-                        className="dialog__header"
-                        id={headingId}
-                      >
-                        <h3>{title}</h3>
+                      <header className="dialog__header">
+                        <Heading slot="title" id={headingId}>
+                          {title}
+                        </Heading>
                         <IconButton
                           icon="close"
                           aria-label="Close dialog"
@@ -80,7 +93,7 @@ const Dialog = forwardRef<DialogRef, DialogProps>(
                             close();
                           }}
                         />
-                      </Heading>
+                      </header>
                       <section className="dialog__content">{children}</section>
                       {footer && (
                         <footer className="dialog__actions">{footer}</footer>

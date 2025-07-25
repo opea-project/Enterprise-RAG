@@ -38,6 +38,8 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
     5. [Vector Database RBAC support](#vector-database-rbac-support)
     6. [Single Sign-On Integration Using Microsoft Entra ID](#single-sign-on-integration-using-microsoft-entra-id-formerly-azure-active-directory)
     7. [Backup Functionality with VMWare Velero](#backup-functionality-with-vmware-velero)
+11. [Additional Pipelines](#additional-pipelines)
+    1. [Language Translation Pipeline](#language-translation-pipeline)
 ---
 
 ## Verify System Status
@@ -137,7 +139,7 @@ certs:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.3.2"
+tag: "1.3.0"
 setup_registry: true # this is localhost registry that may be used for localhost one-node deployment
 use_alternate_tagging: false # changes format of images from registry/image:tag to registry:image_tag
 helm_timeout: "10m0s"
@@ -149,9 +151,11 @@ tdxEnabled: false # enables Intel® Trust Domain Extensions
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
-# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
-  enabled: false # this is not supported on Gaudi/multi-node cluster
+  enabled: false
+  namespace: kube-system # alternatively, set custom namespace for balloons
 
 pipelines:
   - namespace: chatqa
@@ -226,18 +230,13 @@ fingerprint:
 ```
 
 > [!NOTE]
-> Balloons policy is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> Balloons policy is not supported on Gaudi or non-NUMA architectures.
 > For more informations regarding balloons policy refer [here](components/nri-plugin/README.md)
 
 > [!NOTE]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
-
-> [!NOTE]
-> To achieve optimal performance on Intel® Xeon® processors, additional configuration adjustments may be required.
-> For detailed guidance, refer to the [Performance tuning tips](../docs/performance_tuning_tips.md).
-
 
 ### Storage
 #### Storage Class
@@ -918,10 +917,28 @@ Right after that you may review status of the restore -
 - either with `kubectl describe restore.velero.io/userdata-250617-210655-20250617173441 -n velero`
 - or with cli: `velero restore describe userdata-250617-210655-20250617173441 --details`.
 
-```
-
 
 #### Backup Links
 
 - [Kubernetes CSI Documentation](https://kubernetes-csi.github.io/docs/)
 - [Velero documentation](https://velero.io/docs/)
+
+
+### Additional Pipelines
+
+#### Language Translation Pipeline
+
+> [!NOTE] ⚠️ **Preview Status – not integrated into UI**  
+> This is a preview pipeline and is currently in active development. While core functionality is in place, it is not yet integrated into the RAG UI, and development and validation efforts are still ongoing.
+
+This pipeline provides language translation capabilities using advanced Language Models from the ALMA family, where:
+
+- ALMA-7B-R model - recommended for CPU-based execution
+- ALMA-13B-R model - recomended for Gaudi-based (Habana) acceleration
+
+To test the translation pipeline, first deploy it by following the instructions in [Deployment Options → Installation](#installation), using a configuration file based on [inventory/sample/config_language_translation.yaml](inventory/sample/config_language_translation.yaml).
+
+Once deployed, run the provided shell script:
+```bash
+./scripts/test_translation.sh
+```

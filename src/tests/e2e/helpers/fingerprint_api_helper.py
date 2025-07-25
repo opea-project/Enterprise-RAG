@@ -4,9 +4,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import requests
 import time
-from helpers.api_request_helper import ApiResponse, CustomPortForward, ApiRequestHelper
+
+import requests
+
+from helpers.api_request_helper import (ApiRequestHelper, ApiResponse,
+                                        CustomPortForward)
 
 logger = logging.getLogger(__name__)
 

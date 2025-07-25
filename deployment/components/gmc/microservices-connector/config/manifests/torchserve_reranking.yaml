@@ -75,6 +75,21 @@ spec:
       {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
       {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: inference-eligible
+                    operator: In
+                    values:
+                      - "true"
+      tolerations:
+        - key: "inference_eligible"
+          operator: "Equal"
+          value: "true"
+          effect: "PreferNoSchedule"
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}

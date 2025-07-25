@@ -1,10 +1,22 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# uses kubespray to deploy Kubernetes cluster and install required components
+# Uses Kubespray to deploy Kubernetes cluster and install required components
 deploy_k8s: false
-# local path provisioner works only with kubespray deployment, so deploy_k8s needs to be true to install it.
-install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
+
+# Available options:
+# - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+# - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+install_csi: "local-path-provisioner"
+
+# Setup when install_csi is "nfs"
+# Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+# Setting nfs_server_enabled to true will install NFS server together with CSI driver
+# and set nfs_csi_storage_class as the default one.
+nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+nfs_csi_driver_version: "4.11.0"
+nfs_csi_storage_class: "nfs-csi"
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
@@ -26,7 +38,7 @@ certs:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.3.2"
+tag: "1.3.0"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
@@ -37,10 +49,13 @@ tdxEnabled: false
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
+embedding_model_name: "BAAI/bge-base-en-v1.5"
 
-# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
   enabled: false
+  namespace: kube-system # alternatively, set custom namespace for balloons
 
 pipelines:
   - namespace: chatqa
@@ -52,6 +67,18 @@ pipelines:
 gmc:
   enabled: true
   namespace: system
+  pvc:
+    accessMode: ReadWriteOnce
+    models:
+      modelLlm:
+        name: model-volume-llm
+        storage: 100Gi
+      modelEmbedding:
+        name: model-volume-embedding
+        storage: 20Gi
+      modelReranker:
+        name: model-volume-reranker
+        storage: 10Gi
 
 ingress:
   enabled: true

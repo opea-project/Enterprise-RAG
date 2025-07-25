@@ -294,12 +294,15 @@ def test_docx_numbered_and_bulleted_lists(edp_helper, chatqa_api_helper, access_
 def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper, access_token):
     """Verify if the content is actually forgotten after file deletion"""
     question = "What did the note say that Zenvorlith Marnqueeble left when he disappeared?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story_to_be_deleted.txt", access_token, question)
+    file_name = "story_to_be_deleted.txt"
+    response = upload_and_ask_question(edp_helper, chatqa_api_helper, file_name, access_token, question)
     assert chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
+    response = delete_file(edp_helper, os.path.join(TEST_FILES_DIR, file_name))
+    assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
     logger.debug("Sleeping to make sure the file is deleted")
     time.sleep(10)
     logger.debug("Asking question once again after file deletion")
-    response = delete_and_ask_question(edp_helper, chatqa_api_helper, "story_to_be_deleted.txt", access_token, question)
+    response = ask_question(chatqa_api_helper, access_token, question)
     assert not chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
 
 
@@ -465,12 +468,6 @@ def test_updated_file(edp_helper, chatqa_api_helper, access_token):
         assert chatqa_api_helper.words_in_response(expected_3_after, response_3_after), UNRELATED_RESPONSE_MSG
 
 
-def delete_and_ask_question(edp_helper, chatqa_api_helper, file, token="", question=""):
-    response = edp_helper.generate_presigned_url(file, "DELETE")
-    edp_helper.delete_file(response.json().get("url"))
-    return ask_question(chatqa_api_helper, token, question)
-
-
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, token="", question=""):
     edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
     return ask_question(chatqa_api_helper, token, question)
@@ -483,3 +480,8 @@ def ask_question(chatqa_api_helper, token="", question=""):
     response_text = chatqa_api_helper.format_response(response)
     logger.info(f"ChatQA response: {response_text}")
     return response_text
+
+
+def delete_file(edp_helper, file):
+    response = edp_helper.generate_presigned_url(file, "DELETE")
+    return edp_helper.delete_file(response.json().get("url"))

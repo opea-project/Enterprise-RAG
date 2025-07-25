@@ -51,9 +51,11 @@ llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 embedding_model_name: "BAAI/bge-base-en-v1.5"
 
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
   enabled: false
-  namespace: kube-system
+  namespace: kube-system # alternatively, set custom namespace for balloons
 
 pipelines:
   - namespace: chatqa

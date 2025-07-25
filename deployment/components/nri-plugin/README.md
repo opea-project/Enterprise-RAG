@@ -1,12 +1,15 @@
-# vLLM CPUs Allocation Based on Balloons Policy and System Topology
+# Resources Scheduling and vLLM CPUs Pinning Based on System Topology and Balloons Policy
 
 > ℹ️ **Info:**  
-> This is **preview** feature and intended only for Intel Xeon platforms **with each NUMA node >= 64 CPUs**. It is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> This is a **preview** feature and is intended for Intel Xeon-only platforms.
+It is not supported on Gaudi or non-NUMA architectures.
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
+- [vLLM CPU Allocation Adjustment](#vllm-cpus-allocation-adjustment)
+- [Node Topology Discovery and Scheduling](#node-topology-discovery-and-scheduling)
 - [Configuration Example](#configuration-example)
 - [Calculating maxBalloons](#calculating-maxballoons)
 - [Limitations](#limitations)
@@ -14,17 +17,61 @@
 
 ## Overview
 
-This feature enables optimal vLLM pod distribution across NUMA nodes by assigning resources based on the system's CPU topology, specifically targeting Intel Xeon platforms.
+This feature performs node topology discovery and allocates resources accordingly to enable optimal inference pods distribution across k8s nodes and NUMA nodes within them, specifically targeting Intel Xeon platforms.
+It incorporates the use of the [NRI Plugin](https://containers.github.io/nri-plugins/stable/docs/resource-policy/policy/balloons.html) to create "balloons", the isolated resources for containers.
 
 ## Key Features
 
-- Automatic detection of NUMA topology (number and size of NUMA nodes) at runtime; no manual configuration required.
-- Spread vLLM pods equally between each NUMA node, balancing placement according to the system topology.
-- Keep each vLLM pod isolated to a single NUMA node, and avoid spanning across nodes.
-- Allocate 32 CPUs per vLLM pod; the sibling (hyperthreads) of those CPUs are available for non-vLLM workloads.
+- Node topology discovery and scheduling: Inspects each cluster node to determine CPU layout, NUMA configuration, Xeon generation, and other hardware features, and uses this information to optimize resource allocation.
+- Automatic detection of NUMA topology (number and size of NUMA nodes) at runtime for each cluster node; no manual configuration required.
+- Spread vLLM pods equally between NUMA nodes, balancing placement according to the system topology on each cluster node.
+- Keep each vLLM pod isolated to a single NUMA node, and avoid spanning across NUMA nodes.
+- Allocate CPUs for vLLM pod; the sibling CPUs are available for non-vLLM workloads.
 - Supports dynamic scaling with Horizontal Pod Autoscaler (HPA).  
   **Note:** When `balloons.enabled` is set, the `maxReplicas` value in HPA is automatically set to the calculated `maxBalloons` value (see [Calculating maxBalloons](#calculating-maxballoons)).
-- **Currently supported only on single-node Kubernetes clusters.**
+
+## vLLM CPUs Allocation Adjustment
+
+By default, each vLLM pod reserves `32` CPUs (referred to as **`VLLM_CPU_REQUEST`** throughout this document).  
+If the NUMA node size is **less than 32 physical CPUs**, **`VLLM_CPU_REQUEST`** must be changed to match the hardware.
+This value is configured by the file specified in `config.yaml` as the `resourcesPath` parameter.  
+By default, this file is [`resources-reference-cpu.yaml`](../../pipelines/chatqa/resources-reference-cpu.yaml).
+
+**Example:**
+```yaml
+vllm:
+  resources:
+    requests:
+      cpu: ${VLLM_CPU_REQUEST}
+    limits:
+      cpu: ${VLLM_CPU_REQUEST}
+```
+**`VLLM_CPU_REQUEST`** should be set to the number of CPUs to allocate per vLLM pod.
+
+**Note:**
+If `edp.vllm.enabled` is set to `true`, **`VLLM_CPU_REQUEST`** should also be adjusted in
+[`edp values file`](../edp/values.yaml)
+under the `vllm.resources` section.
+
+## Node Topology Discovery and Scheduling
+
+This feature performs node topology discovery for each node in the cluster to gather the following information:
+
+- `numa_nodes`: Number of NUMA nodes on the k8s node
+- `cpus_per_numa_node`: Number of CPUs per NUMA node
+- `amx_supported`: Whether AMX is supported (Sapphire Rapids or newer Xeon)
+- `numa_balanced`: Whether NUMA nodes are balanced
+- `maxBalloons`: Maximum number of vLLM pods ("balloons") for the k8s node
+- `gaudi`: Whether the Habana (Gaudi) plugin is present
+
+Based on this information, taints and labels are created on each node to determine eligibility for inference workloads. The following pods will prefer nodes with AMX support during scheduling:
+- `vllm`
+- `edp-vllm`
+- `input-scan`
+- `torchserve`
+- `tei-rerank`
+
+Additionally, an individual balloons policy is created for each k8s node based on its discovered topology, providing flexible and node-specific resource management in multi-node clusters.
 
 ## Configuration Example
 
@@ -51,42 +98,45 @@ The plugin will automatically detect:
 
 ## Calculating maxBalloons
 
-The maximum number of vLLM pods ("balloons") that can run concurrently is determined by the available NUMA nodes and CPU requirements:
+The maximum number of vLLM pods ("balloons") that can run concurrently is determined by the available NUMA nodes and CPU requirements **on each k8s node**:
 
-- Each vLLM pod reserves 32 CPUs, and also blocks the corresponding 32 hyperthreads (sibling threads) from use by other vLLM pods. Effectively, each vLLM pod "reserves" 64 CPUs (from the perspective of other vLLM pods).
+- Each vLLM pod reserves **`VLLM_CPU_REQUEST`** CPUs, and also blocks the corresponding **`VLLM_CPU_REQUEST`** hyperthreads (sibling threads) from use by other vLLM pods. Effectively, each vLLM pod "reserves" **`VLLM_CPU_REQUEST`** × 2 CPUs (from the perspective of other vLLM pods).
 - The number of vLLM pods that can be placed per NUMA node is calculated as:  
-  `max vLLM per NUMA node = NUMANodeSize // 64`
+  `max vLLM per NUMA node = NUMANodeSize // (VLLM_CPU_REQUEST × 2)`
 - Therefore,  
-  `maxBalloons = NUMANodes * (NUMANodeSize // 64)`
+  `maxBalloons = NUMANodes * (NUMANodeSize // (VLLM_CPU_REQUEST × 2))`
 
 Here, the `//` operator means integer (floor) division, i.e., the result is rounded down to the nearest whole number. For example, `130 // 64 = 2`.
 
 **Examples:**  
+Assume **`VLLM_CPU_REQUEST`** = 32
 
-- If your system has 2 NUMA nodes, and each node has 80 CPUs:
+- If a k8s node has 2 NUMA nodes, and each NUMA node has 80 logical CPUs:
 
   ```
   maxBalloons = 2 * (80 // 64) = 2 * 1 = 2
   ```
-  So only one vLLM pod can be scheduled per NUMA node.
+  *Result: Only one vLLM pod can be scheduled per NUMA node, two in total on that k8s node.*
 
-- If your system has 2 NUMA nodes, and each node has 128 CPUs:
+- If a cluster node has 2 NUMA nodes, and each NUMA node has 128 logical CPUs:
 
   ```
   maxBalloons = 2 * (128 // 64) = 2 * 2 = 4
   ```
-  So two vLLM pods can be scheduled per NUMA node, four in total.
-
-This allows for multiple vLLM balloons per NUMA node when resources permit.
+  *Result: Two vLLM pods can be scheduled per NUMA node, four in total on that k8s node.*
 
 ## Limitations
 
 - **Xeon only:** Unsupported on Gaudi or non-NUMA platforms.
-- **NUMA node size:** Only supported on systems where each NUMA node has **at least 64 CPUs**.
-- **Single-node only:** Currently, this feature is designed for single-node Kubernetes clusters.
+- **Hyperthreading:** Must be enabled on each node.
 
 ## Reset Balloons Policy Manually
 
+To remove all balloons policies from the cluster, run:
+```shell
+kubectl delete BalloonsPolicy --all -A
+```
+Then, overwrite obsolete policies by running:
 ```sh
 helm upgrade --install nri-balloons nri-plugins/nri-resource-policy-balloons \
   -n kube-system \

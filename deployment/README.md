@@ -151,9 +151,11 @@ tdxEnabled: false # enables Intel® Trust Domain Extensions
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
-# CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
-  enabled: false # this is not supported on Gaudi/multi-node cluster
+  enabled: false
+  namespace: kube-system # alternatively, set custom namespace for balloons
 
 pipelines:
   - namespace: chatqa
@@ -228,7 +230,7 @@ fingerprint:
 ```
 
 > [!NOTE]
-> Balloons policy is not supported on Gaudi, multi-node cluster or non-NUMA architectures.
+> Balloons policy is not supported on Gaudi or non-NUMA architectures.
 > For more informations regarding balloons policy refer [here](components/nri-plugin/README.md)
 
 > [!NOTE]

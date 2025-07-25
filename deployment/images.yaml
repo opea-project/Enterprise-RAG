@@ -87,10 +87,6 @@ images:
     image_name: chatqna-conversation-ui
     dockerfile_path: src/ui/Dockerfile
     docker_context: src
-  vllmCpu:
-    image_name: vllm-cpu
-    dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/cpu/Dockerfile
-    docker_context: src/comps/llms/impl/model_server/vllm
   vllmGaudi:
     image_name: vllm-gaudi
     dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/hpu/Dockerfile

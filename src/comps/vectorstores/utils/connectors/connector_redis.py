@@ -205,13 +205,19 @@ class ConnectorRedis(VectorStoreConnector):
         return await index.search(query)
 
     async def search_and_delete_by_metadata(self, field_name: str, field_value: str):
-        results = await self.search_by_metadata(field_name, field_value)
         client = RedisConnectionFactory.connect(
             redis_url=ConnectorRedis.format_url_from_env(),
             use_async=True
         )
-        for r in results.docs:
-            await client.delete(r.id)
+        logger.debug(f"Searching and deleting documents with {field_name}={field_value}")
+        while True:
+            results = await self.search_by_metadata(field_name, field_value)
+            if not results.docs or len(results.docs) == 0:
+                logger.debug("No more documents found to delete.")
+                break
+            logger.debug(f"Deleting {len(results.docs)} documents")
+            for r in results.docs:
+                await client.delete(r.id)
 
     def _build_vector_query(
         self,

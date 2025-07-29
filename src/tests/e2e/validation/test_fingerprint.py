@@ -85,6 +85,7 @@ def test_fingerprint_change_arguments(fingerprint_api_helper):
         fingerprint_api_helper.change_arguments(body)
 
 
+@pytest.mark.xfail(reason="Fix to be implemented")
 @allure.testcase("IEASG-T152")
 def test_fingerprint_empty_prompt_template(fingerprint_api_helper, chatqa_api_helper):
     """

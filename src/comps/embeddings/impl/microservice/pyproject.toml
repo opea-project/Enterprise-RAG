@@ -8,7 +8,7 @@ requires-python = ">=3.10"
 
 dependencies = [
     "docarray[full] == 0.40.0",
-    "fastapi == 0.115.12",
+    "fastapi == 0.116.1",
     "opentelemetry-api == 1.25.0",
     "opentelemetry-exporter-otlp == 1.25.0",
     "opentelemetry-sdk == 1.25.0",
@@ -23,10 +23,13 @@ dependencies = [
     "torch == 2.7.1",
     "transformers == 4.52.1",
     "setuptools == 80.9.0",
-    "starlette == 0.40.0",
+    "starlette == 0.47.2",
     "jinja2 == 3.1.6",
     "python-dotenv == 1.1.0",
     "h11==0.16.0",
+    "protobuf == 4.25.8",
+    "requests == 2.32.4",
+    "urllib3 == 2.5.0",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +37,7 @@ test = [
     "pytest==8.3.4",
     "pytest-asyncio==0.24.0",
     "pytest-cov==5.0.0",
-    "fastapi==0.115.12",
+    "fastapi==0.116.1",
     "docarray[full]==0.40.0",
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",

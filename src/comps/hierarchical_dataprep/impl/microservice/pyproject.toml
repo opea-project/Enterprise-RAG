@@ -30,6 +30,9 @@ dependencies = [
     "torch==2.7.1",
     "torchvision==0.22.1",
     "setuptools == 80.9.0",     # security update
+    "protobuf == 4.25.8",
+    "requests == 2.32.4",
+    "urllib3 == 2.5.0",
 ]
 
 [project.optional-dependencies]

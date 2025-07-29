@@ -23,6 +23,8 @@ dependencies = [
     "expecttest==0.3.0",
     "packaging==24.2",
     "setuptools == 80.9.0",     # security update
+    "requests == 2.32.4",
+    "urllib3 == 2.5.0",
 ]
 
 [tool.uv.sources]

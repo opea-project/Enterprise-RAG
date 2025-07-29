@@ -137,6 +137,16 @@ minio:
   initContainers:
     - name: wait-for-oidc-config
       image: alpine/curl
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 1000
       env:
         - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
           valueFrom:

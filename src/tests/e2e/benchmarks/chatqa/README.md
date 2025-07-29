@@ -1,22 +1,6 @@
 # Intel® AI for Enterprise RAG E2E benchmark
 ### Deploy Enterprise RAG and Adjust the parameters
-Before running the E2E benchmark you need to deploy Enterprise RAG and set the parameters of the components(e.g. reranker or retriever) to best suit the use case you want to test.
-
-#### Deploy Enterprise RAG
-Deploy the pipeline by using the instructions provided in [deployment's README.md](../../../../deployment/README.md). However, you might need to modify following elements to best suit your use cases or achieve best performance:
- * To modify llm model, change the `llm_model` in [config.yaml](../../../../deployment/inventory/sample/config.yaml) before deploying the pipeline. To see all supported LLM models, check out [here](../../../../deployment/pipelines/chatqa/resources-model-cpu.yaml).
- * For benchmarking big databases with e.g. 1M vectors in the database it is advisable to use `redis-cluster` instead of redis. To change it, modify `vector_store` parameter in [config.yaml](../../../../deployment/inventory/sample/config.yaml).
- * Usually, 1 replica for `teirerank` is not enough and it might be beneficial to set the number of teirerank's replicas to the number of sockets on the machine, e.g. if there're 2 sockets, set the number of the number of teirerank's replicas to 2. To change it, adjust the parameters in [resources-reference-cpu.yaml](../../../../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
- * It might be also beneficial to adjust number of replicas for `vllm`. If the number of physical cores per socket is <=64, keep 1 replica per socket (so total 2, if there're 2 sockets). If it is higher (for example, 96 or 128), set the number of replicas to 2 per socket (so total 4, if there're 2 sockets). To change it, adjust the parameters in [resources-reference-cpu.yaml](../../../../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
- * Consider also turning on SNC (sub-numa clustering) in BIOS for better performance for vllm.
-
-
-#### Adjust components parameters
-In order to modify the parameters of the particular microservices, e.g. top_k for reranker or max_new_tokens for llm, you need to either access Admin Panel via UI and modify particular elements or utilize scripts mentioned [below](#helpers-for-configuring-erag). If you prefer UI approach, check out [UI_features.md](../../../../docs/UI_features.md#admin-panel).
-
-> [!WARNING]
-> Only parameters that don't require a microservice to be restarted can be adjusted this way.
-> Additionally, to configure input token size or concurrency levels, follow [Test execution instructions](#test-execution).
+Before running the E2E benchmark, ensure that Enterprise RAG is deployed and configured with the recommended parameters as outlined in the [Performance tuning tips](../../../../../docs/performance_tuning_tips.md) guide.
 
 ### Test prerequisites
 In order to be able to run the e2e performance benchmark you need to:
@@ -37,10 +21,10 @@ sudo -E ./add_cert_to_ca.sh
 ```
 * export UI username and password of the account with administrative rights using `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD` env variables:
   * if username is not exported, then `erag-admin` will be used as default, but you still need to export the password
-  * if you didn't change the default UI password after the ansible based installation you can export it using the default credentials file `source ../../../../deployment/ansible-logs/default_credentials.txt && export KEYCLOAK_ERAG_ADMIN_PASSWORD=$KEYCLOAK_ERAG_ADMIN_PASSWORD`
+  * if you didn't change the default UI password after the ansible based installation you can export it using the default credentials file `source ../../../../../deployment/ansible-logs/default_credentials.txt && export KEYCLOAK_ERAG_ADMIN_PASSWORD=$KEYCLOAK_ERAG_ADMIN_PASSWORD`
 * export Realm username and password using `KEYCLOAK_REALM_ADMIN_USERNAME` and `KEYCLOAK_REALM_ADMIN_USERNAME` env variables:
   * if username is not exported, then `admin` will be used as default, but you still need to export the password
-  * if you didn't change the default Realm password after the ansible based installation you can export it using the default credentials file `export KEYCLOAK_REALM_ADMIN_PASSWORD=$(cat ../../../../deployment/ansible-logs/default_credentials.yaml | grep KEYCLOAK_REALM_ADMIN_PASSWORD | awk '{print $2}')`
+  * if you didn't change the default Realm password after the ansible based installation you can export it using the default credentials file `export KEYCLOAK_REALM_ADMIN_PASSWORD=$(cat ../../../../../deployment/ansible-logs/default_credentials.yaml | grep KEYCLOAK_REALM_ADMIN_PASSWORD | awk '{print $2}')`
 * if you are running test on Gaudi:
   * it is advised to increase the rate limits for chatqa endpoint in `/deployment/components/apisix-routes/values.yaml` before eRAG installation to avoid ratelimiter errors (429 error code) - this can be done by modifying `rate_limit_count` value under `endpoint -> chatqa` section of the file
   * vLLM warmup should not be skipped `VLLM_SKIP_WARMUP: "false"` for your LLM model in resource file `/deployment/pipelines/chatqa/resources-model-hpu.yaml`

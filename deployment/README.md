@@ -238,6 +238,11 @@ fingerprint:
 > Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 
+> [!NOTE]
+> To achieve optimal performance on Intel® Xeon® processors, additional configuration adjustments may be required.
+> For detailed guidance, refer to the [Performance tuning tips](../docs/performance_tuning_tips.md).
+
+
 ### Storage
 #### Storage Class
 Users can define their own CSI driver that will be used during deployment. The StorageClass should support accessMode ReadWriteMany (RWX).

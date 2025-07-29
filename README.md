@@ -58,7 +58,7 @@ To deploy the solution on a platform with Gaudi® AI Accelerator we need to have
 
 -  **logical cores**: A minimum of `48` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
--  **Disk Space**: `1TB` of disk space is generally recommended, though this is highly dependent on the model size and database size
+-  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
 -  **Latest Gaudi driver**: To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
 
@@ -82,7 +82,7 @@ To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® 
 - access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
 -  **logical cores**: A minimum of `80` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM
--  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
+-  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 ### Software Prerequisites
 -   **Operating System**: Ubuntu 22.04/24.04
@@ -105,6 +105,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
+
+> **Note:** To verify if venv is properly used, check with `ansible --version` for Python version. If not using the venv Python, you can add `ansible_python_interpreter=erag-venv/bin/python3` to the inventory under `[local]` section, or for application playbook add `-e ansible_python_interpreter=erag-venv/bin/python3`.
 
 # Configuration File
 
@@ -201,11 +203,19 @@ pipelines:
 > Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
 > Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.
 
-3. **Deploy the cluster:**
+3. **(Optional) Validate hardware resources and config.yaml:**
 
-```sh
-ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-```
+   ```sh
+   ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
+
+   > **Note:** If this is gaudi_deployment add additional flag -e is_gaudi_platform=true 
+
+4. **Deploy the cluster:**
+
+   ```sh
+   ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
 
 ### Cluster Deletion
 
@@ -221,40 +231,40 @@ ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/tes
    - Open `inventory/test-cluster/config.yaml`.
    - Set `deploy_k8s: false` and update the other fields as needed for your environment.
 
-Example `config.yaml` for deploying on an existing cluster:
-```yaml
-# Uses Kubespray to deploy Kubernetes cluster and install required components
-deploy_k8s: false
+   Example `config.yaml` for deploying on an existing cluster:
+   ```yaml
+   # Uses Kubespray to deploy Kubernetes cluster and install required components
+   deploy_k8s: false
 
-# Available options:
-# - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
-# - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
-install_csi: "local-path-provisioner"
+   # Available options:
+   # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+   # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+   install_csi: "local-path-provisioner"
 
-# Setup when install_csi is "nfs"
-# Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
-# Setting nfs_server_enabled to true will install NFS server together with CSI driver
-# and set nfs_csi_storage_class as the default one.
-nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
-nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
-nfs_csi_driver_version: "4.11.0"
-nfs_csi_storage_class: "nfs-csi"
+   # Setup when install_csi is "nfs"
+   # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+   # Setting nfs_server_enabled to true will install NFS server together with CSI driver
+   # and set nfs_csi_storage_class as the default one.
+   nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+   nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+   nfs_csi_driver_version: "4.11.0"
+   nfs_csi_storage_class: "nfs-csi"
 
-huggingToken: FILL_HERE # Provide your Hugging Face token here
-kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
+   huggingToken: FILL_HERE # Provide your Hugging Face token here
+   kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
 
-# Proxy settings are optional
-httpProxy:
-httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field as needed:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-# ...
-pipelines:
-  - namespace: chatqa
-    samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
-    resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
-    type: chatqa
-```
+   # Proxy settings are optional
+   httpProxy:
+   httpsProxy:
+   # If HTTP/HTTPS proxy is set, update the noProxy field as needed:
+   noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+   # ...
+   pipelines:
+     - namespace: chatqa
+       samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
+       resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
+       type: chatqa
+   ```
 # Installation
 
 ```sh

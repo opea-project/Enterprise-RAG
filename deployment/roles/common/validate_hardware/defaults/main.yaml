@@ -1,0 +1,7 @@
+gaudi_min_total_cpu_cores: 48
+gaudi_min_total_memory_gb: 250
+gaudi_min_total_storage_gb: 500
+gaudi_min_gaudi_cards: 8
+cpu_min_total_cpu_cores: 80
+cpu_min_total_memory_gb: 250
+cpu_min_total_storage_gb: 200

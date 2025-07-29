@@ -26,6 +26,7 @@ import LightModeIcon from "@/components/icons/LightModeIcon/LightModeIcon";
 import LinkIcon from "@/components/icons/LinkIcon/LinkIcon";
 import LoadingIcon from "@/components/icons/LoadingIcon/LoadingIcon";
 import LogoutIcon from "@/components/icons/LogoutIcon/LogoutIcon";
+import MoreOptionsIcon from "@/components/icons/MoreOptionsIcon/MoreOptionsIcon";
 import NewChatIcon from "@/components/icons/NewChatIcon/NewChatIcon";
 import OptionsIcon from "@/components/icons/OptionsIcon/OptionsIcon";
 import PlusIcon from "@/components/icons/PlusIcon/PlusIcon";
@@ -65,6 +66,7 @@ export const icons = {
   link: LinkIcon,
   loading: LoadingIcon,
   logout: LogoutIcon,
+  "more-options": MoreOptionsIcon,
   options: OptionsIcon,
   "new-chat": NewChatIcon,
   plus: PlusIcon,

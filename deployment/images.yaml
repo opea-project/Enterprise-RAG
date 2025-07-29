@@ -11,6 +11,10 @@ images:
     image_name: embedding
     dockerfile_path: src/comps/embeddings/impl/microservice/Dockerfile
     docker_context: src
+  chatHistoryUsvc:
+    image_name: chat-history
+    dockerfile_path: src/comps/chat_history/impl/microservice/Dockerfile
+    docker_context: src
   fingerprintUsvc:
     image_name: system-fingerprint
     dockerfile_path: src/comps/system_fingerprint/impl/microservice/Dockerfile

@@ -16,7 +16,7 @@ interface PopoverProps extends AriaPopoverProps {
 }
 
 const Popover = ({ ariaLabel, children, ...rest }: PopoverProps) => (
-  <AriaPopover {...rest} className="popover !z-20">
+  <AriaPopover {...rest} className="popover !z-[101]">
     <AriaDialog aria-label={ariaLabel}>{children}</AriaDialog>
   </AriaPopover>
 );

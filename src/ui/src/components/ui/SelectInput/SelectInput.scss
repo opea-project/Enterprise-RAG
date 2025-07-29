@@ -14,7 +14,7 @@
 
   button.select-input__button {
     @apply text-base;
-    @apply py-0 pl-4 pr-2;
+    @apply py-2 pl-4 pr-2;
 
     @apply flex items-center justify-between gap-3;
     @apply rounded border border-light-border dark:border-dark-border;

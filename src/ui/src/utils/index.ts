@@ -17,6 +17,16 @@ const constructUrlWithUuid = (baseUrl: string, uuid: string) => {
   return baseUrl.replace("{uuid}", encodedUuid);
 };
 
+const downloadBlob = async (blob: Blob, fileName: string) => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+};
+
 const formatSnakeCaseToTitleCase = (value: string) =>
   value
     .split("_")
@@ -71,7 +81,10 @@ const sanitizeHref = (href: string | undefined) => {
   }
 };
 
-const sanitizeString = (value: string) => {
+const sanitizeString = (value: string | undefined) => {
+  if (typeof value === "undefined") {
+    return "";
+  }
   const decodedValue = tryDecode(value);
   return DOMPurify.sanitize(decodedValue);
 };
@@ -81,6 +94,7 @@ const titleCaseString = (value: string) =>
 
 export {
   constructUrlWithUuid,
+  downloadBlob,
   formatSnakeCaseToTitleCase,
   getAppEnv,
   isPunycodeSafe,

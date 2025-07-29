@@ -16,7 +16,12 @@ import { paths } from "@/config/paths";
 import useColorScheme from "@/hooks/useColorScheme";
 import ProtectedRoute from "@/lib/auth/components/ProtectedRoute";
 
-const ChatRoute = lazy(() => import("@/app/routes/chat/ChatRoute"));
+const InitialChatRoute = lazy(
+  () => import("@/app/routes/chat/InitialChatRoute"),
+);
+const ChatConversationRoute = lazy(
+  () => import("@/app/routes/chat/ChatConversationRoute"),
+);
 const AdminPanelRoute = lazy(
   () => import("@/app/routes/admin-panel/AdminPanelRoute"),
 );
@@ -35,7 +40,17 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Suspense fallback={<LoadingFallback />}>
-              <ChatRoute />
+              <InitialChatRoute />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: `${paths.chat}/:chatId`,
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <ChatConversationRoute />
             </Suspense>
           </ProtectedRoute>
         ),

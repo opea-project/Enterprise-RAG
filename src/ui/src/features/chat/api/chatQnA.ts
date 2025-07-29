@@ -4,7 +4,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import {
-  API_ENDPOINTS,
+  CHATQNA_API_ENDPOINTS,
   CONTENT_TYPE_ERROR_MESSAGE,
   HTTP_ERRORS,
 } from "@/features/chat/config/api";
@@ -32,12 +32,12 @@ export const chatQnAApi = createApi({
   }),
   endpoints: (builder) => ({
     postPrompt: builder.mutation<void, PostPromptRequest>({
-      query: ({ prompt, conversationHistory, signal, onAnswerUpdate }) => ({
-        url: API_ENDPOINTS.POST_PROMPT,
+      query: ({ prompt, id, signal, onAnswerUpdate }) => ({
+        url: CHATQNA_API_ENDPOINTS.POST_PROMPT,
         method: "POST",
         body: {
           text: prompt,
-          conversation_history: conversationHistory,
+          history_id: id,
         },
         signal,
         responseHandler: async (response) => {

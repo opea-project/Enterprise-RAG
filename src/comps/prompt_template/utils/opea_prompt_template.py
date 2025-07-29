@@ -13,15 +13,15 @@ from comps import (
 
 from comps.prompt_template.utils.templates import template_system_english as default_system_template
 from comps.prompt_template.utils.templates import template_user_english as default_user_template
-from comps.prompt_template.utils.conversation_history_handler import ConversationHistoryHandler
+from comps.prompt_template.utils.chat_history_handler import ChatHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEAPromptTemplate:
-    def __init__(self):
+    def __init__(self, chat_history_endpoint: str = None,):
         self._if_conv_history_in_prompt = False
-        self._conversation_history_placeholder = "conversation_history"
-        self.ch_handler = ConversationHistoryHandler()
+        self._chat_history_placeholder = "conversation_history"
+        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint)
         try:
             self._validate(default_system_template, default_user_template)
             self.system_prompt_template = default_system_template
@@ -72,13 +72,13 @@ class OPEAPromptTemplate:
 
         # Ensure no placeholders in templates are not in the provided placeholders set
         extra_placeholders = combined_placeholders - placeholders
-        extra_placeholders_no_ch = extra_placeholders - set([self._conversation_history_placeholder])
+        extra_placeholders_no_ch = extra_placeholders - set([self._chat_history_placeholder])
         if extra_placeholders_no_ch:
             raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders_no_ch}")
 
-        if self._conversation_history_placeholder not in extra_placeholders:
+        if self._chat_history_placeholder not in extra_placeholders:
             logger.warning("A placeholder for conversation history is missing. LLM will not remember previous answers. " +
-                           "Add {conversation_history} placeholder if you want to add the conversation to LLM.")
+                           "Add {chat_history} placeholder if you want to add the conversation to LLM.")
             self._if_conv_history_in_prompt = False
         else:
             self._if_conv_history_in_prompt = True
@@ -185,7 +185,7 @@ class OPEAPromptTemplate:
 
         return "\n\n".join(formatted_docs)
 
-    async def run(self, input: PromptTemplateInput) -> LLMParamsDoc:
+    async def run(self, input: PromptTemplateInput, access_token: str=None) -> LLMParamsDoc:
         """
         Executes the prompt template generation process using the provided input.
         Args:
@@ -212,7 +212,7 @@ class OPEAPromptTemplate:
                 # even if the prompt template has not changed
                 expected_placeholders_system = extract_placeholders_from_template(self.system_prompt_template)
                 expected_placeholders_user = extract_placeholders_from_template(self.user_prompt_template)
-                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._conversation_history_placeholder])
+                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._chat_history_placeholder])
                 if keys != expected_placeholders:
                     logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
                     raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
@@ -232,8 +232,9 @@ class OPEAPromptTemplate:
         # Get conversation history
         if self._if_conv_history_in_prompt:
             params = {}
-            prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
-                                                                                                             input.conversation_history_parse_type,
+            prompt_data[self._chat_history_placeholder] = self.ch_handler.parse_chat_history(input.history_id,
+                                                                                                             input.chat_history_parse_type,
+                                                                                                             access_token,
                                                                                                              params)
 
         # Generate the final prompt

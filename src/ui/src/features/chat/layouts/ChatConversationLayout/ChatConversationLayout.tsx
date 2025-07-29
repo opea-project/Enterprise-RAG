@@ -6,25 +6,25 @@ import { ChangeEventHandler } from "react";
 import ConversationFeed from "@/components/ui/ConversationFeed/ConversationFeed";
 import PromptInput from "@/components/ui/PromptInput/PromptInput";
 import ChatDisclaimer from "@/features/chat/components/ChatDisclaimer/ChatDisclaimer";
-import { ConversationTurn } from "@/types";
+import { ChatTurn } from "@/types";
 
-interface ConversationFeedLayoutProps {
+interface ChatConversationLayoutProps {
   userInput: string;
-  conversationTurns: ConversationTurn[];
+  conversationTurns: ChatTurn[];
   isChatResponsePending: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
   onPromptSubmit: () => void;
   onRequestAbort: () => void;
 }
 
-const ConversationFeedLayout = ({
+const ChatConversationLayout = ({
   userInput,
   conversationTurns,
   isChatResponsePending,
   onPromptChange,
   onPromptSubmit,
   onRequestAbort,
-}: ConversationFeedLayoutProps) => (
+}: ChatConversationLayoutProps) => (
   <div className="grid h-full grid-rows-[1fr_auto]">
     <ConversationFeed conversationTurns={conversationTurns} />
     <PromptInput
@@ -38,4 +38,4 @@ const ConversationFeedLayout = ({
   </div>
 );
 
-export default ConversationFeedLayout;
+export default ChatConversationLayout;

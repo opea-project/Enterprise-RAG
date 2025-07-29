@@ -1,10 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-export interface ConversationTurn {
+// interface defined for chat elements displayed in UI
+export interface ChatTurn {
   id: string;
   question: string;
-  answer: string;
+  answer?: string;
   error: string | null;
   isPending: boolean;
 }

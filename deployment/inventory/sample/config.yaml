@@ -148,6 +148,10 @@ fingerprint:
   enabled: true
   namespace: fingerprint
 
+chat_history:
+  enabled: true
+  namespace: chat-history
+
 # It is recommented to change the default resources for vector database nodes
 # For examples, check deployment/components/vector_databases/values.yaml
 vector_databases:

@@ -5,22 +5,26 @@ import "./ConversationFeed.scss";
 
 import debounce from "lodash.debounce";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import BotMessage from "@/components/ui/BotMessage/BotMessage";
 import ScrollToBottomButton from "@/components/ui/ScrollToBottomButton/ScrollToBottomButton";
 import UserMessage from "@/components/ui/UserMessage/UserMessage";
-import { ConversationTurn } from "@/types";
+import { paths } from "@/config/paths";
+import { ChatTurn } from "@/types";
 
 const bottomMargin = 80; // margin to handle bottom scroll detection
 
 interface ConversationFeedProps {
-  conversationTurns: ConversationTurn[];
+  conversationTurns: ChatTurn[];
 }
 
 const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
   const conversationFeedRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
+
+  const location = useLocation();
 
   const debouncedScrollToBottom = useCallback(
     debounce((behavior: ScrollBehavior) => {
@@ -57,6 +61,12 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
   useEffect(() => {
     debouncedScrollToBottom("instant");
   }, []);
+
+  useEffect(() => {
+    if (location.pathname.startsWith(`${paths.chat}/`)) {
+      debouncedScrollToBottom("instant");
+    }
+  }, [location.pathname, debouncedScrollToBottom]);
 
   useEffect(() => {
     debouncedScrollToBottom("instant");

@@ -5,7 +5,8 @@ import os
 import time
 
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException, Request
+from json import JSONDecodeError
 
 from comps import (
     LLMParamsDoc,
@@ -20,6 +21,7 @@ from comps import (
     statistics_dict,
 )
 from comps.prompt_template.utils.opea_prompt_template import OPEAPromptTemplate
+from comps.cores.utils.utils import sanitize_env
 
 # Define the unique service name for the microservice
 USVC_NAME='opea_service@prompt_template'
@@ -32,7 +34,13 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEALlm class with environment variables.
-opea_prompt_template = OPEAPromptTemplate()
+opea_prompt_template = OPEAPromptTemplate(chat_history_endpoint=sanitize_env(os.getenv("CHAT_HISTORY_ENDPOINT")))
+
+async def get_access_token(request: Request) -> str:
+    access_token = request.headers.get('Authorization')
+    if not access_token:
+        return ""
+    return access_token.replace('Bearer ', '')
 
 # Register the microservice with the specified configuration.
 @register_microservice(
@@ -48,7 +56,7 @@ opea_prompt_template = OPEAPromptTemplate()
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-async def process(input: PromptTemplateInput) -> LLMParamsDoc:
+async def process(input: PromptTemplateInput, access_token: str = Depends(get_access_token)) -> LLMParamsDoc:
     """
 
     Returns:
@@ -57,11 +65,16 @@ async def process(input: PromptTemplateInput) -> LLMParamsDoc:
     start = time.time()
     try:
         # Pass the input to the 'run' method of the microservice instance
-        res = await opea_prompt_template.run(input)
-    except ValueError as e:
-        logger.exception(f"An internal error occurred while processing: {str(e)}")
+        res = await opea_prompt_template.run(input, access_token)
+    except JSONDecodeError as e:
+        logger.exception(f"A JSONDecodeError occurred while processing: {str(e)}")
         raise HTTPException(status_code=400,
-                            detail=f"An internal error occurred while processing: {str(e)}"
+                            detail=f"A JSONDecodeError occurred while processing: {str(e)}"
+        )
+    except ValueError as e:
+        logger.exception(f"A ValueError occurred while processing: {str(e)}")
+        raise HTTPException(status_code=400,
+                            detail=f"A ValueError occurred while processing: {str(e)}"
         )
     except Exception as e:
          logger.exception(f"An error occurred while processing: {str(e)}")

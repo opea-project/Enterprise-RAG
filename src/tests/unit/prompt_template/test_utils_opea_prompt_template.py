@@ -1,13 +1,12 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 from docarray import DocList
 
 from comps import (
-    PrevQuestionDetails,
     LLMPromptTemplate,
     PromptTemplateInput,
     TextDoc,
@@ -55,7 +54,7 @@ def mock_default_response_data():
 
 
 @pytest.fixture
-def mock_default_input_data_with_conversation_history():
+def mock_default_input_data_with_chat_history():
     """Fixture to provide mock input data."""
     return PromptTemplateInput(prompt_template=None,
         data={
@@ -66,16 +65,12 @@ def mock_default_input_data_with_conversation_history():
                 TextDoc(text="Document3"),
             ])
         },
-        conversation_history=[
-            PrevQuestionDetails(question="Previous question 1", answer="Previous answer 1"),
-            PrevQuestionDetails(question="Previous question 2", answer="Previous answer 2"),
-            PrevQuestionDetails(question="Previous question 3", answer="Previous answer 3"),
-            PrevQuestionDetails(question="Previous question 4", answer="Previous answer 4"),]
+        history_id="test-history-id"
     )
 
 
 @pytest.fixture
-def mock_default_response_data_with_conversation_history():
+def mock_default_response_data_with_chat_history():
     """Fixture to provide mock response data."""
     return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
         "Please refer to the search results obtained from the local knowledge base. " \
@@ -144,17 +139,49 @@ async def test_opea_prompt_run_suceeds_with_defaults(test_class, mock_default_in
 
 
 @pytest.mark.asyncio
-async def test_opea_prompt_run_suceeds_with_conversation_history(test_class, mock_default_input_data_with_conversation_history, mock_default_response_data_with_conversation_history):
+@patch('comps.prompt_template.utils.chat_history_handler.requests.get')
+async def test_opea_prompt_run_suceeds_with_chat_history(mock_get, mock_default_input_data_with_chat_history, mock_default_response_data_with_chat_history):
+    mock_health_response = Mock()
+    mock_health_response.status_code = 200
+    mock_health_response.text = "chat_history service is healthy"
+
+    mock_history_response = Mock()
+    mock_history_response.status_code = 200
+    mock_history_response.json.return_value = {
+        "history": [
+            {"question": "Previous question 2", "answer": "Previous answer 2"},
+            {"question": "Previous question 3", "answer": "Previous answer 3"},
+            {"question": "Previous question 4", "answer": "Previous answer 4"}
+        ]
+    }
+
+    def side_effect(url, **kwargs):
+        if "health_check" in url:
+            return mock_health_response
+        elif "chat_history/get" in url:
+            return mock_history_response
+        else:
+            raise ValueError(f"Unexpected URL: {url}")
+
+    mock_get.side_effect = side_effect
+
+    test_class_with_history = OPEAPromptTemplate(chat_history_endpoint="http://test-endpoint")
+
     try:
-        result = await test_class.run(mock_default_input_data_with_conversation_history)
+        result = await test_class_with_history.run(mock_default_input_data_with_chat_history, access_token="test-token")
     except Exception as e:
         pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
 
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'query'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_default_response_data_with_conversation_history.system, "Query does not match the expected response"
-    assert result.messages.user == mock_default_response_data_with_conversation_history.user, "Query does not match the expected response"
+    assert result.messages.system == mock_default_response_data_with_chat_history.system, "Query does not match the expected response"
+    assert result.messages.user == mock_default_response_data_with_chat_history.user, "Query does not match the expected response"
+
+    assert mock_get.call_count == 2
+    mock_get.assert_any_call("http://test-endpoint/v1/health_check", headers={"Content-Type": "application/json"})
+    mock_get.assert_any_call("http://test-endpoint/v1/chat_history/get?history_id=test-history-id",
+                            headers={"Authorization": "Bearer test-token", "Content-Type": "application/json"})
 
 
 @pytest.mark.asyncio

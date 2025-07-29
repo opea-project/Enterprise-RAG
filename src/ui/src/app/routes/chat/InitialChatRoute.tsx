@@ -2,39 +2,38 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import PageLayout from "@/components/layouts/PageLayout/PageLayout";
-import NewChatButton from "@/features/chat/components/NewChatButton/NewChatButton";
+import ChatSideMenu from "@/features/chat/components/ChatSideMenu/ChatSideMenu";
+import ChatSideMenuIconButton from "@/features/chat/components/ChatSideMenuIconButton/ChatSideMenuIconButton";
 import useChat from "@/features/chat/hooks/useChat";
-import ConversationFeedLayout from "@/features/chat/layouts/ConversationFeedLayout/ConversationFeedLayout";
+import ChatConversationLayout from "@/features/chat/layouts/ChatConversationLayout/ChatConversationLayout";
 import InitialChatLayout from "@/features/chat/layouts/InitialChatLayout/InitialChatLayout";
 
-const ChatRoute = () => {
+const InitialChatRoute = () => {
   const {
     userInput,
-    conversationTurns,
+    chatTurns,
+    isChatHistorySideMenuOpen,
     isChatResponsePending,
     onPromptChange,
     onPromptSubmit,
     onRequestAbort,
-    onNewChat,
   } = useChat();
 
   const getChatLayout = () => {
-    if (conversationTurns.length === 0) {
+    if (chatTurns.length === 0) {
       return (
         <InitialChatLayout
           userInput={userInput}
-          isChatResponsePending={isChatResponsePending}
           onPromptChange={onPromptChange}
           onPromptSubmit={onPromptSubmit}
-          onRequestAbort={onRequestAbort}
         />
       );
     }
 
     return (
-      <ConversationFeedLayout
+      <ChatConversationLayout
         userInput={userInput}
-        conversationTurns={conversationTurns}
+        conversationTurns={chatTurns}
         isChatResponsePending={isChatResponsePending}
         onPromptChange={onPromptChange}
         onPromptSubmit={onPromptSubmit}
@@ -46,7 +45,11 @@ const ChatRoute = () => {
   return (
     <PageLayout
       appHeaderProps={{
-        extraActions: <NewChatButton onNewChat={onNewChat} />,
+        leftSideMenuTrigger: <ChatSideMenuIconButton />,
+      }}
+      leftSideMenu={{
+        component: <ChatSideMenu />,
+        isOpen: isChatHistorySideMenuOpen,
       }}
     >
       {getChatLayout()}
@@ -54,4 +57,4 @@ const ChatRoute = () => {
   );
 };
 
-export default ChatRoute;
+export default InitialChatRoute;

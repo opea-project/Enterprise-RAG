@@ -120,12 +120,19 @@ create_database_secret() {
             --from-literal=REDIS_USERNAME="$DB_USERNAME" \
             --from-literal=REDIS_PASSWORD="$DB_PASSWORD" \
             --from-literal=VECTOR_DB_REDIS_ARGS="--save 60 1000 --appendonly yes --requirepass $DB_PASSWORD"
-    elif [[ "$DATABASE" == "mongo" ]]; then
+    elif [[ "$DATABASE" == "mongo" && "$NAMESPACE_OF_SECRET" == "fingerprint" ]]; then
         kubectl get secret mongo-database-secret -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic mongo-database-secret -n $NAMESPACE_OF_SECRET \
             --from-literal=MONGO_DATABASE_NAME="$ADDITIONAL_ARG_1" \
             --from-literal=MONGO_USER="$DB_USERNAME" \
             --from-literal=MONGO_PASSWORD="$DB_PASSWORD" \
             --from-literal=MONGO_HOST="fingerprint-mongodb.$DB_NAMESPACE.svc" \
+            --from-literal=MONGO_PORT="27017"
+    elif [[ "$DATABASE" == "mongo" && "$NAMESPACE_OF_SECRET" == "chat-history" ]]; then
+        kubectl get secret mongo-database-secret -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic mongo-database-secret -n $NAMESPACE_OF_SECRET \
+            --from-literal=MONGO_DATABASE_NAME="$ADDITIONAL_ARG_1" \
+            --from-literal=MONGO_USER="$DB_USERNAME" \
+            --from-literal=MONGO_PASSWORD="$DB_PASSWORD" \
+            --from-literal=MONGO_HOST="chat-history-mongodb.$DB_NAMESPACE.svc" \
             --from-literal=MONGO_PORT="27017"
     fi
 }

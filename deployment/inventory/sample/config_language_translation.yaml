@@ -122,6 +122,10 @@ fingerprint:
   enabled: false
   namespace: fingerprint
 
+chatHistory:
+  enabled: false
+  namespace: chat-history
+
 vector_databases:
   enabled: false
   namespace: vdb

@@ -11,26 +11,20 @@ import ChatDisclaimer from "@/features/chat/components/ChatDisclaimer/ChatDiscla
 
 interface InitialChatLayoutProps {
   userInput: string;
-  isChatResponsePending: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
   onPromptSubmit: () => void;
-  onRequestAbort: () => void;
 }
 
 const InitialChatLayout = ({
   userInput,
-  isChatResponsePending,
   onPromptChange,
   onPromptSubmit,
-  onRequestAbort,
 }: InitialChatLayoutProps) => (
   <div className="initial-chat-layout">
     <ChatBotIcon />
     <p className="initial-chat-layout__greeting">What do you want to know?</p>
     <PromptInput
       prompt={userInput}
-      isChatResponsePending={isChatResponsePending}
-      onRequestAbort={onRequestAbort}
       onChange={onPromptChange}
       onSubmit={onPromptSubmit}
     />

@@ -39,7 +39,7 @@ import {
   filterRetrieverFormData,
 } from "@/features/admin-panel/control-plane/utils";
 import { useAppSelector } from "@/store/hooks";
-import { ConversationTurn } from "@/types";
+import { ChatTurn } from "@/types";
 import { getErrorMessage } from "@/utils/api";
 
 const initialSearchByParam = `{
@@ -61,9 +61,7 @@ const RetrieverDebugDialog = () => {
   const [postRetrieverQuery] = usePostRetrieverQueryMutation();
 
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
-  const [conversationTurns, setConversationTurns] = useState<
-    ConversationTurn[]
-  >([]);
+  const [conversationTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [query, setQuery] = useState("");
   const [searchByParam, setSearchByParam] = useState(initialSearchByParam);
 
@@ -149,14 +147,14 @@ const RetrieverDebugDialog = () => {
 
     setQuery("");
 
-    const newConversationTurn: ConversationTurn = {
+    const newChatTurn: ChatTurn = {
       id: uuidv4(),
       question: createCodeBlock(newQueryRequest),
       answer: "",
       error: null,
       isPending: true,
     };
-    setConversationTurns((prevTurns) => [...prevTurns, newConversationTurn]);
+    setChatTurns((prevTurns) => [...prevTurns, newChatTurn]);
 
     const { data, error } = await postRetrieverQuery(newQueryRequest);
 
@@ -165,16 +163,20 @@ const RetrieverDebugDialog = () => {
         error,
         ERROR_MESSAGES.POST_RETRIEVER_QUERY,
       );
-      setConversationTurns((prevTurns) => [
+      setChatTurns((prevTurns) => [
         ...prevTurns.slice(0, -1),
-        { ...newConversationTurn, error: errorMessage, isPending: false },
+        {
+          ...newChatTurn,
+          error: errorMessage,
+          isPending: false,
+        },
       ]);
     } else {
       const responseData = data ? data : "";
-      setConversationTurns((prevTurns) => [
+      setChatTurns((prevTurns) => [
         ...prevTurns.slice(0, -1),
         {
-          ...newConversationTurn,
+          ...newChatTurn,
           answer: createCodeBlock(responseData),
           isPending: false,
         },
@@ -372,7 +374,7 @@ const RetrieverDebugParamsForm = ({
 };
 
 interface RetrieverDebugChatProps {
-  conversationTurns: ConversationTurn[];
+  conversationTurns: ChatTurn[];
   query: string;
   handleQueryInputChange: ChangeEventHandler<HTMLTextAreaElement>;
   handleSubmitQuery: (query: string) => void;

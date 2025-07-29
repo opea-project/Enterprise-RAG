@@ -75,6 +75,14 @@
         - install
         - uninstall
 
+    - name: Chat History role
+      ansible.builtin.include_role:
+        name: chat_history
+      when: chat_history.enabled
+      tags:
+        - install
+        - uninstall
+
     - name: Pipeline role
       ansible.builtin.include_role:
         name: pipeline

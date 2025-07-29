@@ -15,6 +15,7 @@ data:
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
   PORT: "7900"
+  CHAT_HISTORY_ENDPOINT: "http://chat-history-svc.chat-history.svc:6012"
 ---
 # Source: prmpt-tmpl-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -35,6 +36,14 @@ spec:
       name: prmpt-tmpl-usvc
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: prmpt-tmpl-usvc
+    app.kubernetes.io/instance: prmpt-tmpl-usvc
+  name: prmpt-tmpl-usvc
 ---
 # Source: prmpt-tmpl-usvc/templates/deployment.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -59,6 +68,30 @@ spec:
       {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      serviceAccountName: prmpt-tmpl-usvc
+      initContainers:
+        - name: wait-for-svc
+          image: alpine/curl
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: CHAT_HISTORY_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: prompttemplate-usvc-config
+                  key: CHAT_HISTORY_ENDPOINT
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$CHAT_HISTORY_ENDPOINT" ]; then
+                  echo "Environment variable CHAT_HISTORY_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s $CHAT_HISTORY_ENDPOINT; do
+                    echo "waiting for reranking server $CHAT_HISTORY_ENDPOINT to be ready...";
+                    sleep 2;
+                  done;
+                fi;
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: prmpt-tmpl-usvc

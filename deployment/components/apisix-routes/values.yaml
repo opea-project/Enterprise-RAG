@@ -37,6 +37,25 @@ endpoints:
     rate_limit_count: 30
     permissions:
       - "admin#admin-access"
+  - name: chat-history
+    enabled: true
+    namespace: chat-history
+    path: /v1/chat_history/*
+    backend_service: chat-history-svc
+    service_port: 6012
+    rate_limit_count: 120
+    permissions:
+      - "admin#admin-access"
+      - "user#user-access"
+    service_regex:
+      - ^/v1/chat_history/save$
+      - /v1/chat_history/save
+      - ^/v1/chat_history/get$
+      - /v1/chat_history/get
+      - ^/v1/chat_history/change_name$
+      - /v1/chat_history/change_name
+      - ^/v1/chat_history/delete$
+      - /v1/chat_history/delete
   - name: edp
     enabled: true
     namespace: edp

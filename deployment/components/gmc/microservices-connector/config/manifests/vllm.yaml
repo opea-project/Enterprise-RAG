@@ -111,7 +111,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                  - key: inference-eligible
+                  - key: inference-eligible-vllm
                     operator: In
                     values:
                       - "true"
@@ -120,13 +120,13 @@ spec:
             - weight: 100
               preference:
                 matchExpressions:
-                  - key: inference-eligible
+                  - key: inference-eligible-vllm
                     operator: In
                     values:
                       - "true"
           {{- end }}
       tolerations:
-        - key: "inference_eligible"
+        - key: "inference_eligible_vllm"
           operator: "Equal"
           value: "true"
           effect: "PreferNoSchedule"

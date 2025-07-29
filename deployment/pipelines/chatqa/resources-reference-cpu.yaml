@@ -59,7 +59,7 @@ services:
             value: 1
             periodSeconds: 60
   llm-usvc:
-    replicas: 1
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -207,7 +207,7 @@ services:
             value: 1
             periodSeconds: 15
   torchserve_reranking:
-    replicas: 1
+    replicas: 2
     resources:
       requests:
         cpu: 4

@@ -12,8 +12,10 @@
   vars:
     nodeName: "{{ item.key }}"
     amx_supported: "{{ item.value.amx_supported }}"
-    maxBalloons: "{{ item.value.maxBalloons }}"
+    maxBalloonsVLLM: "{{ item.value.maxBalloonsVLLM }}"
+    maxBalloonsReranker: "{{ item.value.maxBalloonsReranker }}"
     vllm_cpus: "{{ VLLM_CPUS }}"
+    reranker_cpus: "{{ RERANKER_CPUS }}"
   tags:
     - install
 
@@ -24,14 +26,21 @@
   tags:
     - install
 
-- name: Identify if node is eligible for vllm
+- name: Identify if node is eligible for inference
   set_fact:
     inference_eligible_label: >-
-      {{ 'true' if (item.value.amx_supported | bool and item.value.maxBalloons | int != 0) else 'false' }}
+      {{ 'true' if (item.value.amx_supported | bool and item.value.maxBalloonsReranker | int != 0) else 'false' }}
   tags:
     - install
 
-- name: Label node as inference-eligible
+- name: Identify if node is eligible for vllm
+  set_fact:
+    inference_eligible_vllm_label: >-
+      {{ 'true' if (item.value.amx_supported | bool and item.value.maxBalloonsVLLM | int != 0) else 'false' }}
+  tags:
+    - install
+
+- name: Label node as inference-eligible for inference
   kubernetes.core.k8s:
     state: patched
     kind: Node
@@ -45,7 +54,37 @@
   tags:
     - install
 
+- name: Label node as inference-eligible for vllm
+  kubernetes.core.k8s:
+    state: patched
+    kind: Node
+    api_version: v1
+    name: "{{ item.key }}"
+    definition:
+      metadata:
+        name: "{{ item.key }}"
+        labels:
+          inference-eligible-vllm: "{{ inference_eligible_vllm_label | string | lower }}"
+  tags:
+    - install
+
 - name: Add taint if node is eligible for vllm
+  kubernetes.core.k8s:
+    state: patched
+    kind: Node
+    api_version: v1
+    name: "{{ item.key }}"
+    definition:
+      spec:
+        taints:
+          - key: inference_eligible_vllm
+            value: "true"
+            effect: PreferNoSchedule
+  when: inference_eligible_vllm_label | lower == 'true'
+  tags:
+    - install
+
+- name: Add taint if node is eligible for inference
   kubernetes.core.k8s:
     state: patched
     kind: Node

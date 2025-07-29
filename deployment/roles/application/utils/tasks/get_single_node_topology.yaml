@@ -62,9 +62,15 @@
   tags:
     - install
 
-- name: Calculate maxBalloons
+- name: Calculate maxBalloons for vLLM
   set_fact:
-    maxBalloons: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((VLLM_CPUS | int) * 2))) }}"
+    maxBalloonsVLLM: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((VLLM_CPUS | int) * 2))) }}"
+  tags:
+    - install
+
+- name: Calculate maxBalloons for Reranker
+  set_fact:
+    maxBalloonsReranker: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((RERANKER_CPUS | int) * 2))) }}"
   tags:
     - install
 
@@ -99,7 +105,8 @@
             'cpus_per_numa_node': (cpu_counts_list | min),
             'amx_supported': (amx_check.rc == 0),
             'numa_balanced': numa_balanced,
-            'maxBalloons': (maxBalloons | int),
+            'maxBalloonsVLLM': (maxBalloonsVLLM | int),
+            'maxBalloonsReranker': (maxBalloonsReranker | int),
             'gaudi': habana_plugin_present
           }
         })

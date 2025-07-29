@@ -89,6 +89,27 @@
   tags:
     - install
 
+- name: Set RERANKER_CPUS from resources reference file
+  set_fact:
+    RERANKER_CPUS: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'equalto', 'chatqa')
+              | map(attribute='resourcesPath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          )
+          | default({})
+        ).get('services', {}).get('torchserve_reranking', {}).get('resources', {}).get('requests', {}).get('cpu', 4)
+        | int
+      }}
+  tags:
+    - install
+
 - name: Gather CPU/NUMA/AMX info for each node
   include_tasks: get_single_node_topology.yaml
   vars:

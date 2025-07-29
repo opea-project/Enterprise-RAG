@@ -56,7 +56,7 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 
 To deploy the solution on a platform with Gaudi® AI Accelerator we need to have access to instance with minimal requirements:
 
--  **logical cores**: A minimum of `48` logical cores
+-  **logical cores**: A minimum of `56` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
@@ -80,7 +80,7 @@ If you don't have a Gaudi® AI Accelerator, you can request these instances in [
 ## Hardware Prerequisites for Deployment using Xeon only
 To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:
 - access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
--  **logical cores**: A minimum of `80` logical cores
+-  **logical cores**: A minimum of `88` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM
 -  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 

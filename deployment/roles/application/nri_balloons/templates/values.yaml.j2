@@ -18,11 +18,12 @@ spec:
       values:
       - vllm
       - edp-vllm
+      - torchserve-reranking
   balloonTypes:
   - name: vllm-balloon
-    minCPUs: {{ vllm_cpus if amx_supported and maxBalloons != 0 else -1 }}
-    maxCPUs: {{ vllm_cpus if amx_supported and maxBalloons != 0 else -1 }}
-    maxBalloons: {{ maxBalloons }}
+    minCPUs: {{ vllm_cpus if amx_supported and maxBalloonsVLLM != 0 else -1 }}
+    maxCPUs: {{ vllm_cpus if amx_supported and maxBalloonsVLLM != 0 else -1 }}
+    maxBalloons: {{ maxBalloonsVLLM }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true
     loads:
@@ -33,6 +34,19 @@ spec:
       values:
       - vllm
       - edp-vllm
+  - name: torchserve-reranking-balloon
+    minCPUs: {{ reranker_cpus if amx_supported and maxBalloonsReranker != 0 else -1 }}
+    maxCPUs: {{ reranker_cpus if amx_supported and maxBalloonsReranker != 0 else -1 }}
+    maxBalloons: {{ maxBalloonsReranker }}
+    allocatorTopologyBalancing: true
+    preferNewBalloons: true
+    loads:
+    - llm-inference
+    matchExpressions:
+    - key: name
+      operator: In
+      values:
+      - torchserve-reranking
   instrumentation:
     httpEndpoint: :8891
     metrics:

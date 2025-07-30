@@ -19,6 +19,8 @@ alternateTagging: {{ use_alternate_tagging }}
 llm_model: &cpu_model {{ llm_model }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
+chat_history:
+  enabled: {{ chat_history.enabled }}
 
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}

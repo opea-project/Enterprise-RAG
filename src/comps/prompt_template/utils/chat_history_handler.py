@@ -49,6 +49,10 @@ class ChatHistoryHandler:
         if history_id is None:
             return []
 
+        if self.chat_history_endpoint is None or self.chat_history_endpoint.strip() == "":
+            logger.warning("Chat history endpoint is not set. No conversation history will be retrieved.")
+            return []
+
         logger.info(f"Retrieving conversation history for ID: {history_id}")
 
         if not access_token or access_token == "":

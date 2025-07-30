@@ -107,8 +107,18 @@ def test_chat_history_handler_naive_correct_parse_long_input(mock_get):
 
     assert parsed_output == "User: Previous question 4\nAssistant: Previous answer 4\nUser: Previous question 5\nAssistant: Previous answer 5\nUser: Previous question 6\nAssistant: Previous answer 6"
 
-def test_chat_history_handler_incorrect_type():
-    handler = ChatHistoryHandler()
+@patch('comps.prompt_template.utils.chat_history_handler.requests.get')
+def test_chat_history_handler_incorrect_type(mock_get):
+    health_response = Mock()
+    health_response.status_code = 200
+    health_response.text = "chat_history service is healthy"
+
+    history_response = Mock()
+    history_response.status_code = 200
+    history_response.json.return_value = mock_api_response_long_history()
+    mock_get.side_effect = [ health_response, history_response ]
+
+    handler = ChatHistoryHandler("http://localhost:8080")
     with pytest.raises(ValueError) as error:
         handler.parse_chat_history("test_history_id", "wrong_type", "test_token")
 

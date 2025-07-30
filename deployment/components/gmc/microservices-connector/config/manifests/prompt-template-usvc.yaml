@@ -15,7 +15,9 @@ data:
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
   PORT: "7900"
+  {{ if .Values.chat_history.enabled }}
   CHAT_HISTORY_ENDPOINT: "http://chat-history-svc.chat-history.svc:6012"
+  {{ end }}
 ---
 # Source: prmpt-tmpl-usvc/templates/service.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -69,6 +71,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: prmpt-tmpl-usvc
+      {{ if .Values.chat_history.enabled }}
       initContainers:
         - name: wait-for-svc
           image: alpine/curl
@@ -92,6 +95,7 @@ spec:
                     sleep 2;
                   done;
                 fi;
+      {{ end }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: prmpt-tmpl-usvc

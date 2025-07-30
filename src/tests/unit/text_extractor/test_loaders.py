@@ -35,7 +35,7 @@ def test_csv_loader():
     assert len(text) > 0
 
 def test_doc_loader():
-    file_name = 'test_dataprep.doc'
+    file_name = 'test_dataprep_convert.doc'
     loader = LoadDoc(abs_file_path(file_name))
     text = loader.extract_text()
     assert text is not None
@@ -84,7 +84,7 @@ def test_pdf_loader():
     assert len(text) > 0
 
 def test_ppt_loader():
-    file_name = 'test_dataprep.ppt'
+    file_name = 'test_dataprep_convert.ppt'
     loader = LoadPpt(abs_file_path(file_name))
     text = loader.extract_text()
     assert text is not None

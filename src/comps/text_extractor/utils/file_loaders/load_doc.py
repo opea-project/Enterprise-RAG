@@ -3,6 +3,7 @@
 
 import os
 import docx
+import uuid
 from comps.text_extractor.utils.file_loaders.abstract_loader import AbstractLoader
 from comps.text_extractor.utils.file_loaders.load_image import LoadImage
 from comps.cores.mega.logger import get_opea_logger
@@ -12,23 +13,32 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 class LoadDoc(AbstractLoader):
     """ Load and parse doc/docx files. """
     def extract_text(self):
+        converted = False
         if self.file_type == "doc":
             self.convert_to_docx(self.file_path)
+            converted = True
 
-        doc = docx.Document(self.file_path)
-        parsed_text = ""
+        try:
+            doc = docx.Document(self.file_path)
+            parsed_text = ""
 
-        logger.info(f"[{self.file_path}] Processing {len(doc.element.body)} elements")
+            logger.info(f"[{self.file_path}] Processing {len(doc.element.body)} elements")
 
-        for child in doc.element.body.iterchildren():
-            # {http://schemas.openxmlformats.org/wordprocessingml/2006/main}tbl
-            if child.tag.endswith('tbl'):
-                table = docx.table.Table(child, doc)
-                parsed_text += self.extract_text_from_table(table)
-            # {http://schemas.openxmlformats.org/wordprocessingml/2006/main}p
-            if child.tag.endswith('p'):
-                paragraph = docx.text.paragraph.Paragraph(child, doc)
-                parsed_text += self.extract_text_from_paragraph(paragraph)
+            for child in doc.element.body.iterchildren():
+                # {http://schemas.openxmlformats.org/wordprocessingml/2006/main}tbl
+                if child.tag.endswith('tbl'):
+                    table = docx.table.Table(child, doc)
+                    parsed_text += self.extract_text_from_table(table)
+                # {http://schemas.openxmlformats.org/wordprocessingml/2006/main}p
+                if child.tag.endswith('p'):
+                    paragraph = docx.text.paragraph.Paragraph(child, doc)
+                    parsed_text += self.extract_text_from_paragraph(paragraph)
+        finally:
+            # Ensure the converted file is deleted. The original file deletion
+            # should be handled in the caller code
+            if converted and os.path.exists(self.file_path):
+                os.remove(self.file_path)
+                logger.info(f"Removed temporary converted file {self.file_path}")
 
         return parsed_text
 
@@ -92,6 +102,19 @@ class LoadDoc(AbstractLoader):
     def convert_to_docx(self, doc_path):
         """Convert doc file to docx file."""
         docx_path = doc_path + "x"
-        os.system(f"libreoffice --headless --invisible --convert-to docx --outdir {os.path.dirname(docx_path)} {doc_path}")
-        self.file_path = docx_path
-        self._file_type = "docx"
+        convert_log_file = f'/tmp/convert_{uuid.uuid4()}.log'
+        exit_code = os.system(f"libreoffice --headless --invisible --convert-to docx --outdir {os.path.dirname(docx_path)} '{doc_path}' > {convert_log_file} 2>&1")
+        if exit_code != 0 or not os.path.exists(docx_path):
+            error = ""
+            logger.error(f"Failed to convert {doc_path} to docx format. Exit code: {exit_code}")
+            if os.path.exists(convert_log_file):
+                try:
+                    with open(convert_log_file, 'r') as f:
+                        error = f.read()
+                    logger.error(f"Conversion error: {error}")
+                finally:
+                    os.remove(convert_log_file)
+            raise ValueError(f"Failed to convert {doc_path} to docx format. Error: {error}")
+        else:
+            self.file_path = docx_path
+            self.file_type = "docx"

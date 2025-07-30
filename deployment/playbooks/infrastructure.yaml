@@ -56,6 +56,8 @@
   vars:
     helm_timeout: 15m0s
     secure_logs: true
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   tasks:
     - name: Include post-installation tasks
       ansible.builtin.include_role:

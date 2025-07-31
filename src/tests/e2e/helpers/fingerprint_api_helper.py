@@ -8,7 +8,7 @@ import time
 
 import requests
 
-from helpers.api_request_helper import (ApiRequestHelper, ApiResponse,
+from tests.e2e.helpers.api_request_helper import (ApiRequestHelper, ApiResponse,
                                         CustomPortForward)
 
 logger = logging.getLogger(__name__)

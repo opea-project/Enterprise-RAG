@@ -74,5 +74,5 @@ if [ "${LLM_DEVICE}" = "hpu" ]; then
     fi
 else
     export UID
-    docker compose -f docker/cpu/docker-compose.yaml up --build llm-vllm-model-server
+    docker compose -f docker/cpu/docker-compose.yaml up --build llm-vllm-model-server -d
 fi

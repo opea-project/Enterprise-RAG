@@ -7,8 +7,10 @@ import logging
 import os
 import shutil
 import time
+from typing import Any
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+
 
 import requests
 from tests.e2e.helpers.api_request_helper import (ApiRequestHelper,
@@ -196,6 +198,17 @@ class EdpHelper(ApiRequestHelper):
                     raise RuntimeError(msg)
 
         return results
+
+    def retrieve(self, payload: dict[str, Any]) -> requests.Response:
+        """Make post call to /api/retrieve endpoint with the given payload"""
+        logger.debug(f"Attempting to retrieve documents using the following payload: {payload}")
+        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
+            response = requests.post(
+                f"http://localhost:{pf.local_port}/api/retrieve/",
+                headers=self.default_headers,
+                json=payload,
+            )
+        return response
 
     def wait_for_file_upload(self, filename, desired_status, timeout=FILE_UPLOAD_TIMEOUT_S):
         """Wait for the file to be uploaded and have the desired status"""

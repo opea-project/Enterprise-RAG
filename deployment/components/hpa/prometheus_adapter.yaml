@@ -54,6 +54,18 @@ rules:
         matches: ^te_request_duration_sum$
         as: "tei_reranking_duration_sum"
       metricsQuery: 'sum(rate(te_request_duration_sum{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(te_request_duration_count{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="ts_queue_latency_microseconds",namespace="chatqa",service="torchserve-reranking-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^ts_queue_latency_microseconds$
+        as: "torchserve_reranking_query_latency"
+      metricsQuery: 'avg(rate(ts_queue_latency_microseconds{namespace="chatqa",service="torchserve-reranking-svc"}[1m])) by (<<.GroupBy>>) / 1000000'
     - seriesQuery: '{__name__="edp_files_uploaded_total",service="edp-backend"}'
       seriesFilters: []
       resources:

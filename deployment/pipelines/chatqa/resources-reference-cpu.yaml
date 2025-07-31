@@ -215,6 +215,30 @@ services:
       limits:
         cpu: 4
         memory: 16Gi
+    hpa:
+      minReplicas: 2
+      maxReplicas: 3
+      targetValue: 1000m
+      # this is average requests queue latency in miliseconds
+      # depends on hardware used and number of requests
+      # metric used: 'avg(rate(ts_queue_latency_microseconds{namespace="chatqa",service="torchserve-reranking-svc"}[1m])) by (<<.GroupBy>>) / 1000000'
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 120
+        scaleUp:
+          selectPolicy: Max
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 15
+          - type: Pods
+            value: 1
+            periodSeconds: 15
   vllm:
     replicas: 1
     resources:

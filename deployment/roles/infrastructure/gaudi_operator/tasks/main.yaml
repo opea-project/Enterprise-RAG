@@ -57,7 +57,6 @@
     chart_version: "{{ habana_driver_version }}"
     release_namespace: habana-ai-operator
     create_namespace: true
-    values_files: "{{ role_path }}/files/config.yaml"
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"

@@ -88,7 +88,7 @@
     habana_plugin_present: >-
       {{
         pods_info.resources
-        | selectattr('metadata.name', 'search', 'habanalabs-device-plugin')
+        | selectattr('metadata.name', 'search', 'habana-ai-device-plugin|habanalabs-device-plugin')
         | list
         | length > 0
       }}

@@ -95,7 +95,7 @@ curl -X POST -H "Content-Type: application/json"  http://localhost:9397/v1/text_
         "compressed_length":100,
         "compression_ratio":0.2375296912114014
       },
-      "conversation_history":null
+      "history_id":null
     }
   ],
   "chunk_size":null,

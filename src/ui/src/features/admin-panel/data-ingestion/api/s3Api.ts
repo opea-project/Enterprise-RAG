@@ -10,6 +10,7 @@ import {
 } from "@/features/admin-panel/data-ingestion/types/api";
 import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
 import { RootState } from "@/store";
+import { downloadBlob } from "@/utils";
 import { transformErrorMessage } from "@/utils/api";
 
 export const s3Api = createApi({
@@ -42,15 +43,8 @@ export const s3Api = createApi({
       query: ({ presignedUrl, fileName }) => ({
         url: presignedUrl,
         responseHandler: async (response) => {
-          const fileBlob = await response.blob();
-
-          const url = window.URL.createObjectURL(fileBlob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          a.click();
-          a.remove();
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          const blob = await response.blob();
+          downloadBlob(blob, fileName);
         },
       }),
       transformErrorResponse: (error) =>

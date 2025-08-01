@@ -56,9 +56,9 @@ For the complete microservices architecture, refer [here](./docs/microservices_a
 
 To deploy the solution on a platform with Gaudi® AI Accelerator we need to have access to instance with minimal requirements:
 
--  **logical cores**: A minimum of `48` logical cores
+-  **logical cores**: A minimum of `56` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
--  **Disk Space**: `1TB` of disk space is generally recommended, though this is highly dependent on the model size and database size
+-  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
 -  **Latest Gaudi driver**: To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
 
@@ -80,13 +80,14 @@ If you don't have a Gaudi® AI Accelerator, you can request these instances in [
 ## Hardware Prerequisites for Deployment using Xeon only
 To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:
 - access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
--  **logical cores**: A minimum of `80` logical cores
+-  **logical cores**: A minimum of `88` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM
--  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size
+-  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 ### Software Prerequisites
 -   **Operating System**: Ubuntu 22.04/24.04
 -   **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. This default model used is `Mixtral-8x7B` for which access needs to be requested. Visit  [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) to apply for access.
+-   **For multi-node clusters CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX). NFS server with CSI driver that supports RWX can be installed in [simplified-kubernetes-cluster-deployment](#simplified-kubernetes-cluster-deployment) section.
 
 #### Additional Software Prerequisites when using Gaudi® AI Accelerator
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
@@ -104,6 +105,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
+
+> **Note:** To verify if venv is properly used, check with `ansible --version` for Python version. If not using the venv Python, you can add `ansible_python_interpreter=erag-venv/bin/python3` to the inventory under `[local]` section, or for application playbook add `-e ansible_python_interpreter=erag-venv/bin/python3`.
 
 # Configuration File
 
@@ -161,10 +164,22 @@ For more information on preparing an Ansible inventory, see the [Ansible Invento
 
 Example `config.yaml` for deploying a new Kubernetes cluster:
 ```yaml
-# Uses kubespray to deploy Kubernetes cluster and install required components
-deploy_k8s: true
-# Local path provisioner works only with kubespray deployment, so deploy_k8s must be true to install it.
-install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
+# Uses Kubespray to deploy Kubernetes cluster and install required components
+deploy_k8s: false
+
+# Available options:
+# - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+# - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+install_csi: "local-path-provisioner"
+
+# Setup when install_csi is "nfs"
+# Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+# Setting nfs_server_enabled to true will install NFS server together with CSI driver
+# and set nfs_csi_storage_class as the default one.
+nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+nfs_csi_driver_version: "4.11.0"
+nfs_csi_storage_class: "nfs-csi"
 
 gaudi_operator: true # set to true when Gaudi operator is to be installed
 habana_driver_version: "1.21.1-16" # habana operator from https://vault.habana.ai/ui/native/habana-ai-operator/driver/
@@ -184,17 +199,23 @@ pipelines:
     resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
     type: chatqa
 ```
-3. **Prepare variables:**
+> **Note:** The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.  
+> Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
+> Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.
 
-```sh
-ansible-playbook -K playbooks/setup.yaml --tags prepare-vars,configure -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-```
+3. **(Optional) Validate hardware resources and config.yaml:**
+
+   ```sh
+   ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
+
+   > **Note:** If this is gaudi_deployment add additional flag -e is_gaudi_platform=true 
 
 4. **Deploy the cluster:**
 
-```sh
-ansible-playbook -K playbooks/infrastructure.yaml --tags install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-```
+   ```sh
+   ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
 
 ### Cluster Deletion
 
@@ -210,28 +231,40 @@ ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/tes
    - Open `inventory/test-cluster/config.yaml`.
    - Set `deploy_k8s: false` and update the other fields as needed for your environment.
 
-Example `config.yaml` for deploying on an existing cluster:
-```yaml
-# Uses kubespray to deploy Kubernetes cluster and install required components
-deploy_k8s: false
-# Local path provisioner works only with kubespray deployment, so deploy_k8s must be true to install it.
-install_csi: "" # available options: "local-path-provisioner"
+   Example `config.yaml` for deploying on an existing cluster:
+   ```yaml
+   # Uses Kubespray to deploy Kubernetes cluster and install required components
+   deploy_k8s: false
 
-huggingToken: FILL_HERE # Provide your Hugging Face token here
-kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
+   # Available options:
+   # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+   # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+   install_csi: "local-path-provisioner"
 
-# Proxy settings are optional
-httpProxy:
-httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field as needed:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-# ...
-pipelines:
-  - namespace: chatqa
-    samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
-    resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
-    type: chatqa
-```
+   # Setup when install_csi is "nfs"
+   # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+   # Setting nfs_server_enabled to true will install NFS server together with CSI driver
+   # and set nfs_csi_storage_class as the default one.
+   nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+   nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+   nfs_csi_driver_version: "4.11.0"
+   nfs_csi_storage_class: "nfs-csi"
+
+   huggingToken: FILL_HERE # Provide your Hugging Face token here
+   kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
+
+   # Proxy settings are optional
+   httpProxy:
+   httpsProxy:
+   # If HTTP/HTTPS proxy is set, update the noProxy field as needed:
+   noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+   # ...
+   pipelines:
+     - namespace: chatqa
+       samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
+       resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
+       type: chatqa
+   ```
 # Installation
 
 ```sh

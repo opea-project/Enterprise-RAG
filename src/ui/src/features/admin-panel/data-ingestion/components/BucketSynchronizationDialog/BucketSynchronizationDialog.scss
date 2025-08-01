@@ -1,0 +1,10 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.bucket-synchronization-dialog__content {
+  @apply h-full w-full px-4 py-3 text-sm;
+}
+
+.bucket-synchronization-dialog__footer {
+  @apply flex items-center justify-end gap-4 text-sm;
+}

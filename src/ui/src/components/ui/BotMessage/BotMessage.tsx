@@ -11,10 +11,10 @@ import ErrorIcon from "@/components/icons/ErrorIcon/ErrorIcon";
 import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
 import CopyButton from "@/components/ui/CopyButton/CopyButton";
 import PulsingDot from "@/components/ui/PulsingDot/PulsingDot";
-import { ConversationTurn } from "@/types";
+import { ChatTurn } from "@/types";
 import { sanitizeString } from "@/utils";
 
-type BotMessageProps = Pick<ConversationTurn, "answer" | "error" | "isPending">;
+type BotMessageProps = Pick<ChatTurn, "answer" | "error" | "isPending">;
 
 const BotMessage = memo(({ answer, error, isPending }: BotMessageProps) => {
   const isWaitingForAnswer = isPending && (answer === "" || error !== null);

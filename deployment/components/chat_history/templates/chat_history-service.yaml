@@ -1,0 +1,22 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chat-history.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "chat-history.name" . }}
+    helm.sh/chart: {{ include "chat-history.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.service.name }}
+  selector:
+    app.kubernetes.io/name: {{ include "chat-history.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

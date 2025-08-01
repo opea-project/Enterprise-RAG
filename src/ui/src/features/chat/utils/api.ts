@@ -13,7 +13,6 @@ import {
   AnswerUpdateHandler,
   ChatErrorResponse,
 } from "@/features/chat/types/api";
-import { ConversationTurn } from "@/types";
 
 export const handleChatJsonResponse = async (
   response: Response,
@@ -59,6 +58,7 @@ export const handleChatStreamResponse = async (
         }
         newTextChunk = newTextChunk
           .replace(quoteRegex, "")
+          .replace(/\\t/g, "  \t")
           .replace(/\\n/g, "  \n");
 
         onAnswerUpdate(newTextChunk);
@@ -154,16 +154,6 @@ const parseGuardrailsResponseErrorDetail = (
     return HTTP_ERRORS.GUARDRAILS_ERROR.parsingErrorMessages.PARSING_FAILED;
   }
 };
-
-export const getValidConversationHistory = (
-  conversationTurns: ConversationTurn[],
-): Pick<ConversationTurn, "question" | "answer">[] =>
-  conversationTurns
-    .filter(({ error, answer }) => answer !== "" && error === null)
-    .map(({ question, answer }) => ({
-      question,
-      answer,
-    }));
 
 export const isChatErrorResponse = (
   error: FetchBaseQueryError | SerializedError | undefined,

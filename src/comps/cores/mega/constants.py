@@ -39,6 +39,7 @@ class ServiceType(Enum):
     TEXT_EXTRACTOR = 22
     TEXT_COMPRESSION = 23
     TEXT_SPLITTER = 24
+    CHAT_HISTORY = 25
 
 
 class MegaServiceEndpoint(Enum):
@@ -77,6 +78,7 @@ class MegaServiceEndpoint(Enum):
     TEXT_EXTRACTOR = "/v1/text_extractor"
     TEXT_COMPRESSION = "/v1/text_compression"
     TEXT_SPLITTER = "/v1/text_splitter"
+    CHAT_HISTORY = "/v1/chat_history"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

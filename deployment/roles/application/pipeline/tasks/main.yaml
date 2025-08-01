@@ -1,0 +1,189 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override facts
+  ansible.builtin.set_fact:
+    helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
+    helm_resources_path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
+    helm_override_resources_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-resources.yaml"
+    helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath }}"
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+
+- name: Gather NUMA topology info
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: get_nodes_topology.yaml
+  when:
+    - balloons is defined and (balloons.enabled | bool)
+    - cpu_topology_per_node is not defined
+  tags:
+    - install
+
+- name: Generate override resources values file from template
+  ansible.builtin.template:
+    src: "resources-values.yaml.j2"
+    dest: "{{ helm_override_resources_path }}"
+    mode: '0644'
+  vars:
+    maxReplicas: >-
+      {{
+        cpu_topology_per_node.values()
+        | selectattr('amx_supported', 'equalto', true)
+        | map(attribute='maxBalloonsVLLM')
+        | sum
+      }}
+  when: balloons is defined and (balloons.enabled | bool)
+  tags:
+    - install
+
+- name: Ensure pipeline namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Ensure GMC namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Set fact for Helm values files
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [gmc.helm.default_values_file] +
+        [gmc.helm.default_resources_file] +
+        ([gmc.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([helm_resources_path] if item.resourcesPath is defined else []) +
+        ([helm_override_resources_path] if (balloons is defined and (balloons.enabled | bool)) else []) +
+        [helm_override_values_path] +
+        ([helm_override_model_config_path] if item.modelConfigPath is defined else [])
+      }}
+  tags:
+    - install
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - install
+    - update
+
+- name: Install or Upgrade Helm chart
+  kubernetes.core.helm:
+    name: "{{ gmc.helm.release_name }}"
+    chart_ref: "{{ gmc.helm.chart_directory }}"
+    namespace: "{{ gmc.namespace }}"
+    values_files: "{{ values_files }}"
+    state: present
+    create_namespace: true
+    timeout: "{{ helm_timeout }}"
+    wait: true
+  tags:
+    - install
+
+- name: Include chatqa specific tasks
+  ansible.builtin.include_tasks:
+    file: chatqa.yaml
+  when: item.type=='chatqa'
+  tags:
+    - install
+
+- name: Sleep mitigation due to GMC Helm chart readiness
+  ansible.builtin.pause:
+    seconds: 5
+  when: item.type=='chatqa'
+  tags:
+    - install
+
+- name: Apply pipeline
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('file', pipelines_dir + item.samplePath) }}"
+    namespace: "{{ item.namespace }}"
+  tags:
+    - install
+
+- name: Remove pipeline namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item.namespace }}"
+  tags:
+    - uninstall
+
+- name: Uninstall Helm chart
+  kubernetes.core.helm:
+    name: "{{ gmc.helm.release_name }}"
+    namespace: "{{ gmc.namespace }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete GMC namespace
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ gmc.namespace }}"
+  tags:
+    - uninstall

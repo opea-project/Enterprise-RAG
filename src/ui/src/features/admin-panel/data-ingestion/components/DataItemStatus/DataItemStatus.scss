@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .data-item-status {
-  @apply flex cursor-default flex-nowrap items-center;
-
-  & .data-item-status__icon {
-    @apply mr-1.5;
-  }
+  @apply mr-2 inline-flex cursor-default flex-nowrap items-center gap-2;
 
   & .data-item-status__text {
     @apply text-xs;

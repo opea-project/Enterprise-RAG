@@ -14,7 +14,7 @@ interface ChatBotIconProps extends IconBaseProps {
 const ChatBotIcon = ({
   forConversation,
   className,
-  ...props
+  ...rest
 }: ChatBotIconProps) => {
   const chatIconClassNames = classNames([
     "chat-bot-icon",
@@ -23,7 +23,7 @@ const ChatBotIcon = ({
     },
     className,
   ]);
-  return <GiAtom {...props} className={chatIconClassNames} />;
+  return <GiAtom {...rest} className={chatIconClassNames} />;
 };
 
 export default ChatBotIcon;

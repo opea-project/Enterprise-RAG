@@ -1,0 +1,44 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set up port forwarding for Keycloak service
+  ansible.builtin.command: >
+    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80
+  async: 180
+  poll: 0
+  register: port_forward_job
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+  tags:
+    - install
+
+- name: Wait for port forwarding to be established
+  ansible.builtin.wait_for:
+    port: "{{ keycloak.fport }}"
+    host: localhost
+    delay: 5
+    timeout: 30
+  tags:
+    - install
+
+- name: Initial keycloak configuration
+  ansible.builtin.command: >
+    bash {{ role_path }}/files/keycloak_configurator.sh {{ KEYCLOAK_REALM_ADMIN_PASSWORD }} {{ edp.minio.domainName }}
+  environment:
+    KEYCLOAK_FPORT: "{{ keycloak.fport }}"
+    OIDC_ENDPOINT: "{{ keycloak.oidc.endpoint | default('') }}"
+    OIDC_ALIAS: "{{ keycloak.oidc.alias | default('') }}"
+    OIDC_CLIENT_ID: "{{ keycloak.oidc.client_id | default('') }}"
+    OIDC_CLIENT_SECRET: "{{ keycloak.oidc.client_secret | default('') }}"
+    OIDC_ADMIN_GID: "{{ keycloak.oidc.admin_gid | default('') }}"
+    OIDC_USER_GID: "{{ keycloak.oidc.user_gid | default('') }}"
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Stop port forwarding
+  ansible.builtin.command: >
+    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80"
+  tags:
+    - install

@@ -3,41 +3,25 @@
 
 import "./NewChatButton.scss";
 
-import classNames from "classnames";
-import { useLocation } from "react-router-dom";
+import IconButton from "@/components/ui/IconButton/IconButton";
+import Tooltip from "@/components/ui/Tooltip/Tooltip";
+import useChat from "@/features/chat/hooks/useChat";
 
-import Button from "@/components/ui/Button/Button";
-import { paths } from "@/config/paths";
-import { selectConversationTurns } from "@/features/chat/store/conversationFeed.slice";
-import { useAppSelector } from "@/store/hooks";
-
-interface NewChatButtonProps {
-  onNewChat: () => void;
-}
-
-const NewChatButton = ({ onNewChat }: NewChatButtonProps) => {
-  const location = useLocation();
-  const isChatPage = location.pathname === paths.chat;
-
-  const conversationTurns = useAppSelector(selectConversationTurns);
-
-  const isVisible = isChatPage && conversationTurns.length > 0;
-
-  const className = classNames("new-chat-btn", {
-    visible: isVisible,
-    invisible: !isVisible,
-  });
-
+const NewChatButton = () => {
+  const { onNewChat } = useChat();
   return (
-    <Button
-      variant="outlined"
-      icon="plus"
-      size="sm"
-      className={className}
-      onPress={onNewChat}
-    >
-      New chat
-    </Button>
+    <Tooltip
+      title="Create new chat"
+      trigger={
+        <IconButton
+          icon="new-chat"
+          variant="contained"
+          className="new-chat-btn"
+          onPress={onNewChat}
+        />
+      }
+      placement="bottom"
+    />
   );
 };
 

@@ -7,9 +7,9 @@ import { memo, useState } from "react";
 
 import MarkdownRenderer from "@/components/markdown/MarkdownRenderer";
 import CopyButton from "@/components/ui/CopyButton/CopyButton";
-import { ConversationTurn } from "@/types";
+import { ChatTurn } from "@/types";
 
-type UserMessageProps = Pick<ConversationTurn, "question">;
+type UserMessageProps = Pick<ChatTurn, "question">;
 
 const UserMessage = memo(({ question }: UserMessageProps) => {
   const [showCopyBtn, setShowCopyBtn] = useState(false);

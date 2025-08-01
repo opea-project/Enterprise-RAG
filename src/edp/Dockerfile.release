@@ -8,4 +8,4 @@ COPY uv.lock .
 
 # CMD from base Dockerfile
 WORKDIR /home/user/app
-CMD ["bash"]
+ENTRYPOINT ["./entrypoint.sh"]

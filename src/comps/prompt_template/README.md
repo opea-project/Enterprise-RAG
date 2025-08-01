@@ -6,10 +6,10 @@ The Prompt Template Microservice is designed to dynamically generate prompt temp
 ## Configuration Options
 The configuration for the Prompt Template Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
-| Environment Variable        | Description                                                                |
-|-----------------------------|----------------------------------------------------------------------------|
-| `PROMPT_TEMPLATE_USVC_PORT`       | The port of the microservice, by default 7900                              |
-
+| Environment Variable              | Default Value | Description                                              |
+|-----------------------------------|---------------|----------------------------------------------------------|
+| `CHAT_HISTORY_ENDPOINT`           | `http://localhost:6012/` | Chat History endpoint, required for getting current history details        |
+| `PROMPT_TEMPLATE_USVC_PORT`       | `7900`                   | (Optional) Prompt Template microservice port  |
 
 ## Getting started
 
@@ -45,7 +45,8 @@ docker build -t opea/prompt_template:latest -f comps/prompt_template/impl/micros
 
 #### 2.2. Run the Docker Container
 ```bash
-docker run -d --name="prompt-template-microservice" \
+docker run --rm --name="prompt-template-microservice" \
+  -e https_proxy=${https_proxy} -e http_proxy=${http_proxy} -e no_proxy=${no_proxy} \
   --net=host \
   --ipc=host \
   opea/prompt_template:latest
@@ -83,11 +84,12 @@ curl http://localhost:7900/v1/prompt_template \
                   "user_prompt": "What is Deep Learning?",
                   "reranked_docs": [{"text":"Deep Learning is..."}]
                 },
-        "conversation_history": [{"question": "Hello", "answer": "Hello as well"}, {"question": "How are you?", "answer": "I am good, thank you!"}, {"question": "Who are you?", "answer": "I am a robot"}],
+        "history_id": "68824ddba4f83aecb5a424af",
         "system_prompt_template": "",
         "user_prompt_template": ""
       }' \
-  -H 'Content-Type: application/json'
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <jwt_token_here>'
 ```
 
 Output:

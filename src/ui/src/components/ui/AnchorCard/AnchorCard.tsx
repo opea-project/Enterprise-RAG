@@ -24,7 +24,7 @@ const AnchorCard = ({
   target = "_blank",
   className,
   onPress,
-  ...props
+  ...rest
 }: AnchorCardProps) => {
   const isSafe = isSafeHref(href);
   const safeHref = isSafe ? sanitizeHref(href) : undefined;
@@ -45,7 +45,7 @@ const AnchorCard = ({
 
   return (
     <Link
-      {...props}
+      {...rest}
       href={safeHref}
       target={target}
       rel={rel}

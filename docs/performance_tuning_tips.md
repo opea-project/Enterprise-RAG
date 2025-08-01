@@ -12,8 +12,9 @@ This guide provides recommendations for optimizing the performance of your deplo
      - [VLLM Scaling](#vllm-scaling)
      - [LLM-usvc Scaling](#llm-usvc-scaling)
    - [Runtime Parameter Tuning](#runtime-parameter-tuning)
-   - [Monitoring and Validation](#monitoring-and-validation)
    - [Horizontal Pod Autoscaling](#horizontal-pod-autoscaling)
+   - [Balloons Policy](#balloons-policy)
+   - [Monitoring and Validation](#monitoring-and-validation)
 
 ---
 
@@ -86,7 +87,7 @@ vllm:
 > **Performance Tip:** Consider enabling Sub-NUMA Clustering (SNC) in BIOS for better VLLM performance. This helps optimize memory access patterns across NUMA nodes.
 
 ### LLM-usvc Scaling
-* When running more then one vLLM instance and when system is accessed by multiple concurrent users (e.g., 64+ users) use at least 2 replicas of llm-usvc
+* When running more then one vLLM instance and when system is accessed by multiple concurrent users (e.g., 64+ users) use at least 2 replicas of llm-usvc.
 * Adjust parameters in [resources-reference-cpu.yaml](../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
 
 ```yaml
@@ -105,14 +106,14 @@ You can adjust microservice parameters (e.g., `top_k` for reranker, `k` for retr
    * Find detailed instructions in [UI features](../docs/UI_features.md#admin-panel)
 
 2. **Using Configuration Scripts:**
-   * Utilize [the helper scripts](../src/tests/benchmark/e2e/README.md#helpers-for-configuring-erag)
+   * Utilize [the helper scripts](../src/tests/e2e/benchmarks/chatqa/README.md#helpers-for-configuring-erag)
 
 > **Warning:** Only parameters that don't require a microservice restart can be adjusted at runtime.
 
 ---
 
 ## Horizontal Pod Autoscaling
-* Consider enabling [HPA](../deployment#enabling-horizontal-pod-autoscaling) in order to allow the system to dynamically scale required resources in cluster
+* Consider enabling [HPA](../deployment#enabling-horizontal-pod-autoscaling) in order to allow the system to dynamically scale required resources in cluster.
 * HPA can be enabled in [config.yaml](../deployment/inventory/sample/config.yaml):
 
 ```yaml
@@ -120,6 +121,18 @@ hpaEnabled: true
 ```
 
 ---
+
+## Balloons Policy
+* [Balloons Policy](../deployment/components/nri-plugin/README.md) is responsible for assigning optimal resources for LLM inference pods such as vLLM and it is crucial for the performance of the whole deployment.
+* It can be enabled in [config.yaml](../deployment/inventory/sample/config.yaml):
+
+```yaml
+balloons:
+  enabled: true
+```
+
+---
+
 
 ## Monitoring and Validation
 

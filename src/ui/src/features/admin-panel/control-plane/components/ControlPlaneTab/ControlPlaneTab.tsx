@@ -4,6 +4,7 @@
 import "@xyflow/react/dist/style.css";
 import "./ControlPlaneTab.scss";
 
+import ConfigurableServiceIcon from "@/components/icons/ConfigurableServiceIcon/ConfigurableServiceIcon";
 import LoadingFallback from "@/components/ui/LoadingFallback/LoadingFallback";
 import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
 import ChatQnAGraph from "@/features/admin-panel/control-plane/components/ChatQnAGraph/ChatQnAGraph";
@@ -29,6 +30,10 @@ const ServiceStatusLegend = () => (
     <div className="chatqna-graph-legend-item">
       <ServiceStatusIndicator status={ServiceStatus.NotAvailable} noTooltip />
       <p>Status Not Available</p>
+    </div>
+    <div className="chatqna-graph-legend-item mt-3">
+      <ConfigurableServiceIcon className="text-xs" />
+      <p>Configurable Service</p>
     </div>
   </div>
 );

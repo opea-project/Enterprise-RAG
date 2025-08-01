@@ -18,6 +18,7 @@ type: chatqa
 extraNginxVars:
   chatqaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  chatHistoryEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   dataprepClientMaxBodySize: "64m"

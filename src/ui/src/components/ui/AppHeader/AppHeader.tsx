@@ -10,13 +10,17 @@ import LogoutButton from "@/components/ui/LogoutButton/LogoutButton";
 import ViewSwitchButton from "@/components/ui/ViewSwitchButton/ViewSwitchButton";
 import { keycloakService } from "@/lib/auth";
 
-interface AppHeaderProps {
+export interface AppHeaderProps {
   extraActions?: ReactNode;
+  leftSideMenuTrigger?: ReactNode;
 }
 
-const AppHeader = ({ extraActions }: AppHeaderProps) => (
+const AppHeader = ({ extraActions, leftSideMenuTrigger }: AppHeaderProps) => (
   <header className="app-header">
-    <p className="app-header__app-name">Intel AI&reg; for Enterprise RAG</p>
+    <div className="app-header__actions">
+      {leftSideMenuTrigger}
+      <p className="app-header__app-name">Intel AI&reg; for Enterprise RAG</p>
+    </div>
     <div className="app-header__actions">
       {extraActions}
       {keycloakService.isAdminUser() && <ViewSwitchButton />}

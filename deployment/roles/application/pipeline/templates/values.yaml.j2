@@ -19,6 +19,8 @@ alternateTagging: {{ use_alternate_tagging }}
 llm_model: &cpu_model {{ llm_model }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
+reranking_model_name: &reranking_model_name {{ reranking_model_name }}
+
 chat_history:
   enabled: {{ chat_history.enabled }}
 
@@ -82,10 +84,14 @@ images:
     image: "erag-teirerank"
     repository: *repo
     tag: *tag
+    envs:
+      MODEL_ID: *reranking_model_name
   teirerank_gaudi:
     image: "erag-teirerank_gaudi"
     repository: *repo
     tag: *tag
+    envs:
+      MODEL_ID: *reranking_model_name
   prompt-template-usvc:
     image: "erag-prompt_template"
     repository: *repo
@@ -103,6 +109,8 @@ images:
     image: "erag-torchserve_reranking"
     repository: *repo
     tag: *tag
+    envs:
+      TORCHSERVE_MODEL_NAME: *reranking_model_name
   retriever-usvc:
     image: "erag-retriever"
     repository: *repo

@@ -31,3 +31,4 @@ gmc:
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 embedding_model_name: "BAAI/bge-base-en-v1.5"
+reranking_model_name: "BAAI/bge-reranker-base"

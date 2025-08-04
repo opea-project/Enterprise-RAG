@@ -1,0 +1,77 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+velero:
+  enabled: false
+  namespace: "velero"
+
+  velero_pod_labels:
+    app.kubernetes.io/instance: velero
+    app.kubernetes.io/name: velero
+
+  install_server: true
+  install_client: true
+  # Set version of velero client to install: set specific one - e.g. "v1.16.1" or follow server version - "automatic"
+  client_version: "automatic"
+  # Whether to install a CSI snapshot class for default storage class driver
+  install_snapshot_class: true
+  snapshot_class_name: "csi-snapclass"
+  # leave empty to generate snapshotclass configuration for default storage class in cluster
+  snapshot_class_driver: ""
+
+  storageType: minio
+
+  # name of a velero Backup resource, created in result of backup in velero namespace;
+  # if not specified, most recent backup resource will be looked up.
+  restore_from: ""
+  # for getting backup details use server or client, if it's properly configured
+  backup_details_from: "server"
+
+
+  backup:
+    prefix: backup
+    restore_prefix: restore
+    backupConfig:
+      namespaceOrder: [auth, system, chatqa, chat-history, edp, fingerprint, vdb]
+      # selectors for resources to backup (or to exclude); multiple selectors will be ANDed
+      resourceSelectors:
+        - app.kubernetes.io/instance notin (torchserve_embedding,torchserve_reranking,vllm)
+      # list of deployments to be cleared in preparation for restore
+      deployments:
+        auth: [Helm/keycloak]
+        chatqa: []
+        chat-history: [Helm/chat-history]
+        edp: [Helm/edp]
+        fingerprint: [Helm/fingerprint]
+        vdb: [Helm/vdb]
+        system: [Helm/gmc]
+        ingress-nginx: []
+
+    # labels to apply to backup object itself
+    labels:
+      backup-reason: regular
+    # labels to apply to a restore object
+    restore_labels:
+      restore-reason: recovery
+    itemOperationTimeout: 2h0m0s
+    csiSnapshotTimeout: 2h0m0s
+    ttl: 720h
+
+  helm:
+    repo_name: "velero-tanzu"
+    repo_url: "https://vmware-tanzu.github.io/helm-charts/"
+    chart_name: "velero"
+    chart_version: "10.0.5"
+    release_name: "velero"
+    default_values_file: "{{ playbook_dir }}/../components/velero/values.yaml"
+    chart_directory: "{{ playbook_dir }}/../components/velero"
+
+  tls:
+    secret_name: "tls-secret"
+
+  minio:
+    apiDomainName: velero-s3.erag.com
+    domainName: velero-minio.erag.com
+    auth:
+      admin_username: admin

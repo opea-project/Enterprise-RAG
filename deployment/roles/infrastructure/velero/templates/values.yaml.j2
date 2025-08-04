@@ -15,6 +15,13 @@ veleroSecretKey: "{{ VELERO_MINIO_SECRET_KEY }}"
 minioAdminUser: "{{ velero.minio.auth.admin_username }}"
 minioAdminPassword: "{{ MINIO_ADMIN_PASSWORD }}"
 
+snapshotSupport:
+  installSnapshotClass: {{ velero.install_snapshot_class }}
+{% if velero.install_snapshot_class %}
+  snapshotClassName: "{{ velero.snapshot_class_name }}"
+  snapshotClassDriver: "{{ velero_snapshot_class_driver }}"
+{% endif %}
+
 minioApiDomain: &minioApiDomain "{{ velero.minio.apiDomainName }}"
 minioBrowserDomain: &minioBrowserDomain "{{ velero.minio.domainName }}"
 {% endif %}

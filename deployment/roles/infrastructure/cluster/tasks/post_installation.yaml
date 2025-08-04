@@ -18,4 +18,24 @@
   tags:
     - install
     - post-install
+
+- name: Velero role
+  when: velero.enabled
+  ansible.builtin.include_role:
+    name: velero
+  vars:
+    deployment_dir: "{{ playbook_dir }}/.."
+    log_dir: "{{ deployment_dir }}/ansible-logs"
+    tmp_dir: "{{ deployment_dir }}/velero-tmp"
+  tags:
+    - install
+    - post-install
+    - delete
+    - velero-delete
+
+- name: Uninstall NFS Server
+  when: install_csi == "nfs"
+  ansible.builtin.include_role:
+    name: nfs_server_csi_setup
+  tags:
     - delete

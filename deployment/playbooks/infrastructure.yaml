@@ -48,6 +48,29 @@
     - deploy_k8s
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
 
+- name: Pre-deletion warnings
+  become: false
+  hosts: local
+  tags:
+    - delete
+    - never
+  tasks:
+    - name: Warning about backup and restore resources deletion
+      ansible.builtin.pause:
+        prompt: |
+          WARNING: Velero is enabled with server installation in this deployment.
+          Deleting the Kubernetes cluster will permanently remove:
+          - All backup objects and their metadata
+          - All restore objects and their history
+          - All backup data stored in the configured storage backend
+
+          This action cannot be undone.
+          (ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+        seconds: 30
+      when:
+        - velero.enabled | default(false)
+        - velero.install_server | default(false)
+
 # Post-installation tasks - can be run independently with post-install tag
 - name: Post-installation tasks
   become: false
@@ -66,6 +89,7 @@
       tags:
         - install
         - post-install
+        - velero-delete
         - delete
         - never
 

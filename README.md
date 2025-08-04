@@ -174,7 +174,7 @@ deploy_k8s: false
 
 # Available options:
 # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
-# - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+# - "nfs": Use for multi-node deployment or single node with velero backup functionality; can be installed on existing K8s cluster using infrastructure playbook
 install_csi: "local-path-provisioner"
 
 # Setup when install_csi is "nfs"

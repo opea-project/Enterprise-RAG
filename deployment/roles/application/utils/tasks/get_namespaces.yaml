@@ -23,8 +23,7 @@
           ui.namespace if ui.enabled else None,
           edp.namespace if edp.enabled else None,
           fingerprint.namespace if fingerprint.enabled else None,
-          chat_history.namespace if chat_history.enabled else None,
-          velero.namespace if velero.enabled else None
+          chat_history.namespace if chat_history.enabled else None
         ]
         | select('defined') | select('truthy') | list
         +

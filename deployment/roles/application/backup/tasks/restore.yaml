@@ -1,0 +1,230 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Generate order of cleanup before restore
+  ansible.builtin.set_fact:
+    cleanup_list: >-
+      {% set result = [] %}
+      {% for ns in velero.backup.backupConfig.namespaceOrder %}
+        {% for dp in velero.backup.backupConfig.deployments[ns] %}
+          {% set _ = result.append({'ns': ns, 'dp': dp}) %}
+        {% endfor %}
+      {% endfor %}
+      {{ result }}
+
+- name: Get all Velero backups
+  kubernetes.core.k8s_info:
+    api_version: velero.io/v1
+    kind: Backup
+    namespace: "{{ velero.namespace }}"
+    label_selectors: "{{ velero.backup.labels.items() | map('join', '=') | join(',') }}"
+  register: backup_list
+  when: velero.restore_from == ""
+
+- name: Filter and sort completed backups by completion time
+  ansible.builtin.set_fact:
+    sorted_backups: >-
+      {{
+        backup_list.resources |
+        selectattr('status.phase', 'equalto', 'Completed') |
+        sort(attribute='status.completionTimestamp', reverse=true) |
+        list
+      }}
+  when: velero.restore_from == ""
+
+- name: Verify that any completed backups are available
+  ansible.builtin.fail:
+    msg: "No completed backups found with labels: {{ velero.backup.labels.items() | map('join', '=') | join(',') }}. Cannot proceed with restore."
+  when:
+    - velero.restore_from == ""
+    - sorted_backups | length == 0
+
+- name: Select the backup to restore from
+  ansible.builtin.set_fact:
+    selected_backup: >-
+      {{
+        velero.restore_from if velero.restore_from != ""
+        else (sorted_backups|first).metadata.name
+      }}
+
+- name: Verify selected backup exists and is completed
+  kubernetes.core.k8s_info:
+    api_version: velero.io/v1
+    kind: Backup
+    namespace: "{{ velero.namespace }}"
+    name: "{{ selected_backup }}"
+  register: backup_verification
+
+- name: Fail if backup does not exist
+  ansible.builtin.fail:
+    msg: "Backup '{{ selected_backup }}' does not exist in namespace '{{ velero.namespace }}'"
+  when: backup_verification.resources | length == 0
+
+- name: Fail if backup is not completed
+  ansible.builtin.fail:
+    msg: "Backup '{{ selected_backup }}' is not completed. Current status: {{ backup_verification.resources[0].status.phase | default('Unknown') }}"
+  when:
+    - backup_verification.resources | length > 0
+    - backup_verification.resources[0].status.phase != "Completed"
+
+- name: Assert backup_details_from has valid value
+  ansible.builtin.fail:
+    msg: "velero.backup_details_from must be either 'client' or 'server', got: '{{ velero.backup_details_from }}'"
+  when: velero.backup_details_from not in ['client', 'server']
+
+- name: Get backup details using velero client
+  ansible.builtin.command:
+    cmd: velero backup describe {{ selected_backup }} --details -o json
+  register: backup_details_client
+  when: velero.backup_details_from == "client"
+
+- name: Find velero pod for server method
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ velero.namespace }}"
+    label_selectors: "{{ velero.velero_pod_labels.items() | map('join', '=') | join(',') }}"
+    field_selectors:
+      - status.phase=Running
+  register: velero_pods
+  when: velero.backup_details_from == "server"
+
+- name: Fail if no running velero pod found
+  ansible.builtin.fail:
+    msg: "No running velero pod found in namespace '{{ velero.namespace }}' with labels: {{ velero.velero_pod_labels }}"
+  when:
+    - velero.backup_details_from == "server"
+    - velero_pods.resources | length == 0
+
+- name: Get backup details using velero server
+  kubernetes.core.k8s_exec:
+    namespace: "{{ velero.namespace }}"
+    pod: "{{ velero_pods.resources[0].metadata.name }}"
+    container: velero
+    command: /velero backup describe {{ selected_backup }} --details -o json
+  register: backup_details_server
+  when: velero.backup_details_from == "server"
+
+- name: Set backup details fact
+  ansible.builtin.set_fact:
+    backup_details: >-
+      {{
+        backup_details_client.stdout | from_json if velero.backup_details_from == "client"
+        else backup_details_server.stdout | from_json
+      }}
+
+- name: Discover PVCs to restore from backup
+  ansible.builtin.set_fact:
+    pvc_list: |
+      {% set result = [] %}
+      {% for pvc_string in backup_details.status.resourceList['v1/PersistentVolumeClaim'] | default([]) %}
+        {% set parts = pvc_string.split('/') %}
+        {% set _ = result.append({'namespace': parts[0], 'name': parts[1]}) %}
+      {% endfor %}
+      {{ result }}
+
+- name: Cleanup deployments using Helm
+  kubernetes.core.helm:
+    name: "{{ item.dp.split('/') | last }}"
+    namespace: "{{ item.ns }}"
+    state: absent
+    wait: true
+    wait_timeout: 300s
+  loop: "{{ cleanup_list | from_yaml | selectattr('dp', 'match', '^Helm/') | list }}"
+  loop_control:
+    label: "{{ item.ns }}:{{ item.dp.split('/') | last }}"
+  failed_when: false
+
+- name: Cleanup kubernetes resources
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: "{{ item.dp.split('/') | first }}"
+    name: "{{ item.dp.split('/') | last }}"
+    namespace: "{{ item.ns }}"
+    wait: true
+    wait_timeout: 300
+  loop: "{{ cleanup_list | from_yaml | rejectattr('dp', 'match', '^Helm/') | list }}"
+  loop_control:
+    label: "{{ item.ns }}:{{ item.dp }}"
+  failed_when: false
+
+- name: Delete PVCs to restore from backup
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+  loop: "{{ pvc_list | from_yaml }}"
+  loop_control:
+    label: "{{ item.namespace }}:{{ item.name }}"
+
+- name: Wait for PVCs to be fully deleted
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ item.namespace }}"
+    name: "{{ item.name }}"
+  register: pvc_status
+  until: pvc_status.resources | length == 0
+  retries: 30
+  delay: 10
+  loop: "{{ pvc_list | from_yaml }}"
+  loop_control:
+    label: "{{ item.namespace }}:{{ item.name }}"
+
+- name: Setup restore name
+  ansible.builtin.set_fact:
+    restore_name: "{{ velero.backup.restore_prefix }}-{{ ansible_date_time.iso8601_basic_short | lower }}"
+
+- name: Restore from backup
+  ansible.builtin.command:
+    cmd: velero restore create "{{ restore_name }}" --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
+
+- name: Monitor restore completion
+  kubernetes.core.k8s_info:
+    api_version: velero.io/v1
+    kind: Restore
+    namespace: "{{ velero.namespace }}"
+    name: "{{ restore_name }}"
+  register: restore_status
+  until: >
+    restore_status.resources | length > 0 and
+    (restore_status.resources[0].status.phase == "Completed" or
+      restore_status.resources[0].status.phase in ["FinalizingPartiallyFailed", "PartiallyFailed", "Failed", "FailedValidation"])
+  retries: 360  # 60 minutes / 10 seconds = 360 retries
+  delay: 10
+  vars:
+    current_phase: "{{ restore_status.resources[0].status.phase | default('Unknown') }}"
+  tags:
+    - monitor_restore
+
+- name: Check restore result
+  ansible.builtin.fail:
+    msg: "Restore '{{ restore_name }}' failed with status: {{ restore_status.resources[0].status.phase }}"
+  when: >
+    restore_status.resources | length > 0 and
+    restore_status.resources[0].status.phase in ["FinalizingPartiallyFailed", "PartiallyFailed", "Failed", "FailedValidation"]
+  tags:
+    - monitor_restore
+
+- name: Display restore completion status
+  ansible.builtin.debug:
+    msg: "Restore '{{ restore_name }}' completed successfully with status: {{ restore_status.resources[0].status.phase }}"
+  when: >
+    restore_status.resources | length > 0 and
+    restore_status.resources[0].status.phase == "Completed"
+  tags:
+    - monitor_restore
+
+- name: Verify if all pods are in desired state until 120 minutes
+  ansible.builtin.include_role:
+    name: check_pods
+    apply:
+      tags:
+        - monitor_restore
+  vars:
+    check_pods_role_retries: 120
+  tags:
+    - monitor_restore

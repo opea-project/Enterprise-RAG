@@ -9,17 +9,20 @@
         execution_counter: "{{ (execution_counter | default(0) | int) + 1 }}"
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Define operation_mode
       set_fact:
         operation_mode: >-
           {{
-            'install' if 'install' in ansible_run_tags else
+            'install' if 'install' in ansible_run_tags
+            or 'restore' in ansible_run_tags else
             'uninstall' if 'uninstall' in ansible_run_tags
           }}
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Wait 60 seconds before verifying namespaces and pods
@@ -27,6 +30,7 @@
         seconds: 60
       tags:
         - install
+        - restore
         - uninstall
       when: (execution_counter | int) > 1
 
@@ -36,6 +40,7 @@
         tasks_from: get_namespaces.yaml
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Get all namespaces
@@ -44,6 +49,7 @@
       register: namespaces_info
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Compare enabled namespaces with existing namespaces
@@ -55,6 +61,7 @@
           }}
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Get pods in enabled namespaces
@@ -66,6 +73,7 @@
       register: pods_info
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Identify empty namespaces
@@ -78,6 +86,7 @@
           }}
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Identify containers with "not ready" status
@@ -98,6 +107,7 @@
           {{ result }}
       tags:
         - install
+        - restore
 
     - name: Verify pods based on operation_mode
       set_fact:
@@ -118,6 +128,7 @@
           }}
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Failure summary message
@@ -144,6 +155,7 @@
             (empty_namespaces | length > 0)
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Success summary message
@@ -158,21 +170,24 @@
             (operation_mode == 'uninstall' and undesirable_pods | length == 0)
       tags:
         - install
+        - restore
         - uninstall
 
   rescue:
     - name: Retry the role on failure
       include_role:
         name: check_pods
-      when: (execution_counter | int) < 5
+      when: (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
+        - restore
         - uninstall
 
     - name: Return failed status after maximum retries
       fail:
-        msg: "Role execution failed after 5 attempts."
-      when: (execution_counter | int) >= 5
+        msg: "Role execution failed after (check_pods_role_retries | default(5)) attempts."
+      when: (execution_counter | int) >= (check_pods_role_retries | default(5))
       tags:
         - install
+        - restore
         - uninstall

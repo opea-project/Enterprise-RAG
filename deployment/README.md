@@ -762,48 +762,193 @@ Backup functionality has been added to Enterprise RAG to offer protection and re
 
 This feature is currently disabled by default - due to certain configuration and maintenance effort that is related to this.
 
-#### Prerequisites
+Recommended way to enable this feature is to plan for it up-front before deploying Kubernetes cluster as certain prerequisites need to be met.
 
-- Install a `StorageClass` with support for volume snapshots.<br>
+> **Note**:<br>
+> Backup functionality works on both single- and multi-node deployments. It does however need a suitable `StorageClass` supporting volume snapshots which might be provided by NFS server. That does not mandate multi-node setup.
+
+#### Velero Prerequisites
+
+To have a working backup and restore functionality the following items need to be ensured:
+
+- Installation of a `StorageClass` with support for volume snapshots.<br>
   Velero works with volumes provisioned with a dedicated `StorageClass`, supporting volume snapshot.
   The [default solution](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution/tree/main?tab=readme-ov-file#software-prerequisites) mentioned in documentation doesn't offer that.<br>
-  To evaluate backup you may try NFS CSI storage driver mentioned in document [evaluation_of_backup](../docs/evaluation_of_backup.md). Please note that it might not your specific needs in the long run.
+  Good choice for evaluation might be an installation of NFS server and storage driver in cluster. Simplified approach to achieve this in cluster is offered by `infrastructure.yaml` infrastructure Ansible playbook.
+  At minimum the following values need to be set in cluster `config.yaml` to ensure this before starting infrastructure Ansible playbook:
+  ```yaml
+  install_csi: nfs
+  ```
+  See [Simplified Cluster Deployment procedure](../README.md#simplified-kubernetes-cluster-deployment) for details.
+
+- Installation of VMWare Velero
+  Velero can be installed externally or by use of `infrastructure.yaml` infrastructure Ansible playbook.<br>
+  To ensure that velero is installed during deployment of cluster update `config.yaml` to have at least these parameters set accordingly:
+  ```yaml
+  velero:
+    enabled: true
+    namespace: velero
+
+    velero_pod_labels:
+      app.kubernetes.io/instance: velero
+      app.kubernetes.io/name: velero
+
+    install_server: true
+    install_client: true
+  ```
+  Please review *sample* cluster config file comments for details.
+  > **Note**:
+  > Velero installation requires a valid `StorageClass` to be set up as default in cluster. Furthermore it needs support for volume snapshots, like the NFS storage driver offered by infrastructure Ansible playbook.
 
 - Ensure suitable object storage for backups.<br>
   Backup functionality is installed with a basic instance of Minio object storage.<br>
-  You may need to adjust Minio settings to make sure it meets your requirements.
+  It might be necessary to adjust Minio settings to make sure it meets specific requirements.
 
-- Install [velero cli](https://github.com/vmware-tanzu/velero/releases/tag/v1.16.1) for evaluation.
+#### Backup and Restore Configuration Variants
 
-#### Installation
+  - Custom `StorageClass`<br>
+    Different storage driver may be configured in cluster to still support backup and restore.
+    > **Note**:
+    > `StorageClass` of choice must be consistently used for provisioning of new persistent volumes; it translates to making it the default StorageClass.
 
-- Enable velero in cluster configuration file`inventory/sample/config.yaml`:
-  ```yaml
-  velero:
-    enabled: false
-    namespace: velero
-    storageType: minio
-  ```
+    > **Note**:
+    > `LocalPath` provisioner as well as host-path based solutions won't work. They do not support volume snapshots.
+    See [Velero documentation on Container Storage Interface](https://velero.io/docs/csi/) for details.
+  - Custom installed NFS CSI storage driver for evaluation<br>
+    To evaluate backup you may try NFS CSI storage driver mentioned in document [evaluation_of_backup](../docs/evaluation_of_backup.md). Please note that it might not meet production needs in the long run.
+  - Externally installed Velero solution<br>
+    To support standalone installation of Velero cluster deployment may skip installation of server. This requires following modification of cluster `config.yaml`:
+    ```yaml
+    velero:
+      enabled: true
+      namespace: VELERO_NAMESPACE
 
-  Then simply run installation playbook.
+      # update as needed to allow Velero instance to be located during backup and restore operations
+      velero_pod_labels:
+        app.kubernetes.io/instance: velero
+        app.kubernetes.io/name: velero
 
-#### Create Partial Backup
+      install_server: false
+      # ensure that client binary will be installed
+      install_client: true
+    ```
+    This will support external instance of Velero.
+  - Deployment of Velero server after cluster has already been set up<br>
+    - Update the cluster `config.yaml` as explained in [Velero Prerequisites](#velero-prerequisites).
+    - Start a post-installation configuration process with infrastructure Ansible playbook:
+      ```shell
+      ansible-playbook playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml -e deploy_k8s=false
+      ```
+    - Velero server and client will be installed, enabling the backup and restore operations.
+  - Install externally a Velero client<br>
+    Review [velero release](https://github.com/vmware-tanzu/velero/releases/tag/v1.16.1) for installation of Velero binary if not installed during cluster deployment.
 
-You may use cli to start a backup of namespace `edp`:
-```bash
-velero backup create edp-backup --include-namespaces edp --csi-snapshot-timeout=2h --item-operation-timeout=2h
+#### Full Backup of User Data
 
-Backup request "edp-backup" submitted successfully.
+This paragraph describes steps that are necessary to secure data coming from user. These include:
+- ingested vector data,
+- ingested documents,
+- user accounts and credentials,
+- chat history.
+
+Backup operation is now directly supported with invocation of a dedicated `backup.yaml` ansible playbook.<br>
+Backup can now be requested with the following command:
+```shell
+ansible-playbook playbooks/backup.yaml --tags backup,monitor_backup -e @inventory/test-cluster/config.yaml
 ```
 
-> __Note__
->
-> Backup resources must have unique names; it's probably a good idea to suffix them with date-derived string.
+Backup process will now start and will be monitored until completion (tag `monitor_backup` is optional).
+As a result a `backup` object will be created in specified backup namespace (review `config.yaml`) that can be described with `kubectl`:
+```shell
+# list backup resources
+kubectl get backup -n velero
+NAME                     AGE
+backup-20250803t050646   21h
+backup-20250803t051937   21h
+backup-20250804t010158   86m
 
-Right after completion of that command you may review outcome of the backup:
-- First make sure that `velero` can reach kubernetes API - if `kubectl` works, velero will as well.
+# describe a backup resource to view details
+kubectl describe backup backup-20250804t010158 -n velero
+Name:         backup-20250804t010158
+Namespace:    backup
+# (details omitted for clarity)
+Status:
+  Backup Item Operations Attempted:  7
+  Backup Item Operations Completed:  7
+  Completion Timestamp:              2025-08-03T23:02:48Z
+  Csi Volume Snapshots Attempted:    7
+  Csi Volume Snapshots Completed:    7
+  Expiration:                        2025-09-02T23:02:05Z
+  Format Version:                    1.1.0
+  Hook Status:
+  Phase:  Completed
+  Progress:
+    Items Backed Up:  452
+    Total Items:      452
 
-- To gather details you need to expose `minio` service locally.<br>
+```
+
+Details can also be viewed with `velero` command:
+```shell
+velero backup describe backup-20250804t010158 --details
+```
+
+> **Note**: The name of the backup resource must be unique.<br>
+> That's why the backup resource names are generated by `backup` playbook, according to pattern:<br>
+> `(BACKUP_RESOURCE_PREFIX)-(TIMESTAMP)`, where:<br>
+> - `BACKUP_RESOURCE_PREFIX` is the `config.yaml` setting `velero.backup.prefix`,
+> - `TIMESTAMP` is a compact time and date representation.
+
+#### Full Restore of User Data
+
+This paragraph describes steps that are necessary to restore data from full backup created in previous step.
+
+* Restore operation is now directly supported with invocation of a dedicated `backup.yaml` ansible playbook.<br>
+* Restore can now be requested with the following command:
+  ```shell
+  ansible-playbook playbooks/backup.yaml --tags restore,monitor_restore -e @inventory/test-cluster/config.yaml
+  ```
+
+* Restore process will now start and will be monitored until completion (tag `monitor_restore` is optional).
+  A `backup` resource to restore will be the most recently completed backup resource. Furthermore the backup resource can be filtered by matching kubernetes resource labels specified in `config.yaml` for backup resource.
+
+* To select a specific backup to restore from (not necessarily most recent) the following command may be used:
+  ```shell
+  ansible-playbook playbooks/backup.yaml --tags restore,monitor_restore -e @inventory/test-cluster/config.yaml -e '{"velero": {"restore_from": BACKUP_RESOURCE_ID} }'
+
+  ```
+  where `BACKUP_RESOURCE_ID` is the name of kubernetes `backup` resource to restore from.
+
+* As a result a `restore` object will be created in specified backup namespace (review `config.yaml`) that can be described with `kubectl`:
+  ```shell
+  # list restore resources
+  kubectl get restore -n velero
+  NAME                      AGE
+  restore-20250803t052410   21h
+  restore-20250803t053604   21h
+  restore-20250803t054219   21h
+
+  # describe a restore resource to view details
+  kubectl describe restore restore-20250803t053604 -n velero
+  Name:         restore-20250803t053604
+  Namespace:    backup
+  Labels:       restore-reason=recovery
+  # (details omitted for clarity)
+  Status:
+    Completion Timestamp:  2025-08-03T03:36:44Z
+    Hook Status:
+    Phase:  Completed
+    Progress:
+      Items Restored:  378
+      Total Items:     378
+  ```
+
+* Details can also be viewed with `velero` command:
+  ```shell
+  velero restore describe restore-20250803t053604
+  ```
+
+* To gather further details you need to expose `minio` service locally.<br>
   Forward minio port 9000:
   ```bash
   # it's probably better to start this in a separate terminal
@@ -815,113 +960,41 @@ Right after completion of that command you may review outcome of the backup:
   127.0.0.1 localhost velero-minio.velero.svc
   ```
 
-- Then call velero to review details:
+  Then call velero to review details:
   ```bash
-  velero backup describe edp-backup --details
+  velero backup describe backup-20250803t051937 --details
   ```
 
-#### Restore From Partial Backup
+* > **Note**
+  >
+  > Restore operation requires multiple tasks to be performed.<br>
+  > Specifically the deploments hosting the user data need to be **removed** before being restored from saved objects and stored volume snapshots.
+  >
+  > This results in a period of unavailability of services, including but not limited to:
+  > - authorization services (Keycloak instance),
+  > - data ingestion pipelines (`edp` namespace).
 
-Assuming that the backup was created under name `edp-backup_1` this command will trigger a restore:
-```bash
-velero restore create --item-operation-timeout=2h --from-backup edp-backup_1 -o yaml | kubectl apply -f -
+  For better overview of the operation the monitoring mode is supported with optional ansible tag `monitor_restore`.<br>
+  The monitor process won't finish until both restore process on Velero side and microservices pods have recovered.
 
-restore.velero.io/edp-backup_1-20250617173441 created
-```
+* > **Note**
+  >
+  > When planning to use backup and restore it's recommended to make a copy of `ansible-logs` folder from original deployment. It might be necessary to properly set up credentials for services such as *fingerprint*, *chat history* and *edp* and restore them from backup. <br>
+  > In case it's necessary to uninstall deployment to retry installation and restore from backup, folder should be restored before starting recovery install of ERAG again.
 
-Right after that you may review status of the restore -
-- either with `kubectl describe restore.velero.io/edp-backup_1-20250617173441 -n velero`
-- or with cli: `velero restore describe edp-backup_1-20250617173441 --details`.
+#### Removal of Velero from Cluster
 
-> __Note__
->
-> Restore works best when original resources were removed - that especially true for `PersistentVolumes`.
+  > **Note**: Either of the following approaches to removing velero will result in removal of backup and restore objects created with use of the velero.
 
-#### Full Backup of User Data
-
-This paragraph describes steps that are necessary to secure data coming from user. These include:
-- ingested vector data,
-- ingested documents,
-- user accounts and credentials.
-
-To create backup create a `Backup` resource in file `backup-userdata.yaml`:
-```yaml
-apiVersion: velero.io/v1
-kind: Backup
-metadata:
-  creationTimestamp: null
-  name: userdata-250617-210655
-  namespace: velero
-spec:
-  csiSnapshotTimeout: 2h0m0s
-  hooks: {}
-  includedNamespaces:
-  - fingerprint
-  - edp
-  - auth
-  - chatqa
-  - vdb
-  itemOperationTimeout: 2h0m0s
-  labelSelector:
-    matchExpressions:
-    - key: app.kubernetes.io/instance
-      operator: NotIn
-      values:
-      - torchserve_embedding
-      - vllm
-  metadata: {}
-  ttl: 0s
-status: {}
-```
-
-Now apply the backup with kubectl:
-```bash
-kubectl apply -f backup-userdata.yaml
-
-## check status of backup to learn if it is finished:
-
-```
-
-- Then call velero to review details:
-  ```bash
-  velero backup describe userdata-250617-210655 --details
+* Normally velero will be removed along with cluster deletion:
+  ```sh
+  ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
   ```
 
-> __Note__
->
-> The name of the backup resource must be unique.
-
-#### Full Restore of User Data
-
-This paragraph describes steps that are necessary to restore data from full backup created in previous step.
-
-- Uninstall deployments that are to be restored:
-  ```bash
-  helm delete fingerprint -n fingerprint
-  helm delete edp -n edp
-  helm delete vdb -n vdb
-  helm delete keycloak -n auth
+* Removing only the installed instance of velero without deleting the cluster:
+  ```shell
+  ansible-playbook playbooks/infrastructure.yaml --tags velero-delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml -e deploy_k8s=false
   ```
-
-- Delete volumes to allow replacing them with data from backup:
-  ```bash
-  kubectl get pvc -n edp -o name | xargs kubectl delete -n edp
-  kubectl get pvc -n vdb -o name | xargs kubectl delete -n vdb
-  kubectl get pvc -n fingerprint -o name | xargs kubectl delete -n fingerprint
-  kubectl get pvc -n auth -o name | xargs kubectl delete -n auth
-  ```
-
-- Finally execute restore with command:
-```bash
-velero restore create --item-operation-timeout=2h --from-backup userdata-250617-210655 -o yaml | kubectl apply -f -
-
-restore.velero.io/userdata-250617-210655-20250617173441 created
-```
-
-Right after that you may review status of the restore -
-- either with `kubectl describe restore.velero.io/userdata-250617-210655-20250617173441 -n velero`
-- or with cli: `velero restore describe userdata-250617-210655-20250617173441 --details`.
-
 
 #### Backup Links
 

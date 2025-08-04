@@ -139,14 +139,6 @@
         - install
         - uninstall
 
-    - name: Velero role
-      ansible.builtin.include_role:
-        name: velero
-      when: velero.enabled
-      tags:
-        - install
-        - uninstall
-
     - name: Configure Istio
       ansible.builtin.include_role:
         name: istio

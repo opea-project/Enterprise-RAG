@@ -1,9 +1,13 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import olefile
 import os
 import pptx
 import uuid
+
+from pptx.exc import PackageNotFoundError
+
 from comps.text_extractor.utils.file_loaders.abstract_loader import AbstractLoader
 from comps.text_extractor.utils.file_loaders.load_image import LoadImage
 from comps.cores.mega.logger import get_opea_logger
@@ -12,6 +16,14 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 class LoadPpt(AbstractLoader):
     """ Load and parse ppt/pptx files. """
+    def is_encrypted(self):
+        """ Check if the ppt file is encrypted. """
+        ole = olefile.OleFileIO(self.file_path)
+        if ole.exists('EncryptedPackage'):
+            logger.info(f"[{self.file_path}] This file is encrypted.")
+            return True
+        return False
+
     def extract_text(self):
         converted = False
         if self.file_type == "ppt":
@@ -52,13 +64,20 @@ class LoadPpt(AbstractLoader):
                             if img_path and img_path != "" and os.path.exists(img_path) and not os.path.isdir(img_path):
                                 logger.debug(f"[{self.file_path}] Removed {img_path} after processing")
                                 os.remove(img_path)
+        except PackageNotFoundError as e:
+            if os.path.exists(self.file_path) and self.is_encrypted():
+                logger.error(f"[{self.file_path}] The file is encrypted and cannot be processed: {e}")
+                raise ValueError(f"The file {self.file_path} is encrypted and cannot be processed. Please decrypt it before uploading.")
+            else:
+                logger.error(f"[{self.file_path}] Error opening PPTX file: {e}")
+                raise e
         finally:
             # Ensure the converted file is deleted. The original file deletion
             # should be handled in the caller code
             if converted and os.path.exists(self.file_path):
                 os.remove(self.file_path)
                 logger.info(f"Removed temporary converted file {self.file_path}")
-        
+
         return text
 
     def save_image(self, image, save_path="/tmp/opea_upload"):

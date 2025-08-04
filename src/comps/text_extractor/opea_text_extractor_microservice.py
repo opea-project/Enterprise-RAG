@@ -105,7 +105,7 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
         loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list)
     except ValueError as e:
         logger.exception(e)
-        raise HTTPException(status_code=400, detail=f"An internal error occurred while processing: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"A Value Error occurred while processing: {str(e)}")
     except MaxRetryError as e:
         logger.exception(e)
         raise HTTPException(status_code=503, detail=f"Could not connect to remote server: {str(e)}")

@@ -134,13 +134,14 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
       >
         <div className="conversation-feed">
           {conversationTurns.map(
-            ({ id, question, answer, error, isPending }) => (
+            ({ id, question, answer, error, isPending, sources }) => (
               <Fragment key={id}>
                 <UserMessage question={question} />
                 <BotMessage
                   answer={answer}
                   isPending={isPending}
                   error={error}
+                  sources={sources}
                 />
               </Fragment>
             ),

@@ -3,6 +3,9 @@
 
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
+import { SourceDocumentType } from "@/features/chat/types";
+import { ChatTurn } from "@/types";
+
 // type for history array that is sent to API via POST request on /save endpoint
 export interface ChatHistoryEntry {
   question: string;
@@ -15,9 +18,12 @@ export interface PostPromptRequest {
   id?: string;
   signal: AbortSignal;
   onAnswerUpdate: AnswerUpdateHandler;
+  onSourcesUpdate: SourcesUpdateHandler;
 }
 
-export type AnswerUpdateHandler = (answer?: string) => void;
+export type AnswerUpdateHandler = (answer: ChatTurn["answer"]) => void;
+
+export type SourcesUpdateHandler = (sources: SourceDocumentType[]) => void;
 
 export type ChatErrorResponse = FetchBaseQueryError & {
   status: string | number;

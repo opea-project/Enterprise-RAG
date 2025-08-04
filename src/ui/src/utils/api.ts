@@ -3,7 +3,9 @@
 
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 
+import { addNotification } from "@/components/ui/Notifications/notifications.slice";
 import { keycloakService } from "@/lib/auth";
+import { AppDispatch } from "@/store";
 import { resetStore } from "@/store/utils";
 
 const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
@@ -43,6 +45,22 @@ const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
   return fallbackMessage;
 };
 
+const handleOnQueryStarted = async <T>(
+  queryFulfilled: Promise<T>,
+  dispatch: AppDispatch,
+  fallbackMessage: string,
+) => {
+  try {
+    await queryFulfilled;
+  } catch (error) {
+    const errorMessage = getErrorMessage(
+      (error as { error: FetchBaseQueryError }).error,
+      fallbackMessage,
+    );
+    dispatch(addNotification({ severity: "error", text: errorMessage }));
+  }
+};
+
 const onRefreshTokenFailed = () => {
   resetStore();
   keycloakService.redirectToLogout();
@@ -59,4 +77,9 @@ const transformErrorMessage = (
   }
 };
 
-export { getErrorMessage, onRefreshTokenFailed, transformErrorMessage };
+export {
+  getErrorMessage,
+  handleOnQueryStarted,
+  onRefreshTokenFailed,
+  transformErrorMessage,
+};

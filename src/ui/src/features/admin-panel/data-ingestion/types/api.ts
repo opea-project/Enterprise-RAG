@@ -1,14 +1,6 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-export interface GetFilePresignedUrlRequest {
-  fileName: string;
-  method: GetFilePresignedUrlMethod;
-  bucketName: string;
-}
-
-type GetFilePresignedUrlMethod = "GET" | "PUT" | "DELETE";
-
 export type FileSyncAction = "add" | "no action" | "delete" | "update";
 
 export interface FileSyncDataItem {
@@ -36,9 +28,4 @@ export interface GetS3BucketsListResponseData {
 export interface PostFileRequest {
   url: string;
   file: File;
-}
-
-export interface DownloadFileRequest {
-  presignedUrl: string;
-  fileName: string;
 }

@@ -6,7 +6,6 @@ import { DataStatus } from "@/features/admin-panel/data-ingestion/types";
 export const API_ENDPOINTS = {
   BASE_URL: "/api/v1/edp",
   GET_FILES: "/files",
-  GET_FILE_PRESIGNED_URL: "/presignedUrl",
   RETRY_FILE_ACTION: "/file/{uuid}/retry",
   POST_FILE_TO_EXTRACT_TEXT: "/file/{uuid}/extract",
   POST_LINK_TO_EXTRACT_TEXT: "/link/{uuid}/extract",
@@ -25,8 +24,6 @@ export const ERROR_MESSAGES = {
   GET_FILES: "Failed to fetch files",
   POST_FILE: "Failed to upload file:",
   POST_FILES: "Failed to upload files",
-  GET_FILE_PRESIGNED_URL: "Failed to get presigned URL for file",
-  DOWNLOAD_FILE: "Failed to download file",
   RETRY_FILE_ACTION: "Error occurred when retrying file action",
   DELETE_FILE: "Failed to delete file",
   POST_FILE_TO_EXTRACT_TEXT: "Failed to extract text from the file",

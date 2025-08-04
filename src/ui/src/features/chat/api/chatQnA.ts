@@ -32,7 +32,7 @@ export const chatQnAApi = createApi({
   }),
   endpoints: (builder) => ({
     postPrompt: builder.mutation<void, PostPromptRequest>({
-      query: ({ prompt, id, signal, onAnswerUpdate }) => ({
+      query: ({ prompt, id, signal, onAnswerUpdate, onSourcesUpdate }) => ({
         url: CHATQNA_API_ENDPOINTS.POST_PROMPT,
         method: "POST",
         body: {
@@ -53,9 +53,17 @@ export const chatQnAApi = createApi({
 
           const contentType = response.headers.get("Content-Type");
           if (contentType && contentType.includes("application/json")) {
-            await handleChatJsonResponse(response, onAnswerUpdate);
+            await handleChatJsonResponse(
+              response,
+              onAnswerUpdate,
+              onSourcesUpdate,
+            );
           } else if (contentType && contentType.includes("text/event-stream")) {
-            await handleChatStreamResponse(response, onAnswerUpdate);
+            await handleChatStreamResponse(
+              response,
+              onAnswerUpdate,
+              onSourcesUpdate,
+            );
           } else {
             throw {
               status: response.status,

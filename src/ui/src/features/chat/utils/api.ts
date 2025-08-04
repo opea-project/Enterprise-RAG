@@ -12,19 +12,23 @@ import {
 import {
   AnswerUpdateHandler,
   ChatErrorResponse,
+  SourcesUpdateHandler,
 } from "@/features/chat/types/api";
 
 export const handleChatJsonResponse = async (
   response: Response,
   onAnswerUpdate: AnswerUpdateHandler,
+  onSourcesUpdate: SourcesUpdateHandler,
 ) => {
   const json = await response.json();
   onAnswerUpdate(json.text);
+  onSourcesUpdate(json.json.reranked_docs || []);
 };
 
 export const handleChatStreamResponse = async (
   response: Response,
   onAnswerUpdate: AnswerUpdateHandler,
+  onSourcesUpdate: SourcesUpdateHandler,
 ) => {
   const reader = response.body?.getReader();
   const decoder = new TextDecoder("utf-8");
@@ -62,6 +66,26 @@ export const handleChatStreamResponse = async (
           .replace(/\\n/g, "  \n");
 
         onAnswerUpdate(newTextChunk);
+      }
+
+      // handling JSON data event for reranked documents aka sources
+      if (event.startsWith("json:")) {
+        // Replace single quotes with double quotes only around field names and string values, not inside values
+        const jsonText = event
+          .slice(5)
+          .trim()
+          // Replace single quotes around field names: 'field': -> "field":
+          .replace(/'([^']+?)'\s*:/g, '"$1":')
+          // Replace single quotes around string values: : 'value' -> : "value"
+          .replace(/:\s*'([^']*?)'/g, ': "$1"');
+        try {
+          const sourcesDataObject = JSON.parse(jsonText);
+          const rerankedDocs = sourcesDataObject.reranked_docs || [];
+          onSourcesUpdate(rerankedDocs);
+        } catch (error) {
+          console.error("Error parsing JSON data:", error);
+          onSourcesUpdate([]);
+        }
       }
     }
   }

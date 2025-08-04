@@ -92,6 +92,11 @@ To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® 
 #### Additional Software Prerequisites when using Gaudi® AI Accelerator
 -   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
 
+### Software Images
+
+Software images will be downloaded automatically during deployment from [Docker Hub](https://hub.docker.com/). If you prefer to use an internal registry, all required images are available under the following link: [ERAG Images](https://hub.docker.com/u/opea?page=1&search=erag).
+
+To configure the use of an internal registry, please specify it in the `config.yaml` file as described in the [Application Deployment on a Custom Cluster](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution#application-deployment-on-a-custom-cluster) section of the repository.
 # Pre-Installation
 
 It is recommended to use python3-venv to manage python packages.

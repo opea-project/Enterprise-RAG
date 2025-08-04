@@ -13,14 +13,16 @@ import {
 } from "@/features/admin-panel/data-ingestion/types";
 import {
   FileSyncDataItem,
-  GetFilePresignedUrlRequest,
   GetS3BucketsListResponseData,
   PostFileToExtractTextRequest,
 } from "@/features/admin-panel/data-ingestion/types/api";
-import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
 import { keycloakService } from "@/lib/auth";
 import { constructUrlWithUuid } from "@/utils";
-import { onRefreshTokenFailed, transformErrorMessage } from "@/utils/api";
+import {
+  handleOnQueryStarted,
+  onRefreshTokenFailed,
+  transformErrorMessage,
+} from "@/utils/api";
 
 const edpBaseQuery = fetchBaseQuery({
   baseUrl: API_ENDPOINTS.BASE_URL,
@@ -49,33 +51,7 @@ export const edpApi = createApi({
       },
       providesTags: ["Files"],
     }),
-    getFilePresignedUrl: builder.mutation<string, GetFilePresignedUrlRequest>({
-      query: ({ fileName, method, bucketName }) => ({
-        url: API_ENDPOINTS.GET_FILE_PRESIGNED_URL,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          object_name: fileName,
-          method,
-          bucket_name: bucketName,
-        }),
-        responseHandler: async (response) => {
-          const { url } = await response.json();
-          return url;
-        },
-      }),
-      transformErrorResponse: (error) =>
-        transformErrorMessage(error, ERROR_MESSAGES.GET_FILE_PRESIGNED_URL),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        await handleOnQueryStarted(
-          queryFulfilled,
-          dispatch,
-          ERROR_MESSAGES.GET_FILE_PRESIGNED_URL,
-        );
-      },
-    }),
+
     retryFileAction: builder.mutation({
       query: (uuid) => ({
         url: constructUrlWithUuid(API_ENDPOINTS.RETRY_FILE_ACTION, uuid),
@@ -229,7 +205,6 @@ export const edpApi = createApi({
 export const {
   useGetFilesQuery,
   useLazyGetFilesQuery,
-  useGetFilePresignedUrlMutation,
   useRetryFileActionMutation,
   usePostFileToExtractTextMutation,
   usePostLinkToExtractTextMutation,

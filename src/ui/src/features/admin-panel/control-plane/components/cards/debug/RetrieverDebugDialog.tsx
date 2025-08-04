@@ -165,11 +165,7 @@ const RetrieverDebugDialog = () => {
       );
       setChatTurns((prevTurns) => [
         ...prevTurns.slice(0, -1),
-        {
-          ...newChatTurn,
-          error: errorMessage,
-          isPending: false,
-        },
+        { ...newChatTurn, error: errorMessage, isPending: false },
       ]);
     } else {
       const responseData = data ? data : "";

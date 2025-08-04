@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { SourceDocumentType } from "@/features/chat/types";
+
 // interface defined for chat elements displayed in UI
 export interface ChatTurn {
   id: string;
@@ -8,6 +10,7 @@ export interface ChatTurn {
   answer?: string;
   error: string | null;
   isPending: boolean;
+  sources?: SourceDocumentType[];
 }
 
 export type AppEnvKey =

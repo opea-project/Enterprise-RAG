@@ -3,6 +3,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 
+import { appApi } from "@/api";
 import colorSchemeReducer from "@/components/ui/ColorSchemeSwitch/colorScheme.slice";
 import notificationsReducer from "@/components/ui/Notifications/notifications.slice";
 import { controlPlaneApi } from "@/features/admin-panel/control-plane/api";
@@ -24,6 +25,7 @@ export const store = configureStore({
     colorScheme: colorSchemeReducer,
     notifications: notificationsReducer,
     dataIngestionSettings: dataIngestionSettingsReducer,
+    [appApi.reducerPath]: appApi.reducer,
     [chatQnAApi.reducerPath]: chatQnAApi.reducer,
     [chatHistoryApi.reducerPath]: chatHistoryApi.reducer,
     [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,
@@ -32,6 +34,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
+      appApi.middleware,
       chatQnAApi.middleware,
       chatHistoryApi.middleware,
       controlPlaneApi.middleware,

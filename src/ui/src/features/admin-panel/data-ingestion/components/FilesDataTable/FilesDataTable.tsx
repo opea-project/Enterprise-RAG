@@ -1,16 +1,16 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import DataTable from "@/components/ui/DataTable/DataTable";
 import {
   useGetFilePresignedUrlMutation,
+  useLazyDownloadFileQuery,
+} from "@/api";
+import DataTable from "@/components/ui/DataTable/DataTable";
+import {
   useGetFilesQuery,
   useRetryFileActionMutation,
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
-import {
-  useDeleteFileMutation,
-  useLazyDownloadFileQuery,
-} from "@/features/admin-panel/data-ingestion/api/s3Api";
+import { useDeleteFileMutation } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
 import { getFilesTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/files";
 

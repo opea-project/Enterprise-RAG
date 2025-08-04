@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useEffect, useRef } from "react";
+import { ChangeEventHandler, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
@@ -18,18 +18,24 @@ import {
   addNewChatTurn,
   resetCurrentChatSlice,
   selectCurrentChatId,
+  selectCurrentChatSources,
   selectCurrentChatTurns,
   selectIsChatResponsePending,
   selectUserInput,
   setCurrentChatId,
+  setCurrentChatSources,
   setCurrentChatTurns,
   setIsChatResponsePending,
   setUserInput,
   updateAnswer,
   updateError,
   updateIsPending,
+  updateSources,
 } from "@/features/chat/store/currentChat.slice";
-import { AnswerUpdateHandler } from "@/features/chat/types/api";
+import {
+  AnswerUpdateHandler,
+  SourcesUpdateHandler,
+} from "@/features/chat/types/api";
 import { createChatTurnsFromHistory } from "@/features/chat/utils";
 import {
   isChatErrorResponse,
@@ -58,6 +64,7 @@ const useChat = () => {
   const dispatch = useAppDispatch();
   const userInput = useAppSelector(selectUserInput);
   const currentChatTurns = useAppSelector(selectCurrentChatTurns);
+  const currentChatSources = useAppSelector(selectCurrentChatSources);
   const currentChatId = useAppSelector(selectCurrentChatId);
   const isChatResponsePending = useAppSelector(selectIsChatResponsePending);
   const isChatHistorySideMenuOpen = useAppSelector(
@@ -83,6 +90,20 @@ const useChat = () => {
               getChatHistoryByIdData.history || [],
             );
             dispatch(setCurrentChatTurns(chatTurns));
+
+            if (currentChatSources.length === 0) {
+              dispatch(setCurrentChatSources(Array(chatTurns.length).fill([])));
+            } else if (currentChatSources.length < chatTurns.length) {
+              // If sources are not initialized or are less than turns, fill with empty arrays
+              dispatch(
+                setCurrentChatSources([
+                  ...currentChatSources,
+                  ...Array(chatTurns.length - currentChatSources.length).fill(
+                    [],
+                  ),
+                ]),
+              );
+            }
           })
           .catch((error) => {
             console.error(
@@ -95,10 +116,14 @@ const useChat = () => {
           });
       }
     }
-  }, [dispatch, getChatById, location, navigate]);
+  }, [currentChatSources, dispatch, getChatById, location, navigate]);
 
   const onPromptChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     dispatch(setUserInput(event.target.value));
+  };
+
+  const onSourcesUpdate: SourcesUpdateHandler = (sources) => {
+    dispatch(updateSources(sources));
   };
 
   const afterResponse = () => {
@@ -149,6 +174,7 @@ const useChat = () => {
       id: currentChatId,
       signal: abortController.signal,
       onAnswerUpdate,
+      onSourcesUpdate,
     }).finally(() => {
       dispatch(updateIsPending(false));
       dispatch(setIsChatResponsePending(false));
@@ -189,9 +215,18 @@ const useChat = () => {
     dispatch(resetCurrentChatSlice());
   };
 
+  const chatTurns = useMemo(
+    () =>
+      currentChatTurns.map((turn, index) => ({
+        ...turn,
+        sources: currentChatSources[index] ?? [],
+      })),
+    [currentChatTurns, currentChatSources],
+  );
+
   return {
     userInput,
-    chatTurns: currentChatTurns,
+    chatTurns,
     isChatResponsePending,
     isChatHistorySideMenuOpen,
     onNewChat,

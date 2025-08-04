@@ -43,7 +43,7 @@ setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
 
-hpaEnabled: false
+hpaEnabled: true
 enforcePSS: false
 tdxEnabled: false
 
@@ -55,7 +55,7 @@ reranking_model_name: "BAAI/bge-reranker-base"
 # Topology-aware resource scheduling and CPU pinning for vLLM
 # For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:
-  enabled: false
+  enabled: true
   namespace: kube-system # alternatively, set custom namespace for balloons
 
 pipelines:
@@ -158,4 +158,4 @@ chat_history:
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis # Supported: redis, redis-cluster
+  vector_store: redis-cluster # Supported: redis, redis-cluster

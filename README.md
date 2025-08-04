@@ -124,7 +124,10 @@ cp -r inventory/sample inventory/test-cluster
 
 ## Simplified Kubernetes Cluster Deployment
 
-> **Note:** If you already have a Kubernetes cluster prepared, you can skip directly to the [Application Deployment on a Custom Cluster](#application-deployment-on-a-custom-cluster) section.
+If you need to deploy a new Kubernetes cluster, follow the instructions below. If you already have a cluster prepared, you can skip to the [Preparing a Custom Cluster and Installing Infrastructure Components](#preparing-a-custom-cluster-and-installing-infrastructure-components) section.
+
+<details>
+<summary><strong>Show instructions for installing a new Kubernetes cluster</strong></summary>
 
 1. **Edit the inventory file:**
    - Open `inventory/test-cluster/inventory.ini`.
@@ -206,7 +209,8 @@ pipelines:
 ```
 > **Note:** The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.  
 > Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
-> Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.
+> Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.  
+> [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included.
 
 3. **(Optional) Validate hardware resources and config.yaml:**
 
@@ -229,47 +233,88 @@ To remove the cluster, run:
 ```sh
 ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
 ```
+</details>
+&nbsp;
 
-## Application Deployment on a Custom Cluster
+
+## Preparing a Custom Cluster and Installing Infrastructure Components
+
+If you are using your own custom Kubernetes cluster (not provisioned by the provided infrastructure playbooks), you may need to install additional infrastructure components before deploying the application. These include the NFS server for shared storage, the Gaudi operator (for Habana Gaudi AI accelerator support), Velero, or other supported services.
+
+<details>
+<summary><strong>Show instructions for Preparing a Custom Cluster</strong></summary>
+
+To prepare your cluster:
 
 1. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
-   - Set `deploy_k8s: false` and update the other fields as needed for your environment.
+   - Set `deploy_k8s: false` and update the other fields as needed for your environment (see the [Configuration File](#configuration-file) section for details).
+   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included). If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
 
    Example `config.yaml` for deploying on an existing cluster:
-   ```yaml
-   # Uses Kubespray to deploy Kubernetes cluster and install required components
-   deploy_k8s: false
+    ```yaml
+    # Uses Kubespray to deploy Kubernetes cluster and install required components
+    deploy_k8s: false
 
-   # Available options:
-   # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
-   # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
-   install_csi: "local-path-provisioner"
+    # Available options:
+    # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
+    # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
+    install_csi: "local-path-provisioner"
 
-   # Setup when install_csi is "nfs"
-   # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
-   # Setting nfs_server_enabled to true will install NFS server together with CSI driver
-   # and set nfs_csi_storage_class as the default one.
-   nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
-   nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
-   nfs_csi_driver_version: "4.11.0"
-   nfs_csi_storage_class: "nfs-csi"
+    # Setup when install_csi is "nfs"
+    # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
+    # Setting nfs_server_enabled to true will install NFS server together with CSI driver
+    # and set nfs_csi_storage_class as the default one.
+    nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+    nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
+    nfs_csi_driver_version: "4.11.0"
+    nfs_csi_storage_class: "nfs-csi"
 
-   huggingToken: FILL_HERE # Provide your Hugging Face token here
-   kubeconfig: FILL_HERE  # Provide the absolute path to your kubeconfig (e.g. /home/ubuntu/.kube/config)
+    huggingToken: FILL_HERE # Provide your Hugging Face token here
+    kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
 
-   # Proxy settings are optional
-   httpProxy:
-   httpsProxy:
-   # If HTTP/HTTPS proxy is set, update the noProxy field as needed:
-   noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-   # ...
-   pipelines:
-     - namespace: chatqa
-       samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
-       resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
-       type: chatqa
+    httpProxy:
+    httpsProxy:
+    # If HTTP/HTTPS proxy is set, update the noProxy field with the following:
+    noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+
+    ...
+
+    gaudi_operator: false # set to true when Gaudi operator is to be installed
+    habana_driver_version: "1.21.3-57" # habana operator from https://vault.habana.ai/ui/native/habana-ai-operator/driver/
+
+    ...
+    pipelines:
+      - namespace: chatqa
+        samplePath: chatqa/reference-cpu.yaml
+        resourcesPath: chatqa/resources-reference-cpu.yaml
+        modelConfigPath: chatqa/resources-model-cpu.yaml
+        type: chatqa
+
+    ...
+    ```
+
+
+2. **Validate hardware resources and `config.yaml`:**
+
+   ```sh
+   ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
+   > **Note:** If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
+
+3. **Install infrastructure components (NFS, Gaudi operator, or others):**
+
+   ```sh
+    ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
+   This will install and configure the NFS server, Gaudi operator, or velero as specified in your configuration.
+
+   > **Note:** You can enable several components in the same run if both are needed. Additional components may be supported via post-install in the future.
+
+Once your cluster is prepared and the required infrastructure is installed, proceed with the application installation as described below.
+</details>
+&nbsp;
+
 # Installation
 
 ```sh
@@ -277,6 +322,22 @@ ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install
 ```
 
 Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
+
+
+# Updating the Application
+
+After the application is installed, you can update its components (for example, change the LLM or embedding model) by editing your configuration file and running the install tag again. The deployment scripts will detect changes and update only the involved components, minimizing downtime and unnecessary redeployments.
+
+To update the application:
+
+1. Edit `inventory/test-cluster/config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings).
+2. Run:
+
+```sh
+ansible-playbook -u $USER -K playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
+```
+
+This will apply the changes and update only the affected services.
 
 # Remove installation
 

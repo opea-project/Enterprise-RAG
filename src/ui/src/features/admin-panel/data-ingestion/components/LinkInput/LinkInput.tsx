@@ -4,6 +4,7 @@
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ValidationError } from "yup";
 
+import Button from "@/components/ui/Button/Button";
 import IconButton from "@/components/ui/IconButton/IconButton";
 import TextInput from "@/components/ui/TextInput/TextInput";
 import { validateLinkInput } from "@/features/admin-panel/data-ingestion/validators/linkInput";
@@ -15,9 +16,11 @@ interface LinkInputProps {
 
 const LinkInput = ({ addLinkToList }: LinkInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState("");
   const [isInvalid, setIsInvalid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     const checkValidity = async (value: string) => {
@@ -63,27 +66,99 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
 
   const addLinkBtnDisabled = !value || isInvalid;
 
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+
+    const invalidLinks: string[] = [];
+
+    const rawLinks = text
+      .split(/[\n\r, ]+/)
+      .map((link) => sanitizeString(link.trim()))
+      .filter((link) => link.length > 0);
+
+    if (rawLinks.length === 0 || !/^https?:\/\//.test(rawLinks[0])) {
+      setUploadError("No valid links found in the uploaded file");
+      return;
+    }
+
+    for (const link of rawLinks) {
+      try {
+        await validateLinkInput(link);
+        addLinkToList(link);
+      } catch {
+        console.warn("Invalid link input skipped:", link);
+        invalidLinks.push(link);
+      }
+    }
+
+    if (invalidLinks.length > 0) {
+      setUploadError(
+        `The following link(s) were invalid and skipped: ${invalidLinks.join(", ")}`,
+      );
+    } else {
+      setUploadError("");
+    }
+    event.target.value = "";
+  };
+
+  const handleBrowseFilesButtonPress = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
-    <div className="flex items-start gap-2">
-      <TextInput
-        ref={inputRef}
-        type="url"
-        value={value}
-        name="link-input"
-        isInvalid={isInvalid}
-        errorMessage={errorMessage}
-        placeholder="Enter valid URL (starting with http:// or https://)"
-        onChange={handleLinkInputChange}
-        onKeyDown={handleLinkInputKeyDown}
-        className="w-full"
-      />
-      <IconButton
-        icon="plus"
-        variant="contained"
-        aria-label="Add list to the list"
-        isDisabled={addLinkBtnDisabled}
-        onPress={handleAddLinkBtnPress}
-      />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start gap-2">
+        <TextInput
+          ref={inputRef}
+          type="url"
+          value={value}
+          name="link-input"
+          isInvalid={isInvalid}
+          errorMessage={errorMessage}
+          placeholder="Enter valid URL (starting with http:// or https://)"
+          onChange={handleLinkInputChange}
+          onKeyDown={handleLinkInputKeyDown}
+          className="w-full"
+        />
+        <IconButton
+          icon="plus"
+          variant="contained"
+          aria-label="Add list to the list"
+          isDisabled={addLinkBtnDisabled}
+          onPress={handleAddLinkBtnPress}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <p className="text-xs">
+          You can also upload a <code>.txt</code> file with links separated by
+          commas, spaces, or new lines. Each link must start with{" "}
+          <code>http://</code> or <code>https://</code>
+        </p>
+        <Button size="sm" onPress={handleBrowseFilesButtonPress}>
+          Browse Files
+        </Button>
+        {uploadError && (
+          <div
+            style={{
+              color: "red",
+              marginTop: "8px",
+              fontSize: "0.875rem",
+            }}
+          >
+            {uploadError}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt"
+          onChange={handleFileUpload}
+          hidden
+        />
+      </div>
     </div>
   );
 };

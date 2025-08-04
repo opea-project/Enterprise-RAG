@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import LinkInput from "@/features/admin-panel/data-ingestion/components/LinkInput/LinkInput";
@@ -14,14 +14,25 @@ interface LinksIngestionPanelProps {
 }
 
 const LinksIngestionPanel = ({ links, setLinks }: LinksIngestionPanelProps) => {
+  const [highlightedLinkId, setHighlightedLinkId] = useState<string | null>(
+    null,
+  );
   const addLinkToList = (value: string) => {
-    setLinks((prevState) => [
-      ...prevState,
-      {
-        id: uuidv4(),
-        value,
-      },
-    ]);
+    setLinks((prevState) => {
+      const existing = prevState.find((link) => link.value === value);
+      if (existing) {
+        setHighlightedLinkId(existing.id);
+        setTimeout(() => setHighlightedLinkId(null), 1500);
+        return prevState;
+      }
+      return [
+        ...prevState,
+        {
+          id: uuidv4(),
+          value,
+        },
+      ];
+    });
   };
 
   const removeLinkFromList = (linkId: string) => {
@@ -42,6 +53,7 @@ const LinksIngestionPanel = ({ links, setLinks }: LinksIngestionPanelProps) => {
           links={links}
           setLinks={setLinks}
           removeLinkFromList={removeLinkFromList}
+          highlightedLinkId={highlightedLinkId}
         />
       )}
     </section>

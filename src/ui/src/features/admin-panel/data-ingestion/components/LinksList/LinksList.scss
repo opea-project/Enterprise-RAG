@@ -10,3 +10,19 @@
   @apply bg-light-bg-2 px-3.5 py-2 dark:bg-dark-bg-2;
   @apply rounded border border-light-border dark:border-dark-border;
 }
+
+.link-list-item__url.highlighted {
+  animation: flash-grey-bg 1.0s ease-in-out;
+}
+
+@keyframes flash-grey-bg {
+  0% {
+    background-color: #4e4e4e;
+  }
+  50% {
+    background-color: #4e4e4e;
+  }
+  100% {
+    background-color: #1f2133;
+  }
+}

@@ -131,5 +131,3 @@ The project is organized into several directories:
 - `impl/`: This directory contains the implementation of the retriever service.
 
 - `utils/`: This directory contains scripts that are used by the Retriever Microservice.
-
-The tree view of the main directories and files:

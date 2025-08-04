@@ -303,9 +303,13 @@ curl http://localhost:8060/v1/llmguardoutput \
 A full set of possible configurations can be found in the file [object_document_mapper.py](src/comps/system_fingerprint/utils/object_document_mapper.py).
 
 #### Example output (when scanner blocked the prompt)
+The output of an output guardrail microservice is a 466 error code JSON object that includes following message.
+
 ```bash
 {
-    "detail":"Prompt What are virus and backdoor? is not valid, scores: {'BanSubstrings': 1.0}"
+    {
+        "detail":"I'm sorry, I cannot assist you with your prompt."
+    }
 }
 ```
 
@@ -315,20 +319,5 @@ A full set of possible configurations can be found in the file [object_document_
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains configuration files for the LLM Guard Output Guardrail Microservice.
+- `impl/`: This directory contains configuration files for the LLM Guard Output Guardrail Microservice e.g. docker files.
 - `utils/`: This directory contains scripts that are used by the LLM Guard Output Guardrail Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-├── README.md
-├── impl
-│   └── microservice
-│       ├── .env
-│       ├── Dockerfile
-│       ├── pyproject.toml
-│       └── uv.lock
-├── opea_llm_guard_output_guardrail_microservice.py
-└── utils
-    ├── llm_guard_output_guardrail.py
-    └── llm_guard_output_scanners.py

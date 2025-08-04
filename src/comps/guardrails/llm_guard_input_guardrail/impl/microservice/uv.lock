@@ -1103,7 +1103,7 @@ wheels = [
 
 [[package]]
 name = "intel-enterprise-rag-llm-guard-input-guardrail-microservice"
-version = "1.0.1"
+version = "1.4.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiohttp" },

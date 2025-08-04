@@ -4,7 +4,7 @@ The OPEA ERAG Enhanced Data Preparation service provides advanced document proce
 
 ## Requirements
 
-- Python >=3.12 is required to run EDP.
+- Python >=3.11 is required to run EDP.
 - A stand alone `redis` server for task management is required.
 - A stand alone `redis search` server or Redis >= 8.0 for VectorDB data is required.
 - A stand alone `postgresql` server for storing file and link entries is required.

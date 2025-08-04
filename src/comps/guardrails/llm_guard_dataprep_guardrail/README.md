@@ -184,7 +184,7 @@ curl http://localhost:8070/v1/llmguarddataprep \
 
 **Example Output**
 
-The output of an dataprep guardrail microservice is a JSON object that includes the scanned texts or 466 error code.
+The output of a dataprep guardrail microservice is a JSON object that includes the scanned texts or 466 error code.
 
 ```json
 {
@@ -201,3 +201,10 @@ The output of an dataprep guardrail microservice is a JSON object that includes 
   ]
 }
 ```
+
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains configuration files for the LLM Guard Dataprep Guardrail Microservice e.g. docker files.
+- `utils/`: This directory contains scripts that are used by the LLM Guard Dataprep Guardrail Microservice.

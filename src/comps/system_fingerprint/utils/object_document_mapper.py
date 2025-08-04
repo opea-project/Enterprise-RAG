@@ -213,13 +213,18 @@ class LLMGuardDataprepGuardrailParams(Document):
     toxicity: ToxicityModel = None
 
 class PromptTemplateParams(Document):
-    system_prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
+    system_prompt_template: str = """
+### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
+Include in-text citation IDs (in the format [1], [2] etc.) corresponding to the search results at the end of relevant sentences. \
+Citation IDs are at the beginning of each search result in [n] format. \
 Refer also to the conversation history if you think it is relevant to the current question. \
 Ignore all information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \n \
-### Search results: {reranked_docs}
-### Conversation history: {conversation_history} \n
+If you don't know the answer to a question, please don't share false information.\n\
+### Search results:\n\
+{reranked_docs}\n\
+### Conversation history:\n\
+{conversation_history}\n\
 """
     user_prompt_template: str = """### Question: {user_prompt} \n
 ### Answer:

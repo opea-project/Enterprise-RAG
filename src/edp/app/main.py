@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 from minio.error import S3Error
 from urllib.parse import unquote_plus
-from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket
+from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket, get_local_minio_client_using_token_credentials
 from app.database import get_db
 from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
@@ -181,7 +181,15 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
 
     region = os.getenv('EDP_BASE_REGION', None)
     try:
-        url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region)
+        credentials = None
+        access_token = request.headers.get('Authorization')
+        if access_token:
+            access_token = access_token.replace('Bearer ', '')
+            token = { "access_token": access_token }
+            local_client = get_local_minio_client_using_token_credentials(token)
+            local_client._provider.retrieve()
+            credentials = local_client._provider._credentials
+        url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
         logger.debug(f"Generated presigned url for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
     except S3Error as e:

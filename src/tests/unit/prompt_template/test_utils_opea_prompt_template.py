@@ -46,11 +46,13 @@ def mock_default_response_data():
     """Fixture to provide mock response data."""
     return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
         "Please refer to the search results obtained from the local knowledge base. " \
+        "Include in-text citation IDs (in the format [1], [2] etc.) corresponding to the search results at the end of relevant sentences. " \
+        "Citation IDs are at the beginning of each search result in [n] format. " \
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1\n\nDocument2\n\nDocument3\n### Conversation history:",
-                             user="### Question: This is my sample query? \n\n### Answer:")
+        "If you don't know the answer to a question, please don't share false information.\n" \
+        "### Search results:\nDocument1\n\nDocument2\n\nDocument3\n### Conversation history:",
+                             user="### Question: This is my sample query?\n\n### Answer:")
 
 
 @pytest.fixture
@@ -74,12 +76,14 @@ def mock_default_response_data_with_chat_history():
     """Fixture to provide mock response data."""
     return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
         "Please refer to the search results obtained from the local knowledge base. " \
+        "Include in-text citation IDs (in the format [1], [2] etc.) corresponding to the search results at the end of relevant sentences. " \
+        "Citation IDs are at the beginning of each search result in [n] format. " \
         "Refer also to the conversation history if you think it is relevant to the current question. " \
         "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1\n\nDocument2\n\nDocument3\n" \
-        "### Conversation history: User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
-                             user="### Question: This is my sample query? \n\n### Answer:")
+        "If you don't know the answer to a question, please don't share false information.\n" \
+        "### Search results:\nDocument1\n\nDocument2\n\nDocument3\n" \
+        "### Conversation history:\nUser: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
+                             user="### Question: This is my sample query?\n\n### Answer:")
 
 
 def test_opea_prompt_template_initialization_succeeds():
@@ -412,3 +416,44 @@ async def test_operator_prompt_run_raises_exception_on_unexpected_placeholder_in
 
     with pytest.raises(ValueError, match="The prompt template contains unexpected placeholders: {'placeholder3'}"):
         await test_class.run(mock_invalid_input_data)
+
+def test_parse_reranked_docs(test_class):
+    docs = DocList([
+        TextDoc(text="Document1"),
+        TextDoc(text="Document2"),
+        TextDoc(text="Document3"),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+
+    docs = DocList([
+        {"text": "Document1"},
+        {"text": "Document2"},
+        {"text": "Document3"}
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert result == "Document1\n\nDocument2\n\nDocument3"
+
+    docs = DocList([
+        TextDoc(text="Document1", metadata={"url": "http://example.com/doc1", "citation_id": "1"}),
+        TextDoc(text="Document2", metadata={"object_name": "doc2.txt", "bucket_name": "my-bucket", "citation_id": "2"}),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert "example.com/doc1" in result
+    assert "doc2.txt" in result
+    assert "my-bucket" in result
+    assert "[1]" in result
+    assert "[2]" in result
+    
+    docs = DocList([
+        TextDoc(text="Document1", metadata={"url": "http://example.com/doc1", "citation_id": "1"}),
+        TextDoc(text="Document2", metadata={"object_name": "doc2.txt", "bucket_name": "my-bucket", "Header1": 'H1', "Header2": 'H2', "Header3": 'H3', "citation_id": "2"}),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert "example.com/doc1" in result
+    assert "doc2.txt" in result
+    assert "my-bucket" in result
+    assert "H1" in result
+    assert "H2" in result
+    assert "H3" in result
+    assert "[1]" in result
+    assert "[2]" in result

@@ -104,7 +104,7 @@ def get_minio_client(endpoint=None, region=None, cert_check=True, credentials=No
     return minio
 
 
-def generate_presigned_url(client, method, bucket_name, object_name, expires = timedelta(days=7), region = 'us-east-1'):
+def generate_presigned_url(client, method, bucket_name, object_name, expires = timedelta(days=7), region = 'us-east-1', credentials=None):
     """
     Generate a presigned URL for accessing an object in an S3 bucket.
     Parameters:
@@ -117,19 +117,32 @@ def generate_presigned_url(client, method, bucket_name, object_name, expires = t
     str: A presigned URL that can be used to access the specified object in the S3 bucket.
     """
 
+    query_params = {}
+
+    # If credentials are provided from WebIdentityProvider,
+    # session token has to be added to query params.
+    # Otherwise, MinIO will return InvalidTokenId error due to validation in following:
+    # https://github.com/minio/minio/blob/7ced9663e6a791fef9dc6be798ff24cda9c730ac/cmd/auth-handler.go#L278
+    if credentials:
+        query_params['X-Amz-Security-Token'] = credentials._session_token
+
+    # This retrieves credentials from client if not passed
+    if credentials is None:
+        credentials = client._provider.retrieve()
+
     base_url = client._base_url.build(
         method,
         region,
         bucket_name=bucket_name,
         object_name=object_name,
-        query_params={},
+        query_params=query_params
     )
 
     presigned_url = presign_v4(
         method,
         base_url,
         region,
-        client._provider.retrieve(),
+        credentials,
         datetime.now(),
         int(expires.total_seconds())
     )

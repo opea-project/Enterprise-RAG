@@ -56,7 +56,20 @@ endpoints:
       - /v1/chat_history/change_name
       - ^/v1/chat_history/delete$
       - /v1/chat_history/delete
-  - name: edp
+  - name: edp-presigned
+    enabled: true
+    namespace: edp
+    path: /api/v1/edp/presignedUrl
+    backend_service: edp-backend
+    service_port: 5000
+    rate_limit_count: 30
+    service_regex:
+      - ^/api/v1/edp/presignedUrl$
+      - /api/presignedUrl
+    permissions:
+      - "admin#admin-access"
+      - "user#user-access"
+  - name: edp-admin
     enabled: true
     namespace: edp
     path: /api/v1/edp/*
@@ -88,8 +101,6 @@ endpoints:
       - /api/link/$1/extract
       - ^/api/v1/edp/retrieve$
       - /api/retrieve
-      - ^/api/v1/edp/presignedUrl$
-      - /api/presignedUrl
       - ^/api/v1/edp/files/sync
       - /api/files/sync
     permissions:

@@ -252,27 +252,9 @@ class ConnectorRedis(VectorStoreConnector):
 
     def _parse_search_results(self, input_text: str, results: Iterable[any]) -> SearchedDoc:
         searched_docs = []
-
-        metadata_fields = [VectorQuery.DISTANCE_ID]
-        if self._metadata_schema():
-            metadata_fields.extend([field['name'] for field in self._metadata_schema()])
-
         for r in results:
-            metadata = {}
-            for field in metadata_fields:
-                try:
-                    metadata[field] = r[field]
-                except AttributeError:
-                    continue
-                except KeyError:
-                    continue
+            searched_docs.append(self._convert_to_text_doc(r))
 
-            searched_docs.append(
-                TextDoc(
-                    text=r[ConnectorRedis.CONTENT_FIELD_NAME],
-                    metadata=metadata
-                )
-            )
         return SearchedDoc(retrieved_docs=searched_docs, user_prompt=input_text)
 
     async def similarity_search_by_vector(self, input_text: str, embedding: List[float], k: int, distance_threshold: float = None, filter_expression: Optional[Union[str, FilterExpression]] = None, parse_result: bool = True) -> SearchedDoc:
@@ -455,16 +437,18 @@ class ConnectorRedis(VectorStoreConnector):
         logger.debug(f"Found {len(primary_docs)} primary documents for input: {input_text}")
         all_sibling_docs = {}
 
+        # We only find siblings for files therefore use file_id for file uniqueness.
+        # Using object_name would not work since it might not be unique across different buckets.
         for doc in initial_result.docs:
             sibling_docs = []
-            if not hasattr(doc, 'object_name') or not hasattr(doc, 'start_index'):
+            if not hasattr(doc, 'file_id') or not hasattr(doc, 'start_index'):
                 continue
 
-            object_name = doc.object_name
+            object_id = doc.file_id
             start_index = doc.start_index
 
             has_headers = False
-            header_filter = Text('object_name') == object_name
+            header_filter = Text('file_id') == object_id
 
             for i in range(1, 7):
                 header_key = f'Header{i}'
@@ -498,7 +482,7 @@ class ConnectorRedis(VectorStoreConnector):
                             sibling_docs.append(self._convert_to_text_doc(next_chunk))
             else:
                 # Case 2: Document doesn't have headers - get nearest chunks by start_index
-                before_filter = (Text('object_name') == object_name) & (Num('start_index') < int(start_index))
+                before_filter = (Text('file_id') == object_id) & (Num('start_index') < int(start_index))
                 before_query = FilterQuery(filter_expression=before_filter, num_results=100)
                 before_result = await index.search(before_query)
 
@@ -507,7 +491,7 @@ class ConnectorRedis(VectorStoreConnector):
                     logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
                     sibling_docs.append(self._convert_to_text_doc(prev_chunk))
 
-                after_filter = (Text('object_name') == object_name) & (Num('start_index') > int(start_index))
+                after_filter = (Text('file_id') == object_id) & (Num('start_index') > int(start_index))
                 after_query = FilterQuery(filter_expression=after_filter, num_results=100)
                 after_result = await index.search(after_query)
 

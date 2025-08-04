@@ -134,9 +134,10 @@ class OPEAPromptTemplate:
 
         return system_prompt, user_prompt
 
-    def _parse_reranked_docs(self, reranked_docs: list) -> str:
+    def _parse_reranked_docs(self, reranked_docs: list, header_separator=" > ") -> str:
         """
         Parse reranked documents and format them to display source and section information.
+        If docs do not have valid metadata or text, they are skipped with an error logged.
 
         Args:
             reranked_docs (list): List of document dictionaries containing metadata and text
@@ -147,40 +148,47 @@ class OPEAPromptTemplate:
         formatted_docs = []
 
         for doc in reranked_docs:
-            if isinstance(doc, dict) and "metadata" not in doc.keys() or \
-               isinstance(doc, TextDoc) and not doc.metadata:
-                if isinstance(doc, dict) and "text" in doc.keys():
-                    formatted_docs.append(doc["text"])
-                    continue
-                elif isinstance(doc, TextDoc) and hasattr(doc, "text"):
-                    formatted_docs.append(doc.text)
-                    continue
-                else:
-                    logger.error(f"Document {doc} does not contain metadata or text.")
-                    raise ValueError(f"Document {doc} does not contain metadata or text.")
-
-            metadata = doc["metadata"] if isinstance(doc, dict) else doc.metadata
-            text = doc["text"] if isinstance(doc, dict) else doc.text
-
-            file_info = "Unknown Source"
-            if "url" in metadata:
-                file_info = metadata["url"]
+            if isinstance(doc, dict):
+                doc = TextDoc(**doc)
             else:
-                file_info = metadata["object_name"]
+                if not isinstance(doc, TextDoc):
+                    logger.error(f"Expected reranked_docs to be a list of TextDoc or dict objects, but got {type(doc)}. Skipping.")
+                    continue
+
+            if doc.text is None or doc.metadata is None:
+                logger.error(f"Document {doc} does not contain metadata or text.")
+                raise ValueError(f"Document {doc} does not contain metadata or text.")
+                
+            source_info = { "type": "unknown" }
+            if "url" in doc.metadata:
+                source_info = {
+                    "type": "Link",
+                    "source": doc.metadata["url"]
+                }
+            if "bucket_name" in doc.metadata and "object_name" in doc.metadata:
+                source_info = {
+                    "type": "File",
+                    "source": "/".join([doc.metadata["bucket_name"], doc.metadata["object_name"]])
+                }
+            
+            if source_info["type"] == "unknown":
+                # Cannot reference this document in any way
+                logger.warning(f"Document {doc} does not contain valid source information.")
 
             # Collect header information if available
             headers = []
             for i in range(1, 8):  # Check for Header1 through Header7
                 header_key = f"Header{i}"
-                if header_key in metadata and metadata[header_key]:
-                    headers.append(metadata[header_key])
+                if header_key in doc.metadata and doc.metadata[header_key]:
+                    headers.append(doc.metadata[header_key])
 
             # Build the formatted string
-            header_part = ""
-            if headers:
-                header_part = f" | Section: {' > '.join(headers)}"
+            header_part = f"\nSection: {header_separator.join(headers)}" if len(headers) > 0 else ""
 
-            formatted_doc = f"[File: {file_info}{header_part}]\n{text}"
+            if source_info["type"] == "unknown":
+                formatted_doc = f"{header_part}{doc.text}"
+            else:
+                formatted_doc = f"[{doc.metadata['citation_id']}] ({source_info['source']}){header_part}\nContent: {doc.text}"
             formatted_docs.append(formatted_doc)
 
         return "\n\n".join(formatted_docs)
@@ -240,6 +248,8 @@ class OPEAPromptTemplate:
         # Generate the final prompt
         try:
             final_system_prompt, final_user_prompt = self._get_prompt(**prompt_data)
+            logger.debug(f"Final System Prompt: {final_system_prompt}")
+            logger.debug(f"Final User Prompt: {final_user_prompt}")
         except KeyError as e:
             logger.error(f"Failed to get prompt from template, missing value for key {e}")
             raise KeyError(f"Failed to get prompt from template, missing value for key {e}")
@@ -247,7 +257,9 @@ class OPEAPromptTemplate:
             logger.error(f"Failed to get prompt from template, err={e}")
             raise
 
-        return LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt))
+        response = LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt), data=input.data)
+
+        return response
 
 
 def extract_placeholders_from_template(template: str) -> set:

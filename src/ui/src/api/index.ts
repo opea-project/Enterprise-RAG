@@ -33,6 +33,10 @@ export const appApi = createApi({
       query: ({ presignedUrl, fileName }) => ({
         url: presignedUrl,
         responseHandler: async (response) => {
+          if (!response.ok) {
+            return Promise.reject(ERROR_MESSAGES.DOWNLOAD_FILE);
+          }
+
           const fileBlob = await response.blob();
           downloadBlob(fileBlob, fileName);
         },
@@ -60,6 +64,10 @@ export const appApi = createApi({
           bucket_name: bucketName,
         }),
         responseHandler: async (response) => {
+          if (!response.ok) {
+            return Promise.reject(ERROR_MESSAGES.GET_FILE_PRESIGNED_URL);
+          }
+
           const { url } = await response.json();
           return url;
         },

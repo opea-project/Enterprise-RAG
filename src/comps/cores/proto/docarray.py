@@ -21,6 +21,7 @@ class TopologyInfo:
 class ChatMessage(BaseModel):
     question: str
     answer: str
+    metadata: Optional[Dict[str, Any]] = {}
 
 class ChatHistory(BaseModel):
     id: Optional[str] = None
@@ -48,7 +49,7 @@ class TextDoc(BaseDoc, TopologyInfo):
                 reranker_score=self.metadata.get('reranker_score', 0.0),
                 citation_id=self.metadata.get('citation_id', 0)
             )
-            
+
         if self.metadata and 'bucket_name' in self.metadata and 'object_name' in self.metadata:
             return RerankedFileDoc(
                 text=self.text,

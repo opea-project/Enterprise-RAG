@@ -7,7 +7,9 @@ import { IconName } from "@/components/icons";
 import IconButton from "@/components/ui/IconButton/IconButton";
 import Tooltip from "@/components/ui/Tooltip/Tooltip";
 import { paths } from "@/config/paths";
+import { selectCurrentChatId } from "@/features/chat/store/currentChat.slice";
 import { keycloakService } from "@/lib/auth";
+import { useAppSelector } from "@/store/hooks";
 
 const options = {
   chat: {
@@ -28,6 +30,8 @@ const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const currentChatId = useAppSelector(selectCurrentChatId);
+
   if (!keycloakService.isAdminUser()) {
     return null;
   }
@@ -41,6 +45,18 @@ const ViewSwitchButton = () => {
 
   const currentView = isChatPage ? "chat" : "admin-panel";
 
+  const handlePress = () => {
+    if (isAdminPanelPage) {
+      if (currentChatId) {
+        navigate(`${paths.chat}/${currentChatId}`);
+      } else {
+        navigate(paths.chat);
+      }
+    } else {
+      navigate(paths.adminPanel);
+    }
+  };
+
   return (
     <Tooltip
       title={options[currentView].tooltip}
@@ -48,7 +64,7 @@ const ViewSwitchButton = () => {
         <IconButton
           icon={options[currentView].icon}
           aria-label={options[currentView].ariaLabel}
-          onPress={() => navigate(options[currentView].routePath)}
+          onPress={handlePress}
         />
       }
       placement="bottom"

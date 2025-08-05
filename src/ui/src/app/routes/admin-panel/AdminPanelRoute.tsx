@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { Key, Tab, TabList, TabPanel, Tabs } from "react-aria-components";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import Notifications from "@/components/ui/Notifications/Notifications";
 import ControlPlaneTab from "@/features/admin-panel/control-plane/components/ControlPlaneTab/ControlPlaneTab";
 import DataIngestionTab from "@/features/admin-panel/data-ingestion/components/DataIngestionTab/DataIngestionTab";
 import TelemetryAuthenticationTab from "@/features/admin-panel/telemetry-authentication/components/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
@@ -83,7 +82,6 @@ const AdminPanelRoute = () => {
           </TabPanel>
         ))}
       </Tabs>
-      <Notifications />
     </div>
   );
 };

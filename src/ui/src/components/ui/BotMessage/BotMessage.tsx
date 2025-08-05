@@ -48,7 +48,7 @@ const BotMessage = memo(
 
     const className = classNames("bot-message", {
       "mb-6": isWaitingForAnswer,
-      "mb-4": !isWaitingForAnswer,
+      "mb-8": !isWaitingForAnswer,
     });
 
     return (

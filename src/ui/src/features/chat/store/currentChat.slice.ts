@@ -4,6 +4,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { SourceDocumentType } from "@/features/chat/types";
+import { createUniqueSources } from "@/features/chat/utils";
 import { RootState } from "@/store";
 import { ChatTurn } from "@/types";
 
@@ -11,7 +12,6 @@ interface ConversationState {
   userInput: string;
   chatId?: string;
   chatTurns: ChatTurn[];
-  chatSources: SourceDocumentType[][];
   currentChatTurnId: string | null;
   isChatResponsePending: boolean;
   hasActiveRequest: boolean;
@@ -21,7 +21,6 @@ const initialState: ConversationState = {
   userInput: "",
   chatId: undefined,
   chatTurns: [],
-  chatSources: [],
   currentChatTurnId: null,
   isChatResponsePending: false,
   hasActiveRequest: false,
@@ -44,12 +43,6 @@ export const currentChatSlice = createSlice({
       } else {
         state.currentChatTurnId = null;
       }
-    },
-    setCurrentChatSources: (
-      state,
-      action: PayloadAction<SourceDocumentType[][]>,
-    ) => {
-      state.chatSources = action.payload;
     },
     addNewChatTurn: (
       state,
@@ -82,14 +75,15 @@ export const currentChatSlice = createSlice({
       );
     },
     updateSources: (state, action: PayloadAction<SourceDocumentType[]>) => {
-      const sources = Array.from(
-        new Map(
-          action.payload
-            .filter((src) => src.citation_id)
-            .map((src) => [src.citation_id, src]),
-        ).values(),
+      const sources = createUniqueSources(action.payload);
+      state.chatTurns = state.chatTurns.map((turn) =>
+        turn.id === state.currentChatTurnId
+          ? {
+              ...turn,
+              sources: sources.length > 0 ? sources : [],
+            }
+          : turn,
       );
-      state.chatSources = [...state.chatSources, sources];
     },
     updateError: (state, action: PayloadAction<ChatTurn["error"]>) => {
       const error = action.payload;
@@ -117,7 +111,6 @@ export const {
   setUserInput,
   setCurrentChatId,
   setCurrentChatTurns,
-  setCurrentChatSources,
   addNewChatTurn,
   updateAnswer,
   updateSources,
@@ -133,8 +126,6 @@ export const selectCurrentChatId = (state: RootState) =>
   state.currentChat.chatId;
 export const selectCurrentChatTurns = (state: RootState) =>
   state.currentChat.chatTurns;
-export const selectCurrentChatSources = (state: RootState) =>
-  state.currentChat.chatSources;
 export const selectIsChatResponsePending = (state: RootState) =>
   state.currentChat.isChatResponsePending;
 export default currentChatSlice.reducer;

@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useEffect, useMemo, useRef } from "react";
+import { ChangeEventHandler, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
@@ -18,12 +18,10 @@ import {
   addNewChatTurn,
   resetCurrentChatSlice,
   selectCurrentChatId,
-  selectCurrentChatSources,
   selectCurrentChatTurns,
   selectIsChatResponsePending,
   selectUserInput,
   setCurrentChatId,
-  setCurrentChatSources,
   setCurrentChatTurns,
   setIsChatResponsePending,
   setUserInput,
@@ -32,11 +30,15 @@ import {
   updateIsPending,
   updateSources,
 } from "@/features/chat/store/currentChat.slice";
+import { SourceDocumentType } from "@/features/chat/types";
 import {
   AnswerUpdateHandler,
   SourcesUpdateHandler,
 } from "@/features/chat/types/api";
-import { createChatTurnsFromHistory } from "@/features/chat/utils";
+import {
+  createChatTurnsFromHistory,
+  createUniqueSources,
+} from "@/features/chat/utils";
 import {
   isChatErrorResponse,
   isChatErrorResponseDataString,
@@ -64,14 +66,15 @@ const useChat = () => {
   const dispatch = useAppDispatch();
   const userInput = useAppSelector(selectUserInput);
   const currentChatTurns = useAppSelector(selectCurrentChatTurns);
-  const currentChatSources = useAppSelector(selectCurrentChatSources);
   const currentChatId = useAppSelector(selectCurrentChatId);
   const isChatResponsePending = useAppSelector(selectIsChatResponsePending);
   const isChatHistorySideMenuOpen = useAppSelector(
     selectIsChatHistorySideMenuOpen,
   );
 
+  // Refs to keep track of the current answer and sources to save them after the response is received
   const currentAnswerRef = useRef("");
+  const currentSourcesRef = useRef<SourceDocumentType[]>([]);
 
   useEffect(() => {
     if (location.pathname !== paths.chat) {
@@ -90,20 +93,6 @@ const useChat = () => {
               getChatHistoryByIdData.history || [],
             );
             dispatch(setCurrentChatTurns(chatTurns));
-
-            if (currentChatSources.length === 0) {
-              dispatch(setCurrentChatSources(Array(chatTurns.length).fill([])));
-            } else if (currentChatSources.length < chatTurns.length) {
-              // If sources are not initialized or are less than turns, fill with empty arrays
-              dispatch(
-                setCurrentChatSources([
-                  ...currentChatSources,
-                  ...Array(chatTurns.length - currentChatSources.length).fill(
-                    [],
-                  ),
-                ]),
-              );
-            }
           })
           .catch((error) => {
             console.error(
@@ -116,14 +105,37 @@ const useChat = () => {
           });
       }
     }
-  }, [currentChatSources, dispatch, getChatById, location, navigate]);
+  }, [dispatch, getChatById, location, navigate]);
+
+  const onRequestAbort = () => {
+    if (!abortController) {
+      return;
+    }
+    abortController.abort(ABORT_ERROR_MESSAGE);
+    dispatch(setIsChatResponsePending(false));
+  };
+
+  const onNewChat = () => {
+    if (isChatResponsePending) {
+      onRequestAbort();
+    }
+
+    navigate(paths.chat);
+    dispatch(resetCurrentChatSlice());
+  };
 
   const onPromptChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     dispatch(setUserInput(event.target.value));
   };
 
+  const onAnswerUpdate: AnswerUpdateHandler = (answer) => {
+    dispatch(updateAnswer(answer));
+    currentAnswerRef.current += answer;
+  };
+
   const onSourcesUpdate: SourcesUpdateHandler = (sources) => {
     dispatch(updateSources(sources));
+    currentSourcesRef.current = createUniqueSources(sources);
   };
 
   const afterResponse = () => {
@@ -133,6 +145,9 @@ const useChat = () => {
         {
           question: sanitizeString(userInput),
           answer: currentAnswerRef.current,
+          metadata: {
+            reranked_docs: currentSourcesRef.current,
+          },
         },
       ],
     }).then((response) => {
@@ -145,11 +160,6 @@ const useChat = () => {
         }
       }
     });
-  };
-
-  const onAnswerUpdate: AnswerUpdateHandler = (answer) => {
-    dispatch(updateAnswer(answer));
-    currentAnswerRef.current += answer;
   };
 
   const onPromptSubmit = async () => {
@@ -168,6 +178,7 @@ const useChat = () => {
 
     abortController = new AbortController();
     currentAnswerRef.current = "";
+    currentSourcesRef.current = [];
 
     const { error } = await postPrompt({
       prompt: sanitizedUserInput,
@@ -198,35 +209,9 @@ const useChat = () => {
     afterResponse();
   };
 
-  const onRequestAbort = () => {
-    if (!abortController) {
-      return;
-    }
-    abortController.abort(ABORT_ERROR_MESSAGE);
-    dispatch(setIsChatResponsePending(false));
-  };
-
-  const onNewChat = () => {
-    if (isChatResponsePending) {
-      onRequestAbort();
-    }
-
-    navigate(paths.chat);
-    dispatch(resetCurrentChatSlice());
-  };
-
-  const chatTurns = useMemo(
-    () =>
-      currentChatTurns.map((turn, index) => ({
-        ...turn,
-        sources: currentChatSources[index] ?? [],
-      })),
-    [currentChatTurns, currentChatSources],
-  );
-
   return {
     userInput,
-    chatTurns,
+    chatTurns: currentChatTurns,
     isChatResponsePending,
     isChatHistorySideMenuOpen,
     onNewChat,

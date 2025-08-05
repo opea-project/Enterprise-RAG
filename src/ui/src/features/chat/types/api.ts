@@ -10,6 +10,9 @@ import { ChatTurn } from "@/types";
 export interface ChatHistoryEntry {
   question: string;
   answer?: string;
+  metadata?: {
+    reranked_docs?: SourceDocumentType[];
+  };
   timestamp?: string | null;
 }
 

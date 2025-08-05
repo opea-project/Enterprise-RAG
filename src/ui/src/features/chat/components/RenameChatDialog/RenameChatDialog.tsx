@@ -27,9 +27,10 @@ const RenameChatDialog = ({
 
   useEffect(() => {
     if (isOpen) {
+      setNewChatName(name);
       textInputRef.current?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, name]);
 
   const dispatch = useAppDispatch();
 

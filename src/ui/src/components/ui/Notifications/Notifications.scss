@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .notifications {
-  @apply absolute bottom-4 right-4 flex flex-col items-end gap-2;
+  @apply absolute bottom-4 right-4 z-[1000] flex flex-col items-end gap-2;
 
   & .notification-toast {
     @apply flex items-center gap-2 break-words rounded-lg py-0.5 pl-3 pr-1 text-sm shadow-md;

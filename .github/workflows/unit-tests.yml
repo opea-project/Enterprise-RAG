@@ -33,6 +33,11 @@ jobs:
     - name: Install test prerequisities for text extractor
       run: sudo apt install -y libgl1 asciidoctor libcairo2 libreoffice-nogui
 
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
     - name: Checkout code to folder
       uses: actions/checkout@v4
       with:

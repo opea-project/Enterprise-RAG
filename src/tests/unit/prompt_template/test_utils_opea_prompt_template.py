@@ -12,6 +12,7 @@ from comps import (
     TextDoc,
 )
 from comps.prompt_template.utils.opea_prompt_template import OPEAPromptTemplate
+from comps.prompt_template.utils.templates import template_system_english, template_user_english
 
 """
 To execute these tests with coverage report, navigate to the `src` folder and run the following command:
@@ -44,15 +45,14 @@ def mock_default_input_data():
 @pytest.fixture
 def mock_default_response_data():
     """Fixture to provide mock response data."""
-    return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
-        "Please refer to the search results obtained from the local knowledge base. " \
-        "Include in-text citation IDs (in the format [1], [2] etc.) corresponding to the search results at the end of relevant sentences. " \
-        "Citation IDs are at the beginning of each search result in [n] format. " \
-        "Refer also to the conversation history if you think it is relevant to the current question. " \
-        "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information.\n" \
-        "### Search results:\nDocument1\n\nDocument2\n\nDocument3\n### Conversation history:",
-                             user="### Question: This is my sample query?\n\n### Answer:")
+    st = template_system_english.format(
+        reranked_docs="Document1\n\nDocument2\n\nDocument3",
+        conversation_history="",
+    ).strip()
+    ut = template_user_english.format(
+        user_prompt="This is my sample query?"
+    ).strip()
+    return LLMPromptTemplate(system=st, user=ut)
 
 
 @pytest.fixture
@@ -74,16 +74,14 @@ def mock_default_input_data_with_chat_history():
 @pytest.fixture
 def mock_default_response_data_with_chat_history():
     """Fixture to provide mock response data."""
-    return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
-        "Please refer to the search results obtained from the local knowledge base. " \
-        "Include in-text citation IDs (in the format [1], [2] etc.) corresponding to the search results at the end of relevant sentences. " \
-        "Citation IDs are at the beginning of each search result in [n] format. " \
-        "Refer also to the conversation history if you think it is relevant to the current question. " \
-        "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information.\n" \
-        "### Search results:\nDocument1\n\nDocument2\n\nDocument3\n" \
-        "### Conversation history:\nUser: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
-                             user="### Question: This is my sample query?\n\n### Answer:")
+    st = template_system_english.format(
+        reranked_docs="Document1\n\nDocument2\n\nDocument3",
+        conversation_history="User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
+    ).strip()
+    ut = template_user_english.format(
+        user_prompt="This is my sample query?"
+    ).strip()
+    return LLMPromptTemplate(system=st, user=ut)
 
 
 def test_opea_prompt_template_initialization_succeeds():

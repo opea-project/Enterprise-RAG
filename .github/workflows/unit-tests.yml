@@ -5,9 +5,26 @@ name: Unit tests
 
 on:
   pull_request:
+    branches: [ main, internal_main ]
+    paths:
+    - 'src/comps/**'
+    - 'src/tests/unit/**'
+    - '.github/workflows/unit-tests.yml'
+    - '**.ini'
+    - '!**.md'
+
+  push:
+    branches: [ main ]
+    paths:
+    - 'src/comps/**'
+    - 'src/tests/unit/**'
+    - '.github/workflows/unit-tests.yml'
+    - '**.ini'
+    - '!**.md'
 
 jobs:
   unit-tests:
+    if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
     name: Unit tests
     runs-on: ubuntu-22.04
     defaults:

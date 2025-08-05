@@ -9,7 +9,7 @@ on:
 jobs:
   unit-tests:
     name: Unit tests
-    runs-on: python:3.11
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash

@@ -102,6 +102,7 @@ Output:
     "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Ignore all information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is...",
     "user": "### Question: What is Deep Learning? \n\n### Answer:"
     },
+  "data": {},
   "model":null,
   "max_new_tokens": 1024,
   "top_k": 10,
@@ -146,6 +147,7 @@ Output:
     "system": "### Please refer to the search results obtained from the local knowledge base. But be careful to not incorporate information that you think is not relevant to the question. If you don't know the answer to a question, please don't share false information. ### Search results: Deep Learning is...",
     "user": "### Question: What is Deep Learning? \n### Answer:"
   },
+  "data": {},
   "model": null,
   "max_new_tokens": 1024,
   "top_k": 10,
@@ -192,6 +194,7 @@ Output:
     "system": "### You are a helpful, respectful, and honest assistant to help the user with translations. Translate this from chinese to english.",
     "user": "### Question: 什么是深度学习？ \n### Answer:"
   },
+  "data": {},
   "model": null,
   "max_new_tokens": 1024,
   "top_k": 10,
@@ -204,7 +207,6 @@ Output:
   "output_guardrail_params": null
 }
 ```
-
 
 #### Tests
 - `src/tests/unit/prompt_template/`: Contains unit tests for the Prompt Template Microservice components

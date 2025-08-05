@@ -279,6 +279,17 @@ data: ' response'
 data: '[DONE]'
 ```
 
+If additional data is passed then it is appended at the end of the response in the following way:
+
+```bash
+data: ' Some'
+data: ' random'
+data: ' LLM'
+data: ' response'
+data: '[DONE]'
+json: '{ "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }'
+```
+
 ### 3.3. Changing scanners configuration via requests
 
 #### Example input

@@ -81,7 +81,7 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
 
     if doc.streaming is False:
-        return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False)
+        return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False, data=doc.data)
     else:
         generator = scanned_output.split()
         async def stream_generator():
@@ -95,6 +95,13 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
                     await asyncio.sleep(0.02)  # Delay of 0.02 second between chunks
                 logger.debug("[guard - chat_stream] stream response: {chat_response}")
                 yield "data: [DONE]\n\n"
+
+                if isinstance(doc.data, dict):
+                    data = { "reranked_docs": doc.data.get("reranked_docs", []) }
+                    logger.debug(f"[guard - chat_stream] appending json data: {data}")
+                    yield f"json: {data}\n\n"
+                else:
+                    logger.debug("Not appending json data since it is not a dict")
             except Exception as e:
                 logger.error(f"Error streaming from Guard: {e}")
                 yield "data: [ERROR]\n\n"

@@ -157,7 +157,7 @@ curl http://localhost:9000/v1/chat/completions \
 
 The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
 
- - In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
 
 ```json
 {
@@ -185,6 +185,42 @@ data: ' artificial'
 data: ' neural'
 data: ' networks'
 data: [DONE]
+```
+
+**Example Output with additional Data**
+
+If additional data is passed in LLMParamsDoc.data attribute, additional data is appended to the response. For example:
+
+- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+
+```json
+{
+  "id": "9a1b09face84c316c9a6297052d8b791",
+  "text": "System: I am a helpful, respectful, and honest assistant designed to help you",
+  "prompt": "### Question: Who are you? \n\n",
+  "streaming": false,
+  "output_guardrail_params": null,
+  "data": { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
+}
+```
+- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+```
+data: '\n'
+data: 'Deep'
+data: ' learning'
+data: ' is'
+data: ' a'
+data: ' subset'
+data: ' of'
+data: ' machine'
+data: ' learning'
+data: ' that'
+data: ' uses'
+data: ' artificial'
+data: ' neural'
+data: ' networks'
+data: [DONE]
+json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 ```
 
 ## Validated Model

@@ -5,7 +5,7 @@ name: Unit tests
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, internal_main ]
     paths:
     - 'src/comps/**'
     - 'src/tests/unit/**'
@@ -26,7 +26,7 @@ jobs:
   unit-tests:
     if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
     name: Unit tests
-    runs-on: ubuntu-22.04
+    runs-on: python:3.11
     defaults:
       run:
         shell: bash
@@ -44,13 +44,8 @@ jobs:
           "$AGENT_TOOLSDIRECTORY"
         df -h /
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
     - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1 libglx-mesa0 tox
+      run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
 
     - name: Checkout code to folder
       uses: actions/checkout@v4

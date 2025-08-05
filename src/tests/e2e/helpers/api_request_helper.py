@@ -183,14 +183,17 @@ class ApiRequestHelper:
                     line = line.decode('utf-8')
                 if line == "":
                     continue
-                if not line.startswith("data:"):
+                if line.startswith("json:"):
+                    logger.warning("There're no 'reranked_docs' e2e tests for the moment, Ignoring...")
+                    # reranked_docs = line[7:-1]
+                elif line.startswith("data:"):
+                    response_text += line[7:-1]
+                else:
                     logger.warning(f"Unexpected line in the response: {line}")
                     raise InvalidChatqaResponseBody(
                         "Chatqa API response body does not follow 'Server-Sent Events' structure. "
                         f"Response: {response.text}.\n\nHeaders: {response.headers}"
                     )
-                else:
-                    response_text += line[7:-1]
             # Replace new line characters for better output
             return response_text.replace('\\n', '\n')
         else:

@@ -44,16 +44,6 @@ jobs:
           "$AGENT_TOOLSDIRECTORY"
         df -h /
 
-#    - name: Install Python 3.11 system-wide
-#      run: |
-#        sudo apt-get update
-#        sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
-#
-#    - name: Set Python 3.11 as system default
-#      run: |
-#        sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-#        sudo update-alternatives --set python3 /usr/bin/python3.11
-
     - name: Install test prerequisites
       run: sudo apt-get update && sudo apt-get -y install libgl1 tox
 

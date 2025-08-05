@@ -44,9 +44,6 @@ jobs:
           "$AGENT_TOOLSDIRECTORY"
         df -h /
 
-    - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
-
     - name: Install Python 3.11 system-wide
       run: |
         sudo apt-get update
@@ -56,6 +53,9 @@ jobs:
       run: |
         sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
         sudo update-alternatives --set python3 /usr/bin/python3.11
+
+    - name: Install test prerequisites
+      run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
 
     - name: Checkout code to folder
       uses: actions/checkout@v4

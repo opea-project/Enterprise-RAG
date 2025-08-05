@@ -26,7 +26,7 @@ jobs:
   unit-tests:
     if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
     name: Unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
@@ -44,18 +44,18 @@ jobs:
           "$AGENT_TOOLSDIRECTORY"
         df -h /
 
-    - name: Install Python 3.11 system-wide
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
-
-    - name: Set Python 3.11 as system default
-      run: |
-        sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-        sudo update-alternatives --set python3 /usr/bin/python3.11
+#    - name: Install Python 3.11 system-wide
+#      run: |
+#        sudo apt-get update
+#        sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
+#
+#    - name: Set Python 3.11 as system default
+#      run: |
+#        sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+#        sudo update-alternatives --set python3 /usr/bin/python3.11
 
     - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
+      run: sudo apt-get update && sudo apt-get -y install libgl1 tox
 
     - name: Checkout code to folder
       uses: actions/checkout@v4

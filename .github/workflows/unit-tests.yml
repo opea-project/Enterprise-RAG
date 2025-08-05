@@ -9,7 +9,7 @@ on:
 jobs:
   unit-tests:
     name: Unit tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     defaults:
       run:
         shell: bash
@@ -29,6 +29,9 @@ jobs:
 
     - name: Install test prerequisites
       run: sudo apt-get update && sudo apt-get -y install libgl1-mesa-glx tox
+
+    - name: Install test prerequisities for text extractor
+      run: sudo apt install -y libgl1 asciidoctor libcairo2 libreoffice-nogui
 
     - name: Checkout code to folder
       uses: actions/checkout@v4

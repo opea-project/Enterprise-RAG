@@ -64,6 +64,12 @@ jobs:
       with:
         test-name: prompt_registry_unit_tests
 
+    - name: Prompt template unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: prompt_template_unit_tests
+
     - name: Retrievers unit tests
       if: success() || failure()
       uses: ./.github/actions/unit-tests
@@ -130,8 +136,20 @@ jobs:
       with:
         test-name: language_detection_unit_tests
 
+    - name: Chat History unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: chat_history_unit_tests
+
     - name: EDP unit tests
       if: success() || failure()
       uses: ./.github/actions/unit-tests
       with:
         test-name: edp_unit_tests
+
+    - name: Hierarchical dataprep unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: hierarchical_dataprep_unit_tests

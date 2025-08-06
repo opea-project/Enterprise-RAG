@@ -105,6 +105,13 @@
   tags:
     - install
 
+- name: Set VLLM_CPUS to default if balloons not enabled
+  set_fact:
+    VLLM_CPUS: "{{ VLLM_CPUS_DEFAULT }}"
+  when: not (balloons.enabled | default(false))
+  tags:
+    - install
+
 - name: Set RERANKER_CPUS from resources reference file
   set_fact:
     RERANKER_CPUS: >-

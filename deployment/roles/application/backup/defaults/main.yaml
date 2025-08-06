@@ -33,20 +33,19 @@ velero:
     prefix: backup
     restore_prefix: restore
     backupConfig:
-      namespaceOrder: [auth, system, chatqa, chat-history, edp, fingerprint, vdb]
+      namespaceOrder: [auth, fingerprint, chatqa, chat-history, edp, vdb, system]
       # selectors for resources to backup (or to exclude); multiple selectors will be ANDed
       resourceSelectors:
-        - app.kubernetes.io/instance notin (torchserve_embedding,torchserve_reranking,vllm)
+        - app.kubernetes.io/instance notin (torchserve_embedding,torchserve_reranking,vllm,vllm-gaudi)
       # list of deployments to be cleared in preparation for restore
       deployments:
-        auth: [Helm/keycloak]
-        chatqa: []
-        chat-history: [Helm/chat-history]
-        edp: [Helm/edp]
-        fingerprint: [Helm/fingerprint]
-        vdb: [Helm/vdb]
+        auth: [Helm/keycloak,Secret/keycloak,Secret/tls-secret]
+        chatqa: [Deployment/embedding-svc-deployment, Deployment/fgp-svc-deployment, Deployment/input-scan-svc-deployment, Deployment/llm-svc-deployment, Deployment/prompt-template-svc-deployment, Deployment/reranking-svc-deployment, Deployment/retriever-svc-deployment, Deployment/router-service-deployment, Secret/mongo-database-secret,Secret/vector-database-config]
+        chat-history: [Helm/chat-history,Secret/mongo-database-secret]
+        edp: [Helm/edp,Secret/vector-database-config,Secret/tls-secret,Secret/vector-database-config]
+        fingerprint: [Helm/fingerprint,Secret/mongo-database-secret]
+        vdb: [Helm/vdb,Secret/vector-database-config]
         system: [Helm/gmc]
-        ingress-nginx: []
 
     # labels to apply to backup object itself
     labels:
@@ -58,20 +57,3 @@ velero:
     csiSnapshotTimeout: 2h0m0s
     ttl: 720h
 
-  helm:
-    repo_name: "velero-tanzu"
-    repo_url: "https://vmware-tanzu.github.io/helm-charts/"
-    chart_name: "velero"
-    chart_version: "10.0.5"
-    release_name: "velero"
-    default_values_file: "{{ playbook_dir }}/../components/velero/values.yaml"
-    chart_directory: "{{ playbook_dir }}/../components/velero"
-
-  tls:
-    secret_name: "tls-secret"
-
-  minio:
-    apiDomainName: velero-s3.erag.com
-    domainName: velero-minio.erag.com
-    auth:
-      admin_username: admin

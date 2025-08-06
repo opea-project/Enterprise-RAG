@@ -346,6 +346,29 @@ cd deployment
 ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
 ```
 
+# User Data Backup
+
+Application supports taking backup and restoring user data, including ingested vector data, ingested documents, user accounts and credentials and chat history.
+
+* With backup enabled and configured in cluster, the backup can be taken with the following command:
+  ```sh
+  ansible-playbook -u $USER -K playbooks/backup.yaml --tags backup,monitor_backup -e @inventory/test-cluster/config.yaml
+  ```
+
+  See documentation on [Full Backup of User Data](deployment/README.md#full-backup-of-user-data) to find more details on backup.
+
+> **Note**: Backup requires configuring cluster and application to support this feature, in particular the VMWare Velero tool is required.<br>
+> Refer to Deployment guide's chapter [Velero Prerequisites](deployment/README.md#velero-prerequisites) for details.
+
+## User Data Restore
+
+* With backup configured correctly the data restore process can be started with the following command:
+  ```sh
+  ansible-playbook -u $USER -K playbooks/backup.yaml --tags restore,monitor_restore -e @inventory/test-cluster/config.yaml
+  ```
+
+  See documentation on [Full Restore of User Data](deployment/README.md#full-restore-of-user-data) to find more details on restore.
+
 # Support
 
 Submit questions, feature requests, and bug reports on the GitHub Issues page.

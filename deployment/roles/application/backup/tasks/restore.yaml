@@ -180,7 +180,7 @@
 
 - name: Restore from backup
   ansible.builtin.command:
-    cmd: velero restore create "{{ restore_name }}" --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
+    cmd: velero restore create "{{ restore_name }}" --exclude-resources "instrumentations.opentelemetry.io" --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
 
 - name: Monitor restore completion
   kubernetes.core.k8s_info:

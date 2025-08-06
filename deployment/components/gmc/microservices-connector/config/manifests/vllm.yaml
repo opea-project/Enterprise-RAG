@@ -237,8 +237,13 @@ spec:
               path: /health
               port: http
           resources:
-            {{- $defaultValues := "{requests: {cpu: '32', memory: '64Gi'}, limits: {cpu: '32', memory: '100Gi'}}" -}}
-            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+            {{- $balloonsResources := (((((.Values).balloons).services).vllm).resources | default nil) }}
+            {{- if and ((.Values).balloons.enabled) $balloonsResources }}
+              {{- toYaml $balloonsResources | nindent 12 }}
+            {{- else }}
+              {{- $defaultValues := "{requests: {cpu: '32', memory: '64Gi'}, limits: {cpu: '32', memory: '100Gi'}}" -}}
+              {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+            {{- end }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:

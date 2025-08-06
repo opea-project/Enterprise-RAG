@@ -37,6 +37,7 @@ tdx:
 {% if balloons.enabled is defined %}
 balloons:
   enabled: {{ balloons.enabled }}
+  services: {{ balloons.services }}
 {% endif %}
 
 {% if gmc.pvc is defined and gmc.pvc.models is defined %}

@@ -63,6 +63,15 @@ reranking_model_name: "BAAI/bge-reranker-base"
 balloons:
   enabled: true
   namespace: kube-system # alternatively, set custom namespace for balloons
+  services:
+    vllm:
+      resources:
+        requests:
+          cpu: 32
+          memory: 64Gi
+        limits:
+          cpu: 32
+          memory: 100Gi
 
 pipelines:
   - namespace: chatqa

@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Check if OS is supported Ubuntu 20.04 or 22.04 or 24.04
+- name: Check if OS is supported Ubuntu 22.04 or 24.04
   ansible.builtin.assert:
     that:
       - ansible_distribution == "Ubuntu"
-      - ansible_distribution_version in ["20.04", "22.04", "24.04"]
+      - ansible_distribution_version in ["22.04", "24.04"]
     fail_msg: >
       [WARNING]: This system is running {{ ansible_distribution }} {{ ansible_distribution_version }},
-      which is not officially supported. Only Ubuntu 20.04, 22.04 and 24.04 are validated.
+      which is not officially supported. Only Ubuntu 22.04 and 24.04 are validated.
       Proceeding may result in failures during dependency installation or unexpected behavior.
     success_msg: >
       [INFO]: This system is running {{ ansible_distribution }} {{ ansible_distribution_version }}

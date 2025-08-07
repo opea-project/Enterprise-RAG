@@ -14,6 +14,7 @@ import urllib3
 
 from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
+from helpers.chat_history_helper import ChatHistoryHelper
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
@@ -100,6 +101,11 @@ def chatqa_api_helper():
 @pytest.fixture(scope="session")
 def keycloak_helper(request):
     return KeycloakHelper(request.config.getoption("--credentials-file"))
+
+
+@pytest.fixture(scope="session")
+def chat_history_helper():
+    return ChatHistoryHelper(namespace="chat-history", label_selector={"app.kubernetes.io/name": "chat-history"}, api_port=6012)
 
 
 @pytest.fixture(scope="session")

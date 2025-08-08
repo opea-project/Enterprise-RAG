@@ -21,11 +21,6 @@ SIMPLE_CHAT_HISTORY = [
 ]
 
 
-@pytest.fixture
-def access_token(keycloak_helper):
-    return keycloak_helper.get_access_token()
-
-
 @pytest.fixture(autouse=True)
 def cleanup(chat_history_helper, access_token):
     clean_all_history(chat_history_helper, access_token)

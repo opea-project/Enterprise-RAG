@@ -19,11 +19,6 @@ UNRELATED_RESPONSE_MSG = "Chatbot should return answer that is strictly related 
 # In each test case, a file is uploaded and a question related to the file content is asked.
 
 
-@pytest.fixture
-def access_token(keycloak_helper):
-    return keycloak_helper.get_access_token()
-
-
 @pytest.mark.smoke
 @allure.testcase("IEASG-T50")
 def test_txt(edp_helper, chatqa_api_helper, access_token):

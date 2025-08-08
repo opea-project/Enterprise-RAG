@@ -93,6 +93,11 @@ def collect_k8s_logs(request):
     allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
 
 
+@pytest.fixture
+def access_token(keycloak_helper):
+    return keycloak_helper.get_access_token()
+
+
 @pytest.fixture(scope="session")
 def chatqa_api_helper():
     return ApiRequestHelper("chatqa", {"app": "router-service"})

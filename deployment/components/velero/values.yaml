@@ -12,6 +12,11 @@ veleroSecretKey: ""
 minioAdminUser: "admin"
 minioAdminPassword: ""
 
+snapshotSupport:
+  installSnapshotClass: false
+  snapshotClassName: "csi-snapclass"
+  snapshotClassDriver: ""
+
 minioApiDomain: &minioApiDomain "velero-s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "velero-minio.erag.com"
 minio:

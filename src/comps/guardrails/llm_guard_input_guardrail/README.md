@@ -214,6 +214,8 @@ curl http://localhost:8050/v1/llmguardinput \
 ```
 
 #### Example output (when no scanners enabled or scanner did not catch any problem)
+The output of an input guardrail microservice is a JSON object that includes the scanned texts.
+
 ```json
 {
     "id":"d343573ed6be001001d505c335aa332b",
@@ -260,11 +262,22 @@ curl http://localhost:8050/v1/llmguardinput \
   -H 'Content-Type: application/json'
 ```
 
-#### Example output (when scanner blocked the prompt)
+#### Example output(when scanner blocked the prompt)
+The output of an input guardrail microservice is a 466 error code JSON object that includes following message.
+
 ```bash
 {
-    "detail":"Prompt What are virus and backdoor? is not valid, scores: {'BanSubstrings': 1.0}"
+    {
+        "detail":"I'm sorry, I cannot assist you with your prompt."
+    }
 }
 ```
 
 A full set of possible configurations can be found in the file [object_document_mapper.py](src/comps/system_fingerprint/utils/object_document_mapper.py).
+
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains configuration files for the LLM Guard Input Guardrail Microservice e.g. docker files.
+- `utils/`: This directory contains scripts that are used by the LLM Guard Input Guardrail Microservice.

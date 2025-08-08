@@ -4,14 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import concurrent
-from constants import ERAG_DOMAIN, INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR
-import kr8s
 import logging
-import requests
 import secrets
 import socket
 import time
 from urllib.parse import urljoin
+
+import kr8s
+import requests
+from tests.e2e.validation.constants import (
+    ERAG_DOMAIN, INGRESS_NGINX_CONTROLLER_NS,
+    INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR)
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +66,10 @@ class ApiResponse:
     Wrapper class for the response from 'requests' library
     """
 
-    def __init__(self, response, response_time, exception=None, streaming_duration=None):
+    def __init__(self, response, response_time, exception=None):
         self._response = response
         self._response_time = response_time
         self._exception = exception
-        self._streaming_duration = streaming_duration
 
     def __getattr__(self, name):
         return getattr(self._response, name)
@@ -75,10 +77,6 @@ class ApiResponse:
     @property
     def response_time(self):
         return self._response_time
-
-    @property
-    def streaming_duration(self):
-        return self._streaming_duration
 
     @property
     def exception(self):
@@ -136,9 +134,9 @@ class ApiRequestHelper:
             headers=self.default_headers,
             json=request_body
         )
-        duration = round(time.time() - start_time, 2)
-        logger.info(f"ChatQA API call duration: {duration}")
-        return ApiResponse(response, duration)
+        api_call_duration = round(time.time() - start_time, 2)
+        logger.info(f"ChatQA API call duration: {api_call_duration}")
+        return ApiResponse(response, api_call_duration)
 
     def call_chatqa_through_apisix(self, token, question):
         """
@@ -146,8 +144,6 @@ class ApiRequestHelper:
 
         This method does not port-forwarding router-server. Instead, it does port-forwarding of nginx-controller
         in order to reach it in case of Kind deployment.
-
-        Also, streaming duration is calculated and passed as an additional parameter in the response.
         """
         url = f"{ERAG_DOMAIN}/api/v1/chatqna"
         payload = {"text": question}
@@ -165,17 +161,9 @@ class ApiRequestHelper:
                 stream=True,
                 verify=False
             )
-            line_number = 0
-            for line in response.iter_lines(decode_unicode=True):
-                if line_number == 0:
-                    first_line_start_time = time.time()
-                line_number += 1
-                logger.debug(line)
-
-        streaming_duration = time.time() - first_line_start_time
-        duration = round(time.time() - start_time, 2)
-        logger.info(f"ChatQA API call duration: {duration}")
-        return ApiResponse(response, duration, streaming_duration=streaming_duration)
+        api_call_duration = round(time.time() - start_time, 2)
+        logger.info(f"ChatQA API call duration: {api_call_duration}")
+        return ApiResponse(response, api_call_duration)
 
     def format_response(self, response):
         """
@@ -195,14 +183,17 @@ class ApiRequestHelper:
                     line = line.decode('utf-8')
                 if line == "":
                     continue
-                if not line.startswith("data:"):
+                if line.startswith("json:"):
+                    logger.warning("There're no 'reranked_docs' e2e tests for the moment, Ignoring...")
+                    # reranked_docs = line[7:-1]
+                elif line.startswith("data:"):
+                    response_text += line[7:-1]
+                else:
                     logger.warning(f"Unexpected line in the response: {line}")
                     raise InvalidChatqaResponseBody(
                         "Chatqa API response body does not follow 'Server-Sent Events' structure. "
                         f"Response: {response.text}.\n\nHeaders: {response.headers}"
                     )
-                else:
-                    response_text += line[7:-1]
             # Replace new line characters for better output
             return response_text.replace('\\n', '\n')
         else:
@@ -237,4 +228,9 @@ class ApiRequestHelper:
     def words_in_response(self, substrings, response):
         """Returns true if any of the substrings appear in the response strings"""
         response = response.lower()
-        return any(substring in response for substring in substrings)
+        return any(substring.lower() in response for substring in substrings)
+
+    def all_words_in_response(self, substrings, response):
+        """Returns true if all of the substrings appear in the response strings"""
+        response = response.lower()
+        return all(substring.lower() in response for substring in substrings)

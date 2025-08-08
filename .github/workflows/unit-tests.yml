@@ -5,7 +5,7 @@ name: Unit tests
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, internal_main ]
     paths:
     - 'src/comps/**'
     - 'src/tests/unit/**'
@@ -26,7 +26,7 @@ jobs:
   unit-tests:
     if: ${{ (github.event.repository.visibility == 'public') && (github.repository_owner == 'opea-project') }}
     name: Unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
@@ -44,13 +44,8 @@ jobs:
           "$AGENT_TOOLSDIRECTORY"
         df -h /
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
     - name: Install test prerequisites
-      run: sudo apt-get update && sudo apt-get -y install libgl1 libglx-mesa0 tox
+      run: sudo apt-get update && sudo apt-get -y install libgl1 tox
 
     - name: Checkout code to folder
       uses: actions/checkout@v4
@@ -68,6 +63,12 @@ jobs:
       uses: ./.github/actions/unit-tests
       with:
         test-name: prompt_registry_unit_tests
+
+    - name: Prompt template unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: prompt_template_unit_tests
 
     - name: Retrievers unit tests
       if: success() || failure()
@@ -135,8 +136,20 @@ jobs:
       with:
         test-name: language_detection_unit_tests
 
+    - name: Chat History unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: chat_history_unit_tests
+
     - name: EDP unit tests
       if: success() || failure()
       uses: ./.github/actions/unit-tests
       with:
         test-name: edp_unit_tests
+
+    - name: Hierarchical dataprep unit tests
+      if: success() || failure()
+      uses: ./.github/actions/unit-tests
+      with:
+        test-name: hierarchical_dataprep_unit_tests

@@ -8,6 +8,7 @@
   @apply text-light-text-inverse dark:text-dark-text-primary;
 
   &:disabled {
+    @apply disabled:cursor-default;
     @apply disabled:bg-light-primary/60 dark:disabled:bg-dark-primary/60;
   }
 }

@@ -42,7 +42,7 @@ class FileParser:
         try:
             data = loader(self.file_path).extract_text()
         except Exception as e:
-            logger.exception(f"Error while processing file {self.file_path} with loader {file_loader['loader_class']}. {e}")
+            logger.error(f"Error while processing file {self.file_path} with loader {file_loader['loader_class']}. {e}")
             raise
 
         logger.info(f"Finished processing file {self.file_path} with loader {file_loader['loader_class']}")
@@ -68,7 +68,7 @@ class FileParser:
             {'file_type': 'xml',   'loader_file_name': 'load_with_markitdown',  'loader_class': 'LoadWithMarkitdown',  'mime_type': 'text/xml, text/plain'},
             {'file_type': 'yaml',  'loader_file_name': 'load_with_markitdown',  'loader_class': 'LoadWithMarkitdown',  'mime_type': 'text/plain, application/yaml'},
             {'file_type': 'ppt',   'loader_file_name': 'load_ppt',              'loader_class': 'LoadPpt',             'mime_type': 'application/vnd.ms-powerpoint'},
-            {'file_type': 'pptx',  'loader_file_name': 'load_ppt',              'loader_class': 'LoadPpt',             'mime_type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'},
+            {'file_type': 'pptx',  'loader_file_name': 'load_ppt',              'loader_class': 'LoadPpt',             'mime_type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation, application/vnd.ms-powerpoint'},
             {'file_type': 'tiff',  'loader_file_name': 'load_image',            'loader_class': 'LoadImage',           'mime_type': 'image/tiff'},
             {'file_type': 'jpg',   'loader_file_name': 'load_image',            'loader_class': 'LoadImage',           'mime_type': 'image/jpeg'},
             {'file_type': 'jpeg',  'loader_file_name': 'load_image',            'loader_class': 'LoadImage',           'mime_type': 'image/jpeg'},

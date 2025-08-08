@@ -18,7 +18,7 @@
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 42,
+  "id": 6,
   "links": [
     {
       "asDropdown": true,
@@ -137,7 +137,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "PredictionTime{namespace=\"$namespace\"}",
+          "expr": "PredictionTime{namespace=\"$namespace\", service=~\"$service\"}",
           "instant": false,
           "legendFormat": "{{Hostname}}:{{Level}}/{{ModelName}}",
           "range": true,
@@ -235,7 +235,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "HandlerTime{namespace=\"$namespace\"}",
+          "expr": "HandlerTime{namespace=\"$namespace\", service=~\"$service\"}",
           "instant": false,
           "legendFormat": "{{Hostname}}:{{Level}}/{{ModelName}}",
           "range": true,
@@ -346,7 +346,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(ts_queue_latency_microseconds{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(ts_queue_latency_microseconds{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "legendFormat": "{{hostname}} Model:{{model_name}}:{{model_version}}",
           "range": true,
           "refId": "A"
@@ -443,7 +443,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "QueueTime{namespace=\"$namespace\"}",
+          "expr": "QueueTime{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}}",
           "range": true,
           "refId": "A"
@@ -496,6 +496,7 @@
             }
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -540,7 +541,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(ts_inference_latency_microseconds{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(ts_inference_latency_microseconds{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "legendFormat": "{{hostname}} Model:{{model_name}}:{{model_version}}",
           "range": true,
           "refId": "A"
@@ -593,6 +594,7 @@
             }
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -605,7 +607,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "reqps"
         },
         "overrides": []
       },
@@ -636,7 +639,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(ts_inference_requests_total{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(ts_inference_requests_total{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "legendFormat": "{{hostname}} Model:{{model_name}}:{{model_version}}",
           "range": true,
           "refId": "A"
@@ -689,6 +692,7 @@
             }
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -733,7 +737,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "ts_inference_latency_microseconds{namespace=\"$namespace\"}/ts_inference_requests_total{namespace=\"$namespace\"}",
+          "expr": "ts_inference_latency_microseconds{namespace=\"$namespace\", service=~\"$service\"}/ts_inference_requests_total{namespace=\"$namespace\", service=~\"$service\"}",
           "instant": false,
           "legendFormat": "{{hostname}} Model:{{model_name}}:{{model_version}}",
           "range": true,
@@ -803,6 +807,8 @@
             }
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -829,9 +835,12 @@
       "id": 10,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
           "showLegend": true
         },
         "tooltip": {
@@ -847,7 +856,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "CPUUtilization{namespace=\"$namespace\"}",
+          "expr": "CPUUtilization{namespace=\"$namespace\", service=~\"$service\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Level:{{Level}} {{Hostname}}",
@@ -915,6 +924,7 @@
             }
           },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -959,7 +969,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(Requests2XX{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(Requests2XX{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "hide": false,
           "legendFormat": "Level:{{Level}} {{Hostname}}",
           "range": true,
@@ -1013,16 +1023,13 @@
             }
           },
           "mappings": [],
+          "noValue": "No errors occured",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
@@ -1057,7 +1064,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(Requests4XX{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(Requests4XX{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "legendFormat": "Level:{{Level}} {{Hostname}}",
           "range": true,
           "refId": "A"
@@ -1110,6 +1117,8 @@
             }
           },
           "mappings": [],
+          "min": 0,
+          "noValue": "No errors occured",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1154,7 +1163,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(Requests5XX{namespace=\"$namespace\"}[5m])",
+          "expr": "rate(Requests5XX{namespace=\"$namespace\", service=~\"$service\"}[$__rate_interval])",
           "legendFormat": "Level:{{Level}} {{Hostname}}",
           "range": true,
           "refId": "A"
@@ -1264,7 +1273,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "MemoryUsed{namespace=\"$namespace\"}",
+          "expr": "MemoryUsed{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1361,7 +1370,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "MemoryAvailable{namespace=\"$namespace\"}",
+          "expr": "MemoryAvailable{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1414,6 +1423,8 @@
             }
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1458,7 +1469,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "MemoryUtilization{namespace=\"$namespace\"}",
+          "expr": "MemoryUtilization{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1568,7 +1579,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "DiskUsage{namespace=\"$namespace\"}",
+          "expr": "DiskUsage{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1665,7 +1676,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "DiskAvailable{namespace=\"$namespace\"}",
+          "expr": "DiskAvailable{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1718,6 +1729,8 @@
             }
           },
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1762,7 +1775,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "DiskUtilization{namespace=\"$namespace\"}",
+          "expr": "DiskUtilization{namespace=\"$namespace\", service=~\"$service\"}",
           "legendFormat": "Level:{{Level}} {{Hostname}} ",
           "range": true,
           "refId": "A"
@@ -1772,7 +1785,7 @@
       "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1780,229 +1793,208 @@
         "y": 76
       },
       "id": 29,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+      "panels": [],
+      "title": "Workers Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Time taken by a worker thread to process a single inference request. Useful for tracking model inference latency and identifying performance bottlenecks.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 11,
-            "w": 12,
-            "x": 0,
-            "y": 69
-          },
-          "id": 8,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
             },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
-          "pluginVersion": "11.4.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "WorkerThreadTime{namespace=\"$namespace\"}",
-              "legendFormat": "Level:{{Level}} {{Hostname}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Worker Thread Time",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "ms"
-            },
-            "overrides": [
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
               {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "Level:Host torchserve-embedding-svc-deployment-665b6c6fb9-94z5h WorkerName:W-9000-bge-base-en-v1.5_1.0"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": true
-                    }
-                  }
-                ]
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
               }
             ]
           },
-          "gridPos": {
-            "h": 11,
-            "w": 12,
-            "x": 12,
-            "y": 69
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 77
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "id": 9,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "11.4.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "editorMode": "code",
-              "expr": "WorkerLoadTime{namespace=\"$namespace\"}",
-              "legendFormat": "Level:{{Level}} {{Hostname}} WorkerName:{{WorkerName}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Worker Load Time",
-          "type": "timeseries"
+          "editorMode": "code",
+          "expr": "WorkerThreadTime{namespace=\"$namespace\", service=~\"$service\"}",
+          "legendFormat": "Level:{{Level}} {{Hostname}}",
+          "range": true,
+          "refId": "A"
         }
       ],
-      "title": "Workers Metrics",
-      "type": "row"
+      "title": "Worker Thread Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Time taken by a worker to load a model (in ms). Recorded once at startup. Useful for analyzing cold-start latency and comparing model load performance.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 77
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "WorkerLoadTime{namespace=\"$namespace\", service=~\"$service\"}",
+          "legendFormat": "Level:{{Level}} {{Hostname}} WorkerName:{{WorkerName}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Worker Load Time",
+      "type": "timeseries"
     }
   ],
   "preload": false,

@@ -1,18 +1,18 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import pytest
 from docarray import DocList
 
 from comps import (
-    PrevQuestionDetails,
     LLMPromptTemplate,
     PromptTemplateInput,
     TextDoc,
 )
 from comps.prompt_template.utils.opea_prompt_template import OPEAPromptTemplate
+from comps.prompt_template.utils.templates import template_system_english, template_user_english
 
 """
 To execute these tests with coverage report, navigate to the `src` folder and run the following command:
@@ -45,17 +45,18 @@ def mock_default_input_data():
 @pytest.fixture
 def mock_default_response_data():
     """Fixture to provide mock response data."""
-    return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
-        "Please refer to the search results obtained from the local knowledge base. " \
-        "Refer also to the conversation history if you think it is relevant to the current question. " \
-        "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1\n\nDocument2\n\nDocument3\n### Conversation history:",
-                             user="### Question: This is my sample query? \n\n### Answer:")
+    st = template_system_english.format(
+        reranked_docs="Document1\n\nDocument2\n\nDocument3",
+        conversation_history="",
+    ).strip()
+    ut = template_user_english.format(
+        user_prompt="This is my sample query?"
+    ).strip()
+    return LLMPromptTemplate(system=st, user=ut)
 
 
 @pytest.fixture
-def mock_default_input_data_with_conversation_history():
+def mock_default_input_data_with_chat_history():
     """Fixture to provide mock input data."""
     return PromptTemplateInput(prompt_template=None,
         data={
@@ -66,25 +67,21 @@ def mock_default_input_data_with_conversation_history():
                 TextDoc(text="Document3"),
             ])
         },
-        conversation_history=[
-            PrevQuestionDetails(question="Previous question 1", answer="Previous answer 1"),
-            PrevQuestionDetails(question="Previous question 2", answer="Previous answer 2"),
-            PrevQuestionDetails(question="Previous question 3", answer="Previous answer 3"),
-            PrevQuestionDetails(question="Previous question 4", answer="Previous answer 4"),]
+        history_id="test-history-id"
     )
 
 
 @pytest.fixture
-def mock_default_response_data_with_conversation_history():
+def mock_default_response_data_with_chat_history():
     """Fixture to provide mock response data."""
-    return LLMPromptTemplate(system="### You are a helpful, respectful, and honest assistant to help the user with questions. " \
-        "Please refer to the search results obtained from the local knowledge base. " \
-        "Refer also to the conversation history if you think it is relevant to the current question. " \
-        "Ignore all information that you think is not relevant to the question. " \
-        "If you don't know the answer to a question, please don't share false information. \n" \
-        " ### Search results: Document1\n\nDocument2\n\nDocument3\n" \
-        "### Conversation history: User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
-                             user="### Question: This is my sample query? \n\n### Answer:")
+    st = template_system_english.format(
+        reranked_docs="Document1\n\nDocument2\n\nDocument3",
+        conversation_history="User: Previous question 2\nAssistant: Previous answer 2\nUser: Previous question 3\nAssistant: Previous answer 3\nUser: Previous question 4\nAssistant: Previous answer 4",
+    ).strip()
+    ut = template_user_english.format(
+        user_prompt="This is my sample query?"
+    ).strip()
+    return LLMPromptTemplate(system=st, user=ut)
 
 
 def test_opea_prompt_template_initialization_succeeds():
@@ -144,17 +141,49 @@ async def test_opea_prompt_run_suceeds_with_defaults(test_class, mock_default_in
 
 
 @pytest.mark.asyncio
-async def test_opea_prompt_run_suceeds_with_conversation_history(test_class, mock_default_input_data_with_conversation_history, mock_default_response_data_with_conversation_history):
+@patch('comps.prompt_template.utils.chat_history_handler.requests.get')
+async def test_opea_prompt_run_suceeds_with_chat_history(mock_get, mock_default_input_data_with_chat_history, mock_default_response_data_with_chat_history):
+    mock_health_response = Mock()
+    mock_health_response.status_code = 200
+    mock_health_response.text = "chat_history service is healthy"
+
+    mock_history_response = Mock()
+    mock_history_response.status_code = 200
+    mock_history_response.json.return_value = {
+        "history": [
+            {"question": "Previous question 2", "answer": "Previous answer 2"},
+            {"question": "Previous question 3", "answer": "Previous answer 3"},
+            {"question": "Previous question 4", "answer": "Previous answer 4"}
+        ]
+    }
+
+    def side_effect(url, **kwargs):
+        if "health_check" in url:
+            return mock_health_response
+        elif "chat_history/get" in url:
+            return mock_history_response
+        else:
+            raise ValueError(f"Unexpected URL: {url}")
+
+    mock_get.side_effect = side_effect
+
+    test_class_with_history = OPEAPromptTemplate(chat_history_endpoint="http://test-endpoint")
+
     try:
-        result = await test_class.run(mock_default_input_data_with_conversation_history)
+        result = await test_class_with_history.run(mock_default_input_data_with_chat_history, access_token="test-token")
     except Exception as e:
         pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
 
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'query'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_default_response_data_with_conversation_history.system, "Query does not match the expected response"
-    assert result.messages.user == mock_default_response_data_with_conversation_history.user, "Query does not match the expected response"
+    assert result.messages.system == mock_default_response_data_with_chat_history.system, "Query does not match the expected response"
+    assert result.messages.user == mock_default_response_data_with_chat_history.user, "Query does not match the expected response"
+
+    assert mock_get.call_count == 2
+    mock_get.assert_any_call("http://test-endpoint/v1/health_check", headers={"Content-Type": "application/json"})
+    mock_get.assert_any_call("http://test-endpoint/v1/chat_history/get?history_id=test-history-id",
+                            headers={"Authorization": "Bearer test-token", "Content-Type": "application/json"})
 
 
 @pytest.mark.asyncio
@@ -385,3 +414,44 @@ async def test_operator_prompt_run_raises_exception_on_unexpected_placeholder_in
 
     with pytest.raises(ValueError, match="The prompt template contains unexpected placeholders: {'placeholder3'}"):
         await test_class.run(mock_invalid_input_data)
+
+def test_parse_reranked_docs(test_class):
+    docs = DocList([
+        TextDoc(text="Document1"),
+        TextDoc(text="Document2"),
+        TextDoc(text="Document3"),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+
+    docs = DocList([
+        {"text": "Document1"},
+        {"text": "Document2"},
+        {"text": "Document3"}
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert result == "Document1\n\nDocument2\n\nDocument3"
+
+    docs = DocList([
+        TextDoc(text="Document1", metadata={"url": "http://example.com/doc1", "citation_id": "1"}),
+        TextDoc(text="Document2", metadata={"object_name": "doc2.txt", "bucket_name": "my-bucket", "citation_id": "2"}),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert "example.com/doc1" in result
+    assert "doc2.txt" in result
+    assert "my-bucket" in result
+    assert "[1]" in result
+    assert "[2]" in result
+    
+    docs = DocList([
+        TextDoc(text="Document1", metadata={"url": "http://example.com/doc1", "citation_id": "1"}),
+        TextDoc(text="Document2", metadata={"object_name": "doc2.txt", "bucket_name": "my-bucket", "Header1": 'H1', "Header2": 'H2', "Header3": 'H3', "citation_id": "2"}),
+    ])
+    result = test_class._parse_reranked_docs(docs)
+    assert "example.com/doc1" in result
+    assert "doc2.txt" in result
+    assert "my-bucket" in result
+    assert "H1" in result
+    assert "H2" in result
+    assert "H3" in result
+    assert "[1]" in result
+    assert "[2]" in result

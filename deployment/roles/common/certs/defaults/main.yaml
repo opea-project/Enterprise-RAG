@@ -1,0 +1,11 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Default prefix for TLS files (key, crt, csr)
+tls_file_prefix: "tls"
+
+# Certificate generation settings
+certs_autogenerate: true
+certs_preset_pathToCert: ""
+certs_preset_pathToKey: ""

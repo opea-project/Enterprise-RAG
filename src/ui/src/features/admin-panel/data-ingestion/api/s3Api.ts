@@ -4,13 +4,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
-import {
-  DownloadFileRequest,
-  PostFileRequest,
-} from "@/features/admin-panel/data-ingestion/types/api";
-import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
+import { PostFileRequest } from "@/features/admin-panel/data-ingestion/types/api";
 import { RootState } from "@/store";
-import { transformErrorMessage } from "@/utils/api";
+import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 
 export const s3Api = createApi({
   reducerPath: "s3Api",
@@ -38,31 +34,6 @@ export const s3Api = createApi({
         );
       },
     }),
-    downloadFile: builder.query<void, DownloadFileRequest>({
-      query: ({ presignedUrl, fileName }) => ({
-        url: presignedUrl,
-        responseHandler: async (response) => {
-          const fileBlob = await response.blob();
-
-          const url = window.URL.createObjectURL(fileBlob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          a.click();
-          a.remove();
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-        },
-      }),
-      transformErrorResponse: (error) =>
-        transformErrorMessage(error, ERROR_MESSAGES.DOWNLOAD_FILE),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        await handleOnQueryStarted(
-          queryFulfilled,
-          dispatch,
-          ERROR_MESSAGES.DOWNLOAD_FILE,
-        );
-      },
-    }),
     deleteFile: builder.mutation({
       query: (url: string) => ({
         url,
@@ -81,10 +52,6 @@ export const s3Api = createApi({
   }),
 });
 
-export const {
-  usePostFileMutation,
-  useLazyDownloadFileQuery,
-  useDeleteFileMutation,
-} = s3Api;
+export const { usePostFileMutation, useDeleteFileMutation } = s3Api;
 
 export const selectS3Api = (state: RootState) => state.s3Api;

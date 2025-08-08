@@ -42,7 +42,7 @@ class OPEATextExtractor:
                 textdocs = self._load_files(files=files)
                 loaded_docs.extend(textdocs)
             except Exception as e:
-                logger.exception(e)
+                logger.error(e)
                 raise ValueError(f"Failed to load file. Exception: {e}")
 
         # Save links
@@ -51,7 +51,7 @@ class OPEATextExtractor:
                 textdocs = self._load_links(links=link_list)
                 loaded_docs.extend(textdocs)
             except Exception as e:
-                logger.exception(e)
+                logger.error(e)
                 raise ValueError(f"Failed to load link. Exception: {e}")
 
         logger.info(f"Done preprocessing. Loaded {len(loaded_docs)} documents.")
@@ -75,7 +75,7 @@ class OPEATextExtractor:
 
                 loaded_docs.append(TextDoc(text=self._load_text(saved_path), metadata=metadata))
             except Exception as e:
-                logger.exception(e)
+                logger.error(e)
                 raise e
             finally:
                 if saved_path != "" and os.path.exists(saved_path) and not os.path.isdir(saved_path):
@@ -114,7 +114,7 @@ class OPEATextExtractor:
 
                 loaded_docs.append(TextDoc(text=self._load_text(parsed_link['file_path']), metadata=metadata))
             except Exception as e:
-                logger.exception(e)
+                logger.error(e)
                 raise e
             finally:
                 if saved_path != "" and os.path.exists(saved_path) and not os.path.isdir(saved_path):

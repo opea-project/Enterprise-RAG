@@ -12,14 +12,17 @@ import {
   LinkDataItem,
 } from "@/features/admin-panel/data-ingestion/types";
 import {
-  GetFilePresignedUrlRequest,
+  FileSyncDataItem,
   GetS3BucketsListResponseData,
   PostFileToExtractTextRequest,
 } from "@/features/admin-panel/data-ingestion/types/api";
-import { handleOnQueryStarted } from "@/features/admin-panel/data-ingestion/utils/api";
 import { keycloakService } from "@/lib/auth";
 import { constructUrlWithUuid } from "@/utils";
-import { onRefreshTokenFailed, transformErrorMessage } from "@/utils/api";
+import {
+  handleOnQueryStarted,
+  onRefreshTokenFailed,
+  transformErrorMessage,
+} from "@/utils/api";
 
 const edpBaseQuery = fetchBaseQuery({
   baseUrl: API_ENDPOINTS.BASE_URL,
@@ -48,45 +51,19 @@ export const edpApi = createApi({
       },
       providesTags: ["Files"],
     }),
-    getFilePresignedUrl: builder.mutation<string, GetFilePresignedUrlRequest>({
-      query: ({ fileName, method, bucketName }) => ({
-        url: API_ENDPOINTS.GET_FILE_PRESIGNED_URL,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          object_name: fileName,
-          method,
-          bucket_name: bucketName,
-        }),
-        responseHandler: async (response) => {
-          const { url } = await response.json();
-          return url;
-        },
-      }),
-      transformErrorResponse: (error) =>
-        transformErrorMessage(error, ERROR_MESSAGES.GET_FILE_PRESIGNED_URL),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        await handleOnQueryStarted(
-          queryFulfilled,
-          dispatch,
-          ERROR_MESSAGES.GET_FILE_PRESIGNED_URL,
-        );
-      },
-    }),
+
     retryFileAction: builder.mutation({
       query: (uuid) => ({
         url: constructUrlWithUuid(API_ENDPOINTS.RETRY_FILE_ACTION, uuid),
         method: "POST",
       }),
       transformErrorResponse: (error) =>
-        transformErrorMessage(error, ERROR_MESSAGES.RETRY_LINK_ACTION),
+        transformErrorMessage(error, ERROR_MESSAGES.RETRY_FILE_ACTION),
       onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
         await handleOnQueryStarted(
           queryFulfilled,
           dispatch,
-          ERROR_MESSAGES.RETRY_LINK_ACTION,
+          ERROR_MESSAGES.RETRY_FILE_ACTION,
         );
       },
       invalidatesTags: ["Files"],
@@ -116,6 +93,33 @@ export const edpApi = createApi({
         method: "POST",
         params: queryParams,
       }),
+    }),
+    getFilesSync: builder.query<FileSyncDataItem[], void>({
+      query: () => API_ENDPOINTS.GET_FILES_SYNC,
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.GET_FILES_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.GET_FILES_SYNC,
+        );
+      },
+    }),
+    postFilesSync: builder.mutation<void, void>({
+      query: () => ({
+        url: API_ENDPOINTS.POST_FILES_SYNC,
+        method: "POST",
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_FILES_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.POST_FILES_SYNC,
+        );
+      },
     }),
     getLinks: builder.query<LinkDataItem[], void>({
       query: () => API_ENDPOINTS.GET_LINKS,
@@ -201,10 +205,12 @@ export const edpApi = createApi({
 export const {
   useGetFilesQuery,
   useLazyGetFilesQuery,
-  useGetFilePresignedUrlMutation,
   useRetryFileActionMutation,
   usePostFileToExtractTextMutation,
   usePostLinkToExtractTextMutation,
+  useGetFilesSyncQuery,
+  useLazyGetFilesSyncQuery,
+  usePostFilesSyncMutation,
   useGetLinksQuery,
   useLazyGetLinksQuery,
   usePostLinksMutation,

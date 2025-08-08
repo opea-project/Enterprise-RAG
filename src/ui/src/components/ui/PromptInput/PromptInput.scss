@@ -6,7 +6,7 @@
   @apply grid grid-cols-[1fr_auto] gap-2.5;
   @apply mx-4 md:mx-auto;
   @apply py-2.5 pl-11 pr-2.5;
-  @apply z-10 w-[calc(100%_-_2rem)] md:w-[46rem];
+  @apply z-10 w-[calc(100%_-_2rem)] max-w-full md:w-[46rem];
   @apply bg-light-bg-2 dark:bg-dark-bg-contrast;
   @apply shadow-light-border/40 dark:shadow-dark-border/80;
   @apply border-light-border border-opacity-0 dark:border-dark-border dark:border-opacity-100;

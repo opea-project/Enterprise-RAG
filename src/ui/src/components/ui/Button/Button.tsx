@@ -12,14 +12,14 @@ import {
 
 import { IconName, icons } from "@/components/icons";
 
-type ButtonColors = "primary" | "error" | "success";
-type ButtonSizes = "sm";
-type ButtonVariants = "outlined";
+export type ButtonColor = "primary" | "error" | "success";
+type ButtonSize = "sm";
+type ButtonVariant = "outlined" | "text";
 
 interface ButtonProps extends ReactAriaButtonProps {
-  color?: ButtonColors;
-  size?: ButtonSizes;
-  variant?: ButtonVariants;
+  color?: ButtonColor;
+  size?: ButtonSize;
+  variant?: ButtonVariant;
   fullWidth?: boolean;
   icon?: IconName;
 }
@@ -34,16 +34,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       className,
       children,
-      ...props
+      ...rest
     },
     ref,
   ) => {
-    const buttonClassNames = classNames([
+    const buttonClassNames = classNames("button", [
       {
         "button--sm": size === "sm",
         "button--success": color === "success",
         "button--error": color === "error",
         "button--outlined": variant === "outlined",
+        "button--text": variant === "text",
         "button--outlined-primary":
           variant === "outlined" && color === "primary",
         "button--outlined-error": variant === "outlined" && color === "error",
@@ -65,7 +66,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <ReactAriaButton {...props} ref={ref} className={buttonClassNames}>
+      <ReactAriaButton {...rest} ref={ref} className={buttonClassNames}>
         {content}
       </ReactAriaButton>
     );

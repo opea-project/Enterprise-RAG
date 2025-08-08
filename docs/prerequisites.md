@@ -19,7 +19,7 @@ This document outlines the essential prerequisites for deploying and using the E
 
 | Category            | Details                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
-| Operating System    | Ubuntu 20.04/22.04                                                                                                |
+| Operating System    | Ubuntu 20.04/22.04/24.04                                                                                          |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
 | Gaudi Firmware Version | 1.21.0

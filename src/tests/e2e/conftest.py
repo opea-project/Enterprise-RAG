@@ -11,7 +11,10 @@ import logging
 import pytest
 import tarfile
 import urllib3
+
+from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
+from helpers.chat_history_helper import ChatHistoryHelper
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
@@ -90,6 +93,11 @@ def collect_k8s_logs(request):
     allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
 
 
+@pytest.fixture
+def access_token(keycloak_helper):
+    return keycloak_helper.get_access_token()
+
+
 @pytest.fixture(scope="session")
 def chatqa_api_helper():
     return ApiRequestHelper("chatqa", {"app": "router-service"})
@@ -98,6 +106,11 @@ def chatqa_api_helper():
 @pytest.fixture(scope="session")
 def keycloak_helper(request):
     return KeycloakHelper(request.config.getoption("--credentials-file"))
+
+
+@pytest.fixture(scope="session")
+def chat_history_helper():
+    return ChatHistoryHelper(namespace="chat-history", label_selector={"app.kubernetes.io/name": "chat-history"}, api_port=6012)
 
 
 @pytest.fixture(scope="session")
@@ -132,11 +145,10 @@ def code_snippets():
     a dictionary mapping each snippet's name (without the file extension)
     to its content.
     """
-    def _code_snippets(snippets_dir=None):
+    def _code_snippets(snippets_dir="code_snippets"):
         code_snippets = {}
-        if snippets_dir is None:
-            snippets_dir = "files/code_snippets"
 
+        snippets_dir = f"{CODE_SNIPPETS_DIR}/{snippets_dir}"
         for filename in os.listdir(snippets_dir):
             file_path = os.path.join(snippets_dir, filename)
             with open(file_path, 'r') as file:

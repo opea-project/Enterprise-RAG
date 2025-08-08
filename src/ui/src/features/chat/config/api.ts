@@ -1,8 +1,15 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-export const API_ENDPOINTS = {
+export const CHATQNA_API_ENDPOINTS = {
   POST_PROMPT: "/api/v1/chatqna",
+} as const;
+
+export const CHAT_HISTORY_API_ENDPOINTS = {
+  GET_CHAT_HISTORY: "/v1/chat_history/get",
+  SAVE_CHAT_HISTORY: "/v1/chat_history/save",
+  CHANGE_CHAT_HISTORY_NAME: "/v1/chat_history/change_name",
+  DELETE_CHAT_HISTORY: "/v1/chat_history/delete",
 } as const;
 
 export const ABORT_ERROR_MESSAGE = "User interrupted chatbot response.";

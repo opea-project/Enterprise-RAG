@@ -21,6 +21,14 @@ When you receive a response from the chat, verify whether it responds correctly 
 
 ![Screenshot of chat page - waiting for response from chat](../images/ui/chat_waiting.png)
 
+After receiving a message your chat will be saved in Chat History. You can access it by clicking panel icon in the top left corner. Side menu will show up.
+
+![Screenshot of chat page - side panel with Chat History](../images/ui/chat_history_saved.png)
+
+By clicking three dots next to the name of your chat you will see the options to manage your chat. You can rename your chat, export its contents in JSON format and delete it.
+
+![Screenshot of chat page - side panel with Chat History - chat options menu displayed](../images/ui/chat_history_options.png)
+
 In the top right corner of the page, if you logged in as an admin, you will see three interactive elements - **Admin Panel** button, **Light/Dark Mode** switch and **Logout** button. If you logged in as a regular user, **Admin Panel** button won't be visible for you.
 
 ## Admin Panel

@@ -157,6 +157,7 @@ def register_microservice(
     ssl_keyfile: Optional[str] = None,
     ssl_certfile: Optional[str] = None,
     endpoint: Optional[str] = "/",
+    http_method: str = "POST",
     input_datatype: Type[Any] = TextDoc,
     output_datatype: Type[Any] = TextDoc,
     provider: Optional[str] = None,
@@ -194,7 +195,7 @@ def register_microservice(
             )
             opea_microservices[name] = micro_service
 
-        micro_service.app.router.add_api_route(endpoint, func, methods=["POST"])
+        micro_service.app.router.add_api_route(endpoint, func, methods=[http_method])
         micro_service.server.logger.info(f"Registered endpoint: {endpoint}")
 
         return func

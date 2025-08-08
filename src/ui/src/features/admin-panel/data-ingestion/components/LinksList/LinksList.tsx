@@ -3,6 +3,7 @@
 
 import "./LinksList.scss";
 
+import classNames from "classnames";
 import { Dispatch, SetStateAction } from "react";
 
 import IconButton from "@/components/ui/IconButton/IconButton";
@@ -13,9 +14,15 @@ interface LinksListProps {
   links: LinkForIngestion[];
   setLinks: Dispatch<SetStateAction<LinkForIngestion[]>>;
   removeLinkFromList: (id: string) => void;
+  highlightedLinkId?: string | null;
 }
 
-const LinksList = ({ links, setLinks, removeLinkFromList }: LinksListProps) => {
+const LinksList = ({
+  links,
+  setLinks,
+  removeLinkFromList,
+  highlightedLinkId,
+}: LinksListProps) => {
   const clearList = () => {
     setLinks([]);
   };
@@ -26,7 +33,13 @@ const LinksList = ({ links, setLinks, removeLinkFromList }: LinksListProps) => {
       <ul>
         {links.map(({ id, value }) => (
           <li key={id} className="link-list-item">
-            <p className="link-list-item__url">{value}</p>
+            <p
+              className={classNames("link-list-item__url", {
+                highlighted: id === highlightedLinkId,
+              })}
+            >
+              {value}
+            </p>
             <IconButton
               icon="delete"
               color="error"

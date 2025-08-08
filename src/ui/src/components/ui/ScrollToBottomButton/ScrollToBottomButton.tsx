@@ -16,10 +16,11 @@ interface ScrollToBottomButtonProps
 
 const ScrollToBottomButton = ({
   show,
-  ...props
+  className,
+  ...rest
 }: ScrollToBottomButtonProps) => (
   <IconButton
-    {...props}
+    {...rest}
     icon="scroll-to-bottom"
     aria-label="Scroll to bottom"
     className={classNames([
@@ -28,6 +29,7 @@ const ScrollToBottomButton = ({
         invisible: !show,
       },
       "scroll-to-bottom-button",
+      className,
     ])}
   />
 );

@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# recourse-cpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
+# resources-reference-hpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
 
 services:
   embedding-usvc:
@@ -59,7 +59,7 @@ services:
             value: 1
             periodSeconds: 15
   llm-usvc:
-    replicas: 1
+    replicas: 2
     resources:
       requests:
         cpu: 1
@@ -208,7 +208,7 @@ services:
             value: 1
             periodSeconds: 15
   torchserve_reranking:
-    replicas: 1
+    replicas: 2
     resources:
       requests:
         cpu: 4
@@ -216,6 +216,30 @@ services:
       limits:
         cpu: 4
         memory: 16Gi
+    hpa:
+      minReplicas: 2
+      maxReplicas: 3
+      targetValue: 1000m
+      # this is average requests queue latency in miliseconds
+      # depends on hardware used and number of requests
+      # metric used: 'avg(rate(ts_queue_latency_microseconds{namespace="chatqa",service="torchserve-reranking-svc"}[1m])) by (<<.GroupBy>>) / 1000000'
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 120
+        scaleUp:
+          selectPolicy: Max
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 15
+          - type: Pods
+            value: 1
+            periodSeconds: 15
   vllm_gaudi:
     replicas: 1
     # Note: For vllm_gaudi, the habana.ai/gaudi limit is set to the tensor-parallel-size value defined in deployment/pipelines/chatqa/resources-model-hpu.yaml

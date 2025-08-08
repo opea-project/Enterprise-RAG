@@ -8,6 +8,12 @@ The important assumption that is made here is about storage provider:
 
 ## Installing NFS Server
 
+### Prerequisites
+
+* `nerdctl` command - available on GitHub repository [containerd/nerdctl](https://github.com/containerd/nerdctl).
+
+### Server Installation
+
 Firstly the NFS server needs to be set up, open for connections from other hosts.
 ```bash
 sudo mkdir -p /opt/nfs-data/data
@@ -20,10 +26,13 @@ sudo nerdctl run --name nfs-server --network host -td --privileged \
 Please verify the NFS Server ip address. It will be needed for next step.
 
 ## Installing CSI Driver from Helm Chart
+
+> **Note**: `NFS_SERVER_IP` is needed for this step. That must be a routable IP address of the host where NFS server was installed in the previous step.
+
 ```bash
 ## https://github.com/kubernetes-csi/csi-driver-nfs/tree/master/charts
 helm repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
-helm install csi-driver-nfs csi-driver-nfs/csi-driver-nfs --namespace kube-system --version 4.11.0 --set externalSnapshotter.enabled=true --set storageClass.create=true --set storageClass.name=nfs-csi --set storageClass.parameters.server=${NFS_SERVER_IP} --set storageClass.parameters.share=/data --set storageClass.volumeBindingMode=WaitForFirstConsumer --set storageClass.mountOptions="{nfsvers=4}"
+[[ -z $NFS_SERVER_IP ]] && echo "Unset variable NFS_SERVER_IP" || helm install csi-driver-nfs csi-driver-nfs/csi-driver-nfs --namespace kube-system --version 4.11.0 --set externalSnapshotter.enabled=true --set controller.useTarCommandInSnapshot=true --set storageClass.create=true --set storageClass.name=nfs-csi --set storageClass.parameters.server=${NFS_SERVER_IP} --set storageClass.parameters.share=/data --set storageClass.volumeBindingMode=WaitForFirstConsumer --set storageClass.mountOptions="{nfsvers=4}"
 ```
 
 The above command will start storage driver in cluster and will create and register a `StorageClass`.
@@ -32,20 +41,22 @@ The above command will start storage driver in cluster and will create and regis
 
 ```bash
 ## Review the name of now default StorageClass and make in non-default:
-kubectl get sc
+DEF_SC_NAME="$(kubectl get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')"
 
-kubectl patch sc DEF_SC_NAME -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+annotate_sc_default() { sc_name=$1; toggle=${2:-true}; kubectl patch sc $sc_name -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"'$toggle'"}}}'; }
 
-## Annotate nfs-csi storageclass as default
-kubectl patch sc nfs-csi -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+## unset previously default storage class and annotate nfs-csi the default one
+[[ -n $DEF_SC_NAME ]] && annotate_sc_default $DEF_SC_NAME false
+annotate_sc_default nfs-csi true
 ```
 
 ## Install VolumeSnapshotClass
 
 This step is necessary for Velero to call correct class for making a snapshot.
 
-Create a document with following contents:
-```yaml
+Create a manifest document for `VolumeSnapshotClass` for applying it with `kubectl`:
+```shell
+cat <<EOF>> csi-snapclass.yaml
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
 metadata:
@@ -54,16 +65,11 @@ metadata:
     velero.io/csi-volumesnapshot-class: "true"
 driver: nfs.csi.k8s.io
 deletionPolicy: Delete
+
+EOF
+
+kubectl apply -f csi-snapclass.yaml
 ```
-
-And apply it with `kubectl apply`.
-
-> __Note__
->
-> It is a known issue that NFS CSI snapshot function may restore some volumes to a suboptimal state.<br>
-> It was found that ownership data may not reflect the source volume of snapshot. <br>
-> The workaround is to apply expected ownership by mounting the same NFS share outside of cluster, and fix ownership with `chown`.
-> This fix is needed for database services like: Postgresql and Minio.
 
 ## Summary
 

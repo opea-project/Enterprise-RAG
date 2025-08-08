@@ -7,7 +7,7 @@ import numpy as np
 from docarray import BaseDoc, DocList
 from docarray.documents import AudioDoc
 from docarray.typing import AudioUrl
-from pydantic import Field, conint, conlist, PositiveInt, NonNegativeFloat
+from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat
 
 class ComponentArgument(BaseDoc):
     name: str
@@ -18,6 +18,19 @@ class TopologyInfo:
     # should be a pattern string
     downstream_black_list: Optional[list] = []
 
+class ChatMessage(BaseModel):
+    question: str
+    answer: str
+    metadata: Optional[Dict[str, Any]] = {}
+
+class ChatHistory(BaseModel):
+    id: Optional[str] = None
+    history: List[ChatMessage]
+
+class ChatHistoryName(BaseModel):
+    id: str
+    history_name: str
+
 class PrevQuestionDetails(BaseDoc):
     question: str
     answer: str
@@ -25,7 +38,42 @@ class PrevQuestionDetails(BaseDoc):
 class TextDoc(BaseDoc, TopologyInfo):
     text: str
     metadata: Optional[dict] = {}
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    history_id: Optional[str] = None
+
+    def to_reranked_doc(self):
+        if self.metadata and 'url' in self.metadata:
+            return RerankedLinkDoc(
+                text=self.text,
+                url=self.metadata.get('url'),
+                vector_distance=self.metadata.get('vector_distance', 1.0),
+                reranker_score=self.metadata.get('reranker_score', 0.0),
+                citation_id=self.metadata.get('citation_id', 0)
+            )
+
+        if self.metadata and 'bucket_name' in self.metadata and 'object_name' in self.metadata:
+            return RerankedFileDoc(
+                text=self.text,
+                bucket_name=self.metadata.get('bucket_name'),
+                object_name=self.metadata.get('object_name'),
+                vector_distance=self.metadata.get('vector_distance', 1.0),
+                reranker_score=self.metadata.get('reranker_score', 0.0),
+                citation_id=self.metadata.get('citation_id', 0)
+            )
+        raise ValueError("TextDoc must have either 'url' or both 'bucket_name' and 'object_name' in metadata to convert to RerankedDoc.")
+
+class RerankedBaseDoc(BaseDoc):
+    vector_distance: float = 1.0 # max far away
+    reranker_score: float = 0.0 # lowest score
+    citation_id: int = 0
+
+class RerankedFileDoc(RerankedBaseDoc):
+    type: str = "file"
+    bucket_name: str
+    object_name: str
+
+class RerankedLinkDoc(RerankedBaseDoc):
+    type: str = "link"
+    url: str
 
 class Base64ByteStrDoc(BaseDoc):
     byte_str: str
@@ -45,11 +93,11 @@ class EmbedDoc(BaseDoc):
     lambda_mult: NonNegativeFloat = 0.5
     score_threshold: NonNegativeFloat = 0.2
     metadata: Optional[dict] = {}
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    history_id: Optional[str] = None
 
 class EmbedDocList(BaseDoc):
     docs: List[EmbedDoc]
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    history_id: Optional[str] = None
 
 class Audio2TextDoc(AudioDoc):
     url: Optional[AudioUrl] = Field(
@@ -102,15 +150,15 @@ class SearchedDoc(BaseDoc):
     sibling_docs: Optional[Dict[str, DocList[TextDoc]]] = None
     top_n: PositiveInt = 3
     rerank_score_threshold: Optional[float] = 0.02
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    history_id: Optional[str] = None
 
     class Config:
         json_encoders = {np.ndarray: lambda x: x.tolist()}
 
 class PromptTemplateInput(BaseDoc):
     data: Dict[str, Any]
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
-    conversation_history_parse_type: str = "naive"
+    history_id: Optional[str] = None
+    chat_history_parse_type: str = "naive"
     system_prompt_template: Optional[str] = None
     user_prompt_template: Optional[str] = None
 
@@ -299,7 +347,7 @@ class LLMGuardDataprepGuardrailParams(BaseDoc):
 
 class TextDocList(BaseDoc):
     docs: List[TextDoc]
-    conversation_history: Optional[List[PrevQuestionDetails]] = None
+    history_id: Optional[str] = None
     dataprep_guardrail_params: Optional[LLMGuardDataprepGuardrailParams] = None
 
 class LLMPromptTemplate(BaseDoc):
@@ -318,12 +366,14 @@ class LLMParamsDoc(BaseDoc):
     streaming: bool = True
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
+    data: Optional[Dict[str, Any]] = None
 
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
     streaming: bool = True
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
+    data: Optional[Dict[str, Any]] = None
 
 class LLMParams(BaseDoc):
     max_new_tokens: PositiveInt = 1024

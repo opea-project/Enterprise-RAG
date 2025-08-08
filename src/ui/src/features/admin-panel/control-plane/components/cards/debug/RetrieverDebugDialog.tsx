@@ -14,6 +14,7 @@ import PromptInput from "@/components/ui/PromptInput/PromptInput";
 import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
+import ServiceArgumentTextArea from "@/features/admin-panel/control-plane/components/ServiceArgumentTextArea/ServiceArgumentTextArea";
 import { ERROR_MESSAGES } from "@/features/admin-panel/control-plane/config/api";
 import {
   RerankerArgs,
@@ -32,13 +33,19 @@ import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
+import { PostRetrieverQueryRequest } from "@/features/admin-panel/control-plane/types/api";
 import {
   filterInvalidRetrieverArguments,
   filterRetrieverFormData,
 } from "@/features/admin-panel/control-plane/utils";
 import { useAppSelector } from "@/store/hooks";
-import { ConversationTurn } from "@/types";
+import { ChatTurn } from "@/types";
 import { getErrorMessage } from "@/utils/api";
+
+const initialSearchByParam = `{
+    "bucket_name": "default",
+    "object_name": ""
+}`;
 
 const createCodeBlock = (text: string | object) => {
   let parsedText = text;
@@ -54,10 +61,40 @@ const RetrieverDebugDialog = () => {
   const [postRetrieverQuery] = usePostRetrieverQueryMutation();
 
   const [isRerankerEnabled, setIsRerankerEnabled] = useState(false);
-  const [conversationTurns, setConversationTurns] = useState<
-    ConversationTurn[]
-  >([]);
+  const [conversationTurns, setChatTurns] = useState<ChatTurn[]>([]);
   const [query, setQuery] = useState("");
+  const [searchByParam, setSearchByParam] = useState(initialSearchByParam);
+
+  const handleSearchByParamChange: ChangeEventHandler<HTMLTextAreaElement> = (
+    event,
+  ) => {
+    setSearchByParam(event.target.value);
+  };
+
+  const isSearchByJSONValid = () => {
+    try {
+      JSON.parse(searchByParam);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const isFormatJSONButtonDisabled = () => {
+    try {
+      const parsed = JSON.parse(searchByParam);
+      const formatted = JSON.stringify(parsed, null, 4);
+      return searchByParam.trim() === formatted.trim();
+    } catch {
+      return true;
+    }
+  };
+
+  const formatSearchByJSON = () => {
+    setSearchByParam((prevValue) =>
+      JSON.stringify(JSON.parse(prevValue), null, 4),
+    );
+  };
 
   const chatQnAGraphNodes = useAppSelector(chatQnAGraphNodesSelector);
   const retrieverNode = chatQnAGraphNodes.find(
@@ -94,7 +131,7 @@ const RetrieverDebugDialog = () => {
   };
 
   const handleSubmitQuery = async (query: string) => {
-    const newQueryRequest = {
+    const newQueryRequest: PostRetrieverQueryRequest = {
       query,
       ...retrieverArgumentsForm,
       reranker: isRerankerEnabled,
@@ -102,16 +139,22 @@ const RetrieverDebugDialog = () => {
       rerank_score_threshold: rerankerArgumentsForm.rerank_score_threshold,
     };
 
+    if (isSearchByJSONValid()) {
+      newQueryRequest.search_by = searchByParam
+        ? JSON.parse(searchByParam)
+        : undefined;
+    }
+
     setQuery("");
 
-    const newConversationTurn: ConversationTurn = {
+    const newChatTurn: ChatTurn = {
       id: uuidv4(),
       question: createCodeBlock(newQueryRequest),
       answer: "",
       error: null,
       isPending: true,
     };
-    setConversationTurns((prevTurns) => [...prevTurns, newConversationTurn]);
+    setChatTurns((prevTurns) => [...prevTurns, newChatTurn]);
 
     const { data, error } = await postRetrieverQuery(newQueryRequest);
 
@@ -120,16 +163,16 @@ const RetrieverDebugDialog = () => {
         error,
         ERROR_MESSAGES.POST_RETRIEVER_QUERY,
       );
-      setConversationTurns((prevTurns) => [
+      setChatTurns((prevTurns) => [
         ...prevTurns.slice(0, -1),
-        { ...newConversationTurn, error: errorMessage, isPending: false },
+        { ...newChatTurn, error: errorMessage, isPending: false },
       ]);
     } else {
       const responseData = data ? data : "";
-      setConversationTurns((prevTurns) => [
+      setChatTurns((prevTurns) => [
         ...prevTurns.slice(0, -1),
         {
-          ...newConversationTurn,
+          ...newChatTurn,
           answer: createCodeBlock(responseData),
           isPending: false,
         },
@@ -169,6 +212,31 @@ const RetrieverDebugDialog = () => {
               handleRerankerEnabledCheckboxChange
             }
           />
+          <ServiceArgumentTextArea
+            value={searchByParam}
+            placeholder="Enter search_by parameters in JSON format"
+            isInvalid={!isSearchByJSONValid()}
+            rows={5}
+            titleCaseLabel={false}
+            inputConfig={{
+              name: "search_by",
+              tooltipText: "Search by parameters in JSON format",
+            }}
+            onChange={handleSearchByParamChange}
+          />
+          {!isSearchByJSONValid() && (
+            <p className="error mb-2 text-xs italic">
+              Invalid search_by parameter. It won't be included in the query.
+            </p>
+          )}
+          <Button
+            size="sm"
+            isDisabled={isFormatJSONButtonDisabled()}
+            fullWidth
+            onPress={formatSearchByJSON}
+          >
+            Format JSON
+          </Button>
         </div>
         <div className="flex h-[calc(100vh-12rem)] flex-col text-sm">
           <div className="grid h-full grid-rows-[1fr_auto]">
@@ -302,7 +370,7 @@ const RetrieverDebugParamsForm = ({
 };
 
 interface RetrieverDebugChatProps {
-  conversationTurns: ConversationTurn[];
+  conversationTurns: ChatTurn[];
   query: string;
   handleQueryInputChange: ChangeEventHandler<HTMLTextAreaElement>;
   handleSubmitQuery: (query: string) => void;

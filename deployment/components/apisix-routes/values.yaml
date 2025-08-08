@@ -7,6 +7,7 @@ auth:
 
 endpoints:
   - name: chatqna
+    enabled: true
     namespace: chatqa
     path: /api/v1/chatqna
     backend_service: router-service
@@ -17,6 +18,7 @@ endpoints:
       - "admin#admin-access"
       - "user#user-access"
   - name: fingerprint-append
+    enabled: true
     namespace: fingerprint
     path: /v1/system_fingerprint/append_arguments
     service_port: 6012
@@ -26,6 +28,7 @@ endpoints:
     permissions:
       - "admin#admin-access"
   - name: fingerprint-change
+    enabled: true
     namespace: fingerprint
     path: /v1/system_fingerprint/change_arguments
     service_port: 6012
@@ -34,7 +37,40 @@ endpoints:
     rate_limit_count: 30
     permissions:
       - "admin#admin-access"
-  - name: edp
+  - name: chat-history
+    enabled: true
+    namespace: chat-history
+    path: /v1/chat_history/*
+    backend_service: chat-history-svc
+    service_port: 6012
+    rate_limit_count: 120
+    permissions:
+      - "admin#admin-access"
+      - "user#user-access"
+    service_regex:
+      - ^/v1/chat_history/save$
+      - /v1/chat_history/save
+      - ^/v1/chat_history/get$
+      - /v1/chat_history/get
+      - ^/v1/chat_history/change_name$
+      - /v1/chat_history/change_name
+      - ^/v1/chat_history/delete$
+      - /v1/chat_history/delete
+  - name: edp-presigned
+    enabled: true
+    namespace: edp
+    path: /api/v1/edp/presignedUrl
+    backend_service: edp-backend
+    service_port: 5000
+    rate_limit_count: 30
+    service_regex:
+      - ^/api/v1/edp/presignedUrl$
+      - /api/presignedUrl
+    permissions:
+      - "admin#admin-access"
+      - "user#user-access"
+  - name: edp-admin
+    enabled: true
     namespace: edp
     path: /api/v1/edp/*
     backend_service: edp-backend
@@ -65,8 +101,6 @@ endpoints:
       - /api/link/$1/extract
       - ^/api/v1/edp/retrieve$
       - /api/retrieve
-      - ^/api/v1/edp/presignedUrl$
-      - /api/presignedUrl
       - ^/api/v1/edp/files/sync
       - /api/files/sync
     permissions:

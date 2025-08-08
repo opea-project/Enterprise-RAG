@@ -27,6 +27,11 @@
 .li {
   @apply text-sm;
 
+  & > .ul,
+  & > .ol {
+    @apply mt-2;
+  }
+
   & > p {
     @apply text-sm;
   }

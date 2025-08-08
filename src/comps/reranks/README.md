@@ -117,7 +117,11 @@ The reranking microservice outputs a JSON containing the original user question 
         "downstream_black_list": [],
         "id": "22c8b1d78b34945003101708494a24b6",
         "text": "Deep learning is...",
-        "metadata": {}
+        "metadata": {
+          "vector_distance": 0.23,
+          "reranker_score": 0.82,
+          "citation_id": 1
+        }
       }
     ]
   },

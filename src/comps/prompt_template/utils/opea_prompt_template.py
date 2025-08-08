@@ -13,15 +13,15 @@ from comps import (
 
 from comps.prompt_template.utils.templates import template_system_english as default_system_template
 from comps.prompt_template.utils.templates import template_user_english as default_user_template
-from comps.prompt_template.utils.conversation_history_handler import ConversationHistoryHandler
+from comps.prompt_template.utils.chat_history_handler import ChatHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class OPEAPromptTemplate:
-    def __init__(self):
+    def __init__(self, chat_history_endpoint: str = None,):
         self._if_conv_history_in_prompt = False
-        self._conversation_history_placeholder = "conversation_history"
-        self.ch_handler = ConversationHistoryHandler()
+        self._chat_history_placeholder = "conversation_history"
+        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint)
         try:
             self._validate(default_system_template, default_user_template)
             self.system_prompt_template = default_system_template
@@ -72,13 +72,13 @@ class OPEAPromptTemplate:
 
         # Ensure no placeholders in templates are not in the provided placeholders set
         extra_placeholders = combined_placeholders - placeholders
-        extra_placeholders_no_ch = extra_placeholders - set([self._conversation_history_placeholder])
+        extra_placeholders_no_ch = extra_placeholders - set([self._chat_history_placeholder])
         if extra_placeholders_no_ch:
             raise ValueError(f"The prompt template contains unexpected placeholders: {extra_placeholders_no_ch}")
 
-        if self._conversation_history_placeholder not in extra_placeholders:
+        if self._chat_history_placeholder not in extra_placeholders:
             logger.warning("A placeholder for conversation history is missing. LLM will not remember previous answers. " +
-                           "Add {conversation_history} placeholder if you want to add the conversation to LLM.")
+                           "Add {chat_history} placeholder if you want to add the conversation to LLM.")
             self._if_conv_history_in_prompt = False
         else:
             self._if_conv_history_in_prompt = True
@@ -134,9 +134,10 @@ class OPEAPromptTemplate:
 
         return system_prompt, user_prompt
 
-    def _parse_reranked_docs(self, reranked_docs: list) -> str:
+    def _parse_reranked_docs(self, reranked_docs: list, header_separator=" > ") -> str:
         """
         Parse reranked documents and format them to display source and section information.
+        If docs do not have valid metadata or text, they are skipped with an error logged.
 
         Args:
             reranked_docs (list): List of document dictionaries containing metadata and text
@@ -147,45 +148,52 @@ class OPEAPromptTemplate:
         formatted_docs = []
 
         for doc in reranked_docs:
-            if isinstance(doc, dict) and "metadata" not in doc.keys() or \
-               isinstance(doc, TextDoc) and not doc.metadata:
-                if isinstance(doc, dict) and "text" in doc.keys():
-                    formatted_docs.append(doc["text"])
-                    continue
-                elif isinstance(doc, TextDoc) and hasattr(doc, "text"):
-                    formatted_docs.append(doc.text)
-                    continue
-                else:
-                    logger.error(f"Document {doc} does not contain metadata or text.")
-                    raise ValueError(f"Document {doc} does not contain metadata or text.")
-
-            metadata = doc["metadata"] if isinstance(doc, dict) else doc.metadata
-            text = doc["text"] if isinstance(doc, dict) else doc.text
-
-            file_info = "Unknown Source"
-            if "url" in metadata:
-                file_info = metadata["url"]
+            if isinstance(doc, dict):
+                doc = TextDoc(**doc)
             else:
-                file_info = metadata["object_name"]
+                if not isinstance(doc, TextDoc):
+                    logger.error(f"Expected reranked_docs to be a list of TextDoc or dict objects, but got {type(doc)}. Skipping.")
+                    continue
+
+            if doc.text is None or doc.metadata is None:
+                logger.error(f"Document {doc} does not contain metadata or text.")
+                raise ValueError(f"Document {doc} does not contain metadata or text.")
+                
+            source_info = { "type": "unknown" }
+            if "url" in doc.metadata:
+                source_info = {
+                    "type": "Link",
+                    "source": doc.metadata["url"]
+                }
+            if "bucket_name" in doc.metadata and "object_name" in doc.metadata:
+                source_info = {
+                    "type": "File",
+                    "source": "/".join([doc.metadata["bucket_name"], doc.metadata["object_name"]])
+                }
+            
+            if source_info["type"] == "unknown":
+                # Cannot reference this document in any way
+                logger.warning(f"Document {doc} does not contain valid source information.")
 
             # Collect header information if available
             headers = []
             for i in range(1, 8):  # Check for Header1 through Header7
                 header_key = f"Header{i}"
-                if header_key in metadata and metadata[header_key]:
-                    headers.append(metadata[header_key])
+                if header_key in doc.metadata and doc.metadata[header_key]:
+                    headers.append(doc.metadata[header_key])
 
             # Build the formatted string
-            header_part = ""
-            if headers:
-                header_part = f" | Section: {' > '.join(headers)}"
+            header_part = f"\nSection: {header_separator.join(headers)}" if len(headers) > 0 else ""
 
-            formatted_doc = f"[File: {file_info}{header_part}]\n{text}"
+            if source_info["type"] == "unknown":
+                formatted_doc = f"{header_part}{doc.text}"
+            else:
+                formatted_doc = f"[{doc.metadata['citation_id']}] ({source_info['source']}){header_part}\nContent: {doc.text}"
             formatted_docs.append(formatted_doc)
 
         return "\n\n".join(formatted_docs)
 
-    async def run(self, input: PromptTemplateInput) -> LLMParamsDoc:
+    async def run(self, input: PromptTemplateInput, access_token: str=None) -> LLMParamsDoc:
         """
         Executes the prompt template generation process using the provided input.
         Args:
@@ -212,7 +220,7 @@ class OPEAPromptTemplate:
                 # even if the prompt template has not changed
                 expected_placeholders_system = extract_placeholders_from_template(self.system_prompt_template)
                 expected_placeholders_user = extract_placeholders_from_template(self.user_prompt_template)
-                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._conversation_history_placeholder])
+                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._chat_history_placeholder])
                 if keys != expected_placeholders:
                     logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
                     raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
@@ -232,13 +240,16 @@ class OPEAPromptTemplate:
         # Get conversation history
         if self._if_conv_history_in_prompt:
             params = {}
-            prompt_data[self._conversation_history_placeholder] = self.ch_handler.parse_conversation_history(input.conversation_history,
-                                                                                                             input.conversation_history_parse_type,
+            prompt_data[self._chat_history_placeholder] = self.ch_handler.parse_chat_history(input.history_id,
+                                                                                                             input.chat_history_parse_type,
+                                                                                                             access_token,
                                                                                                              params)
 
         # Generate the final prompt
         try:
             final_system_prompt, final_user_prompt = self._get_prompt(**prompt_data)
+            logger.debug(f"Final System Prompt: {final_system_prompt}")
+            logger.debug(f"Final User Prompt: {final_user_prompt}")
         except KeyError as e:
             logger.error(f"Failed to get prompt from template, missing value for key {e}")
             raise KeyError(f"Failed to get prompt from template, missing value for key {e}")
@@ -246,7 +257,9 @@ class OPEAPromptTemplate:
             logger.error(f"Failed to get prompt from template, err={e}")
             raise
 
-        return LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt))
+        response = LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt), data=input.data)
+
+        return response
 
 
 def extract_placeholders_from_template(template: str) -> set:

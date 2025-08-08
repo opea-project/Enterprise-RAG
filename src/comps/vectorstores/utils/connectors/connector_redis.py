@@ -63,9 +63,10 @@ class ConnectorRedis(VectorStoreConnector):
 
         # Find and update the bucket_name field to include index_missing attribute
         for field in metadata_schema:
-            if field["name"] == "bucket_name":
+            if field["name"] == "file_id":
                 field["attrs"] = {"index_missing": True}
-                break
+            if field["name"] == "link_id":
+                field["attrs"] = {"index_missing": True}  
 
         if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
             hierarchical_fields = [
@@ -204,13 +205,19 @@ class ConnectorRedis(VectorStoreConnector):
         return await index.search(query)
 
     async def search_and_delete_by_metadata(self, field_name: str, field_value: str):
-        results = await self.search_by_metadata(field_name, field_value)
         client = RedisConnectionFactory.connect(
             redis_url=ConnectorRedis.format_url_from_env(),
             use_async=True
         )
-        for r in results.docs:
-            await client.delete(r.id)
+        logger.debug(f"Searching and deleting documents with {field_name}={field_value}")
+        while True:
+            results = await self.search_by_metadata(field_name, field_value)
+            if not results.docs or len(results.docs) == 0:
+                logger.debug("No more documents found to delete.")
+                break
+            logger.debug(f"Deleting {len(results.docs)} documents")
+            for r in results.docs:
+                await client.delete(r.id)
 
     def _build_vector_query(
         self,
@@ -245,27 +252,9 @@ class ConnectorRedis(VectorStoreConnector):
 
     def _parse_search_results(self, input_text: str, results: Iterable[any]) -> SearchedDoc:
         searched_docs = []
-
-        metadata_fields = [VectorQuery.DISTANCE_ID]
-        if self._metadata_schema():
-            metadata_fields.extend([field['name'] for field in self._metadata_schema()])
-
         for r in results:
-            metadata = {}
-            for field in metadata_fields:
-                try:
-                    metadata[field] = r[field]
-                except AttributeError:
-                    continue
-                except KeyError:
-                    continue
+            searched_docs.append(self._convert_to_text_doc(r))
 
-            searched_docs.append(
-                TextDoc(
-                    text=r[ConnectorRedis.CONTENT_FIELD_NAME],
-                    metadata=metadata
-                )
-            )
         return SearchedDoc(retrieved_docs=searched_docs, user_prompt=input_text)
 
     async def similarity_search_by_vector(self, input_text: str, embedding: List[float], k: int, distance_threshold: float = None, filter_expression: Optional[Union[str, FilterExpression]] = None, parse_result: bool = True) -> SearchedDoc:
@@ -298,18 +287,32 @@ class ConnectorRedis(VectorStoreConnector):
             logger.exception("Error occured while searching by vector")
             raise e
 
-    def empty_filter_expression(self) -> FilterExpression:
+    def get_files_filter_expression(self) -> FilterExpression:
         """
+        Use is_missing operator for link_id to filter out links and return only files.
         Returns:
-            FilterExpression: An empty filter expression equivalent to None.
+            FilterExpression: Returns a filter expression matching only files.
         """
-        return (Text("") == None)  # noqa: E711
+        logger.debug("Adding files filter expression")
+        return Text("link_id").is_missing()
 
     def get_links_filter_expression(self) -> FilterExpression:
+        """
+        Use is_missing operator for file_id to filter out files and return only links.
+        Returns:
+            FilterExpression: Returns a filter expression to query only links.
+        """
         logger.debug("Adding links filter expression")
-        return Text("bucket_name").is_missing()
+        return Text("file_id").is_missing()
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]) -> FilterExpression:
+        """
+        Constructs a filter expression for bucket names.
+        Args:
+            bucket_names (List[str]): List of bucket names to filter by.
+        Returns:
+            FilterExpression: The filter expression for the bucket names.
+        """
         logger.debug(f"Bucket names in filter expression: {bucket_names}")
         if len(bucket_names) == 0:
             raise ValueError("Bucket names list cannot be empty")
@@ -321,6 +324,16 @@ class ConnectorRedis(VectorStoreConnector):
         return bucket_name_filter
 
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str) -> FilterExpression:
+        """
+        Constructs a filter expression for bucket name and object name.
+        Args:
+            bucket_name (str): The name of the bucket.
+            object_name (str): The name of the object.
+        Returns:
+            FilterExpression: The filter expression for the bucket names.
+        Raises:
+            ValueError: If bucket_name and/or object_name is empty.
+        """
         if len(bucket_name) == 0 or len(object_name) == 0:
             raise ValueError("Bucket name and object name cannot be empty")
         bucket_name_filter = Text("bucket_name") == bucket_name
@@ -347,11 +360,10 @@ class ConnectorRedis(VectorStoreConnector):
         Returns:
             FilterExpression: The filter expression for the hierarchical index.
         """
-        return (
-            Text("doc_id") == doc_id
-            & Num("page") == page
-            & Num("summary") == 0
-        )
+        doc = Text("doc_id") == doc_id
+        page = Num("page") == page
+        summary = Num("summary") == 0
+        return doc & page & summary
 
     def _convert_to_text_doc(self, doc):
         """Helper method to convert a raw Redis result to a TextDoc"""
@@ -425,16 +437,18 @@ class ConnectorRedis(VectorStoreConnector):
         logger.debug(f"Found {len(primary_docs)} primary documents for input: {input_text}")
         all_sibling_docs = {}
 
+        # We only find siblings for files therefore use file_id for file uniqueness.
+        # Using object_name would not work since it might not be unique across different buckets.
         for doc in initial_result.docs:
             sibling_docs = []
-            if not hasattr(doc, 'object_name') or not hasattr(doc, 'start_index'):
+            if not hasattr(doc, 'file_id') or not hasattr(doc, 'start_index'):
                 continue
 
-            object_name = doc.object_name
+            object_id = doc.file_id
             start_index = doc.start_index
 
             has_headers = False
-            header_filter = Text('object_name') == object_name
+            header_filter = Text('file_id') == object_id
 
             for i in range(1, 7):
                 header_key = f'Header{i}'
@@ -468,7 +482,7 @@ class ConnectorRedis(VectorStoreConnector):
                             sibling_docs.append(self._convert_to_text_doc(next_chunk))
             else:
                 # Case 2: Document doesn't have headers - get nearest chunks by start_index
-                before_filter = (Text('object_name') == object_name) & (Num('start_index') < int(start_index))
+                before_filter = (Text('file_id') == object_id) & (Num('start_index') < int(start_index))
                 before_query = FilterQuery(filter_expression=before_filter, num_results=100)
                 before_result = await index.search(before_query)
 
@@ -477,7 +491,7 @@ class ConnectorRedis(VectorStoreConnector):
                     logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
                     sibling_docs.append(self._convert_to_text_doc(prev_chunk))
 
-                after_filter = (Text('object_name') == object_name) & (Num('start_index') > int(start_index))
+                after_filter = (Text('file_id') == object_id) & (Num('start_index') > int(start_index))
                 after_query = FilterQuery(filter_expression=after_filter, num_results=100)
                 after_result = await index.search(after_query)
 

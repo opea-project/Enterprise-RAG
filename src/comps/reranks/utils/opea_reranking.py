@@ -113,12 +113,16 @@ class OPEAReranker:
         if input.retrieved_docs and all(doc.text for doc in input.retrieved_docs):
             # Proceed with processing the retrieved documents
             try:
-                retrieved_docs = [doc.text for doc in input.retrieved_docs]
+                retrieved_texts = [doc.text for doc in input.retrieved_docs]
                 response_data = await self._async_call_reranker(
-                    input.user_prompt, retrieved_docs
+                    input.user_prompt, retrieved_texts
                 )
                 logger.debug(f"Received response from reranking service: {response_data}")
                 best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
+                if len(best_response_list) != len(retrieved_texts):
+                    logger.warning(f"Limiting the number of best responses to {input.top_n} based on {len(retrieved_texts)} retrieved documents using max score of {input.rerank_score_threshold}.")
+                logger.debug(f"Best responses after filtering: {best_response_list}")
+
             except TimeoutError as e:
                 raise TimeoutError(e)
             except Timeout as e:
@@ -137,7 +141,13 @@ class OPEAReranker:
                 logger.warning("No best responses found. Using all retrieved documents.")
                 reranked_docs = input.retrieved_docs
             else:
-                reranked_docs = [input.retrieved_docs[best_response["index"]] for best_response in best_response_list]
+                reranked_docs = []
+                for best_response in best_response_list:
+                    doc = input.retrieved_docs[best_response["index"]]
+                    doc.metadata['reranker_score'] = best_response["score"]
+                    reranked_docs.append(doc)
+                logger.debug(f"Retrieved documents: {input.retrieved_docs}")
+                logger.debug(f"Reranked documents via best responses: {reranked_docs}")
         else:
             logger.warning("No retrieved documents found")
             reranked_docs = []
@@ -146,6 +156,21 @@ class OPEAReranker:
             final_reranked_docs = self._combine_sibling_docs(reranked_docs, input.sibling_docs)
         else:
             final_reranked_docs = reranked_docs
+
+        # Assign unique citation IDs to file and link citations
+        # This assigns unique ID similarly to file_id/link_id but with an integer rather than UUID
+        next_citation_id = 1
+        citations = {}
+
+        for doc in final_reranked_docs:
+            doc_id = doc.metadata.get('file_id') or doc.metadata.get('link_id')
+            if doc_id not in citations:
+                citations[doc_id] = next_citation_id
+                next_citation_id += 1
+            doc.metadata['citation_id'] = citations[doc_id]
+
+        logger.debug(f"Citations: {citations}")
+        logger.debug(f"Final reranked docs: {final_reranked_docs}")
         return PromptTemplateInput(data={"user_prompt": input.user_prompt.strip(), "reranked_docs": final_reranked_docs})
 
     def _combine_sibling_docs(self, reranked_docs: DocList[TextDoc], sibling_docs: Dict[str, DocList[TextDoc]]) -> List[SearchedDoc]:
@@ -160,8 +185,9 @@ class OPEAReranker:
         all_combined_docs = []
         for doc in reranked_docs:
             combined_docs = [doc]
-            if doc.metadata["id"] in sibling_docs:
-                siblings = sibling_docs[doc.metadata["id"]]
+            doc_id = doc.metadata.get("file_id") if doc.metadata.get("file_id") else doc.metadata.get("link_id")
+            if doc_id and doc_id in sibling_docs:
+                siblings = sibling_docs[doc_id]
                 combined_docs.extend(siblings)
                 combined_docs = sorted(combined_docs, key=lambda x: int(x.metadata.get("start_index", 0)))
                 # Combine all texts
@@ -169,7 +195,6 @@ class OPEAReranker:
 
                 found = any(combined_text == d["text"] for d in all_combined_docs)
                 if found:
-                    logger.info(f"Skipping duplicate sibling documents for {doc.metadata['id']}")
                     continue
 
                 # Copy metadata from the first element

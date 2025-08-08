@@ -101,22 +101,6 @@ Output data, if the request is successfull, is equal to input data.
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains the implementation of the ingestion service.
+- `impl/`: This directory contains the implementation of the ingestion service e.g. Dockerfile for the microservice.
 
 - `utils/`: This directory contains scripts that are used by the Ingestion Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-.
-├── impl
-│   ├── microservice
-│   │   ├── Dockerfile
-│   │   ├── pyproject.toml
-│   │   ├── uv.lock
-│   │   └── .env
-├── opea_ingestion_microservice.py
-├── README.md
-└── utils
-    ├── opea_ingestion.py
-```

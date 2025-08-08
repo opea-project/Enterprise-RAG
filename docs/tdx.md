@@ -37,7 +37,7 @@ This guide assumes that:
 
 Follow the below steps on the server node with Intel Xeon Processor:
 
-1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/blob/noble-24.04/README.md#setup-host-os)
+1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-host-os)
 2. Check, if Intel TDX is enabled:
 
    ```bash
@@ -53,7 +53,7 @@ Follow the below steps on the server node with Intel Xeon Processor:
    
    In case the module version or `build_num` is lower than shown above, please refer to the [Intel TDX documentation](https://cc-enabling.trustedservices.intel.com/intel-tdx-enabling-guide/04/hardware_setup/#deploy-specific-intel-tdx-module-version) for update instructions.
 
-3. [Setup Remote Attestation](https://github.com/canonical/tdx?tab=readme-ov-file#setup-remote-attestation)
+3. [Setup Remote Attestation](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-remote-attestation)
 
 4. Increase the kubelet timeout and wait until the node is `Ready`:
 

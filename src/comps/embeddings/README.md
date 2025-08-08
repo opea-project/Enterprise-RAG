@@ -223,43 +223,8 @@ For multiple documents:
 ### Project Structure
 
 The project is organized into several directories:
-- `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TEI or OVMS.
+- `impl/`: This directory contains the implementation. It includes the microservice folder with the Dockerfile for the microservice, and the `model_server` directory, which provides setup and running instructions for various model servers, such as TEI or Torchserve.
 - `utils/`: This directory contains utility scripts and modules that are used by the Embedding Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl
-  │   ├── microservice
-  │   │   ├── Dockerfile
-  │   │   ├── pyproject.toml
-  │   │   ├── uv.lock
-  │   │   └── .env
-  │   ├── model_server/
-  │   │   ├── tei/
-  │   │   │   ├── README.md
-  │   │   │   ├── run_tei.sh
-  │   │   │   └── docker/
-  │   │   │       ├── .env
-  │   │   │       └── docker-compose.yml
-  │   │   │
-  │   │   └── ...
-  │   └── ...
-  │
-  ├── utils/
-  │   ├── opea_embedding.py
-  │   ├── api_config/
-  │   │   └── api_config.yml
-  │   │
-  │   └── connectors/
-  │       ├── connector.py
-  │       ├── connector_langchain.py
-  │       └── connector_lamaindex.py
-  │
-  ├── README.md
-  └── opea_embedding_microservice.py
-```
 
 #### Tests
 - `src/tests/unit/embeddings/`: Contains unit tests for the Embedding Microservice components

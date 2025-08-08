@@ -62,8 +62,6 @@ spec:
         dependency: Hard
         internalService:
           serviceName: tei-reranking-svc
-          config:
-            endpoint: /rerank
           isDownstreamService: true
       - name: PromptTemplate
         dependency: Hard

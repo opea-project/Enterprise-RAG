@@ -86,7 +86,7 @@ function validate_docx_file_upload() {
 }
 
 function validate_doc_file_upload() {
-    http_response_with_status_code=$(upload_file_curl "test_dataprep.doc")
+    http_response_with_status_code=$(upload_file_curl "test_dataprep_convert.doc")
     basic_validate_response "$http_response_with_status_code"
     check_content "Doc file content with some images" "$http_response_with_status_code"
 }
@@ -116,7 +116,7 @@ function validate_md_file_upload() {
 }
 
 function validate_ppt_file_upload() {
-    http_response_with_status_code=$(upload_file_curl "test_dataprep.ppt")
+    http_response_with_status_code=$(upload_file_curl "test_dataprep_convert.ppt")
     basic_validate_response "$http_response_with_status_code"
     check_content "PPT WITH SOME TEXT, IMAGES, AND OTHER" "$http_response_with_status_code"
 }

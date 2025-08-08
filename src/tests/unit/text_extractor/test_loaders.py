@@ -17,7 +17,7 @@ from comps.text_extractor.utils.file_loaders.load_with_markitdown import LoadWit
 import os
 
 def abs_file_path(file_name):
-    file_path = '../../files/dataprep_upload/'
+    file_path = '../../e2e/files/dataprep_upload/'
     return os.path.join(os.path.dirname(__file__), file_path, file_name)
 
 def test_adoc_loader():
@@ -35,7 +35,7 @@ def test_csv_loader():
     assert len(text) > 0
 
 def test_doc_loader():
-    file_name = 'test_dataprep.doc'
+    file_name = 'test_dataprep_convert.doc'
     loader = LoadDoc(abs_file_path(file_name))
     text = loader.extract_text()
     assert text is not None
@@ -84,7 +84,7 @@ def test_pdf_loader():
     assert len(text) > 0
 
 def test_ppt_loader():
-    file_name = 'test_dataprep.ppt'
+    file_name = 'test_dataprep_convert.ppt'
     loader = LoadPpt(abs_file_path(file_name))
     text = loader.extract_text()
     assert text is not None

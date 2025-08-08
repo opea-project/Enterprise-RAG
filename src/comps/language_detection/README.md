@@ -133,28 +133,6 @@ The output contains the original text, prompt template, source language and targ
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains the implementation of the service. 
+- `impl/`: This directory contains the implementation of the service e.g. Dockerfile for the microservice.
 
 - `utils/`: This directory contains utility scripts and modules that are used by the Language Detection Microservice.
-
-The tree view of the main directories and files:
-
-```bash
-  .
-  ├── impl/
-  │   ├── microservice/
-  │   │   ├── .env
-  │   │   ├── Dockerfile
-  │   │   └── requirements.txt
-  │   │
-  │   │
-  │   └── ...
-  │
-  ├── utils/
-  │   ├── opea_language_detection.py
-  │   └── prompt.py
-      └── detector.py
-  │
-  ├── README.md
-  └── opea_language_detection_microservice.py
-```

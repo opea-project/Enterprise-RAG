@@ -1,0 +1,46 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Setup backup
+  ansible.builtin.set_fact:
+    backup_name: "{{ velero.backup.prefix }}-{{ ansible_date_time.iso8601_basic_short | lower }}"
+
+- name: Create backup
+  ansible.builtin.command:
+    cmd: velero backup create "{{ backup_name }}" --namespace {{ velero.namespace }} --include-namespaces {{ velero.backup.backupConfig.namespaceOrder | join(",") }} --labels "{{ velero.backup.labels.items() | map('join', '=') | join(',') }}" --selector "{{ velero.backup.backupConfig.resourceSelectors | join(',') }}" --csi-snapshot-timeout {{ velero.backup.csiSnapshotTimeout }}  --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --ttl {{ velero.backup.ttl }}
+
+- name: Monitor backup completion
+  kubernetes.core.k8s_info:
+    api_version: velero.io/v1
+    kind: Backup
+    namespace: "{{ velero.namespace }}"
+    name: "{{ backup_name }}"
+  register: backup_status
+  until: >
+    backup_status.resources | length > 0 and
+    (backup_status.resources[0].status.phase == "Completed" or
+      backup_status.resources[0].status.phase in ["FinalizingPartiallyFailed", "PartiallyFailed", "Failed", "FailedValidation"])
+  retries: 360  # 60 minutes / 10 seconds = 360 retries
+  delay: 10
+  vars:
+    current_phase: "{{ backup_status.resources[0].status.phase | default('Unknown') }}"
+  tags:
+    - monitor_backup
+
+- name: Check backup result
+  ansible.builtin.fail:
+    msg: "Backup '{{ backup_name }}' failed with status: {{ backup_status.resources[0].status.phase }}"
+  when: >
+    backup_status.resources | length > 0 and
+    backup_status.resources[0].status.phase in ["FinalizingPartiallyFailed", "PartiallyFailed", "Failed", "FailedValidation"]
+  tags:
+    - monitor_backup
+
+- name: Display backup completion status
+  ansible.builtin.debug:
+    msg: "Backup '{{ backup_name }}' completed successfully with status: {{ backup_status.resources[0].status.phase }}"
+  when: >
+    backup_status.resources | length > 0 and
+    backup_status.resources[0].status.phase == "Completed"
+  tags:
+    - monitor_backup

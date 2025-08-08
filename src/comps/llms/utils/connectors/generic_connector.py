@@ -14,6 +14,7 @@ from comps import (
     GeneratedDoc,
     LLMParamsDoc,
     get_opea_logger,
+    TextDoc
 )
 from comps.llms.utils.connectors.connector import LLMConnector
 
@@ -72,6 +73,11 @@ class VLLMConnector:
             logger.error(f"Error streaming from VLLM: {e}")
             raise Exception(f"Error streaming from VLLM: {e}")
 
+        reranked_docs_output = []
+        if isinstance(input.data, dict) and 'reranked_docs' in input.data:
+            logger.debug(f"Reranked documents found in input data. {input.data['reranked_docs']}")
+            reranked_docs_output = [TextDoc(**rdoc).to_reranked_doc().model_dump(exclude=['id']) for rdoc in input.data['reranked_docs']]
+
         if input.streaming and not self._disable_streaming:
             if self._llm_output_guard_exists:
                 chat_response = ""
@@ -79,7 +85,7 @@ class VLLMConnector:
                     text = chunk.choices[0].delta.content
                     chat_response += text
                 return GeneratedDoc(text=chat_response, prompt=input.messages.user, streaming=input.streaming,
-                                output_guardrail_params=input.output_guardrail_params)
+                                output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
 
             stream_gen_time = []
             start_local = time.time()
@@ -96,6 +102,13 @@ class VLLMConnector:
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"
+                    
+                    if isinstance(input.data, dict):
+                        data = { "reranked_docs": reranked_docs_output }
+                        logger.debug(f"[llm - chat_stream] appending json data: {data}")
+                        yield f"json: {data}\n\n"
+                    else:
+                        logger.debug("Not appending json data since it is not a dict")
                 except httpx.ReadTimeout as e:
                     error_message = f"Failed to invoke the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
                         "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
@@ -117,7 +130,7 @@ class VLLMConnector:
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
             return GeneratedDoc(text=generator.choices[0].message.content, prompt=input.messages.user, streaming=input.streaming,
-                                output_guardrail_params=input.output_guardrail_params)
+                                output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
 
 SUPPORTED_INTEGRATIONS = {
     "vllm": VLLMConnector

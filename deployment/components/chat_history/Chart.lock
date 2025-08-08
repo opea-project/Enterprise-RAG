@@ -1,0 +1,9 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+dependencies:
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.4.0
+digest: sha256:b72ee707f4331c93fb3661365541f955bf5c9e96b32bf748514bab2ac099de7c
+generated: "2024-12-19T04:42:21.619854824-08:00"

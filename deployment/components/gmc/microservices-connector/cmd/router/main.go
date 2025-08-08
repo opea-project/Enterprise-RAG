@@ -1095,7 +1095,8 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				break
 			}
 
-			if !strings.HasPrefix(string(buffer[:n]), "data:") {
+			// The following code handles NON_STREAMING responses from the LLM or Output Guardrials
+			if !(strings.HasPrefix(string(buffer[:n]), "data:") || strings.HasPrefix(string(buffer[:n]), "json:")) {
 				collectedParts = append(collectedParts, string(buffer[:n]))
 				if err == io.EOF {
 					// Concatenate all parts into a single JSON string
@@ -1109,9 +1110,12 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 						spanTokens.End()
 						return
 					}
+					// response is expected to be a GeneratedDoc class, need to clean it up
+					// remap data attribute to json from the GeneratedDoc class
 					cleanedResponse := map[string]interface{}{
 						"id":   jsonResponse["id"],
 						"text": jsonResponse["text"],
+						"json": jsonResponse["data"],
 					}
 
 					cleanedResponseBytes, err := json.Marshal(cleanedResponse)

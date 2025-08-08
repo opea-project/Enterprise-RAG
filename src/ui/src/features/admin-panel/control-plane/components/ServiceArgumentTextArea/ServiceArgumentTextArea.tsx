@@ -12,10 +12,12 @@ interface ServiceArgumentTextAreaProps {
   value: string;
   placeholder: string;
   isInvalid: boolean;
+  rows?: number;
+  titleCaseLabel?: boolean;
   onChange: ChangeEventHandler<HTMLTextAreaElement>;
   inputConfig: {
     name: string;
-    tooltipText: string;
+    tooltipText?: string;
   };
 }
 
@@ -23,10 +25,12 @@ const ServiceArgumentTextArea = ({
   value,
   placeholder,
   isInvalid,
+  rows = 3,
+  titleCaseLabel = true,
   onChange,
   inputConfig: { name, tooltipText },
 }: ServiceArgumentTextAreaProps) => {
-  const label = formatSnakeCaseToTitleCase(name);
+  const label = titleCaseLabel ? formatSnakeCaseToTitleCase(name) : name;
 
   return (
     <TextAreaInput
@@ -35,6 +39,7 @@ const ServiceArgumentTextArea = ({
       label={label}
       size="sm"
       placeholder={placeholder}
+      rows={rows}
       isInvalid={isInvalid}
       tooltipText={tooltipText}
       onChange={onChange}

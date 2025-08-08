@@ -37,7 +37,7 @@
     - name: Gather NUMA topology info
       ansible.builtin.include_role:
         name: utils
-        tasks_from: get_cpu_topology.yaml
+        tasks_from: get_nodes_topology.yaml
       tags:
         - install
 
@@ -71,6 +71,14 @@
       ansible.builtin.include_role:
         name: fingerprint
       when: fingerprint.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Chat History role
+      ansible.builtin.include_role:
+        name: chat_history
+      when: chat_history.enabled
       tags:
         - install
         - uninstall
@@ -127,14 +135,6 @@
       ansible.builtin.include_role:
         name: telemetry
       when: telemetry.enabled
-      tags:
-        - install
-        - uninstall
-
-    - name: Velero role
-      ansible.builtin.include_role:
-        name: velero
-      when: velero.enabled
       tags:
         - install
         - uninstall

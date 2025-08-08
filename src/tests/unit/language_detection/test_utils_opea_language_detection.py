@@ -30,7 +30,7 @@ def mock_input_data():
 ### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
 But be careful to not incorporate information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
+If you don't know the answer to a question, please don't share false information.\
 ### Search results:   \n
 ### Question: 你好。你好吗？ \n
 ### Answer:
@@ -115,7 +115,7 @@ def test_run_raises_exception_on_unsupported_query_language(test_class):
 ### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
 But be careful to not incorporate information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
+If you don't know the answer to a question, please don't share false information.\
 ### Search results:   \n
 ### Question: よぷさんの調子はどうですか？ \n
 ### Answer:
@@ -131,7 +131,7 @@ def test_run_raises_exception_on_unsupported_answer_language(test_class):
 ### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Please refer to the search results obtained from the local knowledge base. \
 But be careful to not incorporate information that you think is not relevant to the question. \
-If you don't know the answer to a question, please don't share false information. \
+If you don't know the answer to a question, please don't share false information.\
 ### Search results:   \n
 ### Question: 你好。你好吗？ \n
 ### Answer:

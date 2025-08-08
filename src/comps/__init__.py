@@ -55,7 +55,10 @@ from comps.cores.proto.docarray import (
     PromptId,
     PromptOutput,
     TranslationInput,
-    TextDocList
+    TextDocList,
+    RerankedBaseDoc,
+    RerankedFileDoc,
+    RerankedLinkDoc
 )
 
 # Telemetry

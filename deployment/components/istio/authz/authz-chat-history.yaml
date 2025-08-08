@@ -1,0 +1,36 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chat-history-svc
+  namespace: chat-history
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chat-history
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/chatqa/sa/prmpt-tmpl-usvc
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chat-history-mongodb
+  namespace: chat-history
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mongodb
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chat-history/sa/chat-history

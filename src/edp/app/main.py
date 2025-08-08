@@ -5,7 +5,6 @@ import os
 from typing import List, Union
 import uuid
 import validators
-import uvicorn
 from datetime import timedelta
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request, status
@@ -14,8 +13,8 @@ from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 from minio.error import S3Error
 from urllib.parse import unquote_plus
-from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket
-from app.database import get_db, init_db
+from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket, get_local_minio_client_using_token_credentials
+from app.database import get_db
 from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
 from app.rbac import RBACFactory
@@ -182,7 +181,15 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
 
     region = os.getenv('EDP_BASE_REGION', None)
     try:
-        url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region)
+        credentials = None
+        access_token = request.headers.get('Authorization')
+        if access_token:
+            access_token = access_token.replace('Bearer ', '')
+            token = { "access_token": access_token }
+            local_client = get_local_minio_client_using_token_credentials(token)
+            local_client._provider.retrieve()
+            credentials = local_client._provider._credentials
+        url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
         logger.debug(f"Generated presigned url for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
     except S3Error as e:
@@ -202,7 +209,7 @@ def list_buckets():
 # -------------- Permission retrieval ------------
 
 @app.get('/api/list_bucket_with_permissions')
-def list_bucket_with_permissions(request: Request):
+async def list_bucket_with_permissions(request: Request):
     """
     List all buckets that the user has read permissions to based on the RBAC configuration.
     Returns:
@@ -845,12 +852,13 @@ def api_file_text_extract(file_uuid: str, request: Request):
             minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
             file_data = minio_response.read()
             file_base64 = base64.b64encode(file_data).decode('ascii')
+            file_name = os.path.basename(file.object_name)
             logger.debug(f"[{file.id}] Retrieved file from S3 storage.")
 
             HIERARCHICAL_DATAPREP_ENDPOINT = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
             if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
                 response = requests.post(HIERARCHICAL_DATAPREP_ENDPOINT, json={
-                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                    'files': [ {'filename': file_name, 'data64': file_base64} ],
                     'chunk_size': request.query_params.get('chunk_size', 512),
                     'chunk_overlap': request.query_params.get('chunk_overlap', 0),
                 })
@@ -863,7 +871,7 @@ def api_file_text_extract(file_uuid: str, request: Request):
             else:
                 TEXT_EXTRACTOR_ENDPOINT = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
                 response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={
-                    'files': [ {'filename': file.object_name, 'data64': file_base64} ],
+                    'files': [ {'filename': file_name, 'data64': file_base64} ],
                 })
 
                 if response.status_code != 200:
@@ -980,6 +988,10 @@ async def api_retrieve(request: Request):
         d = await request.json()
         logger.debug(d)
 
+        headers={}
+        if 'Authorization' in request.headers:
+            headers['Authorization'] = request.headers['Authorization']
+
         def get_f(data, field, default=None):
             return data.get(field, default)
 
@@ -997,9 +1009,10 @@ async def api_retrieve(request: Request):
         retriever_request['fetch_k'] =  get_f(d, 'fetch_k', '20')
         retriever_request['lambda_mult'] =  get_f(d, 'lambda_mult', '0.5')
         retriever_request['score_threshold'] =  get_f(d, 'score_threshold', '0.2')
+        retriever_request['search_by'] = get_f(d, 'search_by', {})
 
         logger.debug(f"Request to retriever: {retriever_request}")
-        response = requests.post(RETRIEVER_ENDPOINT, json=retriever_request)
+        response = requests.post(RETRIEVER_ENDPOINT, json=retriever_request, headers=headers)
 
         if str(get_f(d, 'reranker', 'false')).lower() == 'true':
             reranker_request = response.json()
@@ -1019,9 +1032,3 @@ async def api_retrieve(request: Request):
             return JSONResponse(content={'docs': response.json()})
     except Exception as e:
         return JSONResponse(content={'details': f"Something went wrong: {e}"})
-
-# ---------------------------------------
-
-if __name__ == '__main__':
-    init_db()
-    uvicorn.run(app, host="0.0.0.0", port=5000)

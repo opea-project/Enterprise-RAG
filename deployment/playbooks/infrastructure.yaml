@@ -11,15 +11,67 @@
         gather_subset:
           - all
 
+- name: Set facts for kubespray deployment
+  hosts: k8s_cluster
+  tags:
+    - install
+    - delete
+  tasks:
+    - name: Set proxy facts
+      ansible.builtin.set_fact:
+        http_proxy: "{{ httpProxy | default('') }}"
+        https_proxy: "{{ httpsProxy | default('') }}"
+
+    - name: Set Kubernetes configuration facts
+      ansible.builtin.set_fact:
+        local_path_provisioner_enabled: "{{ install_csi == 'local-path-provisioner' }}"
+        kubeconfig_localhost: true
+        kube_version: "{{ k8s_version | default('1.31.9') }}"
+        supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + groups['kube_control_plane'] | map('extract', hostvars, ['ansible_host']) | list }}"
+
+- name: Pre-setup tasks
+  become: false
+  hosts: local
+  tasks:
+    - name: Pre-configure environment role
+      ansible.builtin.include_role:
+        name: configure
+      tags:
+        - configure
+        - never
+
 - name: Install Kubernetes cluster
   tags:
     - install
     - never
   when:
     - deploy_k8s
-    - '"install" in ansible_run_tags'
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
 
+- name: Pre-deletion warnings
+  become: false
+  hosts: local
+  tags:
+    - delete
+    - never
+  tasks:
+    - name: Warning about backup and restore resources deletion
+      ansible.builtin.pause:
+        prompt: |
+          WARNING: Velero is enabled with server installation in this deployment.
+          Deleting the Kubernetes cluster will permanently remove:
+          - All backup objects and their metadata
+          - All restore objects and their history
+          - All backup data stored in the configured storage backend
+
+          This action cannot be undone.
+          (ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+        seconds: 30
+      when:
+        - velero.enabled | default(false)
+        - velero.install_server | default(false)
+
+# Post-installation tasks - can be run independently with post-install tag
 - name: Post-installation tasks
   become: false
   gather_facts: false
@@ -27,6 +79,8 @@
   vars:
     helm_timeout: 15m0s
     secure_logs: true
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   tasks:
     - name: Include post-installation tasks
       ansible.builtin.include_role:
@@ -34,7 +88,10 @@
         tasks_from: post_installation
       tags:
         - install
+        - post-install
+        - velero-delete
         - delete
+        - never
 
 - name: Remove Kubernetes cluster
   tags:
@@ -42,7 +99,6 @@
     - never
   when:
     - deploy_k8s
-    - '"delete" in ansible_run_tags'
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.reset
 
 - name: Remove Kubernetes cluster artifacts

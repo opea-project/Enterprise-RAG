@@ -1,0 +1,18 @@
+{% set no_proxy_list = noProxy.split(',') %}
+{% if insecure_registry is defined and insecure_registry %}
+  {% set registry_ip = insecure_registry.split(':')[0] %}
+  {% set no_proxy_combined = (no_proxy_list + [registry_ip]) | join(',') %}
+{% else %}
+  {% set no_proxy_combined = noProxy %}
+{% endif %}
+
+{
+  "proxies": {
+    "http-proxy": "{{ httpProxy }}",
+    "https-proxy": "{{ httpsProxy }}",
+    "no-proxy": "{{- no_proxy_combined -}}"
+  }{% if insecure_registry is defined and insecure_registry %},
+  "insecure-registries": ["{{ insecure_registry }}"]
+  {% endif %}
+}
+

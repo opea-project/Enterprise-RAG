@@ -31,6 +31,10 @@
   ansible.builtin.apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   tags:
     - configure
 
@@ -83,6 +87,45 @@
     src: templates/config.json.j2
     dest: "~/.docker/config.json"
     mode: 0777
+  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  tags:
+    - configure
+
+- name: Check if Docker daemon.json exists
+  stat:
+    path: /etc/docker/daemon.json
+  register: docker_daemon_json
+
+- name: Backup existing Docker daemon.json
+  copy:
+    src: /etc/docker/daemon.json
+    dest: /etc/docker/daemon.json.bak
+    remote_src: true
+  when: docker_daemon_json.stat.exists
+
+- name: Create Docker daemon.json with proxy settings
+  become: true
+  ansible.builtin.template:
+    src: templates/daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  when: httpProxy != "" or httpsProxy != "" or noProxy != "" or insecure_registry != ""
+  tags:
+    - configure
+
+- name: Reload systemd manager configuration
+  become: true
+  ansible.builtin.command: systemctl daemon-reload
+  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  tags:
+    - configure
+
+- name: Restart Docker
+  become: true
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+    enabled: true
   when: httpProxy != "" or httpsProxy != "" or noProxy != ""
   tags:
     - configure

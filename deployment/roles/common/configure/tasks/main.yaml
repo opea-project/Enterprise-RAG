@@ -34,8 +34,21 @@
   tags:
     - configure
 
-- name: Check if docker is installed
-  ansible.builtin.command: docker --version
+- name: Install yq (Go version) manually
+  become: true
+  ansible.builtin.get_url:
+    url: https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+    dest: /usr/local/bin/yq
+    mode: '0755'
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
+  tags:
+    - configure
+
+- name: Check if docker service is running
+  ansible.builtin.command: docker ps
   register: docker_check
   ignore_errors: true
   tags:
@@ -61,6 +74,10 @@
     dest: /usr/local/bin/kubectl
     mode: '0755'
     owner: "{{ ansible_user }}"
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   when: kubectl_check.rc != 0
   tags:
     - configure
@@ -77,6 +94,10 @@
     url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
     dest: /tmp/helm-{{ helm_version }}-linux-amd64.tar.gz
     mode: '0644'
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   tags:
     - configure
 
@@ -84,12 +105,12 @@
   become: true
   ansible.builtin.unarchive:
     src: /tmp/helm-{{ helm_version }}-linux-amd64.tar.gz
-    dest: /usr/local/bin
+    dest: /usr/bin
     remote_src: true
     extra_opts:
       - "--strip-components=1"
   args:
-    creates: /usr/local/bin/helm
+    creates: /usr/bin/helm
   when: helm_check.rc != 0
   tags:
     - configure
@@ -97,7 +118,7 @@
 - name: Set ownership and permissions for Helm binary
   become: true
   ansible.builtin.file:
-    path: /usr/local/bin/helm
+    path: /usr/bin/helm
     owner: "{{ ansible_user }}"
     mode: '0755'
   tags:

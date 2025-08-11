@@ -109,10 +109,20 @@
   tags:
     - delete
 
+- name: Check if the NFS namespace exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: "{{ nfs_namespace }}"
+  register: nfs_namespace_info
+  tags:
+    - delete
+
 - name: Remove NFS export directory on the labeled node using a Kubernetes Job
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'nfs-cleanup-job.yaml.j2') }}"
+  when: nfs_namespace_info.resources | length > 0
   tags:
     - delete
 

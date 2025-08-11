@@ -9,6 +9,11 @@ deploy_k8s: false
 # - "nfs": Use for multi-node deployment or single node with velero backup functionality; can be installed on existing K8s cluster using infrastructure playbook
 install_csi: "local-path-provisioner"
 
+# please use variables local_registry and insecure_registry together
+# set to true to install registry on K8s , set insecure registry to be able to push and pull images from registry on defined node and defined port.
+local_registry: true
+insecure_registry: "master-1:32000"
+
 # Setup when install_csi is "nfs"
 # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
 # Setting nfs_server_enabled to true will install NFS server together with CSI driver
@@ -19,6 +24,9 @@ nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
+
+# Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config).
+# If you are installing K8s cluster in simplified deployment, your kubeconfig will be created in path "<repository path>/deployment/inventory/test-cluster/artifacts/admin.conf"
 kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
 
 httpProxy:

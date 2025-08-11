@@ -40,6 +40,43 @@
         - configure
         - never
 
+- name: Configure containerd registry mirrors
+  hosts: all
+  tags:
+    - install
+  tasks:
+    - name: Set containerd registry mirrors configuration for insecure and secure registries
+      ansible.builtin.set_fact:
+        containerd_registries_mirrors: >
+          {{
+            [
+              {
+                "prefix": insecure_registry,
+                "mirrors": [
+                  {
+                    "host": "http://{{ insecure_registry }}",
+                    "capabilities": ["pull", "resolve"],
+                    "skip_verify": true
+                  }
+                ]
+              },
+              {
+                "prefix": "docker.io",
+                "mirrors": [
+                  {
+                    "host": "https://registry-1.docker.io",
+                    "capabilities": ["pull", "resolve"],
+                    "skip_verify": false
+                  }
+                ]
+              }
+            ]
+          }}
+      when:
+        - insecure_registry is defined
+        - insecure_registry | length > 0
+        - local_registry | default(false) | bool
+
 - name: Install Kubernetes cluster
   tags:
     - install

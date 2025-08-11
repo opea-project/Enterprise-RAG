@@ -3,30 +3,39 @@
 
 ---
 - name: Gaudi operator role
-  when: gaudi_operator
   ansible.builtin.include_role:
     name: gaudi_operator
+  when: gaudi_operator
+  tags:
+    - install
+    - post-install
+    - delete
+
+- name: Local registry role
+  ansible.builtin.include_role:
+    name: k8s_local_registry
+  when: local_registry
   tags:
     - install
     - post-install
     - delete
 
 - name: NFS Server CSI role
-  when: install_csi == "nfs"
   ansible.builtin.include_role:
     name: nfs_server_csi_setup
+  when: install_csi == "nfs"
   tags:
     - install
     - post-install
 
 - name: Velero role
-  when: velero.enabled
   ansible.builtin.include_role:
     name: velero
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     log_dir: "{{ deployment_dir }}/ansible-logs"
     tmp_dir: "{{ deployment_dir }}/velero-tmp"
+  when: velero.enabled
   tags:
     - install
     - post-install
@@ -34,8 +43,8 @@
     - velero-delete
 
 - name: Uninstall NFS Server
-  when: install_csi == "nfs"
   ansible.builtin.include_role:
     name: nfs_server_csi_setup
+  when: install_csi == "nfs"
   tags:
     - delete

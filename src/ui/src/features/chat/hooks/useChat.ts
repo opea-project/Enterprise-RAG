@@ -197,10 +197,12 @@ const useChat = () => {
     ) {
       if (error.status === HTTP_ERRORS.GUARDRAILS_ERROR.statusCode) {
         dispatch(updateAnswer(error.data));
+        currentAnswerRef.current += error.data;
       } else if (
         error.status === HTTP_ERRORS.CLIENT_CLOSED_REQUEST.statusCode
       ) {
         dispatch(updateAnswer(""));
+        currentAnswerRef.current += "";
       } else {
         dispatch(updateError(error.data));
       }

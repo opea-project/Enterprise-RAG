@@ -1,18 +1,13 @@
-{% set no_proxy_list = noProxy.split(',') %}
-{% if insecure_registry is defined and insecure_registry %}
-  {% set registry_ip = insecure_registry.split(':')[0] %}
-  {% set no_proxy_combined = (no_proxy_list + [registry_ip]) | join(',') %}
-{% else %}
-  {% set no_proxy_combined = noProxy %}
+{
+{% if httpProxy is defined or httpsProxy is defined or noProxy is defined %}
+  "proxies": {
+    "http-proxy": "{{ httpProxy | default('') }}",
+    "https-proxy": "{{ httpsProxy | default('') }}",
+    "no-proxy": "{{ noProxy | default('') }}{% if insecure_registry is defined and insecure_registry and noProxy is defined and noProxy %},{{ insecure_registry.split(':')[0] }}{% endif %}"
+  }{% if insecure_registry is defined and insecure_registry %},{% endif %}
 {% endif %}
 
-{
-  "proxies": {
-    "http-proxy": "{{ httpProxy }}",
-    "https-proxy": "{{ httpsProxy }}",
-    "no-proxy": "{{- no_proxy_combined -}}"
-  }{% if insecure_registry is defined and insecure_registry %},
+{% if insecure_registry is defined and insecure_registry %}
   "insecure-registries": ["{{ insecure_registry }}"]
-  {% endif %}
+{% endif %}
 }
-

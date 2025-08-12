@@ -99,4 +99,3 @@
     state: absent
   tags:
     - delete
-

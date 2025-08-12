@@ -57,8 +57,8 @@
       - app=node-topology-debugger
   register: pods_info
   until: pods_info.resources | length > 0 and (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length)
-  retries: 10
-  delay: 5
+  retries: 30
+  delay: 10
   tags:
     - install
 

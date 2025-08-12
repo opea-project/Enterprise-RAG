@@ -12,7 +12,7 @@ install_csi: "local-path-provisioner"
 # please use variables local_registry and insecure_registry together
 # set to true to install registry on K8s , set insecure registry to be able to push and pull images from registry on defined node and defined port.
 local_registry: false
-insecure_registry: #"<node-name>:32000"
+#insecure_registry: "<node-name>:32000"
 
 # Setup when install_csi is "nfs"
 # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.

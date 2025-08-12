@@ -121,5 +121,6 @@
     path: /usr/bin/helm
     owner: "{{ ansible_user }}"
     mode: '0755'
+  when: helm_check.rc != 0
   tags:
     - configure

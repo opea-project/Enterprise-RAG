@@ -41,7 +41,7 @@
         - never
 
 - name: Configure containerd registry mirrors
-  hosts: all
+  hosts: k8s_cluster
   tags:
     - install
   tasks:
@@ -72,10 +72,7 @@
               }
             ]
           }}
-      when:
-        - insecure_registry is defined
-        - insecure_registry | length > 0
-        - local_registry | default(false) | bool
+      when: insecure_registry is defined and local_registry | default(false) | bool and deploy_k8s
 
 - name: Install Kubernetes cluster
   tags:

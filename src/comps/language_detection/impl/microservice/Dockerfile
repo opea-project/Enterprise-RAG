@@ -4,7 +4,7 @@
 # Dockerfile for the RAG language detection microservice
 # This Dockerfile is used to build the container image for the RAG language detection microservice.
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 

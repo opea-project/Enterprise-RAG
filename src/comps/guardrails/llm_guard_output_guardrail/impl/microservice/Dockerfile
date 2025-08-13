@@ -3,7 +3,7 @@
 
 # Dockerfile for the RAG LLM Guard Output Guardrail microservice
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 RUN apt-get update -y && \

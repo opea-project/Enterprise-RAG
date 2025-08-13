@@ -11,7 +11,7 @@ ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
  && apt-get install -y                          \
-    openjdk-17-jdk                              \
+    openjdk-21-jdk                              \
     numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \

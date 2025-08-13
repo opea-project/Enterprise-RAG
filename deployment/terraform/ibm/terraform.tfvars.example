@@ -1,0 +1,113 @@
+# ============================================================================
+# REQUIRED VARIABLES
+# ============================================================================
+
+# IBM Cloud API key - obtain from IBM Cloud Console → Manage → Access (IAM) → API keys
+api_key = "your-ibm-cloud-api-key-here"
+
+# IBM Cloud region where resources will be deployed
+region = "eu-de"
+
+# Resource group name - use your custom resource group
+resource_group = "default"
+
+# SSH key configuration
+ssh_key = "~/.ssh/ibm_rsa"                    # Path to your SSH private key file
+ssh_key_name = "my-ssh-key"                   # Name of SSH key in IBM Cloud console
+instance_name = "my-erag-instance"            # Name for your virtual server instance
+instance_zone = "eu-de-1"                     # Availability zone (must match region)
+ssh_user = "ubuntu"                           # SSH username (ubuntu for Ubuntu images)
+
+# Hugging Face token for model downloads (recommended for rate limiting)
+# Obtain from: https://huggingface.co/settings/tokens
+hugging_face_token = "hf_your_token_here"
+
+# ============================================================================
+# OPTIONAL INFRASTRUCTURE VARIABLES
+# ============================================================================
+
+# Uncomment to use existing VPC infrastructure instead of creating new
+#vpc = "my-existing-vpc"
+#subnet = "my-existing-subnet"  
+#security_group = "my-existing-security-group"
+
+# Instance configuration
+instance_profile = "gx3d-160x1792x8gaudi3"    # Instance type with Intel Gaudi accelerators
+boot_volume_size = 250                         # Boot disk size in GB (100-250)
+
+# ============================================================================
+# SECURITY AND NETWORK CONFIGURATION
+# ============================================================================
+
+# SSH access restriction - limit to your network/IP range
+ssh_allowed_cidr = "0.0.0.0/0"                # Allow from anywhere (change for security)
+
+# ============================================================================
+# CORPORATE PROXY CONFIGURATION (for restricted networks)
+# ============================================================================
+
+# Enable if deploying from behind corporate firewall
+use_proxy = false
+proxy_host = "proxy.company.com"               # Your corporate proxy hostname
+proxy_port = 8080                              # Proxy port (common: 8080, 3128, 1080)
+# proxy_scheme = "http"                        # Proxy protocol: http, https, socks5
+
+# ============================================================================
+# HUGGING FACE AND AI MODEL CONFIGURATION
+# ============================================================================
+# Optional: Custom AI model configuration
+# fqdn = "erag.com"                    # Custom domain name
+# deployment_type = "hpu"                      # Model deployment target: hpu or cpu
+# llm_gaudi_model = "microsoft/DialoGPT-medium"
+# embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
+# reranking_model_name = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+# ============================================================================
+# RESOURCE NAMING
+# ============================================================================
+
+# Prefix for created resource names (helps with organization)
+# resource_prefix = "erag"
+
+# ============================================================================
+# EXAMPLE CONFIGURATIONS
+# ============================================================================
+
+# Example 1: New VPC deployment with proxy (Intel corporate network)
+# api_key = "your-api-key"
+# region = "eu-de"
+# resource_group = "DCAI-SW-SEE"
+# ssh_key = "/home/user/.ssh/intel_key"
+# ssh_key_name = "intel-ssh-key"
+# instance_name = "gaudi-erag"
+# instance_zone = "eu-de-1" 
+# use_proxy = true
+# proxy_host = "proxy-dmz.intel.com"
+# proxy_port = 1080
+# ssh_allowed_cidr = "134.191.0.0/16"
+
+# Example 2: Existing VPC deployment without proxy
+# api_key = "your-api-key"
+# region = "us-south"
+# vpc = "existing-vpc-name"
+# subnet = "existing-subnet-name"
+# security_group = "existing-sg-name"
+# resource_group = "my-resource-group"
+# ssh_key = "~/.ssh/id_rsa"
+# ssh_key_name = "my-ssh-key"
+# instance_name = "erag-production"
+# instance_zone = "us-south-2"
+# boot_volume_size = 200
+
+# Example 3: Development deployment with custom models
+# api_key = "your-api-key"
+# region = "us-east"
+# resource_group = "development"
+# ssh_key = "~/.ssh/dev_key"
+# ssh_key_name = "dev-ssh-key"
+# instance_name = "erag-dev"
+# instance_zone = "us-east-1"
+# instance_profile = "gx3d-80x896x4gaudi3"
+# hugging_face_token = "hf_your_dev_token"
+# fqdn = "erag-dev.company.com"
+# llm_gaudi_model = "meta-llama/Llama-2-7b-chat-hf"

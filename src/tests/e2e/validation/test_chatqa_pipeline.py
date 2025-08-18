@@ -13,8 +13,7 @@ import secrets
 import statistics
 import string
 import time
-from helpers.api_request_helper import InvalidChatqaResponseBody
-from helpers.keycloak_helper import CredentialsNotFound
+from helpers.chatqa_api_helper import InvalidChatqaResponseBody
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ def test_chatqa_disable_streaming(chatqa_api_helper, fingerprint_api_helper):
 
 
 @allure.testcase("IEASG-T49")
-def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
+def test_chatqa_response_headers_when_streaming_enabled(chatqa_api_helper, fingerprint_api_helper):
     """
     Enable streaming. Check that the response is in 'Server-Sent Events' format. Check headers.
     """
@@ -97,27 +96,21 @@ def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T150")
-def test_chatqa_through_apisix(chatqa_api_helper, fingerprint_api_helper, keycloak_helper):
+def test_chatqa_streaming_capability(chatqa_api_helper, fingerprint_api_helper):
     """
-    Test the ChatQA through APISIX. Authenticate with Keycloak first.
     Check if streaming is working properly by measuring the time between first and last line of the response.
     """
     question = "List 20 most popular travel destination among people in their 20s"
     fingerprint_api_helper.set_streaming(True)
-    try:
-        token = keycloak_helper.get_access_token()
-    except CredentialsNotFound:
-        msg = ("Unable to retrieve Keycloak credentials. Please check if the credentials file (--credentials-file) "
-               "exists or default_credentials.txt is present in default directory.")
-        pytest.skip(msg)
-    response = chatqa_api_helper.call_chatqa_through_apisix(token, question)
+    response = chatqa_api_helper.call_chatqa_with_streaming_enabled(question)
 
     line_number = 0
     for line in response.iter_lines(decode_unicode=True):
         if line_number == 0:
             first_line_start_time = time.time()
         line_number += 1
-        logger.debug(line)
+        if line:
+            logger.debug(line.replace("data: ", ""))
     streaming_duration = time.time() - first_line_start_time
 
     assert streaming_duration > 0.1, \

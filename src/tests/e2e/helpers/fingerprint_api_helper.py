@@ -8,31 +8,31 @@ import time
 
 import requests
 
-from tests.e2e.helpers.api_request_helper import (ApiRequestHelper, ApiResponse,
-                                        CustomPortForward)
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
+from tests.e2e.validation.constants import ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 
 
 class FingerprintApiHelper(ApiRequestHelper):
 
-    def __init__(self, namespace, label_selector, api_port):
-        super().__init__(namespace=namespace, label_selector=label_selector, api_port=api_port)
+    def __init__(self, keycloak_helper):
+        super().__init__(keycloak_helper=keycloak_helper)
 
     def change_arguments(self, json_data):
         """
         /v1/system_fingerprint/change_arguments API call
         """
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            start_time = time.time()
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/system_fingerprint/change_arguments",
-                headers=self.default_headers,
-                json=json_data
-            )
-            duration = round(time.time() - start_time, 2)
-            logger.info(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
-            return ApiResponse(response, duration)
+        start_time = time.time()
+        response = requests.post(
+            f"{ERAG_DOMAIN}/v1/system_fingerprint/change_arguments",
+            headers=self.get_headers(),
+            json=json_data,
+            verify=False
+        )
+        duration = round(time.time() - start_time, 2)
+        logger.info(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
+        return ApiResponse(response, duration)
 
     def append_arguments(self, text):
         """
@@ -47,16 +47,16 @@ class FingerprintApiHelper(ApiRequestHelper):
         return self._append_arguments(json_body)
 
     def _append_arguments(self, json_data):
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            start_time = time.time()
-            response = requests.post(
-                f"http://127.0.0.1:{pf.local_port}/v1/system_fingerprint/append_arguments",
-                headers=self.default_headers,
-                json=json_data
-            )
-            duration = round(time.time() - start_time, 2)
-            logger.info(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
-            return ApiResponse(response, duration)
+        start_time = time.time()
+        response = requests.post(
+            url=f"{ERAG_DOMAIN}/v1/system_fingerprint/append_arguments",
+            headers=self.get_headers(),
+            json=json_data,
+            verify=False
+        )
+        duration = round(time.time() - start_time, 2)
+        logger.info(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
+        return ApiResponse(response, duration)
 
     def set_streaming(self, streaming=True):
         """

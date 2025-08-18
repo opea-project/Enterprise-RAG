@@ -13,11 +13,8 @@ from tempfile import NamedTemporaryFile
 
 
 import requests
-from tests.e2e.helpers.api_request_helper import (ApiRequestHelper,
-                                                  CustomPortForward)
-from tests.e2e.validation.constants import (
-    INGRESS_NGINX_CONTROLLER_NS, INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR,
-    TEST_FILES_DIR)
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper
+from tests.e2e.validation.constants import TEST_FILES_DIR, ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +22,13 @@ LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
 DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "ingested"]
+EDP_API_PATH = f"{ERAG_DOMAIN}/api/v1/edp"
 
 
 class EdpHelper(ApiRequestHelper):
 
-    def __init__(self, namespace, label_selector, api_port, bucket_name=None):
-        super().__init__(namespace=namespace, label_selector=label_selector, api_port=api_port)
+    def __init__(self, keycloak_helper, bucket_name=None):
+        super().__init__(keycloak_helper=keycloak_helper)
         self.default_headers = {
             "Content-Type": "application/json"
         }
@@ -44,45 +42,45 @@ class EdpHelper(ApiRequestHelper):
             # Use the first bucket that is not read-only as the default bucket
             self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
             logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
-                        f"{self.available_buckets}")
+                         f"{self.available_buckets}")
 
     def list_buckets(self):
         """Call /api/list_buckets endpoint"""
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.get(
-                f"http://localhost:{pf.local_port}/api/list_buckets",
-                headers=self.default_headers
-            )
+        response = requests.get(
+            url=f"{EDP_API_PATH}/list_buckets",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def list_links(self):
         """Call /api/links endpoint"""
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.get(
-                f"http://localhost:{pf.local_port}/api/links",
-                headers=self.default_headers
-            )
+        response = requests.get(
+            url=f"{EDP_API_PATH}/links",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def upload_links(self, payload):
         """Make post call to /api/links endpoint with the given payload"""
         logger.info(f"Attempting to upload links using the following payload: {payload}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.post(
-                f"http://localhost:{pf.local_port}/api/links",
-                headers=self.default_headers,
-                json=payload
-            )
+        response = requests.post(
+            url=f"{EDP_API_PATH}/links",
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
         return response
 
     def delete_link(self, link_uuid):
         """Delete a link by its id"""
         logger.info(f"Deleting link with id: {link_uuid}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.delete(
-                f"http://localhost:{pf.local_port}/api/link/{link_uuid}",
-                headers=self.default_headers
-            )
+        response = requests.delete(
+            url=f"{EDP_API_PATH}/link/{link_uuid}",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def wait_for_link_upload(self, link_uri, desired_status, timeout=LINK_UPLOAD_TIMEOUT):
@@ -110,11 +108,11 @@ class EdpHelper(ApiRequestHelper):
 
     def list_files(self):
         """Call /api/files endpoint"""
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.get(
-                f"http://localhost:{pf.local_port}/api/files",
-                headers=self.default_headers
-            )
+        response = requests.get(
+            url=f"{EDP_API_PATH}/files",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def generate_presigned_url(self, object_name, method="PUT", bucket=None):
@@ -127,32 +125,32 @@ class EdpHelper(ApiRequestHelper):
             "object_name": object_name,
             "method": method
         }
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.post(
-                f"http://localhost:{pf.local_port}/api/presignedUrl",
-                headers=self.default_headers,
-                json=payload
-            )
+        response = requests.post(
+            url=f"{EDP_API_PATH}/presignedUrl",
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
         return response
 
     def cancel_processing_task(self, file_uuid):
         """Cancel the processing task for the given file UUID"""
         logger.info(f"Cancelling task for file with id: {file_uuid}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.delete(
-                f"http://localhost:{pf.local_port}/api/file/{file_uuid}/task",
-                headers=self.default_headers
-            )
+        response = requests.delete(
+            url=f"{EDP_API_PATH}/file/{file_uuid}/task",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def extract_text(self, file_uuid):
         """Extract text for the given file UUID"""
         logger.info(f"Extracting text for file with id: {file_uuid}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.post(
-                f"http://localhost:{pf.local_port}/api/file/{file_uuid}/extract",
-                headers=self.default_headers
-            )
+        response = requests.post(
+            f"{EDP_API_PATH}/file/{file_uuid}/extract",
+            headers=self.get_headers(),
+            verify=False
+        )
         return response
 
     def _open_and_send_file(self, file_path, presigned_url) :
@@ -168,9 +166,7 @@ class EdpHelper(ApiRequestHelper):
 
     def upload_file(self, file_path, presigned_url):
         """Upload a file using the presigned URL"""
-        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            return self._open_and_send_file(file_path, presigned_url)
+        return self._open_and_send_file(file_path, presigned_url)
 
     def upload_files_in_parallel(self, files_dir, file_names):
         files_info = []
@@ -181,33 +177,31 @@ class EdpHelper(ApiRequestHelper):
             files_info.append(file_data)
 
         results = []
-        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            logger.debug(f"Start {len(file_names)} threads for file uploading.")
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(file_names)) as executor:
-                futures = [executor.submit(self._open_and_send_file, file_info['path'], file_info['presigned_url']) for file_info in files_info]
+        logger.debug(f"Start {len(file_names)} threads for file uploading.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(file_names)) as executor:
+            futures = [executor.submit(self._open_and_send_file, file_info['path'], file_info['presigned_url']) for file_info in files_info]
 
-                try:
-                    for future in concurrent.futures.as_completed(futures):
-                        results.append(future.result())
-                except Exception as e:
-                    msg = f"Caugh an exception in a thread during file upload: {str(e)}"
-                    for f in futures:
-                        f.cancel()
-                    logger.critical(msg)
-                    raise RuntimeError(msg)
+            try:
+                for future in concurrent.futures.as_completed(futures):
+                    results.append(future.result())
+            except Exception as e:
+                msg = f"Caugh an exception in a thread during file upload: {str(e)}"
+                for f in futures:
+                    f.cancel()
+                logger.critical(msg)
+                raise RuntimeError(msg)
 
         return results
 
     def retrieve(self, payload: dict[str, Any]) -> requests.Response:
         """Make post call to /api/retrieve endpoint with the given payload"""
         logger.debug(f"Attempting to retrieve documents using the following payload: {payload}")
-        with CustomPortForward(self.api_port, self.namespace, self.label_selector) as pf:
-            response = requests.post(
-                f"http://localhost:{pf.local_port}/api/retrieve/",
-                headers=self.default_headers,
-                json=payload,
-            )
+        response = requests.post(
+            url=f"{EDP_API_PATH}/retrieve/",
+            headers=self.get_headers(),
+            json=payload,
+            verify=False
+        )
         return response
 
     def wait_for_file_upload(self, filename, desired_status, timeout=FILE_UPLOAD_TIMEOUT_S):
@@ -271,10 +265,8 @@ class EdpHelper(ApiRequestHelper):
 
     def delete_file(self, presigned_url):
         """Delete a file using the presigned URL"""
-        with CustomPortForward(self.remote_port_fw, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, self.local_port_fw):
-            logger.info("Attempting to delete file using presigned URL")
-            return requests.delete(presigned_url, verify=False)
+        logger.info("Attempting to delete file using presigned URL")
+        return requests.delete(presigned_url, verify=False)
 
     def _status_reached(self, status, desired_status):
         """

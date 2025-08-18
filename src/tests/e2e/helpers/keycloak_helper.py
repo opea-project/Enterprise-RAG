@@ -10,11 +10,8 @@ import os
 import kr8s
 import requests
 from tests.e2e.validation.constants import (ERAG_AUTH_DOMAIN,
-                                  INGRESS_NGINX_CONTROLLER_NS,
-                                  INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR,
                                   VITE_KEYCLOAK_CLIENT_ID, VITE_KEYCLOAK_REALM)
 
-from tests.e2e.helpers.api_request_helper import CustomPortForward
 
 logger = logging.getLogger(__name__)
 DEFAULT_CREDENTIALS_PATH = "../../deployment/ansible-logs/default_credentials.txt"
@@ -106,10 +103,7 @@ class KeycloakHelper:
             "Authorization": f"Bearer {admin_access_token}",
             "Content-Type": "application/json"
         }
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.get(url, headers=headers, verify=False)
+        response = requests.get(url, headers=headers, verify=False)
 
         if response.status_code == 200:
             users = response.json()
@@ -132,10 +126,7 @@ class KeycloakHelper:
             "client_id": client_id,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.post(token_url, data=data, headers=headers, verify=False)
+        response = requests.post(token_url, data=data, headers=headers, verify=False)
         if response.status_code == 200:
             return response.json().get("access_token")
         else:
@@ -150,9 +141,7 @@ class KeycloakHelper:
         }
 
         url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}/users/{user_id}"
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.get(url, headers=headers, verify=False)
+        response = requests.get(url, headers=headers, verify=False)
         return response.json().get("requiredActions", [])
 
     def remove_required_actions(self, admin_access_token, user_id):
@@ -172,8 +161,5 @@ class KeycloakHelper:
             "Content-Type": "application/json"
         }
         payload = {"requiredActions": required_actions}
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.put(url, json=payload, headers=headers, verify=False)
+        response = requests.put(url, json=payload, headers=headers, verify=False)
         assert response.status_code == 204, f"Failed to remove required actions. Status code: {response.status_code}"

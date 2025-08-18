@@ -14,7 +14,9 @@ import urllib3
 
 from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
+from helpers.chatqa_api_helper import ChatQaApiHelper
 from helpers.chat_history_helper import ChatHistoryHelper
+
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
@@ -44,6 +46,11 @@ def suppress_logging():
     logging.getLogger("urllib3").setLevel(logging.ERROR)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     yield
+
+
+@pytest.fixture(scope="session")
+def keycloak_helper(request):
+    return KeycloakHelper(request.config.getoption("--credentials-file"))
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -99,28 +106,23 @@ def access_token(keycloak_helper):
 
 
 @pytest.fixture(scope="session")
-def chatqa_api_helper():
-    return ApiRequestHelper("chatqa", {"app": "router-service"})
+def edp_helper(keycloak_helper):
+    return EdpHelper(keycloak_helper=keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def keycloak_helper(request):
-    return KeycloakHelper(request.config.getoption("--credentials-file"))
+def chatqa_api_helper(keycloak_helper):
+    return ChatQaApiHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def chat_history_helper():
-    return ChatHistoryHelper(namespace="chat-history", label_selector={"app.kubernetes.io/name": "chat-history"}, api_port=6012)
+def chat_history_helper(keycloak_helper):
+    return ChatHistoryHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def edp_helper():
-    return EdpHelper(namespace="edp", label_selector={"app.kubernetes.io/name": "edp-backend"}, api_port=5000)
-
-
-@pytest.fixture(scope="session")
-def fingerprint_api_helper():
-    return FingerprintApiHelper("fingerprint", {"app.kubernetes.io/name": "fingerprint"}, 6012)
+def fingerprint_api_helper(keycloak_helper):
+    return FingerprintApiHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")

@@ -15,7 +15,7 @@ def download_pubmed_dataset(url):
 def generate_random_questions(lines, n, prefix, suffix):
     if n > len(lines):
         raise ValueError(f"Requested {n} random rows, but file has only {len(lines)} rows.")
-    sampled_lines = random.sample(lines, n)
+    sampled_lines = random.sample(lines, n) # nosec B311
     titles = []
     for line in sampled_lines:
         row = json.loads(line)

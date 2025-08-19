@@ -226,7 +226,7 @@ def test_chatqa_input_over_limit(chatqa_api_helper):
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T171")
-def test_follow_up_questions_simple_case(chatqa_api_helper):
+def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper):
     """Check if second answer refers to the first answer (simple case)"""
     # Ask first question
     question_france = "What is the capital of France?"
@@ -235,10 +235,12 @@ def test_follow_up_questions_simple_case(chatqa_api_helper):
                                          f"Answer: {response.text}")
     response_france = chatqa_api_helper.format_response(response)
     logger.info(f"Response: {response_france}")
+    response = chat_history_helper.save_history([{"question": question_france, "answer": response_france}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
 
     # Ask second question
     question_followup = "What river flows through this city and what is most famous landmark in this city?"
-    history = {"conversation_history": [{"question": question_france, "answer": response_france}]}
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
     assert response.status_code == 200, (f"Unexpected status code returned: {response.status_code}. "
                                          f"Answer: {response.text}")
@@ -247,57 +249,27 @@ def test_follow_up_questions_simple_case(chatqa_api_helper):
     assert chatqa_api_helper.words_in_response(["seine", "eiffel"], response_followup)
 
 
-@allure.testcase("IEASG-T172")
-def test_follow_up_questions_empty_conversation(chatqa_api_helper):
-    """Check the behavior when empty conversation history is passed"""
-    # Empty list
-    question = "What river flows through this city?"
-    history = {"conversation_history": []}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code in [200, 400], (f"Unexpected status code returned: {response.status_code}. "
-                                                f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-    # A list of empty values
-    history = {"conversation_history": [{"question": "", "answer": ""}]}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code in [200, 400], (f"Unexpected status code returned: {response.status_code}. "
-                                                f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-    # A list with empty dict
-    history = {"conversation_history": [{}]}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
-                                         f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-
 @allure.testcase("IEASG-T173")
-def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper):
+def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper, chat_history_helper):
     """Irrelevant data injected in the first question. Refer to it a couple of questions later"""
     # Ask first question
     question_poland = "My name is Giovanni Giorgio. What is the capital of Poland?"
     response = chatqa_api_helper.call_chatqa(question_poland)
     response_poland = chatqa_api_helper.format_response(response)
     logger.info(f"Response: {response_poland}")
+    response = chat_history_helper.save_history([{"question": question_poland, "answer": response_poland}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
 
     # Ask second question
     question_people = "How many people live there?"
-    history = {"conversation_history": [{"question": question_poland, "answer": response_poland}]}
     response = chatqa_api_helper.call_chatqa(question_people, **history)
     response_people = chatqa_api_helper.format_response(response)
     logger.info(f"Follow-up response: {response_people}")
+    response = chat_history_helper.save_history([{"question": question_people, "answer": response_people}], history_id)
 
     # Refer to the information in a first question
     question_followup = "What is my name?"
-    history = {"conversation_history": [
-        {"question": question_poland, "answer": response_poland},
-        {"question": question_people, "answer": response_people}
-    ]}
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
     response_followup = chatqa_api_helper.format_response(response)
     logger.info(f"Follow-up response: {response_followup}")
@@ -305,10 +277,12 @@ def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper):
 
 
 @allure.testcase("IEASG-T174")
-def test_follow_up_questions_contradictory_history(chatqa_api_helper):
+def test_follow_up_questions_contradictory_history(chatqa_api_helper, chat_history_helper):
     """Check if the model is able to handle contradictory history"""
     question_people = "And in which country is that city located?"
-    history = {"conversation_history": [{"question": "What is the capital of Germany?", "answer": "Warsaw."}]}
+    response = chat_history_helper.save_history([{"question": "What is the capital of Germany?", "answer": "Warsaw."}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
     response = chatqa_api_helper.call_chatqa(question_people, **history)
     response_text = chatqa_api_helper.format_response(response)
     logger.info(f"Follow-up response: {response_text}")
@@ -316,17 +290,19 @@ def test_follow_up_questions_contradictory_history(chatqa_api_helper):
 
 
 @allure.testcase("IEASG-T175")
-def test_follow_up_questions_long_history(chatqa_api_helper, code_snippets):
+def test_follow_up_questions_long_history(chatqa_api_helper, chat_history_helper, code_snippets):
     """
     There might be a case when the sum of tokens of 3 previous questions and answers
     is longer than the model's token limit. Expect it not to fail in such case.
     """
     question = "In which programming languages have I prepared a TODO list application?"
     snippets = code_snippets("code_snippets_long")
-    history = {"conversation_history": [
-        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok"},
+    response = chat_history_helper.save_history([
+        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok",},
         {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": f"The code {snippets['js']} looks ok"},
         {"question": f"This is a third version of TODO list application: {snippets['python']}", "answer": f"The code: {snippets['python']} looks ok"},
-    ]}
+    ])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
     response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
+    assert response.status_code == 400, f"Unexpected status code returned: {response.status_code}"

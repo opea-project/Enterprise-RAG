@@ -282,7 +282,7 @@ def test_edp_upload_invalid_body(edp_helper):
 def test_edp_delete_nonexistent_link(edp_helper):
     """Delete a link that does not exist"""
     response = edp_helper.delete_link("nonexistent_link_id")
-    assert response.status_code == 400, f"Unexpected status code. Response: {response.text}"
+    assert response.status_code == 404, f"Unexpected status code. Response: {response.text}"
 
 
 @allure.testcase("IEASG-T38")

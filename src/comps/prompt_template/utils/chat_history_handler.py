@@ -42,6 +42,17 @@ class ChatHistoryHandler:
         return if_not_empty_history
 
 
+    def remove_history_blocked_by_guardrails(self, con_history: List[PrevQuestionDetails]) -> List[PrevQuestionDetails]:
+        """
+        Removes any history entries that are blocked by guardrails.
+        """
+        history_without_blocked_answers = []
+        for h in con_history:
+            if h.answer == "I'm sorry, I cannot assist you with your prompt.":
+                continue
+            history_without_blocked_answers.append(h)
+        return history_without_blocked_answers
+
     def retrieve_chat_history(self, history_id: str, access_token: str) -> List[PrevQuestionDetails]:
         """
         Retrieves the conversation history by its ID.
@@ -97,6 +108,8 @@ class ChatHistoryHandler:
 
         if self.validate_chat_history(con_history) is False:
             return ""
+
+        con_history = self.remove_history_blocked_by_guardrails(con_history)
 
         if type.lower() == "naive":
             return self._get_history_naive(con_history, **params)

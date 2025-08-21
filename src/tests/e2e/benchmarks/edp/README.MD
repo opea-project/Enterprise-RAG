@@ -2,6 +2,9 @@
 ### How to prepare?
 
 Place benchmark files into `src/tests/e2e/benchmarks/edp/files` directory
+Categorize into subfolders with `src/tests/e2e/benchmarks/edp/files/categorize.sh`
+Test is matching datesets names like `simple_small` with subdirs and picks
+all files from this subdir.
 
 ### How to run?
 

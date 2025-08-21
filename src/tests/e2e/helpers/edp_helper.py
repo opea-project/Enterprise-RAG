@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import asyncio
 import concurrent
 import logging
 import os
 import shutil
 import time
-from typing import Any
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
+from typing import Any
 
-
+import aiohttp
 import requests
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper
 from tests.e2e.validation.constants import TEST_FILES_DIR, ERAG_DOMAIN
@@ -133,6 +134,56 @@ class EdpHelper(ApiRequestHelper):
         )
         return response
 
+    async def generate_presigned_url_async(self, session, object_name, method="PUT", bucket=None) -> str:
+        """generate_presigned_url() intended to use for multiple async calls."""
+        logger.debug(f"Generating presigned URL for {method} object: {object_name} and bucket: {bucket}")
+        payload = {
+            "bucket_name": bucket,
+            "object_name": object_name,
+            "method": method
+        }
+        async with session.post(
+                f"{EDP_API_PATH}/presignedUrl",
+                headers=self.get_headers(),
+                json=payload,
+                ssl=False
+        ) as response:
+            if response.status >= 400:
+                response_text = await response.text()
+                logger.error(f"Failed to generate presigned URL for object {object_name}:\n"
+                             f"{response.status} - {response_text}")
+                raise UploadFailedException()
+
+            response_url = (await response.json()).get("url")
+            logger.info(f"Got presigned url for {object_name}.")
+            return response_url
+
+    async def generate_many_presigned_urls(self, objects_names: set, method="PUT", bucket=None) -> dict[str,str]:
+        """Generate a presigned URL for the given objects' names
+
+        Returns dictionary with url per object name:
+
+        ```
+        {
+            obj_name0: presgined_url0,
+            ...
+        }
+        ```
+        """
+        if not bucket:
+            bucket = self.default_bucket
+
+        presigned_urls = dict()
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                self.generate_presigned_url_async(session, object_name, method=method, bucket=bucket)
+                for object_name in objects_names
+            ]
+            urls = await asyncio.gather(*tasks)
+            presigned_urls = dict(zip(objects_names, urls))
+
+        return presigned_urls
+
     def cancel_processing_task(self, file_uuid):
         """Cancel the processing task for the given file UUID"""
         logger.info(f"Cancelling task for file with id: {file_uuid}")
@@ -158,7 +209,7 @@ class EdpHelper(ApiRequestHelper):
         try:
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False)
-            logger.info("Upload complete")
+            logger.info(f"Upload {file_path} completed")
             return response
         except FileNotFoundError:
             logger.error(f"Not found the file {file_path}")
@@ -170,11 +221,12 @@ class EdpHelper(ApiRequestHelper):
 
     def upload_files_in_parallel(self, files_dir, file_names):
         files_info = []
+
+        presigned_urls = asyncio.run(self.generate_many_presigned_urls(set(file_names)))
         for name in file_names:
-            file_path = os.path.join(files_dir, name)
-            file_presigned_url = self.generate_presigned_url(name).json().get("url")
-            file_data = {"path": file_path, "presigned_url": file_presigned_url}
-            files_info.append(file_data)
+            path = os.path.join(files_dir, name)
+            file_info = {"path": path, "presigned_url": presigned_urls[name]}
+            files_info.append(file_info)
 
         results = []
         logger.debug(f"Start {len(file_names)} threads for file uploading.")
@@ -236,6 +288,44 @@ class EdpHelper(ApiRequestHelper):
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
 
+    def wait_for_all_files_ingestion(self, filenames: set, timeout=FILE_UPLOAD_TIMEOUT_S) -> None:
+        """Wait for all files to be uploaded and ingested.
+
+        Uses sets logic for quick check for object readiness.
+        Expressions like filenames & filenames_all == filenames are way to continue if there are old files in edp.
+        """
+
+        sleep_interval = 10
+        start_time = time.time()
+        all_ingested = False
+        filenames_ingested = set()
+        while time.time() < start_time + timeout:
+            edp_files = self.list_files().json()
+            filenames_all = set([f["object_name"] for f in edp_files])
+            # all files from filenames should be present in the EDP
+            assert filenames & filenames_all == filenames, f"Not all files are present in the EDP:\n {'\n'.join(list(filenames_all - filenames))}"
+
+            filenames_ingested = set([f["object_name"] for f in edp_files if f["status"] == "ingested"])
+            if filenames & filenames_ingested == filenames:
+                logger.info(f"All files have been ingested. Elapsed time: {round(time.time() - start_time, 1)}s")
+                all_ingested = True
+                break
+            else:
+                waiting_time = time.time() - start_time
+                waiting_h = int(waiting_time // 3600)
+                waiting_m = int((waiting_time % 3600) // 60)
+                waiting_s = int(waiting_time % 60)
+
+                logger.debug(f"(Total: {waiting_h:02d}:{waiting_m:02d}:{waiting_s:02d}) Waiting {sleep_interval}s for all files to be ingested. Still processing: {', '.join(list(filenames - filenames_ingested))}")
+                time.sleep(sleep_interval)
+
+        if not all_ingested:
+            not_ingested = filenames - filenames_ingested
+            raise UploadTimeoutException(
+                f"Timed out after {timeout} seconds while waiting for the files to be ingested:" + "\n- ".join(not_ingested)
+            )
+
+
     def upload_file_and_wait_for_ingestion(self, file_path):
         response = self.generate_presigned_url(file_path)
         response = self.upload_file(file_path, response.json().get("url"))
@@ -267,6 +357,13 @@ class EdpHelper(ApiRequestHelper):
         """Delete a file using the presigned URL"""
         logger.info("Attempting to delete file using presigned URL")
         return requests.delete(presigned_url, verify=False)
+
+    async def delete_many_files(self, presigned_urls: list[str]) -> None:
+        """Delete files asynchronously."""
+        async with aiohttp.ClientSession() as session:
+            for presigned_url in presigned_urls:
+                async with session.delete(presigned_url, ssl=False) as response:
+                    response.raise_for_status()
 
     def _status_reached(self, status, desired_status):
         """

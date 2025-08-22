@@ -30,12 +30,6 @@ class EdpHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper, bucket_name=None):
         super().__init__(keycloak_helper=keycloak_helper)
-        self.default_headers = {
-            "Content-Type": "application/json"
-        }
-        self.remote_port_fw = 443
-        self.local_port_fw = 443
-
         if bucket_name:
             self.default_bucket = bucket_name
         else:

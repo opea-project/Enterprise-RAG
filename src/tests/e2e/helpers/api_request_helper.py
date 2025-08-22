@@ -99,7 +99,5 @@ class ApiRequestHelper:
 
     def get_headers(self):
         """ Get headers with the access token for authenticated requests. """
-        token = self.keycloak_helper.get_access_token()
-        headers = self.default_headers
-        headers["authorization"] = f"Bearer {token}"
-        return headers
+        self.default_headers["authorization"] = f"Bearer {self.keycloak_helper.access_token}" if self.keycloak_helper else ""
+        return self.default_headers

@@ -21,6 +21,7 @@ from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
 from helpers.istio_helper import IstioHelper
+from helpers.k8s_helper import K8sHelper
 from helpers.keycloak_helper import KeycloakHelper
 
 NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
@@ -49,12 +50,36 @@ def suppress_logging():
 
 
 @pytest.fixture(scope="session")
-def keycloak_helper(request):
-    return KeycloakHelper(request.config.getoption("--credentials-file"))
+def k8s_helper(request):
+    return K8sHelper()
+
+
+@pytest.fixture(scope="session")
+def keycloak_helper(request, k8s_helper, suppress_logging):
+    # suppress_logging fixture is deliberately placed here to ensure that it is executed
+    return KeycloakHelper(request.config.getoption("--credentials-file"), k8s_helper)
 
 
 @pytest.fixture(scope="session", autouse=True)
-def disable_guards_at_startup(guard_helper, suppress_logging):
+def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
+    """
+    Disable the required actions for the erag-admin user temporarily to allow obtaining the access token without
+    forcing to change the password. Get it back after the tests are done.
+    """
+    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
+                                                                     keycloak_helper.erag_admin_user)
+    if required_actions:
+        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_admin_user)
+    yield
+    # Restore original settings after tests
+    if required_actions:
+        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_admin_user)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_guards_at_startup(guard_helper, suppress_logging, temporarily_remove_user_required_actions):
     """
     Disable all guards at the beginning of the test suite.
     Note that supress_logging fixture is deliberately placed here to ensure that it is executed
@@ -98,11 +123,6 @@ def collect_k8s_logs(request):
 
     # Attach in allure report
     allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
-
-
-@pytest.fixture
-def access_token(keycloak_helper):
-    return keycloak_helper.get_access_token()
 
 
 @pytest.fixture(scope="session")

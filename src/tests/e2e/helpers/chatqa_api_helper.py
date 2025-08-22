@@ -37,8 +37,7 @@ class ChatQaApiHelper(ApiRequestHelper):
             "text": question
         }
         json_data.update(custom_params)
-        token = self.keycloak_helper.get_access_token()
-        return self._call_chatqa(token, json_data)
+        return self._call_chatqa(json_data)
 
     def call_chatqa_with_streaming_enabled(self, question, **custom_params):
         """
@@ -48,8 +47,7 @@ class ChatQaApiHelper(ApiRequestHelper):
             "text": question
         }
         json_data.update(custom_params)
-        token = self.keycloak_helper.get_access_token()
-        return self._call_chatqa(token, json_data, stream=True)
+        return self._call_chatqa(json_data, stream=True)
 
     def call_chatqa_in_parallel(self, questions):
         """Ask questions in parallel"""
@@ -59,12 +57,11 @@ class ChatQaApiHelper(ApiRequestHelper):
             json_data = {"text": question, "parameters": {"streaming": False}}
             request_bodies.append(json_data)
 
-        token = self.keycloak_helper.get_access_token()
         results = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(questions)) as executor:
             futures_to_questions = {}
             for payload in request_bodies:
-                future = executor.submit(self._call_chatqa, token, payload)
+                future = executor.submit(self._call_chatqa, payload)
                 futures_to_questions[future] = payload
 
             for future in concurrent.futures.as_completed(futures_to_questions):
@@ -75,18 +72,15 @@ class ChatQaApiHelper(ApiRequestHelper):
                                                exception=f"Request failed with exception: {e}"))
         return results
 
-    def _call_chatqa(self, token, payload, stream=False):
+    def _call_chatqa(self, payload, stream=False):
         """
         Make /api/v1/chatqna API call through APISIX using provided token.
         """
-        headers = self.default_headers
-        headers["authorization"] = f"Bearer {token}"
-
         logger.info(f"Asking the following question: {payload['text']}")
         start_time = time.time()
         response = requests.post(
             url=CHATQA_API_PATH,
-            headers=headers,
+            headers=self.get_headers(),
             json=payload,
             stream=stream,
             verify=False

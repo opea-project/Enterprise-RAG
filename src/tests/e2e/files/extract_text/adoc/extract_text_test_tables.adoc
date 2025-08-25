@@ -1,0 +1,35 @@
+== Table 1: Standard AsciiDoc Table
+
+[options="header,footer"]
+|=======================
+|ID |Name
+
+|1  |Number One
+|2  |Number Two
+
+|=======================
+
+== Table 2: CSV Format Table
+
+[format="csv",cols="2"]
+|======
+R0C0,R0C1
+R1C0,R1C1
+|======
+
+== Table 3: Merged and Multiline Table
+
+[options="header"]
+|===
+|Row number |Column 1|Column 2
+
+|00
+2+|Multi-column text
+
+|01
+.2+|Multi-row text
+|Multi-line +
+value
+
+|02
+|Sample text

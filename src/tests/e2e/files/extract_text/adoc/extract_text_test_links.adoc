@@ -1,0 +1,2 @@
+Custom link: http://samplelinkforadoc.org +
+Link to Google: https://google.com +

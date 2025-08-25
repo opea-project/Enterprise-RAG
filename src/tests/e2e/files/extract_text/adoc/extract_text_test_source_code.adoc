@@ -1,0 +1,5 @@
+Example python source code:
+[source,python]
+----
+print("Hello, world!")
+----

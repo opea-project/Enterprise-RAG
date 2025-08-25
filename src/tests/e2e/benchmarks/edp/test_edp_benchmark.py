@@ -12,23 +12,10 @@ from models import ProcessingKpi, FileProcessing, FileInfo, FilesProcessingSerie
 FILES_DIR = "benchmarks/edp/files"
 RESULTS_DIR = "benchmarks/edp/results"
 
-s_extensions = ["adoc", "docx", "md", "pdf", "pptx", "txt", "xlsx"]
-ss_file_name = "SS_simple"
-sm_file_name = "SM_simple"
-sl_file_name = "SL_simple"
-ss_files = [f"{ss_file_name}.{extension}" for extension in s_extensions]
-sm_files = [f"{sm_file_name}.{extension}" for extension in s_extensions]
-sl_files = [f"{sl_file_name}.{extension}" for extension in s_extensions]
-m_extensions = ["docx", "pdf", "pptx"]
-ms_file_name = "MS_moderate"
-mm_file_name = "MM_moderate"
-ml_file_name = "ML_moderate"
-ms_files = [f"{ms_file_name}.{extension}" for extension in m_extensions]
-mm_files = [f"{mm_file_name}.{extension}" for extension in m_extensions]
-ml_files = [f"{ml_file_name}.{extension}" for extension in m_extensions]
-
-files_dataset = [(Fileset.simple_small.value, ss_files), (Fileset.simple_medium.value, sm_files), (Fileset.simple_large.value, sl_files),
-                 (Fileset.moderate_small.value, ms_files), (Fileset.moderate_medium.value, mm_files), (Fileset.moderate_large.value, ml_files)]
+# Generate dataset names like simple_small, moderate_xlarge etc.
+complexities = ("simple", "moderate")
+sizes = ("small", "medium", "large", "xlarge")
+datasets_names = (f"{c}_{s}" for s in sizes for c in complexities)
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_results_dir() -> None:
@@ -42,39 +29,37 @@ def ensure_results_dir() -> None:
             shutil.rmtree(file_path)
 
 
-@pytest.mark.parametrize("label,dataset", files_dataset, ids=[label for label, _ in files_dataset])
-def test_edp_benchmark(edp_helper, label, dataset):
+@pytest.mark.parametrize("ds_name", datasets_names)
+def test_edp_benchmark(edp_helper, ds_name):
+    dataset_dir = os.path.join(FILES_DIR, ds_name)
+    dataset_files_names = [
+        f for f in os.listdir(dataset_dir)
+        if os.path.isfile(os.path.join(dataset_dir, f))
+    ]
+
     time_start = time.perf_counter()
-    edp_helper.upload_files_in_parallel(FILES_DIR, dataset)
-    asyncio.run(async_wait_for_all_files_upload(edp_helper, dataset))
-    time_total = int((time.perf_counter() - time_start) * 1000)
+    edp_helper.upload_files_in_parallel(dataset_dir, dataset_files_names)
+    try:
+        edp_helper.wait_for_all_files_ingestion(set(dataset_files_names), 36000)
+        time_total = int((time.perf_counter() - time_start) * 1000)
 
-    series = FilesProcessingSeries(
-        fileset_name=label,
-        all_totals=time_total
-    )
-    edp_results = edp_helper.list_files().json()
-    for file in dataset:
-        file_processing = get_file_edp_data(edp_results, file)
-        series.records.append(file_processing)
-    benchmark_record = EdpRecord(
-        timing_series=series
-    )
+        series = FilesProcessingSeries(
+            fileset_name=Fileset(ds_name.upper()),
+            all_totals=time_total
+        )
+        edp_results = edp_helper.list_files().json()
+        for file_name in dataset_files_names:
+            file_processing = get_file_edp_data(edp_results, file_name)
+            series.records.append(file_processing)
+        benchmark_record = EdpRecord(
+            timing_series=series
+        )
 
-    print(json.dumps(benchmark_record.model_dump(), indent=4))
-    benchmark_record.dump_csv(os.path.join(RESULTS_DIR, f"{label}_benchmark.csv"))
-    benchmark_record.dump_json(os.path.join(RESULTS_DIR, f"{label}_benchmark.json"))
-    delete_files_from_edp(edp_helper, dataset)
-
-
-async def async_wait_for_all_files_upload(edp_helper, files):
-    tasks = [async_wait_for_file_upload(edp_helper, file) for file in files]
-    await asyncio.gather(*tasks)
-
-
-async def async_wait_for_file_upload(edp_helper, file):
-    result = await asyncio.to_thread(edp_helper.wait_for_file_upload, file, "ingested")
-    return result
+        print(json.dumps(benchmark_record.model_dump(), indent=4))
+        benchmark_record.dump_csv(os.path.join(RESULTS_DIR, f"{ds_name}_benchmark.csv"))
+        benchmark_record.dump_json(os.path.join(RESULTS_DIR, f"{ds_name}_benchmark.json"))
+    finally:
+        delete_files_from_edp(edp_helper, dataset_files_names)
 
 
 def get_file_edp_data(edp_results, filename):
@@ -109,6 +94,6 @@ def get_file_edp_data(edp_results, filename):
 
 
 def delete_files_from_edp(edp_helper, file_name_list):
-    for file_name in file_name_list:
-        response = edp_helper.generate_presigned_url(file_name, "DELETE")
-        edp_helper.delete_file(response.json().get("url"))
+    presigned_urls = asyncio.run(edp_helper.generate_many_presigned_urls(file_name_list, "DELETE"))
+    presigned_urls_list = list(presigned_urls.values())
+    asyncio.run(edp_helper.delete_many_files(presigned_urls_list))

@@ -1,4 +1,4 @@
-FROM hierarchical-dataprep-usvc-base:latest
+FROM hierarchical_dataprep-base:latest
 
 COPY compliance /compliance
 

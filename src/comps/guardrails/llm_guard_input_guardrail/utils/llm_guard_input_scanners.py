@@ -549,6 +549,9 @@ class InputScannersConfig:
             regex_params['match_type'] = match_type
         if redact is not None:
             regex_params['redact'] = redact
+        else:
+            # For aligning default redact parameter: https://github.com/protectai/llm-guard/issues/280
+            regex_params['redact'] = False
 
         logger.info(f"Creating Regex scanner with params: {regex_params}")
         return OPEARegexScanner(**regex_params)

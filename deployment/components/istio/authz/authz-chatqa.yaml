@@ -80,7 +80,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: torchserve-reranking
+      app.kubernetes.io/name: torchserve_reranking
   action: DENY
   rules:
   - from:

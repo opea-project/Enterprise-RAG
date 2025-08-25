@@ -15,6 +15,7 @@ def cleanup(guard_helper):
     yield
     guard_helper.disable_all_guards()
 
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T75")
 def test_in_guard_ban_substrings(guard_helper):

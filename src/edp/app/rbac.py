@@ -41,7 +41,7 @@ class AbstractRBAC(ABC):
     def check_bucket_for_read_access(self, client, bucket_name):
         files = []
         try:
-            objects = client.list_objects(bucket_name)
+            objects = client.list_objects(bucket_name, recursive=True)
             files = list(objects)  # Convert iterator to list for safe iteration
         except S3Error as e:
             logger.error(f"S3Error on bucket {bucket_name}")

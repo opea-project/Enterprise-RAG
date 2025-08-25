@@ -10,9 +10,11 @@ class Fileset(str, Enum):
     simple_small = 'SIMPLE_SMALL'
     simple_medium = 'SIMPLE_MEDIUM'
     simple_large = 'SIMPLE_LARGE'
+    simple_xlarge = 'SIMPLE_XLARGE'
     moderate_small = 'MODERATE_SMALL'
     moderate_medium = 'MODERATE_MEDIUM'
     moderate_large = 'MODERATE_LARGE'
+    moderate_xlarge = 'MODERATE_XLARGE'
 
 class ProcessingKpi(BaseModel):
     """

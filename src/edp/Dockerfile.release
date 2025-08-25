@@ -4,7 +4,7 @@ COPY compliance /compliance
 
 WORKDIR /compliance/ospdt
 COPY Dockerfile .
-COPY uv.lock .
+COPY app/uv.lock .
 
 # CMD from base Dockerfile
 WORKDIR /home/user/app

@@ -1,17 +1,17 @@
 # LLM Guard Dataprep Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.16) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. Theese guardrails can be enabled by passing --dpguard parameter, while using [install_chatqna.sh](../../../../deployment/README.md) script. LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
- - [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
- - [BanTopics](https://llm-guard.com/input_scanners/ban_topics/)
- - [Code](https://llm-guard.com/input_scanners/code/)
- - [InvisibleText](https://llm-guard.com/input_scanners/invisible_text/)
- - [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
- - [Regex](https://llm-guard.com/input_scanners/regex/)
- - [Secrets](https://llm-guard.com/input_scanners/secrets/)
- - [Sentiment](https://llm-guard.com/input_scanners/sentiment/)
- - [TokenLimit](https://llm-guard.com/input_scanners/token_limit/)
- - [Toxicity](https://llm-guard.com/input_scanners/toxicity/)
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. Theese guardrails can be enabled by passing --dpguard parameter, while using [install_chatqna.sh](../../../../deployment/README.md) script. LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
+ - [BanSubstrings](https://protectai.github.io/llm-guard/input_scanners/ban_substrings/)
+ - [BanTopics](https://protectai.github.io/llm-guard/input_scanners/ban_topics/)
+ - [Code](https://protectai.github.io/llm-guard/input_scanners/code/)
+ - [InvisibleText](https://protectai.github.io/llm-guard/input_scanners/invisible_text/)
+ - [PromptInjection](https://protectai.github.io/llm-guard/input_scanners/prompt_injection/)
+ - [Regex](https://protectai.github.io/llm-guard/input_scanners/regex/)
+ - [Secrets](https://protectai.github.io/llm-guard/input_scanners/secrets/)
+ - [Sentiment](https://protectai.github.io/llm-guard/input_scanners/sentiment/)
+ - [TokenLimit](https://protectai.github.io/llm-guard/input_scanners/token_limit/)
+ - [Toxicity](https://protectai.github.io/llm-guard/input_scanners/toxicity/)
 
-A detailed description of each scanner is available on [LLM Guard](https://llm-guard.com/).
+A detailed description of each scanner is available on [LLM Guard](https://protectai.github.io/llm-guard/).
 
 ## Configuration Options
 The scanners can be configured only via environmental variables. All scanners can be configured via environmental variables for the microservice. They can be enabled during deployment or via configmap.
@@ -20,7 +20,7 @@ The scanners can be configured only via environmental variables. All scanners ca
 The LLM Guard Dataprep Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor. BanSubstrings scanner is enabled by default.
 
 ### BanSubstrings scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for BanSubstrings scanner](https://llm-guard.com/input_scanners/ban_substrings/)
+Detailed description of the scanner can be found in [LLM Guard documentation for BanSubstrings scanner](https://protectai.github.io/llm-guard/input_scanners/ban_substrings/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `BAN_SUBSTRINGS_ENABLED`   | Enables BanSubstrings scanner.                                                | bool   | false               | Required            |
@@ -31,7 +31,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `BAN_SUBSTRINGS_CONTAINS_ALL` | Requires all substrings to be present.                                     | bool   | false               | Optional            |
 
 ### BanTopics scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for BanTopics scanner](https://llm-guard.com/input_scanners/ban_topics/)
+Detailed description of the scanner can be found in [LLM Guard documentation for BanTopics scanner](https://protectai.github.io/llm-guard/input_scanners/ban_topics/)
 | Environment Variable       | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|--------------------------------------------------------------|--------|-----------------------|---------------------|
 | `BAN_TOPICS_ENABLED`       | Enables BanTopics scanner.                                   | bool   | false               | Required            |
@@ -41,7 +41,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `BAN_TOPICS_MODEL`         | Model to be used for BanTopics scanner.                      | string | "MODEL_V1"            | Optional            |
 
 ### Code scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for Code scanner](https://llm-guard.com/input_scanners/code/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Code scanner](https://protectai.github.io/llm-guard/input_scanners/code/)
 | Environment Variable       | Description                                                 | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------|--------|-----------------------|---------------------|
 | `CODE_ENABLED`             | Enables Code scanner.                                       | bool   | false               | Required            |
@@ -52,13 +52,13 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `CODE_THRESHOLD`           | Threshold for Code scanner.                                 | float  | 0.5                   | Optional            |
 
 ### InvisibleText scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for InvisibleText scanner](https://llm-guard.com/input_scanners/invisible_text/)
+Detailed description of the scanner can be found in [LLM Guard documentation for InvisibleText scanner](https://protectai.github.io/llm-guard/input_scanners/invisible_text/)
 | Environment Variable       | Description                    | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|--------------------------------|--------|-----------------------|---------------------|
 | `INVISIBLE_TEXT_ENABLED`   | Enables InvisibleText scanner. | bool   | false               | Required            |
 
 ### PromptInjection scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for PromptInjection scanner](https://llm-guard.com/input_scanners/prompt_injection/)
+Detailed description of the scanner can be found in [LLM Guard documentation for PromptInjection scanner](https://protectai.github.io/llm-guard/input_scanners/prompt_injection/)
 | Environment Variable          | Description                                                        | Type   | Default in LLM Guard  | Required / Optional |
 |-------------------------------|--------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `PROMPT_INJECTION_ENABLED`    | Enables PromptInjection scanner.                                   | bool   | false               | Required            |
@@ -69,7 +69,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 
 ### Regex scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for Regex scanner](https://llm-guard.com/input_scanners/regex/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Regex scanner](https://protectai.github.io/llm-guard/input_scanners/regex/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `REGEX_ENABLED`            | Enables Regex scanner.                                                        | bool   | false               | Required            |
@@ -79,7 +79,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `REGEX_REDACT`             | Enables redaction of output.                                                  | bool   | false               | Optional            |
 
 ### Secrets scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for Secrets scanner](https://llm-guard.com/input_scanners/secrets/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Secrets scanner](https://protectai.github.io/llm-guard/input_scanners/secrets/)
 | Environment Variable       | Description                                                                   |
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
@@ -87,7 +87,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `SECRETS_REDACT_MODE`      | Redaction mode for detected secrets.                                          | string | "REDACT_ALL"          | Optional            |
 
 ### Sentiment scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for Sentiment scanner](https://llm-guard.com/input_scanners/sentiment/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Sentiment scanner](https://protectai.github.io/llm-guard/input_scanners/sentiment/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SENTIMENT_ENABLED`        | Enables Sentiment scanner.                                                    | bool   | false               | Required            |
@@ -95,7 +95,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `SENTIMENT_LEXICON`        | Lexicon to be used for sentiment analysis.                                    | string | "vader_lexicon"       | Optional            |
 
 ### TokenLimit scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for TokenLimit scanner](https://llm-guard.com/input_scanners/token_limit/)
+Detailed description of the scanner can be found in [LLM Guard documentation for TokenLimit scanner](https://protectai.github.io/llm-guard/input_scanners/token_limit/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `TOKEN_LIMIT_ENABLED`      | Enables TokenLimit scanner.                                                   | bool   | false               | Required            |
@@ -104,7 +104,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `TOKEN_LIMIT_MODEL_NAME`   | Model name to be used for TokenLimit scanner.                                 | string | no value              | Optional            |
 
 ### Toxicity scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for Toxicity scanner](https://llm-guard.com/input_scanners/toxicity/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Toxicity scanner](https://protectai.github.io/llm-guard/input_scanners/toxicity/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `TOXICITY_ENABLED`         | Enables Toxicity scanner.                                                     | bool   | false               | Required            |

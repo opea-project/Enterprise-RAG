@@ -1,41 +1,41 @@
 # LLM Guard Output Guardrail Microservice
-This microservice implements [LLM Guard](https://llm-guard.com/) (version: 0.3.16) Output Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
- - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
- - [BanTopics](https://llm-guard.com/output_scanners/ban_topics/)
- - [Bias](https://llm-guard.com/output_scanners/bias/)
- - [Code](https://llm-guard.com/output_scanners/code/)
- - [Deanonymize](https://llm-guard.com/output_scanners/deanonymize/)
- - [JSON](https://llm-guard.com/output_scanners/json/)
- - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
- - [NoRefusal](https://llm-guard.com/output_scanners/no_refusal/)
- - [NoRefusalLight](https://llm-guard.com/output_scanners/no_refusal_light/)
- - [ReadingTime](https://llm-guard.com/output_scanners/reading_time/)
- - [FactualConsistency](https://llm-guard.com/output_scanners/factual_consistency/)
- - [Regex](https://llm-guard.com/output_scanners/regex/)
- - [Relevance](https://llm-guard.com/output_scanners/relevance/)
- - [Sensitive](https://llm-guard.com/output_scanners/sensitive/)
- - [Sentiment](https://llm-guard.com/output_scanners/sentiment/)
- - [Toxicity](https://llm-guard.com/output_scanners/toxicity/)
- - [URLReachability](https://llm-guard.com/output_scanners/url_reachability/)
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Output Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Output scanners scan LLM response and inform the user whether they are valid. LLM Guard OUtput Guardrail Microservice enables all scanners provided by LLM Guard:
+ - [BanSubstrings](https://protectai.github.io/llm-guard/output_scanners/ban_substrings/)
+ - [BanTopics](https://protectai.github.io/llm-guard/output_scanners/ban_topics/)
+ - [Bias](https://protectai.github.io/llm-guard/output_scanners/bias/)
+ - [Code](https://protectai.github.io/llm-guard/output_scanners/code/)
+ - [Deanonymize](https://protectai.github.io/llm-guard/output_scanners/deanonymize/)
+ - [JSON](https://protectai.github.io/llm-guard/output_scanners/json/)
+ - [MaliciousURLs](https://protectai.github.io/llm-guard/output_scanners/malicious_urls/)
+ - [NoRefusal](https://protectai.github.io/llm-guard/output_scanners/no_refusal/)
+ - [NoRefusalLight](https://protectai.github.io/llm-guard/output_scanners/no_refusal_light/)
+ - [ReadingTime](https://protectai.github.io/llm-guard/output_scanners/reading_time/)
+ - [FactualConsistency](https://protectai.github.io/llm-guard/output_scanners/factual_consistency/)
+ - [Regex](https://protectai.github.io/llm-guard/output_scanners/regex/)
+ - [Relevance](https://protectai.github.io/llm-guard/output_scanners/relevance/)
+ - [Sensitive](https://protectai.github.io/llm-guard/output_scanners/sensitive/)
+ - [Sentiment](https://protectai.github.io/llm-guard/output_scanners/sentiment/)
+ - [Toxicity](https://protectai.github.io/llm-guard/output_scanners/toxicity/)
+ - [URLReachability](https://protectai.github.io/llm-guard/output_scanners/url_reachability/)
 
-A detailed description of each scanner is available on [LLM Guard](https://llm-guard.com/).
+A detailed description of each scanner is available on [LLM Guard](https://protectai.github.io/llm-guard/).
 
 ## Configuration Options
 The scanners can be configured in two places: via UI and via environmental variables. There are seven scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
 
 ### Configuration via UI
 Scanners currently configurable from UI, from Admin Panel:
- - [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
- - [Code](https://llm-guard.com/output_scanners/code/)
- - [Bias](https://llm-guard.com/output_scanners/bias/)
- - [Relevance](https://llm-guard.com/output_scanners/relevance/)
- - [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
+ - [BanSubstrings](https://protectai.github.io/llm-guard/output_scanners/ban_substrings/)
+ - [Code](https://protectai.github.io/llm-guard/output_scanners/code/)
+ - [Bias](https://protectai.github.io/llm-guard/output_scanners/bias/)
+ - [Relevance](https://protectai.github.io/llm-guard/output_scanners/relevance/)
+ - [MaliciousURLs](https://protectai.github.io/llm-guard/output_scanners/malicious_urls/)
 
 ### Configuration via environmental variables
 The LLM Guard Output Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
 
 ### BanSubstrings scanner
-Detailed description of the scanner can be found in [LLM Guard documentation for BanSubstrings scanner](https://llm-guard.com/output_scanners/ban_substrings/)
+Detailed description of the scanner can be found in [LLM Guard documentation for BanSubstrings scanner](https://protectai.github.io/llm-guard/output_scanners/ban_substrings/)
 
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
@@ -48,7 +48,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### BanTopics scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for BanTopics scanner](https://llm-guard.com/output_scanners/ban_topics/)
+Detailed description of the scanner can be found in [LLM Guard documentation for BanTopics scanner](https://protectai.github.io/llm-guard/output_scanners/ban_topics/)
 | Environment Variable       | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|--------------------------------------------------------------|--------|-----------------------|---------------------|
 | `BAN_TOPICS_ENABLED`       | Enables BanTopics scanner.                                   | bool   | false               | Required            |
@@ -59,7 +59,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Bias scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Bias scanner](https://llm-guard.com/output_scanners/bias/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Bias scanner](https://protectai.github.io/llm-guard/output_scanners/bias/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `BIAS_ENABLED`             | Enables Bias scanner.                                                         | bool   | false               | Required            |
@@ -70,7 +70,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Code scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Code scanner](https://llm-guard.com/output_scanners/code/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Code scanner](https://protectai.github.io/llm-guard/output_scanners/code/)
 | Environment Variable       | Description                                                 | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------|--------|-----------------------|---------------------|
 | `CODE_ENABLED`             | Enables Code scanner.                                       | bool   | false               | Required            |
@@ -82,7 +82,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Deanonymize scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Deanonymize scanner](https://llm-guard.com/output_scanners/deanonymize/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Deanonymize scanner](https://protectai.github.io/llm-guard/output_scanners/deanonymize/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `DEANONYMIZE_ENABLED`      | Enables Deanonymize scanner.                                                  | bool   | false               | Required            |
@@ -90,7 +90,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### JSON scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for JSON scanner](https://llm-guard.com/output_scanners/json/)
+Detailed description of the scanner can be found in [LLM Guard documentation for JSON scanner](https://protectai.github.io/llm-guard/output_scanners/json/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `JSON_SCANNER_ENABLED`     | Enables JSON scanner.                                                         | bool   | false               | Required            |
@@ -99,7 +99,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### MaliciousURLs scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for MaliciousURLs scanner](https://llm-guard.com/output_scanners/malicious_urls/)
+Detailed description of the scanner can be found in [LLM Guard documentation for MaliciousURLs scanner](https://protectai.github.io/llm-guard/output_scanners/malicious_urls/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |--------------------------- |-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `MALICIOUS_URLS_ENABLED`   | Enables MaliciousURLs scanner.                                                | bool   | false               | Required            |
@@ -109,7 +109,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### NoRefusal scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for NoRefusal scanner](https://llm-guard.com/output_scanners/no_refusal/)
+Detailed description of the scanner can be found in [LLM Guard documentation for NoRefusal scanner](https://protectai.github.io/llm-guard/output_scanners/no_refusal/)
 | Environment Variable       | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
 |--------------------------- |--------------------------------------------------------------|--------|-----------------------|---------------------|
 | `NO_REFUSAL_ENABLED`       | Enables NoRefusal scanner.                                   | bool   | false               | Required            |
@@ -126,7 +126,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### ReadingTime scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for ReadingTime scanner](https://llm-guard.com/output_scanners/reading_time/)
+Detailed description of the scanner can be found in [LLM Guard documentation for ReadingTime scanner](https://protectai.github.io/llm-guard/output_scanners/reading_time/)
 | Environment Variable       | Description                                               | Type   | Default in LLM Guard  | Required / Optional |
 |--------------------------- |-----------------------------------------------------------|--------|-----------------------|---------------------|
 | `READING_TIME_ENABLED`     | Enables ReadingTime scanner.                              | bool   | false               | Required            |
@@ -135,7 +135,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### FactualConsistency scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for FactualConsistency scanner](https://llm-guard.com/output_scanners/factual_consistency/)
+Detailed description of the scanner can be found in [LLM Guard documentation for FactualConsistency scanner](https://protectai.github.io/llm-guard/output_scanners/factual_consistency/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard   | Required / Optional |
 |--------------------------- |-------------------------------------------------------------------------------|--------|------------------------|---------------------|
 | `FACTUAL_CONSISTENCY_ENABLED` | Enables FactualConsistency scanner.                                        | bool   | false                | Required            |
@@ -145,7 +145,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Regex scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Regex scanner](https://llm-guard.com/output_scanners/regex/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Regex scanner](https://protectai.github.io/llm-guard/output_scanners/regex/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `REGEX_ENABLED`            | Enables Regex scanner.                                                        | bool   | false               | Required            |
@@ -156,7 +156,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Relevance scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Relevance scanner](https://llm-guard.com/output_scanners/relevance/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Relevance scanner](https://protectai.github.io/llm-guard/output_scanners/relevance/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |--------------------------- |-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `RELEVANCE_ENABLED`        | Enables Relevance scanner.                                                    | bool   | false               | Required            |
@@ -166,7 +166,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Sensitive scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Sensitive scanner](https://llm-guard.com/output_scanners/sensitive/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Sensitive scanner](https://protectai.github.io/llm-guard/output_scanners/sensitive/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SENSITIVE_ENABLED`        | Enables Sensitive scanner.                                                    | bool   | false               | Required            |
@@ -179,7 +179,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Sentiment scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Sentiment scanner](https://llm-guard.com/output_scanners/sentiment/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Sentiment scanner](https://protectai.github.io/llm-guard/output_scanners/sentiment/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SENTIMENT_ENABLED`        | Enables Sentiment scanner.                                                    | bool   | false               | Required            |
@@ -188,7 +188,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Toxicity scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for Toxicity scanner](https://llm-guard.com/output_scanners/toxicity/)
+Detailed description of the scanner can be found in [LLM Guard documentation for Toxicity scanner](https://protectai.github.io/llm-guard/output_scanners/toxicity/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `TOXICITY_ENABLED`         | Enables Toxicity scanner.                                                     | bool   | false               | Required            |
@@ -199,7 +199,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### URLReachability scanner
 
-Detailed description of the scanner can be found in [LLM Guard documentation for URLReachability scanner](https://llm-guard.com/output_scanners/url_reachability/)
+Detailed description of the scanner can be found in [LLM Guard documentation for URLReachability scanner](https://protectai.github.io/llm-guard/output_scanners/url_reachability/)
 | Environment Variable                      | Description                                        | Type   | Default in LLM Guard  | Required / Optional |
 |-------------------------------------------|----------------------------------------------------|--------|-----------------------|---------------------|
 | `URL_REACHABILITY_ENABLED`                | Enables URLReachability scanner.                   | bool   | false               | Required            |

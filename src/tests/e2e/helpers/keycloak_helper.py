@@ -152,3 +152,23 @@ class KeycloakHelper:
         payload = {"requiredActions": required_actions}
         response = requests.put(url, json=payload, headers=headers, verify=False)
         assert response.status_code == 204, f"Failed to remove required actions. Status code: {response.status_code}"
+
+    def set_brute_force_detection(self, enabled: bool):
+        """
+        Enable or disable brute force detection for the Keycloak realm.
+        :param enabled: True to enable, False to disable
+        """
+        logger.info(f"{'Enabling' if enabled else 'Disabling'} brute force detection for the Keycloak realm")
+        url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}"
+        headers = {
+            "Authorization": f"Bearer {self.admin_access_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch realm settings (status {response.status_code}): {response.text}")
+        realm_settings = response.json()
+        realm_settings["bruteForceProtected"] = enabled
+        response = requests.put(url, json=realm_settings, headers=headers, verify=False)
+        if response.status_code != 204:
+            raise Exception(f"Failed to update brute force detection (status {response.status_code}): {response.text}")

@@ -126,6 +126,25 @@ def test_delete_history_by_id(chat_history_helper):
     assert response.status_code == 400, f"Unexpected status of getting history details after deletion, {response.text}"
 
 
+@allure.testcase("IEASG-T238")
+def test_empty_history(chat_history_helper):
+    """Check the behavior when empty conversation history is passed"""
+    # Empty list
+    response = chat_history_helper.save_history([])
+    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
+                                         f"Answer: {response.text}")
+
+    # A list of empty values
+    response = chat_history_helper.save_history([{"question": "", "answer": ""}])
+    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
+                                         f"Answer: {response.text}")
+
+    # A list with empty dict
+    response = chat_history_helper.save_history([{}])
+    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
+                                         f"Answer: {response.text}")
+
+
 def clean_all_history(chat_history_helper):
     response = chat_history_helper.get_all_histories()
     for history in response.json():

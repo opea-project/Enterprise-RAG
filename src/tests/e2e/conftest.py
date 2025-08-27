@@ -96,15 +96,15 @@ def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
     forcing to change the password. Get it back after the tests are done.
     """
     required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
-                                                                     keycloak_helper.erag_admin_user)
+                                                                     keycloak_helper.erag_admin_username)
     if required_actions:
         keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
-                                                keycloak_helper.erag_admin_user)
+                                                keycloak_helper.erag_admin_username)
     yield
     # Restore original settings after tests
     if required_actions:
         keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
-                                                keycloak_helper.erag_admin_user)
+                                                keycloak_helper.erag_admin_username)
 
 
 @pytest.fixture(scope="session", autouse=True)

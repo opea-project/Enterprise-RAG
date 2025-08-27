@@ -319,9 +319,8 @@ class EdpHelper(ApiRequestHelper):
                 f"Timed out after {timeout} seconds while waiting for the files to be ingested:" + "\n- ".join(not_ingested)
             )
 
-
-    def upload_file_and_wait_for_ingestion(self, file_path):
-        response = self.generate_presigned_url(file_path)
+    def upload_file_and_wait_for_ingestion(self, file_path, bucket=None):
+        response = self.generate_presigned_url(file_path, bucket=bucket)
         response = self.upload_file(file_path, response.json().get("url"))
         assert response.status_code == 200
         return self.wait_for_file_upload(file_path, "ingested", timeout=180)

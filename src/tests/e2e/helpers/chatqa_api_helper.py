@@ -29,7 +29,7 @@ class ChatQaApiHelper(ApiRequestHelper):
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
 
-    def call_chatqa(self, question, **custom_params):
+    def call_chatqa(self, question, as_user=False, **custom_params):
         """
         Make /v1/chatqa API call with the provided question. Streaming disabled.
         """
@@ -37,7 +37,7 @@ class ChatQaApiHelper(ApiRequestHelper):
             "text": question
         }
         json_data.update(custom_params)
-        return self._call_chatqa(json_data)
+        return self._call_chatqa(json_data, as_user=as_user)
 
     def call_chatqa_with_streaming_enabled(self, question, **custom_params):
         """
@@ -72,7 +72,7 @@ class ChatQaApiHelper(ApiRequestHelper):
                                                exception=f"Request failed with exception: {e}"))
         return results
 
-    def _call_chatqa(self, payload, stream=False):
+    def _call_chatqa(self, payload, stream=False, as_user=False):
         """
         Make /api/v1/chatqna API call through APISIX using provided token.
         """
@@ -80,7 +80,7 @@ class ChatQaApiHelper(ApiRequestHelper):
         start_time = time.time()
         response = requests.post(
             url=CHATQA_API_PATH,
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             json=payload,
             stream=stream,
             verify=False

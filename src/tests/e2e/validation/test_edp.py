@@ -12,6 +12,7 @@ import os
 import time
 import uuid
 
+from validation.buildcfg import cfg
 from constants import TEST_FILES_DIR
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,23 @@ def cleanup(edp_helper):
         if "test_edp_" in link["uri"]:
             logger.info(f"Removing link: {link['uri']}")
             edp_helper.delete_link(link["id"])
+
+
+@pytest.fixture(scope="function")
+def temporarily_remove_regular_user_required_actions(keycloak_helper):
+    """
+    Temporarily remove required actions for the regular user to allow obtaining an access token.
+    """
+    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
+                                                                     keycloak_helper.erag_user_username)
+    if required_actions:
+        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
+    yield
+    # Restore original settings after tests
+    if required_actions:
+        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
 
 
 @pytest.mark.smoke
@@ -360,6 +378,36 @@ def test_edp_list_buckets(edp_helper):
     response = edp_helper.list_buckets()
     assert response.status_code == 200, f"Failed to list buckets. Response: {response.text}"
     logger.info(f"Buckets: {response.json()}")
+
+
+@allure.testcase("IEASG-T217")
+def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
+    """
+    Upload files to admin-only and public buckets.
+    Check that regular user has access only to the file in public bucket, while admin has access to both files.
+    """
+    rbac_enabled = cfg.get("edp", {}).get("rbac", {}).get("enabled")
+    if rbac_enabled is None:
+        pytest.skip("EDP RBAC setting is not found in the build configuration. Skipping the test")
+    elif not rbac_enabled:
+        pytest.skip("EDP RBAC is disabled. Skipping the test")
+
+    file = "file_in_admin_bucket.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="only-admin")
+    file = "file_in_public_bucket.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="default")
+
+    # Check that regular user has access only to the file in public bucket
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?", as_user=True)
+    assert "2567" not in chatqa_api_helper.format_response(response)
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?", as_user=True)
+    assert "944" in chatqa_api_helper.format_response(response)
+
+    # Check that admin has access to both files
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?")
+    assert "2567" in chatqa_api_helper.format_response(response)
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?")
+    assert "944" in chatqa_api_helper.format_response(response)
 
 
 def method_name():

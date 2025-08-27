@@ -21,7 +21,11 @@ class CredentialsNotFound(Exception):
 class KeycloakHelper:
 
     def __init__(self, credentials_file, k8s_helper):
-        self.erag_admin_user, self.erag_admin_pass = self.get_erag_admin_credentials(credentials_file)
+        credentials = self.get_credentials(credentials_file)
+        self.erag_admin_username = credentials["KEYCLOAK_ERAG_ADMIN_USERNAME"]
+        self.erag_admin_password = credentials["KEYCLOAK_ERAG_ADMIN_PASSWORD"]
+        self.erag_user_username = credentials["KEYCLOAK_ERAG_USER_USERNAME"]
+        self.erag_user_password = credentials["KEYCLOAK_ERAG_USER_PASSWORD"]
         self.k8s_helper = k8s_helper
         self._access_token = None
         self._admin_access_token = None
@@ -35,23 +39,20 @@ class KeycloakHelper:
     def admin_access_token(self):
         return self.get_admin_access_token()
 
-    def get_access_token(self):
+    def get_access_token(self, as_user=False):
         """
         Get the access token for the erag-admin user.
         User's required actions need to be temporarily removed in order to obtain the token.
         """
-        return self.get_user_access_token(self.erag_admin_user, self.erag_admin_pass)
+        if as_user:
+            return self.get_user_access_token(self.erag_user_username, self.erag_user_password)
+        return self.get_user_access_token(self.erag_admin_username, self.erag_admin_password)
 
-    def get_erag_admin_credentials(self, credentials_file):
+    def get_credentials(self, credentials_file):
         if credentials_file:
             if os.path.exists(credentials_file):
                 logger.debug(f"Loading {credentials_file} in order to obtain ERAG admin credentials")
-                username, password = self._parse_credentials_file(credentials_file)
-                if username and password:
-                    return username, password
-                else:
-                    logger.warning(f"Failed to obtain ERAG admin credentials from {credentials_file}. "
-                                   f"Proceeding with default_credentials.txt")
+                return self._parse_credentials_file(credentials_file)
             else:
                 logger.warning(f"Provided credentials file (--credentials-file={credentials_file}) does not exist. "
                                f"Proceeding with default_credentials.txt")
@@ -64,18 +65,15 @@ class KeycloakHelper:
             raise CredentialsNotFound()
 
     def _parse_credentials_file(self, file_path):
-        erag_admin_username = ""
-        erag_admin_password = ""
+        """Parse the credentials file and return a corresponding dictionary"""
+        credentials = {}
         with open(file_path, "r") as file:
             for line in file:
                 line = line.strip()
                 if line and not line.startswith("#"):  # Ignore empty lines and comments
                     key, value = line.split("=", 1)
-                    if key == "KEYCLOAK_ERAG_ADMIN_PASSWORD":
-                        erag_admin_password = value.strip('"')
-                    elif key == "KEYCLOAK_ERAG_ADMIN_USERNAME":
-                        erag_admin_username = value.strip('"')
-        return erag_admin_username, erag_admin_password
+                    credentials[key] = value.strip('"')
+        return credentials
 
     def get_admin_access_token(self):
         """Get the access token for the admin user. It is needed in order to obtain erag-admin user_id"""

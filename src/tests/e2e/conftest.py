@@ -11,7 +11,9 @@ import logging
 import pytest
 import tarfile
 import urllib3
+import yaml
 
+from validation import buildcfg
 from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
 from helpers.chatqa_api_helper import ChatQaApiHelper
@@ -34,6 +36,33 @@ def pytest_addoption(parser):
     parser.addoption("--credentials-file", action="store", default="",
                      help="Path to credentials file. Required fields: "
                           "KEYCLOAK_ERAG_ADMIN_USERNAME and KEYCLOAK_ERAG_ADMIN_PASSWORD")
+    parser.addoption("--build-config-file", action="store", default="../../deployment/ansible-logs/config.yaml",
+                     help="Path to build configuration YAML file")
+
+
+def pytest_configure(config):
+    """
+    Load build configuration from the specified YAML file and store it in the global cfg dictionary.
+    """
+    # Manually configure logging here since pytest configures it only after this hook
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+
+    build_config_filepath = config.getoption("--build-config-file")
+    if os.path.exists(build_config_filepath):
+        logger.debug(f"Loading build configuration from {build_config_filepath}")
+        with open(build_config_filepath, "r") as f:
+            build_configuration = yaml.safe_load(f)
+
+        # store into global cfg
+        buildcfg.cfg.update(build_configuration)
+    else:
+        logger.warning("Build configuration file not found. Proceeding with empty configuration.")
+
+    # Remove previously configured logger. If it was not removed, every log would be displayed twice.
+    root = logging.getLogger()
+    for h in root.handlers[:]:
+        root.removeHandler(h)
 
 
 @pytest.fixture(scope="session", autouse=True)

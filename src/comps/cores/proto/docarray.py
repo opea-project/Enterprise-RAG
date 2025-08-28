@@ -19,13 +19,13 @@ class TopologyInfo:
     downstream_black_list: Optional[list] = []
 
 class ChatMessage(BaseModel):
-    question: str
-    answer: str
+    question: str = Field(..., min_length=1)
+    answer: str = Field(..., min_length=1)
     metadata: Optional[Dict[str, Any]] = {}
 
 class ChatHistory(BaseModel):
     id: Optional[str] = None
-    history: List[ChatMessage]
+    history: conlist(ChatMessage, min_length=1)
 
 class ChatHistoryName(BaseModel):
     id: str

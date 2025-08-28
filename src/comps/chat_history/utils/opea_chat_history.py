@@ -12,7 +12,7 @@ from .documents import ChatHistoryDocument
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 def generate_history_title(history: List[ChatMessage]) -> str:
-	return history[0].question[:20] + "..." if len(history[0].question) > 20 else history[0].question
+	return history[0].question[:30] if len(history[0].question) > 30 else history[0].question
 
 class OPEAChatHistoryConnector(OPEAMongoConnector):
     def __init__(self, mongodb_host, mongodb_port) -> None:
@@ -69,6 +69,9 @@ class OPEAChatHistoryConnector(OPEAMongoConnector):
         try:
             if history_name is None or history_name.strip() == "":
                 raise ValueError("History name cannot be empty.")
+
+            if len(history_name) > 250:
+                raise ValueError("History name cannot be longer than 250 characters.")
 
             h = await self.get_by_id(ChatHistoryDocument, history_id)
             if not h:

@@ -62,7 +62,7 @@ endpoints:
     path: /api/v1/edp/presignedUrl
     backend_service: edp-backend
     service_port: 5000
-    rate_limit_count: 30
+    rate_limit_count: 120
     service_regex:
       - ^/api/v1/edp/presignedUrl$
       - /api/presignedUrl

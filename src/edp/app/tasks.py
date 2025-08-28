@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from minio.error import S3Error
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 from celery import Celery, Task, shared_task
 from app.models import FileStatus, LinkStatus
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
@@ -47,34 +48,48 @@ EMBEDDING_ENDPOINT = os.environ.get('EMBEDDING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
 
 class WithEDPTask(Task):
-    _db = None
-    _minio = None
 
-    def after_return(self, *args, **kwargs):
-        if self._db is not None:
-            self._db.close()
+    def __init__(self):
+        self.sessions = {}
+        self._minio = None
+        self._engine = None
 
-    @property
-    def db(self):
-        if self._db is None:
+        if self._minio is None:
+            self._minio = get_local_minio_client()
+
+        if self._engine is None:
             DATABASE_USER = os.getenv("DATABASE_USER")
             DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
             DATABASE_HOST = os.getenv("DATABASE_HOST", 'postgres')
             DATABASE_PORT = os.getenv("DATABASE_PORT", "5432")
             DATABASE_NAME = os.getenv("DATABASE_NAME",'enhanced_dataprep')
-
             DATABASE_URL = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+            self._engine = create_engine(DATABASE_URL, pool_size=8, max_overflow=8) # single class instance used for all task with concurrency
 
-            engine = create_engine(DATABASE_URL)
-            self._db = sessionmaker(autocommit=False, autoflush=False, bind=engine)()
+    def before_start(self, task_id, args, kwargs):
+        self.sessions[task_id] = sessionmaker(autocommit=False, autoflush=False, bind=self._engine)()
+        super().before_start(task_id, args, kwargs)
 
-        return self._db
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        session = self.sessions.pop(task_id)
+        session.close()
+        super().after_return(status, retval, task_id, args, kwargs, einfo)
+
+    @property
+    def db(self):
+        return self.sessions[self.request.id] # equal to task_id
 
     @property
     def minio(self):
-        if self._minio is None:
-            self._minio = get_local_minio_client()
         return self._minio
+
+    def safe_commit(self):
+        try:
+            self.db.commit()
+        except SQLAlchemyError as e:
+            logger.error(f"Error committing to database: {e}")
+            self.db.rollback()
+            raise e
 
 def response_err(response):
     try:
@@ -84,7 +99,6 @@ def response_err(response):
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def process_file_task(self, file_id: Any, *args, **kwargs):
-
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
         raise Exception(f"File with id {file_id} not found")
@@ -93,14 +107,14 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
 
     file_db.status = 'processing'
     file_db.job_message = 'Data clean up in progress.'
-    self.db.commit()
+    self.safe_commit()
 
     # Step 0 - Delete everything related to the file in the vector database
     response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'file_id': str(file_db.id) })
     if response.status_code != 200:
         file_db.status = 'error'
         file_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{file_db.id}] Deleted existing data related to file.")
 
@@ -108,7 +122,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     file_db.text_extractor_start = datetime.datetime.now()
     file_db.status = 'text_extracting'
     file_db.job_message = 'Data loading in progress.'
-    self.db.commit()
+    self.safe_commit()
 
     minio_response = None
     file_base64 = None
@@ -121,7 +135,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         file_db.status = 'error'
         file_db.job_message = f"Error downloading file. {e}"
         file_db.text_extractor_end = datetime.datetime.now()
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error downloading file. {e}")
     finally:
         if minio_response is not None:
@@ -138,7 +152,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data preparation. {response_err(response)}")
         logger.debug(f"[{file_db.id}] Data preparation completed.")
 
@@ -151,12 +165,12 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
             file_db.chunks_total = len(dataprep_docs) # Update chunks count
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             file_db.status = 'error'
             file_db.job_message = 'No text extracted from the file.'
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
         response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'files': [{'filename': file_name, 'data64': file_base64}] })
@@ -164,7 +178,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data loading. {response_err(response)}"
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data loading. {response_err(response)}")
         logger.debug(f"[{file_db.id}] Data loading completed.")
 
@@ -175,26 +189,26 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
                 logger.debug(f"[{file_db.id}] Data loading returned 0 documents.")
                 raise Exception('No text extracted from the file.')
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             file_db.status = 'error'
             file_db.job_message = 'No text extracted from the file.'
             file_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
 
         # Step 3 - Call the text compression service to compress the documents
         file_db.text_compression_start = datetime.datetime.now()
         file_db.status = 'text_compression'
         file_db.job_message = 'Text compression in progress.'
-        self.db.commit()
+        self.safe_commit()
 
         response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while text compressing. {response_err(response)}"
             file_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while text compressing. {response_err(response)}")
         logger.debug(f"[{file_db.id}] Text compression completed.")
 
@@ -207,26 +221,26 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
             file_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
             file_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             file_db.status = 'error'
             file_db.job_message = 'No text compressed.'
             file_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from text compression service. {e} {response.text}")
 
         # Step 4 - Call the data splitter service to split the documents into smaller chunks
         file_db.text_splitter_start = datetime.datetime.now()
         file_db.status = 'text_splitting'
         file_db.job_message = 'Data splitting in progress.'
-        self.db.commit()
+        self.safe_commit()
 
         response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data splitting. {response_err(response)}"
             file_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data splitting. {response_err(response)}")
         logger.debug(f"[{file_db.id}] Data splitting completed.")
 
@@ -238,12 +252,12 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
             file_db.chunks_total = len(dataprep_docs) # Update chunks count
             file_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             file_db.status = 'error'
             file_db.job_message = 'No text extracted from the file.'
             file_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data splitting service. {e} {response.text}")
 
     # 4.1 Update the metadata info from database
@@ -263,7 +277,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             file_db.dpguard_start = datetime.datetime.now()
             file_db.status = 'dpguard'
             file_db.job_message = 'Data Preparation Guardrail in progress.'
-            self.db.commit()
+            self.safe_commit()
 
             # Step 4.5.1 - call fingerprint for configuration
             fingerprint_endpoint   = os.environ.get('FINGERPRINT_ENDPOINT')
@@ -285,13 +299,13 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
                     dpguard_status = 'blocked'
                 raise Exception(f"{dpguard_msg} {response_err(response)}")
             file_db.dpguard_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             logger.info("Dataprep Guardrail completed.")
     except Exception as e:
         file_db.job_message = dpguard_msg if dpguard_msg else 'Error while executing dataprep guardrail.'
         file_db.status = dpguard_status if dpguard_status else 'error'
         file_db.dpguard_end = datetime.datetime.now()
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
     # Step 5 - Call the embedding service and ingestion service in batches
@@ -300,7 +314,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     file_db.ingestion_start = file_db.embedding_start
     file_db.status = 'embedding'
     file_db.job_message = 'Data embedding in progress.'
-    self.db.commit()
+    self.safe_commit()
     total_embedding_duration = datetime.timedelta()
     total_ingestion_duration = datetime.timedelta()
     for i in range(0, len(dataprep_docs), batch_size):
@@ -322,13 +336,13 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
                 file_db.status = 'error'
                 file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
                 file_db.embedding_end = datetime.datetime.now()
-                self.db.commit()
+                self.safe_commit()
                 raise Exception(f"Error encountered while ingestion. {response_err(response)}")
         else:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while embedding. {response_err(response)}"
             file_db.embedding_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while embedding. {response_err(response)}")
 
         # Update the pipeline progress
@@ -336,13 +350,13 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         file_db.embedding_end = file_db.embedding_start + total_embedding_duration
         file_db.ingestion_start = file_db.embedding_end
         file_db.ingestion_end = file_db.embedding_end + total_ingestion_duration
-        self.db.commit()
+        self.safe_commit()
 
     # Update the processing time
     file_db.status = 'ingested'
     file_db.job_message = 'Data ingestion completed.'
     file_db.task_id = ""
-    self.db.commit()
+    self.safe_commit()
     logger.debug(f"[{file_db.id}] File stored successfully.")
     return True
 
@@ -361,13 +375,13 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
     if response.status_code != 200:
         file_db.job_status = 'error'
         file_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
 
     # Step 2 - Delete the file from database
     id = file_db.id
     self.db.delete(file_db)
-    self.db.commit()
+    self.safe_commit()
     logger.debug(f"[{id}] File deleted successfully from database.")
     return True
 
@@ -382,14 +396,14 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
 
     link_db.status = 'processing'
     link_db.job_message = 'Data clean up in progress.'
-    self.db.commit()
+    self.safe_commit()
 
     # Step 0 - Delete everything related to the file in the vector database
     response = requests.post(f"{INGESTION_ENDPOINT}/delete", json={ 'link_id': str(link_db.id) })
     if response.status_code != 200:
         link_db.status = 'error'
         link_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
     logger.debug(f"[{link_db.id}] Deleted existing data related to link.")
 
@@ -397,7 +411,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db.text_extractor_start = datetime.datetime.now()
     link_db.status = 'text_extracting'
     link_db.job_message = 'Data loading in progress.'
-    self.db.commit()
+    self.safe_commit()
 
     # Step 2 - Call the text_extractor service
     dataprep_docs = []
@@ -408,7 +422,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while data preparation. {response_err(response)}"
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data preparation. {response_err(response)}")
         logger.debug(f"[{link_db.id}] Data preparation completed.")
 
@@ -421,12 +435,12 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
             link_db.chunks_total = len(dataprep_docs) # Update chunks count
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             link_db.status = 'error'
             link_db.job_message = 'No text extracted from the link.'
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data preparation service. {e} {response.text}")
     else:
         response = requests.post(TEXT_EXTRACTOR_ENDPOINT, json={ 'links': [link_db.uri] })
@@ -434,7 +448,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while data loading. {response_err(response)}"
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data loading. {response_err(response)}")
         logger.debug(f"[{link_db.id}] Data loading completed.")
 
@@ -445,26 +459,26 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
                 logger.debug(f"[{link_db.id}] Data loading returned 0 documents.")
                 raise Exception('No text extracted from the link.')
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             link_db.status = 'error'
             link_db.job_message = 'No text extracted from the link.'
             link_db.text_extractor_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data loading service. {e} {response.text}")
 
         # Step 3 - Call the text compression service to compress the documents
         link_db.text_compression_start = datetime.datetime.now()
         link_db.status = 'text_compression'
         link_db.job_message = 'Text compression in progress.'
-        self.db.commit()
+        self.safe_commit()
 
         response = requests.post(TEXT_COMPRESSION_ENDPOINT, json={ 'loaded_docs': text_extractor_docs })
         if response.status_code != 200:
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while text compressing. {response_err(response)}"
             link_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while text compressing. {response_err(response)}")
         logger.debug(f"[{link_db.id}] Text compression completed.")
 
@@ -477,26 +491,26 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.chunk_size = len(dataprep_compressed_docs[0]) # Update chunk size
             link_db.chunks_total = len(dataprep_compressed_docs) # Update chunks count
             link_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             link_db.status = 'error'
             link_db.job_message = 'No text compressed.'
             link_db.text_compression_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from text compression service. {e} {response.text}")
 
         # Step 4 - Call the data splitter service to split the documents into smaller chunks
         link_db.text_splitter_start = datetime.datetime.now()
         link_db.status = 'text_splitting'
         link_db.job_message = 'Data splitting in progress.'
-        self.db.commit()
+        self.safe_commit()
 
         response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs })
         if response.status_code != 200:
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while data splitting. {response_err(response)}"
             link_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while data splitting. {response_err(response)}")
         logger.debug(f"[{link_db.id}] Data splitting completed.")
 
@@ -509,12 +523,12 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.chunk_size = len(dataprep_docs[0]) # Update chunk size
             link_db.chunks_total = len(dataprep_docs) # Update chunks count
             link_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
         except Exception as e:
             link_db.status = 'error'
             link_db.job_message = 'No text extracted from the file.'
             link_db.text_splitter_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error parsing response from data splitting service. {e} {response.text}")
 
     # 4.1 Update the metadata info from database
@@ -531,7 +545,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
             link_db.dpguard_start = datetime.datetime.now()
             link_db.status = 'dpguard'
             link_db.job_message = 'Data Preparation Guardrail in progress.'
-            self.db.commit()
+            self.safe_commit()
             dpguard_endpoint = os.environ.get('DPGUARD_ENDPOINT')
             logger.info(f"dpguard_endpoint: {dpguard_endpoint}")
             logger.info("Dataprep Guardrail enabled. Scanning the documents.")
@@ -544,13 +558,13 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
                     dpguard_status = 'blocked'
                 raise Exception(f"{dpguard_msg} {response_err(response)}")
             link_db.dpguard_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             logger.info("Dataprep Guardrail completed.")
     except Exception as e:
         link_db.job_message = dpguard_msg if dpguard_msg else 'Error while executing dataprep guardrail.'
         link_db.status = dpguard_status if dpguard_status else 'error'
         link_db.dpguard_end = datetime.datetime.now()
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
     # Step 5 - Call the embedding service and ingestion service in batches
@@ -559,7 +573,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
     link_db.ingestion_start = link_db.embedding_start
     link_db.status = 'embedding'
     link_db.job_message = 'Data embedding in progress.'
-    self.db.commit()
+    self.safe_commit()
     total_embedding_duration = datetime.timedelta()
     total_ingestion_duration = datetime.timedelta()
     for i in range(0, len(dataprep_docs), batch_size):
@@ -581,13 +595,13 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
                 link_db.status = 'error'
                 link_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
                 link_db.embedding_end = datetime.datetime.now()
-                self.db.commit()
+                self.safe_commit()
                 raise Exception(f"Error encountered while ingestion. {response_err(response)}")
         else:
             link_db.status = 'error'
             link_db.job_message = f"Error encountered while embedding. {response_err(response)}"
             link_db.embedding_end = datetime.datetime.now()
-            self.db.commit()
+            self.safe_commit()
             raise Exception(f"Error encountered while embedding. {response_err(response)}")
 
         # Update the pipeline progress
@@ -595,13 +609,13 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         link_db.embedding_end = link_db.embedding_start + total_embedding_duration
         link_db.ingestion_start = link_db.embedding_end
         link_db.ingestion_end = link_db.embedding_end + total_ingestion_duration
-        self.db.commit()
+        self.safe_commit()
 
     # Update the processing time
     link_db.status = 'ingested'
     link_db.job_message = 'Data ingestion completed.'
     link_db.task_id = ""
-    self.db.commit()
+    self.safe_commit()
     logger.debug(f"[{link_db.id}] File stored successfully.")
     return True
 
@@ -620,13 +634,13 @@ def delete_link_task(self, link_id: Any, *args, **kwargs):
     if response.status_code != 200:
         link_db.job_status = 'error'
         link_db.job_message = f"Error encountered while removing existing data related to file. {response_err(response)}"
-        self.db.commit()
+        self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
 
     # Step 2 - Delete the file from database
     id = link_db.id
     self.db.delete(link_db)
-    self.db.commit()
+    self.safe_commit()
     logger.debug(f"[{id}] File deleted successfully from database.")
     return True
 

@@ -104,7 +104,7 @@ def test_add_new_file(mock_delete_existing_file, mock_process_file_task, mock_ge
     mock_db.commit.assert_called()
 
     # Check if the file processing task was enqueued
-    mock_process_file_task.delay.assert_called_once_with(file_id=file_status.id)
+    mock_process_file_task.delay.assert_called_once_with(file_id=file_status.id, countdown=1)
 
     assert file_status.bucket_name == bucket_name
     assert file_status.object_name == object_name

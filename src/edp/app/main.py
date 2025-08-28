@@ -50,74 +50,77 @@ def health_check():
 @app.get("/metrics")
 async def metrics():
     with get_db() as db:
-        registry = CollectorRegistry()
+        try:
+            registry = CollectorRegistry()
+            files = db.query(FileStatus).filter(FileStatus.marked_for_deletion == False).count() # noqa: E712
+            files_for_deletion = db.query(FileStatus).filter(FileStatus.marked_for_deletion == True).count() # noqa: E712
+            links = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == False).count() # noqa: E712
+            links_for_deletion = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == True).count() # noqa: E712
+            files_chunks = db.query(
+                functions.sum(FileStatus.chunks_total).label('chunks_total_sum'),
+                functions.sum(FileStatus.chunks_processed).label('chunks_processed_sum')
+            ).filter(FileStatus.marked_for_deletion == False).one() # noqa: E712
+            links_chunks = db.query(
+                functions.sum(LinkStatus.chunks_total).label('chunks_total_sum'),
+                functions.sum(LinkStatus.chunks_processed).label('chunks_processed_sum')
+            ).filter(LinkStatus.marked_for_deletion == False).one() # noqa: E712
+            files_statuses = db.query(
+                FileStatus.status,
+                functions.count(FileStatus.status).label('status_count')
+            ).group_by(FileStatus.status).all()
+            files_statuses = dict(files_statuses)
+            links_statuses = db.query(
+                LinkStatus.status,
+                functions.count(LinkStatus.status).label('status_count')
+            ).group_by(LinkStatus.status).all()
+            links_statuses = dict(links_statuses)
 
-        files = db.query(FileStatus).filter(FileStatus.marked_for_deletion == False).count() # noqa: E712
-        files_for_deletion = db.query(FileStatus).filter(FileStatus.marked_for_deletion == True).count() # noqa: E712
-        links = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == False).count() # noqa: E712
-        links_for_deletion = db.query(LinkStatus).filter(LinkStatus.marked_for_deletion == True).count() # noqa: E712
-        files_chunks = db.query(
-            functions.sum(FileStatus.chunks_total).label('chunks_total_sum'),
-            functions.sum(FileStatus.chunks_processed).label('chunks_processed_sum')
-        ).filter(FileStatus.marked_for_deletion == False).one() # noqa: E712
-        links_chunks = db.query(
-            functions.sum(LinkStatus.chunks_total).label('chunks_total_sum'),
-            functions.sum(LinkStatus.chunks_processed).label('chunks_processed_sum')
-        ).filter(LinkStatus.marked_for_deletion == False).one() # noqa: E712
-        files_statuses = db.query(
-            FileStatus.status,
-            functions.count(FileStatus.status).label('status_count')
-        ).group_by(FileStatus.status).all()
-        files_statuses = dict(files_statuses)
-        links_statuses = db.query(
-            LinkStatus.status,
-            functions.count(LinkStatus.status).label('status_count')
-        ).group_by(LinkStatus.status).all()
-        links_statuses = dict(links_statuses)
+            gauge_files = Gauge(name='edp_files_total', documentation='Total number of files in the database', registry=registry)
+            gauge_files.set(files or 0)
 
-        gauge_files = Gauge(name='edp_files_total', documentation='Total number of files in the database', registry=registry)
-        gauge_files.set(files or 0)
+            gauge_links = Gauge(name='edp_links_total', documentation='Total number of links in the database', registry=registry)
+            gauge_links.set(links or 0)
 
-        gauge_links = Gauge(name='edp_links_total', documentation='Total number of links in the database', registry=registry)
-        gauge_links.set(links or 0)
+            gauge_files_for_deletion = Gauge(name='edp_files_for_deletion_total', documentation='Total number of files marked for deletion', registry=registry)
+            gauge_files_for_deletion.set(files_for_deletion or 0)
 
-        gauge_files_for_deletion = Gauge(name='edp_files_for_deletion_total', documentation='Total number of files marked for deletion', registry=registry)
-        gauge_files_for_deletion.set(files_for_deletion or 0)
+            gauge_links_for_deletion = Gauge(name='edp_links_for_deletion_total', documentation='Total number of links marked for deletion', registry=registry)
+            gauge_links_for_deletion.set(links_for_deletion or 0)
 
-        gauge_links_for_deletion = Gauge(name='edp_links_for_deletion_total', documentation='Total number of links marked for deletion', registry=registry)
-        gauge_links_for_deletion.set(links_for_deletion or 0)
+            gauge_files_chunks = Gauge(name='edp_files_chunks_total', documentation='Total number of chunks for files', registry=registry)
+            gauge_files_chunks.set(files_chunks.chunks_processed_sum or 0)
 
-        gauge_files_chunks = Gauge(name='edp_files_chunks_total', documentation='Total number of chunks for files', registry=registry)
-        gauge_files_chunks.set(files_chunks.chunks_processed_sum or 0)
+            gauge_links_chunks = Gauge(name='edp_links_chunks_total', documentation='Total number of chunks for links', registry=registry)
+            gauge_links_chunks.set(links_chunks.chunks_processed_sum or 0)
 
-        gauge_links_chunks = Gauge(name='edp_links_chunks_total', documentation='Total number of chunks for links', registry=registry)
-        gauge_links_chunks.set(links_chunks.chunks_processed_sum or 0)
+            gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
+            gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
 
-        gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
-        gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
+            for obj_status in 'uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
+                file_count = files_statuses.get(obj_status, 0)
+                file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
+                file_gauge.set(file_count)
+                link_count = links_statuses.get(obj_status, 0)
+                link_gauge = Gauge(name=f'edp_links_{obj_status}_total', documentation=f'Total number of links with status {obj_status}', registry=registry)
+                link_gauge.set(link_count)
 
-        for obj_status in 'uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
-            file_count = files_statuses.get(obj_status, 0)
-            file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
-            file_gauge.set(file_count)
-            link_count = links_statuses.get(obj_status, 0)
-            link_gauge = Gauge(name=f'edp_links_{obj_status}_total', documentation=f'Total number of links with status {obj_status}', registry=registry)
-            link_gauge.set(link_count)
+            celery_inspector = celery.control.inspect()
+            reserved = celery_inspector.reserved()
+            scheduled = celery_inspector.scheduled()
+            active = celery_inspector.active()
 
-        celery_inspector = celery.control.inspect()
-        reserved = celery_inspector.reserved()
-        scheduled = celery_inspector.scheduled()
-        active = celery_inspector.active()
+            gauge_reserved = Gauge(name='edp_celery_reserved_tasks_total', documentation='Total number of reserved tasks', registry=registry)
+            gauge_reserved.set(sum(len(v) for v in reserved.values()) if reserved else 0)
+            gauge_scheduled = Gauge(name='edp_celery_scheduled_tasks_total', documentation='Total number of scheduled tasks', registry=registry)
+            gauge_scheduled.set(sum(len(v) for v in scheduled.values()) if scheduled else 0)
+            gauge_active = Gauge(name='edp_celery_active_tasks_total', documentation='Total number of active tasks', registry=registry)
+            gauge_active.set(sum(len(v) for v in active.values()) if active else 0)
 
-        gauge_reserved = Gauge(name='edp_celery_reserved_tasks_total', documentation='Total number of reserved tasks', registry=registry)
-        gauge_reserved.set(sum(len(v) for v in reserved.values()) if reserved else 0)
-        gauge_scheduled = Gauge(name='edp_celery_scheduled_tasks_total', documentation='Total number of scheduled tasks', registry=registry)
-        gauge_scheduled.set(sum(len(v) for v in scheduled.values()) if scheduled else 0)
-        gauge_active = Gauge(name='edp_celery_active_tasks_total', documentation='Total number of active tasks', registry=registry)
-        gauge_active.set(sum(len(v) for v in active.values()) if active else 0)
-
-        data = generate_latest(registry)
-        return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+            data = generate_latest(registry)
+            return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(f"Error retrieving data for metrics: {e}")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -243,26 +246,8 @@ async def list_bucket_with_permissions(request: Request):
 
 
 def add_new_file(bucket_name, object_name, etag, content_type, size):
-    """
-    Adds a new file to the database and enqueues a file processing job.
-
-    This function first deletes any existing files with the same bucket name and object name.
-    Then, it adds a new file entry to the database with the provided metadata and commits the transaction.
-    Finally, it enqueues a file processing job and updates the file entry with the task ID and job name.
-
-    Args:
-        bucket_name (str): The name of the bucket where the file is stored.
-        object_name (str): The name of the object (file) in the bucket.
-        etag (str): The entity tag (ETag) of the file.
-        content_type (str): The MIME type of the file.
-        size (int): The size of the file in bytes.
-
-    Returns:
-        FileStatus: The file status object representing the newly added file.
-
-    Raises:
-        Exception: If there is an error deleting existing files or committing to the database.
-    """
+    file_status = None
+    task = None
     with get_db() as db:
         try:
             old_files = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name).all()
@@ -273,31 +258,36 @@ def add_new_file(bucket_name, object_name, etag, content_type, size):
             db.rollback()
             raise HTTPException(status_code=400, detail="Error deleting existing file")
 
-        file_status = FileStatus(
-            bucket_name=bucket_name,
-            object_name=object_name,
-            etag=etag,
-            content_type=content_type,
-            size=size,
-            status='uploaded',
-            created_at=datetime.now(timezone.utc)
-        )
-        db.add(file_status)
-        db.commit()
-
-        logger.debug(f"Added file {bucket_name}/{object_name} to database with id {file_status.id}")
-
         try:
+            file_status = FileStatus(
+                bucket_name=bucket_name,
+                object_name=object_name,
+                etag=etag,
+                content_type=content_type,
+                size=size,
+                status='uploaded',
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(file_status)
+            db.flush()
+
+            logger.debug(f"Added file {bucket_name}/{object_name} to database with id {file_status.id}")
+
             # Save DB and enqueue file processing job
-            task = process_file_task.delay(file_id=file_status.id)
+            task = process_file_task.delay(file_id=file_status.id, countdown=1) # delay by 1 second
             file_status.task_id = task.id
             file_status.job_name = 'file_processing_job'
             db.commit()
             logger.debug(f"File processing task enqueued with id {task.id}")
         except Exception as e:
-            logger.error(f"Error committing to database: {e}")
+            if task and task.id:
+                try:
+                    AsyncResult(task.id).revoke(terminate=True)
+                except Exception as revoke_error:
+                    logger.error(f"Error revoking task {task.id}: {revoke_error}")
             db.rollback() # rollback only the delay job
-        return file_status
+            logger.error(f"Error committing to database: {e}")
+    return file_status
 
 
 def delete_existing_file(bucket_name, object_name):
@@ -312,18 +302,31 @@ def delete_existing_file(bucket_name, object_name):
         None
     """
     with get_db() as db:
-        file_statuses = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name, FileStatus.marked_for_deletion == False).all() # noqa: E712
-        if file_statuses:
+        try:
+            file_statuses = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name, FileStatus.marked_for_deletion == False).all() # noqa: E712
             for file_status in file_statuses:
-                file_status.marked_for_deletion = True
-                file_status.status = 'deleting'
-                db.commit()
-                task = delete_file_task.delay(file_id=file_status.id, countdown=3) # delay by 3 seconds
-                file_status.job_name = 'file_deleting_job'
-                file_status.job_message = ''
-                file_status.task_id = task.id
-                db.commit()
-                logger.debug(f"File processing task enqueued with id {task.id}")
+                task = None
+                try:
+                    file_status.marked_for_deletion = True
+                    file_status.status = 'deleting'
+                    db.flush()
+                    task = delete_file_task.delay(file_id=file_status.id, countdown=3) # delay by 3 seconds
+                    file_status.job_name = 'file_deleting_job'
+                    file_status.job_message = ''
+                    file_status.task_id = task.id
+                    db.commit()
+                    logger.debug(f"File deleting task enqueued with id {task.id}")
+                except Exception as e:
+                    if task and task.id:
+                        try:
+                            logger.error(f"Revoking task due to error during file deletion {task.id}.")
+                            AsyncResult(task.id).revoke(terminate=True)
+                        except Exception as revoke_error:
+                            logger.error(f"Error revoking task {task.id}: {revoke_error}")
+                    db.rollback()
+                    logger.error(f"Error committing to database: {e}")
+        except Exception as e:
+            logger.error(f"Error retrieving file statuses: {e}")
 
 
 def add_new_link(uri):

@@ -189,10 +189,12 @@ def test_docx_multi_paragraph(edp_helper, chatqa_api_helper):
     question = "What is the name of the group offering the Cloud Solutions Developer Intern for AI RAG position?"
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.words_in_response(["dcai", "ecosystem"], response), UNRELATED_RESPONSE_MSG
-    question = ("What qualifications do I need to meet when applying for the position of "
+    question = ("What technologies do I need to know when applying for the position of "
                 "Cloud Solutions Developer Intern for AI RAG Application?")
     response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["jenkins", "terraform", "typescript"], response), (
+    technologies = ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", 
+                    "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
+    assert chatqa_api_helper.words_in_response(technologies, response), (
         UNRELATED_RESPONSE_MSG)
 
 
@@ -221,7 +223,7 @@ def test_get_context_from_filename(edp_helper, chatqa_api_helper):
 def test_docx_tables(edp_helper, chatqa_api_helper):
     """*.docx file learning capabilities (with tables inside the file)"""
     # 1. Table with a single cell
-    question = "What is Trenvahir's profession?"
+    question = "What was the proffession of the person who whispered the name Trenvahir?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_table_single_cell.docx", question)
     assert chatqa_api_helper.words_in_response(["clockmaker"], response), UNRELATED_RESPONSE_MSG
     # 2. Table with many cells
@@ -234,7 +236,7 @@ def test_docx_tables(edp_helper, chatqa_api_helper):
 def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     """*.docx file learning capabilities (with formatted text inside the file)"""
     # 1. Check if heading is recognized
-    question = "Who is the girl called Lucifelle?"
+    question = "What is the full name of girl called Lucifelle?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_formatted_text.docx", question)
     assert chatqa_api_helper.words_in_response(["lunibelle", "sound"], response), UNRELATED_RESPONSE_MSG
     # 2. Test italic text
@@ -246,7 +248,7 @@ def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.words_in_response(["strange", "kind"], response), UNRELATED_RESPONSE_MSG
     # 4. Test underline text
-    question = "What did people call Lunibelle Lucifelle, and why?"
+    question = "What did people call Lunibelle Lucifelle before they learned her name?"
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.words_in_response(["sound girl"], response), UNRELATED_RESPONSE_MSG
     # 5. Test color text

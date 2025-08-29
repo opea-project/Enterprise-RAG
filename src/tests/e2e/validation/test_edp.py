@@ -380,6 +380,44 @@ def test_edp_list_buckets(edp_helper):
     logger.info(f"Buckets: {response.json()}")
 
 
+@allure.testcase("IEASG-T239")
+def test_edp_regular_user_has_no_access_to_api(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
+    """Check that regular user has no access to EDP APIs"""
+    fail_msg = "Regular user should not have access to EDP APIs"
+
+    # Test list API
+    response = edp_helper.list_files(as_user=True)
+    assert response.status_code == 403, fail_msg
+    response = edp_helper.list_links(as_user=True)
+    assert response.status_code == 403, fail_msg
+    response = edp_helper.list_buckets(as_user=True)
+    assert response.status_code == 403, fail_msg
+
+    # Test upload link API
+    links = [f"https://www.example.org/?test_edp_regular_user_has_no_access_to_api={uuid.uuid4()}"]
+    response = edp_helper.upload_links({"links": links}, as_user=True)
+    assert response.status_code == 403, fail_msg
+
+    # Test delete link API
+    response = edp_helper.delete_link("nonexistent_link_id", as_user=True)
+    assert response.status_code == 403, fail_msg
+
+    # Test cancel processing task API
+    response = edp_helper.cancel_processing_task("some id", as_user=True)
+    assert response.status_code == 403, fail_msg
+
+    # Test extract text API
+    response = edp_helper.extract_text("some id", as_user=True)
+    assert response.status_code == 403, fail_msg
+
+    # Test upload file API
+    file = "story.txt"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+    response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    assert response.status_code == 403, fail_msg
+
+
 @allure.testcase("IEASG-T217")
 def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
     """

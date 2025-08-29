@@ -39,41 +39,41 @@ class EdpHelper(ApiRequestHelper):
             logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
                          f"{self.available_buckets}")
 
-    def list_buckets(self):
+    def list_buckets(self, as_user=False):
         """Call /api/list_buckets endpoint"""
         response = requests.get(
             url=f"{EDP_API_PATH}/list_buckets",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
 
-    def list_links(self):
+    def list_links(self, as_user=False):
         """Call /api/links endpoint"""
         response = requests.get(
             url=f"{EDP_API_PATH}/links",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
 
-    def upload_links(self, payload):
+    def upload_links(self, payload, as_user=False):
         """Make post call to /api/links endpoint with the given payload"""
         logger.info(f"Attempting to upload links using the following payload: {payload}")
         response = requests.post(
             url=f"{EDP_API_PATH}/links",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             json=payload,
             verify=False
         )
         return response
 
-    def delete_link(self, link_uuid):
+    def delete_link(self, link_uuid, as_user=False):
         """Delete a link by its id"""
         logger.info(f"Deleting link with id: {link_uuid}")
         response = requests.delete(
             url=f"{EDP_API_PATH}/link/{link_uuid}",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
@@ -101,16 +101,16 @@ class EdpHelper(ApiRequestHelper):
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the link to be uploaded")
 
-    def list_files(self):
+    def list_files(self, as_user=False):
         """Call /api/files endpoint"""
         response = requests.get(
             url=f"{EDP_API_PATH}/files",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
 
-    def generate_presigned_url(self, object_name, method="PUT", bucket=None):
+    def generate_presigned_url(self, object_name, method="PUT", bucket=None, as_user=False):
         """Generate a presigned URL for the given object name"""
         if not bucket:
             bucket = self.default_bucket
@@ -122,7 +122,7 @@ class EdpHelper(ApiRequestHelper):
         }
         response = requests.post(
             url=f"{EDP_API_PATH}/presignedUrl",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             json=payload,
             verify=False
         )
@@ -178,27 +178,27 @@ class EdpHelper(ApiRequestHelper):
 
         return presigned_urls
 
-    def cancel_processing_task(self, file_uuid):
+    def cancel_processing_task(self, file_uuid, as_user=False):
         """Cancel the processing task for the given file UUID"""
         logger.info(f"Cancelling task for file with id: {file_uuid}")
         response = requests.delete(
             url=f"{EDP_API_PATH}/file/{file_uuid}/task",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
 
-    def extract_text(self, file_uuid):
+    def extract_text(self, file_uuid, as_user=False):
         """Extract text for the given file UUID"""
         logger.info(f"Extracting text for file with id: {file_uuid}")
         response = requests.post(
             f"{EDP_API_PATH}/file/{file_uuid}/extract",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user),
             verify=False
         )
         return response
 
-    def _open_and_send_file(self, file_path, presigned_url) :
+    def _open_and_send_file(self, file_path, presigned_url):
         logger.debug(f"Attempting to upload file {file_path} using presigned URL")
         try:
             with open(file_path, 'rb') as f:

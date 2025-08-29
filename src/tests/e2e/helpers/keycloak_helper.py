@@ -117,7 +117,7 @@ class KeycloakHelper:
 
     def remove_required_actions(self, admin_access_token, user):
         """Remove required actions from the user. Otherwise, we'll get 'Account is not fully set up' error."""
-        logger.debug("Temporarily removing actions required for the user in order to obtain the token")
+        logger.debug(f"Temporarily removing actions required for the user {user} in order to obtain the token")
         user_id = self._get_user_id(admin_access_token, user)
         self._set_required_actions([], admin_access_token, user_id)
 

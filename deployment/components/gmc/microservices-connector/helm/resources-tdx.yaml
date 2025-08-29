@@ -113,6 +113,15 @@ tdx:
         requests:
           memory: 32Gi
           cpu: 16
+    torchserve_reranking:
+      tdxEnabled: true
+      resources:
+        limits:
+          memory: 16Gi
+          cpu: 4
+        requests:
+          memory: 4Gi
+          cpu: 4
     vllm:
       tdxEnabled: true
       resources:

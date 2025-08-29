@@ -109,6 +109,11 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+#   This is a method to use a post-renderer script to modify the rendered manifests before they are applied to the cluster.
+#   Commented due to lack of port forwarding enabled in kata
+#    post_renderer:
+#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ keycloak.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#       if (tdxEnabled is defined and tdxEnabled) else omit }}"
     wait: true
   tags:
     - install

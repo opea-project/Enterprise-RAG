@@ -119,6 +119,10 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+#    This can replace chart and template based deployments with TDX
+#    post_renderer:
+#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ fingerprint.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#       if (tdxEnabled is defined and tdxEnabled) else omit }}"
   register: helm_result
   tags:
     - install

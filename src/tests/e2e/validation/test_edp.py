@@ -296,6 +296,17 @@ def test_edp_upload_invalid_body(edp_helper):
     assert response.status_code == 422, f"Unexpected status code. Response: {response.text}"
 
 
+@allure.testcase("IEASG-T241")
+def test_edp_upload_corrupted_file(edp_helper):
+    """Upload a corrupted file and check that it is in error state"""
+    file = "corrupt_file.docx"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+    response = edp_helper.generate_presigned_url(file)
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
+    edp_helper.wait_for_file_upload(file, "error", timeout=60)
+
+
 @allure.testcase("IEASG-T139")
 def test_edp_delete_nonexistent_link(edp_helper):
     """Delete a link that does not exist"""

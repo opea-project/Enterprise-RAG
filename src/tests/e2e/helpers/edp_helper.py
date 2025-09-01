@@ -206,7 +206,7 @@ class EdpHelper(ApiRequestHelper):
             logger.info(f"Upload {file_path} completed")
             return response
         except FileNotFoundError:
-            logger.error(f"Not found the file {file_path}")
+            logger.error(f"File not found: {file_path}")
             raise
 
     def upload_file(self, file_path, presigned_url):

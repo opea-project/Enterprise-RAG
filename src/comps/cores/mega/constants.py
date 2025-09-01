@@ -40,6 +40,17 @@ class ServiceType(Enum):
     TEXT_COMPRESSION = 23
     TEXT_SPLITTER = 24
     CHAT_HISTORY = 25
+    # GenAIComps exclusive
+    IMAGE2VIDEO = 26
+    TEXT2IMAGE = 27
+    ANIMATION = 28
+    IMAGE2IMAGE = 29
+    TEXT2SQL = 30
+    TEXT2GRAPH = 31
+    TEXT2CYPHER = 32
+    TEXT2KG = 33
+    STRUCT2GRAPH = 34
+    # End GenAIComps exclusive
 
 
 class MegaServiceEndpoint(Enum):
@@ -56,6 +67,13 @@ class MegaServiceEndpoint(Enum):
     TRANSLATION = "/v1/translation"
     LANGUAGE_DETECTION = "/v1/language_detection"
     FAQ_GEN = "/v1/faqgen"
+    # GenAIComps exclusive
+    AVATAR_CHATBOT = "/v1/avatarchatbot"
+    GRAPH_RAG = "/v1/graphrag"
+    HYBRID_RAG = "/v1/hybridrag"
+    RETRIEVALTOOL = "/v1/retrievaltool"
+    MULTIMODAL_QNA = "/v1/multimodalqna"
+    VIDEO_RAG_QNA = "/v1/videoqna"
     # Follow OPENAI
     EMBEDDINGS = "/v1/embeddings"
     TTS = "/v1/audio/speech"

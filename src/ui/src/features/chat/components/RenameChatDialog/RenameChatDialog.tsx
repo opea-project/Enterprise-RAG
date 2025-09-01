@@ -10,6 +10,8 @@ import { useChangeChatNameMutation } from "@/features/chat/api/chatHistory";
 import { ChatItemData } from "@/features/chat/types/api";
 import { useAppDispatch } from "@/store/hooks";
 
+const CHAT_NAME_CHAR_LIMIT = 250;
+
 interface RenameChatDialogProps {
   itemData: ChatItemData;
   isOpen: boolean;
@@ -27,7 +29,7 @@ const RenameChatDialog = ({
 
   useEffect(() => {
     if (isOpen) {
-      setNewChatName(name);
+      setNewChatName(name.slice(0, CHAT_NAME_CHAR_LIMIT));
       textInputRef.current?.focus();
     }
   }, [isOpen, name]);
@@ -35,10 +37,12 @@ const RenameChatDialog = ({
   const dispatch = useAppDispatch();
 
   const handleChatNameChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setNewChatName(event.target.value);
+    if (event.target.value.length <= CHAT_NAME_CHAR_LIMIT) {
+      setNewChatName(event.target.value);
+    } else {
+      setNewChatName(event.target.value.slice(0, CHAT_NAME_CHAR_LIMIT));
+    }
   };
-
-  const isRenameActionDisabled = !newChatName.trim() || newChatName === name;
 
   const handleRenameConfirm = () => {
     changeChatName({
@@ -65,6 +69,8 @@ const RenameChatDialog = ({
     setNewChatName(name);
   };
 
+  const isRenameActionDisabled = !newChatName.trim() || newChatName === name;
+
   return (
     <ActionDialog
       title="Rename Chat"
@@ -76,12 +82,15 @@ const RenameChatDialog = ({
     >
       <TextInput
         ref={textInputRef}
-        name="chat-entry-name"
+        name="new-chat-name"
         value={newChatName}
         size="sm"
         label="Chat Name"
         onChange={handleChatNameChange}
       />
+      <p className="text-right text-xs">
+        {newChatName.length} / {CHAT_NAME_CHAR_LIMIT} characters
+      </p>
     </ActionDialog>
   );
 };

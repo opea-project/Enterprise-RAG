@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { useCallback, useMemo } from "react";
+
 import DataTable from "@/components/ui/DataTable/DataTable";
 import {
   useDeleteLinkMutation,
@@ -17,20 +19,30 @@ const LinksDataTable = () => {
   const [deleteLink] = useDeleteLinkMutation();
   const [retryLinkAction] = useRetryLinkActionMutation();
 
-  const retryHandler = (uuid: string) => {
-    retryLinkAction(uuid);
-  };
+  const retryHandler = useCallback(
+    (uuid: string) => {
+      retryLinkAction(uuid);
+    },
+    [retryLinkAction],
+  );
 
-  const deleteHandler = (uuid: string) => {
-    deleteLink(uuid);
-  };
+  const deleteHandler = useCallback(
+    (uuid: string) => {
+      deleteLink(uuid);
+    },
+    [deleteLink],
+  );
 
   const defaultData = links || [];
 
-  const linksTableColumns = getLinksTableColumns({
-    retryHandler,
-    deleteHandler,
-  });
+  const linksTableColumns = useMemo(
+    () =>
+      getLinksTableColumns({
+        retryHandler,
+        deleteHandler,
+      }),
+    [retryHandler, deleteHandler],
+  );
 
   return (
     <DataTable

@@ -4,7 +4,7 @@
 import "./DataItemStatus.scss";
 
 import classNames from "classnames";
-import { ReactNode } from "react";
+import { memo, ReactNode } from "react";
 
 import BlockedIcon from "@/components/icons/BlockedIcon/BlockedIcon";
 import CanceledIcon from "@/components/icons/CanceledIcon/CanceledIcon";
@@ -46,36 +46,38 @@ interface DataItemStatusProps {
   statusMessage: string;
 }
 
-const DataItemStatus = ({ status, statusMessage }: DataItemStatusProps) => {
-  const statusIcon = statusIconMap[status];
-  const statusText = !status ? "Unknown" : formatStatus(status);
-  const isStatusMessageEmpty = statusMessage === "";
-  const statusClassNames = classNames({
-    "data-item-status": true,
-    [`data-item-status--${status}`]: true,
-    "data-item-status--with-tooltip": !isStatusMessageEmpty,
-  });
+const DataItemStatus = memo(
+  ({ status, statusMessage }: DataItemStatusProps) => {
+    const statusIcon = statusIconMap[status];
+    const statusText = !status ? "Unknown" : formatStatus(status);
+    const isStatusMessageEmpty = statusMessage === "";
+    const statusClassNames = classNames({
+      "data-item-status": true,
+      [`data-item-status--${status}`]: true,
+      "data-item-status--with-tooltip": !isStatusMessageEmpty,
+    });
 
-  const itemStatusIndicator = (
-    <div className={statusClassNames}>
-      {statusIcon}
-      <p className="data-item-status__text">{statusText}</p>
-    </div>
-  );
+    const itemStatusIndicator = (
+      <div className={statusClassNames}>
+        {statusIcon}
+        <p className="data-item-status__text">{statusText}</p>
+      </div>
+    );
 
-  if (isStatusMessageEmpty) {
-    return itemStatusIndicator;
-  }
+    if (isStatusMessageEmpty) {
+      return itemStatusIndicator;
+    }
 
-  const tooltipPosition = status === "error" ? "bottom right" : "right";
+    const tooltipPosition = status === "error" ? "bottom right" : "right";
 
-  return (
-    <Tooltip
-      title={statusMessage}
-      trigger={itemStatusIndicator}
-      placement={tooltipPosition}
-    />
-  );
-};
+    return (
+      <Tooltip
+        title={statusMessage}
+        trigger={itemStatusIndicator}
+        placement={tooltipPosition}
+      />
+    );
+  },
+);
 
 export default DataItemStatus;

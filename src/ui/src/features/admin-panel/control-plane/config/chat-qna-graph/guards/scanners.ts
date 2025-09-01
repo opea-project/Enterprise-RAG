@@ -77,7 +77,10 @@ export const secretsScanner = {
 
 export const sentimentScanner = {
   enabled,
-  threshold,
+  threshold: {
+    ...threshold,
+    range: { min: -1, max: 1 },
+  },
 };
 
 export const tokenLimitScanner = {

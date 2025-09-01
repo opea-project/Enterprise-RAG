@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { useCallback, useMemo } from "react";
+
 import {
   useGetFilePresignedUrlMutation,
   useLazyDownloadFileQuery,
@@ -23,39 +25,52 @@ const FilesDataTable = () => {
   const [deleteFile] = useDeleteFileMutation();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
 
-  const downloadHandler = async (fileName: string, bucketName: string) => {
-    const { data: presignedUrl } = await getFilePresignedUrl({
-      fileName,
-      method: "GET",
-      bucketName,
-    });
+  const downloadHandler = useCallback(
+    async (fileName: string, bucketName: string) => {
+      const { data: presignedUrl } = await getFilePresignedUrl({
+        fileName,
+        method: "GET",
+        bucketName,
+      });
 
-    if (presignedUrl) {
-      downloadFile({ presignedUrl, fileName });
-    }
-  };
+      if (presignedUrl) {
+        downloadFile({ presignedUrl, fileName });
+      }
+    },
+    [downloadFile, getFilePresignedUrl],
+  );
 
-  const retryHandler = (uuid: string) => {
-    retryFileAction(uuid);
-  };
+  const retryHandler = useCallback(
+    (uuid: string) => {
+      retryFileAction(uuid);
+    },
+    [retryFileAction],
+  );
 
-  const deleteHandler = async (fileName: string, bucketName: string) => {
-    const { data: presignedUrl } = await getFilePresignedUrl({
-      fileName,
-      method: "DELETE",
-      bucketName,
-    });
+  const deleteHandler = useCallback(
+    async (fileName: string, bucketName: string) => {
+      const { data: presignedUrl } = await getFilePresignedUrl({
+        fileName,
+        method: "DELETE",
+        bucketName,
+      });
 
-    if (presignedUrl) {
-      deleteFile(presignedUrl);
-    }
-  };
+      if (presignedUrl) {
+        deleteFile(presignedUrl);
+      }
+    },
+    [deleteFile, getFilePresignedUrl],
+  );
 
-  const filesTableColumns = getFilesTableColumns({
-    downloadHandler,
-    retryHandler,
-    deleteHandler,
-  });
+  const filesTableColumns = useMemo(
+    () =>
+      getFilesTableColumns({
+        downloadHandler,
+        retryHandler,
+        deleteHandler,
+      }),
+    [deleteHandler, downloadHandler, retryHandler],
+  );
 
   const defaultData = files || [];
 

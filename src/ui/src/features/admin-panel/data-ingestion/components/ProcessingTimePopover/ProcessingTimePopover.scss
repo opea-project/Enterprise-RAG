@@ -5,7 +5,7 @@
   @apply w-80 p-3;
 
   &__header {
-    @apply grid grid-cols-[1fr_5rem] font-medium;
+    @apply grid grid-cols-2 font-medium;
   }
 
   &__bar {

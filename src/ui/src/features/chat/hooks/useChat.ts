@@ -138,7 +138,7 @@ const useChat = () => {
     currentSourcesRef.current = createUniqueSources(sources);
   };
 
-  const afterResponse = () => {
+  const onResponseFinished = () => {
     saveChat({
       id: currentChatId,
       history: [
@@ -151,7 +151,11 @@ const useChat = () => {
         },
       ],
     }).then((response) => {
-      if (response.data) {
+      const isFirstSuccessfulTurn =
+        currentChatTurns.filter((turn) => !turn.error).length === 0;
+      const isIdReturned = response && "data" in response && response.data;
+
+      if (isFirstSuccessfulTurn && isIdReturned) {
         const { id } = response.data;
         if (currentChatId === null && currentChatId !== id) {
           dispatch(setCurrentChatId(id));
@@ -192,23 +196,26 @@ const useChat = () => {
     });
 
     if (
+      error &&
       isChatErrorResponse(error) &&
       isChatErrorResponseDataString(error.data)
     ) {
       if (error.status === HTTP_ERRORS.GUARDRAILS_ERROR.statusCode) {
         dispatch(updateAnswer(error.data));
         currentAnswerRef.current += error.data;
+        onResponseFinished();
       } else if (
         error.status === HTTP_ERRORS.CLIENT_CLOSED_REQUEST.statusCode
       ) {
         dispatch(updateAnswer(""));
         currentAnswerRef.current += "";
+        onResponseFinished();
       } else {
         dispatch(updateError(error.data));
       }
+    } else {
+      onResponseFinished();
     }
-
-    afterResponse();
   };
 
   return {

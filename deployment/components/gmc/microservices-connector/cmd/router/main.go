@@ -131,11 +131,17 @@ type PydanticErrorResponse struct {
 }
 
 var (
-	firstTokenLatencyMeasure metric.Float64Histogram
-	nextTokenLatencyMeasure  metric.Float64Histogram
-	allTokenLatencyMeasure   metric.Float64Histogram
+	llmFirstTokenLatencyMeasure metric.Float64Histogram
+	llmNextTokenLatencyMeasure  metric.Float64Histogram
+	llmAllTokensLatencyMeasure  metric.Float64Histogram
+
+	// pipeline preceding LLM (pre-LLM)
 	pipelineLatencyMeasure   metric.Float64Histogram
 	stepLatencyMeasure       metric.Float64Histogram
+
+	// e2e (pipeline + llm)
+	e2eLatencyMeasure metric.Float64Histogram
+	e2eTimeToFirstTokenLatencyMeasure metric.Float64Histogram
 )
 
 func initMeter() {
@@ -149,41 +155,41 @@ func initMeter() {
 	provider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(exporter))
 	otel.SetMeterProvider(provider)
 
-	// ppalucki: Own metrics defintion bellow
+	// ppalucki: Own metrics definition below
 	const meterName = "entrag-telemetry"
 	meter := provider.Meter(meterName)
 
-	firstTokenLatencyMeasure, err = meter.Float64Histogram(
-		"llm.first.token.latency",
+	llmFirstTokenLatencyMeasure, err = meter.Float64Histogram(
+		"router.llm.first.token.latency",
 		metric.WithUnit("ms"),
-		metric.WithDescription("Measures the duration of first token generation."),
+		metric.WithDescription("Measures the duration of first token generation from the LLM server after."),
 		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
 	)
 	if err != nil {
-		log.Error(err, "metrics: cannot register first token histogram measure")
+		log.Error(err, "metrics: cannot register LLM first token histogram measure")
 	}
-	nextTokenLatencyMeasure, err = meter.Float64Histogram(
-		"llm.next.token.latency",
+	llmNextTokenLatencyMeasure, err = meter.Float64Histogram(
+		"router.llm.next.token.latency",
 		metric.WithUnit("ms"),
-		metric.WithDescription("Measures the duration of generating all but first tokens."),
+		metric.WithDescription("Measures the average latency of generating each token from the LLM server after the first token."),
 		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
 	)
 	if err != nil {
-		log.Error(err, "metrics: cannot register next token histogram measure")
+		log.Error(err, "metrics: cannot register LLM next token histogram measure")
 	}
 
-	allTokenLatencyMeasure, err = meter.Float64Histogram(
-		"llm.all.token.latency",
+	llmAllTokensLatencyMeasure, err = meter.Float64Histogram(
+		"router.llm.all.tokens.latency",
 		metric.WithUnit("ms"),
-		metric.WithDescription("Measures the duration to generate response with all tokens."),
+		metric.WithDescription("Measures the duration to generate response from the LLM model server with all tokens."),
 		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
 	)
 	if err != nil {
-		log.Error(err, "metrics: cannot register all token histogram measure")
+		log.Error(err, "metrics: cannot register LLM all token histogram measure")
 	}
 
 	pipelineLatencyMeasure, err = meter.Float64Histogram(
-		"llm.pipeline.latency",
+		"router.pipeline.latency",
 		metric.WithUnit("ms"),
 		metric.WithDescription("Measures the duration to going through pipeline steps until first token is being generated (including read data time from client)."),
 		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
@@ -191,8 +197,9 @@ func initMeter() {
 	if err != nil {
 		log.Error(err, "metrics: cannot register pipeline histogram measure")
 	}
+
 	stepLatencyMeasure, err = meter.Float64Histogram(
-		"llm.pipeline.step",
+		"router.pipeline.step",
 		metric.WithUnit("ms"),
 		metric.WithDescription("Measures the duration to going through step."),
 		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
@@ -200,6 +207,28 @@ func initMeter() {
 	if err != nil {
 		log.Error(err, "metrics: cannot register step histogram measure")
 	}
+
+	e2eLatencyMeasure, err = meter.Float64Histogram(
+		"router.e2e.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the duration to going through all steps end-to-end."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register e2e latency histogram measure")
+	}
+
+	e2eTimeToFirstTokenLatencyMeasure, err = meter.Float64Histogram(
+		"router.e2e.ttft.latency",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Measures the time from request start to the generation of the first token in the end-to-end."),
+		api.WithExplicitBucketBoundaries(1, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16364),
+	)
+	if err != nil {
+		log.Error(err, "metrics: cannot register e2e TTFT latency histogram measure")
+	}
+
+
 	println("otel/metrics: configured")
 }
 
@@ -973,7 +1002,7 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		// spanReadInitialRequest.AddEvent("handling this...", trace.WithAttributes(uk.String(bag.Member("bar").Value())))
 
 		// ---------------------- ReadRequestBody
-		allTokensStartTime := time.Now()
+		routerRequestStartTime := time.Now()
 		inputBytes, err := io.ReadAll(req.Body)
 		if err != nil {
 			otlpr.WithContext(log, ctx).Error(err, "failed to read request body")
@@ -995,11 +1024,12 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 		// ---------------------- RouterAllSteps
 		allStepsCtx, spanRouterAllSteps := mainTracer.Start(ctx, "router all steps") // this context will be used for callClient instrumenation (POSTs)
 		responseBody, statusCode, err := routeStep(allStepsCtx, defaultNodeName, *mcGraph, inputBytes, inputBytes, req.Header)
-		pipeLatencyMilliseconds := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
+
+		pipeLatencyMilliseconds := float64(time.Since(routerRequestStartTime)) / float64(time.Millisecond)
 		pipelineLatencyMeasure.Record(ctx, pipeLatencyMilliseconds)
 
 		spanRouterAllSteps.SetAttributes(attribute.Int("last_step.statusCode", statusCode))
-		spanRouterAllSteps.SetAttributes(attribute.Float64("llm.pipeline.latency.ms", pipeLatencyMilliseconds))
+		spanRouterAllSteps.SetAttributes(attribute.Float64("router.pipeline.latency.ms", pipeLatencyMilliseconds))
 
 		if statusCode == 466 { // Guardrails code!
 			// Info: statusCode != 200 is unrealted to err being nil or not and for Guardrails err is nil
@@ -1052,9 +1082,11 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 		w.Header().Set("Content-Type", "text/event-stream")
 		firstTokenCollected := false
-		firstTokenLatencyMilliseconds := 0.0
-		nextTokenLatencyTotal := 0.0
-		nextTokenLatencyCount := 0.0
+		llmStartTime := time.Now()
+		llmFirstTokenLatencyMilliseconds := 0.0
+		timeToFirstTokenLatencyMilliseconds := 0.0
+		llmNextTokenLatencyTotal := 0.0
+		llmNextTokenLatencyCount := 0.0
 		buffer := make([]byte, BufferSize)
 		var collectedParts []string
 		// ---------------------- Tokens
@@ -1072,14 +1104,18 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 			elapsedTimeMilisecond := float64(time.Since(tokenStartTime)) / float64(time.Millisecond)
 
+
 			if !firstTokenCollected {
 				firstTokenCollected = true
-				firstTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
-				firstTokenLatencyMilliseconds = elapsedTimeMilisecond
+				llmFirstTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+				llmFirstTokenLatencyMilliseconds = elapsedTimeMilisecond
+
+				timeToFirstTokenLatencyMilliseconds = pipeLatencyMilliseconds + llmFirstTokenLatencyMilliseconds
+				e2eTimeToFirstTokenLatencyMeasure.Record(ctx, timeToFirstTokenLatencyMilliseconds)
 			} else {
-				nextTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
-				nextTokenLatencyTotal += elapsedTimeMilisecond
-				nextTokenLatencyCount += 1.0
+				llmNextTokenLatencyMeasure.Record(ctx, elapsedTimeMilisecond)
+				llmNextTokenLatencyTotal += elapsedTimeMilisecond
+				llmNextTokenLatencyCount += 1.0
 			}
 
 			if err != nil && err != io.EOF {
@@ -1161,14 +1197,22 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		// Statisitcs for metrics and traces attributes
-		allTokensElapsedTimeMilisecond := float64(time.Since(allTokensStartTime)) / float64(time.Millisecond)
-		allTokenLatencyMeasure.Record(ctx, allTokensElapsedTimeMilisecond)
-		spanTokens.SetAttributes(attribute.Float64("llm.first.token.latency.ms", firstTokenLatencyMilliseconds))
-		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.total.ms", nextTokenLatencyTotal))
-		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.count", nextTokenLatencyCount))
-		spanTokens.SetAttributes(attribute.Float64("llm.next.token.latency.avg.ms", nextTokenLatencyTotal/nextTokenLatencyCount))
-		spanTokens.SetAttributes(attribute.Float64("llm.all.token.latency.ms", allTokensElapsedTimeMilisecond))
+		// Statistics for metrics and traces attributes
+		llmAllTokensElapsedTimeMilisecond := float64(time.Since(llmStartTime)) / float64(time.Millisecond)
+		e2eElapsedTimeMilisecond := float64(time.Since(routerRequestStartTime)) / float64(time.Millisecond)
+
+		llmAllTokensLatencyMeasure.Record(ctx, llmAllTokensElapsedTimeMilisecond)
+		e2eLatencyMeasure.Record(ctx, e2eElapsedTimeMilisecond)
+
+		spanTokens.SetAttributes(attribute.Float64("router.llm.first.token.latency.ms", llmFirstTokenLatencyMilliseconds))
+		spanTokens.SetAttributes(attribute.Float64("router.llm.next.token.latency.total.ms", llmNextTokenLatencyTotal))
+		spanTokens.SetAttributes(attribute.Float64("router.llm.next.token.latency.count", llmNextTokenLatencyCount))
+		spanTokens.SetAttributes(attribute.Float64("router.llm.next.token.latency.avg.ms", llmNextTokenLatencyTotal/llmNextTokenLatencyCount))
+		spanTokens.SetAttributes(attribute.Float64("router.llm.all.tokens.latency.ms", llmAllTokensElapsedTimeMilisecond))
+
+		spanTokens.SetAttributes(attribute.Float64("router.e2e.ttft.latency.ms", timeToFirstTokenLatencyMilliseconds))
+		spanTokens.SetAttributes(attribute.Float64("router.e2e.latency.ms", e2eElapsedTimeMilisecond))
+
 		if debugRequestTraces {
 			spanTokens.SetAttributes(attribute.String("response buffer", string(buffer[:])))
 		}

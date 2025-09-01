@@ -85,7 +85,7 @@ def send_request():
         return None
     return time.perf_counter() - start_time
 
-def run_test_round():
+def run_warmup_round():
     """Run one round of N parallel requests and collect response times."""
     response_times = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=N) as executor:
@@ -159,7 +159,7 @@ def main():
     all_response_times = []
     for i in range(X):
         print(f"Starting test round {i + 1}/{X}")
-        round_times = run_test_round()
+        round_times = run_warmup_round()
         all_response_times.extend(round_times)
         print(f"Round {i + 1} response times: {round_times}")
 

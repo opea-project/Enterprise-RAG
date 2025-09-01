@@ -58,11 +58,43 @@ From **Control Plane** view you are also able to change currently used prompt te
 
 ### Data Ingestion
 
-The Admin Panel also has the interface for Data Ingestion as shown below:
+The Data Ingestion UI provides visibility into synchronization and processing workflows. It is intended for administrative use and supports the following features:
 
-![Screenshot of Data Ingestion view presenting two empty tables for ingested files and links](../images/ui/data_ingestion_initial.png)
+**Synchronization Monitoring**
+  - View status of synchronization processes with external storage endpoints (e.g., S3).
+  - Identify sync failures or delays.
 
-To upload new data, click on **Upload** button. The following dialog will be displayed:
+**File Processing Monitoring**
+  - Track processing status of individual files and links (queued, in progress, completed, failed).
+  - View and manage the queue of files and links awaiting processing.
+
+**Error Handling**
+  - Inspect error messages for failed processing tasks.
+  - Manually trigger retries for failed items.
+
+**Performance Metrics**
+  - Monitor processing statistics per file/link.
+  - View detailed timing breakdowns for each processing step.
+
+This is an example of the Data Ingestion UI:
+
+![Screenshot of Data Ingestion view presenting two empty tables for ingested files and links](../images/ui/data_ingestion_files.png)
+
+Detailed overview of processing time is displayed after clicking the processing time for individual file or link:
+![Screenshot of Data Ingestion view with Detailed Overview](../images/ui/data_ingestion_timings.png)
+
+The Data Ingestion UI is designed for lightweight, administrative interactions with data sources and should not be used for uploading or managing large volumes of files.
+
+Recommended workflow for ingesting data:
+- Primary data source: External storage endpoints (e.g., S3 compatible sotrage endpoints) should be used as the main interface for data ingestion.
+- File operations: Users are encouraged to use their existing tools (e.g., S3 GUI, Windows mounts, CLI tools) to upload, delete, or organize files.
+- UI limitations:
+  - File uploads via the UI are restricted to the main folder only, making it difficult to preserve complex directory structures.
+  - Data manipulation through the UI is limited to admin users, reducing flexibility for users and broader teams.
+
+Configuring external sources is covered in [EDP's README.md](../src/edp/README.md) file.
+
+Nevertheless, you can upload sample data using this UI by click on **Upload** button. The following dialog will be displayed:
 
 ![Screenshot of Data Ingestion view presenting upload dialog](../images/ui/data_ingestion_upload.png)
 

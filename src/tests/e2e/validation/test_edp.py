@@ -42,23 +42,6 @@ def cleanup(edp_helper):
             edp_helper.delete_link(link["id"])
 
 
-@pytest.fixture(scope="function")
-def temporarily_remove_regular_user_required_actions(keycloak_helper):
-    """
-    Temporarily remove required actions for the regular user to allow obtaining an access token.
-    """
-    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
-                                                                     keycloak_helper.erag_user_username)
-    if required_actions:
-        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
-                                                keycloak_helper.erag_user_username)
-    yield
-    # Restore original settings after tests
-    if required_actions:
-        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
-                                                keycloak_helper.erag_user_username)
-
-
 @pytest.mark.smoke
 @allure.testcase("IEASG-T120")
 def test_edp_list_files(edp_helper):
@@ -280,9 +263,36 @@ def test_edp_reupload_link(edp_helper):
 @allure.testcase("IEASG-T137")
 def test_edp_upload_nonexistent_link(edp_helper):
     """Upload a link to a nonexistent website"""
-    nonexistent_link = "https://some-nonexisting-webpage-12345.com"
+    nonexistent_link = "https://some-nonexisting-webpage-test_edp_12345.com"
     response = edp_helper.upload_links({"links": [nonexistent_link]})
     assert response.status_code == 200, f"Unexpected status code. Response: {response.text}"
+
+
+@allure.testcase("IEASG-T242")
+def test_edp_upload_link_that_redirects_to_another_site(edp_helper, chatqa_api_helper):
+    """
+    Upload a link that redirects to another site (HTTP to HTTPS).
+    Verify that the content from the redirected link is available in ChatQA.
+    """
+    rag_question = "What is Intel® AI for Enterprise RAG powered by?"
+
+    # Verify that ChatBot doesn't have the information from the link yet
+    response = chatqa_api_helper.call_chatqa(rag_question)
+    response_text = chatqa_api_helper.format_response(response)
+    logger.debug(f"Response: {response_text}")
+    assert "gaudi" not in response_text.lower()
+
+    # This link will be redirected to HTTPS one (https://github.com/intel/Enterprise-RAG)
+    link = "http://github.com/intel/Enterprise-RAG"
+    try:
+        edp_helper.upload_links({"links": [link]})
+        edp_helper.wait_for_link_upload(link, "ingested", timeout=120)
+        response = chatqa_api_helper.call_chatqa(rag_question)
+        response_text = chatqa_api_helper.format_response(response)
+        logger.debug(f"Response: {response_text}")
+        assert "gaudi" in response_text.lower()
+    finally:
+        edp_helper.delete_link_by_url(link)
 
 
 @allure.testcase("IEASG-T138")

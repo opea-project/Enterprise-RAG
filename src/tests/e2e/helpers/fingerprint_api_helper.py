@@ -19,14 +19,14 @@ class FingerprintApiHelper(ApiRequestHelper):
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
 
-    def change_arguments(self, json_data):
+    def change_arguments(self, json_data, as_user=False):
         """
         /v1/system_fingerprint/change_arguments API call
         """
         start_time = time.time()
         response = requests.post(
             f"{ERAG_DOMAIN}/v1/system_fingerprint/change_arguments",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user=as_user),
             json=json_data,
             verify=False
         )
@@ -34,11 +34,11 @@ class FingerprintApiHelper(ApiRequestHelper):
         logger.info(f"Fingerprint (/v1/system_fingerprint/change_arguments) call duration: {duration}")
         return ApiResponse(response, duration)
 
-    def append_arguments(self, text):
+    def append_arguments(self, text, as_user=False):
         """
         /v1/system_fingerprint/append_arguments API call
         """
-        return self._append_arguments({"text": text})
+        return self._append_arguments({"text": text}, as_user=as_user)
 
     def append_arguments_custom_body(self, json_body):
         """
@@ -46,11 +46,11 @@ class FingerprintApiHelper(ApiRequestHelper):
         """
         return self._append_arguments(json_body)
 
-    def _append_arguments(self, json_data):
+    def _append_arguments(self, json_data, as_user=False):
         start_time = time.time()
         response = requests.post(
             url=f"{ERAG_DOMAIN}/v1/system_fingerprint/append_arguments",
-            headers=self.get_headers(),
+            headers=self.get_headers(as_user=as_user),
             json=json_data,
             verify=False
         )

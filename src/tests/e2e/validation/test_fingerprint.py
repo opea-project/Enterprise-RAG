@@ -151,3 +151,25 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
             }
         }]
         fingerprint_api_helper.change_arguments(body)
+
+
+@allure.testcase("IEASG-T240")
+def test_fingerprint_regular_user_can_access_fingerprint_api(fingerprint_api_helper, temporarily_remove_regular_user_required_actions):
+    """Verify that append_arguments and change_arguments APIs are not accessible by regular users"""
+    # Test append_arguments API
+    result = fingerprint_api_helper.append_arguments("", as_user=True)
+    assert result.status_code == 403, "Regular user should not be able to call append_arguments"
+
+    # Test change_arguments API
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    current_max_new_tokens = current_arguments.json()["parameters"]["max_new_tokens"]
+    body = [
+        {
+            "name": "llm",
+            "data": {
+                "max_new_tokens": current_max_new_tokens + 1
+            }
+        }
+    ]
+    response = fingerprint_api_helper.change_arguments(body, as_user=True)
+    assert response.status_code == 403

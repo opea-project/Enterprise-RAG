@@ -78,6 +78,15 @@ class EdpHelper(ApiRequestHelper):
         )
         return response
 
+    def delete_link_by_url(self, link_url):
+        """Delete a link by its URL"""
+        links = self.list_links()
+        for item in links.json():
+            if item["uri"] == link_url:
+                logger.info(f"Deleting link with id: {link_url}")
+                return self.delete_link(item["id"])
+        logger.warning(f"Link with URL: {link_url} not found. Nothing to delete.")
+
     def wait_for_link_upload(self, link_uri, desired_status, timeout=LINK_UPLOAD_TIMEOUT):
         """Wait for the link to be uploaded and have the desired status"""
         sleep_interval = 10

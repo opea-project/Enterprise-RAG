@@ -107,6 +107,23 @@ def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
                                                 keycloak_helper.erag_admin_username)
 
 
+@pytest.fixture(scope="session")
+def temporarily_remove_regular_user_required_actions(keycloak_helper):
+    """
+    Temporarily remove required actions for the regular user to allow obtaining an access token.
+    """
+    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
+                                                                     keycloak_helper.erag_user_username)
+    if required_actions:
+        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
+    yield
+    # Restore original settings after tests
+    if required_actions:
+        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def disable_guards_at_startup(guard_helper, suppress_logging, temporarily_remove_user_required_actions):
     """

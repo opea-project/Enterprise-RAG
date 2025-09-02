@@ -5,7 +5,7 @@
 
 set -e
 
-python $HOME/app/init_db.py
+alembic upgrade head
 
 if [ "$#" -eq 0 ]; then
     exec uvicorn main:app --host 0.0.0.0 --port 5000 --workers 4

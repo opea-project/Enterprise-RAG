@@ -28,18 +28,18 @@ const BiasScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
-        initialValue={previousArgumentsValues.threshold}
+        value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
-        initialValue={previousArgumentsValues.match_type}
+        value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
       />
     </>

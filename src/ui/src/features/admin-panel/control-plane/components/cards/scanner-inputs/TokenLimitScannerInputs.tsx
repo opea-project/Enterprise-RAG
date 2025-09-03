@@ -27,12 +27,12 @@ const TokenLimitScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentNumberInput
         {...config.limit}
-        initialValue={previousArgumentsValues.limit}
+        value={previousArgumentsValues.limit}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />

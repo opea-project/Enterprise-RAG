@@ -6,61 +6,46 @@ import { useEffect, useState } from "react";
 import SelectInput, {
   SelectInputChangeHandler,
 } from "@/components/ui/SelectInput/SelectInput";
-import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import { OnArgumentValueChangeHandler } from "@/features/admin-panel/control-plane/types";
-import { useAppSelector } from "@/store/hooks";
 
 export type ServiceArgumentSelectInputValue = string;
 
 interface ServiceArgumentSelectInputProps {
   name: string;
-  initialValue: ServiceArgumentSelectInputValue;
+  value: ServiceArgumentSelectInputValue;
   options: string[];
   tooltipText?: string;
-  isReadOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
 }
 
 const ServiceArgumentSelectInput = ({
   name,
-  initialValue,
+  value,
   options,
   tooltipText,
-  isReadOnlyDisabled = false,
   onArgumentValueChange,
 }: ServiceArgumentSelectInputProps) => {
-  const isGraphEditModeEnabled = useAppSelector(
-    chatQnAGraphEditModeEnabledSelector,
-  );
-  const isEditModeEnabled = isReadOnlyDisabled
-    ? isReadOnlyDisabled
-    : isGraphEditModeEnabled;
-  const isReadOnly = !isEditModeEnabled;
-
-  const [value, setValue] =
-    useState<ServiceArgumentSelectInputValue>(initialValue);
+  const [selected, setSelected] =
+    useState<ServiceArgumentSelectInputValue>(value);
 
   useEffect(() => {
-    if (isReadOnly) {
-      setValue(initialValue);
-    }
-  }, [isReadOnly, initialValue]);
+    setSelected(value);
+  }, [value]);
 
   const handleChange: SelectInputChangeHandler<
     ServiceArgumentSelectInputValue
   > = (item) => {
-    setValue(item);
+    setSelected(item);
     onArgumentValueChange(name, item);
   };
 
   return (
     <SelectInput
-      value={value}
+      value={selected}
       items={options}
       label={name}
       name={name}
       size="sm"
-      isDisabled={isReadOnly}
       tooltipText={tooltipText}
       fullWidth
       onChange={handleChange}

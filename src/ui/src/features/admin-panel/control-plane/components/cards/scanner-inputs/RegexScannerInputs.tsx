@@ -29,23 +29,23 @@ const RegexScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentTextInput
         {...config.patterns}
-        initialValue={previousArgumentsValues.patterns}
+        value={previousArgumentsValues.patterns}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
-        initialValue={previousArgumentsValues.match_type}
+        value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentThreeStateSwitch
         {...config.redact}
-        initialValue={previousArgumentsValues.redact}
+        value={previousArgumentsValues.redact}
         onChange={handleArgumentValueChange}
       />
     </>

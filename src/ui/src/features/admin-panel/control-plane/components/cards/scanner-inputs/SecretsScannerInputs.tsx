@@ -26,12 +26,12 @@ const SecretsScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentSelectInput
         {...config.redact_mode}
-        initialValue={previousArgumentsValues.redact_mode}
+        value={previousArgumentsValues.redact_mode}
         onArgumentValueChange={handleArgumentValueChange}
       />
     </>

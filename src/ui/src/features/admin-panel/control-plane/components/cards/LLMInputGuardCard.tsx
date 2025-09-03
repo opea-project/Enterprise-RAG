@@ -21,7 +21,7 @@ import useGuardServiceCard from "@/features/admin-panel/control-plane/hooks/useG
 const LLMInputGuardCard = ({
   data: { id, status, displayName, inputGuardArgs, details },
 }: ControlPlaneCardProps) => {
-  const { previousArgumentsValues, handlers, footerProps } =
+  const { argumentsForm, handlers, footerProps } =
     useGuardServiceCard<LLMInputGuardArgs>(id, inputGuardArgs);
 
   return (
@@ -34,47 +34,47 @@ const LLMInputGuardCard = ({
       <p className="mb-1 mt-1 text-sm font-medium">Scanners Arguments</p>
       <PromptInjectionScannerInputs
         config={llmInputGuardFormConfig.prompt_injection}
-        previousArgumentsValues={previousArgumentsValues.prompt_injection}
+        previousArgumentsValues={argumentsForm.prompt_injection}
         handlers={handlers}
       />
       <BanSubstringsScannerInputs
         config={llmInputGuardFormConfig.ban_substrings}
-        previousArgumentsValues={previousArgumentsValues.ban_substrings}
+        previousArgumentsValues={argumentsForm.ban_substrings}
         handlers={handlers}
       />
       <CodeScannerInputs
         config={llmInputGuardFormConfig.code}
-        previousArgumentsValues={previousArgumentsValues.code}
+        previousArgumentsValues={argumentsForm.code}
         handlers={handlers}
       />
       <InvisibleTextScannerInputs
         config={llmInputGuardFormConfig.invisible_text}
-        previousArgumentsValues={previousArgumentsValues.invisible_text}
+        previousArgumentsValues={argumentsForm.invisible_text}
         handlers={handlers}
       />
       <RegexScannerInputs
         config={llmInputGuardFormConfig.regex}
-        previousArgumentsValues={previousArgumentsValues.regex}
+        previousArgumentsValues={argumentsForm.regex}
         handlers={handlers}
       />
       <SecretsScannerInputs
         config={llmInputGuardFormConfig.secrets}
-        previousArgumentsValues={previousArgumentsValues.secrets}
+        previousArgumentsValues={argumentsForm.secrets}
         handlers={handlers}
       />
       <SentimentScannerInputs
         config={llmInputGuardFormConfig.sentiment}
-        previousArgumentsValues={previousArgumentsValues.sentiment}
+        previousArgumentsValues={argumentsForm.sentiment}
         handlers={handlers}
       />
       <TokenLimitScannerInputs
         config={llmInputGuardFormConfig.token_limit}
-        previousArgumentsValues={previousArgumentsValues.token_limit}
+        previousArgumentsValues={argumentsForm.token_limit}
         handlers={handlers}
       />
       <ToxicityScannerInputs
         config={llmInputGuardFormConfig.toxicity}
-        previousArgumentsValues={previousArgumentsValues.toxicity}
+        previousArgumentsValues={argumentsForm.toxicity}
         handlers={handlers}
       />
     </SelectedServiceCard>

@@ -32,33 +32,33 @@ const BanSubstringsScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentTextInput
         {...config.substrings}
-        initialValue={previousArgumentsValues.substrings}
+        value={previousArgumentsValues.substrings}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
-        initialValue={previousArgumentsValues.match_type}
+        value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentCheckbox
         {...config.case_sensitive}
-        initialValue={previousArgumentsValues.case_sensitive}
+        value={previousArgumentsValues.case_sensitive}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentThreeStateSwitch
         {...config.redact}
-        initialValue={previousArgumentsValues.redact}
+        value={previousArgumentsValues.redact}
         onChange={handleArgumentValueChange}
       />
       <ServiceArgumentThreeStateSwitch
         {...config.contains_all}
-        initialValue={previousArgumentsValues.contains_all}
+        value={previousArgumentsValues.contains_all}
         onChange={handleArgumentValueChange}
       />
     </>

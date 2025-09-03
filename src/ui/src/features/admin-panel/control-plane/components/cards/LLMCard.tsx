@@ -15,10 +15,10 @@ const LLMCard = ({
   data: { id, status, displayName, llmArgs, details },
 }: ControlPlaneCardProps) => {
   const {
-    previousArgumentsValues,
     onArgumentValueChange,
     onArgumentValidityChange,
     footerProps,
+    argumentsForm,
   } = useServiceCard<LLMArgs>(id, llmArgs);
 
   return (
@@ -31,43 +31,43 @@ const LLMCard = ({
       <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentNumberInput
         {...llmFormConfig.max_new_tokens}
-        initialValue={previousArgumentsValues.max_new_tokens}
+        value={argumentsForm.max_new_tokens}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...llmFormConfig.top_k}
-        initialValue={previousArgumentsValues.top_k}
+        value={argumentsForm.top_k}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...llmFormConfig.top_p}
-        initialValue={previousArgumentsValues.top_p}
+        value={argumentsForm.top_p}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...llmFormConfig.typical_p}
-        initialValue={previousArgumentsValues.typical_p}
+        value={argumentsForm.typical_p}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...llmFormConfig.temperature}
-        initialValue={previousArgumentsValues.temperature}
+        value={argumentsForm.temperature}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...llmFormConfig.repetition_penalty}
-        initialValue={previousArgumentsValues.repetition_penalty}
+        value={argumentsForm.repetition_penalty}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentCheckbox
         {...llmFormConfig.streaming}
-        initialValue={previousArgumentsValues.streaming}
+        value={argumentsForm.streaming}
         onArgumentValueChange={onArgumentValueChange}
       />
     </SelectedServiceCard>

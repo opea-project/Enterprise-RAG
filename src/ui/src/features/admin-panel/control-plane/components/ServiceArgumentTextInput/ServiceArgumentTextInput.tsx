@@ -5,20 +5,18 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { ValidationError } from "yup";
 
 import TextInput from "@/components/ui/TextInput/TextInput";
-import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
 import { validateServiceArgumentTextInput } from "@/features/admin-panel/control-plane/validators/service-arguments/textInput";
-import { useAppSelector } from "@/store/hooks";
 import { sanitizeString } from "@/utils";
 
 export type ServiceArgumentTextInputValue = string | string[] | null;
 
 interface ServiceArgumentTextInputProps {
   name: string;
-  initialValue: ServiceArgumentTextInputValue;
+  value: ServiceArgumentTextInputValue;
   tooltipText?: string;
   isNullable?: boolean;
   isCommaSeparated?: boolean;
@@ -28,26 +26,20 @@ interface ServiceArgumentTextInputProps {
 
 const ServiceArgumentTextInput = ({
   name,
-  initialValue,
+  value,
   tooltipText,
   isNullable = false,
   isCommaSeparated = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentTextInputProps) => {
-  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const isReadOnly = !isEditModeEnabled;
-
-  const [value, setValue] = useState(initialValue ?? "");
+  const [displayValue, setDisplayValue] = useState(value ?? "");
   const [isInvalid, setIsInvalid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (isReadOnly) {
-      setValue(initialValue ?? "");
-      setIsInvalid(false);
-    }
-  }, [isReadOnly, initialValue]);
+    setDisplayValue(value ?? "");
+  }, [value]);
 
   const validateInput = async (value: string) => {
     try {
@@ -64,7 +56,7 @@ const ServiceArgumentTextInput = ({
 
   const handleChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    setValue(newValue);
+    setDisplayValue(newValue);
     const sanitizedValue = sanitizeString(newValue);
     const isValid = await validateInput(sanitizedValue);
     setIsInvalid(!isValid);
@@ -87,10 +79,9 @@ const ServiceArgumentTextInput = ({
     <TextInput
       name={name}
       label={name}
-      value={value}
+      value={displayValue}
       size="sm"
       isInvalid={isInvalid}
-      isReadOnly={isReadOnly}
       placeholder={placeholder}
       tooltipText={tooltipText}
       errorMessage={errorMessage}

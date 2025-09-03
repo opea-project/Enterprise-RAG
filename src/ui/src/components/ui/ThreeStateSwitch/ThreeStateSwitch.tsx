@@ -11,33 +11,29 @@ import { v4 as uuidv4 } from "uuid";
 export type ThreeStateSwitchValue = boolean | null;
 
 export interface ThreeStateSwitchProps {
-  initialValue?: ThreeStateSwitchValue;
+  value?: ThreeStateSwitchValue;
   name: string;
   isReadOnly?: boolean;
   onChange?: (name: string, value: boolean | null) => void;
 }
 
 const ThreeStateSwitch = ({
-  initialValue = null,
+  value = null,
   name,
   isReadOnly,
   onChange,
 }: ThreeStateSwitchProps) => {
-  const [state, setState] = useState<ThreeStateSwitchValue>(initialValue);
+  const [state, setState] = useState<ThreeStateSwitchValue>(value);
 
   useEffect(() => {
-    if (isReadOnly) {
-      setState(initialValue);
-    }
-  }, [isReadOnly, initialValue]);
+    setState(value);
+  }, [value]);
 
   const handleBtnPress = (newValue: ThreeStateSwitchValue) => {
-    if (!isReadOnly) {
-      setState(newValue);
+    setState(newValue);
 
-      if (onChange) {
-        onChange(name, newValue);
-      }
+    if (onChange) {
+      onChange(name, newValue);
     }
   };
 
@@ -72,7 +68,6 @@ const ThreeStateSwitch = ({
       </label>
       <ToggleButtonGroup
         aria-labelledby={switchId}
-        isDisabled={isReadOnly}
         className={switchClassNames}
       >
         <ToggleButton

@@ -41,13 +41,13 @@ In the **Admin Panel** you can access three views using the following tabs: [Con
 
 The **Control Plane** view shown above allows the user to see all the components of the currently deployed pipeline as a graph. Each service can be selected from the graph to get further information on the configuration settings of each service. In some components it is also possible to edit service arguments for the services.
 
-For example, when you click on the LLM service, as shown in the screenshot below, the right pane is populated with the LLM parameters that can be modified like `max_new_tokens`, `temperature` etc. To confirm parameters changes, click **Confirm Change** button.
+For example, when you click on the LLM service, as shown in the screenshot below, the right pane is populated with the LLM parameters that can be modified like `max_new_tokens`, `temperature` etc. To confirm parameters changes, click **Confirm Changes** button.
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. LLM service selected.](../images/ui/control_plane_llm_selected.png)
 
-![Screenshot of Control Plane view presenting a graph of pipeline services. LLM max_new_tokens parameter value changed to 2048, waiting to be confirmed.](../images/ui/control_plane_confirm.png)
+![Screenshot of Control Plane view presenting a graph of pipeline services. LLM max_new_tokens parameter value changed to 512, waiting to be confirmed.](../images/ui/control_plane_confirm.png)
 
-From **Control Plane** view you are also able to change currently used prompt templates by selecting Prompt Template service node from the graph. Edit current prompt templates and click "Confirm Changes" to update them.
+From **Control Plane** view you are also able to change currently used prompt templates by selecting Prompt Template service node from the graph. Edit current prompt templates and click "Change Prompt Template" to update them.
 
 ![Screenshot of Control Plane view presenting a graph of pipeline services. Prompt Template service selected.](../images/ui/control_plane_prompt_template.png)
 

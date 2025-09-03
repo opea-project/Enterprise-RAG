@@ -1,7 +1,12 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEventHandler, useEffect, useState } from "react";
+import {
+  ChangeEventHandler,
+  FormEventHandler,
+  useEffect,
+  useState,
+} from "react";
 import { ValidationError } from "yup";
 
 import Button from "@/components/ui/Button/Button";
@@ -27,17 +32,33 @@ const PromptTemplateCard = ({
   const [changeArguments] = useChangeArgumentsMutation();
 
   const [promptTemplateForm, setPromptTemplateForm] =
-    useState<PromptTemplateArgs>({} as PromptTemplateArgs);
+    useState<PromptTemplateArgs>(
+      (prevPromptTemplateArguments ??
+        ({} as PromptTemplateArgs)) as PromptTemplateArgs,
+    );
+
+  const [isHydrated, setIsHydrated] = useState<boolean>(
+    !!prevPromptTemplateArguments,
+  );
   const [isInvalid, setIsInvalid] = useState(false);
   const [error, setError] = useState("");
+  const showInvalid = isInvalid && isHydrated;
 
   useEffect(() => {
     if (prevPromptTemplateArguments !== undefined) {
       setPromptTemplateForm(prevPromptTemplateArguments);
+      setIsHydrated(true);
+    } else {
+      setIsHydrated(false);
     }
   }, [prevPromptTemplateArguments]);
 
   useEffect(() => {
+    if (!isHydrated) {
+      setIsInvalid(false);
+      setError("");
+      return;
+    }
     const validateForm = async () => {
       try {
         await validatePromptTemplateForm(promptTemplateForm);
@@ -50,7 +71,7 @@ const PromptTemplateCard = ({
     };
 
     validateForm();
-  }, [promptTemplateForm]);
+  }, [promptTemplateForm, isHydrated]);
 
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     const { value, name } = event.target;
@@ -60,7 +81,10 @@ const PromptTemplateCard = ({
     }));
   };
 
-  const handlePromptTemplateArgsSubmit = () => {
+  const handlePromptTemplateArgsSubmit: FormEventHandler<HTMLFormElement> = (
+    event,
+  ) => {
+    event.preventDefault();
     const changeArgumentsRequest: ChangeArgumentsRequest = [
       {
         name: "prompt_template",
@@ -72,6 +96,7 @@ const PromptTemplateCard = ({
   };
 
   const changePromptTemplateBtnDisabled =
+    !isHydrated ||
     isInvalid ||
     (promptTemplateForm.user_prompt_template ===
       prevPromptTemplateArguments?.user_prompt_template &&
@@ -85,16 +110,16 @@ const PromptTemplateCard = ({
         onSubmit={handlePromptTemplateArgsSubmit}
       >
         <ServiceArgumentTextArea
-          value={promptTemplateForm.system_prompt_template}
+          value={promptTemplateForm.system_prompt_template ?? ""}
           placeholder="Enter system prompt template..."
-          isInvalid={isInvalid}
+          isInvalid={showInvalid}
           onChange={handleChange}
           inputConfig={promptTemplateFormConfig.system_prompt_template}
         />
         <ServiceArgumentTextArea
-          value={promptTemplateForm.user_prompt_template}
+          value={promptTemplateForm.user_prompt_template ?? ""}
           placeholder="Enter user prompt template..."
-          isInvalid={isInvalid}
+          isInvalid={showInvalid}
           onChange={handleChange}
           inputConfig={promptTemplateFormConfig.user_prompt_template}
         />

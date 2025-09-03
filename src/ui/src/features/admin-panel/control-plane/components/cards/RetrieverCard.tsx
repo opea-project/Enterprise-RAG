@@ -23,7 +23,6 @@ const RetrieverCard = ({
 }: ControlPlaneCardProps) => {
   const {
     argumentsForm,
-    previousArgumentsValues,
     onArgumentValueChange,
     onArgumentValidityChange,
     footerProps,
@@ -49,13 +48,13 @@ const RetrieverCard = ({
       <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentSelectInput
         {...retrieverFormConfig.search_type}
-        initialValue={previousArgumentsValues.search_type}
+        value={argumentsForm.search_type}
         onArgumentValueChange={onArgumentValueChange}
       />
       {visibleArgumentInputs.includes(retrieverFormConfig.k.name) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.k}
-          initialValue={previousArgumentsValues.k}
+          value={argumentsForm.k}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />
@@ -65,7 +64,7 @@ const RetrieverCard = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.distance_threshold}
-          initialValue={previousArgumentsValues.distance_threshold}
+          value={argumentsForm.distance_threshold}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />
@@ -73,7 +72,7 @@ const RetrieverCard = ({
       {visibleArgumentInputs.includes(retrieverFormConfig.fetch_k.name) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.fetch_k}
-          initialValue={previousArgumentsValues.fetch_k}
+          value={argumentsForm.fetch_k}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />
@@ -81,7 +80,7 @@ const RetrieverCard = ({
       {visibleArgumentInputs.includes(retrieverFormConfig.lambda_mult.name) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.lambda_mult}
-          initialValue={previousArgumentsValues.lambda_mult}
+          value={argumentsForm.lambda_mult}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />
@@ -91,7 +90,7 @@ const RetrieverCard = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.score_threshold}
-          initialValue={previousArgumentsValues.score_threshold}
+          value={argumentsForm.score_threshold}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
         />

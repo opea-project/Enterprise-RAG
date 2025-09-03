@@ -4,13 +4,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
-import { setChatQnAGraphIsEditModeEnabled } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
 import { ChangeArgumentsRequestData } from "@/features/admin-panel/control-plane/types/api";
-import { useAppDispatch } from "@/store/hooks";
 
 export type FilterFormDataFunction<T> = (formData: T) => Partial<T>;
 export type FilterInvalidArgumentsFunction<T> = (
@@ -26,19 +24,22 @@ const useServiceCard = <T>(
     filterInvalidArguments: FilterInvalidArgumentsFunction<T>;
   },
 ) => {
-  const dispatch = useAppDispatch();
   const [changeArguments] = useChangeArgumentsMutation();
 
   const [invalidArguments, setInvalidArguments] = useState<string[]>([]);
-  const [argumentsForm, setArgumentsForm] = useState<T>({} as T);
+  const [argumentsForm, setArgumentsForm] = useState<T>((args ?? {}) as T);
   const [previousArgumentsValues, setPreviousArgumentsValues] = useState<T>(
-    args as T,
+    (args ?? {}) as T,
+  );
+  const [isHydrated, setIsHydrated] = useState<boolean>(
+    !!args && Object.keys(args as object).length > 0,
   );
 
   useEffect(() => {
     if (args !== undefined) {
       setArgumentsForm(args as T);
       setPreviousArgumentsValues(args as T);
+      setIsHydrated(true);
     }
   }, [args]);
 
@@ -68,10 +69,6 @@ const useServiceCard = <T>(
     [invalidArguments],
   );
 
-  const onEditArgumentsButtonClick = () => {
-    dispatch(setChatQnAGraphIsEditModeEnabled(true));
-  };
-
   const onConfirmChangesButtonClick = () => {
     let data: Partial<T> = argumentsForm;
     if (filterFns && filterFns.filterFormData) {
@@ -89,15 +86,8 @@ const useServiceCard = <T>(
   };
 
   const onCancelChangesButtonClick = () => {
-    setArgumentsForm((prevForm) => {
-      const newForm = { ...prevForm };
-      for (const argumentName in newForm) {
-        newForm[argumentName] = previousArgumentsValues[argumentName];
-      }
-      return newForm;
-    });
+    setArgumentsForm(previousArgumentsValues);
     setInvalidArguments([]);
-    dispatch(setChatQnAGraphIsEditModeEnabled(false));
   };
 
   const isServiceFormModified = () => {
@@ -132,7 +122,7 @@ const useServiceCard = <T>(
   };
 
   const isConfirmChangesButtonDisabled =
-    !isServiceFormValid() || !isServiceFormModified();
+    !isHydrated || !isServiceFormValid() || !isServiceFormModified();
 
   return {
     argumentsForm,
@@ -141,7 +131,6 @@ const useServiceCard = <T>(
     onArgumentValidityChange,
     footerProps: {
       isConfirmChangesButtonDisabled,
-      onEditArgumentsButtonClick,
       onConfirmChangesButtonClick,
       onCancelChangesButtonClick,
     },

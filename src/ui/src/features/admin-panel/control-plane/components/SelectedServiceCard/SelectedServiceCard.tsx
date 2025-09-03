@@ -9,12 +9,10 @@ import { PressEvent } from "react-aria-components";
 
 import Button from "@/components/ui/Button/Button";
 import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
-import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   ServiceDetails,
   ServiceStatus,
 } from "@/features/admin-panel/control-plane/types";
-import { useAppSelector } from "@/store/hooks";
 
 interface SelectedServiceCardProps extends PropsWithChildren {
   serviceStatus?: ServiceStatus;
@@ -87,57 +85,34 @@ interface SelectedServiceCardFooterProps {
   isConfirmChangesButtonDisabled: boolean;
   onConfirmChangesButtonClick: (event: PressEvent) => void;
   onCancelChangesButtonClick: (event: PressEvent) => void;
-  onEditArgumentsButtonClick: (event: PressEvent) => void;
 }
 
 const SelectedServiceCardFooter = ({
   isConfirmChangesButtonDisabled,
   onConfirmChangesButtonClick,
   onCancelChangesButtonClick,
-  onEditArgumentsButtonClick,
 }: SelectedServiceCardFooterProps) => {
-  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-
-  const ConfirmChangesButton = (
-    <Button
-      size="sm"
-      color="success"
-      fullWidth
-      isDisabled={isConfirmChangesButtonDisabled}
-      onPress={onConfirmChangesButtonClick}
-    >
-      Confirm Changes
-    </Button>
-  );
-
-  const CancelChangesButton = (
-    <Button
-      size="sm"
-      variant="outlined"
-      fullWidth
-      onPress={onCancelChangesButtonClick}
-    >
-      Cancel
-    </Button>
-  );
-
-  const EditServiceArgumentsButton = (
-    <Button size="sm" fullWidth onPress={onEditArgumentsButtonClick}>
-      Edit Service Arguments
-    </Button>
-  );
-
-  const actionButtons = isEditModeEnabled ? (
-    <>
-      {ConfirmChangesButton}
-      {CancelChangesButton}
-    </>
-  ) : (
-    EditServiceArgumentsButton
-  );
-
   return (
-    <footer className="selected-service-card__footer">{actionButtons}</footer>
+    <footer className="selected-service-card__footer">
+      <Button
+        size="sm"
+        color="success"
+        fullWidth
+        isDisabled={isConfirmChangesButtonDisabled}
+        onPress={onConfirmChangesButtonClick}
+      >
+        Confirm Changes
+      </Button>
+      <Button
+        size="sm"
+        variant="outlined"
+        fullWidth
+        isDisabled={isConfirmChangesButtonDisabled}
+        onPress={onCancelChangesButtonClick}
+      >
+        Cancel
+      </Button>
+    </footer>
   );
 };
 

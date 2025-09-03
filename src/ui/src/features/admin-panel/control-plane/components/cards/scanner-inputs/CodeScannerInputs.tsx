@@ -28,18 +28,18 @@ const CodeScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
-        initialValue={previousArgumentsValues.threshold}
+        value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
       <ServiceArgumentTextInput
         {...config.languages}
-        initialValue={previousArgumentsValues.languages}
+        value={previousArgumentsValues.languages}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />

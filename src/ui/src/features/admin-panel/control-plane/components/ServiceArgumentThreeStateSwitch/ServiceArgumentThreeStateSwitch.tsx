@@ -5,8 +5,6 @@ import ThreeStateSwitch, {
   ThreeStateSwitchProps,
   ThreeStateSwitchValue,
 } from "@/components/ui/ThreeStateSwitch/ThreeStateSwitch";
-import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
-import { useAppSelector } from "@/store/hooks";
 
 type ServiceArgumentThreeStateSwitchProps = ThreeStateSwitchProps;
 
@@ -15,10 +13,7 @@ export type ServiceArgumentThreeStateSwitchValue = ThreeStateSwitchValue;
 const ServiceArgumentThreeStateSwitch = (
   props: ServiceArgumentThreeStateSwitchProps,
 ) => {
-  const isEditModeEnabled = useAppSelector(chatQnAGraphEditModeEnabledSelector);
-  const isReadOnly = !isEditModeEnabled;
-
-  return <ThreeStateSwitch {...props} isReadOnly={isReadOnly} />;
+  return <ThreeStateSwitch {...props} />;
 };
 
 export default ServiceArgumentThreeStateSwitch;

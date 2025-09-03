@@ -14,10 +14,10 @@ const RerankerCard = ({
   data: { id, status, details, displayName, rerankerArgs },
 }: ControlPlaneCardProps) => {
   const {
-    previousArgumentsValues,
     onArgumentValueChange,
     onArgumentValidityChange,
     footerProps,
+    argumentsForm,
   } = useServiceCard<RerankerArgs>(id, rerankerArgs);
 
   return (
@@ -30,13 +30,13 @@ const RerankerCard = ({
       <p className="mb-2 mt-3 text-sm font-medium">Service Arguments</p>
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
-        initialValue={previousArgumentsValues.top_n}
+        value={argumentsForm.top_n}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.rerank_score_threshold}
-        initialValue={previousArgumentsValues.rerank_score_threshold}
+        value={argumentsForm.rerank_score_threshold}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
       />

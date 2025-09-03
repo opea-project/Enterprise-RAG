@@ -1,17 +1,15 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, FocusEvent, useEffect, useRef, useState } from "react";
 import { ValidationError } from "yup";
 
 import TextInput from "@/components/ui/TextInput/TextInput";
-import { chatQnAGraphEditModeEnabledSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
   OnArgumentValidityChangeHandler,
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
 import { validateServiceArgumentNumberInput } from "@/features/admin-panel/control-plane/validators/service-arguments/numberInput";
-import { useAppSelector } from "@/store/hooks";
 import { sanitizeString } from "@/utils";
 import { NumberInputRange } from "@/utils/validators/types";
 
@@ -23,43 +21,58 @@ export type ServiceArgumentNumberInputValue =
 
 interface ServiceArgumentNumberInputProps {
   name: string;
-  initialValue: ServiceArgumentNumberInputValue;
+  value?: ServiceArgumentNumberInputValue;
   range: NumberInputRange;
   tooltipText?: string;
   isNullable?: boolean;
-  isReadOnlyDisabled?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
 
 const ServiceArgumentNumberInput = ({
   name,
-  initialValue,
+  value,
   range,
   tooltipText,
   isNullable = false,
-  isReadOnlyDisabled = false,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentNumberInputProps) => {
-  const isGraphEditModeEnabled = useAppSelector(
-    chatQnAGraphEditModeEnabledSelector,
+  // Ensure 0 renders and preserve user format while editing
+  const [displayValue, setDisplayValue] = useState<string>(
+    value !== null && value !== undefined ? String(value) : "",
   );
-  const isEditModeEnabled = isReadOnlyDisabled
-    ? isReadOnlyDisabled
-    : isGraphEditModeEnabled;
-  const isReadOnly = !isEditModeEnabled;
-
-  const [value, setValue] = useState(initialValue || "");
+  const [isFocused, setIsFocused] = useState(false);
   const [isInvalid, setIsInvalid] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // New: keep empty after blur and track last prop to detect external changes
+  const [keepEmptyOnBlur, setKeepEmptyOnBlur] = useState(false);
+  const lastPropValueRef = useRef<ServiceArgumentNumberInputValue>(value);
+
   useEffect(() => {
-    if (isReadOnly) {
-      setValue(initialValue ?? "");
-      setIsInvalid(false);
+    // Only sync from prop when not editing; avoid dropping ".0"
+    if (!isFocused) {
+      const propChanged = value !== lastPropValueRef.current;
+
+      // If user cleared and prop hasn't changed externally, keep the empty display
+      if (keepEmptyOnBlur && !propChanged && displayValue === "") {
+        return;
+      }
+
+      const next = value !== null && value !== undefined ? String(value) : "";
+      if (displayValue !== next) {
+        setDisplayValue(next);
+      }
+
+      lastPropValueRef.current = value;
+
+      // If prop changed externally, allow future syncs again
+      if (propChanged) {
+        setKeepEmptyOnBlur(false);
+      }
     }
-  }, [isReadOnly, initialValue]);
+  }, [value, isFocused, keepEmptyOnBlur, displayValue]);
 
   const validateInput = async (value: string) => {
     try {
@@ -76,13 +89,41 @@ const ServiceArgumentNumberInput = ({
 
   const handleChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    setValue(newValue);
+    setDisplayValue(newValue);
     const sanitizedValue = sanitizeString(newValue);
+    setKeepEmptyOnBlur(sanitizedValue === "");
+
     const isValid = await validateInput(sanitizedValue);
     onArgumentValidityChange(name, !isValid);
+
     if (isValid) {
-      const argumentValue = parseFloat(sanitizedValue) || null;
+      // Preserve 0; only send null/undefined for empty
+      let argumentValue: ServiceArgumentNumberInputValue;
+      if (sanitizedValue === "") {
+        argumentValue = isNullable ? null : undefined;
+      } else {
+        const parsed = parseFloat(sanitizedValue);
+        argumentValue = Number.isNaN(parsed) ? null : parsed;
+      }
       onArgumentValueChange(name, argumentValue);
+    }
+  };
+
+  const handleFocus = () => setIsFocused(true);
+
+  const handleBlur = async (event: FocusEvent<HTMLInputElement>) => {
+    setIsFocused(false);
+
+    const sanitizedValue = sanitizeString(event.target.value);
+    setKeepEmptyOnBlur(sanitizedValue === "");
+
+    // Re-validate on blur
+    const isValid = await validateInput(sanitizedValue);
+    onArgumentValidityChange(name, !isValid);
+
+    // If cleared, explicitly commit empty so the model matches the UI
+    if (sanitizedValue === "") {
+      onArgumentValueChange(name, isNullable ? null : undefined);
     }
   };
 
@@ -92,14 +133,15 @@ const ServiceArgumentNumberInput = ({
     <TextInput
       name={name}
       label={name}
-      value={value}
+      value={displayValue}
       size="sm"
       isInvalid={isInvalid}
-      isReadOnly={isReadOnly}
       placeholder={placeholder}
       tooltipText={tooltipText}
       errorMessage={errorMessage}
       onChange={handleChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
     />
   );
 };

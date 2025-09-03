@@ -30,7 +30,6 @@ import {
 import { RootState } from "@/store/index";
 
 interface ChatQnAGraphState {
-  isEditModeEnabled: boolean;
   nodes: Node<ServiceData>[];
   edges: Edge[];
   isLoading: boolean;
@@ -39,7 +38,6 @@ interface ChatQnAGraphState {
 }
 
 const initialState: ChatQnAGraphState = {
-  isEditModeEnabled: false,
   nodes: graphNodes,
   edges: [],
   isLoading: false,
@@ -50,7 +48,6 @@ const initialState: ChatQnAGraphState = {
 export const resetChatQnAGraph = createAsyncThunk(
   "chatQnAGraph/resetChatQnAGraph",
   (_, { dispatch }) => {
-    dispatch(setChatQnAGraphIsEditModeEnabled(false));
     dispatch(setChatQnAGraphSelectedServiceNode([]));
     dispatch(setChatQnAGraphIsLoading(true));
   },
@@ -166,12 +163,6 @@ export const chatQnAGraphSlice = createSlice({
       const edgeParams = action.payload;
       state.edges = addEdge(edgeParams, state.edges);
     },
-    setChatQnAGraphIsEditModeEnabled: (
-      state,
-      action: PayloadAction<boolean>,
-    ) => {
-      state.isEditModeEnabled = action.payload;
-    },
     setChatQnAGraphEdges: (
       state,
       action: PayloadAction<FetchedServiceDetails>,
@@ -220,7 +211,6 @@ export const chatQnAGraphSlice = createSlice({
 });
 
 export const {
-  setChatQnAGraphIsEditModeEnabled,
   onChatQnAGraphNodesChange,
   onChatQnAGraphEdgesChange,
   onChatQnAGraphConnect,
@@ -232,8 +222,6 @@ export const {
   resetChatQnAGraphSlice,
 } = chatQnAGraphSlice.actions;
 
-export const chatQnAGraphEditModeEnabledSelector = (state: RootState) =>
-  state.chatQnAGraph.isEditModeEnabled;
 export const chatQnAGraphNodesSelector = (state: RootState) =>
   state.chatQnAGraph.nodes;
 export const chatQnAGraphEdgesSelector = (state: RootState) =>

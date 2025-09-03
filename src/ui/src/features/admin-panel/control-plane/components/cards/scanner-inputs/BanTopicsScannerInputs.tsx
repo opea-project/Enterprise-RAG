@@ -28,18 +28,18 @@ const BanTopicsScannerInputs = ({
       <ScannerInputsTitle>{titleCasedName}</ScannerInputsTitle>
       <ServiceArgumentCheckbox
         {...config.enabled}
-        initialValue={previousArgumentsValues.enabled}
+        value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
       />
       <ServiceArgumentTextInput
         {...config.topics}
-        initialValue={previousArgumentsValues.topics}
+        value={previousArgumentsValues.topics}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
-        initialValue={previousArgumentsValues.threshold}
+        value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
       />

@@ -21,7 +21,7 @@ Integrate NetApp Trident CSI deployment automation into the Intel Enterprise RAG
 ## Files Modified/Created
 
 ### 1. Infrastructure Playbook
-**File**: `deployment/playbooks/infrastructure.yaml`
+**File**: [`deployment/playbooks/infrastructure.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/playbooks/infrastructure.yaml)
 
 **Changes Made**:
 - Added NFS utilities installation section for Ubuntu systems
@@ -49,7 +49,7 @@ Integrate NetApp Trident CSI deployment automation into the Intel Enterprise RAG
 ```
 
 ### 2. Post-Installation Tasks
-**File**: `deployment/roles/infrastructure/cluster/tasks/post_installation.yaml`
+**File**: [`deployment/roles/infrastructure/cluster/tasks/post_installation.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/cluster/tasks/post_installation.yaml)
 
 **Changes Made**:
 - Added NetApp Trident CSI role inclusion for installation
@@ -73,7 +73,7 @@ Integrate NetApp Trident CSI deployment automation into the Intel Enterprise RAG
 ```
 
 ### 3. Configuration Validation
-**File**: `deployment/roles/common/validate_config/tasks/main.yaml`
+**File**: [`deployment/roles/common/validate_config/tasks/main.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/common/validate_config/tasks/main.yaml)
 
 **Changes Made**:
 - Updated CSI driver validation to include "netapp-trident" as valid option
@@ -87,7 +87,7 @@ install_csi not in ['local-path-provisioner', 'nfs', 'netapp-trident']
 ```
 
 ### 4. Sample Configuration
-**File**: `deployment/inventory/sample/config.yaml`
+**File**: [`deployment/inventory/sample/config.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/inventory/sample/config.yaml)
 
 **Changes Made**:
 - Added "netapp-trident" to available CSI options documentation
@@ -125,13 +125,13 @@ deployment/roles/infrastructure/netapp_trident_csi_setup/
 
 ### Role Components
 
-#### defaults/main.yaml
+#### [defaults/main.yaml](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/defaults/main.yaml)
 Default variables for Trident configuration including:
 - Trident operator version (25.06)
 - Namespace and StorageClass names
 - ONTAP backend connection parameters
 
-#### tasks/main.yaml
+#### [tasks/main.yaml](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/tasks/main.yaml)
 Main Ansible tasks including:
 - **Install Tasks**:
   - Create Trident namespace
@@ -147,7 +147,7 @@ Main Ansible tasks including:
 
 #### Templates
 
-**trident-backend.yaml.j2**: TridentBackendConfig CRD for ONTAP NAS
+[**trident-backend.yaml.j2**](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/templates/trident-backend.yaml.j2): TridentBackendConfig CRD for ONTAP NAS
 ```yaml
 apiVersion: trident.netapp.io/v1
 kind: TridentBackendConfig
@@ -165,7 +165,7 @@ spec:
   aggregate: {{ ontap_aggregate }}
 ```
 
-**trident-storageclass.yaml.j2**: Kubernetes StorageClass
+[**trident-storageclass.yaml.j2**](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/templates/trident-storageclass.yaml.j2): Kubernetes StorageClass
 ```yaml
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -200,7 +200,7 @@ reclaimPolicy: Delete
 
 ### Required Configuration Parameters
 
-Users must provide the following ONTAP-specific parameters in their `config.yaml`:
+Users must provide the following ONTAP-specific parameters in their [`config.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/inventory/sample/config.yaml):
 
 ```yaml
 install_csi: "netapp-trident"

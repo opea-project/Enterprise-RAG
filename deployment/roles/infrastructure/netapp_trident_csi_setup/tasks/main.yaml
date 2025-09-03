@@ -1,0 +1,92 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# INSTALL TASKS
+- name: Create Trident namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ trident_namespace }}"
+    state: present
+  tags:
+    - install
+    - post-install
+
+- name: Add Trident Helm repo
+  kubernetes.core.helm_repository:
+    name: netapp-trident
+    repo_url: https://artifacthub.io/packages/helm/netapp-trident/trident-operator
+  tags:
+    - install
+    - post-install
+
+- name: Install Trident operator via Helm
+  kubernetes.core.helm:
+    name: trident-operator
+    chart_ref: netapp-trident/trident-operator
+    release_namespace: "{{ trident_namespace }}"
+    create_namespace: true
+    chart_version: "100.{{ trident_operator_version }}"
+  tags:
+    - install
+    - post-install
+
+- name: Create Trident backend for ONTAP NAS
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'trident-backend.yaml.j2') }}"
+  tags:
+    - install
+    - post-install
+
+- name: Create Trident StorageClass
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'trident-storageclass.yaml.j2') }}"
+  tags:
+    - install
+    - post-install
+
+- name: Get all StorageClasses
+  kubernetes.core.k8s_info:
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+  register: sc_list
+  tags:
+    - install
+    - post-install
+
+- name: Remove default annotation from non-trident StorageClasses
+  kubernetes.core.k8s_json_patch:
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: "{{ item.metadata.name }}"
+    patch:
+      - op: remove
+        path: /metadata/annotations/storageclass.kubernetes.io~1is-default-class
+  loop: "{{ sc_list.resources }}"
+  when:
+    - item.metadata.name != trident_storage_class
+    - item.metadata.annotations is defined
+    - item.metadata.annotations['storageclass.kubernetes.io/is-default-class'] is defined
+  tags:
+    - install
+    - post-install
+
+# DELETE TASKS
+- name: Uninstall Trident operator
+  kubernetes.core.helm:
+    name: trident-operator
+    release_namespace: "{{ trident_namespace }}"
+    state: absent
+  tags:
+    - delete
+
+- name: Delete Trident namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ trident_namespace }}"
+    state: absent
+  tags:
+    - delete

@@ -31,6 +31,14 @@
     - install
     - post-install
 
+- name: Create Trident ONTAP credentials secret
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'trident-secret.yaml.j2') }}"
+  tags:
+    - install
+    - post-install
+
 - name: Create Trident backend for ONTAP NAS
   kubernetes.core.k8s:
     state: present
@@ -74,6 +82,26 @@
     - post-install
 
 # DELETE TASKS
+- name: Delete Trident backend configuration
+  kubernetes.core.k8s:
+    api_version: trident.netapp.io/v1
+    kind: TridentBackendConfig
+    name: "{{ trident_backend_name }}"
+    namespace: "{{ trident_namespace }}"
+    state: absent
+  tags:
+    - delete
+
+- name: Delete Trident ONTAP credentials secret
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Secret
+    name: "{{ trident_backend_name }}-secret"
+    namespace: "{{ trident_namespace }}"
+    state: absent
+  tags:
+    - delete
+
 - name: Uninstall Trident operator
   kubernetes.core.helm:
     name: trident-operator

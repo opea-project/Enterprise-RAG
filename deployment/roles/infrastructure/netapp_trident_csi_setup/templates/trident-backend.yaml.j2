@@ -5,15 +5,11 @@ metadata:
   namespace: {{ trident_namespace }}
 spec:
   version: 1
+  backendName: {{ trident_backend_name }}-backend
   storageDriverName: ontap-nas
   managementLIF: {{ ontap_management_lif }}
   dataLIF: {{ ontap_data_lif }}
   svm: {{ ontap_svm }}
-  username: {{ ontap_username }}
-  password: {{ ontap_password }}
   aggregate: {{ ontap_aggregate }}
-  storage:
-    - labels:
-        performance: standard
-      region: us-east-1
-      zone: us-east-1a
+  credentials:
+    name: {{ trident_backend_name }}-secret 

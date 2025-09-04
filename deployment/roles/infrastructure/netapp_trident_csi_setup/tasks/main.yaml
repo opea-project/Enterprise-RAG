@@ -15,7 +15,7 @@
 - name: Add Trident Helm repo
   kubernetes.core.helm_repository:
     name: netapp-trident
-    repo_url: https://artifacthub.io/packages/helm/netapp-trident/trident-operator
+    repo_url: https://netapp.github.io/trident-helm-chart/
   tags:
     - install
     - post-install

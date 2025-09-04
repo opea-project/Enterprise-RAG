@@ -18,6 +18,60 @@ Integrate NetApp Trident CSI deployment automation into the Intel Enterprise RAG
 - Seamless integration with existing Enterprise RAG deployment workflow
 - Ubuntu-specific NFS utilities installation for Trident prerequisites
 
+## Current Project Structure
+
+### Enterprise RAG Deployment Architecture
+
+The Enterprise RAG project follows a structured Ansible-based deployment approach with the following key components:
+
+```
+Enterprise-RAG/
+├── deployment/
+│   ├── playbooks/
+│   │   ├── infrastructure.yaml           # Infrastructure setup playbook
+│   │   ├── application.yaml              # Application deployment playbook
+│   │   └── validate.yaml                 # Validation playbook
+│   ├── roles/
+│   │   ├── application/                  # Application-specific roles
+│   │   ├── common/                       # Shared utilities and validation
+│   │   │   └── validate_config/          # Configuration validation
+│   │   └── infrastructure/               # Infrastructure roles
+│   │       ├── cluster/                  # Kubernetes cluster management
+│   │       │   └── tasks/
+│   │       │       └── post_installation.yaml  # Post-install tasks
+│   │       ├── gaudi_operator/           # Intel Gaudi support
+│   │       ├── k8s_local_registry/       # Local container registry
+│   │       ├── nfs_server_csi_setup/     # NFS CSI driver (existing)
+│   │       └── velero/                   # Backup solution
+│   └── inventory/
+│       └── sample/
+│           └── config.yaml               # Sample configuration file
+├── docs/                                 # Project documentation
+└── src/                                  # Source code components
+```
+
+### Current CSI Driver Support
+
+Before Trident integration, Enterprise RAG supported:
+
+1. **`local-path-provisioner`**: For single-node deployments
+   - Location: Built into Kubespray
+   - Use case: Development and single-node setups
+   - Access modes: ReadWriteOnce only
+
+2. **`nfs`**: For multi-node deployments
+   - Location: [`deployment/roles/infrastructure/nfs_server_csi_setup/`](https://github.com/sushma-m1/Enterprise-RAG/tree/main/deployment/roles/infrastructure/nfs_server_csi_setup)
+   - Use case: Multi-node clusters requiring ReadWriteMany
+   - Implementation: In-cluster NFS server + CSI driver
+
+### Configuration Flow
+
+1. **User Configuration**: Users modify [`inventory/sample/config.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/inventory/sample/config.yaml)
+2. **Validation**: [`roles/common/validate_config/`](https://github.com/sushma-m1/Enterprise-RAG/tree/main/deployment/roles/common/validate_config) validates settings
+3. **Infrastructure Setup**: [`playbooks/infrastructure.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/playbooks/infrastructure.yaml) handles Kubernetes and CSI setup
+4. **Post-Installation**: [`roles/infrastructure/cluster/tasks/post_installation.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/cluster/tasks/post_installation.yaml) manages CSI drivers
+5. **Application Deployment**: [`playbooks/application.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/playbooks/application.yaml) deploys Enterprise RAG components
+
 ## Files Modified/Created
 
 ### 1. Infrastructure Playbook
@@ -26,7 +80,7 @@ Integrate NetApp Trident CSI deployment automation into the Intel Enterprise RAG
 **Changes Made**:
 - Added NFS utilities installation section for Ubuntu systems
 - Conditional installation when `install_csi == "netapp-trident"`
-- Installs `nfs-common` and `nfs-kernel-server` packages for NFS client utilities and NFS server utilities (required for Trident NFS backends)
+- Installs `nfs-common` and `nfs-kernel-server` packages for NFS client utilities and NFS server utilities (required for Trident NFS backends) respectively.
 
 ```yaml
 - name: Install NFS utilities

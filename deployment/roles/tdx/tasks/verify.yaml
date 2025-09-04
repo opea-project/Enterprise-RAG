@@ -1,0 +1,23 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- ansible.builtin.fail:
+   msg: "TDX variables are not defined."
+  when: >-
+    tdx.attestation is not defined or
+    tdx.attestation.enabled is not defined or
+    tdx.td_type is not defined
+  tags:
+    - install
+
+- ansible.builtin.fail:
+    msg: "Incorrect value for TDX td_type."
+  when: tdx.td_type not in ["one-td", "td-per-container"]
+  tags:
+    - install
+
+- ansible.builtin.set_fact:
+    tdxEnabled: "{{ tdx.enabled and tdx.td_type == 'td-per-container' }}" # to be changed in next PR
+  tags:
+    - install

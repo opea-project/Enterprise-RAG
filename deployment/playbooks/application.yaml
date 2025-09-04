@@ -29,6 +29,22 @@
       tags:
         - build-images
 
+    - name: Verify TDX variables
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: verify.yaml
+      tags:
+        - install
+      when: tdx.enabled
+
+    - name: TDX Attest
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: attest.yaml
+      tags:
+        - install
+      when: tdx.enabled and tdx.attestation.enabled
+
     - name: Pre-install role
       ansible.builtin.include_role:
         name: pre_install

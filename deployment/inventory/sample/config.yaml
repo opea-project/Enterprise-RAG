@@ -59,7 +59,12 @@ helm_timeout: "10m0s"
 
 hpaEnabled: true
 enforcePSS: false
-tdxEnabled: false
+
+tdx:
+  enabled: false
+  td_type: "one-td" # allowed options: one-td, td-per-container
+  attestation:
+    enabled: false
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"

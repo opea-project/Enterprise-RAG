@@ -111,15 +111,7 @@ class OPEALLMGuardInputGuardrail:
             if not fresh_scanners:
                 logger.info("Recreating anonymize scanner if exists to clear the Vault.")
                 self._recreate_anonymize_scanner_if_exists()
-            system_prompt = input_doc.messages.system
             user_prompt = input_doc.messages.user
-
-            # We want to block only user question with a TokenLimit Scanner
-            scanners_without_token_limit = [item for item in self._scanners if type(item).__name__ != "TokenLimit"]
-            if len(self._scanners) != scanners_without_token_limit:
-                sanitized_system_prompt, system_results_valid, system_results_score = scan_prompt(scanners_without_token_limit, system_prompt)
-            else:
-                sanitized_system_prompt, system_results_valid, system_results_score = scan_prompt(self._scanners, system_prompt)
 
             if "### Question:" in user_prompt:
                 # Default template is used
@@ -131,10 +123,8 @@ class OPEALLMGuardInputGuardrail:
             else:
                 sanitized_user_prompt, user_results_valid, user_results_score = scan_prompt(self._scanners, user_prompt)
 
-            self._analyze_scan_outputs(system_prompt, system_results_valid, system_results_score)
             self._analyze_scan_outputs(user_prompt, user_results_valid, user_results_score)
 
-            input_doc.messages.system = sanitized_system_prompt
             input_doc.messages.user = sanitized_user_prompt
             if input_doc.output_guardrail_params is not None and 'Anonymize' in user_results_valid:
                 input_doc.output_guardrail_params.anonymize_vault = self._get_anonymize_vault()

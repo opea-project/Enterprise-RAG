@@ -286,7 +286,7 @@ def add_new_file(bucket_name, object_name, etag, content_type, size):
                 except Exception as revoke_error:
                     logger.error(f"Error revoking task {task.id}: {revoke_error}")
             db.rollback() # rollback only the delay job
-            logger.error(f"Error committing to database: {e}")
+            logger.error(f"Error committing to database: {e}", exc_info=True)
     return file_status
 
 
@@ -324,7 +324,7 @@ def delete_existing_file(bucket_name, object_name):
                         except Exception as revoke_error:
                             logger.error(f"Error revoking task {task.id}: {revoke_error}")
                     db.rollback()
-                    logger.error(f"Error committing to database: {e}")
+                    logger.error(f"Error committing to database: {e}", exc_info=True)
         except Exception as e:
             logger.error(f"Error retrieving file statuses: {e}")
 
@@ -374,8 +374,8 @@ def add_new_link(uri):
             db.commit()
             logger.debug(f"Link {link_status.id} processing task enqueued with id {task.id}")
         except Exception as e:
-            logger.error(f"Error committing to database: {e}")
             db.rollback() # rollback only the delay job
+            logger.error(f"Error committing to database: {e}", exc_info=True)
         return link_status
 
 def delete_existing_link(uri):

@@ -1,5 +1,14 @@
 # Intel® AI for Enterprise RAG UI
 
+## Table of Contents
+
+- [Login](#login)
+- [Chat](#chat)
+- [Admin Panel](#admin-panel)
+  - [Control Plane](#control-plane)
+  - [Data Ingestion](#data-ingestion)
+  - [Telemetry \& Authentication](#telemetry--authentication)
+
 ## Login
 
 Upon visiting https://erag.com, you will be redirected to Keycloak login page where you will be asked to enter your credentials.

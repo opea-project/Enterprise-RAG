@@ -89,7 +89,7 @@ images:
     docker_context: src/comps/reranks/impl/model_server/torchserve
   uiUsvc:
     image_name: chatqna-conversation-ui
-    dockerfile_path: src/ui/Dockerfile
+    dockerfile_path: src/ui/apps/chatqna/Dockerfile
     docker_context: src
   vllmGaudi:
     image_name: vllm-gaudi

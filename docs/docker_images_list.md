@@ -4,7 +4,7 @@ A list of released OPEA Enterprise RAG Docker images in [DockerHub](https://hub.
 
 
 | Images      | Dockerfile  | Description | Readme      |
-| ----------- | ----------- | ----------- | ----------- |    
+| ----------- | ----------- | ----------- | ----------- |
 | [opea/erag-ingestion](https://hub.docker.com/r/opea/erag-ingestion) | [Link](../src/comps/ingestion/impl/microservice/Dockerfile) | Intel® AI for Enterprise RAG Document Ingestion Service | [Link](../src/comps/ingestion/impl/microservice/.dockerhub/overview.md)|
 | [opea/erag-enhanced-dataprep](https://hub.docker.com/r/opea/erag-enhanced-dataprep) | [Link](../src/edp/Dockerfile) | Intel® AI for Enterprise RAG Enhanced Data Prep Service to facilitate advanced doc processing | [Link](../src/edp/.dockerhub/overview.md)|
 | [opea/erag-dataprep](https://hub.docker.com/r/opea/erag-dataprep) | [Link](../src/comps/dataprep/impl/microservice/Dockerfile) | Intel® AI for Enterprise RAG Data Preparation Service | [Link](../src/comps/dataprep/impl/microservice/.dockerhub/overview.md)|
@@ -27,4 +27,4 @@ A list of released OPEA Enterprise RAG Docker images in [DockerHub](https://hub.
 | [opea/erag-language-detection](https://hub.docker.com/r/opea/erag-language-detection) | [Link](../src/comps/language_detection/impl/microservice/Dockerfile) | Intel® AI for Enterprise RAG Language Detection Service | [Link](../src/comps/language_detection/impl/microservice/.dockerhub/overview.md)|
 | [opea/erag-gmcrouter](https://hub.docker.com/r/opea/erag-gmcrouter) | [Link](../deployment/components/gmc/microservices-connector/router/Dockerfile) | Routing service for Intel® AI for Enterprise RAG service communication | [Link](../deployment/components/gmc/microservices-connector/router/.dockerhub/overview.md)|
 | [opea/erag-gmcmanager](https://hub.docker.com/r/opea/erag-gmcmanager) | [Link](../deployment/components/gmc/microservices-connector/manager/Dockerfile) | Management service for Intel® AI for Enterprise RAG services orchestration | [Link](../deployment/components/gmc/microservices-connector/manager/.dockerhub/overview.md)|
-| [opea/erag-chatqna-conversation-ui](https://hub.docker.com/r/opea/erag-chatqna-conversation-ui) | [Link](../src/ui/Dockerfile) | Intel® AI for Enterprise RAG Chat QnA User Interface | [Link](../src/ui/.dockerhub/overview.md)|
+| [opea/erag-chatqna-conversation-ui](https://hub.docker.com/r/opea/erag-chatqna-conversation-ui) | [Link](../src/ui/apps/chatqna/Dockerfile) | Intel® AI for Enterprise RAG Chat QnA User Interface | [Link](../src/ui/apps/chatqna/.dockerhub/overview.md)|

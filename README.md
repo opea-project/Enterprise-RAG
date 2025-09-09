@@ -269,8 +269,9 @@ To prepare your cluster:
 1. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
    - Set `deploy_k8s: false` and update the other fields as needed for your environment (see the [Configuration File](#configuration-file) section for details).
-   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included). If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
-   - If you need NetApp Trident, set `install_csi: netapp-trident` and configure the ONTAP-related variables. If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
+   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included).
+   - If you need NetApp Trident, set `install_csi: netapp-trident` and configure the ONTAP-related variables.
+   - If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
 
    Example `config.yaml` for deploying on an existing cluster:
     ```yaml

@@ -13,6 +13,20 @@
   tags:
     - install
 
+- name: label topology-discovery namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: topology-discovery
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Create a topology discovery daemonset
   kubernetes.core.k8s:
     state: present

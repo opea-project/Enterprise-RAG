@@ -358,7 +358,10 @@ class InputScannersConfig:
         if recognizer_conf is not None:
             anonymize_params['recognizer_conf'] = recognizer_conf
         if threshold is not None:
-            anonymize_params['threshold'] = threshold
+            try:
+                anonymize_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Anonymize scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if language is not None:
             anonymize_params['language'] = language
         logger.info(f"Creating Anonymize scanner with params: {anonymize_params}")
@@ -387,6 +390,8 @@ class InputScannersConfig:
             else:
                 logger.error("Provided type is not valid for BanSubstrings scanner")
                 raise ValueError("Provided type is not valid for BanSubstrings scanner")
+        elif isinstance(substrings, str) and substrings.strip() == "":
+            ban_substrings_params['substrings'] = []
         else:
             logger.error("Substrings list is required for BanSubstrings scanner")
             raise TypeError("Substrings list is required for BanSubstrings scanner")
@@ -433,7 +438,10 @@ class InputScannersConfig:
             logger.error("Topics list is required for BanTopics scanner")
             raise TypeError("Topics list is required for BanTopics scanner")
         if threshold is not None:
-            ban_topics_params['threshold'] = threshold
+            try:
+                ban_topics_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Ban Topics scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if model_name is not None:
             if model_name in enabled_models:
                 logger.info(f"Using selected model for BanTopics scanner: {model_name}")
@@ -480,7 +488,10 @@ class InputScannersConfig:
         if is_blocked is not None:
             code_params['is_blocked'] = is_blocked
         if threshold is not None:
-            code_params['threshold'] = threshold
+            try:
+                code_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Code scanner. Please provide a float value. Provided threshold: {threshold}") from e
         logger.info(f"Creating Code scanner with params: {code_params}")
         return Code(**code_params)
 
@@ -513,7 +524,10 @@ class InputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            prompt_injection_params['threshold'] = threshold
+            try:
+                prompt_injection_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for PromptInjection scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in enabled_match_types:
             prompt_injection_params['match_type'] = match_type
         logger.info(f"Creating PromptInjection scanner with params: {prompt_injection_params}")
@@ -576,7 +590,10 @@ class InputScannersConfig:
         lexicon = scanner_config.get('lexicon', None)
 
         if threshold is not None:
-            sentiment_params['threshold'] = threshold
+            try:
+                sentiment_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Sentiment scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if lexicon is not None and lexicon in enabled_lexicons:
             sentiment_params['lexicon'] = lexicon
 
@@ -591,7 +608,10 @@ class InputScannersConfig:
         encoding_name = scanner_config.get('encoding', None)
 
         if limit is not None:
-            token_limit_params['limit'] = limit
+            try:
+                token_limit_params['limit'] = int(limit)
+            except ValueError as e:
+                raise ValueError(f"Limit value is not valid for TokenLimit scanner. Please provide an integer value. Provided limit: {limit}") from e
         if encoding_name is not None and encoding_name in enabled_encodings:
             token_limit_params['encoding_name'] = encoding_name
 
@@ -621,7 +641,10 @@ class InputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            toxicity_params['threshold'] = threshold
+            try:
+                toxicity_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Toxicity scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in enabled_match_types:
             toxicity_params['match_type'] = match_type
 

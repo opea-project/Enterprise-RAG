@@ -372,13 +372,16 @@ class DataprepScannersConfig:
         if is_blocked is not None:
             code_params['is_blocked'] = is_blocked
         if threshold is not None:
-            code_params['threshold'] = threshold
+            try:
+                code_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Code scanner. Please provide a float value. Provided threshold: {threshold}") from e
         logger.info(f"Creating Code scanner with params: {code_params}")
         return Code(**code_params)
-        
+
     def _create_invisible_text_scanner(self):
         return InvisibleText()
-    
+
     def _create_prompt_injection_scanner(self, scanner_config):
         enabled_models = {
             'V1_MODEL': PROMPTINJECTION_V1_MODEL,
@@ -405,7 +408,10 @@ class DataprepScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            prompt_injection_params['threshold'] = threshold
+            try:
+                prompt_injection_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for PromptInjection scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in enabled_match_types:
             prompt_injection_params['match_type'] = match_type
         logger.info(f"Creating PromptInjection scanner with params: {prompt_injection_params}")
@@ -441,7 +447,7 @@ class DataprepScannersConfig:
 
         logger.info(f"Creating Regex scanner with params: {regex_params}")
         return Regex(**regex_params)
-    
+
     def _create_secrets_scanner(self):
         logger.info("Creating Secrets scanner")
         return Secrets()
@@ -454,13 +460,16 @@ class DataprepScannersConfig:
         lexicon = scanner_config.get('lexicon', None)
 
         if threshold is not None:
-            sentiment_params['threshold'] = threshold
+            try:
+                sentiment_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Sentiment scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if lexicon is not None and lexicon in enabled_lexicons:
             sentiment_params['lexicon'] = lexicon
 
         logger.info(f"Creating Sentiment scanner with params: {sentiment_params}")
         return Sentiment(**sentiment_params)
-    
+
     def _create_token_limit_scanner(self, scanner_config):
         enabled_encodings = ['cl100k_base'] # TODO: test more encoding from tiktoken
         token_limit_params = {}
@@ -469,7 +478,10 @@ class DataprepScannersConfig:
         encoding_name = scanner_config.get('encoding', None)
 
         if limit is not None:
-            token_limit_params['limit'] = limit
+            try:
+                token_limit_params['limit'] = int(limit)
+            except ValueError as e:
+                raise ValueError(f"Limit value is not valid for TokenLimit scanner. Please provide an integer value. Provided limit: {limit}") from e
         if encoding_name is not None and encoding_name in enabled_encodings:
             token_limit_params['encoding_name'] = encoding_name
 
@@ -499,13 +511,16 @@ class DataprepScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            toxicity_params['threshold'] = threshold
+            try:
+                toxicity_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Toxicity scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in enabled_match_types:
             toxicity_params['match_type'] = match_type
 
         logger.info(f"Creating Toxicity scanner with params: {toxicity_params}")
         return Toxicity(**toxicity_params)
-    
+
     def _create_dataprep_scanner(self, scanner_name, scanner_config):
         if scanner_name not in ENABLED_SCANNERS:
             logger.error(f"Scanner {scanner_name} is not supported. Enabled scanners are: {ENABLED_SCANNERS}")
@@ -531,7 +546,7 @@ class DataprepScannersConfig:
         elif scanner_name == 'toxicity':
             return self._create_toxicity_scanner(scanner_config)
         return None
-    
+
     def create_enabled_dataprep_scanners(self):
         """
         Create and return a list of enabled scanners based on the global configuration.
@@ -576,7 +591,7 @@ class DataprepScannersConfig:
                 raise Exception(f"Some scanners failed to be created due to validation or unexpected errors. The details: {err_msgs}")
 
         return [s for s in enabled_scanners_objects if s is not None]
-    
+
     def changed(self, new_scanners_config):
         """
         Check if the scanners configuration has changed.

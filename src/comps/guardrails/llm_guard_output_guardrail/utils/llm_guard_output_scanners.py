@@ -436,6 +436,8 @@ class OutputScannersConfig:
             else:
                 logger.error("Provided type is not valid for BanSubstrings scanner")
                 raise ValueError("Provided type is not valid for BanSubstrings scanner")
+        elif isinstance(substrings, str) and substrings.strip() == "":
+            ban_substrings_params['substrings'] = []
         else:
             logger.error("Substrings list is required for BanSubstrings scanner")
             raise TypeError("Substrings list is required for BanSubstrings scanner")
@@ -480,7 +482,10 @@ class OutputScannersConfig:
             logger.error("Topics list is required for BanTopics scanner")
             raise TypeError("Topics list is required for BanTopics scanner")
         if threshold is not None:
-            ban_topics_params['threshold'] = threshold
+            try:
+                ban_topics_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for BanTopics scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if model_name is not None:
             if model_name in enabled_models:
                 logger.info(f"Using selected model for BanTopics scanner: {model_name}")
@@ -502,7 +507,10 @@ class OutputScannersConfig:
         model_name = scanner_config.get('model', None)
 
         if threshold is not None:
-            bias_params['threshold'] = threshold
+            try:
+                bias_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Bias scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in available_match_types:
             bias_params['match_type'] = match_type
         if model_name is not None:
@@ -552,7 +560,10 @@ class OutputScannersConfig:
         if is_blocked is not None:
             code_params['is_blocked'] = is_blocked
         if threshold is not None:
-            code_params['threshold'] = threshold
+            try:
+                code_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Code scanner. Please provide a float value. Provided threshold: {threshold}") from e
         logger.info(f"Creating Code scanner with params: {code_params}")
         return Code(**code_params)
 
@@ -575,7 +586,10 @@ class OutputScannersConfig:
         repair = scanner_config.get('repair', None)
 
         if required_elements is not None:
-            json_scanner_params['required_elements'] = required_elements
+            try:
+                json_scanner_params['required_elements'] = int(required_elements)
+            except ValueError as e:
+                raise ValueError(f"Required elements value is not valid for JSON scanner. Please provide an integer value. Provided required elements: {required_elements}") from e
         if repair is not None:
             json_scanner_params['repair'] = repair
 
@@ -598,7 +612,10 @@ class OutputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            malicious_urls_params['threshold'] = threshold
+            try:
+                malicious_urls_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for MaliciousURLs scanner. Please provide a float value. Provided threshold: {threshold}") from e
 
         logger.info(f"Creating MaliciousURLs scanner with params: {malicious_urls_params}")
         return MaliciousURLs(**malicious_urls_params)
@@ -613,7 +630,10 @@ class OutputScannersConfig:
         match_type = scanner_config.get('match_type', None)
 
         if threshold is not None:
-            no_refusal_params['threshold'] = threshold
+            try:
+                no_refusal_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for NoRefusal scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if model_name is not None:
             if model_name in enabled_models:
                 logger.info(f"Using selected model for NoRefusal scanner: {model_name}")
@@ -639,7 +659,10 @@ class OutputScannersConfig:
         truncate = scanner_config.get('truncate', None)
 
         if max_time is not None:
-            reading_time_params['max_time'] = float(max_time)
+            try:
+                reading_time_params['max_time'] = float(max_time)
+            except ValueError as e:
+                raise ValueError(f"Max time value is not valid for ReadingTime scanner. Please provide a float value. Provided max time: {max_time}") from e
         else:
             logger.error("Max time is required for ReadingTime scanner")
             raise TypeError("Max time is required for ReadingTime scanner")
@@ -665,7 +688,10 @@ class OutputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if minimum_score is not None:
-            factual_consistency_params['minimum_score'] = minimum_score
+            try:
+                factual_consistency_params['minimum_score'] = float(minimum_score)
+            except ValueError as e:
+                raise ValueError(f"Minimum score value is not valid for FactualConsistency scanner. Please provide a float value. Provided minimum score: {minimum_score}") from e
 
         logger.info(f"Creating FactualConsistency scanner with params: {factual_consistency_params}")
         return FactualConsistency(**factual_consistency_params)
@@ -722,7 +748,10 @@ class OutputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            relevance_params['threshold'] = threshold
+            try:
+                relevance_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Relevance scanner. Please provide a float value. Provided threshold: {threshold}") from e
 
         logger.info(f"Creating Relevance scanner with params: {relevance_params}")
         return Relevance(**relevance_params)
@@ -757,7 +786,10 @@ class OutputScannersConfig:
         if recognizer_conf is not None:
             sensitive_params['recognizer_conf'] = recognizer_conf
         if threshold is not None:
-            sensitive_params['threshold'] = threshold
+            try:
+                sensitive_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Sensitive scanner. Please provide a float value. Provided threshold: {threshold}") from e
 
         logger.info(f"Creating Sensitive scanner with params: {sensitive_params}")
         return Sensitive(**sensitive_params)
@@ -770,7 +802,10 @@ class OutputScannersConfig:
         lexicon = scanner_config.get('lexicon', None)
 
         if threshold is not None:
-            sentiment_params['threshold'] = threshold
+            try:
+                sentiment_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Sentiment scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if lexicon is not None and lexicon in enabled_lexicons:
             sentiment_params['lexicon'] = lexicon
 
@@ -800,7 +835,10 @@ class OutputScannersConfig:
                 logger.error(err_msg)
                 raise ValueError(err_msg)
         if threshold is not None:
-            toxicity_params['threshold'] = threshold
+            try:
+                toxicity_params['threshold'] = float(threshold)
+            except ValueError as e:
+                raise ValueError(f"Threshold value is not valid for Toxicity scanner. Please provide a float value. Provided threshold: {threshold}") from e
         if match_type is not None and match_type in enabled_match_types:
             toxicity_params['match_type'] = match_type
 
@@ -823,7 +861,10 @@ class OutputScannersConfig:
                 logger.error("Provided type is not valid for Url Reachability scanner")
                 raise ValueError("Provided type is not valid for Url Reachability scanner")
         if timeout is not None:
-            url_reachability_params['timeout'] = timeout
+            try:
+                url_reachability_params['timeout'] = int(timeout)
+            except ValueError as e:
+                raise ValueError(f"Timeout value is not valid for URL Reachability scanner. Please provide an integer value. Provided timeout: {timeout}") from e
 
         logger.info(f"Creating URLReachability scanner with params: {url_reachability_params}")
         return URLReachability(**url_reachability_params)

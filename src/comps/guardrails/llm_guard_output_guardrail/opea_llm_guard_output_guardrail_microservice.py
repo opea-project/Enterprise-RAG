@@ -29,7 +29,7 @@ USVC_NAME = "opea_service@llm_guard_output_scanner"
 logger = get_opea_logger("llm_guard_output_scanner_microservice") # TODO: to be changed to after folder structure changes
 
 usvc_config = {
-    **dotenv_values(".env"),
+    **dotenv_values("impl/microservice/.env"),
     **os.environ # override loaded values with environment variables - priotity
 }
 

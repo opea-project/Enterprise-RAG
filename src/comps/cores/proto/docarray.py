@@ -170,7 +170,7 @@ class AnonymizeModel(BaseDoc):
     entity_types: Optional[List[str]] = None
     preamble: Optional[str] = None
     regex_patterns: Optional[List[str]] = None
-    use_faker: Optional[bool] = None
+    use_faker: Optional[bool] = False
     recognizer_conf: Optional[str] = None
     threshold: Optional[float] = None
     language: Optional[str] = None
@@ -180,8 +180,8 @@ class BanSubstringsModel(BaseDoc):
     substrings: List[str] = ["backdoor", "malware", "virus"]
     match_type: Optional[str] = "str"
     case_sensitive: bool = False
-    redact: Optional[bool] = None
-    contains_all: Optional[bool] = None
+    redact: Optional[bool] = False
+    contains_all: Optional[bool] = False
 
 class BanTopicsModel(BaseDoc):
     enabled: bool = False
@@ -195,7 +195,7 @@ class CodeModel(BaseDoc):
     use_onnx: bool = False
     languages: List[str] = ["Java", "Python"]
     model: Optional[str] = None
-    is_blocked: Optional[bool] = None
+    is_blocked: Optional[bool] = True
     threshold: Optional[float] = 0.5
 
 class InvisibleText(BaseDoc):
@@ -211,9 +211,9 @@ class PromptInjectionModel(BaseDoc):
 class RegexModel(BaseDoc):
     enabled: bool = False
     patterns: List[str] = ["Bearer [A-Za-z0-9-._~+/]+"]
-    is_blocked: Optional[bool] = None
+    is_blocked: Optional[bool] = True
     match_type: Optional[str] = "all"
-    redact: Optional[bool] = None
+    redact: Optional[bool] = False
 
 class SecretsModel(BaseDoc):
     enabled: bool = False
@@ -251,7 +251,7 @@ class DeanonymizeModel(BaseDoc):
 class JSONModel(BaseDoc):
     enabled: bool = False
     required_elements: Optional[int] = None
-    repair: Optional[bool] = None
+    repair: Optional[bool] = False
 
 class MaliciousURLsModel(BaseDoc):
     enabled: bool = False
@@ -272,7 +272,7 @@ class NoRefusalLightModel(BaseDoc):
 class ReadingTimeModel(BaseDoc):
     enabled: bool = False
     max_time: float = 0.5
-    truncate: Optional[bool] = None
+    truncate: Optional[bool] = False
 
 class FactualConsistencyModel(BaseDoc):
     enabled: bool = False
@@ -291,7 +291,7 @@ class SensitiveModel(BaseDoc):
     use_onnx: bool = False
     entity_types: Optional[List[str]] = None
     regex_patterns: Optional[List[str]] = None
-    redact: Optional[bool] = None
+    redact: Optional[bool] = False
     recognizer_conf: Optional[str] = None
     threshold: Optional[float] = None
 

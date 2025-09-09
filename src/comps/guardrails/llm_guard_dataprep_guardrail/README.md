@@ -1,20 +1,23 @@
 # LLM Guard Dataprep Guardrail Microservice
 This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. Theese guardrails can be enabled by passing --dpguard parameter, while using [install_chatqna.sh](../../../../deployment/README.md) script. LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
- - [BanSubstrings](https://protectai.github.io/llm-guard/input_scanners/ban_substrings/)
- - [BanTopics](https://protectai.github.io/llm-guard/input_scanners/ban_topics/)
- - [Code](https://protectai.github.io/llm-guard/input_scanners/code/)
- - [InvisibleText](https://protectai.github.io/llm-guard/input_scanners/invisible_text/)
- - [PromptInjection](https://protectai.github.io/llm-guard/input_scanners/prompt_injection/)
- - [Regex](https://protectai.github.io/llm-guard/input_scanners/regex/)
- - [Secrets](https://protectai.github.io/llm-guard/input_scanners/secrets/)
- - [Sentiment](https://protectai.github.io/llm-guard/input_scanners/sentiment/)
- - [TokenLimit](https://protectai.github.io/llm-guard/input_scanners/token_limit/)
- - [Toxicity](https://protectai.github.io/llm-guard/input_scanners/toxicity/)
+ - [BanSubstrings](#bansubstrings-scanner)
+ - [BanTopics](#bantopics-scanner)
+ - [Code](#code-scanner)
+ - [InvisibleText](#invisibletext-scanner)
+ - [PromptInjection](#promptinjection-scanner)
+ - [Regex](#regex-scanner)
+ - [Secrets](#secrets-scanner)
+ - [Sentiment](#sentiment-scanner)
+ - [TokenLimit](#tokenlimit-scanner)
+ - [Toxicity](#toxicity-scanner)
 
 A detailed description of each scanner is available on [LLM Guard](https://protectai.github.io/llm-guard/).
 
 ## Configuration Options
 The scanners can be configured only via environmental variables. All scanners can be configured via environmental variables for the microservice. They can be enabled during deployment or via configmap.
+
+> [!Warning]
+> Dataprep guardrail is not enabled in default Chatqna's pipeline. To enable it, change `edp.dpGuard.enabled` to `true` in [deployment/inventory/sample/config.yaml](../../../../deployment/inventory/sample/config.yaml).
 
 ### Configuration via environmental variables
 The LLM Guard Dataprep Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor. BanSubstrings scanner is enabled by default.
@@ -27,7 +30,6 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `BAN_SUBSTRINGS_SUBSTRINGS`| List of substrings to be banned.                                              | string | "backdoor,malware,virus"| Required            |
 | `BAN_SUBSTRINGS_MATCH_TYPE`| Match type for substrings.                                                    | string | "str"                 | Optional            |
 | `BAN_SUBSTRINGS_CASE_SENSITIVE` | Enables case sensitivity for detecting substrings.                       | bool   | false               | Optional            |
-| `BAN_SUBSTRINGS_REDACT`    | Enables redaction of banned substrings.                                       | bool   | false               | Optional            |
 | `BAN_SUBSTRINGS_CONTAINS_ALL` | Requires all substrings to be present.                                     | bool   | false               | Optional            |
 
 ### BanTopics scanner
@@ -35,19 +37,19 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | Environment Variable       | Description                                                  | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|--------------------------------------------------------------|--------|-----------------------|---------------------|
 | `BAN_TOPICS_ENABLED`       | Enables BanTopics scanner.                                   | bool   | false               | Required            |
-| `BAN_TOPICS_USE_ONNX`      | Enables usage of ONNX optimized model for BanTopics scanner. | bool   | true                | Required            |
+| `BAN_TOPICS_USE_ONNX`      | Enables usage of ONNX optimized model for BanTopics scanner. | bool   | false                | Required            |
 | `BAN_TOPICS_TOPICS`        | List of topics to be banned.                                 | string | "violence,attack,war" | Required            |
 | `BAN_TOPICS_THRESHOLD`     | Threshold for BanTopics scanner.                             | float  | 0.5                   | Optional            |
-| `BAN_TOPICS_MODEL`         | Model to be used for BanTopics scanner.                      | string | "MODEL_V1"            | Optional            |
+| `BAN_TOPICS_MODEL`         | Model to be used for BanTopics scanner.                      | string | none            | Optional            |
 
 ### Code scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Code scanner](https://protectai.github.io/llm-guard/input_scanners/code/)
 | Environment Variable       | Description                                                 | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------|--------|-----------------------|---------------------|
 | `CODE_ENABLED`             | Enables Code scanner.                                       | bool   | false               | Required            |
-| `CODE_USE_ONNX`            | Enables usage of ONNX optimized model for Code scanner.     | bool   | true                | Required            |
+| `CODE_USE_ONNX`            | Enables usage of ONNX optimized model for Code scanner.     | bool   | false                | Required            |
 | `CODE_LANGUAGES`           | List of programming languages to be detected.               | string | "Java,Python"         | Required            |
-| `CODE_MODEL`               | Model to be used for Code scanner.                          | string | "DEFAULT_MODEL"       | Optional            |
+| `CODE_MODEL`               | Model to be used for Code scanner.                          | string | none       | Optional            |
 | `CODE_IS_BLOCKED`          | Enables blocking of detected code.                          | bool   | false               | Optional            |
 | `CODE_THRESHOLD`           | Threshold for Code scanner.                                 | float  | 0.5                   | Optional            |
 
@@ -62,8 +64,8 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | Environment Variable          | Description                                                        | Type   | Default in LLM Guard  | Required / Optional |
 |-------------------------------|--------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `PROMPT_INJECTION_ENABLED`    | Enables PromptInjection scanner.                                   | bool   | false               | Required            |
-| `PROMPT_INJECTION_USE_ONNX`   | Enables usage of ONNX optimized model for PromptInjection scanner. | bool   | true                | Required            |
-| `PROMPT_INJECTION_MODEL`      | Model to be used for PromptInjection scanner.                      | string | "V1_MODEL"            | Optional            |
+| `PROMPT_INJECTION_USE_ONNX`   | Enables usage of ONNX optimized model for PromptInjection scanner. | bool   | false                | Required            |
+| `PROMPT_INJECTION_MODEL`      | Model to be used for PromptInjection scanner.                      | string | none            | Optional            |
 | `PROMPT_INJECTION_THRESHOLD`  | Threshold for PromptInjection scanner.                             | float  | 0.92                  | Optional            |
 | `PROMPT_INJECTION_MATCH_TYPE` | Match type for prompt injection detection.                         | string | "full"                | Optional            |
 
@@ -75,8 +77,7 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `REGEX_ENABLED`            | Enables Regex scanner.                                                        | bool   | false               | Required            |
 | `REGEX_PATTERNS`           | List of regex patterns to be used.                                            | string | "Bearer [A-Za-z0-9-._~+/]+"| Required            |
 | `REGEX_IS_BLOCKED`         | Enables blocking of matched patterns.                                         | bool   | true               | Optional            |
-| `REGEX_MATCH_TYPE`         | Match type for regex patterns (e.g., full, partial).                          | string | "SEARCH"              | Optional            |
-| `REGEX_REDACT`             | Enables redaction of output.                                                  | bool   | false               | Optional            |
+| `REGEX_MATCH_TYPE`         | Match type for regex patterns (e.g., full, partial).                          | string | "all"              | Optional            |
 
 ### Secrets scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Secrets scanner](https://protectai.github.io/llm-guard/input_scanners/secrets/)
@@ -84,15 +85,14 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SECRETS_ENABLED`          | Enables Secrets scanner.                                                      | bool   | false               | Required            |
-| `SECRETS_REDACT_MODE`      | Redaction mode for detected secrets.                                          | string | "REDACT_ALL"          | Optional            |
 
 ### Sentiment scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Sentiment scanner](https://protectai.github.io/llm-guard/input_scanners/sentiment/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SENTIMENT_ENABLED`        | Enables Sentiment scanner.                                                    | bool   | false               | Required            |
-| `SENTIMENT_THRESHOLD`      | Threshold for Sentiment scanner.                                              | float  | 0.3                   | Optional            |
-| `SENTIMENT_LEXICON`        | Lexicon to be used for sentiment analysis.                                    | string | "vader_lexicon"       | Optional            |
+| `SENTIMENT_THRESHOLD`      | Threshold for Sentiment scanner.                                              | float  | -0.3                   | Optional            |
+| `SENTIMENT_LEXICON`        | Lexicon to be used for sentiment analysis.                                    | string | none       | Optional            |
 
 ### TokenLimit scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for TokenLimit scanner](https://protectai.github.io/llm-guard/input_scanners/token_limit/)
@@ -101,15 +101,15 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 | `TOKEN_LIMIT_ENABLED`      | Enables TokenLimit scanner.                                                   | bool   | false               | Required            |
 | `TOKEN_LIMIT_LIMIT`        | Threshold for TokenLimit scanner. Default: 1000.                              | int    | 4096                  | Required            |
 | `TOKEN_LIMIT_ENCODING_NAME`| Encoding name for TokenLimit scanner.                                         | string | "cl100k_base"         | Optional            |
-| `TOKEN_LIMIT_MODEL_NAME`   | Model name to be used for TokenLimit scanner.                                 | string | no value              | Optional            |
+| `TOKEN_LIMIT_MODEL_NAME`   | Model name to be used for TokenLimit scanner.                                 | string | none              | Optional            |
 
 ### Toxicity scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Toxicity scanner](https://protectai.github.io/llm-guard/input_scanners/toxicity/)
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `TOXICITY_ENABLED`         | Enables Toxicity scanner.                                                     | bool   | false               | Required            |
-| `TOXICITY_USE_ONNX`        | Enables usage of ONNX optimized model for Toxicity scanner.                   | bool   | true                | Required            |
-| `TOXICITY_MODEL`           | Model to be used for Toxicity scanner.                                        | string | "DEFAULT_MODEL"       | Optional            |
+| `TOXICITY_USE_ONNX`        | Enables usage of ONNX optimized model for Toxicity scanner.                   | bool   | false                | Required            |
+| `TOXICITY_MODEL`           | Model to be used for Toxicity scanner.                                        | string | none       | Optional            |
 | `TOXICITY_THRESHOLD`       | Threshold for Toxicity scanner.                                               | float  | 0.5                   | Optional            |
 | `TOXICITY_MATCH_TYPE`      | Match type for toxicity detection.                                            | string | "full"                | Optional            |
 
@@ -155,7 +155,7 @@ docker build -t opea/dpguard:latest -f comps/guardrails/llm_guard_dataprep_guard
 
 #### 2.2. Run the Docker container, for example:
 ```sh
-docker run -d -e BAN_SUBSTRINGS_EMABLED=true -p 8070:8070 opea/dpguard:latest
+docker run -d -e BAN_SUBSTRINGS_ENABLED=true -p 8070:8070 opea/dpguard:latest
 ```
 
 ### 3. Verify the LLM Guard Dataprep Guardrail Microservice

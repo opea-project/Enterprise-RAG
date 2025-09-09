@@ -15,7 +15,7 @@ class AnonymizeModel(Document):
     entity_types: Optional[List[str]] = None
     preamble: Optional[str] = None
     regex_patterns: Optional[List[str]] = None
-    use_faker: Optional[bool] = None
+    use_faker: Optional[bool] = False
     recognizer_conf: Optional[str] = None
     threshold: Optional[float] = None
     language: Optional[str] = None
@@ -26,8 +26,8 @@ class BanSubstringsModel(Document):
     substrings: List[str] = ["backdoor", "malware", "virus"]
     match_type: Optional[str] = "str"
     case_sensitive: bool = False
-    redact: Optional[bool] = None
-    contains_all: Optional[bool] = None
+    redact: Optional[bool] = False
+    contains_all: Optional[bool] = False
 
 
 class BanTopicsModel(Document):
@@ -43,7 +43,7 @@ class CodeModel(Document):
     use_onnx: bool = False
     languages: List[str] = ["Java", "Python"]
     model: Optional[str] = None
-    is_blocked: Optional[bool] = None
+    is_blocked: Optional[bool] = True
     threshold: Optional[float] = 0.5
 
 
@@ -62,9 +62,9 @@ class PromptInjectionModel(Document):
 class RegexModel(Document):
     enabled: bool = False
     patterns: List[str] = ["Bearer [A-Za-z0-9-._~+/]+"]
-    is_blocked: Optional[bool] = None
+    is_blocked: Optional[bool] = True
     match_type: Optional[str] = "all"
-    redact: Optional[bool] = None
+    redact: Optional[bool] = False
 
 
 class SecretsModel(Document):
@@ -109,7 +109,7 @@ class DeanonymizeModel(Document):
 class JSONModel(Document):
     enabled: bool = False
     required_elements: Optional[int] = None
-    repair: Optional[bool] = None
+    repair: Optional[bool] = False
 
 
 class MaliciousURLsModel(Document):
@@ -134,7 +134,7 @@ class NoRefusalLightModel(Document):
 class ReadingTimeModel(Document):
     enabled: bool = False
     max_time: float = 0.5
-    truncate: Optional[bool] = None
+    truncate: Optional[bool] = False
 
 
 class FactualConsistencyModel(Document):
@@ -156,7 +156,7 @@ class SensitiveModel(Document):
     use_onnx: bool = False
     entity_types: Optional[List[str]] = None
     regex_patterns: Optional[List[str]] = None
-    redact: Optional[bool] = None
+    redact: Optional[bool] = False
     recognizer_conf: Optional[str] = None
     threshold: Optional[float] = None
 

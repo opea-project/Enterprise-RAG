@@ -10,7 +10,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"  # Every 5 minutes
   successfulJobsHistoryLimit: 1
-  failedJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 0
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -24,6 +24,68 @@ spec:
           serviceAccountName: edp-minio
           securityContext:
             {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          initContainers:
+          - name: wait-for-oidc-config
+            image: alpine/curl
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 1000
+            env:
+              - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
+                valueFrom:
+                  secretKeyRef:
+                    name: edp-access-secret
+                    key: EDP_OIDC_CONFIG_URL
+            command:
+              - sh
+              - -c
+              - |
+                  if [ -z "$MINIO_IDENTITY_OPENID_CONFIG_URL" ]; then
+                    echo "Environment variable MINIO_IDENTITY_OPENID_CONFIG_URL is not set. Skipping the init container.";
+                  else
+                    until curl -m 5 -sS -o /dev/null $MINIO_IDENTITY_OPENID_CONFIG_URL; do
+                      echo "waiting for OpenID config endpoint $MINIO_IDENTITY_OPENID_CONFIG_URL to become available...";
+                      sleep 2;
+                    done;
+                  fi
+          - name: wait-for-minio
+            image: alpine/curl
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 1000
+            env:
+              - name: "MINIO_HOST"
+                valueFrom:
+                  secretKeyRef:
+                    name: edp-access-secret
+                    key: EDP_INTERNAL_URL
+            command:
+              - sh
+              - -c
+              - |
+                  if [ -z "$MINIO_HOST" ]; then
+                    echo "Environment variable MINIO_HOST is not set. Skipping the init container.";
+                  else
+                    live_url="$MINIO_HOST/minio/health/live"
+                    until curl -m 5 -sS -o /dev/null $live_url; do
+                      echo "waiting for minio endpoint $live_url to become available...";
+                      sleep 2;
+                    done;
+                  fi
           containers:
           - name: minio-oidc-check
             image: docker.io/bitnami/minio:2024.12.18-debian-12-r0 # synced with minio chart version 14.10.3

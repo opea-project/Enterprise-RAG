@@ -1,0 +1,31 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+export const SUPPORTED_CODE_LANGUAGES = [
+  "ARM Assembly",
+  "AppleScript",
+  "C",
+  "C#",
+  "C++",
+  "COBOL",
+  "Erlang",
+  "Fortran",
+  "Go",
+  "Java",
+  "JavaScript",
+  "Kotlin",
+  "Lua",
+  "Mathematica/Wolfram Language",
+  "PHP",
+  "Pascal",
+  "Perl",
+  "PowerShell",
+  "Python",
+  "R",
+  "Ruby",
+  "Rust",
+  "Scala",
+  "Swift",
+  "Visual Basic .NET",
+  "jq",
+];

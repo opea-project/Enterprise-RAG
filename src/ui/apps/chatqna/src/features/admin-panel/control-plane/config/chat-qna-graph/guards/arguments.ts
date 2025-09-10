@@ -1,6 +1,8 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { SUPPORTED_CODE_LANGUAGES } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/constants";
+
 export const enabled = {
   name: "enabled",
 };
@@ -73,4 +75,8 @@ export const limit = {
 export const languages = {
   name: "languages",
   isCommaSeparated: true,
+  tooltipText: `Specify programming languages to scan for.
+    Supported values are: ${SUPPORTED_CODE_LANGUAGES.join(", ")}.
+    Please ensure there are no spaces between the commas and the language names.`,
+  supportedValues: SUPPORTED_CODE_LANGUAGES,
 };

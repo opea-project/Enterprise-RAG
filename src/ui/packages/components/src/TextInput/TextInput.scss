@@ -54,9 +54,10 @@
   }
 
   &__error {
+    @apply block;
     @apply italic;
     @apply text-light-text-error dark:text-dark-text-error;
-    @apply pl-4 text-sm;
+    @apply py-2 pl-4 text-sm;
   }
 
   &--sm {

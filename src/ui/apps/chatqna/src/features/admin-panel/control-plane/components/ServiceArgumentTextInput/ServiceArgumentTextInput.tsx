@@ -20,6 +20,7 @@ interface ServiceArgumentTextInputProps {
   tooltipText?: string;
   isNullable?: boolean;
   isCommaSeparated?: boolean;
+  supportedValues?: string[];
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
 }
@@ -30,6 +31,7 @@ const ServiceArgumentTextInput = ({
   tooltipText,
   isNullable = false,
   isCommaSeparated = false,
+  supportedValues,
   onArgumentValueChange,
   onArgumentValidityChange,
 }: ServiceArgumentTextInputProps) => {
@@ -43,7 +45,12 @@ const ServiceArgumentTextInput = ({
 
   const validateInput = async (value: string) => {
     try {
-      await validateServiceArgumentTextInput(value, isNullable);
+      await validateServiceArgumentTextInput(
+        value,
+        isNullable,
+        isCommaSeparated,
+        supportedValues,
+      );
       setIsInvalid(false);
       setErrorMessage("");
       return true;

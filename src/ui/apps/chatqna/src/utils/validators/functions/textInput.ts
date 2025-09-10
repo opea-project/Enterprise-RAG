@@ -37,3 +37,18 @@ export const containsRequiredValues =
       return false;
     }
   };
+
+export const containsSupportedCommaSeparatedValues =
+  (isCommaSeparated?: boolean, supportedValues?: string[]) =>
+  (value: string | undefined) => {
+    if (isCommaSeparated && supportedValues && supportedValues.length) {
+      const values = value?.split(",");
+      if (values && values.length) {
+        return values.every((val) => supportedValues?.includes(val));
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
+  };

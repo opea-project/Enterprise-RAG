@@ -145,10 +145,16 @@ const isAbortResponseError = (errorResponse: ChatErrorResponse) => {
   const isFetchAbortError =
     errorResponse.status === "FETCH_ERROR" &&
     errorResponse.error === ABORT_ERROR_MESSAGE;
+  const containsBrowserAbortMessage =
+    typeof errorResponse.error === "string" &&
+    (errorResponse.error.toLowerCase().includes("abort") ||
+      errorResponse.error.toLowerCase().includes("interrupt") ||
+      errorResponse.error === "AbortError: BodyStreamBuffer was aborted" || // Edge & Chrome
+      errorResponse.error === "User interrupted chatbot response."); // Firefox
   const isParsingAbortError =
     errorResponse.status === "PARSING_ERROR" &&
     errorResponse.originalStatus === 200 &&
-    errorResponse.error.includes("AbortError:");
+    containsBrowserAbortMessage;
   return isFetchAbortError || isParsingAbortError;
 };
 

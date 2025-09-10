@@ -210,7 +210,7 @@ def test_docx_with_images(edp_helper, chatqa_api_helper):
     assert chatqa_api_helper.words_in_response(["broom", "weather"], response), UNRELATED_RESPONSE_MSG
 
 
-@pytest.mark.skip(reason="Feature not implemented yet")
+@pytest.mark.xfail(reason="Feature not implemented yet")
 @allure.testcase("IEASG-T164")
 def test_get_context_from_filename(edp_helper, chatqa_api_helper):
     """Upload a file with a unique name. Ask a question related to the file name to verify if it has been ingested"""
@@ -426,6 +426,7 @@ def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper):
         response = ask_question(chatqa_api_helper, question)
         assert chatqa_api_helper.all_words_in_response(required_mentions, response), UNRELATED_RESPONSE_MSG
 
+
 @allure.testcase("IEASG-T199")
 def test_updated_file(edp_helper, chatqa_api_helper):
     question_1 = "Who is Alex?"
@@ -463,6 +464,25 @@ def test_updated_file(edp_helper, chatqa_api_helper):
 
         response_3_after = ask_question(chatqa_api_helper, question_3)
         assert chatqa_api_helper.words_in_response(expected_3_after, response_3_after), UNRELATED_RESPONSE_MSG
+
+
+@pytest.mark.xfail(reason="Feature not implemented yet - requires graph structures support")
+@allure.testcase("IEASG-T246")
+def test_json_config_file_insights(edp_helper, chatqa_api_helper):
+    """
+    Upload a JSON config file and ask questions related to the content of the file.
+    Force the chatbot to extract information from across the entire file, not just from a single line.
+    """
+    file = "sample_config.json"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    question = "What is the database type used by the user-service?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "mysql" in response.lower(), UNRELATED_RESPONSE_MSG
+
+    question = "What services are enabled in ExampleMicroservicesSystem under 'services' section?"
+    enabled_services = ["auth-service", "user-service", "order-service", "reporting-service"]
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.all_words_in_response(enabled_services, response), UNRELATED_RESPONSE_MSG
 
 
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question=""):

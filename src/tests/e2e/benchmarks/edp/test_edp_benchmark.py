@@ -9,8 +9,8 @@ import time
 from models import ProcessingKpi, FileProcessing, FileInfo, FilesProcessingSeries, EdpRecord, Fileset
 
 # Relative to tox chdir. See tox.ini :: testenv:benchmark_edp
-FILES_DIR = "benchmarks/edp/files"
-RESULTS_DIR = "benchmarks/edp/results"
+FILES_DIR = "e2e/benchmarks/edp/files"
+RESULTS_DIR = "e2e/benchmarks/edp/results"
 
 # Generate dataset names like simple_small, moderate_xlarge etc.
 complexities = ("simple", "moderate")

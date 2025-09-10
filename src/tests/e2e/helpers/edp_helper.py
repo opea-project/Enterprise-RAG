@@ -298,15 +298,26 @@ class EdpHelper(ApiRequestHelper):
         Expressions like filenames & filenames_all == filenames are way to continue if there are old files in edp.
         """
 
-        sleep_interval = 10
+        SLEEP_INTERVAL = 10
+        MAX_RDP_REGISTER_RETRIES = 30  # How many times wait until edp pick files from bucket
+
         start_time = time.time()
         all_ingested = False
         filenames_ingested = set()
+        fails_remaining = MAX_RDP_REGISTER_RETRIES
         while time.time() < start_time + timeout:
             edp_files = self.list_files().json()
-            filenames_all = set([f["object_name"] for f in edp_files])
+            filenames_in_edp = set([f["object_name"] for f in edp_files])
             # all files from filenames should be present in the EDP
-            assert filenames & filenames_all == filenames, f"Not all files are present in the EDP:\n {'\n'.join(list(filenames_all - filenames))}"
+            if not (filenames & filenames_in_edp == filenames):
+                if fails_remaining > 0:
+                    fails_remaining -= 1
+                    logger.warning(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}")
+                    logger.warning(f"Will wait {SLEEP_INTERVAL}s.. Remaining checks: {fails_remaining}/{MAX_RDP_REGISTER_RETRIES}")
+                    time.sleep(SLEEP_INTERVAL)
+                    continue
+                else:
+                    raise RuntimeError(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}, failed {MAX_RDP_REGISTER_RETRIES} times.")
 
             filenames_ingested = set([f["object_name"] for f in edp_files if f["status"] == "ingested"])
             if filenames & filenames_ingested == filenames:
@@ -319,8 +330,8 @@ class EdpHelper(ApiRequestHelper):
                 waiting_m = int((waiting_time % 3600) // 60)
                 waiting_s = int(waiting_time % 60)
 
-                logger.debug(f"(Total: {waiting_h:02d}:{waiting_m:02d}:{waiting_s:02d}) Waiting {sleep_interval}s for all files to be ingested. Still processing: {', '.join(list(filenames - filenames_ingested))}")
-                time.sleep(sleep_interval)
+                logger.debug(f"(Total: {waiting_h:02d}:{waiting_m:02d}:{waiting_s:02d}) Waiting {SLEEP_INTERVAL}s for all files to be ingested. Still processing: {', '.join(list(filenames - filenames_ingested))}")
+                time.sleep(SLEEP_INTERVAL)
 
         if not all_ingested:
             not_ingested = filenames - filenames_ingested

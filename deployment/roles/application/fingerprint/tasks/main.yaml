@@ -104,7 +104,7 @@
     values_files: >
       {{
         [fingerprint.helm.default_values_file] +
-        ([fingerprint.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([fingerprint.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
         [fingerprint_helm_override_values_path]
       }}
   tags:
@@ -122,7 +122,7 @@
 #    This can replace chart and template based deployments with TDX
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ fingerprint.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
-#       if (tdxEnabled is defined and tdxEnabled) else omit }}"
+#       if (tdx.coco.enabled) else omit }}"
   register: helm_result
   tags:
     - install

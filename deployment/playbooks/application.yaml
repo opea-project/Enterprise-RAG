@@ -32,10 +32,9 @@
     - name: Verify TDX variables
       ansible.builtin.include_role:
         name: tdx
-        tasks_from: verify.yaml
+        tasks_from: verify_variables.yaml
       tags:
         - install
-      when: tdx.enabled
 
     - name: TDX Attest
       ansible.builtin.include_role:

@@ -83,7 +83,7 @@
 #   Commented due to unknown issue with balloon while enabling TDX
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ balloons.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
-#       if (tdxEnabled is defined and tdxEnabled) else omit }}"
+#       if tdx.coco.enabled else omit }}"
   when: gaudi_detected is defined and not gaudi_detected
   tags:
     - install

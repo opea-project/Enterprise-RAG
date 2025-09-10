@@ -28,7 +28,7 @@ chat_history:
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 
-{% if tdxEnabled is defined and tdxEnabled %}
+{% if tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}

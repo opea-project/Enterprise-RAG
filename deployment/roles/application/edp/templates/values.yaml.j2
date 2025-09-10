@@ -53,7 +53,7 @@ redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
 postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
 
-{% if tdxEnabled is defined and tdxEnabled %}
+{% if tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}

@@ -23,7 +23,7 @@ service:
 {% if use_alternate_tagging is defined %}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
-{% if tdxEnabled is defined and tdxEnabled %}
+{% if tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}

@@ -30,10 +30,10 @@ This guide assumes that:
 3. you are using public container registry to push Enterprise RAG images.
 
 Deployment can be done using a single-node Kubernetes cluster created:
-1. inside single hardware-isolated Virtual Machine (VM) protected with TDX called Trust Domain (TD) for all pods `[single TD]`
+1. inside single hardware-isolated Virtual Machine (VM) protected with TDX called Trust Domain (TD) for all pods `[one TD]`
 2. on host, where multiple TDs (each per pod) are created using [Confidential Containers](https://confidentialcontainers.org/docs/overview/) `[CoCo]`
 
-Steps below are common for both cases unless are tagged with `[single TD]` or `[CoCo]`.
+Steps below are common for both cases unless are tagged with `[one TD]` or `[CoCo]`.
 
 ## Getting Started
 
@@ -67,42 +67,45 @@ Follow the below steps on the server node with Intel Xeon Processor:
    kubectl wait --for=condition=Ready node --all --timeout=2m
    ```
 
-5. `[single TD]` [Create TD Image](https://github.com/canonical/tdx/?tab=readme-ov-file#51-create-a-new-td-image) and [Boot TD](https://github.com/canonical/tdx/?tab=readme-ov-file#61-boot-td-with-qemu-using-run_td-script)
+5. `[one TD]` [Create TD Image](https://github.com/canonical/tdx/?tab=readme-ov-file#51-create-a-new-td-image) and [Boot TD](https://github.com/canonical/tdx/?tab=readme-ov-file#61-boot-td-with-qemu-using-run_td-script)
 
 
 ### Prepare the cluster
 
-1. Follow the steps to [deploy kubernetes cluster](../README.md#pre-installation). `[single TD]` Make sure to deploy the cluster inside the TD.
+1. Follow the steps to [deploy kubernetes cluster](../README.md#pre-installation). 
 
-2. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
+2. `[one TD]` Make sure to deploy the cluster inside the TD and check if NRI kubernetes plugin is enabled. Run device injector at index 10:
+   
+   ```bash
+   git clone https://github.com/containerd/nri.git
+   cd nri/plugins/device-injector
+   go build
+   ./device-injector -idx 10
+   ```
 
-3. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
+3. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
+
+4. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
 
 
 ### Build Enterprise RAG images
 
 Follow the steps below to build Enterprise RAG images:
 
-1. Make sure that you have exported the KBS_ADDRESS, which points to the Key Broker Service (KBS):
-
-   ```bash
-   export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
-   ```
-
-2. Set the environment variables:
+1. Set the environment variables:
 
    ```bash
    export REGISTRY="your_container_registry"
    export TAG="your_tag"
    ```
 
-3. Login to your registry:
+2. Login to your registry:
 
    ```bash
    docker login your_container_registry
    ```
 
-4. Push the images to your container registry:
+3. Push the images to your container registry:
 
    ```bash
    ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
@@ -120,20 +123,41 @@ Follow the steps below to deploy Enterprise RAG:
    kubeconfig: ""   # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
    registry: ""     # Provide your_container_registry
    tag: ""          # Provide your_tag
-   tdxEnabled: true|false # Set to true to enable Intel TDX with `[CoCo]`.
-                          # If you deploy eRAG in `[single TD]` it must be set to false
-   tdxAttestation: true|false # Set to true to enable TDX based attestation of `[single TD]`
+   tdx:
+      enabled: true|false  # Set to true to enable Intel TDX.
+      td_type: one-td|coco # Set accordingly to your deployment case: [one TD]/[CoCo] 
+      attestation:
+         enabled: true|false # [one TD] Set to true to enable TDX based attestation.
    ```
 
-6.  Deploy eRAG
+6. `[OPTIONAL]` `[one TD]` Provide attestation infrastracture
+   
+   Build KBS client on VM and add place it under `/opt/trustee/target/release`.
+   
+   ```bash
+   git clone -b {{ kbs_ver }} https://github.com/confidential-containers/trustee
+   cd trustee/kbs
+   make cli ATTESTER=tdx-attester
+   mkdir -p /opt/trustee/target/release
+   cp trustee/target/release/kbs-client /opt/trustee/target/release
+   ```
 
+7.  Deploy eRAG
+   
+   Make sure that you have exported the KBS_ADDRESS, which points to the Key Broker Service (KBS): 
+   
+   ```bash
+   export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
+   ```
+   Now you can deploy erag:
+   
    ```bash
     ansible-playbook playbooks/application.yaml -e @inventory/sample/config.yaml --tags install
    ```
 
 ## Protected services
 
-`[single TD]` All microservices are protected by Intel TDX, as all pods run inside a single Trust Domain (TD).
+`[one TD]` All microservices are protected by Intel TDX, as all pods run inside a single Trust Domain (TD).
 
 `[CoCo]` All microservices under following namespaces are protected with Intel TDX:
 

@@ -113,7 +113,7 @@
 #   Commented due to lack of port forwarding enabled in kata
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ keycloak.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
-#       if (tdxEnabled is defined and tdxEnabled) else omit }}"
+#       if tdx.coco.enabled else omit }}"
     wait: true
   tags:
     - install

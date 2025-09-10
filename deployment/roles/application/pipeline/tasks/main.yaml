@@ -102,7 +102,7 @@
       {{
         [gmc.helm.default_values_file] +
         [gmc.helm.default_resources_file] +
-        ([gmc.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([gmc.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
         ([helm_resources_path] if item.resourcesPath is defined else []) +
         ([helm_override_resources_path] if (balloons is defined and (balloons.enabled | bool)) else []) +
         [helm_override_values_path] +

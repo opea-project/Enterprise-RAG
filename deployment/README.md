@@ -146,7 +146,12 @@ helm_timeout: "10m0s"
 
 hpaEnabled: false # enables Horizontal Pod Autoscaler
 enforcePSS: false # enforces Pod Security Standards
-tdxEnabled: false # enables Intel® Trust Domain Extensions
+
+tdx: # enables Intel® Trust Domain Extensions
+  enabled: false
+  td_type: one-td # one-td/coco
+  attestation:
+      enabled: false
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"

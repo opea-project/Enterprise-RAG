@@ -13,14 +13,14 @@
 - name: Load tdx system variable
   ansible.builtin.set_fact:
     KBS_ADDRESS: "{{ lookup('env', 'KBS_ADDRESS') }}"
-  when: tdxEnabled is defined and tdxEnabled
+  when: tdx.coco.enabled
   tags:
     - install
 
 - name: Fail if KBS_ADDRESS is null or empty
   ansible.builtin.fail:
     msg: "KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable."
-  when: tdxEnabled is defined and tdxEnabled and (KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0)
+  when: tdx.coco.enabled and (KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0)
   tags:
     - install
 

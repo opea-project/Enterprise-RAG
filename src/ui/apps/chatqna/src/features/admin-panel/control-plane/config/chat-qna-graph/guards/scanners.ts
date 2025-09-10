@@ -5,7 +5,6 @@ import { ServiceArgumentCheckboxValue } from "@/features/admin-panel/control-pla
 import { ServiceArgumentNumberInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import { ServiceArgumentSelectInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import { ServiceArgumentTextInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import { ServiceArgumentThreeStateSwitchValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import {
   caseSensitive,
   containsAll,
@@ -93,8 +92,8 @@ export interface BanSubstringsScannerArgs
   substrings: ServiceArgumentTextInputValue;
   match_type: ServiceArgumentSelectInputValue;
   case_sensitive: ServiceArgumentCheckboxValue;
-  redact: ServiceArgumentThreeStateSwitchValue;
-  contains_all: ServiceArgumentThreeStateSwitchValue;
+  redact: ServiceArgumentCheckboxValue;
+  contains_all: ServiceArgumentCheckboxValue;
 }
 
 export interface CodeScannerArgs
@@ -145,7 +144,7 @@ export interface RegexScannerArgs
   enabled: ServiceArgumentCheckboxValue;
   patterns: ServiceArgumentTextInputValue;
   match_type: ServiceArgumentSelectInputValue;
-  redact: ServiceArgumentThreeStateSwitchValue;
+  redact: ServiceArgumentCheckboxValue;
 }
 
 export interface BanTopicsScannerArgs

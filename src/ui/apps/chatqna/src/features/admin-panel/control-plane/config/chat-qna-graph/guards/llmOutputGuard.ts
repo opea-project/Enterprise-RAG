@@ -38,8 +38,8 @@ export const llmOutputGuardArgumentsDefault: LLMOutputGuardArgs = {
     substrings: null,
     match_type: "str",
     case_sensitive: false,
-    redact: null,
-    contains_all: null,
+    redact: false,
+    contains_all: false,
   },
   code: {
     enabled: false,

@@ -8,7 +8,6 @@ import { ServiceArgumentNumberInputValue } from "@/features/admin-panel/control-
 import { ServiceArgumentSelectInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import { ServiceArgumentTextAreaValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentTextArea/ServiceArgumentTextArea";
 import { ServiceArgumentTextInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import { ServiceArgumentThreeStateSwitchValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
 import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
 import { LLMArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
@@ -21,7 +20,6 @@ export type ServiceArgumentInputValue =
   | ServiceArgumentNumberInputValue
   | ServiceArgumentSelectInputValue
   | ServiceArgumentTextInputValue
-  | ServiceArgumentThreeStateSwitchValue
   | ServiceArgumentTextAreaValue;
 
 export type OnArgumentValueChangeHandler = (

@@ -27,5 +27,4 @@ export * from "@/SelectInput/SelectInput";
 export * from "@/Switch/Switch";
 export * from "@/TextAreaInput/TextAreaInput";
 export * from "@/TextInput/TextInput";
-export * from "@/ThreeStateSwitch/ThreeStateSwitch";
 export * from "@/Tooltip/Tooltip";

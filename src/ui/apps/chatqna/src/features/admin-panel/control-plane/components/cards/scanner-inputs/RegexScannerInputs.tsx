@@ -6,7 +6,6 @@ import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import ServiceArgumentThreeStateSwitch from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import {
   RegexScannerArgs,
   RegexScannerConfig,
@@ -43,10 +42,10 @@ const RegexScannerInputs = ({
         value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
       />
-      <ServiceArgumentThreeStateSwitch
+      <ServiceArgumentCheckbox
         {...config.redact}
         value={previousArgumentsValues.redact}
-        onChange={handleArgumentValueChange}
+        onArgumentValueChange={handleArgumentValueChange}
       />
     </>
   );

@@ -63,8 +63,8 @@ export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
     substrings: null,
     match_type: "str",
     case_sensitive: false,
-    redact: null,
-    contains_all: null,
+    redact: false,
+    contains_all: false,
   },
   code: {
     enabled: false,
@@ -78,7 +78,7 @@ export const llmInputGuardArgumentsDefault: LLMInputGuardArgs = {
     enabled: false,
     patterns: null,
     match_type: "all",
-    redact: null,
+    redact: false,
   },
   ban_topics: {
     enabled: false,

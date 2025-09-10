@@ -6,7 +6,6 @@ import ScannerInputsTitle from "@/features/admin-panel/control-plane/components/
 import ServiceArgumentCheckbox from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
 import ServiceArgumentTextInput from "@/features/admin-panel/control-plane/components/ServiceArgumentTextInput/ServiceArgumentTextInput";
-import ServiceArgumentThreeStateSwitch from "@/features/admin-panel/control-plane/components/ServiceArgumentThreeStateSwitch/ServiceArgumentThreeStateSwitch";
 import {
   BanSubstringsScannerArgs,
   BanSubstringsScannerConfig,
@@ -51,15 +50,15 @@ const BanSubstringsScannerInputs = ({
         value={previousArgumentsValues.case_sensitive}
         onArgumentValueChange={handleArgumentValueChange}
       />
-      <ServiceArgumentThreeStateSwitch
+      <ServiceArgumentCheckbox
         {...config.redact}
         value={previousArgumentsValues.redact}
-        onChange={handleArgumentValueChange}
+        onArgumentValueChange={handleArgumentValueChange}
       />
-      <ServiceArgumentThreeStateSwitch
+      <ServiceArgumentCheckbox
         {...config.contains_all}
         value={previousArgumentsValues.contains_all}
-        onChange={handleArgumentValueChange}
+        onArgumentValueChange={handleArgumentValueChange}
       />
     </>
   );

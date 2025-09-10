@@ -96,7 +96,7 @@
           - nfs-kernel-server
         state: present
         update_cache: true
-      when: 
+      when:
         - ansible_distribution == "Ubuntu"
         - install_csi == "netapp-trident"
 

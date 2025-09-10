@@ -33,7 +33,7 @@ trident_storage_class: "netapp-trident" # StorageClass name for Trident
 trident_backend_name: "ontap-nas"     # Backend configuration name
 # ONTAP Backend Configuration - FILL THESE VALUES
 ontap_management_lif: ""              # ONTAP management LIF IP address
-ontap_data_lif: ""                    # ONTAP data LIF IP address  
+ontap_data_lif: ""                    # ONTAP data LIF IP address
 ontap_svm: ""                         # Storage Virtual Machine (SVM) name
 ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
@@ -229,3 +229,4 @@ vector_databases:
   enabled: true
   namespace: vdb
   vector_store: redis-cluster # Supported: redis, redis-cluster
+

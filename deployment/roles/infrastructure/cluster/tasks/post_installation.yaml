@@ -28,14 +28,6 @@
     - install
     - post-install
 
-- name: NetApp Trident CSI role
-  ansible.builtin.include_role:
-    name: netapp_trident_csi_setup
-  when: install_csi == "netapp-trident"
-  tags:
-    - install
-    - post-install
-
 - name: Velero role
   ansible.builtin.include_role:
     name: velero
@@ -54,12 +46,5 @@
   ansible.builtin.include_role:
     name: nfs_server_csi_setup
   when: install_csi == "nfs"
-  tags:
-    - delete
-
-- name: Uninstall NetApp Trident
-  ansible.builtin.include_role:
-    name: netapp_trident_csi_setup
-  when: install_csi == "netapp-trident"
   tags:
     - delete

@@ -7,7 +7,6 @@ deploy_k8s: false
 # Available options:
 # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
 # - "nfs": Use for multi-node deployment or single node with velero backup functionality; can be installed on existing K8s cluster using infrastructure playbook
-# - "netapp-trident": Use for NetApp ONTAP storage with Trident CSI driver; can be installed on existing K8s cluster using infrastructure playbook
 install_csi: "local-path-provisioner"
 
 # please use variables local_registry and insecure_registry together
@@ -23,21 +22,6 @@ nfs_node_name: "master-1"             # K8s node name on which to set up NFS ser
 nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
 nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
-
-# Setup when install_csi is "netapp-trident"
-# Configure NetApp Trident CSI driver for ONTAP storage
-# Requires existing NetApp ONTAP system with configured SVM
-trident_operator_version: "2506.0"    # Trident operator version (becomes 100.2506.0 in Helm chart)
-trident_namespace: "trident"          # Kubernetes namespace for Trident
-trident_storage_class: "netapp-trident" # StorageClass name for Trident
-trident_backend_name: "ontap-nas"     # Backend configuration name
-# ONTAP Backend Configuration - FILL THESE VALUES
-ontap_management_lif: ""              # ONTAP management LIF IP address
-ontap_data_lif: ""                    # ONTAP data LIF IP address
-ontap_svm: ""                         # Storage Virtual Machine (SVM) name
-ontap_username: ""                    # ONTAP username with admin privileges
-ontap_password: ""                    # ONTAP password
-ontap_aggregate: ""                   # ONTAP aggregate name for volume creation
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 
@@ -234,4 +218,3 @@ vector_databases:
   enabled: true
   namespace: vdb
   vector_store: redis-cluster # Supported: redis, redis-cluster
-

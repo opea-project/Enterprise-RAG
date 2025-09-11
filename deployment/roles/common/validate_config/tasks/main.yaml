@@ -43,7 +43,7 @@
   ansible.builtin.set_fact:
     config_valid: false
     invalid_csi: "{{ install_csi }}"
-  when: install_csi is defined and install_csi | length > 0 and install_csi not in ['local-path-provisioner', 'nfs', 'netapp-trident']
+  when: install_csi is defined and install_csi | length > 0 and install_csi not in ['local-path-provisioner', 'nfs']
   tags:
     - config
 

@@ -178,7 +178,6 @@ deploy_k8s: false
 # Available options:
 # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
 # - "nfs": Use for multi-node deployment or single node with velero backup functionality; can be installed on existing K8s cluster using infrastructure playbook
-# - "netapp-trident": Use for enterprise deployments with NetApp ONTAP storage backend; provides ReadWriteMany support with enterprise features
 install_csi: "local-path-provisioner"
 
 # please use variables local_registry and insecure_registry together
@@ -194,19 +193,6 @@ nfs_node_name: "master-1"             # K8s node name on which to set up NFS ser
 nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
 nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
-
-# Setup when install_csi is "netapp-trident"
-# NetApp Trident CSI configuration for ONTAP storage backend
-# Requires Ubuntu for NFS utilities installation
-# SECURITY NOTE: Replace placeholder values with actual configuration
-# Credentials will be stored securely in Kubernetes secrets
-trident_operator_version: "2506.0"    # NetApp Trident operator version
-ontap_management_lif: "FILL_HERE"     # ONTAP management LIF IP address
-ontap_data_lif: "FILL_HERE"           # ONTAP data LIF IP address  
-ontap_svm: "FILL_HERE"                # ONTAP Storage Virtual Machine name
-ontap_aggregate: "FILL_HERE"          # ONTAP aggregate name for volume provisioning
-ontap_username: "FILL_HERE"           # ONTAP admin username (stored in Kubernetes secret)
-ontap_password: "FILL_HERE"           # ONTAP admin password (stored in Kubernetes secret)
 
 huggingToken: FILL_HERE # Provide your Hugging Face token here
 
@@ -229,7 +215,6 @@ pipelines:
 > **Note:** The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.  
 > Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
 > Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.  
-> Set `install_csi: netapp-trident` if you are deploying with NetApp ONTAP storage backend for enterprise-grade storage with advanced features.  
 > [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included.
 
 3. **(Optional) Validate hardware resources and config.yaml:**
@@ -269,9 +254,7 @@ To prepare your cluster:
 1. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
    - Set `deploy_k8s: false` and update the other fields as needed for your environment (see the [Configuration File](#configuration-file) section for details).
-   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included).
-   - If you need NetApp Trident, set `install_csi: netapp-trident` and configure the ONTAP-related variables.
-   - If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
+   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included). If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
 
    Example `config.yaml` for deploying on an existing cluster:
     ```yaml
@@ -281,7 +264,6 @@ To prepare your cluster:
     # Available options:
     # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
     # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
-    # - "netapp-trident": Use for enterprise deployments with NetApp ONTAP storage backend; provides ReadWriteMany support with enterprise features
     install_csi: "local-path-provisioner"
     
     # please use variables local_registry and insecure_registry together
@@ -297,19 +279,6 @@ To prepare your cluster:
     nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
     nfs_csi_driver_version: "4.11.0"
     nfs_csi_storage_class: "nfs-csi"
-
-    # Setup when install_csi is "netapp-trident"
-    # NetApp Trident CSI configuration for ONTAP storage backend
-    # Requires Ubuntu for NFS utilities installation
-    # SECURITY NOTE: Replace placeholder values with actual configuration
-    # Credentials will be stored securely in Kubernetes secrets
-    trident_operator_version: "2506.0"    # NetApp Trident operator version
-    ontap_management_lif: "FILL_HERE"     # ONTAP management LIF IP address
-    ontap_data_lif: "FILL_HERE"           # ONTAP data LIF IP address  
-    ontap_svm: "FILL_HERE"                # ONTAP Storage Virtual Machine name
-    ontap_username: "FILL_HERE"           # ONTAP admin username (stored in Kubernetes secret)
-    ontap_password: "FILL_HERE"           # ONTAP admin password (stored in Kubernetes secret)
-    ontap_aggregate: "FILL_HERE"          # ONTAP aggregate name for volume provisioning
 
     huggingToken: FILL_HERE # Provide your Hugging Face token here
     

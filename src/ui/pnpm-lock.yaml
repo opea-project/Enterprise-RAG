@@ -7,7 +7,6 @@ settings:
 overrides:
   esbuild@<=0.24.2: '>=0.25.0'
   prismjs@<1.30.0: '>=1.30.0'
-  lodash@<4.17.20: '>=4.17.21'
 
 importers:
 

@@ -79,15 +79,6 @@ spec:
       {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       affinity:
         nodeAffinity:
-          {{- if .Values.balloons.enabled }}
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: inference-eligible
-                    operator: In
-                    values:
-                      - "true"
-          {{- else }}
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 100
               preference:
@@ -96,7 +87,6 @@ spec:
                     operator: In
                     values:
                       - "true"
-          {{- end }}
       tolerations:
         - key: "inference_eligible"
           operator: "Equal"

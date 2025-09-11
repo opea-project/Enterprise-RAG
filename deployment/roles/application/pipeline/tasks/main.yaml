@@ -35,11 +35,26 @@
     dest: "{{ helm_override_resources_path }}"
     mode: '0644'
   vars:
-    maxReplicas: >-
+    maxReplicasVLLM: >-
       {{
         cpu_topology_per_node.values()
         | selectattr('amx_supported', 'equalto', true)
         | map(attribute='maxBalloonsVLLM')
+        | sum
+      }}
+    maxReplicasReranker: >-
+      {{
+        (
+          cpu_topology_per_node.values()
+          | selectattr('amx_supported', 'equalto', true)
+          | list
+          +
+          cpu_topology_per_node.values()
+          | selectattr('gaudi', 'equalto', true)
+          | rejectattr('amx_supported', 'equalto', true)
+          | list
+        )
+        | map(attribute='maxBalloonsReranker')
         | sum
       }}
   when: balloons is defined and (balloons.enabled | bool)

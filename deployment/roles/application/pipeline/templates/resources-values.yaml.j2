@@ -7,5 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 services:
   vllm:
     hpa:
-      maxReplicas: {{ maxReplicas }}
+      maxReplicas: {{ maxReplicasVLLM }}
+  torchserve_reranking:
+    hpa:
+      maxReplicas: {{ maxReplicasReranker }}
 {% endif %}

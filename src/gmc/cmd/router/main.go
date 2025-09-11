@@ -1104,6 +1104,62 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 
 			elapsedTimeMilisecond := float64(time.Since(tokenStartTime)) / float64(time.Millisecond)
 
+			if err != nil && err != io.EOF {
+				otlpr.WithContext(log, ctx).Error(err, "failed to read from response body")
+				spanTokens.RecordError(err)
+				spanTokens.SetStatus(codes.Error, err.Error())
+				spanTokens.End()
+				http.Error(w, "failed to read from response body", http.StatusInternalServerError)
+				return
+			}
+
+			if n == 0 {
+				break
+			}
+
+			// Check if this is a json: response or already identified as one
+            currentChunk := string(buffer[:n])
+			isJSONStart := strings.HasPrefix(currentChunk, "json:")
+			isDataDoneWithJSON := strings.HasPrefix(currentChunk, "data:") &&
+									strings.Contains(currentChunk, "[DONE]") &&
+									strings.Contains(currentChunk, "json:")
+
+            if isJSONStart || isDataDoneWithJSON {
+                remainingBytes, readErr := io.ReadAll(responseBody)
+				if readErr != nil {
+					otlpr.WithContext(log, ctx).Error(readErr, "failed to read remaining response body after json: prefix")
+					spanTokens.RecordError(readErr)
+					spanTokens.SetStatus(codes.Error, readErr.Error())
+					spanTokens.End()
+					http.Error(w, "failed to read request body", http.StatusBadRequest)
+					return
+				}
+
+				// Combine first chunk with remaining data
+        		fullResponse := currentChunk + string(remainingBytes)
+
+				w.Header().Set("Content-Type", "application/json")
+				if _, err := w.Write([]byte(fullResponse)); err != nil {
+					otlpr.WithContext(log, ctx).Error(err, "failed to write json response")
+					spanTokens.RecordError(err)
+					spanTokens.SetStatus(codes.Error, err.Error())
+					spanTokens.End()
+					return
+				}
+				// Flush the data to the client immediately
+				if flusher, ok := w.(http.Flusher); ok {
+					flusher.Flush()
+				} else {
+					err := errors.New("unable to flush data")
+					otlpr.WithContext(log, ctx).Error(err, "ResponseWriter does not support flushing")
+					spanTokens.RecordError(err)
+					spanTokens.SetStatus(codes.Error, err.Error())
+					spanTokens.End()
+					return
+				}
+				break
+            }
+
 
 			if !firstTokenCollected {
 				firstTokenCollected = true
@@ -1118,22 +1174,9 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				llmNextTokenLatencyCount += 1.0
 			}
 
-			if err != nil && err != io.EOF {
-				otlpr.WithContext(log, ctx).Error(err, "failed to read from response body")
-				spanTokens.RecordError(err)
-				spanTokens.SetStatus(codes.Error, err.Error())
-				spanTokens.End()
-				http.Error(w, "failed to read from response body", http.StatusInternalServerError)
-				return
-			}
-
-			if n == 0 {
-				break
-			}
-
 			// The following code handles NON_STREAMING responses from the LLM or Output Guardrials
-			if !(strings.HasPrefix(string(buffer[:n]), "data:") || strings.HasPrefix(string(buffer[:n]), "json:")) {
-				collectedParts = append(collectedParts, string(buffer[:n]))
+			if !(strings.HasPrefix(currentChunk, "data:")) {
+				collectedParts = append(collectedParts, currentChunk)
 				if err == io.EOF {
 					// Concatenate all parts into a single JSON string
 					fullJSON := strings.Join(collectedParts, "")

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
@@ -70,7 +71,7 @@ class VLLMConnector:
                     if isinstance(input.data, dict):
                         data = { "reranked_docs": reranked_docs_output }
                         logger.debug(f"[llm - chat_stream] appending json data: {data}")
-                        yield f"json: {data}\n\n"
+                        yield f"json: {json.dumps(data)}\n\n"
                     else:
                         logger.debug("Not appending json data since it is not a dict")
 

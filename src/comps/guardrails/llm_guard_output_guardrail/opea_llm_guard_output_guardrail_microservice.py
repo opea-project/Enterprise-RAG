@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 import os
 import time
 
@@ -100,7 +101,7 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
                 if isinstance(doc.data, dict):
                     data = { "reranked_docs": doc.data.get("reranked_docs", []) }
                     logger.debug(f"[guard - chat_stream] appending json data: {data}")
-                    yield f"json: {data}\n\n"
+                    yield f"json: {json.dumps(data)}\n\n"
                 else:
                     logger.debug("Not appending json data since it is not a dict")
             except Exception as e:

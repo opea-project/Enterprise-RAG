@@ -62,6 +62,7 @@ class TextDoc(BaseDoc, TopologyInfo):
         raise ValueError("TextDoc must have either 'url' or both 'bucket_name' and 'object_name' in metadata to convert to RerankedDoc.")
 
 class RerankedBaseDoc(BaseDoc):
+    text: str = "" # chunk text
     vector_distance: float = 1.0 # max far away
     reranker_score: float = 0.0 # lowest score
     citation_id: int = 0

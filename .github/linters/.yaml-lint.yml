@@ -6,6 +6,7 @@ ignore: |
   deployment/microservices-connector/helm/templates/*.yaml
   telemetry/helm/charts/logs/templates/*.yaml
   /workspace/telemetry/helm/charts/logs/templates/*.yaml
+  deployment/roles/infrastructure/netapp_trident_csi_setup/templates/*.yaml.j2
 
 rules:
   braces:

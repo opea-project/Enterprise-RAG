@@ -1,0 +1,13 @@
+# NetApp Trident CSI Setup - Default Variables
+trident_operator_version: "2506.0"
+trident_namespace: "trident"
+trident_storage_class: "netapp-trident"
+trident_backend_name: "ontap-nas"
+
+# ONTAP Backend Configuration
+ontap_management_lif: ""
+ontap_data_lif: ""
+ontap_svm: ""
+ontap_username: ""
+ontap_password: ""
+ontap_aggregate: ""

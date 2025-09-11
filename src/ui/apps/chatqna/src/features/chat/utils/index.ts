@@ -19,11 +19,24 @@ export const createChatTurnsFromHistory = (
     sources: metadata?.reranked_docs ?? [],
   }));
 
-export const createUniqueSources = (sources: SourceDocumentType[]) =>
-  Array.from(
-    new Map(
-      sources
-        .filter((src) => src.citation_id)
-        .map((src) => [src.citation_id, src]),
-    ).values(),
-  );
+export const parseSources = (sources: SourceDocumentType[]) =>
+  sources.reduce((parsedSources, source) => {
+    const existingSource = parsedSources.find(
+      (s) => s.citation_id === source.citation_id,
+    );
+    if (existingSource) {
+      if (!existingSource.citations) {
+        existingSource.citations = [];
+      }
+      if (source.text) {
+        existingSource.citations.push(source.text);
+      }
+    } else {
+      if (!source.text) {
+        parsedSources.push(source);
+        return parsedSources;
+      }
+      parsedSources.push({ ...source, citations: [source.text] });
+    }
+    return parsedSources;
+  }, [] as SourceDocumentType[]);

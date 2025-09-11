@@ -8,6 +8,8 @@ interface Source {
   reranker_score: number;
   type: SourceType;
   citation_id: number;
+  text?: string;
+  citations?: string[];
 }
 
 export interface FileSource extends Source {

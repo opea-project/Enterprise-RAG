@@ -4,8 +4,8 @@
 import { Button } from "@intel-enterprise-rag-ui/components";
 import { useState } from "react";
 
-import FileSourceItem from "@/features/chat/components/FileSourceItem/FileSourceItem";
-import LinkSourceItem from "@/features/chat/components/LinkSourceItem/LinkSourceItem";
+import FileSourceItem from "@/features/chat/components/FileSourceDialog/FileSourceDialog";
+import LinkSourceItem from "@/features/chat/components/LinkSourceDialog/LinkSourceDialog";
 import { SourceDocumentType } from "@/features/chat/types";
 
 const VISIBLE_SOURCES_OFFSET = 3;

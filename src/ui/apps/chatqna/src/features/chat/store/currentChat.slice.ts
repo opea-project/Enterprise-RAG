@@ -4,7 +4,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { SourceDocumentType } from "@/features/chat/types";
-import { createUniqueSources } from "@/features/chat/utils";
+import { parseSources } from "@/features/chat/utils";
 import { RootState } from "@/store";
 import { ChatTurn } from "@/types";
 
@@ -75,7 +75,7 @@ export const currentChatSlice = createSlice({
       );
     },
     updateSources: (state, action: PayloadAction<SourceDocumentType[]>) => {
-      const sources = createUniqueSources(action.payload);
+      const sources = parseSources(action.payload);
       state.chatTurns = state.chatTurns.map((turn) =>
         turn.id === state.currentChatTurnId
           ? {

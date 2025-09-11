@@ -70,14 +70,7 @@ export const handleChatStreamResponse = async (
 
       // handling JSON data event for reranked documents aka sources
       if (event.startsWith("json:")) {
-        // Replace single quotes with double quotes only around field names and string values, not inside values
-        const jsonText = event
-          .slice(5)
-          .trim()
-          // Replace single quotes around field names: 'field': -> "field":
-          .replace(/'([^']+?)'\s*:/g, '"$1":')
-          // Replace single quotes around string values: : 'value' -> : "value"
-          .replace(/:\s*'([^']*?)'/g, ': "$1"');
+        const jsonText = event.slice(5).trim();
         try {
           const sourcesDataObject = JSON.parse(jsonText);
           const rerankedDocs = sourcesDataObject.reranked_docs || [];

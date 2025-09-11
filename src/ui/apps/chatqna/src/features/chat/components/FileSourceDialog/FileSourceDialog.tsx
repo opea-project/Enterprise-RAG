@@ -1,23 +1,22 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { IconButton, Tooltip } from "@intel-enterprise-rag-ui/components";
 import { FileIcon } from "@intel-enterprise-rag-ui/icons";
 
 import {
   useGetFilePresignedUrlMutation,
   useLazyDownloadFileQuery,
 } from "@/api";
-import SourceItem from "@/features/chat/components/SourceItem/SourceItem";
+import SourceDialog from "@/features/chat/components/SourceDialog/SourceDialog";
 import { FileSource } from "@/features/chat/types";
 
-interface FileSourceItemProps {
+interface FileSourceDialogProps {
   source: FileSource;
 }
 
-const FileSourceItem = ({
-  source: { object_name: fileName, bucket_name: bucketName },
-}: FileSourceItemProps) => {
+const FileSourceDialog = ({
+  source: { object_name: fileName, bucket_name: bucketName, citations },
+}: FileSourceDialogProps) => {
   const [downloadFile] = useLazyDownloadFileQuery();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
 
@@ -34,23 +33,14 @@ const FileSourceItem = ({
   };
 
   return (
-    <SourceItem
-      icon={<FileIcon />}
+    <SourceDialog
       name={fileName}
-      actions={
-        <Tooltip
-          title="Download"
-          trigger={
-            <IconButton
-              icon="download"
-              size="sm"
-              onPress={handleDownloadBtnPress}
-            />
-          }
-        />
-      }
+      triggerIcon={<FileIcon />}
+      actionLabel="Download"
+      citations={citations}
+      onAction={handleDownloadBtnPress}
     />
   );
 };
 
-export default FileSourceItem;
+export default FileSourceDialog;

@@ -38,7 +38,7 @@ import {
 } from "@/features/chat/types/api";
 import {
   createChatTurnsFromHistory,
-  createUniqueSources,
+  parseSources,
 } from "@/features/chat/utils";
 import {
   isChatErrorResponse,
@@ -135,7 +135,7 @@ const useChat = () => {
 
   const onSourcesUpdate: SourcesUpdateHandler = (sources) => {
     dispatch(updateSources(sources));
-    currentSourcesRef.current = createUniqueSources(sources);
+    currentSourcesRef.current = parseSources(sources);
   };
 
   const onResponseFinished = () => {

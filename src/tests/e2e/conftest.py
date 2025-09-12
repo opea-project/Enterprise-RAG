@@ -155,8 +155,12 @@ def collect_k8s_logs(request):
         for pod in pods:
             pod_name = pod.metadata.name
             log_file = os.path.join(log_dir, f"{namespace}_{pod_name}.log")
-
-            logs = "\n".join(pod.logs(since_time=test_start_time))
+            try:
+                logs = "\n".join(pod.logs(since_time=test_start_time))
+            except Exception as e:
+                logger.warning(f"Failed to read logs for pod {pod_name} in namespace {namespace}. "
+                               f"Pod might have already been deleted. Exception: {e}")
+                continue
             with open(log_file, "w") as f:
                 f.write(logs)
     logger.info(f"Logs collected in {log_dir}")

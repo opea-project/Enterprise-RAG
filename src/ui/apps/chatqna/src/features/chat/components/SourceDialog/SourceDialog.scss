@@ -5,7 +5,7 @@
   @apply grid grid-cols-[2.25rem_1fr] items-center gap-0;
   @apply h-10 w-full rounded p-0;
   @apply bg-light-bg-2 dark:bg-dark-bg-2;
-  @apply hover:bg-light-bg-2/80 dark:hover:bg-dark-bg-2/80;
+  @apply hover:bg-light-primary/20 dark:hover:bg-dark-bg-2/80;
 
   .source-dialog__trigger__icon {
     @apply bg-light-primary dark:bg-dark-primary;
@@ -17,6 +17,7 @@
     @apply text-xs;
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
     @apply pl-3 pr-3;
+    @apply text-light-text-primary dark:text-dark-text-primary;
   }
 }
 
@@ -28,8 +29,9 @@
   }
 
   & .source-dialog__citations-list {
-    @apply mb-4 grid grid-cols-[1.5rem_1fr] items-start gap-3;
-    @apply max-h-[50vh] overflow-y-auto;
+    @apply mb-4 pr-4;
+    @apply grid grid-cols-[1.5rem_1fr] items-start gap-3;
+    @apply max-h-[50vh] overflow-y-auto [overflow-wrap:anywhere];
   }
 
   & .source-dialog__citation-index {

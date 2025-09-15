@@ -139,7 +139,7 @@ certs:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.4.0"
+tag: "1.5.0"
 setup_registry: true # this is localhost registry that may be used for localhost one-node deployment
 use_alternate_tagging: false # changes format of images from registry/image:tag to registry:image_tag
 helm_timeout: "10m0s"

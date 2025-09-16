@@ -11,16 +11,38 @@ The Embedding Microservice is designed to efficiently convert textual strings in
 
 Users are able to configure and build embedding-related services according to their actual needs.
 
+## Table of Contents
+
+1. [Embeddings Microservice](#embeddings-microservice)
+2. [Support Matrix](#support-matrix)
+3. [Configuration Options](#configuration-options)
+4. [Getting Started](#getting-started)
+   - 4.1. [Prerequisite: Start Embedding Model Server](#prerequisite-start-embdedding-model-server)
+   - 4.2. [🚀 Start Embedding Microservice with Python (Option 1)](#-start-embedding-microservice-with-python-option-1)
+     - 4.2.1. [Install Requirements](#install-requirements)
+     - 4.2.2. [Start Microservice](#start-microservice)
+   - 4.3. [🚀 Start Embedding Microservice with Docker (Option 2)](#-start-embedding-microservice-with-docker-option-2)
+     - 4.3.1. [Build the Docker Image](#build-the-docker-image)
+     - 4.3.2. [Run the Docker Container](#run-the-docker-container)
+   - 4.4. [Verify the Embedding Microservice](#verify-the-embedding-microservice)
+     - 4.4.1. [Check Status](#check-status)
+     - 4.4.2. [Sending a Request](#sending-a-request)
+5. [Additional Information](#additional-information)
+   - 5.1. [Project Structure](#project-structure)
+   - 5.2. [Tests](#tests)
+
 ## Support matrix
 
 Support for specific model servers with Dockerfiles or build instruction.
 
 | Model server                | langchain | llama_index |
 | ------------                | ----------| ------------|
-| [torchserve](./impl/model-server/torchserve)  | &#x2713;  | &#x2717;    |
-| [TEI](./impl/model-server/tei/)                | &#x2713;  | &#x2713;    |
-| [OVMS](./impl/model-server/ovms)              | &#x2717;  | &#x2717;    |
-| [mosec](./impl/model-server/mosec)            | &#x2713;  | &#x2717;    |
+| [TorchServe](./impl/model_server/torchserve)  | &#x2713;  | &#x2717;    |
+| [TEI](./impl/model_server/tei/)                | &#x2713;  | &#x2713;    |
+| [OVMS](./impl/model_server/ovms)              | &#x2717;  | &#x2717;    |
+| [mosec](./impl/model_server/mosec)            | &#x2713;  | &#x2717;    |
+
+---
 
 ## Configuration Options
 
@@ -37,29 +59,33 @@ The configuration for the Embedding Microservice is specified in the [impl/micro
 
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-embedding-microservice-with-python-option-1)
+  - [via Docker](#-start-embedding-microservice-with-docker-option-2) **(recommended)**
+
 ### Prerequisite: Start Embdedding Model Server
 
 The Embedding Microservice interacts with an Embedding model endpoint, which must be operational and accessible at the the URL specified by the `EMBEDDING_MODEL_SERVER_ENDPOINT` env.
 
-Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service. 
+Depending on the model server you want to use, follow the approppriate instructions in the [./impl/model_server](./impl/model_server/) directory to set up and start the service.
 
 
-Currently, we provide these ways to implement a model server for an embedding:
+Currently there're 4 model servers supported:
 
-1. Build embedding model server based on the [**_TEI endpoint_**](./impl/model-server/tei/), which provides more flexibility, but may bring some network latency.
-2. Utilize [**_Torchserve_**](./impl/model-server/torchserve/), which supports [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch) for a performance boost on Intel-based Hardware.
-3. Utilize [**_Mosec_**](./impl/model-server/mosec/) to run a model server with Intel® Extension for PyTorch* optimizations.
-4. Run an embedding model server with [**_OVMS_**](./impl/model-server/ovms/) - an open source model server built on top of the OpenVINO™ toolkit, which enables optimized inference across a wide range of hardware platforms.
+1. Build embedding model server based on the [**_TEI endpoint_**](./impl/model_server/tei/), which provides more flexibility, but may bring some network latency.
+2. Utilize [**_Torchserve_**](./impl/model_server/torchserve/), which supports [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch) for a performance boost on Intel-based Hardware.
+3. Utilize [**_Mosec_**](./impl/model_server/mosec/) to run a model server with Intel® Extension for PyTorch* optimizations.
+4. Run an embedding model server with [**_OVMS_**](./impl/model_server/ovms/) - an open source model server built on top of the OpenVINO™ toolkit, which enables optimized inference across a wide range of hardware platforms.
 
 Refer to `README.md` of a particular library to get more information on starting a model server.
 
 
-## 🚀1. Start Embedding Microservice with Python (Option 1)
+## 🚀 Start Embedding Microservice with Python (Option 1)
 
-To start the Embedding microservice, you need to install all the dependencies first.
+To start the Embedding microservice, installing all the dependencies first is required.
 
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -68,15 +94,15 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_embedding_microservice.py
 ```
 
-### 🚀2. Start Embedding Microservice with Docker (Option 2)
+### 🚀 Start Embedding Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker Image:
+#### Build the Docker Image
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
@@ -85,7 +111,7 @@ docker build -t opea/embedding:latest -f comps/embeddings/impl/microservice/Dock
 ```
 Please note that the building process may take a while to complete.
 
-#### 2.2. Run the Docker Container:
+#### Run the Docker Container
 
 Ensure that the `EMBEDDING_CONNECTOR` corresponds to the specific image built with the relevant requirements. Below are examples for both Langchain and Llama Index:
 
@@ -134,9 +160,9 @@ docker run -d --name="embedding-microservice" \
 ```
 
 
-### 3. Verify the Embedding Microservice
+### Verify the Embedding Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
 curl http://localhost:6000/v1/health_check \
@@ -144,9 +170,9 @@ curl http://localhost:6000/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+####  Sending a Request
 
-The embedding microservice accepts input as either a single text string or multiple documents containing text. Below are examples of how to structure the reques
+The embedding microservice accepts input as either a single text string or multiple documents containing text.
 
 **Example Input**
 
@@ -228,4 +254,3 @@ The project is organized into several directories:
 
 #### Tests
 - `src/tests/unit/embeddings/`: Contains unit tests for the Embedding Microservice components
-

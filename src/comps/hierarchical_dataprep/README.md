@@ -1,6 +1,6 @@
 # Hierarchical Dataprep Microservice
 
-Hierarchical indices in an advanced Retrieval-Augmented Generation (RAG) technique that involves a structured indexing approach where data is organized in a multi-level hierarchy to improve the efficiency and relevance of information retrieval. This method is particularly useful when dealing with large-scale or complex datasets, as it allows the retrieval system to narrow down the search space progressively. This dataprep microservice implementation supports a two-level hierarchy where the first level stores pagewise summaries whereas the next level stores actual page content chunks. Each user query is processed by retrieving the k-nearest page summaries from level one followed by retrieval of corresponding page content chunks from level two. 
+Hierarchical indices in an advanced Retrieval-Augmented Generation (RAG) technique that involves a structured indexing approach where data is organized in a multi-level hierarchy to improve the efficiency and relevance of information retrieval. This method is particularly useful when dealing with large-scale or complex datasets, as it allows the retrieval system to narrow down the search space progressively. This dataprep microservice implementation supports a two-level hierarchy where the first level stores pagewise summaries whereas the next level stores actual page content chunks. Each user query is processed by retrieving the k-nearest page summaries from level one followed by retrieval of corresponding page content chunks from level two.
 
 This microservice is designed to extract text from data sent for processing. That data can be sent in form of .pdf files for further processing. The following operations are performed on the uploaded files.
 * The file is read as a list of pages.
@@ -10,7 +10,24 @@ This microservice is designed to extract text from data sent for processing. Tha
 
 The Result of this microservice can then be passed to embedding microservice and ultimately persisted in the system.
 
-# Support Matrix
+## Table of Contents
+
+1. [Hierarchical Dataprep Microservice](#hierarchical-dataprep-microservice)
+2. [Support Matrix](#support-matrix)
+3. [Configuration Options](#configuration-options)
+4. [Getting Started](#getting-started)
+   - 4.1. [🚀 Start Hierarchical Dataprep Microservice with Python (Option 1)](#-start-hierarchical-dataprep-microservice-with-python-option-1)
+     - 4.1.1. [Install Requirements](#install-requirements)
+     - 4.1.2. [Start Microservice](#start-microservice)
+   - 4.2. [🚀 Start Hierarchical Dataprep Microservice with Docker (Option 2)](#-start-hierarchical-dataprep-microservice-with-docker-option-2)
+     - 4.2.1. [Build the Docker service](#build-the-docker-service)
+     - 4.2.2. [Run the Docker container](#run-the-docker-container)
+   - 4.3. [Verify the Hierarchical Dataprep Microservice](#verify-the-chat-history-microservice)
+     - 4.3.1. [Example input](#example-input)
+       - 4.3.1.1. [File(s) dataprep](#files-dataprep)
+     - 4.3.2. [Example output](#example-output)
+
+## Support Matrix
 
 This microservice supports .pdf files only.
 
@@ -32,14 +49,15 @@ By default, files are saved to a directory under this container. Save path can b
 
 ## Getting started
 
-We offer 2 ways to run this microservice:
-  - [via Python](#running-the-microservice-via-python-option-1)
-  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+There're 2 ways to run this microservice:
+  - [via Python](#-start-hierarchical-dataprep-microservice-with-python-option-1)
+  - [via Docker](#-start-hierarchical-dataprep-microservice-with-docker-option-2) **(recommended)**
 
 
-### Running the microservice via Python (Option 1)
+### 🚀 Start Hierarchical Dataprep Microservice with Python (Option 1)
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -48,17 +66,16 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-Then start the microservice:
-
+#### Start Microservice
 ```bash
 python opea_hierarchical_dataprep_microservice.py
 ```
 
-### Running the microservice via Docker (Option 2)
+### 🚀 Start Hierarchical Dataprep Microservice with Docker (Option 2)
 
 Using a container is a preferred way to run the microservice.
 
-#### Build the docker service
+#### Build the Docker service
 
 Navigate to the `src` directory and use the docker build command to create the image:
 
@@ -67,7 +84,7 @@ cd ../.. # src/ directory
 docker build -t opea/hierarchical_dataprep:latest -f comps/hierarchical_dataprep/impl/microservice/Dockerfile .
 ```
 
-#### Run the docker container
+#### Run the Docker container
 
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command.
 
@@ -75,11 +92,12 @@ Remember, you can pass configuration variables by passing them via `-e` option i
 docker run -d --name="hierarchical-dataprep" --env-file comps/hierarchical_dataprep/impl/microservice/.env -p 9399:9399 opea/hierarchical_dataprep:latest
 ```
 
-### Example input
+### Verify the Hierarchical Dataprep Microservice
+#### Example input
 
 Hierarchical Dataprep microservice as an input accepts a json containing .pdf files encoded in base64. Example requests can be found in followings paragraphs.
 
-#### File(s) dataprep
+##### File(s) dataprep
 
 Files have to be encoded into Base64. This cURL format allows sending more data than using `-d`.
 
@@ -96,7 +114,7 @@ curl -X POST -H "Content-Type: application/json" -d @- http://localhost:9399/v1/
 JSON_DATA
 ```
 
-### Example output
+#### Example output
 
 As mentioned above, for each file, summaries are generated for pages and then the page is broken down into chunks.
 Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's a sample response for a file with 2 pages. Note that the summary docs have `summary: 1` whereas the chunk docs have `summary: 0`.
@@ -155,3 +173,16 @@ Text is chunked depenting on `CHUNK_SIZE` and `CHUNK_OVERLAP` parameters. Here's
   ]
 }
 ```
+
+## Additional Information
+
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains the implementation of the Hierarchical Dataprep microservice, including the Dockerfile and API endpoints.
+
+- `utils/`: This directory contains utility scripts and modules used by the Hierarchical Dataprep Microservice for database operations and llm connection.
+
+#### Tests
+- `src/tests/unit/chat_history/`: Contains unit tests for the Hierarchical Dataprep Microservice components

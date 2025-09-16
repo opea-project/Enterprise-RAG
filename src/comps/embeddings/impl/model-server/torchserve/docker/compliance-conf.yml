@@ -1,6 +1,0 @@
----
-dockerfile: "Dockerfile"
-docker_context: "../"
-dependencies:
-  - apt
-  - pip-uv

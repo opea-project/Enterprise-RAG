@@ -2,6 +2,25 @@
 
 The Chat History Microservice provides persistent storage and retrieval of chat conversations using MongoDB as the backend database. This microservice enables applications to maintain conversation history, allowing users to access previous interactions and continue conversations seamlessly. The service supports creating, retrieving, updating, and deleting chat conversations with proper user authentication and authorization.
 
+## Table of Contents
+
+1. [Chat History Microservice](#chat-history-microservice)
+2. [Configuration Options](#configuration-options)
+3. [Getting Started](#getting-started)
+   - 3.1. [Prerequisite: Start MongoDB Database Server](#prerequisite-start-mongodb-database-server)
+   - 3.2. [🚀 Start Chat History Microservice with Python (Option 1)](#-start-chat-history-microservice-with-python-option-1)
+     - 3.2.1. [Install Requirements](#install-requirements)
+     - 3.2.2. [Start Microservice](#start-microservice)
+   - 3.3. [🚀 Start Chat History Microservice with Docker (Option 2)](#-start-chat-history-microservice-with-docker-option-2)
+     - 3.3.1. [Build the Docker Image](#build-the-docker-image)
+     - 3.3.2. [Run the Docker Container](#run-the-docker-container)
+   - 3.4. [Verify the Chat History Microservice](#verify-the-chat-history-microservice)
+     - 3.4.1. [Check Status](#check-status)
+     - 3.4.2. [API Endpoints](#api-endpoints)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
+   - 4.2. [Tests](#tests)
+
 ---
 
 ## Configuration Options
@@ -16,19 +35,19 @@ The configuration for the Chat History Microservice is specified in the [impl/mi
 
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-chat-history-microservice-with-python-option-1)
+  - [via Docker](#-start-chat-history-microservice-with-docker-option-2) **(recommended)**
+
 ### Prerequisite: Start MongoDB Database Server
 The Chat History Microservice requires a MongoDB database to be operational and accessible. You can start MongoDB using Docker. Check out [MongoDB Readme](./impl/database/mongo/README.md) for more information.
 
-We offer 2 ways to run this microservice:
-  - [via Python](#running-the-microservice-via-python-option-1)
-  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+### 🚀 Start Chat History Microservice with Python (Option 1)
 
-### 🚀1. Start Chat History Microservice with Python (Option 1)
+To start the Chat History microservice, installing python packages is required.
 
-To start the Chat History microservice, you need to install python packages first.
-
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -37,14 +56,14 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 ```bash
 python opea_chat_history_microservice.py
 ```
 
-### 🚀2. Start Chat History Microservice with Docker (Option 2)
+### 🚀 Start Chat History Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker Image:
+#### Build the Docker Image
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
@@ -52,7 +71,7 @@ docker build -t opea/chat_history:latest -f comps/chat_history/impl/microservice
 ```
 Please note that the building process may take a while to complete.
 
-#### 2.2. Run the Docker Container:
+#### Run the Docker Container
 ```bash
 docker run -d --name="chat-history-microservice" \
   -p 6012:6012 \
@@ -62,16 +81,16 @@ docker run -d --name="chat-history-microservice" \
   opea/chat_history:latest
 ```
 
-### 3. Verify the Chat History Microservice
+### Verify the Chat History Microservice
 
-#### 3.1. Check Status
+#### Check Status
 ```bash
 curl http://localhost:6012/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```
 
-#### 3.2. API Endpoints
+#### API Endpoints
 
 The Chat History microservice exposes several endpoints to save, get, modify and delete the histories. The authorization happens through JWT token that needs to be added to the header.
 

@@ -1,0 +1,11 @@
+FROM torchserve_embedding-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/
+ENTRYPOINT ["/home/user/entrypoint.sh"]

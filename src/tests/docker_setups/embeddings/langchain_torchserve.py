@@ -78,8 +78,8 @@ class EmbeddingsLangchainTorchserveDockerSetup(EmbeddingsDockerSetup):
     def _build_model_server(self) -> Image:
         return self._build_image(
             self.ENDPOINT_IMAGE_NAME,
-            file=f"{self._main_src_path}/comps/embeddings/impl/model-server/torchserve/docker/Dockerfile",
-            context_path=f"{self._main_src_path}/comps/embeddings/impl/model-server/torchserve/",
+            file=f"{self._main_src_path}/comps/embeddings/impl/model_server/torchserve/docker/Dockerfile",
+            context_path=f"{self._main_src_path}/comps/embeddings/impl/model_server/torchserve/",
             **self.COMMON_BUILD_OPTIONS,
         )
 

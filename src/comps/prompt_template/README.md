@@ -2,6 +2,26 @@
 
 The Prompt Template Microservice is designed to dynamically generate prompt templates for large language models (LLMs). It allows users to customize the prompt format by specifying the context and question, ensuring that the generated prompts are tailored to the specific requirements of the application, and as the result enhance the interaction with LLMs by providing more relevant and context-aware prompts.
 
+## Table of Contents
+
+1. [Prompt Template Microservice](#prompt-template-microservice)
+2. [Configuration Options](#configuration-options)
+3. [Getting Started](#getting-started)
+   - 3.1. [🚀 Start Prompt Template Microservice with Python (Option 1)](#-start-prompt-template-microservice-with-python-option-1)
+     - 3.1.1. [Install Requirements](#install-requirements)
+     - 3.1.2. [Start Microservice](#start-microservice)
+   - 3.2. [🚀 Start Prompt Template Microservice with Docker (Option 2)](#-start-prompt-template-microservice-with-docker-option-2)
+     - 3.2.1. [Build the Docker Image](#build-the-docker-image)
+     - 3.2.2. [Run the Docker Container](#run-the-docker-container)
+   - 3.3. [Verify the Prompt Microservice](#verify-the-prompt-microservice)
+     - 3.3.1. [Check Status](#check-status)
+     - 3.3.2. [Sending a Request](#sending-a-request)
+       - 3.3.2.1. [Case 1: Using the Default Prompt Template](#case-1-using-the-default-prompt-template)
+       - 3.3.2.2. [Case 2: Using a Custom Prompt Template](#case-2-using-a-custom-prompt-template)
+       - 3.3.2.3. [Case 3: Using a Custom Prompt Template for a Specific Tasks](#case-3-using-a-custom-prompt-template-for-a-specific-tasks)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
+     - 4.1.1. [Tests](#tests)
 
 ## Configuration Options
 The configuration for the Prompt Template Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
@@ -13,13 +33,14 @@ The configuration for the Prompt Template Microservice is specified in the [impl
 
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-prompt-template-microservice-with-python-option-1)
+  - [via Docker](#-start-prompt-template-microservice-with-docker-option-2) **(recommended)**
 
-### 🚀1. Start Prompt Template Microservice with Python (Option 1)
+### 🚀 Start Prompt Template Microservice with Python (Option 1)
 
-To start the Prompt Template Microservice, you need to install python packages first.
-
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -28,22 +49,22 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_prompt_template_microservice.py
 ```
 
-### 🚀2. Start Prompt Template Microservice with Docker (Option 2)
+### 🚀 Start Prompt Template Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker Image
+#### Build the Docker Image
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
 docker build -t opea/prompt_template:latest -f comps/prompt_template/impl/microservice/Dockerfile .
 ```
 
-#### 2.2. Run the Docker Container
+#### Run the Docker Container
 ```bash
 docker run --rm --name="prompt-template-microservice" \
   -e https_proxy=${https_proxy} -e http_proxy=${http_proxy} -e no_proxy=${no_proxy} \
@@ -52,9 +73,9 @@ docker run --rm --name="prompt-template-microservice" \
   opea/prompt_template:latest
 ```
 
-### 3. Verify the Prompt Microservice
+### Verify the Prompt Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
 curl http://localhost:7900/v1/health_check \
@@ -62,7 +83,7 @@ curl http://localhost:7900/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+####  Sending a Request
 
 The `prompt_template` parameter allows you to specify a custom prompt template instead of using the [default one](utils/templates.py). The custom template must include placeholders that correspond to the input data fields to ensure validity and pass the validation checks. This feature provides greater flexibility and enables customization of prompts tailored to your specific requirements.
 
@@ -207,6 +228,15 @@ Output:
   "output_guardrail_params": null
 }
 ```
+
+## Additional Information
+
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains configuration files for the Prompt Template service, like Dockerfile.
+- `utils/`: This directory contains scripts that are used by the Prompt Template Microservice.
 
 #### Tests
 - `src/tests/unit/prompt_template/`: Contains unit tests for the Prompt Template Microservice components

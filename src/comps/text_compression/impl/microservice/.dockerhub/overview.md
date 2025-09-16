@@ -4,7 +4,7 @@ Part of the Intel® AI for Enterprise RAG (ERAG) ecosystem.
 
 ## 🔍 Overview
 
-This microservice is designed to compressed text from loaded documents. Result of this microservice can then be passed to Data Splitter microservice and, later, to Embedding microservice and ultimately persisted in the system.
+This microservice is designed to compress text from loaded documents. Result of this microservice can then be passed to Data Splitter microservice and, later, to Embedding microservice and ultimately persisted in the system.
 
 ## Support Matrix
 

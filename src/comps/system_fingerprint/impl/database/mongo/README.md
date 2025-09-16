@@ -1,4 +1,4 @@
-# MongoDB database
+# MongoDB Database
 
 This document focuses on using the [MongoDB](https://mongodb.com/) for System Fingerprint Microservice.
 

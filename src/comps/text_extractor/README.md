@@ -2,6 +2,27 @@
 
 This microservice is designed to extract text from data sent for processing. That data can be sent in form of files and/or links for scraping and further extraction. Result of this microservice can then be passed to text_splitter microservice for splitting into chunks and, later, to embedding microservice in order to ultimately persist in the system.
 
+## Table of Contents
+
+1. [Text Extractor Microservice](#text-extractor-microservice)
+2. [Support Matrix](#support-matrix)
+3. [Configuration Options](#configuration-options)
+4. [Getting Started](#getting-started)
+   - 4.1. [🚀 Start Text Extractor Microservice with Python (Option 1)](#-start-text-extractor-microservice-with-python-option-1)
+     - 4.1.1. [Install Requirements](#install-requirements)
+     - 4.1.2. [Start Microservice](#start-microservice)
+   - 4.2. [🚀 Start Text Extractor Microservice with Docker (Option 2)](#-start-text-extractor-microservice-with-docker-option-2)
+     - 4.2.1. [Build the Docker service](#build-the-docker-service)
+     - 4.2.2. [Run the Docker container](#run-the-docker-container)
+   - 4.3. [Verify the Text Extractor Microservice](#verify-the-text-extractor-microservice)
+     - 4.3.1. [Example input](#example-input)
+       - 4.3.1.1. [File(s) Text Extractor](#files-text-extractor)
+       - 4.3.1.2. [Link(s) Text Extractor](#links-text-extractor)
+     - 4.3.2. [Example output](#example-output)
+5. [Additional Information](#additional-information)
+   - 5.1. [Project Structure](#project-structure)
+     - 5.1.1. [Tests](#tests)
+
 ## Support Matrix
 
 Supported files that Text Extractor can extract data from:
@@ -58,14 +79,15 @@ By default, files are saved to a directory under this container. Save path can b
 
 This microservice requires access to external network services for example for downloading models for parsing specific file formats for text extraction.
 
-We offer 2 ways to run this microservice:
-  - [via Python](#running-the-microservice-via-python-option-1)
-  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+There're 2 ways to run this microservice:
+  - [via Python](#-start-text-extractor-microservice-with-python-option-1)
+  - [via Docker](#-start-text-extractor-microservice-with-docker-option-2) **(recommended)**
 
 
-### Running the microservice via Python (Option 1)
+### 🚀 Start Text Extractor Microservice with Python (Option 1)
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -74,17 +96,17 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml --extra c
 source impl/microservice/.venv/bin/activate
 ```
 
-Then start the microservice:
+#### Start Microservice
 
 ```bash
 python opea_text_extractor_microservice.py
 ```
 
-### Running the microservice via Docker (Option 2)
+### 🚀 Start Text Extractor Microservice with Docker (Option 2)
 
 Using a container is a preferred way to run the microservice.
 
-#### Build the docker service
+#### Build the Docker service
 
 Navigate to the `src` directory and use the docker build command to create the image:
 
@@ -93,7 +115,7 @@ cd ../.. # src/ directory
 docker build -t opea/text_extractor:latest -f comps/text_extractor/impl/microservice/Dockerfile .
 ```
 
-#### Run the docker container
+#### Run the Docker container
 
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command.
 
@@ -101,11 +123,12 @@ Remember, you can pass configuration variables by passing them via `-e` option i
 docker run -d --name="text_extractor" --env-file comps/text_extractor/impl/microservice/.env -p 9398:9398 opea/text_extractor:latest
 ```
 
-### Example input
+### Verify the Text Extractor Microservice
+#### Example input
 
 Text Extractor microservice as an input accepts a json containing links or files encoded in base64. Example requests can be found in followings paragraphs. It is possible to post both files and a list of link in one request.
 
-#### File(s) Text Extractor
+##### File(s) Text Extractor
 
 Files have to be encoded into Base64. This cURL format allows sending more data than using `-d`.
 
@@ -122,7 +145,7 @@ curl -X POST -H "Content-Type: application/json" -d @- http://localhost:9398/v1/
 JSON_DATA
 ```
 
-#### Link(s) Text Extractor
+##### Link(s) Text Extractor
 
 ```bash
 curl http://localhost:9398/v1/text_extractor \
@@ -130,7 +153,7 @@ curl http://localhost:9398/v1/text_extractor \
   -d '{ "links": ["https://example.com/"] }'
 ```
 
-### Example output
+#### Example output
 
 For both files and links the output has the same format, containg the extracted text.
 
@@ -148,3 +171,16 @@ For both files and links the output has the same format, containg the extracted 
   ]
 }
 ```
+
+## Additional Information
+
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains the implementation of the Text Extractor microservice, including Dockerfile.
+
+- `utils/`: This directory contains utility scripts and modules used by the Text Extractor Microservice.
+
+#### Tests
+- `src/tests/unit/text_extractor/`: Contains unit tests for the Text Extractor Microservice components

@@ -1,5 +1,7 @@
 # LLM Guard Dataprep Guardrail Microservice
-This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid. Theese guardrails can be enabled by passing --dpguard parameter, while using [install_chatqna.sh](../../../../deployment/README.md) script. LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Dataprep Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Dataprep scanners scan the incoming documents for dataprep pipeline before they are passed to vector database and inform the user whether they are valid.
+
+LLM Guard Dataprep Guardrail Microservice enables the following scanners provided by LLM Guard:
  - [BanSubstrings](#bansubstrings-scanner)
  - [BanTopics](#bantopics-scanner)
  - [Code](#code-scanner)
@@ -12,6 +14,35 @@ This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/)
  - [Toxicity](#toxicity-scanner)
 
 A detailed description of each scanner is available on [LLM Guard](https://protectai.github.io/llm-guard/).
+
+## Table of Contents
+
+1. [LLM Guard Dataprep Guardrail Microservice](#llm-guard-dataprep-guardrail-microservice)
+2. [Configuration Options](#configuration-options)
+   - 2.1. [Configuration via environmental variables](#configuration-via-environmental-variables)
+   - 2.2. [BanSubstrings scanner](#bansubstrings-scanner)
+   - 2.3. [BanTopics scanner](#bantopics-scanner)
+   - 2.4. [Code scanner](#code-scanner)
+   - 2.5. [InvisibleText scanner](#invisibletext-scanner)
+   - 2.6. [PromptInjection scanner](#promptinjection-scanner)
+   - 2.7. [Regex scanner](#regex-scanner)
+   - 2.8. [Secrets scanner](#secrets-scanner)
+   - 2.9. [Sentiment scanner](#sentiment-scanner)
+   - 2.10. [TokenLimit scanner](#tokenlimit-scanner)
+   - 2.11. [Toxicity scanner](#toxicity-scanner)
+3. [Getting Started](#getting-started)
+   - 3.1. [Prerequisites](#prerequisites)
+   - 3.2. [🚀 Start LLM Guard Dataprep Guardrail Microservice with Python (Option 1)](#-start-llm-guard-dataprep-guardrail-microservice-with-python-option-1)
+     - 3.2.1. [Install Requirements](#install-requirements)
+     - 3.2.2. [Start Microservice](#start-microservice)
+   - 3.3. [🚀 Start LLM Guard Dataprep Guardrail Microservice with Docker (Option 2)](#-start-llm-guard-dataprep-guardrail-microservice-with-docker-option-2)
+     - 3.3.1. [Build the Docker image](#build-the-docker-image)
+     - 3.3.2. [Run the Docker container](#run-the-docker-container)
+   - 3.4. [Verify the LLM Guard Dataprep Guardrail Microservice](#verify-the-llm-guard-dataprep-guardrail-microservice)
+     - 3.4.1. [Check Status](#check-status)
+     - 3.4.2. [Sending a Request](#sending-a-request)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
 
 ## Configuration Options
 The scanners can be configured only via environmental variables. All scanners can be configured via environmental variables for the microservice. They can be enabled during deployment or via configmap.
@@ -115,22 +146,22 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ## Getting started
 
-### Prerequisite
+### Prerequisites
 
-1. **Navigate to the microservice directory**:
+1. **Navigate to the microservice directory**
     ```sh
     cd src/comps/guardrails/llm_guard_dataprep_guardrail
     ```
 
-2. **Set up the environment variables**:
-    - Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
+2. **Set up the environment variables**
+    Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
 
-### 🚀1. Start LLM Guard Dataprep Guardrail Microservice with Python (Option 1)
+### 🚀 Start LLM Guard Dataprep Guardrail Microservice with Python (Option 1)
 
 To start the LLM Guard Dataprep Guardrail microservice, you need to install python packages first.
 
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -139,28 +170,28 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_llm_guard_dataprep_guardrail_microservice.py
 ```
 
-### 🚀2. Start LLM Guard Dataprept Guardrail Microservice with Docker (Option 2)
+### 🚀 Start LLM Guard Dataprep Guardrail Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker image:
+#### Build the Docker image
 ```sh
 cd ../../.. # src/ directory
 docker build -t opea/dpguard:latest -f comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile .
 ```
 
-#### 2.2. Run the Docker container, for example:
+#### Run the Docker container, for example
 ```sh
 docker run -d -e BAN_SUBSTRINGS_ENABLED=true -p 8070:8070 opea/dpguard:latest
 ```
 
-### 3. Verify the LLM Guard Dataprep Guardrail Microservice
+### Verify the LLM Guard Dataprep Guardrail Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
 curl http://localhost:8070/v1/health_check \
@@ -168,9 +199,9 @@ curl http://localhost:8070/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+####  Sending a Request
 
-The dataprep guardrail microservice accepts input as multiple documents containing text. Below are examples of how to structure the reques
+The dataprep guardrail microservice accepts input as multiple documents containing text.
 
 **Example Input**
 
@@ -202,6 +233,7 @@ The output of a dataprep guardrail microservice is a JSON object that includes t
 }
 ```
 
+## Additional Information
 ### Project Structure
 
 The project is organized into several directories:

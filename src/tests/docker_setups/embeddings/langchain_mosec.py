@@ -65,8 +65,8 @@ class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
     def _build_model_server(self) -> Image:
         return self._build_image(
             self.ENDPOINT_IMAGE_NAME,
-            file=f"{self._main_src_path}/comps/embeddings/impl/model-server/mosec/docker/Dockerfile",
-            context_path=f"{self._main_src_path}/comps/embeddings/impl/model-server/mosec/",
+            file=f"{self._main_src_path}/comps/embeddings/impl/model_server/mosec/docker/Dockerfile",
+            context_path=f"{self._main_src_path}/comps/embeddings/impl/model_server/mosec/",
             **self.COMMON_BUILD_OPTIONS,
         )
 

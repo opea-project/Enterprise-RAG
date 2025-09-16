@@ -1,5 +1,7 @@
 # LLM Guard Input Guardrail Microservice
-This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Input Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Input scanners scan the incoming prompt and context before they are passed to LLM and inform the user whether they are valid. LLM Guard Input Guardrail Microservice enables several scanners provided by LLM Guard:
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) (version: 0.3.16) Input Scanners as part of the pipeline. The goal is to enable Secure AI and privacy-related capabilities for Enterprise RAG. Input scanners scan the incoming prompt and context before they are passed to LLM and inform the user whether they are valid.
+
+LLM Guard Input Guardrail Microservice enables several scanners provided by LLM Guard:
  - [Anonymize](#anonymize-scanner)
  - [BanSubstrings](#bansubstrings-scanner)
  - [BanTopics](#bantopics-scanner)
@@ -14,8 +16,38 @@ This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/)
 
 A detailed description of each scanner is available on [LLM Guard](https://protectai.github.io/llm-guard/).
 
+## Table of Contents
+
+1. [LLM Guard Input Guardrail Microservice](#llm-guard-input-guardrail-microservice)
+2. [Configuration Options](#configuration-options)
+   - 2.1. [Configuration via UI](#configuration-via-ui)
+   - 2.2. [Configuration via environmental variables](#configuration-via-environmental-variables)
+   - 2.3. [Anonymize scanner](#anonymize-scanner)
+   - 2.4. [BanSubstrings scanner](#bansubstrings-scanner)
+   - 2.5. [BanTopics scanner](#bantopics-scanner)
+   - 2.6. [Code scanner](#code-scanner)
+   - 2.7. [InvisibleText scanner](#invisibletext-scanner)
+   - 2.8. [PromptInjection scanner](#promptinjection-scanner)
+   - 2.9. [Regex scanner](#regex-scanner)
+   - 2.10. [Secrets scanner](#secrets-scanner)
+   - 2.11. [Sentiment scanner](#sentiment-scanner)
+   - 2.12. [TokenLimit scanner](#tokenlimit-scanner)
+   - 2.13. [Toxicity scanner](#toxicity-scanner)
+3. [Getting Started](#getting-started)
+   - 3.1. [Prerequisites](#prerequisites)
+   - 3.2. [🚀 Start LLM Guard Input Guardrail Microservice with Python (Option 1)](#-start-llm-guard-input-guardrail-microservice-with-python-option-1)
+     - 3.2.1. [Install Requirements](#install-requirements)
+     - 3.2.2. [Start Microservice](#start-microservice)
+   - 3.3. [🚀 Start LLM Guard Input Guardrail Microservice with Docker (Option 2)](#-start-llm-guard-input-guardrail-microservice-with-docker-option-2)
+     - 3.3.1. [Build the Docker image](#build-the-docker-image)
+     - 3.3.2. [Run the Docker container](#run-the-docker-container)
+   - 3.4. [Verify the LLM Guard Input Guardrail Microservice](#verify-the-llm-guard-input-guardrail-microservice)
+     - 3.4.1. [Check Status](#check-status)
+     - 3.4.2. [Scanning using previously enabled scanners](#scanning-using-previously-enabled-scanners-for-example-via-environmental-variables-or-while-no-scanner-enabled)
+     - 3.4.3. [Changing scanners configuration via requests](#changing-scanners-configuration-via-requests)
+   - 3.5. [Project Structure](#project-structure)
+
 ## Configuration Options
-The scanners can be configured in two places: via UI and via environmental variables. There are seven scanners enabled in UI. All scanners can be configured via environmental variables for the microservice.
 
 ### Configuration via UI
 Most of the scanners you can configure from Admin Panel available in UI(applicable for ChatQnA pipeline only). The Panel looks as follows:
@@ -32,6 +64,8 @@ Scanners currently configurable from Admin Panel:
  - [Sentiment](#sentiment-scanner) - partially configurable
  - [TokenLimit](#tokenlimit-scanner) - partially configurable
  - [Toxicity](#toxicity-scanner) - partially configurable
+
+Default configurations for UI can be found in the file [object_document_mapper.py](../../system_fingerprint/utils/object_document_mapper.py).
 
 ### Configuration via environmental variables
 The LLM Guard Input Guardrail Microservice configuration is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifying this dotenv file or exporting environmental variables as parameters to the container/pod. Each scanner can be configured in the .env file. Enabled scanners are executed sequentially. The environmental variables that are required for default run of particular scanner have values provided in .env file. Without providing them scanner will not work. The variables that do not have any values are optional, and without providing any values default values will be passed to scanner constructor.
@@ -147,22 +181,22 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ## Getting started
 
-### Prerequisite
+### Prerequisites
 
-1. **Navigate to the microservice directory**:
+1. **Navigate to the microservice directory**
     ```sh
     cd src/comps/guardrails/llm_guard_input_guardrail
     ```
 
-2. **Set up the environment variables**:
-    - Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
+2. **Set up the environment variables**
+    Edit the `.env` file to configure the necessary environment variables for the scanners you want to enable.
 
-### 🚀1. Start LLM Guard Input Guardrail Microservice with Python (Option 1)
+### 🚀 Start LLM Guard Input Guardrail Microservice with Python (Option 1)
 
 To start the LLM Guard Intput Guardrail microservice, you need to install python packages first.
 
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -171,37 +205,37 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_llm_guard_input_guardrail_microservice.py
 ```
 
-### 🚀2. Start LLM Guard Input Guardrail Microservice with Docker (Option 2)
+### 🚀 Start LLM Guard Input Guardrail Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker image:
+#### Build the Docker image
 ```sh
 cd ../../.. # src/ directory
 docker build -t opea/in-guard:latest -f comps/guardrails/llm_guard_input_guardrail/impl/microservice/Dockerfile .
 ```
 
-#### 2.2. Run the Docker container, for example:
+#### Run the Docker container, for example
 ```sh
 docker run -d -e BAN_SUBSTRINGS_ENABLED=true -p 8050:8050 opea/in-guard:latest
 ```
 
-### 3. Verify the LLM Guard Input Guardrail Microservice
+### Verify the LLM Guard Input Guardrail Microservice
 
-#### 3.1. Chaeck Status
+#### Check Status
 ```bash
 curl http://localhost:8050/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```
 
-#### 3.2. Scanning using previously enabled scanners (for example via environmental variables) or while no scanner enabled
+#### Scanning using previously enabled scanners (for example via environmental variables) or while no scanner enabled
 
-#### Example input
+##### Example input
 ```bash
 curl http://localhost:8050/v1/llmguardinput \
   -X POST \
@@ -221,7 +255,7 @@ curl http://localhost:8050/v1/llmguardinput \
   -H 'Content-Type: application/json'
 ```
 
-#### Example output (when no scanners enabled or scanner did not catch any problem)
+##### Example output (when no scanners enabled or scanner did not catch any problem)
 The output of an input guardrail microservice is a JSON object that includes the scanned texts.
 
 ```json
@@ -241,9 +275,9 @@ The output of an input guardrail microservice is a JSON object that includes the
 }
 ```
 
-### 3.3. Changing scanners configuration via requests
+#### Changing scanners configuration via requests
 
-#### Example input
+##### Example input
 ```bash
 curl http://localhost:8050/v1/llmguardinput \
   -X POST \
@@ -270,7 +304,7 @@ curl http://localhost:8050/v1/llmguardinput \
   -H 'Content-Type: application/json'
 ```
 
-#### Example output(when scanner blocked the prompt)
+##### Example output(when scanner blocked the prompt)
 The output of an input guardrail microservice is a 466 error code JSON object that includes following message.
 
 ```bash
@@ -281,7 +315,7 @@ The output of an input guardrail microservice is a 466 error code JSON object th
 }
 ```
 
-A full set of possible configurations can be found in the file [object_document_mapper.py](src/comps/system_fingerprint/utils/object_document_mapper.py).
+## Additional Information
 
 ### Project Structure
 

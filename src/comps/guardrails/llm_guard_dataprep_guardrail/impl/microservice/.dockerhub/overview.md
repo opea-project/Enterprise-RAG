@@ -6,17 +6,17 @@ Part of the Intel® AI for Enterprise RAG (ERAG) ecosystem.
 
 The OPEA ERAG Dataprep Guardrail microservice runs scanners on incoming documents and links destined for the dataprep pipeline. It ensures data safety by checking inputs before they proceed to the next stage (e.g., vector database ingestion), informing users whether their uploaded documents or links have passed the scan or have been blocked by the guard. Acting as a protective layer, it prevents invalid or harmful data from propagating downstream in the system.
 
-This microservice implements [LLM Guard](https://llm-guard.com/) scanners, including:
-- [BanSubstrings](https://llm-guard.com/input_scanners/ban_substrings/)
-- [BanTopics](https://llm-guard.com/input_scanners/ban_topics/)
-- [Code](https://llm-guard.com/input_scanners/code/)
-- [InvisibleText](https://llm-guard.com/input_scanners/invisible_text/)
-- [PromptInjection](https://llm-guard.com/input_scanners/prompt_injection/)
-- [Regex](https://llm-guard.com/input_scanners/regex/)
-- [Secrets](https://llm-guard.com/input_scanners/secrets/)
-- [Sentiment](https://llm-guard.com/input_scanners/sentiment/)
-- [TokenLimit](https://llm-guard.com/input_scanners/token_limit/)
-- [Toxicity](https://llm-guard.com/input_scanners/toxicity/)
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) scanners, including:
+- [BanSubstrings](https://protectai.github.io/llm-guard/input_scanners/ban_substrings/)
+- [BanTopics](https://protectai.github.io/llm-guard/input_scanners/ban_topics/)
+- [Code](https://protectai.github.io/llm-guard/input_scanners/code/)
+- [InvisibleText](https://protectai.github.io/llm-guard/input_scanners/invisible_text/)
+- [PromptInjection](https://protectai.github.io/llm-guard/input_scanners/prompt_injection/)
+- [Regex](https://protectai.github.io/llm-guard/input_scanners/regex/)
+- [Secrets](https://protectai.github.io/llm-guard/input_scanners/secrets/)
+- [Sentiment](https://protectai.github.io/llm-guard/input_scanners/sentiment/)
+- [TokenLimit](https://protectai.github.io/llm-guard/input_scanners/token_limit/)
+- [Toxicity](https://protectai.github.io/llm-guard/input_scanners/toxicity/)
 
 ### Features
 

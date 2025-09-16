@@ -1,6 +1,23 @@
 # VectorStore
 This code implements an interface for connecting to multiple vector store databases. Unified vector store interface allows multiple services to use one storage communication class. This code is not meant to be used as a standalone service, rather as a part for services that require database communication such as ingestion service or retriever service.
 
+## Table of Contents
+
+1. [VectorStore](#vectorstore)
+2. [Support Matrix](#support-matrix)
+3. [Getting Started](#getting-started)
+   - 3.1. [Database setup](#database-setup)
+     - 3.1.1. [Redis](#redis)
+     - 3.1.2. [Redis Cluster](#redis-cluster)
+   - 3.2. [VectorStore implementations](#vectorstore-implementations)
+     - 3.2.1. [ConnectorRedis](#connectorredis)
+   - 3.3. [Example usage](#example-usage)
+4. [VectorStore methods](#vectorstore-methods)
+   - 4.1. [search()](#search)
+   - 4.2. [add_texts()](#add_texts)
+5. [Additional Information](#additional-information)
+   - 5.1. [Project Structure](#project-structure)
+
 ## Support Matrix
 
 Support for specific vector databases:
@@ -20,7 +37,7 @@ If you don't run any vector database yet, you can utilize one of already prepare
 
 #### Redis
 
-For more information on this database, refer to https://redis.io/solutions/vector-search/
+For more information on this database, refer to https://redis.io/solutions/vector-search/.
 
 To run an instance of this database, run the following code:
 ```bash
@@ -31,7 +48,7 @@ To configure VectorStore to use Redis, please refer to [ConnectorRedis](#Connect
 
 #### Redis Cluster
 
-Configuration is exactly the same as for Redis
+Configuration is exactly the same as for Redis.
 
 ### VectorStore implementations
 
@@ -92,14 +109,14 @@ Based on the selected `search_type` method, additional arguments should be passe
 | `similarity_search_with_siblings` | `similarity_search_with_siblings`        | `k`, `distance_threshold`     |
 
 Additional search parameters that can be added to the query to configure the search:
-- `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `4`)
+- `k`: The number of nearest neighbors to retrieve from the database. It determines the size of the result set (default: `10`)
 - `distance_treshold`: The maximum distance threshold for similarity search by vector. Documents with a distance greater than the threshold will not be considered as matches. The default value is not specified. (default: `None`)
 
 ### add_texts()
-This method inserts data directly into the selected vector store database. The input is a list of `EmbedDoc` elements. It returns the list of texts saved into a database. 
+This method inserts data directly into the selected vector store database. The input is a list of `EmbedDoc` elements. It returns the list of texts saved into a database.
 
 ## Additional Information
-   
+
 ### Project Structure
 
 The project is organized into several directories:

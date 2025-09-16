@@ -74,7 +74,7 @@ use_alternate_tagging: false
 helm_timeout: "10m0s"
 
 hpaEnabled: true
-enforcePSS: false
+enforcePSS: true
 
 tdx:
   enabled: false

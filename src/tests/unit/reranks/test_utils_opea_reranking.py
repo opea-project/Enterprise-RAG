@@ -4,7 +4,6 @@
 from unittest.mock import patch  #, AsyncMock
 
 import pytest
-import requests
 from comps import (
     SearchedDoc,
     TextDoc,
@@ -93,24 +92,6 @@ def test_reranker_filter_top_n_with_score_threshold(test_class):
     assert output[0]["score"] == 0.9988041, "The output should contain the element with the highest score"
     assert output[1]["index"] == 2, "The output should contain the element with the second highest score"
     assert output[1]["score"] == 0.5294873, "The output should contain the element with the second highest score"
-
-def test_torchserve_retrieve_torchserve_model_name():
-    with patch('comps.reranks.utils.opea_reranking.requests.get', autospec=True) as MockClass:
-        with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
-            MockClass.return_value.raise_for_status.return_value = None
-            MockClass.return_value.json.return_value = {"models": [{"modelName": "bge-reranker-base", "modelUrl": "bge-reranker-base.tar.gz"}]}
-            r = OPEAReranker(service_endpoint="http:/test:1234", model_server="torchserve")
-
-        assert r._service_endpoint == "http:/test:1234/predictions/bge-reranker-base", "The Torchserve service endpoint should be set to the correct value"
-
-def test_torchserve_retrieve_torchserve_model_name_fails():
-    with patch('comps.reranks.utils.opea_reranking.requests.get', autospec=True) as MockClass:
-        with patch.object(OPEAReranker, '_validate', return_value='Mocked Method'):
-            MockClass.return_value.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error: Not Found")
-            with pytest.raises(Exception) as context:
-                OPEAReranker(service_endpoint="http:/test:1234", model_server="torchserve")
-
-                assert "An error occurred while retrieving the model name from the Torchserve model server" in str(context.value)
 
 # TODO: Investigate and fix the test.
 # Current issue: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited

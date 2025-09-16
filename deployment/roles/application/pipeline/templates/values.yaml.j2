@@ -81,6 +81,8 @@ images:
     image: "erag-reranking"
     repository: *repo
     tag: *tag
+    envs:
+      RERANKING_MODEL_NAME: *reranking_model_name
   teirerank:
     image: "erag-teirerank"
     repository: *repo

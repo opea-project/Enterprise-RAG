@@ -163,6 +163,8 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envs:
+      RERANKING_MODEL_NAME: *reranking_model_name
   teirerank:
     image: "erag-teirerank"
     repository: *repo

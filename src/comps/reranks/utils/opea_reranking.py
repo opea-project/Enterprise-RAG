@@ -4,7 +4,6 @@
 import asyncio
 import heapq
 import json
-import requests
 from docarray import DocList
 from typing import List, TypedDict, Dict
 import aiohttp
@@ -31,7 +30,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 SUPPORTED_MODEL_SERVERS = ["torchserve", "tei"]
 
 class OPEAReranker:
-    def __init__(self, service_endpoint: str, model_server: str):
+    def __init__(self, service_endpoint: str, model_server: str, model_name: str = None):
         """
          Initialize the OPEAReranker instance with the given parameter
         Sets up the reranker.
@@ -48,8 +47,9 @@ class OPEAReranker:
         self._validate_config()
 
         if self._model_server == "torchserve":
-            model_name = self._retrieve_torchserve_model_name()
-            self._service_endpoint = self._service_endpoint + f"/predictions/{model_name}"
+            if not model_name:
+                raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'torchserve' as the model server.")
+            self._service_endpoint = self._service_endpoint + f"/predictions/{model_name.split('/')[-1]}"
         elif self._model_server == "tei":
             self._service_endpoint = self._service_endpoint + "/rerank"
 
@@ -72,23 +72,6 @@ class OPEAReranker:
         retrieved_docs = ["DL is not...", "DL is..."]
         asyncio.run(self._async_call_reranker(initial_query, retrieved_docs))
         logger.info("Reranker service is reachable and working.")
-
-    def _retrieve_torchserve_model_name(self):
-        try:
-            mgnt_port = int(self._service_endpoint.split(":")[-1]) + 1
-            mgnt_service_endpoint = ":".join(self._service_endpoint.split(":")[:-1]) + ":" + str(mgnt_port) + "/models"
-
-            response = requests.get(mgnt_service_endpoint, timeout=20)
-            response.raise_for_status()
-
-            # FIXME: Attention! The code assumes only 1 model is registered in Torchserve.
-            # Should be changed if Torchserve implementation would be modified.
-            return response.json()["models"][0]["modelName"]
-        except Exception as e:
-            err_msg = f"An error occurred while retrieving the model name from the Torchserve: {e}. " \
-                f"Check if management port is correct. Assumed management endpoint: {mgnt_service_endpoint}"
-            logger.error(err_msg)
-            raise Exception(err_msg)
 
     async def run(self, input: SearchedDoc) -> PromptTemplateInput:
         """

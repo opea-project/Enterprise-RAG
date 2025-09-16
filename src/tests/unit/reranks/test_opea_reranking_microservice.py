@@ -51,12 +51,6 @@ def mock_OPEAReranker():
       MockClass.return_value = None
       yield MockClass
 
-@pytest.fixture
-def mock_OPEAReranker_torchserve():
-   with patch('comps.reranks.utils.opea_reranking.OPEAReranker._retrieve_torchserve_model_name', autospec=True) as MockClass:
-      MockClass.return_value = "test_name"
-      yield MockClass
-
 
 @patch('dotenv.load_dotenv')
 def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, mock_OPEAReranker, mock_cores_mega_microservice):
@@ -82,7 +76,7 @@ def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, moc
    assert hasattr(test_module, 'process'), "process is not declared"
 
 
-def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, mock_call_reranker, mock_OPEAReranker_torchserve):
+def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, mock_call_reranker):
    # The configuration in the dotenv file shall satisfy all parameters specified as required
    try:
       import comps.reranks.opea_reranking_microservice as test_module
@@ -94,7 +88,7 @@ def test_initialization_succeeds_with_defaults(mock_cores_mega_microservice, moc
    assert isinstance(test_module.opea_reranker._service_endpoint, str) and test_module.opea_reranker._service_endpoint, "The service_endpoint is expected to be a non-empty string"
 
 
-def test_initialization_succeeds_with_env_vars_present(clean_env_vars, mock_call_reranker, mock_OPEAReranker_torchserve):
+def test_initialization_succeeds_with_env_vars_present(clean_env_vars, mock_call_reranker):
    with patch.dict("os.environ",
       {
          "RERANKING_SERVICE_ENDPOINT": "http://testhost:1234",

@@ -41,6 +41,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 opea_reranker = OPEAReranker(
     service_endpoint=sanitize_env(os.getenv('RERANKING_SERVICE_ENDPOINT')),
     model_server=sanitize_env(os.getenv('RERANKING_MODEL_SERVER')),
+    model_name=sanitize_env(os.getenv('RERANKING_MODEL_NAME')),
 )
 
 # Register the microservice with the specified configuration.

@@ -45,6 +45,7 @@ services:
       HTTPS_PROXY: ${HTTPS_PROXY}
       RERANKING_SERVICE_ENDPOINT: http://127.0.0.1:${TORCHSERVE_PORT}
       RERANKING_MODEL_SERVER: "torchserve"
+      RERANKING_MODEL_NAME: ${TORCHSERVE_MODEL_NAME}
     restart: unless-stopped
     depends_on:
       - reranks-torchserve-model-server

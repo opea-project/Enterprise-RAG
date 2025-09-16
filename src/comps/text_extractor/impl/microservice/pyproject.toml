@@ -24,7 +24,7 @@ dependencies = [
     "markdown==3.0.0",
     "pandas==2.2.2",
     "Pillow==11.3.0",
-    "pymupdf==1.24.9",
+    "pymupdf==1.26.4",
     "python-bidi==0.4.2",
     "python-docx==1.1.2",
     "python-pptx==1.0.1",

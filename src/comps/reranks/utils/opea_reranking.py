@@ -168,7 +168,7 @@ class OPEAReranker:
         all_combined_docs = []
         for doc in reranked_docs:
             combined_docs = [doc]
-            doc_id = doc.metadata.get("file_id") if doc.metadata.get("file_id") else doc.metadata.get("link_id")
+            doc_id = doc.metadata.get("id")
             if doc_id and doc_id in sibling_docs:
                 siblings = sibling_docs[doc_id]
                 combined_docs.extend(siblings)
@@ -176,7 +176,7 @@ class OPEAReranker:
                 # Combine all texts
                 combined_text = " ".join(e.text for e in combined_docs)
 
-                found = any(combined_text == d["text"] for d in all_combined_docs)
+                found = any(combined_text == d.text for d in all_combined_docs)
                 if found:
                     continue
 
@@ -184,10 +184,10 @@ class OPEAReranker:
                 combined_metadata = combined_docs[0].metadata.copy()
 
                 # Final result
-                combined_element = {
-                    "text": combined_text,
-                    "metadata": combined_metadata
-                }
+                combined_element = TextDoc(
+                    text=combined_text,
+                    metadata=combined_metadata
+                )
                 all_combined_docs.append(combined_element)
             else:
                 all_combined_docs.append(doc)

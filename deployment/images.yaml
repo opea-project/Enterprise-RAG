@@ -81,8 +81,8 @@ images:
     docker_context: src
   torchserveEmbedding:
     image_name: torchserve_embedding
-    dockerfile_path: src/comps/embeddings/impl/model-server/torchserve/docker/Dockerfile
-    docker_context: src/comps/embeddings/impl/model-server/torchserve
+    dockerfile_path: src/comps/embeddings/impl/model_server/torchserve/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/torchserve
   torchserveReranking:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile

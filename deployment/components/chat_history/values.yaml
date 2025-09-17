@@ -23,6 +23,8 @@ service:
   name: http
 
 mongodb:
+  image:
+    repository: bitnamilegacy/mongodb
   fullnameOverride: "chat-history-mongodb"
   name: CHAT_HISTORY
   replica:

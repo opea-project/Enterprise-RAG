@@ -157,7 +157,7 @@ class TestPod():
         if connection_type == ConnectionType.REDIS:
             self.image = "redis/redis-stack:7.2.0-v9"
         elif connection_type == ConnectionType.POSTGRESQL:
-            self.image = "bitnami/postgresql:16.3.0-debian-12-r23"
+            self.image = "bitnamilegacy/postgresql:16.3.0-debian-12-r23"
         elif connection_type == ConnectionType.MONGODB:
             self.image = "mongo:5.0.6"
         elif connection_type == ConnectionType.HTTP:

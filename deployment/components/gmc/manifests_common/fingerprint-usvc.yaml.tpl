@@ -76,7 +76,7 @@ spec:
         - name: wait-for-mongo
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: docker.io/bitnami/mongodb:8.0.4-debian-12-r0
+          image: docker.io/bitnamilegacy/mongodb:8.0.13-debian-12-r0
           env:
             - name: MONGO_DATABASE_NAME
               valueFrom:

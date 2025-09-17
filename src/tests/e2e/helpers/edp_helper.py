@@ -346,6 +346,25 @@ class EdpHelper(ApiRequestHelper):
         return self.wait_for_file_upload(file_path, "ingested", timeout=180)
 
     @contextmanager
+    def ephemeral_upload(self, file_path, desired_status="ingested", bucket=None, timeout=180):
+        """
+        Upload a file, wait for desired status, yield file info, and delete the file after context exits.
+        """
+        filename = os.path.basename(file_path)
+        response = self.generate_presigned_url(filename, bucket=bucket)
+        presigned_url = response.json().get("url")
+        self.upload_file(file_path, presigned_url)
+        file_info = self.wait_for_file_upload(filename, desired_status, timeout=timeout)
+        try:
+            yield file_info
+        finally:
+            filename = file_info.get("object_name")
+            logger.debug(f"Deleting temporary file: {filename}")
+            response = self.generate_presigned_url(filename, method="DELETE", bucket=bucket)
+            url = response.json().get("url")
+            self.delete_file(url)
+
+    @contextmanager
     def substitute_file(self, to_substitute, substitution):
         """Temporarily substitute file and yield. Rollback file after context manager exits."""
 

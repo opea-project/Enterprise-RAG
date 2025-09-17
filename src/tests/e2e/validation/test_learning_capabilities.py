@@ -494,7 +494,7 @@ def ask_question(chatqa_api_helper, question=""):
     """Ask a question to the chatbot and return the response"""
     response = chatqa_api_helper.call_chatqa(question)
     assert response.status_code == 200, "Unexpected status code returned"
-    response_text = chatqa_api_helper.format_response(response)
+    response_text = chatqa_api_helper.get_text(response)
     logger.info(f"ChatQA response: {response_text}")
     return response_text
 

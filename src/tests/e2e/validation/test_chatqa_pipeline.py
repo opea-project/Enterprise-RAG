@@ -7,12 +7,15 @@ import allure
 from copy import deepcopy
 import json
 import logging
+import os
 import pytest
 import requests
 import secrets
 import statistics
 import string
 import time
+
+from constants import TEST_FILES_DIR
 from helpers.chatqa_api_helper import InvalidChatqaResponseBody
 
 logger = logging.getLogger(__name__)
@@ -43,7 +46,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     except requests.exceptions.ChunkedEncodingError:
         duration = time.time() - start_time
         pytest.fail(f"Request has been closed on the server side after {duration} seconds")
-    logger.info(f"Response: {chatqa_api_helper.format_response(response)}")
+    logger.info(f"Response: {chatqa_api_helper.get_text(response)}")
 
 
 @allure.testcase("IEASG-T29")
@@ -67,7 +70,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
     question = "Jaki jest najwyższy wieżowiec na świecie?"
     response = chatqa_api_helper.call_chatqa(question)
     try:
-        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.get_text(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -100,7 +103,7 @@ def test_chatqa_response_headers_when_streaming_enabled(chatqa_api_helper, finge
     assert "text/event-stream" in response.headers.get("Content-Type"), \
         f"Unexpected Content-Type in the response. Headers: {response.headers}"
     try:
-        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.get_text(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -143,7 +146,7 @@ def test_chatqa_change_max_new_tokens(chatqa_api_helper, fingerprint_api_helper)
         response = chatqa_api_helper.call_chatqa(question)
         assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
         try:
-            response_text = chatqa_api_helper.format_response(response)
+            response_text = chatqa_api_helper.get_text(response)
             logger.info(f"ChatQA response: {response_text}")
         except InvalidChatqaResponseBody as e:
             pytest.fail(str(e))
@@ -169,7 +172,7 @@ def test_chatqa_api_call_with_additional_parameters(chatqa_api_helper, fingerpri
     response = chatqa_api_helper.call_chatqa(question, **arguments)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
-        response_text = chatqa_api_helper.format_response(response)
+        response_text = chatqa_api_helper.get_text(response)
         logger.info(f"ChatQA response: {response_text}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
@@ -235,6 +238,38 @@ def test_chatqa_input_over_limit(chatqa_api_helper):
                                          f"Answer: {response.text}")
 
 
+@allure.testcase("IEASG-T251")
+def test_chatqa_chunks_in_sources(chatqa_api_helper, edp_helper, fingerprint_api_helper):
+    """
+    Upload a file with the following content:
+    corwenshirel is a character from the game alderwynthiel.
+
+    Ask a question about corwenshirel.
+    Check if the response contains reranked docs with the word alderwynthiel in it.
+    Verify it with streaming enabled and disabled.
+    """
+
+    response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+    reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+    assert len(reranked_docs) == 0, "It's unexpected that there are some reranked docs in the response"
+
+    file = "test_chunks.txt"
+    with edp_helper.ephemeral_upload(os.path.join(TEST_FILES_DIR, file)):
+        fingerprint_api_helper.set_streaming(False)
+        response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+        reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+        assert len(reranked_docs) > 0, "No reranked docs found in the response"
+        assert any("alderwynthiel" in doc.get("text", "").lower() for doc in reranked_docs), \
+            "None of the reranked docs contains the word 'alderwynthiel'"
+
+        fingerprint_api_helper.set_streaming(True)
+        response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+        reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+        assert len(reranked_docs) > 0, "No reranked docs found in the response"
+        assert any("alderwynthiel" in doc.get("text", "").lower() for doc in reranked_docs), \
+            "None of the reranked docs contains the word 'alderwynthiel'"
+
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T171")
 def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper):
@@ -244,7 +279,7 @@ def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper)
     response = chatqa_api_helper.call_chatqa(question_france)
     assert response.status_code == 200, (f"Unexpected status code returned: {response.status_code}. "
                                          f"Answer: {response.text}")
-    response_france = chatqa_api_helper.format_response(response)
+    response_france = chatqa_api_helper.get_text(response)
     logger.info(f"Response: {response_france}")
     response = chat_history_helper.save_history([{"question": question_france, "answer": response_france}])
     history_id = response.json()["id"]
@@ -255,7 +290,7 @@ def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper)
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
     assert response.status_code == 200, (f"Unexpected status code returned: {response.status_code}. "
                                          f"Answer: {response.text}")
-    response_followup = chatqa_api_helper.format_response(response)
+    response_followup = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_followup}")
     assert chatqa_api_helper.words_in_response(["seine", "eiffel"], response_followup)
 
@@ -266,7 +301,7 @@ def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper, chat_hi
     # Ask first question
     question_poland = "My name is Giovanni Giorgio. What is the capital of Poland?"
     response = chatqa_api_helper.call_chatqa(question_poland)
-    response_poland = chatqa_api_helper.format_response(response)
+    response_poland = chatqa_api_helper.get_text(response)
     logger.info(f"Response: {response_poland}")
     response = chat_history_helper.save_history([{"question": question_poland, "answer": response_poland}])
     history_id = response.json()["id"]
@@ -275,14 +310,14 @@ def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper, chat_hi
     # Ask second question
     question_people = "How many people live there?"
     response = chatqa_api_helper.call_chatqa(question_people, **history)
-    response_people = chatqa_api_helper.format_response(response)
+    response_people = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_people}")
     response = chat_history_helper.save_history([{"question": question_people, "answer": response_people}], history_id)
 
     # Refer to the information in a first question
     question_followup = "What is my name?"
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
-    response_followup = chatqa_api_helper.format_response(response)
+    response_followup = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_followup}")
     assert chatqa_api_helper.words_in_response(["giovanni", "giorgio"], response_followup)
 
@@ -295,7 +330,7 @@ def test_follow_up_questions_contradictory_history(chatqa_api_helper, chat_histo
     history_id = response.json()["id"]
     history = {"history_id": history_id}
     response = chatqa_api_helper.call_chatqa(question_people, **history)
-    response_text = chatqa_api_helper.format_response(response)
+    response_text = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_text}")
     assert "poland" in response_text.lower()
 

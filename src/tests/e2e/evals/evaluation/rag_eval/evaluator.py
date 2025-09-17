@@ -309,7 +309,7 @@ class Evaluator:
         return self._get_documents(query, rerank=False)
 
     def post_process(self, result):
-        return self.chatqa_api_helper.format_response(result)
+        return self.chatqa_api_helper.get_text(result)
 
     def evaluate(self, arguments, sort=True, show_progress_bar=False, contain_original_data=False):
         raise NotImplementedError("Depends on the specific dataset.")

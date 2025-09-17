@@ -139,7 +139,7 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
         assert change_prompt_response.status_code == 200, "Unexpected status code for prompt template modification call"
         response = chatqa_api_helper.call_chatqa("What is the capital of France?")
         assert response.status_code == 200, "Unexpected status code when calling ChatQA with modified prompt template"
-        chatbot_response = chatqa_api_helper.format_response(response)
+        chatbot_response = chatqa_api_helper.get_text(response)
         logger.info(f"ChatQA response after modifying prompt template: {chatbot_response}")
         assert "1234" in chatbot_response, "Response does not contain the expected number '1234'"
     finally:

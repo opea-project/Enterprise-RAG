@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import concurrent
+import json
 import logging
 import time
 
@@ -93,11 +94,14 @@ class ChatQaApiHelper(ApiRequestHelper):
         """
         Parse raw response_body from the chatqa response and return a human-readable text
         """
+        response_text = ""
+        reranked_docs = []
         if response.headers.get("Content-Type") == "application/json":
-            response_text = response.json().get("text")
+            response = response.json()
+            response_text = response.get("text")
             if response_text is None:
-                response_text = response.json().get("error")
-            return response_text
+                response_text = response.get("error")
+            reranked_docs = response.get("json", {}).get("reranked_docs", [])
         elif response.headers.get("Content-Type") == "text/event-stream":
             text = self.fix_encoding(response.text)
             response_lines = text.splitlines()
@@ -108,8 +112,10 @@ class ChatQaApiHelper(ApiRequestHelper):
                 if line == "":
                     continue
                 if line.startswith("json:"):
-                    logger.warning("There're no 'reranked_docs' e2e tests for the moment, Ignoring...")
-                    # reranked_docs = line[7:-1]
+                    # Remove 'json: ' prefix and parse the JSON content
+                    reranked_docs = line[5:]
+                    reranked_docs = json.loads(reranked_docs)
+                    reranked_docs = reranked_docs.get("reranked_docs", [])
                 elif line.startswith("data:"):
                     response_text += line[7:-1]
                 else:
@@ -119,10 +125,21 @@ class ChatQaApiHelper(ApiRequestHelper):
                         f"Response: {response.text}.\n\nHeaders: {response.headers}"
                     )
             # Replace new line characters for better output
-            return response_text.replace('\\n', '\n')
+            response_text = response_text.replace('\\n', '\n')
         else:
             raise InvalidChatqaResponseBody(
                 f"Unexpected Content-Type in the response: {response.headers.get('Content-Type')}")
+        return response_text, reranked_docs
+
+    def get_text(self, response):
+        """Extract the text from the response"""
+        response_text, _ = self.format_response(response)
+        return response_text
+
+    def get_reranked_docs(self, response):
+        """Extract the reranked_docs from the response"""
+        _, reranked_docs = self.format_response(response)
+        return reranked_docs
 
     def fix_encoding(self, string):
         try:

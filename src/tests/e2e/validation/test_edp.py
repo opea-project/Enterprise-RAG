@@ -265,7 +265,7 @@ def test_edp_upload_nonexistent_link(edp_helper):
     """Upload a link to a nonexistent website"""
     nonexistent_link = "https://some-nonexisting-webpage-test_edp_12345.com"
     response = edp_helper.upload_links({"links": [nonexistent_link]})
-    assert response.status_code == 200, f"Unexpected status code. Response: {response.text}"
+    assert response.status_code == 400, f"Unexpected status code. Response: {response.text}"
 
 
 @allure.testcase("IEASG-T242")
@@ -278,7 +278,7 @@ def test_edp_upload_link_that_redirects_to_another_site(edp_helper, chatqa_api_h
 
     # Verify that ChatBot doesn't have the information from the link yet
     response = chatqa_api_helper.call_chatqa(rag_question)
-    response_text = chatqa_api_helper.format_response(response)
+    response_text = chatqa_api_helper.get_text(response)
     logger.debug(f"Response: {response_text}")
     assert "gaudi" not in response_text.lower()
 
@@ -288,7 +288,7 @@ def test_edp_upload_link_that_redirects_to_another_site(edp_helper, chatqa_api_h
         edp_helper.upload_links({"links": [link]})
         edp_helper.wait_for_link_upload(link, "ingested", timeout=120)
         response = chatqa_api_helper.call_chatqa(rag_question)
-        response_text = chatqa_api_helper.format_response(response)
+        response_text = chatqa_api_helper.get_text(response)
         logger.debug(f"Response: {response_text}")
         assert "gaudi" in response_text.lower()
     finally:
@@ -458,15 +458,15 @@ def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user
 
     # Check that regular user has access only to the file in public bucket
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?", as_user=True)
-    assert "2567" not in chatqa_api_helper.format_response(response)
+    assert "2567" not in chatqa_api_helper.get_text(response)
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?", as_user=True)
-    assert "944" in chatqa_api_helper.format_response(response)
+    assert "944" in chatqa_api_helper.get_text(response)
 
     # Check that admin has access to both files
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?")
-    assert "2567" in chatqa_api_helper.format_response(response)
+    assert "2567" in chatqa_api_helper.get_text(response)
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?")
-    assert "944" in chatqa_api_helper.format_response(response)
+    assert "944" in chatqa_api_helper.get_text(response)
 
 
 def method_name():

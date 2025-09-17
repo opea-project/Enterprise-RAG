@@ -312,7 +312,7 @@ class GuardHelper:
 
     def call_chatqa(self, question):
         response = self.chatqa_api_helper.call_chatqa(question)
-        response_text = self.chatqa_api_helper.format_response(response)
+        response_text = self.chatqa_api_helper.get_text(response)
         logger.info(f"ChatQA response: {response_text}; status code: {response.status_code}")
         return response.status_code, response_text
 

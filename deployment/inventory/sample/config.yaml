@@ -234,4 +234,6 @@ vector_databases:
   enabled: true
   namespace: vdb
   vector_store: redis-cluster # Supported: redis, redis-cluster
+  vector_datatype: FLOAT32
+  vector_dims: 768
 

@@ -127,6 +127,8 @@ images:
 {% if edp.rbac is defined and edp.rbac.enabled is true %}
       VECTOR_DB_RBAC: "true"
 {% endif %}
+      VECTOR_DATATYPE: {{ vector_databases.vector_datatype }}
+      VECTOR_DIMS: {{ vector_databases.vector_dims }}
   llm-usvc:
     image: "erag-llm"
     repository: *repo

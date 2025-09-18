@@ -29,6 +29,24 @@
   tags:
     - install
 
+- name: Calculate maxReplicasGaudi_VLLM
+  ansible.builtin.set_fact:
+    maxReplicasGaudi_VLLM: >-
+      {%- if item.namespace == 'chatqa' and item.modelConfigPath is defined -%}
+        {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
+        {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
+        {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}
+        {%- if tp_size is not none and (tp_size | int) != 0 -%}
+          {{ 8 // (tp_size | int) }}
+        {%- else -%}
+          {{ none }}
+        {%- endif -%}
+      {%- else -%}
+        {{ none }}
+      {%- endif -%}
+  tags:
+    - install
+
 - name: Generate override resources values file from template
   ansible.builtin.template:
     src: "resources-values.yaml.j2"
@@ -37,27 +55,36 @@
   vars:
     maxReplicasVLLM: >-
       {{
-        cpu_topology_per_node.values()
-        | selectattr('amx_supported', 'equalto', true)
-        | map(attribute='maxBalloonsVLLM')
-        | sum
+        cpu_topology_per_node is defined
+        and cpu_topology_per_node.values() | length > 0
+        and (
+          cpu_topology_per_node.values()
+          | selectattr('amx_supported', 'equalto', true)
+          | map(attribute='maxBalloonsVLLM')
+          | sum
+        )
+        or none
       }}
     maxReplicasReranker: >-
       {{
-        (
-          cpu_topology_per_node.values()
-          | selectattr('amx_supported', 'equalto', true)
-          | list
-          +
-          cpu_topology_per_node.values()
-          | selectattr('gaudi', 'equalto', true)
-          | rejectattr('amx_supported', 'equalto', true)
-          | list
+        cpu_topology_per_node is defined
+        and cpu_topology_per_node.values() | length > 0
+        and (
+          (
+            cpu_topology_per_node.values()
+            | selectattr('amx_supported', 'equalto', true)
+            | list
+            +
+            cpu_topology_per_node.values()
+            | selectattr('gaudi', 'equalto', true)
+            | rejectattr('amx_supported', 'equalto', true)
+            | list
+          )
+          | map(attribute='maxBalloonsReranker')
+          | sum
         )
-        | map(attribute='maxBalloonsReranker')
-        | sum
+        or none
       }}
-  when: balloons is defined and (balloons.enabled | bool)
   tags:
     - install
 
@@ -119,7 +146,7 @@
         [gmc.helm.default_resources_file] +
         ([gmc.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
         ([helm_resources_path] if item.resourcesPath is defined else []) +
-        ([helm_override_resources_path] if (balloons is defined and (balloons.enabled | bool)) else []) +
+        [helm_override_resources_path] +
         [helm_override_values_path] +
         ([helm_override_model_config_path] if item.modelConfigPath is defined else [])
       }}

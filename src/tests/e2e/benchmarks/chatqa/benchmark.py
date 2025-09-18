@@ -90,6 +90,7 @@ def parse_args():
     parser.add_argument("-e", type=int, default=200, help="Failures allowed before quitting")
     parser.add_argument("-b", type=str, default="uat.txt", help="Path to file with UAT")
     parser.add_argument("-x", type=int, default=0, help="Fix length of input query to X tokens (0 means no fixing)")
+    parser.add_argument("-w", type=int, default=1, help="Warmup request per thread to skip")
     return parser.parse_args()
 
 def duration_to_seconds(duration_str):
@@ -107,7 +108,7 @@ def collect_results(stop_event, result_queue, output_file):
             except Empty:
                 continue
 
-def worker(wid, ctx, server, pool, result_queue, delay, tokenizer, bearer_file):
+def worker(wid, ctx, server, pool, result_queue, delay, tokenizer, bearer_file, warmup_req):
     time.sleep(delay)
     iteration = 0
     bearer = linecache.getline(bearer_file, (wid + 1)).replace('\n','')
@@ -119,9 +120,10 @@ def worker(wid, ctx, server, pool, result_queue, delay, tokenizer, bearer_file):
     while not ctx.is_set():
         question = pool.get()
         res = call_chatqa(server, question, wid, tokenizer, bearer)
-        if iteration > 0 and res.answer_len != 1 and res.code == 200 and not res.err:
+        if iteration >= warmup_req and res.answer_len != 1 and res.code == 200 and not res.err:
             result_queue.put(res)
-        iteration = iteration + 1
+        if res.answer_len != 1 and res.code == 200 and not res.err:
+            iteration = iteration + 1
         if ctx.is_set():
             break
 
@@ -210,7 +212,7 @@ def main():
             delay = i * delay_unit
             futures.append(
                 executor.submit(
-                    worker, i, stop_event, args.s, pool, result_queue, delay, tokenizer, args.b
+                    worker, i, stop_event, args.s, pool, result_queue, delay, tokenizer, args.b, args.w
                 )
             )
 

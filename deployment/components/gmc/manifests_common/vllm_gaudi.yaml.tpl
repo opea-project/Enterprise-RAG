@@ -121,7 +121,7 @@ spec:
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
-            {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
+            {{- $cmd := concat (list "python3" "-m" "vllm.entrypoints.openai.api_server") $modelArgs (list "--disable-log-requests" "--model" $modelName "--tensor-parallel-size" $tppSize "--port" $port) }}
             {{- if $modelChatTemplate }}
               {{- $cmd = concat $cmd (list "--chat-template" "/etc/vllm/chat_template.jinja") }}
             {{- end }}

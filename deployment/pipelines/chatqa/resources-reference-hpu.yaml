@@ -59,7 +59,7 @@ services:
             value: 1
             periodSeconds: 15
   llm-usvc:
-    replicas: 2
+    replicas: 4
     resources:
       requests:
         cpu: 1
@@ -208,7 +208,7 @@ services:
             value: 1
             periodSeconds: 15
   torchserve_reranking:
-    replicas: 8
+    replicas: 2
     resources:
       requests:
         cpu: 4
@@ -217,8 +217,8 @@ services:
         cpu: 4
         memory: 16Gi
     hpa:
-      minReplicas: 8
-      maxReplicas: 8
+      minReplicas: 2
+      maxReplicas: 6
       targetValue: 1000m
       # this is average requests queue latency in miliseconds
       # depends on hardware used and number of requests

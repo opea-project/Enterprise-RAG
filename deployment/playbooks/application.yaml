@@ -51,13 +51,6 @@
         - install
         - uninstall
 
-    - name: Gather NUMA topology info
-      ansible.builtin.include_role:
-        name: utils
-        tasks_from: get_nodes_topology.yaml
-      tags:
-        - install
-
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons

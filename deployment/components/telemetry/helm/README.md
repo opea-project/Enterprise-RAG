@@ -1,9 +1,33 @@
-# Enterprise-RAG Telemetry Helm Chart
+# Telemetry Helm Chart
 
-### Assumptions/current state/limitations:
+This Helm chart sets up telemetry infrastructure for the Intel® AI for Enterprise RAG.
 
-- ChatQnA application is deployed to "chatqa" namespace (check instructions below).
-- All telemetry base components (metrics) will be deployed to `monitoring` namespace.
+## Table of Contents
+
+- [Overview](#overview)
+- [Available Metrics and Sources](#available-metrics-and-sources)
+- [Getting Started](#getting-started)
+  - [Install Metrics Pipeline](#install-metrics-pipeline)
+  - [Install Logs Pipeline](#install-logs-pipeline)
+  - [Install Traces Pipeline Telemetry](#install-traces-pipeline-telemetry)
+- [Bill of Materials](#bill-of-materials)
+- [Extra Additions](#extra-additions)
+  - [metrics-server – Kubernetes Metrics Pipeline](#metrics-server--kubernetes-own-metrics-pipeline)
+  - [pcm-sensor-server – XEON Telemetry](#pcm-sensor-server---xeon-telemetry)
+- [Configuration: prometheus-kube-stack](#configuration-prometheus-kube-stack)
+  - [kube-etcd Monitoring](#telemetry-kube-prometheus-kube-etcd)
+  - [kube-proxy Monitoring](#telemetry-kube-prometheus-kube-proxy)
+  - [kube-scheduler Monitoring](#telemetry-kube-prometheus-kube-scheduler-and-kube-scheduler-kind-control-plane)
+
+
+## Overview
+
+The chart provisions:
+ - Prometheus – for metrics collection and storage.
+ - Exporters – for exposing metrics from pods and services.
+ - Grafana – for visualization of metrics with preconfigured dashboards.
+ - AlertManager – for alerting with predefined rules.
+
 
 Default Metrics pipeline:
 
@@ -11,14 +35,19 @@ Default Metrics pipeline:
 pods    -> Prometheus   -> Grafana
 ```
 
-Information:
-- pods and services are directly scrapped by Prometheus, defined by Prometheus-operator CRDs: "PodMonitor" and "ServiceMonitor"
+Prometheus scrapes pods and services using Prometheus Operator CRDs: PodMonitor and ServiceMonitor.
 
-### Getting started
+This chart should be installed before other telemetry components (logs, traces) due to dependencies on Prometheus and Grafana.
+
+## Available metrics and sources:
+
+Check [METRICS.md](METRICS.md) how to check existing metrics.
+
+## Getting started
 
 Following instruction deploy only telemetry components.
 
-#### I) Install **metrics pipeline** telemetry.
+### Install metrics pipeline
 
 This is metrics pipeline and Grafana deployed from helm source **base** directory:
 
@@ -34,7 +63,7 @@ Base chart deploys:
 
 Please check the "Extra additions" section for information on **pcm** and **metrics-server** (not yet merged into the Helm chart).
 
-#### II) Install **logs pipeline** telemetry.
+### Install logs pipeline
 
 This uses "logs" subchart from helm **charts/logs** chart directory:
 
@@ -43,7 +72,7 @@ The **metrics** telemetry requires the "metrics pipeline" to be deployed first.
 > [!WARNING]
 > Before deploying, make sure that prerequisites/requirements described [logs/README.md](charts/logs/README.md#prerequisites-imagesvolumes) are met (persistent volumes and images).
 
-##### II a) Install loki and OpenTelemetry collector for logs (with journalctl support) 
+#### Install loki and OpenTelemetry collector for logs (with journalctl support) 
 
 This is **recommended** method but requires custom image.
 
@@ -51,10 +80,8 @@ This is **recommended** method but requires custom image.
 helm install telemetry-logs -n monitoring -f charts/logs/values-journalctl.yaml charts/logs
 ```
 
-> [!NOTE]
-> This step is explicit because of a helm [bug](https://github.com/helm/helm/pull/12879). The "logs" subchart cannot be deployed together with the "telemetry" chart on a single node setup, as the subchart cannot nullify the required log-writer pod anti-affinity and two replicas at least.
 
-##### II b) [Alternatively to IIa] Install loki and OpenTelemetry collector for logs (default image, without journalctl support):
+#### Install loki and OpenTelemetry collector for logs (default image, without journalctl support):
 ```
 helm install telemetry-logs -n monitoring charts/logs
 ```
@@ -65,7 +92,7 @@ helm install telemetry-logs -n monitoring charts/logs
 
 Check [logs README.md](charts/logs/README.md#optional-components) for details.
 
-#### III) Install **traces pipeline** telemetry.
+### Install **traces pipeline** telemetry.
 
 Note two step (two charts) installation is required because CRD/CR dependency and WebHooks race condition of "OpenTelemetry operator" and created custom resources (collector/instrumentation):
 
@@ -81,36 +108,8 @@ helm install telemetry-traces-instr charts/trace-instr -n monitoring-traces
 
 Check [tracing README.md](charts/traces/README.md) for details.
 
-#### IV) Verification and access
 
-##### IV a) Access the Grafana:
-```
-kubectl --namespace monitoring port-forward svc/telemetry-grafana 3000:80
-```
-on `https://127.0.0.1:3000`
-using admin/prom-operator.
-
-
-##### IV b) Access the Prometheus with kubectl proxy:
-
-For debugging only purposes:
-```
-kubectl proxy
-```
-
-on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/graph`
-
-Note that all scrapping targets should be properly discovered and scrapped here `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometheus-prometheus:http-web/proxy/targets?search=&scrapePool=` .
-
-##### IV c) Access alert manager:
-
-on `http://127.0.0.1:8001/api/v1/namespaces/monitoring/services/telemetry-kube-prometh-alertmanager:http-web/proxy/#/alerts`
-
-### Available metrics and sources:
-
-Check [metrics files](METRICS.md) how to check existing metrics.
-
-### Bill of materials
+## Bill of Materials
 
 Telemetry including following components:
 
@@ -140,22 +139,23 @@ Telemetry including following components:
 - (optional) metric-server	
 - (optional) pcm-sensor-server
 
-### Extra additions
+## Extra Additions
 
-#### a) metrics-server - Kubernetes own "metrics" pipeline
+### metrics-server – Kubernetes own metrics pipeline
 
+Install:
 ```
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
 helm repo update
 helm upgrade --install --set args={--kubelet-insecure-tls} metrics-server metrics-server/metrics-server --namespace monitoring-metrics-server --create-namespace
 ```
-or uninstall
+Uninstall:
 
 ```
 helm uninstall metrics-server --namespace monitoring
 ```
 
-#### b) pcm-sensor-server - XEON telemetry
+### pcm-sensor-server - XEON telemetry
 
 > [!WARNING]
 > PCM-sensor-server is opt-in **experimental** preview feature. Please consider testing in controlled environment, before enabling on production systems.
@@ -164,7 +164,7 @@ It is work in progress by ppalucki, so it requires deployment from source:
 
 https://github.com/intel/pcm/pull/727 (images are published but not helm charts).
 
-a) Clone and deploy
+#### Clone and deploy
 ```
 cd helm
 git clone https://github.com/ppalucki/pcm/ example/pcm
@@ -184,7 +184,7 @@ helm install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit
 helm upgrade --install -n monitoring pcm . -f values-direct-privileged.yaml --set cpuLimit=1000m --set cpuRequest=1000m --set memoryLimit=2048Mi --set memoryRequest=2048Mi --set podMonitor=true --set podMonitorLabels.release=telemetry
 ```
 
-b) Check PCM metrics
+#### Check PCM metrics
 ```
 kubectl get -n monitoring daemonset pcm
 podname=`kubectl -n monitoring get pod -l app.kubernetes.io/component=pcm-sensor-server -ojsonpath='{.items[0].metadata.name}'`
@@ -196,7 +196,7 @@ curl -Ls http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/
 curl -Ls http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/metrics | grep DRAM_Joules_Consumed 
 ```
 
-c) Download PCM dashboard (should be already included in helm-chart)
+#### Download PCM dashboard (should be already included in helm-chart)
 ```
 cd helm
 podname=`kubectl -n monitoring get pod -l app.kubernetes.io/component=pcm-sensor-server -ojsonpath='{.items[0].metadata.name}'`
@@ -204,16 +204,16 @@ echo $podname
 curl -Ls http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname/proxy/dashboard/prometheus/default -o files/dashboards/pcm-dashboard.json
 ```
 
-d) Uninstall PCM
+#### Uninstall PCM
 ```
 helm uninstall -n monitoring pcm 
 ```
 
-#### Configuration prometheus-kube-stack
+### Configuration prometheus-kube-stack
 
 When deploying the Prometheus Operator using the `kube-prometheus-stack` Helm chart, additional configuration may be required to monitor certain Kubernetes services. The following sections provide guidance on how to configure monitoring for the `kube-controller-manager`, `kube-etcd`, `kube-proxy`, and `kube-scheduler` components. This issue was well described [here](https://github.com/prometheus-community/helm-charts/issues/204).
 
-##### telemetry-kube-prometheus-kube-etcd
+#### telemetry-kube-prometheus-kube-etcd
 
 To monitor the `kube-etcd` service, you need to update the `ClusterConfiguration` for `kubeadm` to expose the metrics endpoint. This solution is detailed in a [GitHub issue comment](https://github.com/prometheus-community/helm-charts/issues/204#issuecomment-1003558431)
 
@@ -235,7 +235,7 @@ kubeEtcd:
     targetPort: 2381
 ```
 
-##### telemetry-kube-prometheus-kube-proxy
+#### telemetry-kube-prometheus-kube-proxy
 
 The `kube-proxy` service may have issues with Prometheus instances accessing its metrics. The problem and its solution are documented in the `kube-prometheus-stack` chart [README](https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md#kubeproxy).
 
@@ -264,7 +264,7 @@ metadata:
   namespace: kube-system
 ```
 
-##### telemetry-kube-prometheus-kube-scheduler and kube-scheduler-kind-control-plane
+#### telemetry-kube-prometheus-kube-scheduler and kube-scheduler-kind-control-plane
 
 Monitoring the `kube-scheduler` service, as well as the `kube-scheduler-kind-control-plane` if you are using kind, requires meeting certain pre-requisites when using `kubeadm`. These pre-requisites are outlined in the [kube-prometheus documentation](https://github.com/prometheus-operator/kube-prometheus/blob/main/docs/kube-prometheus-on-kubeadm.md#kubeadm-pre-requisites).
 

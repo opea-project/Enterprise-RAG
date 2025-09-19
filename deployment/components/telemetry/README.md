@@ -1,26 +1,26 @@
-### Telemetry for Enterprise RAG
+# Telemetry for Intel® AI for Enterprise RAG
 
-#### Intro
+# Overview
 
-Telemetry stack for Enterprise RAG is split into three related parts (main chart and three subcharts):
+The telemetry stack for Intel® AI for Enterprise RAG is built from those related Helm charts, including the main metrics chart and three subcharts:
 
-- [**metrics**](helm/README.md) - (base) provides metrics signals based on Prometheus and set of exporters and basic infrastructure for visualization (Grafana) and alerting (AlertManager + Rules)
-- [**logs**](helm/charts/logs/README.md) - provides mechanism to collect logs (custom OpenTelemetry collector running as DaemonSet) from all pods and HOST system OS systemd units and backends to store and query (Loki)
-- [**traces**](helm/charts/traces/README.md) - deploys backends to store and query traces (Tempo) and OpenTelemetry operator to automate collectors deployment,
-- [**traces-instr**](helm/charts/traces-instr/README.md) - exposes central service where traces can be pushed (OpenTelemetry collector running as Deployment deployed by OpenTelemetry operator) and prepare auto zero-code instrumentations
+- [**metrics**](helm/README.md) - (base) Helm chart that sets up metrics collection with Prometheus and exporters, and provisions the core infrastructure for visualization (Grafana) and alerting (AlertManager with rules)
 
-These four charts need to be installed in order because of implicit dependencies (Loki and Tempo use Grafana as visualization and Prometheus for self-monitoring, Traces collector uses OpenTelemetry operator for deployment)
+- [**logs**](helm/charts/logs/README.md) - Helm chart that sets up log collection using a custom OpenTelemetry collector (running as a DaemonSet) to gather data from all pods and host-level systemd units, and stores it in [Loki](https://github.com/grafana/loki) for querying.
 
-Please follow instructions in [helm/README.md](helm/README.md) to install all four charts.
+- [**traces**](helm/charts/traces/README.md) - Helm chart that deploys the trace backend [Tempo](https://github.com/grafana/tempo) for storing and querying traces, and installs the OpenTelemetry operator to automate collectors deployment
 
-#### Namespaces
+- [**traces-instr**](helm/charts/traces-instr/README.md) - Helm chart that provisions a central service where traces can be pushed (OpenTelemetry collector running as a deployment deployed by OpenTelemetry operator) and enables zero-code auto-instrumentation
 
-- **metrics** and **logs** charts are deployed to **monitoring** namespace
-- **traces** and **traces-instr** are deployed to **monitoring-traces** namespace
 
-#### Architecture (overview)
+> [!NOTE]
+> These four charts need to be installed in order due to implicit dependencies: Loki and Tempo rely on Grafana and Prometheus, while the Traces collector depends on the OpenTelemetry Operator for deployment. Please follow instructions in [helm/README.md](helm/README.md) to install all four charts.
 
-This is the "default" telemetry pipeline when all "default" components are deployed (when following instructions "deployment" directory):
+
+## Architecture
+
+The default telemetry pipeline integrates metrics, logs, and traces across the platform, leveraging industry-standard open-source components for collection, storage, and visualization.
+
 
 ```
        ------>  otelcol-traces-deployment  ----------->  Tempo  --\  ------------------
@@ -30,9 +30,20 @@ Pods --------------------------->  exporters ------------------------>  Promethe
 journald ---->  otelcol-logs-daemonset(journalctl) ------------  Loki -----------------
 ```
 
-where:
+### Component Roles
 
-- **`otelcol-*`** are OpenTelemetry collectors, deployed as Deployment or DaemonSet running in "push by pods" or "pull from pods/journald"  mode for **traces** and **logs**,
-- **`exporters`** are set of exporters as sources to scrape metrics by Prometheus (every pod can be treated as exporter using `ServiceMonitor` or `PodPmonitor` custom resources),
-- **`Prometheus`**, **`Loki`** and **`Tempo`** are telemetry backends respectively for: metrics, logs and traces,
-- **`Grafana`** is a frontend to query data from telemetry backends with configured data sources and provisioned dashboards.
+- **Grafana:** Unified dashboard for querying and visualizing metrics, logs, and traces from all telemetry backends.
+- **Prometheus:** Metrics backend, scraping data from exporters and providing alerting and monitoring capabilities.
+- **Loki:** Log backend, storing and indexing logs collected from pods and host systemd units.
+- **Tempo:** Trace backend, storing distributed traces for performance and debugging analysis.
+- **Exporters:** Expose metrics from application pods, discovered via `ServiceMonitor` or `PodMonitor` resources.
+- **OpenTelemetry Collectors (`otelcol-*`):** Collect and forward telemetry data. Deployed as DaemonSets for logs (journald) and as Deployments for traces, supporting both push and pull modes.
+
+This architecture ensures scalable, reliable telemetry collection and observability across all deployed workloads.
+
+### Namespaces
+
+The telemetry stack is organized into separate namespaces to isolate different types of signals and simplify management:
+
+- **metrics** and **logs** charts are deployed to the **monitoring** namespace
+- **traces** and **traces-instr** are deployed to the **monitoring-traces** namespace

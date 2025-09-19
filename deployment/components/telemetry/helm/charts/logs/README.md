@@ -1,33 +1,33 @@
-## Enterprise RAG Telemetry Logs Helm subchart
+# Enterprise RAG Telemetry - "Logs" Helm subchart
 
-### Introduction
+## Introduction
 
 Logs chart allows to deploy "logs" pipeline in following configurations:
 
 1) Default Logs pipeline (not custom image needed, but without logs from systemd units):
 
-```
-pods            -> otelcol-logs-daemonset/default      -> loki
-```
+    ```
+    pods            -> otelcol-logs-daemonset/default      -> loki
+    ```
 
 2) (recommended) Logs pipeline with custom otelcol with journald support:
 
-```
-pods
-journald        -> otelcol-logs-daemonset/journalctl   -> loki
-```
+    ```
+    pods
+    journald        -> otelcol-logs-daemonset/journalctl   -> loki
+    ```
 
-### Getting started
+## Getting started
 
 #### Install metrics and logs telemetry
 
 Please follow instruction from "base telemetry" [README Installation instruction section](../../README.md).
 
-### Prerequisites (images/volumes)
+## Prerequisites
 
-#### 1) OpenTelemetry collector requirements
+### OpenTelemetry collector requirements
 
-##### 1a) Build custom image for Journald host logs
+#### Build custom image for Journald host logs
 
 Using `Dockerfile-otelcol-contrib-journalctl` build custom image:
 
@@ -53,7 +53,7 @@ docker run -ti --rm --entrypoint bash -v /var/log/journal:/var/log/journal -v /r
 docker run -ti --rm --entrypoint journalctl -v /var/log/journal:/var/log/journal -v /run/log/journal:/run/log/journal localhost:5000/otelcol-contrib-journalctl -D /var/log/journal --header | grep 'File path:'
 ```
 
-##### 1b) Number of iwatch open descriptors
+#### Number of iwatch open descriptors
 
 Check numbers of inotify user instances (on target Host):
 ```
@@ -65,11 +65,11 @@ To make this change **permanent** modify `/etc/sysctl.conf` or `/syc/sysctl.d/` 
 References:
 - https://github.com/kubeflow/manifests/issues/2087
 
-### Troubleshooting
+## Troubleshooting
 
-#### OpenTelemetry collector
+### OpenTelemetry collector
 
-##### a) **telemetry-logs-otelcol-logs-agent** (with journalctl support) pod fails with error in logs:
+#### **telemetry-logs-otelcol-logs-agent** (with journalctl support) pod fails with error in logs:
 
 ```
 Error: cannot start pipelines: start stanza: journalctl command exited                                                                                                                                                                                       │
@@ -88,7 +88,7 @@ Description:
 It is caused by journalctl automatically turning off "follow mode" when run by opentelemetry agent with following error
 "Insufficient watch descriptors available. Reverting to -n." (this error is not exposed by otelcol agent, to confirm disable journalctl receiver and attach pod and run `journalctl -f` command).
 
-##### b) Inspect final configuration
+#### Inspect final configuration
 
 ```
 # for installed as "telemetry-logs" release
@@ -99,22 +99,22 @@ kubectl get configmap -n monitoring telemetry-logs-otelcol-otelcol-logs-agent -o
 
 ```
 
-##### c) Check otelcol metrics using dashboard
+#### Check otelcol metrics using dashboard
 
 Open "OTEL / OpenTelemetry Collector" Dashboard in Grafana
 
-##### d) Inspect pipelines and traces ending with errors with zpages extension (enabled by default):
+#### Inspect pipelines and traces ending with errors with zpages extension (enabled by default):
 ```
 podname=`kubectl get pod -l app.kubernetes.io/name=otelcol-logs -n monitoring -oname | cut -f '2' -d '/'` ; echo $podname
 curl -vs "127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/pipelinez" -o /dev/null
 echo open "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/tracez"
 echo open "http://127.0.0.1:8001/api/v1/namespaces/monitoring/pods/$podname:55679/proxy/debug/pipelinez"
 ```
-##### e) Enable and modify "debug exporter"
+#### Enable and modify "debug exporter"
 
 Check `values.yaml` file for `otelcol-logs.alternateConfig.exporters.debug` section . Change mode "basic" to "verbose" or "detailed".
 
-##### f) Change level verbosity from "info" to "debug"
+#### Change level verbosity from "info" to "debug"
 
 Check `values.yaml` file for `otelcol-logs.alternateConfig.service.telemetry.logs.level`.  Change from "info" to "debug".
 

@@ -112,7 +112,6 @@ Detailed description of the scanner can be found in [LLM Guard documentation for
 
 ### Secrets scanner
 Detailed description of the scanner can be found in [LLM Guard documentation for Secrets scanner](https://protectai.github.io/llm-guard/input_scanners/secrets/)
-| Environment Variable       | Description                                                                   |
 | Environment Variable       | Description                                                                   | Type   | Default in LLM Guard  | Required / Optional |
 |----------------------------|-------------------------------------------------------------------------------|--------|-----------------------|---------------------|
 | `SECRETS_ENABLED`          | Enables Secrets scanner.                                                      | bool   | false               | Required            |

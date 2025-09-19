@@ -1,58 +1,91 @@
 # Intel® AI for Enterprise RAG
 
+Intel® AI for Enterprise RAG simplifies transforming your enterprise data into actionable insights. Powered by Intel® Xeon® processors and Intel® Gaudi® AI accelerators, it integrates components from industry partners to offer a streamlined approach to deploying enterprise solutions.
+
+## Why use Intel® AI for Enterprise RAG?
+
+Enable intelligent ChatQ&A experiences that understand your business context:
+
+* **Domain-Specific Intelligence** - Enrich conversations with your organizational knowledge without training or fine-tuning models
+* **Rapid Deployment** - Transform enterprise documents into conversational AI experiences in minutes, not months
+* **Enterprise-Ready Scale** - Deploy secure, compliant ChatQ&A solutions that grow with your business needs
+
+## Core Features
+* **One-Click Enterprise Deployment** - Fully automated Kubernetes cluster provisioning with Ansible playbooks, supporting both single-node and multi-node configurations with comprehensive infrastructure setup.
+* **Optimized AI Hardware Support** - Native support for Intel® Xeon® processors and Intel® Gaudi® AI accelerators with Horizontal Pod Autoscaling (HPA), balloons policy for CPU pinning on NUMA architectures, and performance-tuned configurations.
+* **Enterprise-Grade Security & Compliance** - Integrated Identity and Access Management (IAM) with Keycloak, programmable guardrails for fine-grained control, Pod Security Standards (PSS) enforcement for secure enterprise operations, role-based access control for vector databases, and Intel® Trust Domain Extensions (TDX) support for confidential computing.
+* **Comprehensive Monitoring & Observability** - Integrated telemetry stack with Prometheus, Grafana dashboards, distributed tracing with Tempo, and centralized logging with Loki for full pipeline visibility.
+
+If you're interested in getting a glimpse of how Intel® AI for Enterprise RAG works, check out following demo.
+
+<br/>
 <div align="center">
   <a href="https://www.youtube.com/watch?v=wWcUNle1kkg">
-    <img width=560 width=315 alt="Enterprise RAG Demo ChatQ&A" src="./images/yt_thumbnail.png">
+    <img alt="Enterprise RAG Demo ChatQ&A" src="./docs/images/yt_thumbnail.png">
   </a>
 </div>
 &nbsp;
 
-Intel® AI for Enterprise RAG simplifies transforming your enterprise data into actionable insights. Powered by Intel® Gaudi® AI accelerators and Intel® Xeon® processors, it integrates components from industry partners to offer a streamlined approach to deploying enterprise solutions. It scales seamlessly with proven orchestration frameworks, providing the flexibility and choice your enterprise needs.
-
-Building on the strong foundation of OPEA, Intel® AI for Enterprise RAG extends this base with key features that enhance scalability, security, and user experience. These include integrated Service Mesh capabilities for seamless integration with modern service-based architectures, production-ready validation for pipeline reliability, and a feature-rich UI for RAG as a service to manage and monitor workflows easily. Additionally, Intel® and partner support provide access to a broad ecosystem of solutions, combined with integrated IAM with UI and application, ensuring secure and compliant operations. Programmable guardrails enable fine-grained control over pipeline behavior, allowing for customized security and compliance settings.
-
 > [!NOTE]
-The video provided above showcases the beta release of our project. As we transition to the 1.0 version, users can anticipate an improved UI design along with other minor enhancements. While many features remain consistent with the beta, the 1.0 release will offer a more refined user experience.
+> The video provided below showcases the beta release of our project. As we've transitioned to next releases, users can anticipate an improved UI design, improved installation process along with other enhancements.
 
-**ChatQnA**
+Feel free to check out the architecture of the pipeline. For the detailed microservices architecture, refer [here](./docs/microservices_architecture.png).
 
-The ChatQnA solution uses retrieval augmented generation (RAG) architecture, quickly becoming the industry standard for chatbot development. It combines the benefits of a knowledge base (via a vector store) and generative models to reduce hallucinations, maintain up-to-date information, and leverage domain-specific knowledge.
-
-![arch](./images/architecture.png)
-
-For the complete microservices architecture, refer [here](./docs/microservices_architecture.png)
-<div align="left">
-    <a href="https://opea.dev/" target="_blank">
-    <img  src="./images/logo.png" alt="Powered by Open Platform for Enterprise AI" height=100 width=280>
-  </a>
-</div>
+![arch](./docs/images/architecture.png)
 
 # Table of Contents
 
-- [Documentation](#documentation)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Support](#support)
-- [License](#license)
-- [Security](#security)
-- [Contributing](#contributing)
-- [Trademark Information](#trademark-information)
+1. [Intel® AI for Enterprise RAG](#intel-ai-for-enterprise-rag)
+   - [Why use Intel® AI for Enterprise RAG?](#why-use-intel-ai-for-enterprise-rag)
+   - [Core Features](#core-features)
+3. [Requirements](#requirements)
+   - [System Requirements](#system-requirements)
+   - [Software Prerequisites](#software-prerequisites)
+   - [Hardware Requirements](#hardware-requirements)
+      - [Deployment on Xeon only](#deployment-on-xeon-only)
+      - [Deployment on Xeon + Gaudi Accelerator](#deployment-on-xeon--gaudi-accelerator)
+4. [Getting Started](#getting-started)
+   - [Cluster preparation](#cluster-preparation)
+      - [Simplified Single node Kubernetes Cluster Deployment](#simplified-single-node-kubernetes-cluster-deployment)
+      - [Installing Infrastructure Components on a custom cluster](#installing-infrastructure-components-on-a-custom-cluster)
+   - [Pipeline installation](#pipeline-installation)
+5. [Documentation](#documentation)
+6. [Support](#support)
+7. [Publications](#publications)
+7. [License](#license)
+8. [Security](#security)
+9. [Intel’s Human Rights Principles](#intels-human-rights-principles)
+10. [Model Card Guidance](#model-card-guidance)
+11. [Contributing](#contributing)
+12. [Trademark Information](#trademark-information)
 
-# Documentation
 
-* [Deployment Guide](deployment/README.md) explains how to install and configure Intel® AI for Enterprise RAG for your needs.
+# Requirements
 
-# System Requirements
+## System Requirements
 
 | Category            | Details                                                                                                           |
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
 | Operating System    | Ubuntu 22.04/24.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
-| Gaudi Firmware Version | 1.21.0                                                                                                          |
 | Python              | 3.10                                                                                                               |
 
-## Hardware Prerequisites for Deployment using Gaudi® AI Accelerator
+## Software Prerequisites
+- **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. Default models can be inspected in [config.yaml](deployment/inventory/sample/config.yaml).
+- For **multi-node clusters** CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX) is required. NFS server with CSI driver that supports RWX can be installed via [simplified kubernetes cluster deployment](#simplified-single-node-kubernetes-cluster-deployment) section or you can check out more detailed instructions in [deployment/README.md](deployment/README.md).
+
+## Hardware Requirements
+
+These are minimal requirements to run Intel® AI for Enterprise RAG with default settings. In case of more(or less) resources available, feel free to adjust the parameters in [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml), depending on the chosen hardware.
+
+### Deployment on Xeon only
+To deploy the solution using Xeon only, you will need access to any platform with Intel® Xeon® Scalable processor that meet bellow requirements:
+-  **logical cores**: A minimum of `88` logical cores
+-  **RAM memory**: A minimum of `250GB` of RAM
+-  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
+
+### Deployment on Xeon + Gaudi Accelerator
 
 To deploy the solution on a platform with Gaudi® AI Accelerator we need to have access to instance with minimal requirements:
 
@@ -60,49 +93,14 @@ To deploy the solution on a platform with Gaudi® AI Accelerator we need to have
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
--  **Latest Gaudi driver**: To check your Gaudi version, `run hl-smi`. If Gaudi version doesn't match the required version, upgrade it by following [this tutorial](https://docs.habana.ai/en/latest/Installation_Guide/Driver_Installation.html).
+-  **Gaudi driver**: `1.21.3`
 
+# Getting Started
 
-If you don't have a Gaudi® AI Accelerator, you can request these instances in [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) to run Intel® AI for Enterprise RAG.
-
-- Visit [ai.cloud.intel.com](https://ai.cloud.intel.com/) and register.
-- on [Intel® Tiber™ AI Cloud](https://console.cloud.intel.com/home) the left pane select `Preview > Preview catalog`.
-- Select `Gaudi® 2 Deep Learning Server`, we recommend choosing a Bare Metal machine with 8 Gaudi devices to be able to meet hardware requirements.
-- request instance
-- As there is a limited number of machines with Gaudi accelerators, you need to be whitelisted to be able to access them. Therefore:
-  - Send your email, Account ID, and information that you have requested an instance to [EnterpriseRAGRequest@intel.com](mailto:EnterpriseRAGRequest@intel.com) so we could add you to the whitelist.
-- on Intel® Tiber™ AI Cloud the left pane select `Catalog > Hardware`. Once you are added to the whitelist you should see Gaudi instances available.
-- Select the Machine image - for example: `ubuntu-2204-gaudi2-1.20.1-*` with `Architecture: X86_64 (Baremetal only)`. Please note that minor version tags may change over time.
-- Upload your public key and launch the instance
-- Navigate to the `Instances` page and verify that the machine has reached its ready state, then click on "How to Connect via SSH" to configure your machine correctly for further installation.
-
-
-## Hardware Prerequisites for Deployment using Xeon only
-To deploy the solution on a platform using 4th or 5th generation Intel® Xeon® processors, you will need:
-- access to any platform with Intel® Xeon® Scalable processors that meet bellow requirements:
--  **logical cores**: A minimum of `88` logical cores
--  **RAM memory**: A minimum of `250GB` of RAM
--  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
-
-### Software Prerequisites
--   **Operating System**: Ubuntu 22.04/24.04
--   **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. This default model used is `Mixtral-8x7B` for which access needs to be requested. Visit  [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1) to apply for access.
--   **For multi-node clusters CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX). NFS server with CSI driver that supports RWX can be installed in [simplified-kubernetes-cluster-deployment](#simplified-kubernetes-cluster-deployment) section.
-
-#### Additional Software Prerequisites when using Gaudi® AI Accelerator
--   **Gaudi Software Stack**: Verify that your setup uses a valid software stack for Gaudi accelerators, see  [Gaudi support matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html). Note that running LLM on a CPU is possible but will significantly reduce performance.
-
-### Software Images
-
-Software images will be downloaded automatically during deployment from [Docker Hub](https://hub.docker.com/). If you prefer to use an internal registry, all required images are available under the following link: [ERAG Images](https://hub.docker.com/u/opea?page=1&search=erag).
-
-To configure the use of an internal registry, please specify it in the `config.yaml` file as described in the [Application Deployment on a Custom Cluster](https://github.com/intel-innersource/applications.ai.enterprise-rag.enterprise-ai-solution#application-deployment-on-a-custom-cluster) section of the repository.
-# Pre-Installation
-
-It is recommended to use python3-venv to manage python packages.
+Install the prerequisities.
 
 ```sh
-cd deployment
+cd deployment/
 sudo apt-get install python3-venv
 python3 -m venv erag-venv
 source erag-venv/bin/activate
@@ -111,27 +109,28 @@ pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
 
-> **Note:** To verify if venv is properly used, check with `ansible --version` for Python version. If not using the venv Python, you can add `ansible_python_interpreter=erag-venv/bin/python3` to the inventory under `[local]` section, or for application playbook add `-e ansible_python_interpreter=erag-venv/bin/python3`.
-
-# Configuration File
-
-To prepare the configuration file, create a copy of the sample:
+Create a copy of the configuration file:
 
 ```sh
 cd deployment
 cp -r inventory/sample inventory/test-cluster
 ```
 
-## Simplified Kubernetes Cluster Deployment
+(Optional) Execute following command to install and configure third party applications, including Docker, Helm, make, zip, and jq, needed to run the Intel® AI for Enterprise RAG correctly.
 
-If you need to deploy a new Kubernetes cluster, follow the instructions below. If you already have a cluster prepared, you can skip to the [Preparing a Custom Cluster and Installing Infrastructure Components](#preparing-a-custom-cluster-and-installing-infrastructure-components) section.
+```sh
+ansible-playbook -u $USER -K playbooks/application.yaml --tags configure -e @inventory/test-cluster/config.yaml
+```
 
-<details>
-<summary><strong>Show instructions for installing a new Kubernetes cluster</strong></summary>
+## Cluster preparation
+
+### Simplified Single node Kubernetes Cluster Deployment
+
+If you need to deploy a new Kubernetes cluster or don't know where to start, follow the instructions below. If you already have a cluster prepared, skip to the [next](#installing-infrastructure-components-on-a-custom-cluster) section.
 
 1. **Edit the inventory file:**
    - Open `inventory/test-cluster/inventory.ini`.
-   - Replace `LOCAL_USER`, `REMOTE_USER`, `MACHINE_HOSTNAME`, and `MACHINE_IP` with your actual values.
+   - Replace `LOCAL_USER`, `REMOTE_USER` and `MACHINE_IP` with your actual values.
 
 Example `inventory.ini` for a single-node cluster:
 ```ini
@@ -141,14 +140,14 @@ localhost ansible_connection=local ansible_user=LOCAL_USER
 
 [all]
 # Control plane nodes
-MACHINE_HOSTNAME ansible_host=MACHINE_IP
+node1 ansible_host=MACHINE_IP
 
 # Define node groups
 [kube_control_plane]
-MACHINE_HOSTNAME
+node1
 
 [kube_node]
-MACHINE_HOSTNAME
+node1
 
 [etcd:children]
 kube_control_plane
@@ -164,81 +163,29 @@ ansible_user=REMOTE_USER
 ansible_connection=ssh
 ```
 
+> [!TIP]
+> For password SSH connections to the node, add `--ask-pass` to every ansible command.
+
 For more information on preparing an Ansible inventory, see the [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
 
 2. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
-   - Fill in the required values for your environment.
+   - Fill in the required values for your environment. If you don't have any cluster deployed, ignore `kubeconfig` parameter for now.
 
-Example `config.yaml` for deploying a new Kubernetes cluster:
-```yaml
-# Uses Kubespray to deploy Kubernetes cluster and install required components
-deploy_k8s: false
 
-# Available options:
-# - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
-# - "nfs": Use for multi-node deployment or single node with velero backup functionality; can be installed on existing K8s cluster using infrastructure playbook
-# - "netapp-trident": Use for enterprise deployments with NetApp ONTAP storage backend; provides ReadWriteMany support with enterprise features
-install_csi: "local-path-provisioner"
+> [!NOTE]
+> The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.
+> * Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.
+> * Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities. [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included.
+> * Set `install_csi: netapp-trident` if you are deploying with NetApp ONTAP storage backend for enterprise-grade storage with advanced features.
 
-# please use variables local_registry and insecure_registry together
-# set to true to install registry on K8s , set insecure registry to be able to push and pull images from registry on defined node and defined port.
-local_registry: true
-insecure_registry: "master-1:32000"
-
-# Setup when install_csi is "nfs"
-# Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
-# Setting nfs_server_enabled to true will install NFS server together with CSI driver
-# and set nfs_csi_storage_class as the default one.
-nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
-nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
-nfs_csi_driver_version: "4.11.0"
-nfs_csi_storage_class: "nfs-csi"
-
-# Setup when install_csi is "netapp-trident"
-# NetApp Trident CSI configuration for ONTAP storage backend
-# Requires Ubuntu for NFS utilities installation
-# SECURITY NOTE: Replace placeholder values with actual configuration
-# Credentials will be stored securely in Kubernetes secrets
-trident_operator_version: "2506.0"    # NetApp Trident operator version
-ontap_management_lif: "FILL_HERE"     # ONTAP management LIF IP address
-ontap_data_lif: "FILL_HERE"           # ONTAP data LIF IP address  
-ontap_svm: "FILL_HERE"                # ONTAP Storage Virtual Machine name
-ontap_aggregate: "FILL_HERE"          # ONTAP aggregate name for volume provisioning
-ontap_username: "FILL_HERE"           # ONTAP admin username (stored in Kubernetes secret)
-ontap_password: "FILL_HERE"           # ONTAP admin password (stored in Kubernetes secret)
-
-huggingToken: FILL_HERE # Provide your Hugging Face token here
-
-# Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config).
-# If you are installing K8s cluster in simplified deployment, your kubeconfig will be created in path "<repository path>/deployment/inventory/test-cluster/artifacts/admin.conf"
-kubeconfig: FILL_HERE
-
-# Proxy settings are optional
-httpProxy:
-httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field as needed:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-# ...
-pipelines:
-  - namespace: chatqa
-    samplePath: chatqa/reference-cpu.yaml # For HPU deployment, use chatqa/reference-hpu.yaml
-    resourcesPath: chatqa/resources-reference-cpu.yaml # For HPU deployment, use chatqa/resources-reference-hpu.yaml
-    type: chatqa
-```
-> **Note:** The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.  
-> Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.  
-> Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities.  
-> Set `install_csi: netapp-trident` if you are deploying with NetApp ONTAP storage backend for enterprise-grade storage with advanced features.  
-> [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included.
-
-3. **(Optional) Validate hardware resources and config.yaml:**
+3. **(Optional) Validate hardware resources:**
 
    ```sh
-   ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
 
-   > **Note:** If this is gaudi_deployment add additional flag -e is_gaudi_platform=true 
+If this is gaudi_deployment add additional flag -e is_gaudi_platform=true.
 
 4. **Deploy the cluster:**
 
@@ -246,97 +193,26 @@ pipelines:
    ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
 
-### Cluster Deletion
+5. **Add `kubeconfig` path in config.yaml.**
 
-To remove the cluster, run:
+6. **(Optional) Validate config.yaml:**
 
-```sh
-ansible-playbook -K playbooks/infrastructure.yaml --tags delete -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-```
-</details>
-&nbsp;
+   ```sh
+   ansible-playbook playbooks/validate.yaml --tags config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
 
 
-## Preparing a Custom Cluster and Installing Infrastructure Components
+### Installing Infrastructure Components on a custom cluster
 
-If you are using your own custom Kubernetes cluster (not provisioned by the provided infrastructure playbooks), you may need to install additional infrastructure components before deploying the application. These include the NFS server for shared storage, the Gaudi operator (for Habana Gaudi AI accelerator support), Velero, or other supported services.
-
-<details>
-<summary><strong>Show instructions for Preparing a Custom Cluster</strong></summary>
+If you are using your own custom Kubernetes cluster (not provisioned by the provided infrastructure playbooks), you may need to install additional infrastructure components before deploying the application. These include the NFS server for shared storage, Gaudi operator (for Habana Gaudi AI accelerator support), Velero, or other supported services.
 
 To prepare your cluster:
 
 1. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
-   - Set `deploy_k8s: false` and update the other fields as needed for your environment (see the [Configuration File](#configuration-file) section for details).
+   - Set `deploy_k8s: false` and update the other fields as needed for your environment.
    - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included).
-   - If you need NetApp Trident, set `install_csi: netapp-trident` and configure the ONTAP-related variables.
    - If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
-
-   Example `config.yaml` for deploying on an existing cluster:
-    ```yaml
-    # Uses Kubespray to deploy Kubernetes cluster and install required components
-    deploy_k8s: false
-    
-    # Available options:
-    # - "local-path-provisioner": Use for single-node deployment. Local path provisioner works only with Kubespray deployment, so deploy_k8s needs to be true to install it
-    # - "nfs": Use for multi-node deployment; can be installed on existing K8s cluster using infrastructure playbook
-    # - "netapp-trident": Use for enterprise deployments with NetApp ONTAP storage backend; provides ReadWriteMany support with enterprise features
-    install_csi: "local-path-provisioner"
-    
-    # please use variables local_registry and insecure_registry together
-    # set to true to install registry on K8s , set insecure registry to be able to push and pull images from registry on defined node and defined port.
-    local_registry: true
-    insecure_registry: "master-1:32000"
-
-    # Setup when install_csi is "nfs"
-    # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
-    # Setting nfs_server_enabled to true will install NFS server together with CSI driver
-    # and set nfs_csi_storage_class as the default one.
-    nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
-    nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
-    nfs_csi_driver_version: "4.11.0"
-    nfs_csi_storage_class: "nfs-csi"
-
-    # Setup when install_csi is "netapp-trident"
-    # NetApp Trident CSI configuration for ONTAP storage backend
-    # Requires Ubuntu for NFS utilities installation
-    # SECURITY NOTE: Replace placeholder values with actual configuration
-    # Credentials will be stored securely in Kubernetes secrets
-    trident_operator_version: "2506.0"    # NetApp Trident operator version
-    ontap_management_lif: "FILL_HERE"     # ONTAP management LIF IP address
-    ontap_data_lif: "FILL_HERE"           # ONTAP data LIF IP address  
-    ontap_svm: "FILL_HERE"                # ONTAP Storage Virtual Machine name
-    ontap_username: "FILL_HERE"           # ONTAP admin username (stored in Kubernetes secret)
-    ontap_password: "FILL_HERE"           # ONTAP admin password (stored in Kubernetes secret)
-    ontap_aggregate: "FILL_HERE"          # ONTAP aggregate name for volume provisioning
-
-    huggingToken: FILL_HERE # Provide your Hugging Face token here
-    
-    # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config).
-    # If you are installing K8s cluster in simplified deployment, your kubeconfig will be created in path "<repository path>/deployment/inventory/test-cluster/artifacts/admin.conf"
-    kubeconfig: FILL_HERE
-
-    httpProxy:
-    httpsProxy:
-    # If HTTP/HTTPS proxy is set, update the noProxy field with the following:
-    noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
-
-    ...
-
-    gaudi_operator: false # set to true when Gaudi operator is to be installed
-    habana_driver_version: "1.21.3-57" # habana operator from https://vault.habana.ai/ui/native/habana-ai-operator/driver/
-
-    ...
-    pipelines:
-      - namespace: chatqa
-        samplePath: chatqa/reference-cpu.yaml
-        resourcesPath: chatqa/resources-reference-cpu.yaml
-        modelConfigPath: chatqa/resources-model-cpu.yaml
-        type: chatqa
-
-    ...
-    ```
 
 
 2. **Validate hardware resources and `config.yaml`:**
@@ -344,7 +220,8 @@ To prepare your cluster:
    ```sh
    ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
-   > **Note:** If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
+
+If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
 
 3. **Install infrastructure components (NFS, Gaudi operator, or others):**
 
@@ -353,69 +230,37 @@ To prepare your cluster:
    ```
    This will install and configure the NFS server, Gaudi operator, or velero as specified in your configuration.
 
-   > **Note:** You can enable several components in the same run if both are needed. Additional components may be supported via post-install in the future.
+> [!NOTE]
+> You can enable several components in the same run if both are needed. Additional components may be supported via post-install in the future.
 
-Once your cluster is prepared and the required infrastructure is installed, proceed with the application installation as described below.
-</details>
-&nbsp;
+## Pipeline installation
 
-# Installation
+Once your cluster is prepared and the required infrastructure is installed, proceed with the application installation.
 
 ```sh
 ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @inventory/test-cluster/config.yaml
 ```
 
-Refer [Deployment](deployment/README.md) if you prefer to install with multiple options.
+To verify if the components were installed correctly, run the script [./scripts/test_connection.sh](./deployment/scripts/test_connection.sh), [connect to UI](deployment/README.md#access-the-uigrafana), or execute [e2e tests](src/tests/).
 
+# Documentation
 
-# Updating the Application
-
-After the application is installed, you can update its components (for example, change the LLM or embedding model) by editing your configuration file and running the install tag again. The deployment scripts will detect changes and update only the involved components, minimizing downtime and unnecessary redeployments.
-
-To update the application:
-
-1. Edit `inventory/test-cluster/config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings).
-2. Run:
-
-```sh
-ansible-playbook -u $USER -K playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
-```
-
-This will apply the changes and update only the affected services.
-
-# Remove installation
-
-```sh
-cd deployment
-ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
-```
-
-# User Data Backup
-
-Application supports taking backup and restoring user data, including ingested vector data, ingested documents, user accounts and credentials and chat history.
-
-* With backup enabled and configured in cluster, the backup can be taken with the following command:
-  ```sh
-  ansible-playbook -u $USER -K playbooks/backup.yaml --tags backup,monitor_backup -e @inventory/test-cluster/config.yaml
-  ```
-
-  See documentation on [Full Backup of User Data](deployment/README.md#full-backup-of-user-data) to find more details on backup.
-
-> **Note**: Backup requires configuring cluster and application to support this feature, in particular the VMWare Velero tool is required.<br>
-> Refer to Deployment guide's chapter [Velero Prerequisites](deployment/README.md#velero-prerequisites) for details.
-
-## User Data Restore
-
-* With backup configured correctly the data restore process can be started with the following command:
-  ```sh
-  ansible-playbook -u $USER -K playbooks/backup.yaml --tags restore,monitor_restore -e @inventory/test-cluster/config.yaml
-  ```
-
-  See documentation on [Full Restore of User Data](deployment/README.md#full-restore-of-user-data) to find more details on restore.
+Refer to [deployment/README.md](deployment/README.md) or [docs](docs/) for more detailed deployment guide or in-depth instructions on ERAG components.
 
 # Support
 
 Submit questions, feature requests, and bug reports on the GitHub Issues page.
+
+# Publications
+
+Feel free to checkout articles about Intel® AI for Enterprise RAG:
+* [NetApp AIPod Mini – Deployment Automation](https://community.netapp.com/t5/Tech-ONTAP-Blogs/NetApp-AIPod-Mini-Deployment-Automation/ba-p/463257)
+* [Multi-node deployments using Intel® AI for Enterprise RAG](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Multi-node-deployments-using-Intel-AI-for-Enterprise-RAG/post/1710214)
+* [Rethinking AI Infrastructure: How NetApp and Intel Are Unlocking the Future with AIPod Mini](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Rethinking-AI-Infrastructure-How-NetApp-and-Intel-Are-Unlocking/post/1705557)
+* [Deploying Scalable Enterprise RAG on Kubernetes with Ansible Automation](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Deploying-Scalable-Enterprise-RAG-on-Kubernetes-with-Ansible/post/1701296)
+<br/>
+
+------
 
 # License
 
@@ -443,6 +288,6 @@ If you want to contribute to the project, please refer to the guide in [CONTRIBU
 
 Intel, the Intel logo, OpenVINO, the OpenVINO logo, Pentium, Xeon, and Gaudi are trademarks of Intel Corporation or its subsidiaries.
 
-* Other names and brands may be claimed as the property of others.
+Other names and brands may be claimed as the property of others.
 
 &copy; Intel Corporation

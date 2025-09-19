@@ -236,7 +236,7 @@ fingerprint:
 
 > [!NOTE]
 > Balloons policy is not supported on Gaudi or non-NUMA architectures.
-> For more informations regarding balloons policy refer [here](components/nri-plugin/README.md)
+> For more information regarding balloons policy refer [here](components/nri-plugin/README.md)
 
 > [!NOTE]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
@@ -253,9 +253,9 @@ fingerprint:
 Users can define their own CSI driver that will be used during deployment. The StorageClass should support accessMode ReadWriteMany (RWX).
 
 > [!WARNING]
-> If the driver does not support ReadWriteMany accessMode and Enterprise RAG is deployed on a multi-node cluster, pods may hang in `container creating` state for `tei-reranking` or `vllm`. This occurs because these pods use the same PVC `model-volume-llm` and only one pod can access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) and using it in the reranking manifest: [teirerank.yaml](./components/gmc/microservices-connector/config/manifests/teirerank.yaml) in the volumes section. However, we strongly recommend using a StorageClass that supports ReadWriteMany accessMode.
+> If the driver does not support ReadWriteMany accessMode and Enterprise RAG is deployed on a multi-node cluster, pods may hang in `container creating` state for `tei-reranking` or `vllm`. This occurs because these pods use the same PVC `model-volume-llm` and only one pod can access it if pods are on different nodes. This issue can be worked around by defining another PVC entry in [values.yaml](./components/gmc/microservices-connector/helm/values.yaml) and using it in the reranking manifest: [teirerank.yaml](./components/gmc/microservices-connector/config/manifests/teirerank.yaml) in the volumes section. However, it is strongly recommended to use a StorageClass that supports ReadWriteMany accessMode.
 
-We recommend setting `volumeBindingMode` to `WaitForFirstConsumer`
+Changing `volumeBindingMode` to `WaitForFirstConsumer` setting is recommended.
 
 #### Setting Default Storage Class
 Before running the Enterprise RAG solution, ensure that you have set the correct StorageClass as the default one. You can list storage classes using the following command:
@@ -279,12 +279,12 @@ Additionally, ensure that the `pvc` section in [values.yaml](./components/gmc/mi
 
 You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
 
-If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of storage.
+If using EDP with internal MinIO, update the [deployment/components/edp/values.yaml](components/edp/values.yaml) file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100Gi of data storage.
 
-Similarly, for the selected Vector Store you can increase the persistent storage size. This configration is available in `deployment/compnents/vector_databases/values.yaml` For example, set `persistence.size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
+Similarly, for the selected Vector Store you can increase the persistent storage size. This configuration is set in [deployment/inventory/sample/config.yaml](inventory/sample/config.yaml) with more detail directly in [deployment/components/vector_databases/values.yaml](components/vector_databases/values.yaml). For example, set `persistence.size: 100Gi` to allocate 100Gi of storage for VectorStore database data.
 
 > [!NOTE]
-> The Vector Store storage should have more storage than file storage due to containing both extracted text and vector embeddings for that data.
+> The Vector Store instance(s) should have more storage (and in case of in-memory databases also allocated RAM resources) than the data you want to process due to the need of holding both extracted text and vector embeddings for that text. Size of that storage is also dependent on the vector datatype of stored vectors.
 
 #### EDP Storage Types
 
@@ -335,7 +335,7 @@ This command will configure various tools in your environment, including `Docker
 
 Deployment utilizes Docker images - check [docker images list](../docs/docker_images_list.md) for detailed information. 
 
-Prebuilt images for Enterprise RAG components are publicly available on [OPEA Docker Hub](https://hub.docker.com/u/opea?page=1&search=erag) and are used by default, as defined by the  `registry` and `tag` values in [inventory/sample/config.yaml](inventory/sample/config.yaml).
+Prebuilt images for Enterprise RAG components are publicly available on [OPEA Docker Hub](https://hub.docker.com/u/opea?page=1&search=erag) and are used by default, as defined by the `registry` and `tag` values in [inventory/sample/config.yaml](inventory/sample/config.yaml).
 
 Deployment is based on released docker images - check [Docker images list](../docs/docker_images_list.md) for detailed information.
 
@@ -620,7 +620,7 @@ For detailed information on how to configure the pipeline, please refer to:
 ### Enabling Pod Security Admission (PSA)
 Pod Security Admission (PSA) is a built-in admission controller that enforces the Pod Security Standards (PSS). These standards define different isolation levels for pods to ensure security and compliance within a cluster. PSA operates at the namespace level and uses labels to enforce policies on pods when they are created or updated.
 
-We can deploy Enterprise RAG with enforced validation of PSS across all deployed namespaces. To enable PSA, set `enforcePSS` to `true` in the [configuration file](#prepare-main-configuration-file).
+Enterprise RAG can be deployed with enforced validation of PSS across all deployed namespaces. To enable PSA, set `enforcePSS` to `true` in the [configuration file](#prepare-main-configuration-file).
 
 ### Running Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 
@@ -973,7 +973,7 @@ This paragraph describes steps that are necessary to restore data from full back
 * > **Note**
   >
   > Restore operation requires multiple tasks to be performed.<br>
-  > Specifically the deploments hosting the user data need to be **removed** before being restored from saved objects and stored volume snapshots.
+  > Specifically the deployments hosting the user data need to be **removed** before being restored from saved objects and stored volume snapshots.
   >
   > This results in a period of unavailability of services, including but not limited to:
   > - authorization services (Keycloak instance),
@@ -1017,7 +1017,7 @@ This paragraph describes steps that are necessary to restore data from full back
 This pipeline provides language translation capabilities using advanced Language Models from the ALMA family, where:
 
 - ALMA-7B-R model - recommended for CPU-based execution
-- ALMA-13B-R model - recomended for Gaudi-based (Habana) acceleration
+- ALMA-13B-R model - recommended for Gaudi-based (Habana) acceleration
 
 To test the translation pipeline, first deploy it by following the instructions in [Deployment Options → Installation](#installation), using a configuration file based on [inventory/sample/config_language_translation.yaml](inventory/sample/config_language_translation.yaml).
 

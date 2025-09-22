@@ -20,3 +20,16 @@ pipelines:
     resourcesPath: chatqa/resources-reference-${deployment_type}.yaml
     modelConfigPath: chatqa/resources-model-${deployment_type}.yaml
     type: chatqa
+
+balloons:
+  enabled: true
+  namespace: kube-system # alternatively, set custom namespace for balloons
+  services:
+    vllm:
+      resources:
+        requests:
+          cpu: ${vllm_size_vcpu}
+          memory: 64Gi
+        limits:
+          cpu: ${vllm_size_vcpu}
+          memory: 100Gi

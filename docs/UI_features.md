@@ -114,3 +114,5 @@ Any file belonging to the supported file format shown in the screenshot or a lin
 This tab contains links to the other services - Grafana Dashboard and Keycloak Admin Panel. Clicking on one of the visible blocks will open a new tab in your browser with an URL leading to interface of the selected service.
 
 ![Screenshot of Telemetry & Authentication view presenting links to the other services - Grafana Dashboard and Keycloak Admin Panel](./images/ui/telemetry_authentication.png)
+
+For more details about telemetry and the available dashboards, see [docs/telemetry.md](./telemetry.md).

@@ -170,6 +170,7 @@ For more information on preparing an Ansible inventory, see the [Ansible Invento
 
 2. **Edit the configuration file:**
    - Open `inventory/test-cluster/config.yaml`.
+   - Set `deploy_k8s` to `true`.
    - Fill in the required values for your environment. If you don't have any cluster deployed, ignore `kubeconfig` parameter for now.
 
 

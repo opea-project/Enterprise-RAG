@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import aiohttp
 from aiohttp import ClientResponse
 
-from src.tests.benchmark.common.structures import (
+from src.tests.benchmark_microservices.common.structures import (
     BenchmarkParams,
     RequestTimings,
     StreamRequestTimings,

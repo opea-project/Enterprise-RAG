@@ -1,0 +1,38 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "Intel-Enterprise-RAG-Embedding-Torchserve"
+version = "1.0.1"
+requires-python = ">=3.10"
+
+dependencies = [
+    "sentence_transformers==3.2.1",
+    "transformers==4.55.4",
+    "accelerate==0.34.2",
+    "torchserve==0.12.0",
+    "torch-model-archiver==0.12.0",
+    "torch==2.8.0",
+    "intel-extension-for-pytorch==2.8.0",
+    "hypothesis==6.82.0",
+    "cmake>=3.13.0",
+    "ninja==1.11.1",
+    "wheel>=0.36",
+    "setuptools>=50.0",
+    "psutil==5.9.5",
+    "expecttest==0.3.0",
+    "packaging==24.2",
+    "setuptools == 80.9.0",     # security update
+    "requests == 2.32.4",
+    "urllib3 == 2.5.0",
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

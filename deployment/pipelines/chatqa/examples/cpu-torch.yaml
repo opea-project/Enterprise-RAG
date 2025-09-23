@@ -19,6 +19,7 @@ spec:
       routerType: Sequence
       steps:
       - name: Fingerprint
+        dependency: Hard
         internalService:
           serviceName: fgp-svc
           config:

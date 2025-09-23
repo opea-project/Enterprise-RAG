@@ -35,8 +35,8 @@ spec:
       - vllm
       - edp-vllm
   - name: torchserve-reranking-balloon
-    minCPUs: {{ reranker_cpus if amx_supported and maxBalloonsReranker != 0 else -1 }}
-    maxCPUs: {{ reranker_cpus if amx_supported and maxBalloonsReranker != 0 else -1 }}
+    minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and maxBalloonsReranker != 0 else -1 }}
+    maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and maxBalloonsReranker != 0 else -1 }}
     maxBalloons: {{ maxBalloonsReranker }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true

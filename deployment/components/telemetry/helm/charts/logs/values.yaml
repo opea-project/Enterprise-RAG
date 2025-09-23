@@ -127,7 +127,6 @@ otelcol-logs:
         - id: container-parser
           max_log_size: 102400
           type: container
-          format: containerd
           output: router
 
         ### Second step. Routing based on container name. After that severity parsing, next step is to the last one noop, to avoid go throught all parsers.

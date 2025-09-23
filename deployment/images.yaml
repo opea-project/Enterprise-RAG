@@ -21,12 +21,12 @@ images:
     docker_context: src
   gmcManager:
     image_name: gmcmanager
-    dockerfile_path: deployment/components/gmc/microservices-connector/manager/Dockerfile
-    docker_context: deployment/components/gmc/microservices-connector
+    dockerfile_path: src/gmc/manager/Dockerfile
+    docker_context: src/gmc
   gmcRouter:
     image_name: gmcrouter
-    dockerfile_path: deployment/components/gmc/microservices-connector/router/Dockerfile
-    docker_context: deployment/components/gmc/microservices-connector
+    dockerfile_path: src/gmc/router/Dockerfile
+    docker_context: src/gmc
   hierarchicalDataprepUsvc:
     image_name: hierarchical_dataprep
     dockerfile_path: src/comps/hierarchical_dataprep/impl/microservice/Dockerfile
@@ -81,15 +81,15 @@ images:
     docker_context: src
   torchserveEmbedding:
     image_name: torchserve_embedding
-    dockerfile_path: src/comps/embeddings/impl/model-server/torchserve/docker/Dockerfile
-    docker_context: src/comps/embeddings/impl/model-server/torchserve
+    dockerfile_path: src/comps/embeddings/impl/model_server/torchserve/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/torchserve
   torchserveReranking:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
     docker_context: src/comps/reranks/impl/model_server/torchserve
   uiUsvc:
     image_name: chatqna-conversation-ui
-    dockerfile_path: src/ui/Dockerfile
+    dockerfile_path: src/ui/apps/chatqna/Dockerfile
     docker_context: src
   vllmGaudi:
     image_name: vllm-gaudi

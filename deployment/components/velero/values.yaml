@@ -2,6 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# allowInsecureImages due to repository override to: [bitnamilegacy]
+global:
+  security:
+    allowInsecureImages: true
+
 proxy:
   httpProxy: ""
   httpsProxy: ""
@@ -21,6 +26,8 @@ minioApiDomain: &minioApiDomain "velero-s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "velero-minio.erag.com"
 minio:
   enabled: true
+  image:
+    repository: bitnamilegacy/minio
   persistence:
     # storageClass: ""
     enabled: true
@@ -123,3 +130,7 @@ velero:
     extraEnvVars:
       - name: "NO_PROXY"
         value: "velero-minio.velero.svc"
+  kubectl:
+    image:
+      repository: docker.io/bitnamilegacy/kubectl
+

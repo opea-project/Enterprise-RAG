@@ -79,7 +79,11 @@
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"
-  when: gaudi_detected is defined and not gaudi_detected
+#   This is a method to use a post-renderer script to modify the rendered manifests before they are applied to the cluster.
+#   Commented due to unknown issue with balloon while enabling TDX
+#    post_renderer:
+#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ balloons.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#       if tdx.coco.enabled else omit }}"
   tags:
     - install
     - uninstall
@@ -96,7 +100,7 @@
   when: >-
     not (
       cpu_topology_per_node.values() | selectattr('maxBalloonsVLLM', 'ne', 0) | list | length > 0
-    )
+    ) and not (gaudi_detected | default(false))
   tags:
     - install
 
@@ -123,7 +127,6 @@
   loop: "{{ cpu_topology_per_node | dict2items }}"
   loop_control:
     loop_var: item
-  when: gaudi_detected is defined and not gaudi_detected
   tags:
     - install
 

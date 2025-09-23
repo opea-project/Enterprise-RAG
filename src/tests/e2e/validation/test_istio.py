@@ -71,7 +71,7 @@ http_endpoints = [
     # # Rag-ui endpoints
     "ui-chart.rag-ui.svc.cluster.local:4173",
     # System endpoints
-    "gmc-contoller.system.svc.cluster.local:9443",
+    "gmc-controller.system.svc.cluster.local:9443",
 ]
 
 redis_endpoints = [
@@ -94,6 +94,23 @@ istio_test_data = {
     ConnectionType.MONGODB: mongodb_endpoints,
     ConnectionType.POSTGRESQL: postgres_endpoints
 }
+
+
+@pytest.fixture(scope="module", autouse=True)
+def prepare_tests(istio_helper):
+    logger.info("============= Prepare Istio Authorization tests =====================")
+    istio_helper.create_namespace(inmesh=True)
+    endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}
+    sample_endpoints = dict(list(endpoints.items())[:7])
+    istio_helper.sample_log_timestamp_offsets()
+    istio_helper.query_multiple_endpoints(dict(sample_endpoints))
+    log_ts_offset = istio_helper.apply_log_timestamp_offsets()
+    if log_ts_offset < 0:
+        logger.warning(f"Detected negative time offset {log_ts_offset} sec between kubernetes log and test host")
+    else:
+        logger.info(f"Detected time offset {log_ts_offset} sec between kubernetes log and test host")
+    istio_helper.delete_namespace()
+    yield
 
 
 class TestIstioInMesh:

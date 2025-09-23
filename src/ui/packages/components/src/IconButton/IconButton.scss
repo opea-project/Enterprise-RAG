@@ -1,0 +1,62 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.icon-button {
+  @apply h-10 w-10 p-2;
+  @apply flex items-center justify-center;
+  @apply cursor-pointer;
+
+  @apply bg-transparent dark:bg-transparent;
+  @apply text-light-text-accent dark:text-dark-text-accent text-xl;
+
+  @apply disabled:bg-light-bg-disabled dark:disabled:bg-dark-bg-disabled;
+  @apply disabled:text-light-text-disabled dark:disabled:text-dark-text-disabled;
+
+  &.icon-button--sm {
+    @apply h-8 w-8 p-2 text-sm;
+  }
+
+  &.icon-button--error {
+    @apply text-light-text-error dark:text-dark-text-error;
+  }
+
+  &.icon-button--success {
+    @apply text-light-status-success dark:text-dark-status-success;
+  }
+
+  &.icon-button--contained {
+    @apply rounded p-0;
+    @apply text-light-text-inverse dark:text-dark-text-primary;
+    @apply bg-light-primary dark:bg-dark-primary;
+
+    &.icon-button--sm {
+      @apply h-8 w-8 rounded p-2 text-sm;
+    }
+  }
+
+  &.icon-button--outlined {
+    @apply rounded border;
+    @apply disabled:border-transparent dark:disabled:border-transparent;
+    @apply disabled:hover:cursor-default;
+    @apply disabled:bg-light-bg-disabled dark:disabled:bg-transparent;
+    @apply disabled:text-light-text-disabled dark:disabled:text-dark-text-disabled;
+
+    &.icon-button--outlined-primary {
+      @apply bg-transparent dark:bg-transparent;
+      @apply border-light-primary dark:border-dark-accent;
+      @apply text-light-primary dark:text-dark-accent;
+    }
+
+    &.icon-button--outlined-error {
+      @apply bg-transparent p-0 dark:bg-transparent;
+      @apply border-light-status-error dark:border-dark-status-error;
+      @apply text-light-text-error dark:text-dark-text-error;
+    }
+
+    &.icon-button--outlined-success {
+      @apply bg-transparent p-0 dark:bg-transparent;
+      @apply border-light-status-success dark:border-dark-status-success;
+      @apply text-light-status-success dark:text-dark-status-success;
+    }
+  }
+}

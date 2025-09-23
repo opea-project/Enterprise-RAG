@@ -8,13 +8,13 @@ gmc:
   helm:
     version: "v3.16.1"
     chart_name: "gmc"
-    chart_directory: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm"
+    chart_directory: "{{ playbook_dir }}/../components/gmc/"
     release_name: "gmc"
     chart_version: "1.1.0"
-    default_values_file: "{{ playbook_dir }}/../components/gmc/microservices-connector/helm/values.yaml"
+    default_values_file: "{{ playbook_dir }}/../components/gmc/values.yaml"
     default_resources_file: "{{ pipelines_dir }}/chatqa/resources-reference-cpu.yaml"
     default_model_config_file: "{{ pipelines_dir }}/chatqa/resources-model-cpu.yaml"
-    tdx_resources_file: "{{ pipelines_dir }}/../components/gmc/microservices-connector/helm/resources-tdx.yaml"
+    tdx_resources_file: "{{ pipelines_dir }}/../components/gmc/resources-tdx.yaml"
   pvc:
     accessMode: ReadWriteOnce
     models:

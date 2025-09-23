@@ -5,13 +5,13 @@ from typing import Type
 
 from transformers import AutoConfig
 
-from src.tests.benchmark.common.structures import (
+from src.tests.benchmark_microservices.common.structures import (
     BenchmarkBase,
     BenchmarkParams,
     StreamRequestTimings,
     generate_combinations,
 )
-from src.tests.benchmark.common.targets import (
+from src.tests.benchmark_microservices.common.targets import (
     LlmMicroserviceBenchTarget,
     VllmBenchTarget,
 )
@@ -317,7 +317,7 @@ def parse_habana_devices(value: str) -> int:
     return len(devices)
 
 
-def test_pytest_stream():
+def test_vllm_hpu():
     yaml_conf = VllmHpuBenchmark.parse_yaml_config(
         "src/tests/benchmark/config_defaults/vllm_hpu.yaml"
     )

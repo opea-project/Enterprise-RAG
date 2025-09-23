@@ -11,14 +11,19 @@ import logging
 import pytest
 import tarfile
 import urllib3
+import yaml
 
+from validation import buildcfg
 from validation.constants import CODE_SNIPPETS_DIR
 from helpers.api_request_helper import ApiRequestHelper
+from helpers.chatqa_api_helper import ChatQaApiHelper
 from helpers.chat_history_helper import ChatHistoryHelper
+
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
 from helpers.guard_helper import GuardHelper
 from helpers.istio_helper import IstioHelper
+from helpers.k8s_helper import K8sHelper
 from helpers.keycloak_helper import KeycloakHelper
 
 NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
@@ -31,6 +36,33 @@ def pytest_addoption(parser):
     parser.addoption("--credentials-file", action="store", default="",
                      help="Path to credentials file. Required fields: "
                           "KEYCLOAK_ERAG_ADMIN_USERNAME and KEYCLOAK_ERAG_ADMIN_PASSWORD")
+    parser.addoption("--build-config-file", action="store", default="../../deployment/ansible-logs/config.yaml",
+                     help="Path to build configuration YAML file")
+
+
+def pytest_configure(config):
+    """
+    Load build configuration from the specified YAML file and store it in the global cfg dictionary.
+    """
+    # Manually configure logging here since pytest configures it only after this hook
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+
+    build_config_filepath = config.getoption("--build-config-file")
+    if os.path.exists(build_config_filepath):
+        logger.debug(f"Loading build configuration from {build_config_filepath}")
+        with open(build_config_filepath, "r") as f:
+            build_configuration = yaml.safe_load(f)
+
+        # store into global cfg
+        buildcfg.cfg.update(build_configuration)
+    else:
+        logger.warning("Build configuration file not found. Proceeding with empty configuration.")
+
+    # Remove previously configured logger. If it was not removed, every log would be displayed twice.
+    root = logging.getLogger()
+    for h in root.handlers[:]:
+        root.removeHandler(h)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -46,8 +78,54 @@ def suppress_logging():
     yield
 
 
+@pytest.fixture(scope="session")
+def k8s_helper(request):
+    return K8sHelper()
+
+
+@pytest.fixture(scope="session")
+def keycloak_helper(request, k8s_helper, suppress_logging):
+    # suppress_logging fixture is deliberately placed here to ensure that it is executed
+    return KeycloakHelper(request.config.getoption("--credentials-file"), k8s_helper)
+
+
 @pytest.fixture(scope="session", autouse=True)
-def disable_guards_at_startup(guard_helper, suppress_logging):
+def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
+    """
+    Disable the required actions for the erag-admin user temporarily to allow obtaining the access token without
+    forcing to change the password. Get it back after the tests are done.
+    """
+    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
+                                                                     keycloak_helper.erag_admin_username)
+    if required_actions:
+        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_admin_username)
+    yield
+    # Restore original settings after tests
+    if required_actions:
+        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_admin_username)
+
+
+@pytest.fixture(scope="session")
+def temporarily_remove_regular_user_required_actions(keycloak_helper):
+    """
+    Temporarily remove required actions for the regular user to allow obtaining an access token.
+    """
+    required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
+                                                                     keycloak_helper.erag_user_username)
+    if required_actions:
+        keycloak_helper.remove_required_actions(keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
+    yield
+    # Restore original settings after tests
+    if required_actions:
+        keycloak_helper.revert_required_actions(required_actions, keycloak_helper.admin_access_token,
+                                                keycloak_helper.erag_user_username)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_guards_at_startup(guard_helper, suppress_logging, temporarily_remove_user_required_actions):
     """
     Disable all guards at the beginning of the test suite.
     Note that supress_logging fixture is deliberately placed here to ensure that it is executed
@@ -77,8 +155,12 @@ def collect_k8s_logs(request):
         for pod in pods:
             pod_name = pod.metadata.name
             log_file = os.path.join(log_dir, f"{namespace}_{pod_name}.log")
-
-            logs = "\n".join(pod.logs(since_time=test_start_time))
+            try:
+                logs = "\n".join(pod.logs(since_time=test_start_time))
+            except Exception as e:
+                logger.warning(f"Failed to read logs for pod {pod_name} in namespace {namespace}. "
+                               f"Pod might have already been deleted. Exception: {e}")
+                continue
             with open(log_file, "w") as f:
                 f.write(logs)
     logger.info(f"Logs collected in {log_dir}")
@@ -93,34 +175,24 @@ def collect_k8s_logs(request):
     allure.attach.file(tar_path, f"logs_{test_name}.tar.gz")
 
 
-@pytest.fixture
-def access_token(keycloak_helper):
-    return keycloak_helper.get_access_token()
+@pytest.fixture(scope="session")
+def edp_helper(keycloak_helper):
+    return EdpHelper(keycloak_helper=keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def chatqa_api_helper():
-    return ApiRequestHelper("chatqa", {"app": "router-service"})
+def chatqa_api_helper(keycloak_helper):
+    return ChatQaApiHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def keycloak_helper(request):
-    return KeycloakHelper(request.config.getoption("--credentials-file"))
+def chat_history_helper(keycloak_helper):
+    return ChatHistoryHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def chat_history_helper():
-    return ChatHistoryHelper(namespace="chat-history", label_selector={"app.kubernetes.io/name": "chat-history"}, api_port=6012)
-
-
-@pytest.fixture(scope="session")
-def edp_helper():
-    return EdpHelper(namespace="edp", label_selector={"app.kubernetes.io/name": "edp-backend"}, api_port=5000)
-
-
-@pytest.fixture(scope="session")
-def fingerprint_api_helper():
-    return FingerprintApiHelper("fingerprint", {"app.kubernetes.io/name": "fingerprint"}, 6012)
+def fingerprint_api_helper(keycloak_helper):
+    return FingerprintApiHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,7 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.app-name__text {
+  @apply text-left text-base font-bold leading-5;
+  @apply text-light-secondary dark:text-dark-secondary;
+}

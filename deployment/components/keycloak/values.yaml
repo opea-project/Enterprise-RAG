@@ -1,5 +1,15 @@
 #https://github.com/bitnami/charts/blob/main/bitnami/keycloak/values.yaml
 
+# allowInsecureImages due to repository override to: [bitnamilegacy]
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  repository: bitnamilegacy/keycloak
+defaultInitContainers:
+  image:
+    repository: bitnamilegacy/keycloak
 ingress:
   enabled: true
   ingressClassName: "nginx"
@@ -33,6 +43,8 @@ extraEnvVars:
   - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
     value: "true"
 postgresql:
+  image:
+    repository: bitnamilegacy/postgresql
   primary:
     resources:
       requests:
@@ -47,4 +59,3 @@ postgresql:
       extraIngress:
         - ports:
             - port: 15008
-

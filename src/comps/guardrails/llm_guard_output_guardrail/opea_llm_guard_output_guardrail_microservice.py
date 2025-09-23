@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 import os
 import time
 
@@ -29,7 +30,7 @@ USVC_NAME = "opea_service@llm_guard_output_scanner"
 logger = get_opea_logger("llm_guard_output_scanner_microservice") # TODO: to be changed to after folder structure changes
 
 usvc_config = {
-    **dotenv_values(".env"),
+    **dotenv_values("impl/microservice/.env"),
     **os.environ # override loaded values with environment variables - priotity
 }
 
@@ -83,13 +84,14 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
     if doc.streaming is False:
         return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False, data=doc.data)
     else:
-        generator = scanned_output.split()
         async def stream_generator():
             chat_response = ""
+            chunk_size = 20
             try:
-                for text in generator:
-                    chat_response += text
-                    chunk_repr = repr(' ' + text) # Guard takes over LLM streaming
+                for i in range(0, len(scanned_output), chunk_size):
+                    text_chunk = scanned_output[i:i + chunk_size]
+                    chat_response += text_chunk
+                    chunk_repr = repr(text_chunk) # Guard takes over LLM streaming
                     logger.debug("[guard - chat_stream] chunk:{chunk_repr}")
                     yield f"data: {chunk_repr}\n\n"
                     await asyncio.sleep(0.02)  # Delay of 0.02 second between chunks
@@ -99,7 +101,7 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
                 if isinstance(doc.data, dict):
                     data = { "reranked_docs": doc.data.get("reranked_docs", []) }
                     logger.debug(f"[guard - chat_stream] appending json data: {data}")
-                    yield f"json: {data}\n\n"
+                    yield f"json: {json.dumps(data)}\n\n"
                 else:
                     logger.debug("Not appending json data since it is not a dict")
             except Exception as e:

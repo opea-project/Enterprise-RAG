@@ -11,7 +11,7 @@ from src.tests.docker_setups.embeddings.langchain_mosec import (
 
 @pytest.fixture(scope="module")
 def containers():
-    containers = EmbeddingsLangchainMosecDockerSetup("comps/embeddings/impl/model-server/mosec/docker/.env")
+    containers = EmbeddingsLangchainMosecDockerSetup("comps/embeddings/impl/model_server/mosec/docker/.env")
     containers.deploy()
 
     yield containers

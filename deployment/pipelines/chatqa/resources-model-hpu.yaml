@@ -99,7 +99,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.1-70B-Instruct
@@ -107,14 +107,28 @@ modelConfigs:
     configMapValues:
       PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
       EXPERIMENTAL_WEIGHT_SHARING: "0"
-      VLLM_SKIP_WARMUP: "false"
+      VLLM_SKIP_WARMUP: "true"
       VLLM_GRAPH_RESERVED_MEM: "0.05"
       VLLM_DECODE_BLOCK_BUCKET_STEP: "256"
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","128","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "4"
+
+  # meta-llama/Llama-3.1-405B-Instruct
+  "meta-llama/Llama-3.1-405B-Instruct":
+    configMapValues:
+      PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
+      EXPERIMENTAL_WEIGHT_SHARING: "0"
+      VLLM_SKIP_WARMUP: "true"
+      VLLM_GRAPH_RESERVED_MEM: "0.05"
+      VLLM_DECODE_BLOCK_BUCKET_STEP: "256"
+      VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
+      VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","256","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
+    tensor_parallel_size: "8"
 
   # meta-llama/Llama-3.1-405B-Instruct-FP8
   "meta-llama/Llama-3.1-405B-Instruct-FP8":
@@ -136,7 +150,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "24768"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","96","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","96","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.2-3B-Instruct
@@ -150,7 +164,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "1"
 
   # meta-llama/Llama-3.3-70B-Instruct
@@ -164,7 +178,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "4352"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "9792"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","288","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","288","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "4"
     #   PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
     #   EXPERIMENTAL_WEIGHT_SHARING: "0"
@@ -226,8 +240,70 @@ modelConfigs:
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
       VLLM_ENABLE_EXPERT_PARALLEL: "0"
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","64","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling"]
     tensor_parallel_size: "2"
+    modelChatTemplate: |
+      {%- if messages[0]['role'] == 'system' %}
+        {%- set system_message = messages[0]['content'] %}
+        {%- set loop_messages = messages[1:] %}\n{%- else %}
+        {%- set loop_messages = messages %}
+      {%- endif %}
+      {{- bos_token }}
+      {%- for message in loop_messages %}
+        {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}
+          {{- raise_exception('After the optional system message, conversation roles must alternate user/assistant/user/assistant/...') }}
+        {%- endif %}
+        {%- if message['role'] == 'user' %}
+          {%- if loop.first and system_message is defined %}
+            {{- ' [INST] ' + system_message + '\\n\\n' + message['content'] + ' [/INST]' }}
+          {%- else %}
+            {{- ' [INST] ' + message['content'] + ' [/INST]' }}
+          {%- endif %}
+        {%- elif message['role'] == 'assistant' %}
+          {{- ' ' + message['content'] + eos_token}}
+      {%- else %}
+        {{- raise_exception('Only user and assistant roles are supported, with the exception of an initial optional system message!') }}
+      {%- endif %}
+      {%- endfor %}
+
+  # mistralai/Mixtral-8x22B-Instruct-v0.1
+  "mistralai/Mixtral-8x22B-Instruct-v0.1":
+    configMapValues:
+      PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
+      PT_HPU_LAZY_MODE: "1"
+      EXPERIMENTAL_WEIGHT_SHARING: "0"
+      VLLM_SKIP_WARMUP: "true"
+      VLLM_GRAPH_RESERVED_MEM: "0.05"
+      VLLM_DECODE_BLOCK_BUCKET_STEP: "256"
+      VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
+      VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
+      VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
+      VLLM_ENABLE_EXPERT_PARALLEL: "0"
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","192","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling"]
+    tensor_parallel_size: "4"
+    modelChatTemplate: |
+      {%- if messages[0]['role'] == 'system' %}
+        {%- set system_message = messages[0]['content'] %}
+        {%- set loop_messages = messages[1:] %}\n{%- else %}
+        {%- set loop_messages = messages %}
+      {%- endif %}
+      {{- bos_token }}
+      {%- for message in loop_messages %}
+        {%- if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}
+          {{- raise_exception('After the optional system message, conversation roles must alternate user/assistant/user/assistant/...') }}
+        {%- endif %}
+        {%- if message['role'] == 'user' %}
+          {%- if loop.first and system_message is defined %}
+            {{- ' [INST] ' + system_message + '\\n\\n' + message['content'] + ' [/INST]' }}
+          {%- else %}
+            {{- ' [INST] ' + message['content'] + ' [/INST]' }}
+          {%- endif %}
+        {%- elif message['role'] == 'assistant' %}
+          {{- ' ' + message['content'] + eos_token}}
+      {%- else %}
+        {{- raise_exception('Only user and assistant roles are supported, with the exception of an initial optional system message!') }}
+      {%- endif %}
+      {%- endfor %}
 
   # tiiuae/Falcon3-7B-Instruct
   "tiiuae/Falcon3-7B-Instruct":
@@ -262,10 +338,12 @@ modelConfigs:
   # deepseek-ai/DeepSeek-R1
   "deepseek-ai/DeepSeek-R1":
     configMapValues:
-      OMPI_MCA_btl_vader_single_copy_mechanism: none
+      PT_HPU_LAZY_MODE: "1"
       PT_HPU_ENABLE_LAZY_COLLECTIVES: "true"
-      VLLM_CPU_KVCACHE_SPACE: "40"
-    extraCmdArgs: ["--block-size", "128", "--dtype", "bfloat16", "--max-model-len","5196"]
+      VLLM_GRAPH_PROMPT_RATIO: "0.7"
+      VLLM_GRAPH_RESERVED_MEM: "0.05"
+      VLLM_SKIP_WARMUP: "true"
+    extraCmdArgs: ["--dtype", "bfloat16", "--max-num-seqs", "256", "--max-model-len", "8192", "--trust-remote-code", "--disable-log-requests"]
     tensor_parallel_size: "8"
 
   # deepseek-ai/DeepSeek-R1-Distill-Llama-8B
@@ -279,7 +357,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: 1
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "1"
 
   # deepseek-ai/DeepSeek-R1-Distill-Llama-70B
@@ -293,7 +371,7 @@ modelConfigs:
       VLLM_PROMPT_SEQ_BUCKET_MAX: "33024"
       VLLM_DECODE_BLOCK_BUCKET_MAX: "8256"
       VLLM_ALLOW_LONG_MAX_MODEL_LEN: "1"
-    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--tool-call-parser","llama3_json","--chat-template","/workspace/vllm/examples/tool_chat_template_llama3.1_json.jinja", "--enable-auto-tool-choice", "--disable-log-requests"]
+    extraCmdArgs: ["--block-size","128","--dtype","bfloat16","--max-model-len","33024","--gpu-memory-util","0.99","--max-num-seqs","32","--max-num-prefill-seqs","16","--num_scheduler_steps","16","--use-padding-aware-scheduling", "--disable-log-requests"]
     tensor_parallel_size: "4"
 
   # deepseek-ai/DeepSeek-R1-Distill-Qwen-32B

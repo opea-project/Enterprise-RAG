@@ -19,6 +19,7 @@ spec:
       routerType: Sequence
       steps:
       - name: Fingerprint
+        dependency: Hard
         internalService:
           serviceName: fgp-svc
           config:
@@ -56,12 +57,12 @@ spec:
           serviceName: reranking-svc
           config:
             endpoint: /v1/reranking
-            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
-            RERANKING_MODEL_SERVER: "tei"
-      - name: TeiReranking
+            RERANKING_SERVICE_ENDPOINT: torchserve-reranking-svc
+            RERANKING_MODEL_SERVER: "torchserve"
+      - name: TorchserveReranking
         dependency: Hard
         internalService:
-          serviceName: tei-reranking-svc
+          serviceName: torchserve-reranking-svc
           isDownstreamService: true
       - name: PromptTemplate
         dependency: Hard

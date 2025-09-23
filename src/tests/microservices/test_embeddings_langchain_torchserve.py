@@ -16,7 +16,7 @@ from src.tests.docker_setups.embeddings.langchain_torchserve import (
 @pytest.fixture(scope="module")
 def containers():
     containers = EmbeddingsLangchainTorchserveDockerSetup(
-        "comps/embeddings/impl/model-server/torchserve/docker/.env"
+        "comps/embeddings/impl/model_server/torchserve/docker/.env"
     )
     containers.deploy()
 

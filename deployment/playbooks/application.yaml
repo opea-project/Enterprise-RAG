@@ -5,6 +5,7 @@
   hosts: localhost
   environment:
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+    KUSTOMIZE_HOME: "{{ playbook_dir }}/../renderer"
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     components_dir: "{{ deployment_dir }}/components"
@@ -12,6 +13,7 @@
     log_dir: "{{ deployment_dir }}/ansible-logs"
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
+    tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
   tasks:
 
     # Pre-tasks section (initialization and configuration)
@@ -27,19 +29,27 @@
       tags:
         - build-images
 
+    - name: Verify TDX variables
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: verify_variables.yaml
+      tags:
+        - install
+
+    - name: TDX Attest
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: attest.yaml
+      tags:
+        - install
+      when: tdx.enabled and tdx.attestation.enabled
+
     - name: Pre-install role
       ansible.builtin.include_role:
         name: pre_install
       tags:
         - install
         - uninstall
-
-    - name: Gather NUMA topology info
-      ansible.builtin.include_role:
-        name: utils
-        tasks_from: get_nodes_topology.yaml
-      tags:
-        - install
 
     - name: Install NRI balloons policy
       include_role:

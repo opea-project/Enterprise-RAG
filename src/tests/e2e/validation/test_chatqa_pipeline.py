@@ -7,16 +7,29 @@ import allure
 from copy import deepcopy
 import json
 import logging
+import os
 import pytest
 import requests
 import secrets
 import statistics
 import string
 import time
-from helpers.api_request_helper import InvalidChatqaResponseBody
-from helpers.keycloak_helper import CredentialsNotFound
+
+from constants import TEST_FILES_DIR
+from helpers.chatqa_api_helper import InvalidChatqaResponseBody
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="function")
+def temporarily_remove_brute_force_detection(keycloak_helper):
+    """
+    Disable brute force detection in Keycloak for the duration of the test.
+    This is to avoid locking the user out in case of many concurrent requests.
+    """
+    keycloak_helper.set_brute_force_detection(False)
+    yield
+    keycloak_helper.set_brute_force_detection(True)
 
 
 @allure.testcase("IEASG-T32")
@@ -33,7 +46,7 @@ def test_chatqa_timeout(chatqa_api_helper):
     except requests.exceptions.ChunkedEncodingError:
         duration = time.time() - start_time
         pytest.fail(f"Request has been closed on the server side after {duration} seconds")
-    logger.info(f"Response: {chatqa_api_helper.format_response(response)}")
+    logger.info(f"Response: {chatqa_api_helper.get_text(response)}")
 
 
 @allure.testcase("IEASG-T29")
@@ -57,7 +70,7 @@ def test_chatqa_ask_in_polish(chatqa_api_helper):
     question = "Jaki jest najwyższy wieżowiec na świecie?"
     response = chatqa_api_helper.call_chatqa(question)
     try:
-        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.get_text(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
@@ -80,7 +93,7 @@ def test_chatqa_disable_streaming(chatqa_api_helper, fingerprint_api_helper):
 
 
 @allure.testcase("IEASG-T49")
-def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
+def test_chatqa_response_headers_when_streaming_enabled(chatqa_api_helper, fingerprint_api_helper):
     """
     Enable streaming. Check that the response is in 'Server-Sent Events' format. Check headers.
     """
@@ -90,34 +103,28 @@ def test_chatqa_enable_streaming(chatqa_api_helper, fingerprint_api_helper):
     assert "text/event-stream" in response.headers.get("Content-Type"), \
         f"Unexpected Content-Type in the response. Headers: {response.headers}"
     try:
-        logger.info(f"ChatQA response: {chatqa_api_helper.format_response(response)}")
+        logger.info(f"ChatQA response: {chatqa_api_helper.get_text(response)}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
 
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T150")
-def test_chatqa_through_apisix(chatqa_api_helper, fingerprint_api_helper, keycloak_helper):
+def test_chatqa_streaming_capability(chatqa_api_helper, fingerprint_api_helper):
     """
-    Test the ChatQA through APISIX. Authenticate with Keycloak first.
     Check if streaming is working properly by measuring the time between first and last line of the response.
     """
     question = "List 20 most popular travel destination among people in their 20s"
     fingerprint_api_helper.set_streaming(True)
-    try:
-        token = keycloak_helper.get_access_token()
-    except CredentialsNotFound:
-        msg = ("Unable to retrieve Keycloak credentials. Please check if the credentials file (--credentials-file) "
-               "exists or default_credentials.txt is present in default directory.")
-        pytest.skip(msg)
-    response = chatqa_api_helper.call_chatqa_through_apisix(token, question)
+    response = chatqa_api_helper.call_chatqa_with_streaming_enabled(question)
 
     line_number = 0
     for line in response.iter_lines(decode_unicode=True):
         if line_number == 0:
             first_line_start_time = time.time()
         line_number += 1
-        logger.debug(line)
+        if line:
+            logger.debug(line.replace("data: ", ""))
     streaming_duration = time.time() - first_line_start_time
 
     assert streaming_duration > 0.1, \
@@ -139,7 +146,7 @@ def test_chatqa_change_max_new_tokens(chatqa_api_helper, fingerprint_api_helper)
         response = chatqa_api_helper.call_chatqa(question)
         assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
         try:
-            response_text = chatqa_api_helper.format_response(response)
+            response_text = chatqa_api_helper.get_text(response)
             logger.info(f"ChatQA response: {response_text}")
         except InvalidChatqaResponseBody as e:
             pytest.fail(str(e))
@@ -165,7 +172,7 @@ def test_chatqa_api_call_with_additional_parameters(chatqa_api_helper, fingerpri
     response = chatqa_api_helper.call_chatqa(question, **arguments)
     assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
     try:
-        response_text = chatqa_api_helper.format_response(response)
+        response_text = chatqa_api_helper.get_text(response)
         logger.info(f"ChatQA response: {response_text}")
     except InvalidChatqaResponseBody as e:
         pytest.fail(str(e))
@@ -177,7 +184,7 @@ def test_chatqa_api_call_with_additional_parameters(chatqa_api_helper, fingerpri
 
 
 @allure.testcase("IEASG-T42")
-def test_chatqa_concurrent_requests(chatqa_api_helper):
+def test_chatqa_concurrent_requests(chatqa_api_helper, temporarily_remove_brute_force_detection):
     """
     Ask 100 concurrent questions. Measure min, max, avg response time.
     Check if all requests were processed successfully.
@@ -231,109 +238,117 @@ def test_chatqa_input_over_limit(chatqa_api_helper):
                                          f"Answer: {response.text}")
 
 
+@allure.testcase("IEASG-T251")
+def test_chatqa_chunks_in_sources(chatqa_api_helper, edp_helper, fingerprint_api_helper):
+    """
+    Upload a file with the following content:
+    corwenshirel is a character from the game alderwynthiel.
+
+    Ask a question about corwenshirel.
+    Check if the response contains reranked docs with the word alderwynthiel in it.
+    Verify it with streaming enabled and disabled.
+    """
+
+    response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+    reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+    assert len(reranked_docs) == 0, "It's unexpected that there are some reranked docs in the response"
+
+    file = "test_chunks.txt"
+    with edp_helper.ephemeral_upload(os.path.join(TEST_FILES_DIR, file)):
+        fingerprint_api_helper.set_streaming(False)
+        response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+        reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+        assert len(reranked_docs) > 0, "No reranked docs found in the response"
+        assert any("alderwynthiel" in doc.get("text", "").lower() for doc in reranked_docs), \
+            "None of the reranked docs contains the word 'alderwynthiel'"
+
+        fingerprint_api_helper.set_streaming(True)
+        response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
+        reranked_docs = chatqa_api_helper.get_reranked_docs(response)
+        assert len(reranked_docs) > 0, "No reranked docs found in the response"
+        assert any("alderwynthiel" in doc.get("text", "").lower() for doc in reranked_docs), \
+            "None of the reranked docs contains the word 'alderwynthiel'"
+
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T171")
-def test_follow_up_questions_simple_case(chatqa_api_helper):
+def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper):
     """Check if second answer refers to the first answer (simple case)"""
     # Ask first question
     question_france = "What is the capital of France?"
     response = chatqa_api_helper.call_chatqa(question_france)
     assert response.status_code == 200, (f"Unexpected status code returned: {response.status_code}. "
                                          f"Answer: {response.text}")
-    response_france = chatqa_api_helper.format_response(response)
+    response_france = chatqa_api_helper.get_text(response)
     logger.info(f"Response: {response_france}")
+    response = chat_history_helper.save_history([{"question": question_france, "answer": response_france}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
 
     # Ask second question
     question_followup = "What river flows through this city and what is most famous landmark in this city?"
-    history = {"conversation_history": [{"question": question_france, "answer": response_france}]}
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
     assert response.status_code == 200, (f"Unexpected status code returned: {response.status_code}. "
                                          f"Answer: {response.text}")
-    response_followup = chatqa_api_helper.format_response(response)
+    response_followup = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_followup}")
     assert chatqa_api_helper.words_in_response(["seine", "eiffel"], response_followup)
 
 
-@allure.testcase("IEASG-T172")
-def test_follow_up_questions_empty_conversation(chatqa_api_helper):
-    """Check the behavior when empty conversation history is passed"""
-    # Empty list
-    question = "What river flows through this city?"
-    history = {"conversation_history": []}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code in [200, 400], (f"Unexpected status code returned: {response.status_code}. "
-                                                f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-    # A list of empty values
-    history = {"conversation_history": [{"question": "", "answer": ""}]}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code in [200, 400], (f"Unexpected status code returned: {response.status_code}. "
-                                                f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-    # A list with empty dict
-    history = {"conversation_history": [{}]}
-    response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code == 422, (f"Unexpected status code returned: {response.status_code}. "
-                                         f"Answer: {response.text}")
-    response_text = chatqa_api_helper.format_response(response)
-    logger.info(f"Response: {response_text}")
-
-
 @allure.testcase("IEASG-T173")
-def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper):
+def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper, chat_history_helper):
     """Irrelevant data injected in the first question. Refer to it a couple of questions later"""
     # Ask first question
     question_poland = "My name is Giovanni Giorgio. What is the capital of Poland?"
     response = chatqa_api_helper.call_chatqa(question_poland)
-    response_poland = chatqa_api_helper.format_response(response)
+    response_poland = chatqa_api_helper.get_text(response)
     logger.info(f"Response: {response_poland}")
+    response = chat_history_helper.save_history([{"question": question_poland, "answer": response_poland}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
 
     # Ask second question
     question_people = "How many people live there?"
-    history = {"conversation_history": [{"question": question_poland, "answer": response_poland}]}
     response = chatqa_api_helper.call_chatqa(question_people, **history)
-    response_people = chatqa_api_helper.format_response(response)
+    response_people = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_people}")
+    response = chat_history_helper.save_history([{"question": question_people, "answer": response_people}], history_id)
 
     # Refer to the information in a first question
     question_followup = "What is my name?"
-    history = {"conversation_history": [
-        {"question": question_poland, "answer": response_poland},
-        {"question": question_people, "answer": response_people}
-    ]}
     response = chatqa_api_helper.call_chatqa(question_followup, **history)
-    response_followup = chatqa_api_helper.format_response(response)
+    response_followup = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_followup}")
     assert chatqa_api_helper.words_in_response(["giovanni", "giorgio"], response_followup)
 
 
 @allure.testcase("IEASG-T174")
-def test_follow_up_questions_contradictory_history(chatqa_api_helper):
+def test_follow_up_questions_contradictory_history(chatqa_api_helper, chat_history_helper):
     """Check if the model is able to handle contradictory history"""
     question_people = "And in which country is that city located?"
-    history = {"conversation_history": [{"question": "What is the capital of Germany?", "answer": "Warsaw."}]}
+    response = chat_history_helper.save_history([{"question": "What is the capital of Germany?", "answer": "Warsaw."}])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
     response = chatqa_api_helper.call_chatqa(question_people, **history)
-    response_text = chatqa_api_helper.format_response(response)
+    response_text = chatqa_api_helper.get_text(response)
     logger.info(f"Follow-up response: {response_text}")
     assert "poland" in response_text.lower()
 
 
 @allure.testcase("IEASG-T175")
-def test_follow_up_questions_long_history(chatqa_api_helper, code_snippets):
+def test_follow_up_questions_long_history(chatqa_api_helper, chat_history_helper, code_snippets):
     """
     There might be a case when the sum of tokens of 3 previous questions and answers
     is longer than the model's token limit. Expect it not to fail in such case.
     """
     question = "In which programming languages have I prepared a TODO list application?"
     snippets = code_snippets("code_snippets_long")
-    history = {"conversation_history": [
-        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok"},
+    response = chat_history_helper.save_history([
+        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok",},
         {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": f"The code {snippets['js']} looks ok"},
         {"question": f"This is a third version of TODO list application: {snippets['python']}", "answer": f"The code: {snippets['python']} looks ok"},
-    ]}
+    ])
+    history_id = response.json()["id"]
+    history = {"history_id": history_id}
     response = chatqa_api_helper.call_chatqa(question, **history)
-    assert response.status_code == 200, f"Unexpected status code returned: {response.status_code}"
+    assert response.status_code == 400, f"Unexpected status code returned: {response.status_code}"

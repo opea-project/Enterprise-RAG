@@ -21,7 +21,7 @@
     values_files: >
       {{
         [ui.helm.default_values_file] +
-        ([ui.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([ui.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
         [ui_helm_override_values_path]
       }}
   tags:

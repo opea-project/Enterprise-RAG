@@ -3,6 +3,7 @@
 
 import asyncio
 import httpx
+import json
 import time
 from typing import Optional, Dict, Union
 
@@ -102,11 +103,11 @@ class VLLMConnector:
                         yield f"data: {chunk_repr}\n\n"
                     logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
                     yield "data: [DONE]\n\n"
-                    
+
                     if isinstance(input.data, dict):
                         data = { "reranked_docs": reranked_docs_output }
                         logger.debug(f"[llm - chat_stream] appending json data: {data}")
-                        yield f"json: {data}\n\n"
+                        yield f"json: {json.dumps(data)}\n\n"
                     else:
                         logger.debug("Not appending json data since it is not a dict")
                 except httpx.ReadTimeout as e:

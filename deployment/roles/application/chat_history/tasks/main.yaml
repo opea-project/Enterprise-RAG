@@ -103,7 +103,7 @@
     values_files: >
       {{
         [chat_history.helm.default_values_file] +
-        ([chat_history.helm.tdx_resources_file] if (tdxEnabled is defined and tdxEnabled | bool) else []) +
+        ([chat_history.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
         [chat_history_helm_override_values_path]
       }}
   tags:
@@ -118,6 +118,10 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+#    This can replace chart and template based deployments with TDX
+#    post_renderer:
+#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ chat_history.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#       if tdx.coco.enabled else omit }}"
   register: helm_result
   tags:
     - install

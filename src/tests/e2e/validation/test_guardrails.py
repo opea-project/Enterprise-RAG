@@ -5,8 +5,10 @@
 
 import allure
 import json
+import os
 import pytest
 
+from constants import TEST_FILES_DIR
 from helpers.guard_helper import GuardType, GuardQuestions as questions
 
 
@@ -15,14 +17,12 @@ def cleanup(guard_helper):
     yield
     guard_helper.disable_all_guards()
 
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T75")
 def test_in_guard_ban_substrings(guard_helper):
     """
-    Enable "ban_substring" input scanner. Check if questions are rejected in the following scenarios:
-    - case_sensitive = True (check if case_sensitive working as designed)
-    - match_all = True (check if rejected only when all substrings are matched)
-    - match_type (check "str" and "word" match type)
+    Enable "ban_substring" input scanner and check if questions containing banned substrings are blocked or redacted.
     """
     guard_params = {
         "enabled": True,
@@ -47,11 +47,46 @@ def test_in_guard_ban_substrings(guard_helper):
     guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
     guard_helper.assert_blocked(questions.CHECK_SUBSTRING_MATCH_TYPE_MULTIPLE_WORDS)
 
-    guard_params["match_type"] = "word"
-    guard_params["substrings"] = ["malware", "virus"]
-    guard_params["redact"] = True
+    # Check long substring
+    long_substring = "a" * 1000
+    guard_params = {"enabled": True, "substrings": [long_substring]}
     guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
-    guard_helper.assert_redacted(questions.MALWARE_AND_VIRUS)
+    guard_helper.assert_blocked(questions.LONG_PATTERN)
+    guard_helper.assert_allowed(questions.SHORT_PATTERN)
+
+    # Check special characters
+    infinity_symbol = "\u221E"
+    guard_params = {"enabled": True, "substrings": ["gżegżółka", infinity_symbol]}
+    guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
+    guard_helper.assert_blocked(questions.COMMON_CUCKOO)
+    guard_helper.assert_blocked(questions.INFINITY_SYMBOL)
+
+    # Check case_sensitive = False
+    guard_params = {"enabled": True, "substrings": ["VIRUS"], "case_sensitive": False}
+    guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
+    guard_helper.assert_blocked(questions.MALWARE_AND_VIRUS)
+
+
+@allure.testcase("IEASG-T244")
+def test_in_guard_ban_substrings_when_string_injected_into_file(guard_helper, edp_helper):
+    """
+    Enable "ban_substrings" input scanner with "redact" parameter set to True.
+    Upload a file containing one of the banned substrings.
+    Ask a question containing the banned substring.
+    Check if the answer does not contain information from the file.
+    """
+    guard_params = {"enabled": True, "substrings": ["Zerquilloo"], "case_sensitive": False, "redact": True}
+    guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
+    _, response_text = guard_helper.call_chatqa(questions.ZERQUILLOO)
+    assert "sound" not in response_text
+
+    file = "word_zerquilloo_in_file.txt"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+    edp_helper.upload_file_and_wait_for_ingestion(file_path)
+
+    _, response_text = guard_helper.call_chatqa(questions.ZERQUILLOO)
+    assert "sound" not in response_text, \
+        "Answer should not contain information from the file because 'zerquilloo' word should be redacted"
 
 
 @allure.testcase("IEASG-T76")
@@ -112,14 +147,96 @@ def test_in_guard_code(guard_helper, code_snippets):
     guard_helper.setup(GuardType.INPUT, "code", guard_params)
     snippets = code_snippets()
 
-    # Python and JavaScript related questions should be blocked
-    for language_key in ["javascript", "python", "python_with_plain_text", "c++", "python_v2", "c++_v2", "python_v3", "java"]:
+    # Questions with blocked languages should be blocked
+    for language_key in ["javascript", "python", "python_with_plain_text", "c++", "python_v2", "c++_v2", "python_v3",
+                         "java", "python_and_scala", "java_and_ruby"]:
         guard_helper.assert_blocked(snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
     for language_key in ["ruby", "scala"]:
         guard_helper.assert_allowed(
             snippets[language_key], reason="it is in language that is not marked as blocked")
+
+
+@allure.testcase("IEASG-T77")
+def test_in_guards_invalid_input(guard_helper, code_snippets):
+    """Try to set up input guards with invalid parameters. Check if 400 error is returned."""
+    invalid_inputs_that_did_not_fail = {}
+    invalid_input_examples = {
+        "prompt_injection": [
+            {"enabled": "True"},  # lacking use_onnx required parameter
+            {"enabled": True, "use_onnx": True, "injection_model": "invalid_value"},
+            {"enabled": True, "use_onnx": True, "injection_threshold": "string instead of float"},
+            {"enabled": True, "use_onnx": True, "injection_threshold": 1.1},  # out of range
+            {"enabled": True, "use_onnx": True, "injection_threshold": -1.1},  # out of range
+            {"enabled": True, "use_onnx": True, "match_type": "invalid value"},
+        ],
+        "ban_substrings": [
+            {"enabled": True},  # missing required substrings parameter
+            {"enabled": True, "substrings": []},  # empty list
+            {"enabled": True, "substrings": [" "]},  # empty substring
+            {"enabled": True, "substrings": ["virus"], "match_type": "invalid value"},
+            {"enabled": True, "substrings": ["virus"], "case_sensitive": "invalid value"},
+            {"enabled": True, "substrings": ["virus"], "redact": "invalid value"},
+            {"enabled": True, "substrings": ["virus"], "contains_all": "invalid value"},
+        ],
+        "code": [
+            {"enabled": True,  "use_onnx": True},  # lacking required languages parameter
+            {"enabled": True, "languages": [" "]},  # lacking required use_onnx parameter
+            {"enabled": True, "use_onnx": True, "languages": [" "]},  # empty language
+            {"enabled": True, "use_onnx": True, "languages": ["c++"]},  # lowercase language (should be C++)
+            {"enabled": True, "use_onnx": True, "languages": ["C++"], "model": "invalid value"},
+            {"enabled": True, "use_onnx": True, "languages": ["C++"], "is_blocked": "invalid value"},
+            {"enabled": True, "use_onnx": True, "languages": ["C++"], "threshold": "invalid value"},
+            {"enabled": True, "use_onnx": True, "languages": ["C++"], "threshold": 1.1},  # out of range
+            {"enabled": True, "use_onnx": True, "languages": ["C++"], "threshold": -1.1},  # out of range
+        ],
+        "regex": [
+            {"enabled": True},  # missing required patterns parameter
+            {"enabled": True, "patterns": []},  # empty list
+            {"enabled": True, "patterns": ["("]},  # invalid regex
+            {"enabled": True, "patterns": ["\\"]},  # invalid regex
+            {"enabled": True, "patterns": ["virus"], "is_blocked": "invalid value"},
+            {"enabled": True, "patterns": ["virus"], "redact": "invalid value"},
+            {"enabled": True, "patterns": ["virus"], "match_type": "invalid value"},
+        ],
+        "secrets": [
+            {"enabled": True, "redact_mode": "invalid value"}
+        ],
+        "sentiment": [
+            {"enabled": True, "lexicon": "invalid value"},
+            {"enabled": True, "threshold": "string instead of float"},
+            {"enabled": True, "threshold": 1.1},  # out of range
+            {"enabled": True, "threshold": -1.1},  # out of range
+        ],
+        "token_limit": [
+            {"enabled": True},  # missing required limit parameter
+            {"enabled": True, "limit": "string instead of int"},
+            {"enabled": True, "limit": -10},  # out of range
+            {"enabled": True, "limit": 0},  # out of range
+            {"enabled": True, "limit": 5000, "encoding_name": "invalid value"},
+            {"enabled": True, "limit": 5000, "model_name": "invalid value"},
+        ],
+        "toxicity": [
+            {"enabled": True},  # missing required use_onnx parameter
+            {"enabled": True, "use_onnx": True, "threshold": "string instead of float"},
+            {"enabled": True, "use_onnx": True, "threshold": 1.1},  # out of range
+            {"enabled": True, "use_onnx": True, "threshold": -1.1},  # out of range
+            {"enabled": True, "use_onnx": True, "model": "invalid value"},
+            {"enabled": True, "use_onnx": True, "match_type": "invalid value"},
+        ]
+    }
+
+    for guard_name, invalid_inputs in invalid_input_examples.items():
+        for invalid_input in invalid_inputs:
+            result = guard_helper.setup(GuardType.INPUT, guard_name, invalid_input)
+            if result.status_code != 400:
+                if invalid_inputs_that_did_not_fail.get(guard_name) is None:
+                    invalid_inputs_that_did_not_fail[guard_name] = []
+                invalid_inputs_that_did_not_fail[guard_name].append(invalid_input)
+
+    assert invalid_inputs_that_did_not_fail == {}, \
+        f"Some invalid inputs did not cause 400 error: {invalid_inputs_that_did_not_fail}"
 
 
 @allure.testcase("IEASG-T81")
@@ -157,14 +274,14 @@ def test_in_guard_prompt_injection(guard_helper):
     guard_helper.assert_blocked(questions.KEVIN)
 
 
-@allure.testcase("IEASG-T84") # TODO: change the test
+@allure.testcase("IEASG-T84")
 def test_in_guard_regex(guard_helper):
     """Check if scanner detects the predefined regex expressions and blocks/allows questions accordingly"""
     guard_params = {
         "enabled": True,
-        "redact": False, # e2e will not test redact mode
+        "redact": False,  # e2e will not test redact mode
         "patterns": [
-            "\d{5}"
+            r"\d{5}"
         ],
     }
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
@@ -178,7 +295,6 @@ def test_in_guard_regex(guard_helper):
     guard_helper.assert_blocked(questions.NUMBER_77890)
     guard_helper.assert_blocked(questions.NUMBER_21543)
 
-
     guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_allowed(questions.NUMBER_991)
@@ -188,7 +304,7 @@ def test_in_guard_regex(guard_helper):
     guard_helper.assert_allowed(questions.NUMBER_630_900)
     guard_helper.assert_allowed(questions.NUMBER_1999_2021)
 
-    # secodn case
+    # second case
     guard_params["patterns"] = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"]
     guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
@@ -209,6 +325,12 @@ def test_in_guard_regex(guard_helper):
     guard_helper.assert_allowed(questions.MISSING_AT_SYMBOL)
     guard_helper.assert_allowed(questions.INVALID_DOMAIN_EMAIL)
 
+    # Check unicode support
+    guard_params["patterns"] = [r'\b\wą\w\b']  # words with 3 letters and "ą" inside
+    guard_params["redact"] = False
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.UNICODE_QUESTION)
+
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T85")
@@ -221,7 +343,6 @@ def test_in_guard_secrets(guard_helper):
     guard_helper.assert_blocked(questions.GH_TOKEN)
     guard_helper.assert_blocked(questions.API_KEY)
     guard_helper.assert_allowed(questions.LEGIT)
-
 
     for sentences in questions.SECRETS_BLOCKED_SENTENCES:
         guard_helper.assert_blocked(sentences, reason="it contains secrets")
@@ -245,6 +366,14 @@ def test_in_guard_sentiment(guard_helper):
 
     for sentence in questions.MORE_NEUTRAL_SENTIMENT:
         guard_helper.assert_allowed(sentence, reason="it does not contain negative sentiment")
+
+    guard_helper.assert_blocked(
+        questions.MIXED_SENTIMENT, reason="Mixed sentiment should be blocked (most restrictive policy should win)")
+
+    guard_params["threshold"] = 0.9
+    guard_helper.setup(GuardType.INPUT, "sentiment", guard_params)
+    guard_helper.assert_blocked(
+        questions.NEUTRAL_SENTIMENT, reason="0.9 means very positive sentiment so neutral question should be blocked")
 
 
 @allure.testcase("IEASG-T87")
@@ -281,6 +410,31 @@ def test_in_guard_toxicity(guard_helper):
     guard_params["match_type"] = "sentence"
     guard_helper.setup(GuardType.INPUT, "toxicity", guard_params)
     guard_helper.assert_blocked(questions.INSULTING_MIXED)
+
+
+@allure.testcase("IEASG-T245")
+def test_in_guard_mix(guard_helper, code_snippets):
+    """
+    Enable multiple input guards at the same time. One of the guards should block the question,
+    another should allow it. Check if the question is blocked (most restrictive policy should win).
+    """
+    # Code scanner should block scala snippet
+    guard_params = {
+        "enabled": True,
+        "languages": ["Scala"]
+    }
+    guard_helper.setup(GuardType.INPUT, "code", guard_params)
+
+    # ban_substrings scanner should not block the question
+    guard_params = {
+        "enabled": True,
+        "substrings": ["substring does not appear in the question"]
+    }
+    guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
+
+    snippets = code_snippets()
+    guard_helper.assert_blocked(
+        snippets["scala"], reason="Scala code was detected even though ban_substrings guard allowed the question")
 
 
 @allure.testcase("IEASG-T90")
@@ -449,7 +603,7 @@ def disabled_test_out_guard_regex(guard_helper):
         "enabled": True,
         "redact": True,
         "patterns": [
-            "\d{5}"
+            r"\d{5}"
         ],
     }
     guard_helper.setup(GuardType.OUTPUT, "regex", guard_params)

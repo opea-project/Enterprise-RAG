@@ -1,0 +1,10 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.action-dialog {
+  @apply px-4 pb-4;
+
+  &__actions {
+    @apply mt-4 flex justify-end gap-2;
+  }
+}

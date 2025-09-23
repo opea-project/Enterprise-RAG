@@ -1,4 +1,4 @@
-# Language Detection microservice
+# Language Detection Microservice
 
 The Language Detection microservice can be run in 2 modes:
 
@@ -6,6 +6,24 @@ The Language Detection microservice can be run in 2 modes:
 
 2. Standalone: This mode supports standalone translation. The microservice detects the language of the provided text. It then sets up a prompt for translating the provided text from the source language (detected language) to the provided target language.
 
+## Table of Contents
+
+1. [Language Detection Microservice](#language-detection-microservice)
+2. [Configuration Options](#configuration-options)
+3. [Getting Started](#getting-started)
+   - 3.1. [🚀 Start Language Detection Microservice with Python (Option 1)](#-start-language-detection-microservice-with-python-option-1)
+     - 3.1.1. [Install Requirements](#install-requirements)
+     - 3.1.2. [Start Microservice](#start-microservice)
+   - 3.2. [🚀 Start Language Detection Microservice with Docker (Option 2)](#-start-language-detection-microservice-with-docker-option-2)
+     - 3.2.1. [Build the Docker Image](#build-the-docker-image)
+     - 3.2.2. [Run the Docker Container](#run-the-docker-container)
+   - 3.3. [Verify the Language Detection Microservice](#verify-the-language-detection-microservice)
+     - 3.3.1. [Check Status](#check-status)
+     - 3.3.2. [Sending a Request](#sending-a-request)
+       - 3.3.2.1. [Pipeline Mode](#pipeline-mode)
+       - 3.3.2.2. [Standalone Mode](#standalone-mode)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
 
 ## Configuration Options
 
@@ -17,29 +35,31 @@ The configuration for the Language Detection Microservice is specified in the [i
 | `LANG_DETECT_STANDALONE`             | Set this to `True` for Standalone mode                                     |
 
 
-
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-language-detection-microservice-with-python-option-1)
+  - [via Docker](#-start-language-detection-microservice-with-docker-option-2) **(recommended)**
 
-### 🚀1. Start Language Detection Microservice with Python (Option 1)
+### 🚀 Start Language Detection Microservice with Python (Option 1)
 
-To start the Language Detection microservice, you need to install python packages first.
+To start the Language Detection microservice, installing following python packages is required.
 
-#### 1.1. Install Requirements
+#### Install Requirements
 
 ```bash
 pip install -r impl/microservice/requirements.txt
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_language_detection_microservice.py
 ```
 
-### 🚀2. Start Language Detection Microservice with Docker (Option 2)
+### 🚀 Start Language Detection Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker Image:
+#### Build the Docker Image
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
@@ -47,7 +67,7 @@ docker build -t opea/language_detection:latest -f comps/language_detection/impl/
 ```
 Please note that the building process may take a while to complete.
 
-#### 2.2. Run the Docker Container:
+#### Run the Docker Container
 ```bash
 docker run -d --name="language-detection-microservice" \
   --net=host \
@@ -55,9 +75,9 @@ docker run -d --name="language-detection-microservice" \
   opea/language_detection:latest
 ```
 
-### 3. Verify the Language Detection Microservice
+### Verify the Language Detection Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
 curl http://localhost:8001/v1/health_check \
@@ -65,9 +85,9 @@ curl http://localhost:8001/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+####  Sending a Request
 
-##### 3.2.1 Pipeline Mode
+##### Pipeline Mode
 
 The input request consists of the answer that has to be translated and a prompt containing the user's query.
 
@@ -100,7 +120,7 @@ The output contains the answer, prompt template, source language and target lang
 }
 ```
 
-##### 3.2.2 Standalone Mode
+##### Standalone Mode
 
 The input request consists of the text that has to be translated and the target language.
 

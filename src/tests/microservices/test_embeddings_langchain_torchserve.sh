@@ -13,7 +13,7 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
-ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/torchserve/docker"
+ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model_server/torchserve/docker"
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-torchserve"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 ENDPOINT_BUILD_VENV_NAME="test-embe=ddings-langchain-torchserve-venv"
@@ -33,7 +33,7 @@ function test_fail() {
 function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
-    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/torchserve/docker/Dockerfile comps/embeddings/impl/model-server/torchserve/
+    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model_server/torchserve/docker/Dockerfile comps/embeddings/impl/model_server/torchserve/
     docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 

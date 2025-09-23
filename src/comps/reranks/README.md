@@ -2,6 +2,28 @@
 
 The Reranking Microservice, fueled by reranking models, stands as a straightforward yet immensely potent tool for semantic search. When provided with a query and a collection of documents, reranking swiftly indexes the documents based on their semantic relevance to the query, arranging them from most to least pertinent. This microservice significantly enhances overall accuracy. In a text retrieval system, either a dense embedding model or a sparse lexical search index is often employed to retrieve relevant text documents based on the input. However, a reranking model can further refine this process by rearranging potential candidates into a final, optimized order.
 
+## Table of Contents
+
+1. [Reranking Microservice](#reranking-microservice)
+2. [Support Matrix](#support-matrix)
+3. [Configuration Options](#configuration-options)
+4. [Getting Started](#getting-started)
+   - 4.1. [Prerequisite: Start Reranking Model Server](#prerequisite-start-reranking-model-server)
+   - 4.2. [🚀 Start Reranking Microservice with Python (Option 1)](#-start-reranking-microservice-with-python-option-1)
+     - 4.2.1. [Install Requirements](#install-requirements)
+     - 4.2.2. [Start Microservice](#start-microservice)
+   - 4.3. [🚀 Start Retranking Microservice with Docker (Option 2)](#-start-retranking-microservice-with-docker-option-2)
+     - 4.3.1. [Build the Docker Image](#build-the-docker-image)
+     - 4.3.2. [Run the Docker Container](#run-the-docker-container)
+   - 4.4. [Verify the Reranking Microservice](#verify-the-reranking-microservice)
+     - 4.4.1. [Check Status](#check-status)
+     - 4.4.2. [Sending a Request](#sending-a-request)
+       - 4.4.2.1. [Example Input](#example-input)
+       - 4.4.2.2. [Example Output](#example-output)
+5. [Additional Information](#additional-information)
+   - 5.1. [Project Structure](#project-structure)
+     - 5.1.1. [Tests](#tests)
+
 ## Support matrix
 
 Support for specific model servers with Dockerfiles or build instruction.
@@ -26,17 +48,21 @@ The configuration for the Reranking Microservice is specified in the [impl/micro
 
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-reranking-microservice-with-python-option-1)
+  - [via Docker](#-start-retranking-microservice-with-docker-option-2) **(recommended)**
+
 ### Prerequisite: Start Reranking Model Server
-The Reranking Microservice interacts with a rerank model endpoint,  twhich must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_ENDPOINT` env.
+The Reranking Microservice interacts with a rerank model endpoint, which must be operational and accessible at the the URL specified by the `RERANKING_SERVICE_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service.
 
-### 🚀1. Start Reranking Microservice with Python (Option 1)
+### 🚀 Start Reranking Microservice with Python (Option 1)
 
 To start the Reranking microservice, you need to install python packages first.
 
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -45,15 +71,15 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_reranking_microservice.py
 ```
 
-### 🚀2. Start Retranking Microservice with Docker (Option 2)
+### 🚀 Start Retranking Microservice with Docker (Option 2)
 
-#### 2.1. Build the Docker Image:
+#### Build the Docker Image
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
@@ -61,7 +87,7 @@ docker build -t opea/reranking:latest -f comps/reranks/impl/microservice/Dockerf
 ```
 Please note that the building process may take a while to complete.
 
-#### 2.2. Run the Docker Container:
+#### Run the Docker Container
 ```bash
 docker run -d --name="reranking-microservice" \
   --net=host \
@@ -79,9 +105,9 @@ docker run -d --name="reranking-microservice" \
   opea/reranking:latest
 ```
 
-### 3. Verify the Reraniking Microservice
+### Verify the Reranking Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
 curl http://localhost:8000/v1/health_check \
@@ -89,13 +115,13 @@ curl http://localhost:8000/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+#### Sending a Request
 
 The `top_n` parameter allows you to specify the number of results returned by the reranker model. By default, the reranker returns only the top three result (top_n=3). Adding the top_n parameter enables you to retrieve multiple ranked results, with the option to adjust it as needed.
 
 Additionally, you can pass `rerank_score_threshold` to filter received docs based on the model output. Reranking model returns a similarity distance that is mapped to a float value between 0 and 1 using a sigmoid function. For reranker the higher value, the better similarity to the prompt. If rerank_score_threshold is defined, the microservice will ignore all chunks that returned a score equal or lower than this value.
 
-**Example Input**
+##### Example Input
 
 ```bash
 curl http://localhost:8000/v1/reranking \
@@ -104,7 +130,7 @@ curl http://localhost:8000/v1/reranking \
   -H 'Content-Type: application/json'
 ```
 
-**Example Output**
+##### Example Output
 
 The reranking microservice outputs a JSON containing the original user question and a list of relevant documents based on reranked top_n results.
 ```json
@@ -131,7 +157,6 @@ The reranking microservice outputs a JSON containing the original user question 
 
 ## Additional Information
 ### Project Structure
-
 
 The project is organized into several directories:
 

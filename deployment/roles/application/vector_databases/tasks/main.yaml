@@ -158,6 +158,9 @@
     values_files: "{{ values_files }}"
     state: present
     create_namespace: true
+    post_renderer:
+      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ vector_databases.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+       if tdx.coco.enabled else omit }}"
     timeout: "{{ helm_timeout }}"
   register: helm_result
   tags:

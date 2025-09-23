@@ -2,18 +2,30 @@
 
 This document focuses on using the [Text Embeddings Interface (TEI)]((https://github.com/huggingface/text-embeddings-inference)) as a Reranker.
 
+# Table of Contents
+
+1. [TEI Reranking Model Server](#tei-reranking-model-server)
+2. [Getting Started](#getting-started)
+   - 2.1. [Prerequisite](#prerequisite)
+   - 2.2. [🚀 Start the TEI Service via script (Option 1)](#-start-the-tei-service-via-script-option-1)
+     - 2.2.1. [Run the script](#run-the-script)
+   - 2.3. [🚀 Deploy TEI Service with OPEA Reranking Microservice using Docker Compose (Option 2)](#-deploy-tei-service-with-opea-reranking-microservice-using-docker-compose-option-2)
+     - 2.3.1. [Modify the environment configuration file to align it to your case](#modify-the-environment-configuration-file-to-align-it-to-your-case)
+     - 2.3.2. [Start the Services using Docker Compose](#start-the-services-using-docker-compose)
+     - 2.3.3. [Service Cleanup](#service-cleanup)
+   - 2.4. [Verify the Services](#verify-the-services)
 
 ## Getting Started
 
-### 0. Prerequisite
-Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the [.env](docker/.env) file.
+### Prerequisite
+Provide your Hugging Face API key to enable access to Hugging Face models. Alternatively, you can set this in the [.env.cpu](docker/.env.cpu) or [.env.hpu](docker/.env.hpu) file.
 
 ```bash
 export HF_TOKEN=${your_hf_api_token}
 ```
 
-### 🚀 1. Start the TEI Service via script (Option 1)
-#### 1.1. Run the script
+### 🚀 Start the TEI Service via script (Option 1)
+#### Run the script
 Depending on what Hardware you want to run the TEI on, you can either specify `RERANK_DEVICE` to `"cpu"` or `"hpu"`.
 
 ```bash
@@ -23,27 +35,13 @@ RERANK_DEVICE="cpu" ./run_tei.sh
 
 The run_tei.sh script is a Bash script that starts a Docker container running the TEI model server, which defaults to exposing the service on port `RERANKER_TEI_PORT` (default: **6060**). To change the port or the model (BAAI/bge-reranker-large), please edit the Bash script accordingly.
 
-The script initiates a Docker container with the TEI model server running on port `RERANKER_TEI_PORT` (default: **6060**). Configuration settings are specified in the [docker/.env](docker/.env) file. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
+The script initiates a Docker container with the TEI model server running on port `RERANKER_TEI_PORT` (default: **6060**). Configuration settings are specified in the [.env.cpu](docker/.env.cpu) or [.env.hpu](docker/.env.hpu) file. You can adjust these settings by modifying the appropriate dotenv file or by exporting environment variables.
 
-#### 1.2. Verify the TEI Service
-
-```bash
-curl localhost:6060/rerank \
-    -X POST \
-    -d '{"query":"What is Deep Learning?", "texts": ["Deep Learning is not...", "Deep learning is..."]}' \
-    -H 'Content-Type: application/json'
-```
-
-Expected output:
-```
-[{"index":1,"score":0.9988041},{"index":0,"score":0.02294873}]
-```
-
-### 🚀 2. Deploy TEI Service with OPEA Reranking Microservice using Docker Compose (Option 2)
+### 🚀 Deploy TEI Service with OPEA Reranking Microservice using Docker Compose (Option 2)
 
 To launch TEI along with the OPEA Reranking Microservice, follow these steps:
 
-#### 2.1. Modify the environment configuration file to align it to your case
+#### Modify the environment configuration file to align it to your case
 
 Modify the `./docker/.env.cpu` file or `./docker/.env.hpu`, depending on what Hardware do you want to run the TEI:
 
@@ -60,7 +58,7 @@ RERANKER_TEI_PORT=6060
 #HTTPS_PROXY=<your-https-proxy>
 ```
 
-#### 2.2. Start the Services using Docker Compose
+#### Start the Services using Docker Compose
 
 To build and start the services using Docker Compose
 
@@ -70,7 +68,16 @@ cd docker
 docker compose --env-file=.env.cpu up --build -d
 ```
 
-#### 2.3. Verify the Services
+#### Service Cleanup
+To cleanup the services, run the following commands:
+
+```bash
+cd docker
+
+docker compose down
+```
+
+### Verify the Services
 
 - Test the `reranking-tei-model-server` using the following command:
 
@@ -96,12 +103,3 @@ docker compose --env-file=.env.cpu up --build -d
         "retrieved_docs": [{"text":"DL is not..."}, {"text":"DL is..."}]}' \
         -H 'Content-Type: application/json'
     ```
-
-#### 2.4. Service Cleanup
-To cleanup the services, run the following commands:
-
-```bash
-cd docker
-
-docker compose down
-```

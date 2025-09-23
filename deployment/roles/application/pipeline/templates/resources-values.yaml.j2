@@ -2,10 +2,21 @@
 Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
-
-{% if balloons.enabled %}
+{% if balloons.enabled or maxReplicasGaudi_VLLM %}
 services:
+{% if balloons.enabled %}
   vllm:
     hpa:
-      maxReplicas: {{ maxReplicas }}
+      maxReplicas: {{ maxReplicasVLLM }}
+  torchserve_reranking:
+    hpa:
+      maxReplicas: {{ maxReplicasReranker }}
+{% endif %}
+{% if maxReplicasGaudi_VLLM %}
+  vllm_gaudi:
+    replicas: {{ maxReplicasGaudi_VLLM }}
+    hpa:
+      minReplicas: {{ maxReplicasGaudi_VLLM }}
+      maxReplicas: {{ maxReplicasGaudi_VLLM }}
+{% endif %}
 {% endif %}

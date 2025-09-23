@@ -8,20 +8,9 @@ from comps.cores.mega.base_statistics import register_statistics, statistics_dic
 
 # Constants
 from comps.cores.mega.constants import MegaServiceEndpoint, ServiceRoleType, ServiceType
-from comps.cores.mega.gateway import (
-    AudioQnAGateway,
-    ChatQnAGateway,
-    CodeGenGateway,
-    CodeTransGateway,
-    DocSumGateway,
-    FaqGenGateway,
-    Gateway,
-    SearchQnAGateway,
-    TranslationGateway,
-)
 
 # Logger
-from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
+from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger, CustomLogger
 from comps.cores.mega.micro_service import (
     MicroService,
     opea_microservices,
@@ -60,6 +49,9 @@ from comps.cores.proto.docarray import (
     RerankedFileDoc,
     RerankedLinkDoc
 )
+
+# Common
+from comps.cores.common.component import OpeaComponent, OpeaComponentRegistry, OpeaComponentLoader
 
 # Telemetry
 from comps.cores.telemetry.opea_telemetry import opea_telemetry

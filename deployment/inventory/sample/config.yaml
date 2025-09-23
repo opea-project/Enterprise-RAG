@@ -68,14 +68,19 @@ clusterCerts:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "1.4.0"
+tag: "1.5.0"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
 
 hpaEnabled: true
-enforcePSS: false
-tdxEnabled: false
+enforcePSS: true
+
+tdx:
+  enabled: false
+  td_type: "one-td" # allowed options: one-td, coco
+  attestation:
+    enabled: false
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
@@ -229,4 +234,6 @@ vector_databases:
   enabled: true
   namespace: vdb
   vector_store: redis-cluster # Supported: redis, redis-cluster
+  vector_datatype: FLOAT32
+  vector_dims: 768
 

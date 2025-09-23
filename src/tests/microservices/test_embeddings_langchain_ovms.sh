@@ -13,7 +13,7 @@ IP_ADDRESS=$(hostname -I | awk '{print $1}')
 
 CONTAINER_NAME_BASE="test-comps-embeddings"
 
-ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model-server/ovms/docker"
+ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model_server/ovms/docker"
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
 ENDPOINT_BUILD_VENV_NAME="test-embeddings-langchain-ovms-venv"
@@ -33,7 +33,7 @@ function build_docker_images() {
     cd $WORKPATH
     echo $(pwd)
 
-    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model-server/ovms/docker/Dockerfile comps/embeddings/impl/model-server/ovms/
+    docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model_server/ovms/docker/Dockerfile comps/embeddings/impl/model_server/ovms/
     docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
     }
 

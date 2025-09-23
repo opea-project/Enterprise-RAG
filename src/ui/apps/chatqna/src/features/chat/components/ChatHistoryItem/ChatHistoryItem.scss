@@ -1,0 +1,19 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-history-item {
+  @apply flex items-center justify-between;
+  @apply max-h-10 min-h-10 rounded pl-3 pr-1 text-sm;
+  @apply hover:bg-light-bg-1/80 dark:hover:bg-dark-bg-1/80;
+  @apply cursor-pointer;
+  @apply border border-transparent;
+
+  &.chat-history-item--active {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+  }
+
+  &.chat-history-item--has-menu-open {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+    @apply border-light-border dark:border-dark-border border;
+  }
+}

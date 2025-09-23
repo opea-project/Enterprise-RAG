@@ -1,6 +1,30 @@
 # Enterprise RAG Enhanced DataPrep Service
 
-The OPEA ERAG Enhanced Data Preparation service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `MinIO`, `AWS S3`, and `S3-compatible` endpoints.
+The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `MinIO`, `AWS S3`, and `S3-compatible` endpoints.
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+  - [Storage endpoints](#storage-endpoints)
+- [Storage Synchronization](#storage-synchronization)
+- [RBAC (Role-Based Access Control)](#rbac-role-based-access-control)
+- [Setup](#setup)
+  - [Environment variables](#environment-variables)
+  - [Install dependencies](#install-dependencies)
+  - [Docker images](#docker-images)
+- [Running on localhost via python](#running-on-localhost-via-python)
+- [Running on localhost via Docker](#running-on-localhost-via-docker)
+- [Running on kubernetes](#running-on-kubernetes)
+- [Troubleshooting](#troubleshooting)
+  - [My selected S3 or S3-Compatible storage does not support bucket notifications](#my-selected-s3-or-s3-compatible-storage-does-not-support-bucket-notifications)
+  - [File upload certificate error](#file-upload-certificate-error)
+  - [Protocol mismatch](#protocol-mismatch)
+  - [CORS related issues](#cors-related-issues)
+  - [PostgreSQL connection errors](#postgresql-connection-errors)
+- [Testing](#testing)
+  - [Testing S3 Compatible](#testing-s3-compatible)
+- [Development](#development)
 
 ## Requirements
 
@@ -21,6 +45,8 @@ The OPEA ERAG Enhanced Data Preparation service provides advanced document proce
 
 
 ## Configuration
+
+Similar to other Enterprise RAG components, EDP has its own section under the deployment [config.yaml](../../deployment/inventory/sample/config.yaml). All possible configuration options are listed in [deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml).
 
 ### Storage endpoints
 Use the config.yaml file to define the storage backend. Set the desired `storageType` under the edp section in your config.yaml, see [inventory/sample/config.yaml](../../deployment/inventory/sample/config.yaml). Then, configure the appropriate sub-section based on the selected type.
@@ -73,7 +99,8 @@ edp:
 
 Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_compatible_endpoint`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
 
-> Note: If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
+> [!NOTE]
+> If your S3-compatible backend does not support bucket event notifications, you must enable scheduled or manual synchronization. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
 Then deploy the application by following the instructions in [deployment/README.md](../../deployment/README.md). Example for installation:
 ```bash
@@ -91,7 +118,7 @@ If the configured S3-compatible storage does not support bucket notifications, f
 
 To address this limitation, Enterprise DataPrep provides a pull-based synchronization mechanism. When enabled, it periodically scans the configured storage and updates the internal database accordingly.
 
-To use it, edit the `deployment/components/edp/values.yaml` file and set the `celery.config.scheduledSync.enabled` to `true`.
+To use it, edit the [deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml) file and set the `celery.config.scheduledSync.enabled` to `true`.
 
 Pulling frequency can by adjusted by setting the `celery.config.scheduledSync.syncPeriodSeconds` - set the number of seconds between each pull request from storage. Note that for storages with high amount of files and/or frequently changed files requires more delay between each subsequent pulls, so consider increasing this value to reduce load. For small datasets, lower values (e.g., 60 seconds) are acceptable.
 
@@ -111,7 +138,7 @@ You can also manually schedule the synchronization task. To run the synchronizat
 
 ## RBAC (Role-Based Access Control)
 
-RBAC in EDP (Enterprise Data Platform) is implemented to manage and restrict access to data based on roles and permissions. The following outlines four distinct RBAC modes, each with its own approach to access control:
+RBAC in EDP is implemented to manage and restrict access to data based on roles and permissions. The following outlines four distinct RBAC modes, each with its own approach to access control:
 
 ### 1. None
 - **Description**: No access control policies are enforced.
@@ -252,7 +279,7 @@ If you want to utilize all functionality, depending on the application server yo
 
 ### Install dependencies
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -294,11 +321,11 @@ docker run -d --network edp-network --name edp-celery opea/enhanced_dataprep cel
 docker run -d --network edp-network --name edp-flower -p 5555:5555 opea/enhanced_dataprep celery -A tasks.celery flower
 ```
 
-Remember to attach proper .env values for each container and ensure that you have other required services running and discoverable on network.
+Remember to attach proper `.env` values for each container and ensure that you have other required services running and discoverable on network.
 
 ## Running on kubernetes
 
-Kubernetes helm chart is stored in `deployment/edp/helm` directory. To deploy the application run:
+Kubernetes helm chart is stored in [deployment/components/edp/helm](../../deployment/components/edp) directory. To deploy the application run:
 
 ```bash
 helm repository update
@@ -322,7 +349,7 @@ And proceed to the following url `http://localhost:1234/docs`
 ## Troubleshooting
 
 ### My selected S3 or S3-Compatible storage does not support bucket notifications
-If you are unable to use bucket notifications through the `minio-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart (deployment/components/edp/values.yaml) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
+If you are unable to use bucket notifications through the `minio-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart ([deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml)) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
 ### File upload certificate error
 If you deployed ERAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.
@@ -334,12 +361,12 @@ If you encounter a protocol mismatch error, it may be because edpExternalUrl has
 Your chosen S3 storage endpoint can be configured with special settings known as CORS (Cross-Origin Resource Sharing). When you upload a file using the EDP web GUI, your browser requests a presigned URL from the backend. This URL enables you to upload files to S3-compatible storage without needing to provide credentials. However, this URL will not match the current URL of the EDP GUI you are using. For instance, if your GUI is running under myrag.example.com and the storage is configured at storage.mycorp.internal, you will encounter a CORS error. This occurs because your browser and the storage endpoint do not permit requests from unapproved origins. To resolve this issue, ensure that the storage is properly configured to allow your origin. In the example above, the CORS configuration on your chosen storage should permit requests from myrag.example.com. For more details on CORS, please refer to the manufacturer's documentation.
 
 ### PostgreSQL connection errors
-Make sure that PostgreSQL initialization process was successfull. This container should not have restarted when deploying the solution. Ensure that output logs from the deployment contain following lines:
+Make sure that PostgreSQL initialization process was successful. This container should not have restarted when deploying the solution. Ensure that output logs from the deployment contain following lines:
 ```
 Creating user edp
 Granting access to "edp" to the database "edp"
 ```
-This ensures that the database and users were initialized successfully. If the database container was restarted, check the container events and look for readinessProbe events. If the initialization process is taking long, this probe might restart the container, interrupting the initializaton process. This will result in connections errors such as:
+This ensures that the database and users were initialized successfully. If the database container was restarted, check the container events and look for readinessProbe events. If the initialization process is taking long, this probe might restart the container, interrupting the initialization process. This will result in connections errors such as:
 ```
 FATAL:  password authentication failed for user "edp"
 DETAIL:  Role "edp" does not exist.
@@ -402,3 +429,7 @@ Deploy the application via Ansible using your configuration. After successful de
 ```bash
 curl -X PUT "https://localhost:9191/default/test.txt" --upload-file test.txt -H "Content-Type: application/octet-stream" -k
 ```
+
+## Development
+
+To support changes in the database, a migration strategy software [Alembic](https://alembic.sqlalchemy.org/en/latest/) was introduced. This enabled upgrading the database schema based on model changes. It is done automatically each time the container starts and it ensures that the database schema is migrated to the newest version. If any changes are introduced into database models in [app/models.py](app/models.py) new migrations need to be generated. An instruction on how to generate such migrations is available in a separate [README.md](app/alembic/README.md).

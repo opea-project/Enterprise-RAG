@@ -14,7 +14,7 @@ image:
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
-{% if tdxEnabled is defined and tdxEnabled %}
+{% if tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}
@@ -29,7 +29,7 @@ mongodb:
     databases:
       - {{ fingerprint.mongo.auth.db_name }}
     rootPassword: {{ MONGO_ADMIN_PASSWORD }}
-{% if tdxEnabled is defined and tdxEnabled %}
+{% if tdx.coco.enabled %}
   podAnnotations:
     io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
 {% endif %}

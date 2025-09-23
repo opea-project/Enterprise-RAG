@@ -26,7 +26,6 @@ sudo -E ./add_cert_to_ca.sh
   * if username is not exported, then `admin` will be used as default, but you still need to export the password
   * if you didn't change the default Realm password after the ansible based installation you can export it using the default credentials file `export KEYCLOAK_REALM_ADMIN_PASSWORD=$(cat ../../../../../deployment/ansible-logs/default_credentials.yaml | grep KEYCLOAK_REALM_ADMIN_PASSWORD | awk '{print $2}')`
 * if you are running test on Gaudi:
-  * it is advised to increase the rate limits for chatqa endpoint in `/deployment/components/apisix-routes/values.yaml` before eRAG installation to avoid ratelimiter errors (429 error code) - this can be done by modifying `rate_limit_count` value under `endpoint -> chatqa` section of the file
   * vLLM warmup should not be skipped `VLLM_SKIP_WARMUP: "false"` for your LLM model in resource file `/deployment/pipelines/chatqa/resources-model-hpu.yaml`
   * for vector database (Redis) it is suggested to use `HNSW` algorithm instead of `FLAT`, results can be a little less accurate, but the retrieval latency for hundreds of parallel users will be smaller, this can be changed using `VECTOR_ALGORITHM` parameter in `/src/comps/retrievers/impl/microservice/.env` and `/deployment/components/edp/values.yaml`
 * if you are using eRAG with gated huggingface LLM model:

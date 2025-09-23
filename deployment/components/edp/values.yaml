@@ -2,6 +2,11 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# allowInsecureImages due to repository override to: [bitnamilegacy]
+global:
+  security:
+    allowInsecureImages: true
+
 proxy:
   httpProxy: ""
   httpsProxy: ""
@@ -35,6 +40,8 @@ hfToken: ""
 
 minio:
   enabled: true
+  image:
+    repository: bitnamilegacy/minio
   persistence:
     enabled: true
     size: 10Gi
@@ -206,6 +213,8 @@ minio:
         - mc event add --event "put,delete" provisioning/only-admin arn:minio:sqs::EDP:webhook
 
 redis:
+  image:
+    repository: bitnamilegacy/redis
   networkPolicy:
     extraIngress:
       - ports:
@@ -228,6 +237,8 @@ redis:
       size: 10Gi
 
 postgresql:
+  image:
+    repository: bitnamilegacy/postgresql
   auth:
     username: "edp" # cannot refence secret
     database: "edp" # cannot refence secret
@@ -461,6 +472,9 @@ flower:
       memory: "2Gi"
 
 backend:
+  postgresql:
+    image:
+      repository: bitnamilegacy/postgresql
   environment:
     - name: CELERY_BROKER_URL
       valueFrom:

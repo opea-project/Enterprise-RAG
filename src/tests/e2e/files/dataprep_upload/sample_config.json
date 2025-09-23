@@ -1,0 +1,177 @@
+{
+  "system": {
+    "name": "ExampleMicroservicesSystem",
+    "version": "1.0.0",
+    "environment": "production",
+    "logging": {
+      "level": "INFO",
+      "format": "json",
+      "file": "/var/log/system.log"
+    }
+  },
+  "services": {
+    "auth-service": {
+      "enabled": true,
+      "host": "auth.example.com",
+      "port": 8081,
+      "endpoints": {
+        "login": "/api/v1/login",
+        "logout": "/api/v1/logout",
+        "refresh": "/api/v1/refresh"
+      },
+      "jwt": {
+        "secret": "super-secret-key",
+        "expiration": "24h",
+        "issuer": "example-auth"
+      },
+      "database": {
+        "type": "postgres",
+        "host": "db-auth.example.com",
+        "port": 5432,
+        "user": "auth_user",
+        "password": "auth_password",
+        "name": "auth_db",
+        "pool": {
+          "max": 15,
+          "min": 2
+        }
+      }
+    },
+    "user-service": {
+      "enabled": true,
+      "host": "user.example.com",
+      "port": 8082,
+      "endpoints": {
+        "getUser": "/api/v1/users/{id}",
+        "listUsers": "/api/v1/users",
+        "createUser": "/api/v1/users/create"
+      },
+      "database": {
+        "type": "mysql",
+        "host": "db-user.example.com",
+        "port": 3306,
+        "user": "user_service",
+        "password": "user_password",
+        "name": "user_db"
+      },
+      "cache": {
+        "type": "redis",
+        "host": "redis-user.example.com",
+        "port": 6379,
+        "ttl": 3600
+      }
+    },
+    "order-service": {
+      "enabled": true,
+      "host": "order.example.com",
+      "port": 8083,
+      "endpoints": {
+        "createOrder": "/api/v1/orders",
+        "getOrder": "/api/v1/orders/{id}",
+        "listOrders": "/api/v1/orders"
+      },
+      "database": {
+        "type": "postgres",
+        "host": "db-order.example.com",
+        "port": 5432,
+        "user": "order_user",
+        "password": "order_password",
+        "name": "order_db"
+      },
+      "queue": {
+        "type": "rabbitmq",
+        "host": "mq.example.com",
+        "port": 5672,
+        "user": "mq_user",
+        "password": "mq_password",
+        "queueName": "order-events"
+      }
+    },
+    "notification-service": {
+      "enabled": false,
+      "host": "notify.example.com",
+      "port": 8084,
+      "methods": {
+        "email": {
+          "enabled": true,
+          "smtp": {
+            "host": "smtp.example.com",
+            "port": 587,
+            "user": "smtp_user",
+            "password": "smtp_password",
+            "from": "no-reply@example.com"
+          }
+        },
+        "sms": {
+          "enabled": true,
+          "provider": "twilio",
+          "apiKey": "twilio_api_key",
+          "sender": "+1000000000"
+        },
+        "push": {
+          "enabled": false,
+          "provider": "firebase",
+          "apiKey": "firebase_api_key"
+        }
+      }
+    },
+    "reporting-service": {
+      "enabled": true,
+      "host": "report.example.com",
+      "port": 8085,
+      "endpoints": {
+        "generateReport": "/api/v1/reports/generate",
+        "getReport": "/api/v1/reports/{id}"
+      },
+      "storage": {
+        "type": "s3",
+        "bucket": "reports-bucket",
+        "region": "us-east-1",
+        "accessKey": "s3_access_key",
+        "secretKey": "s3_secret_key"
+      },
+      "schedules": {
+        "daily": "0 2 * * *",
+        "weekly": "0 3 * * 0",
+        "monthly": "0 4 1 * *"
+      }
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "prometheus": {
+      "host": "prometheus.example.com",
+      "port": 9090
+    },
+    "grafana": {
+      "host": "grafana.example.com",
+      "port": 3000,
+      "user": "grafana_user",
+      "password": "grafana_password"
+    }
+  },
+  "security": {
+    "cors": {
+      "enabled": true,
+      "allowedOrigins": [
+        "http://localhost:3000",
+        "https://frontend.example.com"
+      ],
+      "allowedMethods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ]
+    },
+    "rateLimit": {
+      "enabled": true,
+      "requestsPerMinute": 100
+    }
+  },
+  "featureFlags": {
+    "newCheckoutFlow": false,
+    "betaDashboard": true,
+    "darkMode": true
+  }
+}

@@ -1,0 +1,173 @@
+{{- if .Values.minio.enabled -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: edp-minio-oidc-check
+  namespace: edp
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 0
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            istio.io/dataplane-mode: ambient
+        spec:
+          serviceAccount: edp-minio
+          serviceAccountName: edp-minio
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          initContainers:
+          - name: wait-for-oidc-config
+            image: alpine/curl
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 1000
+            env:
+              - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
+                valueFrom:
+                  secretKeyRef:
+                    name: edp-access-secret
+                    key: EDP_OIDC_CONFIG_URL
+            command:
+              - sh
+              - -c
+              - |
+                  if [ -z "$MINIO_IDENTITY_OPENID_CONFIG_URL" ]; then
+                    echo "Environment variable MINIO_IDENTITY_OPENID_CONFIG_URL is not set. Skipping the init container.";
+                  else
+                    until curl -m 5 -sS -o /dev/null $MINIO_IDENTITY_OPENID_CONFIG_URL; do
+                      echo "waiting for OpenID config endpoint $MINIO_IDENTITY_OPENID_CONFIG_URL to become available...";
+                      sleep 2;
+                    done;
+                  fi
+          - name: wait-for-minio
+            image: alpine/curl
+            securityContext:
+              seccompProfile:
+                type: RuntimeDefault
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 1000
+            env:
+              - name: "MINIO_HOST"
+                valueFrom:
+                  secretKeyRef:
+                    name: edp-access-secret
+                    key: EDP_INTERNAL_URL
+            command:
+              - sh
+              - -c
+              - |
+                  if [ -z "$MINIO_HOST" ]; then
+                    echo "Environment variable MINIO_HOST is not set. Skipping the init container.";
+                  else
+                    live_url="$MINIO_HOST/minio/health/live"
+                    until curl -m 5 -sS -o /dev/null $live_url; do
+                      echo "waiting for minio endpoint $live_url to become available...";
+                      sleep 2;
+                    done;
+                  fi
+          containers:
+          - name: minio-oidc-check
+            image: docker.io/bitnamilegacy/minio:2024.12.18-debian-12-r0 # synced with minio chart version 14.10.3
+            command:
+              - sh
+              - -c
+              - |
+                  #!/bin/sh
+
+                  echo "Checking OIDC config URL availability..."
+                  response=$(curl -s -o /dev/null -w "%{http_code}" "$MINIO_IDENTITY_OPENID_CONFIG_URL")
+                  if [ "$response" -ge 200 ] && [ "$response" -lt 400 ]; then
+                    echo "OIDC config URL is accessible, proceeding with OIDC check..."
+                  else
+                    echo "OIDC config URL is not accessible. Response code $response. Skipping OIDC check..."
+                    curl -vv "$MINIO_IDENTITY_OPENID_CONFIG_URL"
+                    exit 0
+                  fi
+
+                  mkdir /tmp/.mc
+                  minio_alias=edp-minio
+
+                  mc --config-dir /tmp/.mc alias set "$minio_alias" "$MINIO_HOST" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"
+                  if ! mc --config-dir /tmp/.mc idp openid list "$minio_alias" --json | jq 'all(.[]; .enabled == true)' | grep -q true; then
+                    echo "Not all OpenID entries are enabled - enabling them..."
+                    mc --config-dir /tmp/.mc idp openid update "$minio_alias" "_" enable="on" config_url="$MINIO_IDENTITY_OPENID_CONFIG_URL" client_id="$MINIO_IDENTITY_OPENID_CLIENT_ID" client_secret="$MINIO_IDENTITY_OPENID_CLIENT_SECRET"
+                    # WARNING: The following command will restart the MinIO service and may cause a brief service disruption.
+                    mc --config-dir /tmp/.mc admin service restart "$minio_alias" --wait --json
+                  else
+                    echo "All OpenID entries are enabled - nothing to do."
+                  fi
+            resources:
+              requests:
+                memory: 128Mi
+                cpu: 100m
+              limits:
+                memory: 256Mi
+                cpu: 200m
+            securityContext:
+              {{- toYaml .Values.securityContextWithTemp | nindent 14 }}
+            env:
+            {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+            {{- end }}
+            {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+            {{- end }}
+            {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
+            {{- end }}
+            - name: "MINIO_IDENTITY_OPENID_CONFIG_URL"
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_OIDC_CONFIG_URL
+            - name: "MINIO_IDENTITY_OPENID_CLIENT_ID"
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_OIDC_CLIENT_ID
+            - name: "MINIO_IDENTITY_OPENID_CLIENT_SECRET"
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_OIDC_CLIENT_SECRET
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_SECRET_KEY
+            - name: MINIO_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: edp-access-secret
+                  key: EDP_INTERNAL_URL
+          restartPolicy: Never
+{{- end }}

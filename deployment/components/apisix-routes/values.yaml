@@ -13,7 +13,7 @@ endpoints:
     backend_service: router-service
     service_port: 8080
     service_path: /
-    rate_limit_count: 10
+    rate_limit_count: 30
     permissions:
       - "admin#admin-access"
       - "user#user-access"
@@ -62,7 +62,7 @@ endpoints:
     path: /api/v1/edp/presignedUrl
     backend_service: edp-backend
     service_port: 5000
-    rate_limit_count: 30
+    rate_limit_count: 120
     service_regex:
       - ^/api/v1/edp/presignedUrl$
       - /api/presignedUrl

@@ -3,18 +3,12 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import base64
 import logging
 import os
 
-import kr8s
 import requests
-from tests.e2e.validation.constants import (ERAG_AUTH_DOMAIN,
-                                  INGRESS_NGINX_CONTROLLER_NS,
-                                  INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR,
-                                  VITE_KEYCLOAK_CLIENT_ID, VITE_KEYCLOAK_REALM)
+from tests.e2e.validation.constants import ERAG_AUTH_DOMAIN, VITE_KEYCLOAK_CLIENT_ID, VITE_KEYCLOAK_REALM
 
-from tests.e2e.helpers.api_request_helper import CustomPortForward
 
 logger = logging.getLogger(__name__)
 DEFAULT_CREDENTIALS_PATH = "../../deployment/ansible-logs/default_credentials.txt"
@@ -26,39 +20,41 @@ class CredentialsNotFound(Exception):
 
 class KeycloakHelper:
 
-    def __init__(self, credentials_file):
-        self.credentials_file = credentials_file
+    def __init__(self, credentials_file, k8s_helper):
+        credentials = self.get_credentials(credentials_file)
+        self.erag_admin_username = credentials["KEYCLOAK_ERAG_ADMIN_USERNAME"]
+        self.erag_admin_password = credentials["KEYCLOAK_ERAG_ADMIN_PASSWORD"]
+        self.erag_user_username = credentials["KEYCLOAK_ERAG_USER_USERNAME"]
+        self.erag_user_password = credentials["KEYCLOAK_ERAG_USER_PASSWORD"]
+        self.k8s_helper = k8s_helper
+        self._access_token = None
+        self._admin_access_token = None
+        self._admin_pass = self.k8s_helper.retrieve_admin_password(secret_name="keycloak", namespace="auth")
 
-    def get_access_token(self):
+    @property
+    def access_token(self):
+        return self.get_access_token()
+
+    @property
+    def admin_access_token(self):
+        return self.get_admin_access_token()
+
+    def get_access_token(self, as_user=False):
         """
         Get the access token for the erag-admin user.
         User's required actions need to be temporarily removed in order to obtain the token.
         """
-        admin_token = self.get_admin_access_token()
-        erag_admin_user, erag_admin_pass = self.get_erag_admin_credentials()
-        user_id = self.get_user_id(admin_token, erag_admin_user)
-        required_actions = self.read_current_required_actions(admin_token, user_id)
-        if required_actions:
-            self.remove_required_actions(admin_token, user_id)
-        try:
-            user_access_token = self.get_user_access_token(erag_admin_user, erag_admin_pass)
-        finally:
-            if required_actions:
-                self.revert_required_actions(required_actions, admin_token, user_id)
-        return user_access_token
+        if as_user:
+            return self.get_user_access_token(self.erag_user_username, self.erag_user_password)
+        return self.get_user_access_token(self.erag_admin_username, self.erag_admin_password)
 
-    def get_erag_admin_credentials(self):
-        if self.credentials_file:
-            if os.path.exists(self.credentials_file):
-                logger.debug(f"Loading {self.credentials_file} in order to obtain ERAG admin credentials")
-                username, password = self._parse_credentials_file(self.credentials_file)
-                if username and password:
-                    return username, password
-                else:
-                    logger.warning(f"Failed to obtain ERAG admin credentials from {self.credentials_file}. "
-                                   f"Proceeding with default_credentials.txt")
+    def get_credentials(self, credentials_file):
+        if credentials_file:
+            if os.path.exists(credentials_file):
+                logger.debug(f"Loading {credentials_file} in order to obtain ERAG admin credentials")
+                return self._parse_credentials_file(credentials_file)
             else:
-                logger.warning(f"Provided credentials file (--credentials-file={self.credentials_file}) does not exist. "
+                logger.warning(f"Provided credentials file (--credentials-file={credentials_file}) does not exist. "
                                f"Proceeding with default_credentials.txt")
 
         if os.path.exists(DEFAULT_CREDENTIALS_PATH):
@@ -69,51 +65,19 @@ class KeycloakHelper:
             raise CredentialsNotFound()
 
     def _parse_credentials_file(self, file_path):
-        erag_admin_username = ""
-        erag_admin_password = ""
+        """Parse the credentials file and return a corresponding dictionary"""
+        credentials = {}
         with open(file_path, "r") as file:
             for line in file:
                 line = line.strip()
                 if line and not line.startswith("#"):  # Ignore empty lines and comments
                     key, value = line.split("=", 1)
-                    if key == "KEYCLOAK_ERAG_ADMIN_PASSWORD":
-                        erag_admin_password = value.strip('"')
-                    elif key == "KEYCLOAK_ERAG_ADMIN_USERNAME":
-                        erag_admin_username = value.strip('"')
-        return erag_admin_username, erag_admin_password
+                    credentials[key] = value.strip('"')
+        return credentials
 
     def get_admin_access_token(self):
         """Get the access token for the admin user. It is needed in order to obtain erag-admin user_id"""
-        admin_pass = self._retrieve_admin_password()
-        return self._obtain_access_token("master", "admin", admin_pass, "admin-cli")
-
-    def _retrieve_admin_password(self):
-        """Retrieve the admin password from the keycloak secret"""
-        keycloak_secret_name = "keycloak"
-        logger.debug(f"Retrieving the admin password from the '{keycloak_secret_name}' secret")
-        secrets = kr8s.get("secrets", namespace="auth")
-        for secret in secrets:
-            if secret.name == keycloak_secret_name:
-                # Extract and decode the base64-encoded password
-                encoded_password = secret.data.get("admin-password")
-                return base64.b64decode(encoded_password).decode().strip()
-
-    def get_user_id(self, admin_access_token, username):
-        """Get user_id of erag-admin user"""
-        logger.debug(f"Obtaining user_id for user '{username}'")
-        url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}/users?username={username}"
-        headers = {
-            "Authorization": f"Bearer {admin_access_token}",
-            "Content-Type": "application/json"
-        }
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.get(url, headers=headers, verify=False)
-
-        if response.status_code == 200:
-            users = response.json()
-            return users[0].get('id')
+        return self._obtain_access_token("master", "admin", self._admin_pass, "admin-cli")
 
     def get_user_access_token(self, username, password):
         """Get the access token for the erag-admin user"""
@@ -132,38 +96,50 @@ class KeycloakHelper:
             "client_id": client_id,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.post(token_url, data=data, headers=headers, verify=False)
+        response = requests.post(token_url, data=data, headers=headers, verify=False)
         if response.status_code == 200:
             return response.json().get("access_token")
         else:
             raise Exception(f"Failed to get access token for user '{username}'. Response: {response.text}")
 
-    def read_current_required_actions(self, admin_access_token, user_id):
+    def read_current_required_actions(self, admin_access_token, user):
         """Read the required actions for the user. We need to revert them back after obtaining the token."""
         logger.debug("Checking if there are any required actions for the user")
+        user_id = self._get_user_id(admin_access_token, user)
         headers = {
             "Authorization": f"Bearer {admin_access_token}",
             "Content-Type": "application/json"
         }
 
         url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}/users/{user_id}"
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.get(url, headers=headers, verify=False)
+        response = requests.get(url, headers=headers, verify=False)
         return response.json().get("requiredActions", [])
 
-    def remove_required_actions(self, admin_access_token, user_id):
+    def remove_required_actions(self, admin_access_token, user):
         """Remove required actions from the user. Otherwise, we'll get 'Account is not fully set up' error."""
-        logger.debug("Temporarily removing actions required for the user in order to obtain the token")
+        logger.debug(f"Temporarily removing actions required for the user {user} in order to obtain the token")
+        user_id = self._get_user_id(admin_access_token, user)
         self._set_required_actions([], admin_access_token, user_id)
 
-    def revert_required_actions(self, required_actions, admin_token, user_id):
+    def revert_required_actions(self, required_actions, admin_token, user):
         """Revert required actions back to the original state"""
         logger.debug("Reverting required actions back to the original state")
+        user_id = self._get_user_id(admin_token, user)
         self._set_required_actions(required_actions, admin_token, user_id)
+
+    def _get_user_id(self, admin_access_token, username):
+        """Get user_id of erag-admin user"""
+        logger.debug(f"Obtaining user_id for user '{username}'")
+        url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}/users?username={username}"
+        headers = {
+            "Authorization": f"Bearer {admin_access_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, verify=False)
+
+        if response.status_code == 200:
+            users = response.json()
+            return users[0].get('id')
 
     def _set_required_actions(self, required_actions, admin_token, user_id):
         url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}/users/{user_id}"
@@ -172,8 +148,25 @@ class KeycloakHelper:
             "Content-Type": "application/json"
         }
         payload = {"requiredActions": required_actions}
-
-        with CustomPortForward(443, INGRESS_NGINX_CONTROLLER_NS,
-                               INGRESS_NGINX_CONTROLLER_POD_LABEL_SELECTOR, 443):
-            response = requests.put(url, json=payload, headers=headers, verify=False)
+        response = requests.put(url, json=payload, headers=headers, verify=False)
         assert response.status_code == 204, f"Failed to remove required actions. Status code: {response.status_code}"
+
+    def set_brute_force_detection(self, enabled: bool):
+        """
+        Enable or disable brute force detection for the Keycloak realm.
+        :param enabled: True to enable, False to disable
+        """
+        logger.info(f"{'Enabling' if enabled else 'Disabling'} brute force detection for the Keycloak realm")
+        url = f"{ERAG_AUTH_DOMAIN}/admin/realms/{VITE_KEYCLOAK_REALM}"
+        headers = {
+            "Authorization": f"Bearer {self.admin_access_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch realm settings (status {response.status_code}): {response.text}")
+        realm_settings = response.json()
+        realm_settings["bruteForceProtected"] = enabled
+        response = requests.put(url, json=realm_settings, headers=headers, verify=False)
+        if response.status_code != 204:
+            raise Exception(f"Failed to update brute force detection (status {response.status_code}): {response.text}")

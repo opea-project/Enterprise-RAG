@@ -10,13 +10,13 @@ from typing import Type
 import aiohttp
 from transformers import AutoConfig
 
-from src.tests.benchmark.common.structures import (
+from src.tests.benchmark_microservices.common.structures import (
     BenchmarkBase,
     BenchmarkParams,
     StreamRequestTimings,
     generate_combinations,
 )
-from src.tests.benchmark.common.targets import (
+from src.tests.benchmark_microservices.common.targets import (
     VllmBenchTarget,
     LlmMicroserviceBenchTarget,
 )
@@ -198,8 +198,8 @@ async def call_microservice(
     return timings
 
 
-def test_pytest():
-    yaml_conf = VllmIpexCpuBenchmark.parse_yaml_config('src/tests/benchmark/config_defaults/vllm_ip_cpu.yaml')
+def test_vllm_ip_cpu():
+    yaml_conf = VllmIpexCpuBenchmark.parse_yaml_config('src/tests/benchmark_microservices/config_defaults/vllm_ip_cpu.yaml')
     setup_combinations = generate_combinations(yaml_conf["setup_configurations"])
     parameters_combinations = generate_combinations(yaml_conf["benchmark_parameters"])
     model_related_token_nums = yaml_conf["model_related_token_nums"]

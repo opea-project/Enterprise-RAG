@@ -13,6 +13,20 @@
   tags:
     - install
 
+- name: label topology-discovery namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: topology-discovery
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+  when: enforcePSS
+  tags:
+    - install
+
 - name: Create a topology discovery daemonset
   kubernetes.core.k8s:
     state: present
@@ -147,17 +161,6 @@
 - name: Check if any node is Gaudi
   set_fact:
     gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
-  tags:
-    - install
-
-- name: Display warning and pause if Gaudi detected
-  ansible.builtin.pause:
-    prompt: "WARNING: At least one node has Habana Gaudi hardware. Balloons policy is not supported and installation will be skipped. Press Enter to continue or wait 30 seconds..."
-    echo: true
-    seconds: 30
-  when:
-    - gaudi_detected
-    - balloons.enabled
   tags:
     - install
 

@@ -6,6 +6,7 @@ import fnmatch
 import os
 import sys
 import pandas as pd
+import numpy as np
 
 path = sys.argv[1]
 files = fnmatch.filter(os.listdir(path), "bench_*.csv")
@@ -17,6 +18,7 @@ for file in files:
         df = pd.read_csv(os.path.join(path, file), header=None)
         df = df.set_axis(['Inputs','Outputs','First','Last','Err','Code'], axis=1)
         df['Next'] = ( df['Last'] - df ['First'] ) / df['Outputs']
+        df = df[~df['Next'].isin([np.inf, -np.inf])]
         im = df['Inputs'].mean()
         i90 = df['Inputs'].quantile(0.9)
         om = df['Outputs'].mean()

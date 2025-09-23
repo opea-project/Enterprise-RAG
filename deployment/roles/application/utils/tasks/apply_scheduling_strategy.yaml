@@ -14,6 +14,7 @@
     amx_supported: "{{ item.value.amx_supported }}"
     maxBalloonsVLLM: "{{ item.value.maxBalloonsVLLM }}"
     maxBalloonsReranker: "{{ item.value.maxBalloonsReranker }}"
+    gaudi: "{{ item.value.gaudi }}"
     vllm_cpus: "{{ VLLM_CPUS }}"
     reranker_cpus: "{{ RERANKER_CPUS }}"
   tags:

@@ -2,6 +2,25 @@
 
 The System Fingerprint microservice is responsible for generating and managing unique fingerprints for different systems and giving user ability to store and update component arguments. It includes the necessary scripts, configurations, and utilities to efficiently handle fingerprint data.
 
+## Table of Contents
+
+1. [System Fingerprint Microservice](#system-fingerprint-microservice)
+2. [Configuration Options](#configuration-options)
+3. [Getting Started](#getting-started)
+   - 3.1. [Prerequisites](#prerequisites)
+   - 3.2. [🚀 Start System Fingerprint Microservice with Python (Option 1)](#-start-system-fingerprint-microservice-with-python-option-1)
+     - 3.2.1. [Install Requirements](#install-requirements)
+     - 3.2.2. [Start Microservice](#start-microservice)
+   - 3.3. [🚀 Start System Fingerprint Microservice with Docker (Option 2)](#-start-system-fingerprint-microservice-with-docker-option-2)
+     - 3.3.1. [Build the Docker service](#build-the-docker-service)
+     - 3.3.2. [Run the Docker container](#run-the-docker-container)
+   - 3.4. [Example API Requests](#example-api-requests)
+     - 3.4.1. [Health Check](#health-check)
+     - 3.4.2. [Change arguments](#change-arguments)
+     - 3.4.3. [Append arguments](#append-arguments)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
+
 ## Configuration options
 
 Configuration is done by specifying the MongoDB connection details. Optionally, you can specify the microservice's port.
@@ -16,15 +35,16 @@ Configuration is done by specifying the MongoDB connection details. Optionally, 
 ## Getting started
 ### Prerequisites
 
-To run this microservice, the MongoDB database should already be running. To run the database, you can use [the sample docker-compose file](./impl/database/mongo).
+To run this microservice, the MongoDB database should already be running. To run the database, you can use [the sample docker-compose file](./impl/database/mongo/docker-compose.yaml).
 
-We offer 2 ways to run this microservice:
-  - [via Python](#running-the-microservice-via-python-option-1)
-  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+There're 2 ways to run this microservice:
+  - [via Python](#-start-system-fingerprint-microservice-with-python-option-1)
+  - [via Docker](#-start-system-fingerprint-microservice-with-docker-option-2) **(recommended)**
 
-### Running the microservice via Python (Option 1)
+### 🚀 Start System Fingerprint Microservice with Python (Option 1)
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice,[uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -33,13 +53,13 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-Then start the microservice:
+#### Start Microservice
 
 ```bash
 python system_fingerprint_microservice.py
 ```
 
-### Running the microservice via Docker (Option 2) **(recommended)**
+### 🚀 Start System Fingerprint Microservice with Docker (Option 2)
 
 Using a container is the preferred way to run the microservice.
 
@@ -109,7 +129,7 @@ A full set of possible configurations can be found in the file [object_document_
 
 #### Append arguments
 
-This endpoint accepts input as a dictionary and appends up-to-date arguments based on records in MongoDB. 
+This endpoint accepts input as a dictionary and appends up-to-date arguments based on records in MongoDB.
 
 Example curl command:
 

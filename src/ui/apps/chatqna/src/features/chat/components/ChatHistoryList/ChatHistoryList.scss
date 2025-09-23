@@ -1,0 +1,14 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-history-list {
+  @apply max-h-[calc(100vh_-_10rem)] overflow-y-auto;
+  @apply mx-2 px-2 py-2;
+  @apply flex flex-col gap-1;
+  @apply [scrollbar-gutter:stable];
+}
+
+.chat-history-list--empty {
+  @apply flex h-32 items-center justify-center;
+  @apply text-sm;
+}

@@ -1,0 +1,12 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.app-header {
+  @apply h-[6rem] px-16;
+  @apply flex items-center justify-between;
+  @apply bg-light-bg-1 dark:bg-dark-bg-1;
+
+  & .app-header__actions {
+    @apply flex items-center gap-4;
+  }
+}

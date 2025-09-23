@@ -40,7 +40,7 @@ COPY --chown=user:user ./comps/guardrails/__init__.py ./comps/guardrails/__init_
 COPY --chown=user:user ./comps/guardrails/llm_guard_input_guardrail/__init__.py ./comps/guardrails/llm_guard_input_guardrail/__init__.py
 COPY --chown=user:user ./comps/guardrails/llm_guard_input_guardrail/utils ./comps/guardrails/llm_guard_input_guardrail/utils
 COPY --chown=user:user ./comps/guardrails/llm_guard_input_guardrail/opea_llm_guard_input_guardrail_microservice.py ./comps/guardrails/llm_guard_input_guardrail/opea_llm_guard_input_guardrail_microservice.py
-COPY --chown=user:user ./comps/guardrails/llm_guard_input_guardrail/impl/microservice/.env ./comps/guardrails/llm_guard_input_guardrail/.env
+COPY --chown=user:user ./comps/guardrails/llm_guard_input_guardrail/impl/microservice/.env ./comps/guardrails/llm_guard_input_guardrail/impl/microservice/.env
 COPY --chown=user:user ./comps/guardrails/utils/scanners.py ./comps/guardrails/utils/scanners.py
 
 WORKDIR /home/user/comps/guardrails/llm_guard_input_guardrail/

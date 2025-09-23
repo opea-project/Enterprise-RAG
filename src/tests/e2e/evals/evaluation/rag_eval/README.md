@@ -109,10 +109,10 @@ _This step is required only for computing RAGAS metrics._
 
 To calculate RAGAS metrics, a separate embedding service that provides vector representations of text is required. You can launch this service using existing scripts provided elsewhere in the project. 
 
-To run the TEI embedding model server, navigate to the folder [src/comps/embeddings/impl/model-server/tei](../../../../../../src/comps/embeddings/impl/model-server/tei) and execute the script `run_tei.sh`. 
+To run the TEI embedding model server, navigate to the folder [src/comps/embeddings/impl/model_server/tei](../../../../../../src/comps/embeddings/impl/model_server/tei) and execute the script `run_tei.sh`.
 
 ```bash
-cd ../../../../../../src/comps/embeddings/impl/model-server/tei
+cd ../../../../../../src/comps/embeddings/impl/model_server/tei
 
 # (Optional) Customize port and model before starting
 export TEI_PORT=8090

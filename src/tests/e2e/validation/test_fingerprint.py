@@ -139,7 +139,7 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
         assert change_prompt_response.status_code == 200, "Unexpected status code for prompt template modification call"
         response = chatqa_api_helper.call_chatqa("What is the capital of France?")
         assert response.status_code == 200, "Unexpected status code when calling ChatQA with modified prompt template"
-        chatbot_response = chatqa_api_helper.format_response(response)
+        chatbot_response = chatqa_api_helper.get_text(response)
         logger.info(f"ChatQA response after modifying prompt template: {chatbot_response}")
         assert "1234" in chatbot_response, "Response does not contain the expected number '1234'"
     finally:
@@ -151,3 +151,25 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
             }
         }]
         fingerprint_api_helper.change_arguments(body)
+
+
+@allure.testcase("IEASG-T240")
+def test_fingerprint_regular_user_can_access_fingerprint_api(fingerprint_api_helper, temporarily_remove_regular_user_required_actions):
+    """Verify that append_arguments and change_arguments APIs are not accessible by regular users"""
+    # Test append_arguments API
+    result = fingerprint_api_helper.append_arguments("", as_user=True)
+    assert result.status_code == 403, "Regular user should not be able to call append_arguments"
+
+    # Test change_arguments API
+    current_arguments = fingerprint_api_helper.append_arguments("")
+    current_max_new_tokens = current_arguments.json()["parameters"]["max_new_tokens"]
+    body = [
+        {
+            "name": "llm",
+            "data": {
+                "max_new_tokens": current_max_new_tokens + 1
+            }
+        }
+    ]
+    response = fingerprint_api_helper.change_arguments(body, as_user=True)
+    assert response.status_code == 403

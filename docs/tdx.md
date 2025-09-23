@@ -5,6 +5,21 @@ This document outlines the deployment process of ChatQnA components on Intel® X
 > [!NOTE]
 > Intel TDX feature in Enterprise RAG is experimental.
 
+## Table of Contents
+
+1. [What is Intel TDX](#what-is-intel-tdx)
+2. [Prerequisites](#prerequisites)
+   1. [System Requirements](#system-requirements)
+3. [Getting Started](#getting-started)
+   1. [Prepare Intel Xeon node](#prepare-intel-xeon-node)
+   2. [Prepare the cluster](#prepare-the-cluster)
+   3. [Build Enterprise RAG images](#build-enterprise-rag-images)
+   4. [Deploy the ChatQnA](#deploy-the-chatqna)
+4. [Protected services](#protected-services)
+5. [Advanced configuration](#advanced-configuration)
+   1. [Authenticated registry or encrypted images](#authenticated-registry-or-encrypted-images)
+   2. [Deployment customization](#deployment-customization)
+6. [Limitations](#limitations) 
 
 ## What is Intel TDX?
 
@@ -17,19 +32,23 @@ This document outlines the deployment process of ChatQnA components on Intel® X
 
 ### System Requirements
 
-| Category            | Details                                                                               |
-|---------------------|---------------------------------------------------------------------------------------|
-| Operating System    | Ubuntu 24.04                                                                          |
-| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors  |
-| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                           |
+| Category            | Details                                                                                                                          |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Operating System    | Ubuntu 24.04                                                                                                                     |
+| Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors |
+| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                                      |
 
 This guide assumes that:
 
 1. you are familiar with the regular deployment of [Enterprise RAG](../README.md),
 2. you have prepared a server with 4th Gen Intel® Xeon® Scalable Processor or later,
-3. you have a single-node Kubernetes cluster already set up on the server for the regular deployment of Enterprise RAG, 
-4. you are using public container registry to push Enterprise RAG images.
+3. you are using public container registry to push Enterprise RAG images.
 
+Deployment can be done using a single-node Kubernetes cluster created:
+1. inside single hardware-isolated Virtual Machine (VM) protected with TDX called Trust Domain (TD) for all pods `[one TD]`
+2. on host, where multiple TDs (each per pod) are created using [Confidential Containers](https://confidentialcontainers.org/docs/overview/) `[CoCo]`
+
+Steps below are common for both cases unless are tagged with `[one TD]` or `[CoCo]`.
 
 ## Getting Started
 
@@ -37,7 +56,7 @@ This guide assumes that:
 
 Follow the below steps on the server node with Intel Xeon Processor:
 
-1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-host-os)
+1. [Install Ubuntu 24.04 and enable Intel TDX](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-host-os).
 2. Check, if Intel TDX is enabled:
 
    ```bash
@@ -53,9 +72,9 @@ Follow the below steps on the server node with Intel Xeon Processor:
    
    In case the module version or `build_num` is lower than shown above, please refer to the [Intel TDX documentation](https://cc-enabling.trustedservices.intel.com/intel-tdx-enabling-guide/04/hardware_setup/#deploy-specific-intel-tdx-module-version) for update instructions.
 
-3. [Setup Remote Attestation](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-remote-attestation)
+3. [Setup Remote Attestation](https://github.com/canonical/tdx/?tab=readme-ov-file#setup-remote-attestation).
 
-4. Increase the kubelet timeout and wait until the node is `Ready`:
+4. `[CoCo]` Increase the kubelet timeout and wait until the node is `Ready`:
 
    ```bash
    echo "runtimeRequestTimeout: 30m" | sudo tee -a /etc/kubernetes/kubelet-config.yaml > /dev/null 2>&1
@@ -63,68 +82,106 @@ Follow the below steps on the server node with Intel Xeon Processor:
    kubectl wait --for=condition=Ready node --all --timeout=2m
    ```
 
+5. `[one TD]` [Create TD Image](https://github.com/canonical/tdx/?tab=readme-ov-file#51-create-a-new-td-image) and [Boot TD](https://github.com/canonical/tdx/?tab=readme-ov-file#61-boot-td-with-qemu-using-run_td-script).
+
 
 ### Prepare the cluster
 
-Follow the steps below on the Kubernetes cluster:
+1. Follow the steps to [deploy kubernetes cluster](../README.md#pre-installation). 
 
-1. [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator)
-2. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components)
-
-
-### Deploy the ChatQnA
-
-Follow the steps below to deploy ChatQnA:
-
-1. Make sure that you have exported the KBS_ADDRESS:
-
+2. `[one TD]` Make sure to deploy the cluster inside the TD and check if NRI kubernetes plugin is enabled. Run device injector at index 10:
+   
    ```bash
-   export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
+   git clone https://github.com/containerd/nri.git
+   cd nri/plugins/device-injector
+   go build
+   ./device-injector -idx 10
    ```
 
-2. Set the environment variables:
+3. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
+
+4. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components).
+
+
+### Build Enterprise RAG images
+
+Follow the steps below to build Enterprise RAG images:
+
+1. Set the environment variables:
 
    ```bash
    export REGISTRY="your_container_registry"
    export TAG="your_tag"
    ```
 
-3. Login to your registry:
+2. Login to your registry:
 
    ```bash
    docker login your_container_registry
    ```
 
-4. Push the images to your container registry:
+3. Push the images to your container registry:
 
    ```bash
    ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
    ```
 
-5. Update inventory/sample/config.yaml
 
-   ```bash
+### Deploy the ChatQnA
+
+Follow the steps below to deploy Enterprise RAG:
+
+1. Update `inventory/sample/config.yaml`:
+
+   ```yaml
    huggingToken: "" # Provide your Hugging Face token here
    kubeconfig: ""   # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
    registry: ""     # Provide your_container_registry
    tag: ""          # Provide your_tag
-   tdxEnabled: true # Set to true to enable Intel TDX
+   tdx:
+      enabled: true|false  # Set to true to enable Intel TDX.
+      td_type: one-td|coco # Set accordingly to your deployment case: [one TD]/[CoCo] 
+      attestation:
+         enabled: true|false # [one TD] Set to true to enable TDX based attestation.
    ```
 
-6.  Deploy eRAG
+2. `[OPTIONAL]` `[one TD]` Provide attestation infrastracture:
+   
+   Build KBS client on VM and add place it under `/opt/trustee/target/release`.
+   
+   ```bash
+   git clone -b {{ kbs_ver }} https://github.com/confidential-containers/trustee
+   cd trustee/kbs
+   make cli ATTESTER=tdx-attester
+   mkdir -p /opt/trustee/target/release
+   cp trustee/target/release/kbs-client /opt/trustee/target/release
+   ```
 
+3.  Deploy eRAG:
+   
+   Make sure that you have exported the KBS_ADDRESS, which points to the Key Broker Service (KBS): 
+   
+   ```bash
+   export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
+   ```
+   Now you can deploy erag:
+   
    ```bash
     ansible-playbook playbooks/application.yaml -e @inventory/sample/config.yaml --tags install
    ```
 
 ## Protected services
 
-By default all microservices under following namespaces are protected with Intel TDX:
+`[one TD]` All microservices are protected by Intel TDX, as all pods run inside a single Trust Domain (TD).
 
-* `chatqa` 
+`[CoCo]` All microservices under following namespaces are protected with Intel TDX:
+
+* `chatqa`
+* `chat-history`
 * `edp`
 * `fingerprint` 
-* `rag-ui` 
+* `rag-ui`
+* `vdb`
 
 
 ## Advanced configuration
@@ -139,13 +196,20 @@ If you want to store your images encrypted in your container registry, follow th
 
 ### Deployment customization
 
-Edit the [resources-tdx.yaml](../deployment/components/*/resources-tdx.yaml) files to customize the Intel TDX-specific configurations per namespace.
+There are two mechanisms used to customize the deployment with Intel TDX:
+- post rendering: enable new pods with Intel TDX using helm's post rendering, i.e. [main.yaml](../deployment/roles/application/vector_databases/tasks/main.yaml#L161).
+
+- charts/tempEdit the `resources-tdx.yaml` files to customize the Intel TDX-specific configurations per namespace.
 The file contains common annotations and runtime class and list of services that should be protected by Intel TDX.
 The service-specific resources are minimum that is required to run the service within a protected VM.
 It overrides resources requests and limits only if increasing the resources.
 
+> [!NOTE]
+> Resource files can be found under: `Enterprise-RAG/deployment/components/<component>/resources-tdx.yaml`.
+
 
 ## Limitations
 
-1. Enterprise RAG cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
-2. Only `*cpu*` pipelines are supported with Intel TDX (e.g.: `chatqa/reference-cpu.yaml`)
+1. Enterprise RAG (eRAG) cannot be used with Intel TDX with local registry or a registry with custom SSL certificate, see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
+2. Only `*cpu*` pipelines are supported with Intel TDX.
+3. `[CoCo]` A few of eRAG's microservices can't be enabled with Intel TDX due to lack of support for port forwarding support in kata VM, [see this issue](https://github.com/kata-containers/kata-containers/issues/1693).

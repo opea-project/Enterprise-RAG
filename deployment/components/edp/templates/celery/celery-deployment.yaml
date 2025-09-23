@@ -33,7 +33,7 @@ spec:
         - name: wait-for-postgresql
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: bitnami/postgresql:16.3.0
+          image: bitnamilegacy/postgresql:16.3.0
           imagePullPolicy: {{ .Values.celery.pullPolicy }}
           env:
             - name: DATABASE_HOST

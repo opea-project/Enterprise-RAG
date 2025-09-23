@@ -1,12 +1,21 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# allowInsecureImages due to repository override to: [bitnamilegacy]
+global:
+  security:
+    allowInsecureImages: true
+
 # Set on the command line:
 vector_database_password:
 
 redis-cluster:
+  image:
+    repository: bitnamilegacy/redis-cluster
   enabled: false
   metrics:
+    image:
+      repository: bitnamilegacy/redis-exporter
     enabled: true
   existingSecret: "redis-cluster-secret"
   existingSecretPasswordKey: "REDIS_PASSWORD"
@@ -14,6 +23,8 @@ redis-cluster:
     nodes: 3
     replicas: 0
   redis:
+    image:
+      repository: bitnamilegacy/redis
     readinessProbe:
       enabled: false
       initialDelaySeconds: 180
@@ -39,7 +50,11 @@ redis-cluster:
 
 redis:
   enabled: false
+  image:
+    repository: bitnamilegacy/redis
   metrics:
+    image:
+      repository: bitnamilegacy/redis-exporter
     enabled: true
   auth:
     enabled: true

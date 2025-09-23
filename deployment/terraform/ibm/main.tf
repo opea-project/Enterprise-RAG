@@ -21,23 +21,6 @@ locals {
   vpc_id = var.vpc != "" ? data.ibm_is_vpc.existing_vpc[0].id : ibm_is_vpc.new_vpc[0].id
 }
 
-# Will be needed for multi-node
-# data "ibm_is_public_gateway" "existing_public_gateway" {
-#   count = var.vpc != "" ? 1 : 0
-#   name  = var.public_gateway
-# }
-
-# resource "ibm_is_public_gateway" "new_public_gateway" {
-#   count = var.vpc == "" ? 1 : 0
-#   name  = "${var.resource_prefix}-${var.instance_name}-pg"
-#   vpc   = local.vpc_id
-#   zone  = var.instance_zone
-#   resource_group = data.ibm_resource_group.existing_resource_group.id
-# }
-
-# locals {
-#   pg_id = var.vpc != "" ? data.ibm_is_public_gateway.existing_public_gateway[0].id : ibm_is_public_gateway.new_public_gateway[0].id
-# }
 
 data "ibm_is_subnet" "existing_subnet" {
   count = var.subnet != "" ? 1 : 0
@@ -46,9 +29,8 @@ data "ibm_is_subnet" "existing_subnet" {
 
 resource "ibm_is_subnet" "new_subnet" {
   count                     = var.subnet == "" ? 1 : 0
-  name                      = "${var.resource_prefix}-${var.instance_name}-sn"
+  name                      = "${var.resource_prefix}-${var.instance_name}-sn-${random_id.suffix.hex}"
   vpc                       = local.vpc_id
-#  public_gateway            = local.pg_id
   zone                      = var.instance_zone
   total_ipv4_address_count  = 256
   resource_group            = data.ibm_resource_group.existing_resource_group.id
@@ -66,7 +48,7 @@ data "ibm_is_security_group" "existing_security_group" {
 
 resource "ibm_is_security_group" "new_security_group" {
   count          = var.security_group == "" ? 1 : 0
-  name           = "${var.resource_prefix}-${var.instance_name}-sg"
+  name           = "${var.resource_prefix}-${var.instance_name}-sg-${random_id.suffix.hex}"
   vpc            = local.vpc_id
   resource_group = data.ibm_resource_group.existing_resource_group.id
 }
@@ -174,14 +156,14 @@ resource "ibm_is_instance" "instance" {
   }
 
   boot_volume {
-    name     = "${var.instance_name}-boot-volume"
+    name     = "${var.resource_prefix}-${var.instance_name}-boot-volume-${random_id.suffix.hex}"
     size     = var.boot_volume_size
     profile  = "general-purpose"
   }
 }
 
 resource "ibm_is_floating_ip" "instance" {
-    name    = var.instance_name
+    name    = "${var.resource_prefix}-${var.instance_name}-fip-${random_id.suffix.hex}"
     target = ibm_is_instance.instance.primary_network_interface[0].id
     resource_group = data.ibm_resource_group.existing_resource_group.id
 }
@@ -195,28 +177,25 @@ output "floating_ip" {
 }
 
 data "template_file" "ansible_inventory" {
-  template = file("${path.module}/templates/inventory.ini.tpl")
+  template = file("${path.module}/../templates/inventory.ini.tpl")
   vars = {
-    instance_name                  = var.instance_name
-    ssh_user                       = var.ssh_user
-    host_ip                        = ibm_is_instance.instance.primary_network_interface[0].primary_ip[0].address
+    ssh_user                    = var.ssh_user
+    host_ip                     = try(ibm_is_instance.instance.primary_network_interface[0].primary_ip[0].address, "127.0.0.1")
+    instance_name               = var.instance_name
   }
-  depends_on = [
-    ibm_is_instance.instance,
-    ibm_is_floating_ip.instance
-  ]
 }
 
 data "template_file" "erag_config" {
-  template = file("${path.module}/templates/config-override.yaml.tpl")
+  template = file("${path.module}/../templates/config-override.yaml.tpl")
   vars = {
-    fqdn                                      = var.fqdn
-    llm_model_gaudi                           = var.llm_model_gaudi
-    llm_model_cpu                             = var.llm_model_cpu
-    embedding_model_name                      = var.embedding_model_name
-    reranking_model_name                      = var.reranking_model_name
-    hugging_face_token                        = var.hugging_face_token
-    deployment_type                           = var.deployment_type
+    fqdn                   = var.fqdn
+    hugging_face_token     = var.hugging_face_token
+    llm_model_cpu          = var.llm_model_cpu
+    llm_model_gaudi        = var.llm_model_gaudi
+    embedding_model_name   = var.embedding_model_name
+    reranking_model_name   = var.reranking_model_name
+    deployment_type        = var.deployment_type
+    vllm_size_vcpu         = var.vllm_size_vcpu
   }
 }
 
@@ -255,7 +234,7 @@ resource "null_resource" "transfer_files" {
   depends_on = [null_resource.wait_for_ssh]
 
   provisioner "file" {
-    source      = "${path.module}/run_install.sh"
+    source      = "${path.module}/../scripts/run_install.sh"
     destination = "/tmp/run_install.sh"
 
     connection {
@@ -303,7 +282,8 @@ resource "null_resource" "transfer_files" {
   }
 }
 
-resource "null_resource" "run_install" {
+# Run system installation stage
+resource "null_resource" "run_install_system" {
   triggers = {
     always_run = timestamp()
   }
@@ -322,7 +302,55 @@ resource "null_resource" "run_install" {
     }
     inline = [
       "chmod +x /tmp/run_install.sh",
-      "/tmp/run_install.sh"
+      "/tmp/run_install.sh --platform ibm --gaudi --stage system"
+    ]
+  }
+}
+
+# Run cluster installation stage
+resource "null_resource" "run_install_cluster" {
+  triggers = {
+    always_run = timestamp()
+  }
+
+  depends_on = [null_resource.run_install_system]
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = var.ssh_user
+      private_key = can(file(var.ssh_key)) ? file(var.ssh_key) : var.ssh_key
+      host        = ibm_is_floating_ip.instance.address
+
+      proxy_scheme = var.use_proxy ? var.proxy_scheme : null
+      proxy_host   = var.use_proxy ? var.proxy_host : null
+      proxy_port   = var.use_proxy ? var.proxy_port : null
+    }
+    inline = [
+      "/tmp/run_install.sh --platform ibm --gaudi --stage cluster"
+    ]
+  }
+}
+
+# Run application installation stage
+resource "null_resource" "run_install_application" {
+  triggers = {
+    always_run = timestamp()
+  }
+
+  depends_on = [null_resource.run_install_cluster]
+  provisioner "remote-exec" {
+    connection {
+      type        = "ssh"
+      user        = var.ssh_user
+      private_key = can(file(var.ssh_key)) ? file(var.ssh_key) : var.ssh_key
+      host        = ibm_is_floating_ip.instance.address
+
+      proxy_scheme = var.use_proxy ? var.proxy_scheme : null
+      proxy_host   = var.use_proxy ? var.proxy_host : null
+      proxy_port   = var.use_proxy ? var.proxy_port : null
+    }
+    inline = [
+      "/tmp/run_install.sh --platform ibm --gaudi --stage application"
     ]
   }
 }

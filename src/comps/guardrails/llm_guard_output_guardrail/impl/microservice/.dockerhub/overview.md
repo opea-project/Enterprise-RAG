@@ -4,26 +4,26 @@ Part of the Intel® AI for Enterprise RAG (ERAG) ecosystem.
 
 ## 🔍 Overview
 
-The OPEA ERAG Output Guardrail service provides content filtering and and privacy-related capabilities for LLM-generated responses in the Enterprise RAG system. This microservice ensures all output content adheres to content policies, preventing potentially harmful, inappropriate, or inaccurate responses from reaching end users.
+The OPEA ERAG Output Guardrail service provides content filtering and privacy-related capabilities for LLM-generated responses in the Enterprise RAG system. This microservice ensures all output content adheres to content policies, preventing potentially harmful, inappropriate, or inaccurate responses from reaching end users.
 
-This microservice implements [LLM Guard](https://llm-guard.com/) Output Scanners, including:
-- [BanSubstrings](https://llm-guard.com/output_scanners/ban_substrings/)
-- [BanTopics](https://llm-guard.com/output_scanners/ban_topics/)
-- [Bias](https://llm-guard.com/output_scanners/bias/)
-- [Code](https://llm-guard.com/output_scanners/code/)
-- [Deanonymize](https://llm-guard.com/output_scanners/deanonymize/)
-- [JSON](https://llm-guard.com/output_scanners/json/)
-- [MaliciousURLs](https://llm-guard.com/output_scanners/malicious_urls/)
-- [NoRefusal](https://llm-guard.com/output_scanners/no_refusal/)
-- [NoRefusalLight](https://llm-guard.com/output_scanners/no_refusal_light/)
-- [ReadingTime](https://llm-guard.com/output_scanners/reading_time/)
-- [FactualConsistency](https://llm-guard.com/output_scanners/factual_consistency/)
-- [Regex](https://llm-guard.com/output_scanners/regex/)
-- [Relevance](https://llm-guard.com/output_scanners/relevance/)
-- [Sensitive](https://llm-guard.com/output_scanners/sensitive/)
-- [Sentiment](https://llm-guard.com/output_scanners/sentiment/)
-- [Toxicity](https://llm-guard.com/output_scanners/toxicity/)
-- [URLReachability](https://llm-guard.com/output_scanners/url_reachability/)
+This microservice implements [LLM Guard](https://protectai.github.io/llm-guard/) Output Scanners, including:
+- [BanSubstrings](https://protectai.github.io/llm-guard/output_scanners/ban_substrings/)
+- [BanTopics](https://protectai.github.io/llm-guard/output_scanners/ban_topics/)
+- [Bias](https://protectai.github.io/llm-guard/output_scanners/bias/)
+- [Code](https://protectai.github.io/llm-guard/output_scanners/code/)
+- [Deanonymize](https://protectai.github.io/llm-guard/output_scanners/deanonymize/)
+- [JSON](https://protectai.github.io/llm-guard/output_scanners/json/)
+- [MaliciousURLs](https://protectai.github.io/llm-guard/output_scanners/malicious_urls/)
+- [NoRefusal](https://protectai.github.io/llm-guard/output_scanners/no_refusal/)
+- [NoRefusalLight](https://protectai.github.io/llm-guard/output_scanners/no_refusal_light/)
+- [ReadingTime](https://protectai.github.io/llm-guard/output_scanners/reading_time/)
+- [FactualConsistency](https://protectai.github.io/llm-guard/output_scanners/factual_consistency/)
+- [Regex](https://protectai.github.io/llm-guard/output_scanners/regex/)
+- [Relevance](https://protectai.github.io/llm-guard/output_scanners/relevance/)
+- [Sensitive](https://protectai.github.io/llm-guard/output_scanners/sensitive/)
+- [Sentiment](https://protectai.github.io/llm-guard/output_scanners/sentiment/)
+- [Toxicity](https://protectai.github.io/llm-guard/output_scanners/toxicity/)
+- [URLReachability](https://protectai.github.io/llm-guard/output_scanners/url_reachability/)
 
 ### Features
 

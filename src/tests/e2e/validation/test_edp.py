@@ -12,6 +12,7 @@ import os
 import time
 import uuid
 
+from validation.buildcfg import cfg
 from constants import TEST_FILES_DIR
 
 logger = logging.getLogger(__name__)
@@ -262,9 +263,36 @@ def test_edp_reupload_link(edp_helper):
 @allure.testcase("IEASG-T137")
 def test_edp_upload_nonexistent_link(edp_helper):
     """Upload a link to a nonexistent website"""
-    nonexistent_link = "https://some-nonexisting-webpage-12345.com"
+    nonexistent_link = "https://some-nonexisting-webpage-test_edp_12345.com"
     response = edp_helper.upload_links({"links": [nonexistent_link]})
-    assert response.status_code == 200, f"Unexpected status code. Response: {response.text}"
+    assert response.status_code == 400, f"Unexpected status code. Response: {response.text}"
+
+
+@allure.testcase("IEASG-T242")
+def test_edp_upload_link_that_redirects_to_another_site(edp_helper, chatqa_api_helper):
+    """
+    Upload a link that redirects to another site (HTTP to HTTPS).
+    Verify that the content from the redirected link is available in ChatQA.
+    """
+    rag_question = "What is Intel® AI for Enterprise RAG powered by?"
+
+    # Verify that ChatBot doesn't have the information from the link yet
+    response = chatqa_api_helper.call_chatqa(rag_question)
+    response_text = chatqa_api_helper.get_text(response)
+    logger.debug(f"Response: {response_text}")
+    assert "gaudi" not in response_text.lower()
+
+    # This link will be redirected to HTTPS one (https://github.com/intel/Enterprise-RAG)
+    link = "http://github.com/intel/Enterprise-RAG"
+    try:
+        edp_helper.upload_links({"links": [link]})
+        edp_helper.wait_for_link_upload(link, "ingested", timeout=120)
+        response = chatqa_api_helper.call_chatqa(rag_question)
+        response_text = chatqa_api_helper.get_text(response)
+        logger.debug(f"Response: {response_text}")
+        assert "gaudi" in response_text.lower()
+    finally:
+        edp_helper.delete_link_by_url(link)
 
 
 @allure.testcase("IEASG-T138")
@@ -278,11 +306,22 @@ def test_edp_upload_invalid_body(edp_helper):
     assert response.status_code == 422, f"Unexpected status code. Response: {response.text}"
 
 
+@allure.testcase("IEASG-T241")
+def test_edp_upload_corrupted_file(edp_helper):
+    """Upload a corrupted file and check that it is in error state"""
+    file = "corrupt_file.docx"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+    response = edp_helper.generate_presigned_url(file)
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
+    edp_helper.wait_for_file_upload(file, "error", timeout=60)
+
+
 @allure.testcase("IEASG-T139")
 def test_edp_delete_nonexistent_link(edp_helper):
     """Delete a link that does not exist"""
     response = edp_helper.delete_link("nonexistent_link_id")
-    assert response.status_code == 400, f"Unexpected status code. Response: {response.text}"
+    assert response.status_code == 404, f"Unexpected status code. Response: {response.text}"
 
 
 @allure.testcase("IEASG-T38")
@@ -362,90 +401,72 @@ def test_edp_list_buckets(edp_helper):
     logger.info(f"Buckets: {response.json()}")
 
 
-@allure.testcase("IEASG-T188")
-def test_edp_upload_docx_file_with_text_in_image(edp_helper):
-    """Upload DOCX file with text in image and check that the text is extracted correctly"""
-    file = "text_in_image.docx"
-    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+@allure.testcase("IEASG-T239")
+def test_edp_regular_user_has_no_access_to_api(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
+    """Check that regular user has no access to EDP APIs"""
+    fail_msg = "Regular user should not have access to EDP APIs"
 
-    response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
-    text_from_image = response.json().get("docs").get("docs")[0].get("text")
-    assert text_from_image == text_in_image
+    # Test list API
+    response = edp_helper.list_files(as_user=True)
+    assert response.status_code == 403, fail_msg
+    response = edp_helper.list_links(as_user=True)
+    assert response.status_code == 403, fail_msg
+    response = edp_helper.list_buckets(as_user=True)
+    assert response.status_code == 403, fail_msg
 
+    # Test upload link API
+    links = [f"https://www.example.org/?test_edp_regular_user_has_no_access_to_api={uuid.uuid4()}"]
+    response = edp_helper.upload_links({"links": links}, as_user=True)
+    assert response.status_code == 403, fail_msg
 
-@allure.testcase("IEASG-T189")
-def test_edp_upload_pptx_file_with_text_in_image(edp_helper):
-    """Upload PPTX file with text in image and check that the text is extracted correctly"""
-    file = "text_in_image.pptx"
-    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    # Test delete link API
+    response = edp_helper.delete_link("nonexistent_link_id", as_user=True)
+    assert response.status_code == 403, fail_msg
 
-    response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
-    text_from_image = response.json().get("docs").get("docs")[0].get("text")
-    assert text_from_image == text_in_image
+    # Test cancel processing task API
+    response = edp_helper.cancel_processing_task("some id", as_user=True)
+    assert response.status_code == 403, fail_msg
 
+    # Test extract text API
+    response = edp_helper.extract_text("some id", as_user=True)
+    assert response.status_code == 403, fail_msg
 
-@allure.testcase("IEASG-T190")
-def test_edp_upload_pdf_file_with_links(edp_helper):
-    """Upload PDF file with links and check that the links are extracted correctly"""
-    file = "links.pdf"
-    links = ["www.SomeMadeUpSiteOne.com", "https://SomeMadeUpSiteTwo.org", "http://SomeMadeUpSiteThree.net",
-             "https://SomeMadeUpSiteFour.pl", "http://bamboozlingwebsite.pl"]
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
-
-    response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
-    text_from_image = response.json().get("docs").get("docs")[0].get("text")
-    for link in links:
-        assert link in text_from_image
+    # Test upload file API
+    file = "story.txt"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+    response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
+    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    assert response.status_code == 403, fail_msg
 
 
-@allure.testcase("IEASG-T197")
-def test_edp_upload_pdf_file_with_table(edp_helper):
-    """Upload PDF file with table and check that the text inside is extracted correctly"""
-    file = "schedule.pdf"
-    column_tags = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    time_stamps = ["6:00", "8:00", "8:30", "10:00", "11:05", "13:00", "14:00", "15:00", "15:05", "16:30"]
-    subjects = {
-        "Math" : 9,
-        "Philosophy" : 1,
-        "Swimming" : 1,
-        "Theology" : 1,
-        "Physics" : 4,
-        "PE" : 1,
-        "Computer" : 1,
-        "Science" : 1,
-        "Art" : 1,
-        "Biology" : 1,
-        "Chemistry" : 1
-    }
+@allure.testcase("IEASG-T217")
+def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
+    """
+    Upload files to admin-only and public buckets.
+    Check that regular user has access only to the file in public bucket, while admin has access to both files.
+    """
+    rbac_enabled = cfg.get("edp", {}).get("rbac", {}).get("enabled")
+    if rbac_enabled is None:
+        pytest.skip("EDP RBAC setting is not found in the build configuration. Skipping the test")
+    elif not rbac_enabled:
+        pytest.skip("EDP RBAC is disabled. Skipping the test")
 
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
-    response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
-    text_from_image = response.json().get("docs").get("docs")[0].get("text")
+    file = "file_in_admin_bucket.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="only-admin")
+    file = "file_in_public_bucket.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="default")
 
-    assert all(day in text_from_image for day in column_tags)
-    assert all(hours in text_from_image for hours in time_stamps)
-    for subject in subjects:
-        subject_number = text_from_image.count(subject)
-        assert subject_number == subjects[subject]
+    # Check that regular user has access only to the file in public bucket
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?", as_user=True)
+    assert "2567" not in chatqa_api_helper.get_text(response)
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?", as_user=True)
+    assert "944" in chatqa_api_helper.get_text(response)
 
-
-@allure.testcase("IEASG-T198")
-def test_edp_upload_docx_file_with_text_in_image_inside_table(edp_helper):
-    """Upload DOCX file with text in image inside a table and check that the text is extracted correctly"""
-    file = "table_text_in_image.docx"
-    text_in_image = "My name is John, and I am a human. Call me “John the Human”."
-    edp_file = edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
-
-    response = edp_helper.extract_text(edp_file["id"])
-    assert response.status_code == 200, f"Failed to extract text. Response: {response.text}"
-    text_from_image = response.json()["docs"]["docs"][0]["text"]
-    assert text_from_image == text_in_image, f"Extracted text '{text_from_image}' does not match expected text '{text_in_image}'"
+    # Check that admin has access to both files
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?")
+    assert "2567" in chatqa_api_helper.get_text(response)
+    response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Lucianoooo have?")
+    assert "944" in chatqa_api_helper.get_text(response)
 
 
 def method_name():

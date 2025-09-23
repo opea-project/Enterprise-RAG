@@ -4,7 +4,31 @@ This microservice, designed for Language Model Inference (LLM), processes input 
 
 A prerequisite for using this microservice is that users must have a LLM text generation service (TGI, vLLM or Ray) already running. Users need to set the LLM service's endpoint into an environment variable. The microservice utilizes this endpoint to create an LLM object, enabling it to communicate with the LLM service for executing language model operations.
 
-Overall, this microservice offers a streamlined way to integrate large language model inference into applications, requiring minimal setup from the user beyond initiating a TGI/vLLM/Ray service and configuring the necessary environment variables. This allows for the seamless processing of queries and documents to generate intelligent, context-aware responses.
+Overall, this microservice offers a streamlined way to integrate large language model inference into applications, requiring minimal setup from the user beyond initiating a TGI/vLLM service and configuring the necessary environment variables. This allows for the seamless processing of queries and documents to generate intelligent, context-aware responses.
+
+## Table of Contents
+
+1. [LLM Microservice](#llm-microservice)
+2. [Support Matrix](#support-matrix)
+3. [Configuration Options](#configuration-options)
+4. [Getting Started](#getting-started)
+   - 4.1. [Prerequisite: Start LLM Model Server](#prerequisite-start-llm-model-server)
+   - 4.2. [🚀 Start LLM Microservice with Python (Option 1)](#-start-llm-microservice-with-python-option-1)
+     - 4.2.1. [Install Requirements](#install-requirements)
+     - 4.2.2. [Start Microservice](#start-microservice)
+   - 4.3. [🚀 Start LLM Microservice with Docker (Option 2)](#-start-llm-microservice-with-docker-option-2)
+     - 4.3.1. [Build the Docker Image](#build-the-docker-image)
+     - 4.3.2. [Run the Docker Container](#run-the-docker-container)
+   - 4.4. [Verify the LLM Microservice](#verify-the-llm-microservice)
+     - 4.4.1. [Check Status](#check-status)
+     - 4.4.2. [Sending a Request](#sending-a-request)
+       - 4.4.2.1. [Example Input](#example-input)
+       - 4.4.2.2. [Example Output](#example-output)
+       - 4.4.2.3. [Example Output with additional Data](#example-output-with-additional-data)
+5. [Validated Model](#validated-model)
+6. [Additional Information](#additional-information)
+   - 6.1. [Project Structure](#project-structure)
+   - 6.2. [Tests](#tests)
 
 ## Support matrix
 
@@ -14,7 +38,6 @@ Support for specific model servers with Dockerfiles or build instruction.
 | ----------------------------------| --------- |
 | [VLLM](./impl/model_server/vllm/) | &#x2713;  |
 | TGI                               | &#x2717;  |
-| RAY                               | &#x2717;  |
 
 
 ## Configuration Options
@@ -39,18 +62,22 @@ Set below environment variables only for VLLM if remote model server is enabled 
 
 ## Getting started
 
+There're 2 ways to run this microservice:
+  - [via Python](#-start-llm-microservice-with-python-option-1)
+  - [via Docker](#-start-llm-microservice-with-docker-option-2) **(recommended)**
+
 ### Prerequisite: Start LLM Model Server
 
 The LLM Microservice interacts with a LLM model endpoint, which must be operational and accessible at the the URL specified by the `LLM_MODEL_SERVER_ENDPOINT` env.
 
 Depending on the model server you want to use, follow the approppriate instructions in the [impl/model_server](impl/model_server/) directory to set up and start the service.
 
-### 🚀1. Start LLM Microservice with Python (Option 1)
+### 🚀 Start LLM Microservice with Python (Option 1)
 
 To start the LLM microservice, you need to install python packages first.
 
-#### 1.1. Install Requirements
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -59,16 +86,15 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-#### 1.2. Start Microservice
+#### Start Microservice
 
 ```bash
 python opea_llm_microservice.py
 ```
 
+### 🚀 Start LLM Microservice with Docker (Option 2)
 
-### 🚀2. Start LLM Microservice with Docker (Option 2)
-
-#### 2.1. Build the Docker Image:
+#### Build the Docker Image:
 Navigate to the `src` directory and use the docker build command to create the image:
 ```bash
 cd ../../
@@ -76,7 +102,7 @@ docker build -t opea/llm:latest -f comps/llms/impl/microservice/Dockerfile .
 ```
 Please note that the building process may take a while to complete.
 
-#### 2.2. Run the Docker Container:
+#### Run the Docker Container:
 ```bash
 docker run -d --name="llm-microservice" \
   --net=host \
@@ -97,17 +123,17 @@ docker run -d --name="llm-microservice" \
   opea/llm:latest
 ```
 
-### 3. Verify the LLM Microservice
+### Verify the LLM Microservice
 
-#### 3.1. Check Status
+#### Check Status
 
 ```bash
-curl http://localhost:9000/v1/health_check\
+curl http://localhost:9000/v1/health_check \
   -X GET \
   -H 'Content-Type: application/json'
 ```
 
-####  3.2. Sending a Request
+#### Sending a Request
 
 You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`. See the example below for more of an understanding.
 
@@ -115,9 +141,10 @@ The `streaming` parameter controls the API response format:
  - `streaming=false` returns a complete text string,
  - `streaming=true` streams the text in real time.
 
-> **NOTE:** Ensure that your model server is running at `LLM_MODEL_SERVER_ENDPOINT` and is ready to accept requests. Be aware that the server may take some time to become fully operational; otherwise, the microservice will return an Internal Server Error.
+> [!NOTE]
+> Ensure that your model server is running at `LLM_MODEL_SERVER_ENDPOINT` and is ready to accept requests. Be aware that the server may take some time to become fully operational; otherwise, the microservice will return an Internal Server Error.
 
-**Example Input**
+##### Example Input
 
 ```bash
 # non-streaming mode
@@ -153,7 +180,7 @@ curl http://localhost:9000/v1/chat/completions \
         -H 'Content-Type: application/json'
 ```
 
-**Example Output**
+##### Example Output
 
 The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
 
@@ -187,7 +214,7 @@ data: ' networks'
 data: [DONE]
 ```
 
-**Example Output with additional Data**
+##### Example Output with additional Data
 
 If additional data is passed in LLMParamsDoc.data attribute, additional data is appended to the response. For example:
 
@@ -231,5 +258,13 @@ To find validated models running on Gaudi, refer to the following resources:
 
 
 ## Additional Information
+### Project Structure
+
+The project is organized into several directories:
+
+- `impl/`: This directory contains the implementation of the LLM microservice, including model servers integration and Dockerfiles.
+
+- `utils/`: This directory contains utility scripts and modules used by the LLM Microservice for model servers connections.
+
 #### Tests
 - `src/tests/unit/llms/`: Contains unit tests for the LLM Microservice components

@@ -1,0 +1,224 @@
+{
+  "products": [
+    {
+      "name": "enterprise-rag-solution",
+      "label": "Intel® AI for Enterprise Retrieval Augmented Generation",
+      "product_kind": "solution",
+      "tags": ["opea", "rag", "intel_gaudi", "enterprise-rag"],
+      "keywords": ["opea", "rag", "intel_gaudi", "enterprise-rag"],
+      "short_description": "Enterprise-grade RAG solution with Intel Gaudi acceleration on IBM Cloud",
+      "long_description": "Complete Enterprise Retrieval-Augmented Generation solution featuring Intel Gaudi AI accelerators, Kubernetes orchestration, ChatQA, comprehensive monitoring, and enterprise security with Keycloak authentication.",
+      "flavors": [
+        {
+          "label": "Standard",
+          "name": "standard",
+          "working_directory": "deployment/terraform/ibm",
+          "compliance": {},
+          "architecture": {},
+          "configuration": [
+            {
+              "key": "api_key",
+              "type": "password",
+              "description": "IBM Cloud API key for resource provisioning",
+              "required": true
+            },
+            {
+              "key": "region",
+              "type": "string",
+              "default_value": "us-south",
+              "description": "IBM Cloud region for deployment",
+              "required": true,
+              "options": [
+                {"label": "US South(Dallas)", "value": "us-south"},
+                {"label": "US East(Washington DC)", "value": "us-east"},
+                {"label": "EU Germany(Frankfurt)", "value": "eu-de"}
+              ]
+            },
+            {
+              "key": "resource_group",
+              "default_value": "Default",
+              "description": "This variable lists resource group name used by the resources",
+              "required": true,
+							"custom_config": {
+							"config_constraints": {
+								"identifier": "rg_name"
+							  },
+							"grouping": "deployment",
+							"original_grouping": "deployment",
+							"type": "resource_group"
+              }
+            },
+            {
+              "key": "instance_name",
+              "type": "string",
+              "default_value": "enterprise-rag",
+              "description": "Name prefix for created resources (VPC, instance, etc.)",
+              "required": true
+            },
+            {
+              "key": "instance_zone",
+              "type": "string",
+              "description": "Availability zone for instance deployment (e.g., us-south-1)",
+              "required": true,
+              "options": [
+								{
+									"displayname": "eu-de-1",
+									"value": "eu-de-1"
+								},
+								{
+									"displayname": "us-south-2",
+									"value": "us-south-2"
+								},
+								{
+									"displayname": "us-east-3",
+									"value": "us-east-3"
+								},
+								{
+									"displayname": "us-east-2",
+									"value": "us-east-2"
+								}
+							]
+            },
+            {
+              "key": "ssh_key_name",
+              "type": "string",
+              "description": "Name of existing SSH key in IBM Cloud for instance access",
+              "required": true
+            },
+            {
+              "key": "ssh_key",
+              "type": "multiline_secure_value",
+              "description": "This variable specifies the ssh key",
+              "default_value": "-----BEGIN OPENSSH PRIVATE KEY-----",
+              "required": true,
+              "custom_config": {
+                  "grouping": "deployment",
+                  "original_grouping": "deployment",
+                  "type": "multiline_secure_value"
+              }
+            },
+            {
+                  "key": "hugging_face_token",
+                  "type": "multiline_secure_value",
+                  "default_value": "__NULL__",
+                  "description": "This variable specifies the Hugging Face token. You can also create a token by referring to the documentation at https://huggingface.co/docs/hub/en/security-tokens. ",
+                  "required": true
+            },
+            {
+              "key": "boot_volume_size",
+              "type": "number",
+              "default_value": 100,
+              "description": "Boot volume size in GB (minimum 100GB recommended)",
+              "minimum": 100,
+              "maximum": 300
+            },
+            {
+              "key": "fqdn",
+              "type": "string",
+              "description": "Fully qualified domain name for the Enterprise RAG application",
+              "default_value": "enterprise-rag.local"
+            },
+            {
+              "key": "vllm_cpu_model_name",
+              "type": "string",
+              "description": "CPU-based LLM model name for inference",
+              "default_value": ""
+            },
+            {
+              "key": "vllm_hpu_model_name",
+              "type": "string",
+              "description": "HPU-optimized LLM model name for Intel Gaudi acceleration",
+              "default_value": ""
+            },
+            {
+              "key": "embedding_model_name",
+              "type": "string",
+              "description": "Embedding model for vector representations",
+              "default_value": "BAAI/bge-base-en-v1.5"
+            },
+            {
+              "key": "reranking_model_name",
+              "type": "string",
+              "description": "Reranking model for improving search results",
+              "default_value": "BAAI/bge-reranker-base"
+            },
+            {
+              "key": "deployment_type",
+              "type": "string",
+              "default_value": "hpu",
+              "description": "Deployment type for AI acceleration",
+              "options": [
+                {"label": "Intel Gaudi HPU", "value": "hpu"},
+                {"label": "Xeon Only", "value": "cpu"}
+              ]
+            },
+            {
+              "key": "vpc",
+              "type": "string",
+              "description": "Existing VPC name (optional - will create new if empty)"
+            },
+            {
+              "key": "subnet",
+              "type": "string", 
+              "description": "Existing subnet name (optional - will create new if empty)"
+            },
+            {
+              "key": "security_group",
+              "type": "string",
+              "description": "Existing security group name (optional - will create new if empty)"
+            },
+            {
+              "key": "ssh_allowed_cidr",
+              "type": "string",
+              "default_value": "0.0.0.0/0",
+              "description": "CIDR block allowed for SSH access (restrict for security)"
+            },
+            {
+              "key": "ssh_user",
+              "type": "string",
+              "default_value": "ubuntu",
+              "description": "SSH username for instance access"
+            },
+            {
+              "key": "resource_prefix",
+              "type": "string",
+              "default_value": "erag",
+              "description": "Prefix for resource naming convention"
+            }
+          ],
+          "outputs": [
+            {
+              "key": "floating_ip",
+              "description": "Public IP address of the deployed Enterprise RAG instance"
+            },
+            {
+              "key": "vpc_id", 
+              "description": "ID of the VPC used for the deployment"
+            },
+            {
+              "key": "subnet_id",
+              "description": "ID of the subnet where the instance is deployed"
+            },
+            {
+              "key": "security_group_id",
+              "description": "ID of the security group protecting the instance"
+            },
+            {
+              "key": "instance_id",
+              "description": "ID of the provisioned compute instance"
+            },
+            {
+              "key": "ssh_command",
+              "description": "SSH command to connect to the instance"
+            },
+            {
+              "key": "application_url",
+              "description": "URL to access the Enterprise RAG application"
+            }
+          ],
+          "install_type": "fullstack"
+        }
+      ]
+    }
+  ]
+}

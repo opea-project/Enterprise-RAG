@@ -1,11 +1,26 @@
-# Enterprise RAG UI
+# Intel® AI for Enterprise RAG UI
 
-## Requirements
+This is the monorepo for the **Intel® AI for Enterprise RAG UI**, containing UI applications for different RAG solutions and supporting packages. It uses [pnpm](https://pnpm.io/) for fast, efficient package management and workspace support.
 
-- [Node.js](https://nodejs.org/) version v20.11.1 or higher
-- [npm](https://www.npmjs.com/) version 10.2.4 or higher
+## Table of Contents
 
-To check if both were successfully installed run the following commands:
+- [Prerequisites](#prerequisites)
+- [Workspace Structure](#workspace-structure)
+  - [Apps](#apps)
+  - [Packages](#packages)
+- [Getting Started](#getting-started)
+  - [Install dependencies](#install-dependencies)
+  - [Build all packages](#build-all-packages)
+  - [Launch the UI development server](#launch-the-ui-development-server)
+- [License](#license)
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) version 20 or higher
+- [pnpm](https://pnpm.io/) version 8 or higher
+- [npm](https://www.npmjs.com/) version 10 or higher
+
+To check if all were successfully installed run the following commands:
 
 ```bash
 node --version
@@ -15,131 +30,59 @@ node --version
 npm --version
 ```
 
+```bash
+pnpm --version
+```
+
 `--version` option can be replaced with `-v` shorthand
 
-## Setup
+## Workspace Structure
 
-### Environment variables
+### Apps
 
-Create `.env` file in this folder.
-The Keycloak adapter for has to be configured by setting the following variables:
+- [@intel-enterprise-rag-ui/chatqna](apps/chatqna)
 
-```
-VITE_KEYCLOAK_URL=<keycloak-service-url>
-VITE_KEYCLOAK_REALM=<realm-name>
-VITE_KEYCLOAK_CLIENT_ID=<client-id>
-VITE_ADMIN_RESOURCE_ROLE=<resource-role-name>
-```
+### Packages
 
-Additional variables for services must be set in `.env` file:
+- [@intel-enterprise-rag-ui/auth](packages/auth)
+- [@intel-enterprise-rag-ui/components](packages/components)
+- [@intel-enterprise-rag-ui/icons](packages/icons)
+- [@intel-enterprise-rag-ui/layouts](packages/layouts)
+- [@intel-enterprise-rag-ui/markdown](packages/markdown)
+- [@intel-enterprise-rag-ui/tailwind-theme](packages/tailwind-theme)
+- [@intel-enterprise-rag-ui/utils](packages/utils)
 
-```
-VITE_CHAT_QNA_URL=<chat-qna-service-url>
-VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
-VITE_GRAFANA_DASHBOARD_URL=<grafana-dashboard-url>
-VITE_APISIX_DASHBOARD_URL=<apisix-dashboard-url>
-VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
-VITE_S3_URL=<s3-service-url>
-```
+## Getting Started
 
 ### Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
-## Start UI Development Server
+This command will install dependencies for all apps and packages in this workspace.
 
-Run `npm run dev` command to start UI development server.
-By default, it will run on `http://localhost:5173`.
-
-The port and IP address can be changed by setting `--port` and `--host` options
-for npm `dev` script inside `package.json` file.
-
-```json
-{
-  "dev": "vite dev --port 9090 --host 127.0.0.1"
-}
-```
-
-These options can also be set via CLI by adding inline options `-- --port <port> --host <ip>`.
+### Build all packages
 
 ```bash
-npm run dev -- --port 9090 --host 127.0.0.1
+pnpm -r build
 ```
 
-## Production Build
+This command runs `build` scripts defined inside `package.json` files of all packages and apps in the workspace, ensuring every dependency is compiled before running the app.
 
-Run `npm run build` command to build the app.
-By default, the build package will be placed at `dist` folder.
+### Launch the UI development server
 
-### Testing production build locally
-
-Once the build is ready, it can be tested locally by running `npm run preview` command.
-
-This command will boot up a local static web server that serves the files
-from `dist` folder at `http://localhost:4173`.
-
-The port of the server can be changed by setting `--port` option
-for npm `preview` script inside `package.json` file.
-
-```json
-{
-  "preview": "vite preview --port 8080"
-}
-```
-
-This option can also be set via CLI by adding inline option `-- --port <port>`
+To start the **Intel® AI for Enterprise RAG ChatQnA UI**, navigate to the `apps/chatqna` directory and run the development server:
 
 ```bash
-npm run preview -- --port 8080
+cd apps/chatqna
+npm run dev
 ```
 
----
+The application will be available at `http://localhost:5173` by default.
 
-In case of any server configuring and creating build issues please refer to https://vitejs.dev/config/server-options.
+For additional details on running and deploying **Intel® AI for Enterprise RAG ChatQnA UI**, refer to its [README](/apps/chatqna/README.md).
 
-## Deployment using Dockerfile
+## License
 
-### Environment variables
-
-Create `.env` file in this folder.
-The Keycloak adapter for has to be configured by setting the following variables:
-
-```
-VITE_KEYCLOAK_URL=<keycloak-service-url>
-VITE_KEYCLOAK_REALM=<realm-name>
-VITE_KEYCLOAK_CLIENT_ID=<client-id>
-VITE_ADMIN_RESOURCE_ROLE=<resource-role-name>
-```
-
-Additional variables for services must be set in `.env` file:
-
-```
-VITE_CHAT_QNA_URL=<chat-qna-service-url>
-VITE_DATA_INGESTION_URL=<data-ingestion-service-url>
-VITE_GRAFANA_DASHBOARD_URL=<grafana-dashboard-url>
-VITE_APISIX_DASHBOARD_URL=<apisix-dashboard-url>
-VITE_KEYCLOAK_ADMIN_PANEL_URL=<keycloak-admin-panel-url>
-VITE_S3_URL=<s3-service-url>
-```
-
-### Docker image
-
-Build docker image with a tag of your choice:
-
-```bash
-docker build -t rag-ui .
-```
-
-Create and run a new container from an image:
-
-```bash
-docker run -dp 127.0.0.1:4173:4173 rag-ui
-```
-
-Now you should be able to access Enterprise RAG UI from your browser via `127.0.0.1:4173`
-
-### Image configuration
-
-Frontend files are served by nginx web server which uses `default.conf` for configuration. Traffic is proxied to different pipelines which are independently configured. Some settings may lead to request errors that exceed configuration settings, such as `client_max_body_size` which by default allows files up to `64MB` to be uploaded into the dataprep pipeline. `proxy_*_timeout` may close the request prematurely if the timeout is exceeded, for example when big documents are ingested into the pipeline and processing takes time. Changing `default.conf` requires rebuilding and redeploying of the UI docker image for changes to apply.
+See [LICENSE](../../LICENSE) in the repository root.

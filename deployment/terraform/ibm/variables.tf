@@ -50,13 +50,6 @@ variable "security_group" {
   default     = ""
 }
 
-# Will be needed for multi-node
-# variable "public_gateway" {
-#   description = "IBM Cloud public_gateway"
-#   type        = string
-#   default     = ""
-# }
-
 variable "subnet" {
   description = "IBM Cloud subnet"
   type        = string
@@ -143,7 +136,7 @@ variable "llm_model_cpu" {
 variable "llm_model_gaudi" {
   description = "VLLM Gaudi model name"
   type        = string
-  default     = ""
+  default     = "mistralai/Mixtral-8x22B-Instruct-v0.1"
 }
 
 variable "reranking_model_name" {
@@ -162,4 +155,10 @@ variable "deployment_type" {
   description = "This variable specifies where the model should be running (cpu/hpu)"
   type        = string
   default     = "hpu"
+}
+
+variable "vllm_size_vcpu" {
+  description = "Number of vCPUs for the VLLM service"
+  type        = number
+  default     = 32
 }

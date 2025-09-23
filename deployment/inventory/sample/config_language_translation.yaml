@@ -34,7 +34,12 @@ helm_timeout: "10m0s"
 
 hpaEnabled: false
 enforcePSS: false
-tdxEnabled: false
+
+tdx: # enables Intel® Trust Domain Extensions
+  enabled: false
+  td_type: one-td # one-td/coco
+  attestation:
+      enabled: false
 
 llm_model: "haoranxu/ALMA-7B-R"
 llm_model_gaudi: "haoranxu/ALMA-13B-R"

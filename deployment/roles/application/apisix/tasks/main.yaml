@@ -84,6 +84,11 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+#   This is a method to use a post-renderer script to modify the rendered manifests before they are applied to the cluster.
+#   Commented due to lack of port forwarding enabled in kata
+#    post_renderer:
+#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ apisix.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#       if tdx.coco.enabled else omit }}"
   tags:
     - install
 

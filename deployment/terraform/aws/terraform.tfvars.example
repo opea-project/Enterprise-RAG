@@ -1,0 +1,55 @@
+# AWS Credentials
+aws_access_key = ""
+aws_secret_key = ""
+
+# Basic Configuration
+region         = "eu-central-1"
+instance_zone  = "eu-central-1b"
+instance_name  = "erag-cpu"
+ssh_key_name   = "your-key-pair-name"
+
+# Ubuntu OS Selection
+ubuntu_version = "24.04"  # Options: "24.04" or "22.04"
+ami_id         = "ami-0a116fa7c861dd5f9"       # Leave empty for auto-selection or specify AMI ID
+
+# Hugging Face Token
+hugging_face_token = ""
+
+# Instance Configuration
+instance_type    = "r8i.32xlarge"
+root_volume_size = 300
+
+# SSH Configuration
+ssh_user         = "ubuntu"
+ssh_private_key  = "~/.ssh/your-key-pair-name.pem"
+ssh_allowed_cidr = "0.0.0.0/0"  # Restrict this for production!
+
+# Network Configuration (leave empty to create new resources)
+#vpc_id            = ""
+#subnet_id         = ""
+#security_group_id = ""
+
+# Model Configuration (CPU optimized)
+#llm_model_cpu         = ""
+#embedding_model_name  = ""
+#reranking_model_name  = ""
+
+# Installation Configuration
+#auto_install = false  # Set to true to automatically run installation script
+
+# Proxy Configuration (if needed)
+#use_proxy    = false
+#proxy_scheme = "socks5"
+#proxy_host   = ""
+#proxy_port   = 1080
+
+# Resource Naming
+#resource_prefix = "erag"
+#fqdn           = "erag.example.com"
+
+# Tags
+tags = {
+  Project     = "Enterprise-RAG"
+  Environment = "development"
+  Terraform   = "true"
+}

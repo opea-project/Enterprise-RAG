@@ -23,7 +23,7 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 
 class MultiHop_Evaluator(Evaluator):
-  
+
     def get_ground_truth_text(self, data: dict):
         return data["answer"]
 
@@ -247,7 +247,7 @@ class MultiHop_Evaluator(Evaluator):
 
         return ragas_metrics
 
-    
+
 def args_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_path", default="multihop_dataset/MultiHopRAG.json", help="Path to the dataset")

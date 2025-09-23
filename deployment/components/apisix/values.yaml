@@ -16,6 +16,8 @@ apisix:
     image:
       tag: "1.8.4"
   etcd:
+    image:
+      repository: bitnamilegacy/etcd
     replicaCount: 1
     persistence:
       enabled: true

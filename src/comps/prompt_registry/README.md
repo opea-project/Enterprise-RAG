@@ -2,6 +2,26 @@
 
 Prompt Registry microservice is responsible for storing and retrieving prompts by interfacing with a MongoDB database. It includes the necessary scripts, configurations, and utilities to manage prompt data efficiently.
 
+## Table of Contents
+
+1. [Prompt Registry Microservice](#prompt-registry-microservice)
+2. [Configuration Options](#configuration-options)
+3. [Getting Started](#getting-started)
+   - 3.1. [Prerequisites](#prerequisites)
+   - 3.2. [🚀 Start Prompt Registry Microservice with Python (Option 1)](#-start-prompt-registry-microservice-with-python-option-1)
+     - 3.2.1. [Install Requirements](#install-requirements)
+     - 3.2.2. [Start Microservice](#start-microservice)
+   - 3.3. [🚀 Start Prompt Registry Microservice with Docker (Option 2)](#-start-prompt-registry-microservice-with-docker-option-2)
+     - 3.3.1. [Build the Docker Service](#build-the-docker-service)
+     - 3.3.2. [Run the Docker Container](#run-the-docker-container)
+   - 3.4. [Example API Requests](#example-api-requests)
+     - 3.4.1. [Health Check](#health-check)
+     - 3.4.2. [Get Request](#get-request)
+     - 3.4.3. [Create Request](#create-request)
+     - 3.4.4. [Delete Request](#delete-request)
+4. [Additional Information](#additional-information)
+   - 4.1. [Project Structure](#project-structure)
+
 ## Configuration options
 
 Configuration is done by specifing MongoDB connection details. Optionally, you can specify microservice's port.
@@ -17,13 +37,14 @@ Configuration is done by specifing MongoDB connection details. Optionally, you c
 
 To run this microservice, MongoDB database should be already running. To run the database you can use sample docker-compose file [located here](./impl/database/mongo).
 
-We offer 2 ways to run this microservice:
-  - [via Python](#running-the-microservice-via-python-option-1)
-  - [via Docker](#running-the-microservice-via-docker-option-2) **(recommended)**
+There're 2 ways to run this microservice:
+  - [via Python](#-start-prompt-registry-microservice-with-python-option-1)
+  - [via Docker](#-start-prompt-registry-microservice-with-docker-option-2) **(recommended)**
 
-### Running the microservice via Python (Option 1)
+### 🚀 Start Prompt Registry Microservice with Python (Option 1)
 
-To freeze the dependencies of a particular microservice, we utilize [uv](https://github.com/astral-sh/uv) project manager. So before installing the dependencies, installing uv is required.
+#### Install Requirements
+To freeze the dependencies of a particular microservice, [uv](https://github.com/astral-sh/uv) project manager is utilized. So before installing the dependencies, installing uv is required.
 Next, use `uv sync` to install the dependencies. This command will create a virtual environment.
 
 ```bash
@@ -32,13 +53,13 @@ uv sync --locked --no-cache --project impl/microservice/pyproject.toml
 source impl/microservice/.venv/bin/activate
 ```
 
-Then start the microservice:
+#### Start Microservice
 
 ```bash
 python opea_prompt_registry_microservice.py
 ```
 
-### Running the microservice via Docker (Option 2) **(recommended)**
+### 🚀 Start Prompt Registry Microservice with Docker (Option 2)
 
 Using a container is a preferred way to run the microservice.
 
@@ -51,7 +72,7 @@ cd ../.. # src/ directory
 docker build -t promptregistry_usvc:latest -f comps/prompt_registry/impl/microservice/Dockerfile .
 ```
 
-#### Run the docker container
+#### Run the Docker container
 
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command, such as the vector database configuration and database endpoint.
 
@@ -193,5 +214,5 @@ If the prompt is deleted successfully, the response will not return any output, 
 
 The project is organized into several directories:
 
-- `impl/`: This directory contains configuration files for the prompt registry service.
+- `impl/`: This directory contains configuration files for the Prompt Registry service.
 - `utils/`: This directory contains scripts that are used by the Prompt Registry Microservice.

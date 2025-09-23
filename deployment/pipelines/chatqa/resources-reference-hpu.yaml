@@ -59,7 +59,7 @@ services:
             value: 1
             periodSeconds: 15
   llm-usvc:
-    replicas: 2
+    replicas: 4
     resources:
       requests:
         cpu: 1
@@ -218,7 +218,7 @@ services:
         memory: 16Gi
     hpa:
       minReplicas: 2
-      maxReplicas: 3
+      maxReplicas: 6
       targetValue: 1000m
       # this is average requests queue latency in miliseconds
       # depends on hardware used and number of requests

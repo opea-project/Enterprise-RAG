@@ -172,6 +172,7 @@
     namespace: topology-discovery
   tags:
     - install
+    - uninstall
 
 - name: Delete topology-discovery namespace
   kubernetes.core.k8s:
@@ -180,6 +181,7 @@
     name: topology-discovery
   tags:
     - install
+    - uninstall
 
 - name: Verify if cluster have AMX or Gaudi support
   fail:

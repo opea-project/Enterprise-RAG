@@ -146,11 +146,13 @@ spec:
               value: /tmp/.cache
             - name: USER
               value: user
+            {{- if .Values.tokens.hugToken -}}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+            {{- end }}
             - name: OMP_NUM_THREADS
               valueFrom:
                 resourceFieldRef:

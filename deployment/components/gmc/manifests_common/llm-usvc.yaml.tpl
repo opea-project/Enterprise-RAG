@@ -94,11 +94,13 @@ spec:
                 name: extra-env-config
                 optional: true
           env:
+          {{- if .Values.tokens.hugToken -}}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

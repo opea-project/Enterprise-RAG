@@ -12,8 +12,16 @@
     missing_fields: "{{ missing_fields | default([]) + [item.field] }}"
   when: (item.value is not defined) or (item.value | length == 0) or (item.value == 'FILL_HERE')
   loop:
-    - { field: "huggingToken", value: "{{ huggingToken | default('') }}" }
     - { field: "FQDN", value: "{{ FQDN | default('') }}" }
+  no_log: "{{ secure_logs }}"
+  tags:
+    - config
+
+# Check huggingToken and add warning if missing
+- name: Check huggingToken configuration
+  ansible.builtin.set_fact:
+    hugging_token_warnings: "{{ hugging_token_warnings | default([]) + ['Hugging Face token is not configured - gated models in Hugging Face will not be accessible'] }}"
+  when: (huggingToken is not defined) or (huggingToken | length == 0)
   no_log: "{{ secure_logs }}"
   tags:
     - config
@@ -112,11 +120,20 @@
       {% endif %}
       {% else %}
       VALIDATION PASSED: Configuration is valid
-      - Hugging Face token is configured properly
       {% if httpProxy is defined and httpProxy | length > 0 or httpsProxy is defined and httpsProxy | length > 0 %}
       - Proxy configuration is valid with required no_proxy values
       {% endif %}
       - Kubeconfig: {{ resolved_kubeconfig }} exists.
+      {% if huggingToken is defined and huggingToken | length > 0 %}
+      - Hugging Face token is configured properly
+      {% endif %}
+      {% endif %}
+      {% if hugging_token_warnings is defined and hugging_token_warnings|length > 0 %}
+
+      WARNINGS:
+      {% for warning in hugging_token_warnings %}
+      - {{ warning }}
+      {% endfor %}
       {% endif %}
   tags:
     - config

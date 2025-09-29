@@ -6,7 +6,7 @@ deploy_k8s: false
 # local path provisioner works only with kubespray deployment, so deploy_k8s needs to be true to install it.
 install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
 
-huggingToken: FILL_HERE # Provide your Hugging Face token here
+huggingToken: "" # Huggingface token is required for gated/private models
 kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config)
 
 httpProxy:

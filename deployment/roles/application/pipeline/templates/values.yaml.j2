@@ -8,7 +8,9 @@ proxy:
   httpsProxy: {{ httpsProxy }}
   noProxy: {{ noProxy }}
 tokens:
+  {% if (huggingToken is not defined) or (huggingToken != "") %}
   hugToken: {{ huggingToken }}
+  {% endif %}
 common_tag: &tag {{ tag }}
 common_registry: &repo {{ registry }}
 

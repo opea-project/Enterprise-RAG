@@ -39,7 +39,7 @@ ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
 ontap_aggregate: ""                   # ONTAP aggregate name for volume creation
 
-huggingToken: FILL_HERE # Provide your Hugging Face token here
+huggingToken: "" # Huggingface token is required for gated/private models
 
 # Provide absolute path to kubeconfig (e.g. /home/ubuntu/.kube/config).
 # If you are installing K8s cluster in simplified deployment, your kubeconfig will be created in path "<repository path>/deployment/inventory/test-cluster/artifacts/admin.conf"

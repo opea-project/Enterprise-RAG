@@ -122,7 +122,7 @@ install_csi: "local-path-provisioner" # available options: "local-path-provision
 
 gaudi_operator: false # set to true when Gaudi operator is to be installed
 
-huggingToken: FILL_HERE # Provide your Hugging Face token here
+huggingToken: "" # Provide your Hugging Face token here
 kubeconfig: FILL_HERE # Provide the absolute path to your kubeconfig file
 
 httpProxy:

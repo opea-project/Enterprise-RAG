@@ -70,11 +70,13 @@ spec:
           {{- if .Values.vllm.environment }}
             {{- toYaml .Values.vllm.environment | nindent 12 }}
           {{- end }}
+          {{- if .Values.tokens.hugToken -}}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: edp-hf-token-secret
                   key: HF_TOKEN
+          {{- end }}
             - name: OMP_NUM_THREADS
               valueFrom:
                 resourceFieldRef:

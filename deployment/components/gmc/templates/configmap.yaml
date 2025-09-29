@@ -11,7 +11,6 @@ metadata:
 data:
   {{- range $path, $_ := .Files.Glob "manifests_common/*.yaml.tpl" }}
   {{ $filename := index (splitList "." ($path | base)) 0 }}
-  {{ $hugToken := required "The hugToken value is required and must be set in values.yaml" $.Values.tokens.hugToken }}
   {{ $filename }}.yaml: |
     {{- $rawContent := $.Files.Get $path }}
     {{- $newContext := dict "Values" $.Values "Release" $.Release "Chart" $.Chart "Files" $.Files "Capabilities" $.Capabilities "Template" $.Template "filename" $filename }}

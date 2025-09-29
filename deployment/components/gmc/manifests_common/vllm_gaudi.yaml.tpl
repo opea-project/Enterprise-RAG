@@ -105,11 +105,13 @@ spec:
           env:
             - name: HF_HOME
               value: /data
+            {{- if .Values.tokens.hugToken -}}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+            {{- end }}
             {{- $defaultValues := "{limits: {habana.ai/gaudi: '8'}}" -}}
             {{- $resourceLimits := include "manifest.getResource" (list .filename $defaultValues .Values) | fromYaml }}
             - name: VLLM_TP_SIZE

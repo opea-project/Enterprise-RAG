@@ -100,11 +100,13 @@ spec:
                 name: extra-env-config
                 optional: true
           env:
+          {{- if .Values.tokens.hugToken -}}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: hf-token-secret
                   key: HF_TOKEN
+          {{- end }}
             - name: TS_ENABLE_METRICS_API
               value: "true"
             - name: TS_METRICS_MODE

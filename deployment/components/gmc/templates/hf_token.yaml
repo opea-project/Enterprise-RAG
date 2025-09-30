@@ -1,4 +1,4 @@
-{{- if .Values.tokens.hugToken -}}
+{{- if .Values.tokens.hugToken }}
 apiVersion: v1
 kind: Secret
 metadata:

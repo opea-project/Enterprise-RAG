@@ -146,7 +146,7 @@ spec:
               value: /tmp/.cache
             - name: USER
               value: user
-            {{- if .Values.tokens.hugToken -}}
+            {{- if .Values.tokens.hugToken }}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:

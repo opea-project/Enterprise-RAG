@@ -105,7 +105,7 @@ spec:
           env:
             - name: HF_HOME
               value: /data
-            {{- if .Values.tokens.hugToken -}}
+            {{- if .Values.tokens.hugToken }}
             - name: HF_TOKEN
               valueFrom:
                 secretKeyRef:

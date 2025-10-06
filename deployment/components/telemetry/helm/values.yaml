@@ -17,7 +17,7 @@ kube-prometheus-stack:
         token_rotation_interval_minutes: 10m             # default 10m
 
     plugins:
-      - grafana-lokiexplore-app
+      - grafana-lokiexplore-app 1.0.26
     env:
       https_proxy: ""
       http_proxy: ""

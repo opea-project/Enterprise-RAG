@@ -52,7 +52,10 @@ RUN pnpm --filter @intel-enterprise-rag-ui/chatqna build
 
 FROM nginx:alpine
 
-RUN rm -f /bin/dmesg \
+# Upgrade packages to fix possible vulnerabilities
+USER root
+RUN apk update && apk upgrade --no-cache && \
+    rm -f /bin/dmesg \
           /usr/bin/nc \
           /bin/ping \
           /bin/base64 \

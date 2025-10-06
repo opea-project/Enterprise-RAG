@@ -34,17 +34,24 @@ It incorporates the use of the [NRI Plugin](https://containers.github.io/nri-plu
 
 By default, each vLLM pod reserves `32` CPUs (referred to as **`VLLM_CPU_REQUEST`** throughout this document).  
 If the NUMA node size is **less than 32 physical CPUs**, **`VLLM_CPU_REQUEST`** must be changed to match the hardware.
-This value is configured by the file specified in `config.yaml` as the `resourcesPath` parameter.  
-By default, this file is [`resources-reference-cpu.yaml`](../../pipelines/chatqa/resources-reference-cpu.yaml).
+This value is configured in the balloons section of your configuration file.
 
-**Example:**
+**Example configuration in [`deployment/inventory/sample/config.yaml`](../../inventory/sample/config.yaml):**
 ```yaml
-vllm:
-  resources:
-    requests:
-      cpu: ${VLLM_CPU_REQUEST}
-    limits:
-      cpu: ${VLLM_CPU_REQUEST}
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
+balloons:
+  enabled: true
+  namespace: kube-system # alternatively, set custom namespace for balloons
+  services:
+    vllm:
+      resources:
+        requests:
+          cpu: 32
+          memory: 64Gi
+        limits:
+          cpu: 32
+          memory: 100Gi
 ```
 **`VLLM_CPU_REQUEST`** should be set to the number of CPUs to allocate per vLLM pod.
 

@@ -1,12 +1,13 @@
 # Performance Tuning Tips
 
-This guide provides recommendations for optimizing the performance of your deployment.
+This guide provides recommendations for optimizing the performance of your Intel® AI for Enterprise RAG deployment.
 
 ## Table of Contents
 
    - [System Configuration Tips](#system-configuration-tips)
      - [LLM Model Selection](#llm-model-selection)
      - [Vector Database Selection](#vector-database-selection)
+     - [Redis Vector Database Performance Settings](#redis-vector-database-performance-settings)
    - [Component Scaling](#component-scaling)
      - [TeiRerank Scaling](#teirerank-scaling)
      - [VLLM Scaling](#vllm-scaling)
@@ -40,6 +41,47 @@ vector_databases:
   vector_store: redis-cluster  # Options: redis, redis-cluster
 ```
 
+### Redis Vector Database Performance Settings
+
+In addition, larger databases might benefit from different vector store index configuration, such as changing the search algorithm from `FLAT` to `HNSW`. This is configurable via `deployment/inventory/**/config.yaml` as follows:
+
+```yaml
+edp:
+  ingestion:
+    config:
+      vector_algorithm: "HNSW"
+      vector_datatype: "FLOAT32"
+      vector_distance_metric: "COSINE"
+      # For HNSW Algorithm additional settings are available
+      vector_hnsw_m: "32"
+      vector_hnsw_ef_construction: "32"
+      vector_hnsw_ef_runtime: "32"
+      vector_hnsw_epsilon: "0.01"
+```
+
+Note that changing those settings requires additional RAM and storage for the vector database, since it creates additional indexes without removing the already existing ones. This operation might be time-consuming, depending on the amount of data already stored in the database.
+
+Ensure the Redis instances have enough resources assigned, both from compute and storage. This is configurable via `deployment/inventory/**/config.yaml` as follows:
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis-cluster
+  redis-cluster:
+    persistence:
+      size: "30Gi"
+    resources:
+      requests:
+        cpu: 8
+        memory: 16Gi
+      limits:
+        cpu: 16
+        memory: 128Gi
+```
+
+In case of `redis-cluster`, all above settings are applied for each cluster node.
+
 ---
 
 ## Component Scaling
@@ -70,9 +112,9 @@ vllm:
 vllm:
   replicas: 4  # 2 replicas per socket × 2 sockets
 ```
-* Additionally, If your machine has less then 32 physical cores per numa node, you need to reduce the number of CPU cores for vLLM:
+* Additionally, if your machine has less than 32 physical cores per NUMA node, you need to reduce the number of CPU cores for vLLM:
 ```yaml
-# Example for system with only 24 cores per numa node
+# Example for system with only 24 cores per NUMA node
   vllm:
     replicas: 1
     resources:
@@ -84,18 +126,17 @@ vllm:
         memory: 100Gi
 ```
 
-> **Performance Tip:** Consider enabling Sub-NUMA Clustering (SNC) in BIOS for better VLLM performance. This helps optimize memory access patterns across NUMA nodes.
+> [!NOTE]
+> Performance Tip: Consider enabling Sub-NUMA Clustering (SNC) in BIOS for better VLLM performance. This helps optimize memory access patterns across NUMA nodes.
 
 ### LLM-usvc Scaling
-* When running more then one vLLM instance and when system is accessed by multiple concurrent users (e.g., 64+ users) use at least 2 replicas of llm-usvc.
+* When running more than one vLLM instance and when system is accessed by multiple concurrent users (e.g., 64+ users) use at least 2 replicas of llm-usvc.
 * Adjust parameters in [resources-reference-cpu.yaml](../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
 
 ```yaml
 llm-usvc:
   replicas: 2
 ```
-
----
 
 ## Runtime Parameter Tuning
 
@@ -108,7 +149,8 @@ You can adjust microservice parameters (e.g., `top_k` for reranker, `k` for retr
 2. **Using Configuration Scripts:**
    * Utilize [the helper scripts](../src/tests/e2e/benchmarks/chatqa/README.md#helpers-for-configuring-erag)
 
-> **Warning:** Only parameters that don't require a microservice restart can be adjusted at runtime.
+> [!WARNING]
+> Only parameters that don't require a microservice restart can be adjusted at runtime.
 
 ---
 
@@ -132,7 +174,6 @@ balloons:
 ```
 
 ---
-
 
 ## Monitoring and Validation
 

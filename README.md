@@ -27,7 +27,7 @@ If you're interested in getting a glimpse of how Intel® AI for Enterprise RAG w
 &nbsp;
 
 > [!NOTE]
-> The video provided below showcases the beta release of our project. As we've transitioned to next releases, users can anticipate an improved UI design, improved installation process along with other enhancements.
+> The video provided below showcases the beta release of our project. As you've transitioned to next releases, users can anticipate an improved UI design, improved installation process along with other enhancements.
 
 Feel free to check out the architecture of the pipeline. For the detailed microservices architecture, refer [here](./docs/microservices_architecture.png).
 
@@ -45,20 +45,18 @@ Feel free to check out the architecture of the pipeline. For the detailed micros
       - [Deployment on Xeon only](#deployment-on-xeon-only)
       - [Deployment on Xeon + Gaudi Accelerator](#deployment-on-xeon--gaudi-accelerator)
 4. [Getting Started](#getting-started)
-   - [Cluster preparation](#cluster-preparation)
-      - [Simplified Single node Kubernetes Cluster Deployment](#simplified-single-node-kubernetes-cluster-deployment)
-      - [Installing Infrastructure Components on a custom cluster](#installing-infrastructure-components-on-a-custom-cluster)
-   - [Pipeline installation](#pipeline-installation)
+   - [Install a Kubernetes cluster (optional - if you don't have one)](#install-a-kubernetes-cluster-optional---if-you-dont-have-one)
+   - [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
+   - [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
 5. [Documentation](#documentation)
 6. [Support](#support)
 7. [Publications](#publications)
-7. [License](#license)
-8. [Security](#security)
-9. [Intel’s Human Rights Principles](#intels-human-rights-principles)
-10. [Model Card Guidance](#model-card-guidance)
-11. [Contributing](#contributing)
-12. [Trademark Information](#trademark-information)
-
+8. [License](#license)
+9. [Security](#security)
+10. [Intel's Human Rights Principles](#intels-human-rights-principles)
+11. [Model Card Guidance](#model-card-guidance)
+12. [Contributing](#contributing)
+13. [Trademark Information](#trademark-information)
 
 # Requirements
 
@@ -73,21 +71,24 @@ Feel free to check out the architecture of the pipeline. For the detailed micros
 
 ## Software Prerequisites
 - **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. Default models can be inspected in [config.yaml](deployment/inventory/sample/config.yaml).
-- For **multi-node clusters** CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX) is required. NFS server with CSI driver that supports RWX can be installed via [simplified kubernetes cluster deployment](#simplified-single-node-kubernetes-cluster-deployment) section or you can check out more detailed instructions in [deployment/README.md](deployment/README.md).
+- For **multi-node clusters** CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX) is required. NFS server with CSI driver that supports RWX can be installed via [deployment guide](deployment/README.md) or you can check out more detailed instructions in [deployment/README.md](deployment/README.md).
 
 ## Hardware Requirements
 
 These are minimal requirements to run Intel® AI for Enterprise RAG with default settings. In case of more(or less) resources available, feel free to adjust the parameters in [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml), depending on the chosen hardware.
 
 ### Deployment on Xeon only
-To deploy the solution using Xeon only, you will need access to any platform with Intel® Xeon® Scalable processor that meet bellow requirements:
+To deploy the solution using Xeon only, you will need access to any platform with Intel® Xeon® Scalable processor that meet below requirements:
 -  **logical cores**: A minimum of `88` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM
 -  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 
+> [!NOTE]
+> By default, Intel® AI for Enterprise RAG uses the NRI plugin for performance optimization. Please adjust NUMA node size before running application. For more info: [NRI plugin](deployment/components/nri-plugin/README.md#vllm-cpus-allocation-adjustment)
+
 ### Deployment on Xeon + Gaudi Accelerator
 
-To deploy the solution on a platform with Gaudi® AI Accelerator we need to have access to instance with minimal requirements:
+To deploy the solution on a platform with Gaudi® AI Accelerator you need to have access to instance with minimal requirements:
 
 -  **logical cores**: A minimum of `56` logical cores
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
@@ -108,145 +109,41 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ansible-galaxy collection install -r requirements.yaml --upgrade
 ```
+## Validate Hardware Requirements
 
-Create a copy of the configuration file:
+Before proceeding with the deployment, it's recommended to validate that your hardware meets the requirements for Intel® AI for Enterprise RAG. To perform hardware validation, you need to create an inventory.ini file first.
 
-```sh
-cd deployment
-cp -r inventory/sample inventory/test-cluster
-```
+An example inventory.ini file structure and detailed instructions are provided in the [Cluster Deployment Guide](docs/cluster_deployment_guide.md).
 
-(Optional) Execute following command to install and configure third party applications, including Docker, Helm, make, zip, and jq, needed to run the Intel® AI for Enterprise RAG correctly.
+Once you have created the inventory.ini file, you can validate your hardware resources using the validate playbook located at `playbooks/validate.yaml`:
 
 ```sh
-ansible-playbook -u $USER -K playbooks/application.yaml --tags configure -e @inventory/test-cluster/config.yaml
+ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-cluster/inventory.ini
 ```
-
-## Cluster preparation
-
-### Simplified Single node Kubernetes Cluster Deployment
-
-If you need to deploy a new Kubernetes cluster or don't know where to start, follow the instructions below. If you already have a cluster prepared, skip to the [next](#installing-infrastructure-components-on-a-custom-cluster) section.
-
-1. **Edit the inventory file:**
-   - Open `inventory/test-cluster/inventory.ini`.
-   - Replace `LOCAL_USER`, `REMOTE_USER` and `MACHINE_IP` with your actual values.
-
-Example `inventory.ini` for a single-node cluster:
-```ini
-# Kubernetes Cluster Inventory
-[local]
-localhost ansible_connection=local ansible_user=LOCAL_USER
-
-[all]
-# Control plane nodes
-node1 ansible_host=MACHINE_IP
-
-# Define node groups
-[kube_control_plane]
-node1
-
-[kube_node]
-node1
-
-[etcd:children]
-kube_control_plane
-
-[k8s_cluster:children]
-kube_control_plane
-kube_node
-
-# Vars
-[k8s_cluster:vars]
-ansible_become=true
-ansible_user=REMOTE_USER
-ansible_connection=ssh
-```
-
-> [!TIP]
-> For password SSH connections to the node, add `--ask-pass` to every ansible command.
-
-For more information on preparing an Ansible inventory, see the [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
-
-2. **Edit the configuration file:**
-   - Open `inventory/test-cluster/config.yaml`.
-   - Set `deploy_k8s` to `true`.
-   - Fill in the required values for your environment. If you don't have any cluster deployed, ignore `kubeconfig` parameter for now.
-
 
 > [!NOTE]
-> The inventory provides the ability to install additional components that might be needed when preparing a Kubernetes (K8s) cluster.
-> * Set `gaudi_operator: true` if you are working with Gaudi nodes and want to install gaudi software stack via operator.
-> * Set `install_csi: nfs` if you are setting up a multi-node cluster and want to deploy an NFS server with a CSI plugin that creates a `StorageClass` with RWX (ReadWriteMany) capabilities. [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included.
-> * Set `install_csi: netapp-trident` if you are deploying with NetApp ONTAP storage backend for enterprise-grade storage with advanced features.
+> If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`
 
-3. **(Optional) Validate hardware resources:**
+## Install a Kubernetes cluster (optional - if you don't have one)
 
-   ```sh
-   ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-   ```
+Intel® AI for Enterprise RAG offers ansible automation for creating a K8s cluster. If you want to set up a K8s cluster, follow the [Cluster Deployment Guide](docs/cluster_deployment_guide.md).
 
-If this is gaudi_deployment add additional flag -e is_gaudi_platform=true.
+## Install infrastructure components (storage, operators, backup tools)
 
-4. **Deploy the cluster:**
+The Intel® AI for Enterprise RAG repository offers installation of additional infrastructure components on the deployed K8s cluster:
+- **Gaudi_operator** - dedicated for K8s clusters with nodes that use Gaudi AI accelerators
+- **CSI drivers** - need to dynamically provision storage for PODs
+- **Velero** - installing Velero backup tool
 
-   ```sh
-   ansible-playbook -K playbooks/infrastructure.yaml --tags configure,install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-   ```
+If your K8s cluster requires installing any of these tools, please follow the [Infrastructure Components Guide](docs/infrastructure_components_guide.md).
 
-5. **Add `kubeconfig` path in config.yaml.**
+## Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
 
-6. **(Optional) Validate config.yaml:**
-
-   ```sh
-   ansible-playbook playbooks/validate.yaml --tags config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-   ```
-
-
-### Installing Infrastructure Components on a custom cluster
-
-If you are using your own custom Kubernetes cluster (not provisioned by the provided infrastructure playbooks), you may need to install additional infrastructure components before deploying the application. These include the NFS server for shared storage, Gaudi operator (for Habana Gaudi AI accelerator support), Velero, or other supported services.
-
-To prepare your cluster:
-
-1. **Edit the configuration file:**
-   - Open `inventory/test-cluster/config.yaml`.
-   - Set `deploy_k8s: false` and update the other fields as needed for your environment.
-   - If you need NFS, set `install_csi: nfs` and configure the NFS-related variables (backing up with [Velero](deployment/README.md#backup-functionality-with-vmware-velero) requires NFS to be included).
-   - If you need Gaudi support, set `gaudi_operator: true` and specify the desired `habana_driver_version`.
-
-
-2. **Validate hardware resources and `config.yaml`:**
-
-   ```sh
-   ansible-playbook playbooks/validate.yaml --tags hardware,config -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-   ```
-
-If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
-
-3. **Install infrastructure components (NFS, Gaudi operator, or others):**
-
-   ```sh
-    ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
-   ```
-   This will install and configure the NFS server, Gaudi operator, or velero as specified in your configuration.
-
-> [!NOTE]
-> You can enable several components in the same run if both are needed. Additional components may be supported via post-install in the future.
-
-## Pipeline installation
-
-Once your cluster is prepared and the required infrastructure is installed, proceed with the application installation.
-
-```sh
-ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @inventory/test-cluster/config.yaml
-```
-
-To verify if the components were installed correctly, run the script [./scripts/test_connection.sh](./deployment/scripts/test_connection.sh), [connect to UI](deployment/README.md#access-the-uigrafana), or execute [e2e tests](src/tests/).
+Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Please follow the [Application Deployment Guide](docs/application_deployment_guide.md).
 
 # Documentation
 
-Refer to [deployment/README.md](deployment/README.md) or [docs](docs/) for more detailed deployment guide or in-depth instructions on ERAG components.
+Refer to [deployment/README.md](deployment/README.md) or [docs](docs/) for more detailed deployment guide or in-depth instructions on Intel® AI for Enterprise RAG components.
 
 # Support
 
@@ -273,9 +170,9 @@ This distribution includes third-party software governed by separate license ter
 
 The [Security Policy](SECURITY.md) outlines our guidelines and procedures for ensuring the highest level of security and trust for our users who consume Intel® AI for Enterprise RAG.
 
-# Intel’s Human Rights Principles
+# Intel's Human Rights Principles
 
-Intel is committed to respecting human rights and avoiding causing or contributing to adverse impacts on human rights. See [Intel’s Global Human Rights Principles](https://www.intel.com/content/dam/www/central-libraries/us/en/documents/policy-human-rights.pdf). Intel’s products and software are intended only to be used in applications that do not cause or contribute to adverse impacts on human rights.
+Intel is committed to respecting human rights and avoiding causing or contributing to adverse impacts on human rights. See [Intel's Global Human Rights Principles](https://www.intel.com/content/dam/www/central-libraries/us/en/documents/policy-human-rights.pdf). Intel's products and software are intended only to be used in applications that do not cause or contribute to adverse impacts on human rights.
 
 # Model Card Guidance
 

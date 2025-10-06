@@ -9,12 +9,15 @@
   tags:
     - install
 
-
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
     name: "{{ apisix.helm.repo_name }}"
     repo_url: "{{ apisix.helm.repo_url }}"
     state: present
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 3
+  delay: 15
   tags:
     - install
 

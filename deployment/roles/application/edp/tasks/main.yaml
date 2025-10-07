@@ -20,6 +20,10 @@
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ edp.helm.chart_directory }}"
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 
@@ -142,6 +146,10 @@
     create_namespace: true
     timeout: "{{ helm_timeout }}"
     wait: true
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

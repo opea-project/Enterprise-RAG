@@ -25,6 +25,10 @@
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ apisix.helm.chart_directory }}"
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 
@@ -92,6 +96,10 @@
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ apisix.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

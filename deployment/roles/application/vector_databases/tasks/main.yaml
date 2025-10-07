@@ -20,6 +20,10 @@
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ vector_databases.helm.chart_directory }}"
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 
@@ -162,7 +166,10 @@
       "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ vector_databases.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
        if tdx.coco.enabled else omit }}"
     timeout: "{{ helm_timeout }}"
-  register: helm_result
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

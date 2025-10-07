@@ -55,6 +55,10 @@
     - "{{ telemetry.logging.charts_path }}"
     - "{{ telemetry.traces.charts_path }}"
     - "{{ telemetry.traces_instr.charts_path }}"
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 
@@ -189,7 +193,7 @@
     timeout: "{{ helm_timeout }}"
   register: helm_install_result
   until: helm_install_result is succeeded
-  retries: 3
+  retries: 5
   delay: 15
   tags:
     - install
@@ -202,7 +206,12 @@
     state: present
     values_files: "{{ telemetry.prometheus_adapter.values_file }}"
     wait: true
+    timeout: "{{ helm_timeout }}"
   when: hpaEnabled
+  register: helm_install_result
+  until: helm_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

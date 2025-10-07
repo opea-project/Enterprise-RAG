@@ -77,6 +77,10 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

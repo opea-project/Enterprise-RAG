@@ -74,6 +74,10 @@
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ ingress.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

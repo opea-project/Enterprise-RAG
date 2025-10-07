@@ -115,6 +115,10 @@
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ keycloak.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
     wait: true
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

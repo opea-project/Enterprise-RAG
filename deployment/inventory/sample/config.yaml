@@ -19,7 +19,7 @@ local_registry: false
 # Setup NFS server when working on a multi-node cluster which does not have a StorageClass with RWX capability.
 # Setting nfs_server_enabled to true will install NFS server together with CSI driver
 # and set nfs_csi_storage_class as the default one.
-nfs_node_name: "master-1"             # K8s node name on which to set up NFS server
+nfs_node_name: "master-1"            # K8s node name on which to set up NFS server
 nfs_host_path: "/opt/nfs-data"       # Host path on the K8s node for NFS server
 nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
@@ -145,6 +145,13 @@ istio:
 velero:
   enabled: false
   namespace: velero
+
+  velero_pod_labels:
+    app.kubernetes.io/instance: velero
+    app.kubernetes.io/name: velero
+
+  install_server: true
+  install_client: true
 
   # name of a velero Backup resource, created in result of backup in velero namespace;
   # if not specified, most recent backup resource will be looked up.

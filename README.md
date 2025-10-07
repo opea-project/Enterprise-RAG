@@ -152,6 +152,7 @@ Submit questions, feature requests, and bug reports on the GitHub Issues page.
 # Publications
 
 Feel free to checkout articles about Intel® AI for Enterprise RAG:
+* [Monitoring and Debugging RAG Systems in Production](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Monitoring-and-Debugging-RAG-Systems-in-Production/post/1720292)
 * [NetApp AIPod Mini – Deployment Automation](https://community.netapp.com/t5/Tech-ONTAP-Blogs/NetApp-AIPod-Mini-Deployment-Automation/ba-p/463257)
 * [Multi-node deployments using Intel® AI for Enterprise RAG](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Multi-node-deployments-using-Intel-AI-for-Enterprise-RAG/post/1710214)
 * [Rethinking AI Infrastructure: How NetApp and Intel Are Unlocking the Future with AIPod Mini](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Rethinking-AI-Infrastructure-How-NetApp-and-Intel-Are-Unlocking/post/1705557)

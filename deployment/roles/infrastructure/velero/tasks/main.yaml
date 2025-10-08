@@ -29,6 +29,16 @@
     - install
     - post-install
 
+- name: Ensure Helm dependency repositories added
+  kubernetes.core.helm_repository:
+    name: "{{ velero.helm.repo_depend_name }}"
+    repo_url: "{{ velero.helm.repo_depend_url }}"
+    state: present
+  when: velero.install_server
+  tags:
+    - install
+    - post-install
+
 - name: Ensure Helm repositories
   kubernetes.core.helm_repository:
     name: "{{ velero.helm.repo_name }}"

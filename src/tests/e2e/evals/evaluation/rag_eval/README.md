@@ -182,7 +182,7 @@ python eval_multihop.py --help
 | `--keep_checkpoint`    | *(flag)*                            | Keep the checkpoint file after evaluation (do not delete)                                   |
 | `--llm_judge_endpoint` | `http://localhost:8008`             | URL of the LLM judge service; only used for RAGAS evaluation                                |
 | `--embedding_endpoint` | `http://localhost:8090/embed`       | URL of the embedding service endpoint, only used for RAGAS                                  |
-| `--temperature`        | 	Read from RAG system config        | Controls text generation randomness; defaults to RAG system setting if omitted.             |
+| `--temperature`        |  Read from RAG system config        | Controls text generation randomness; defaults to RAG system setting if omitted.             |
 | `--max_new_tokens`     |  Read from RAG system config        | Maximum tokens generated; defaults to RAG system setting if omitted.                        |
 
 

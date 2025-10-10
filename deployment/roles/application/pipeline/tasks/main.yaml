@@ -182,20 +182,6 @@
   tags:
     - install
 
-- name: Include chatqa specific tasks
-  ansible.builtin.include_tasks:
-    file: chatqa.yaml
-  when: item.type=='chatqa'
-  tags:
-    - install
-
-- name: Sleep mitigation due to GMC Helm chart readiness
-  ansible.builtin.pause:
-    seconds: 5
-  when: item.type=='chatqa'
-  tags:
-    - install
-
 - name: Apply pipeline
   kubernetes.core.k8s:
     state: present

@@ -103,40 +103,6 @@ get_or_create_and_store_credentials() {
   NEW_USERNAME=$username
 }
 
-create_database_secret() {
-    local DATABASE=$1
-    local NAMESPACE_OF_SECRET=$2
-    local DB_USERNAME=$3
-    local DB_PASSWORD=$4
-    local DB_NAMESPACE=$5
-    local ADDITIONAL_ARG_1=$6
-
-    if [[ "$DATABASE" == "redis" ]]; then
-        kubectl get secret vector-database-config -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic vector-database-config -n $NAMESPACE_OF_SECRET \
-            --from-literal=VECTOR_STORE="$DATABASE" \
-            --from-literal=REDIS_URL="redis://$DB_USERNAME:$VECTOR_DB_PASSWORD@redis-vector-db.$DB_NAMESPACE.svc" \
-            --from-literal=REDIS_HOST="redis-vector-db.$DB_NAMESPACE.svc" \
-            --from-literal=REDIS_PORT="6379" \
-            --from-literal=REDIS_USERNAME="$DB_USERNAME" \
-            --from-literal=REDIS_PASSWORD="$DB_PASSWORD" \
-            --from-literal=VECTOR_DB_REDIS_ARGS="--save 60 1000 --appendonly yes --requirepass $DB_PASSWORD"
-    elif [[ "$DATABASE" == "mongo" && "$NAMESPACE_OF_SECRET" == "fingerprint" ]]; then
-        kubectl get secret mongo-database-secret -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic mongo-database-secret -n $NAMESPACE_OF_SECRET \
-            --from-literal=MONGO_DATABASE_NAME="$ADDITIONAL_ARG_1" \
-            --from-literal=MONGO_USER="$DB_USERNAME" \
-            --from-literal=MONGO_PASSWORD="$DB_PASSWORD" \
-            --from-literal=MONGO_HOST="fingerprint-mongodb.$DB_NAMESPACE.svc" \
-            --from-literal=MONGO_PORT="27017"
-    elif [[ "$DATABASE" == "mongo" && "$NAMESPACE_OF_SECRET" == "chat-history" ]]; then
-        kubectl get secret mongo-database-secret -n $NAMESPACE_OF_SECRET > /dev/null 2>&1 || kubectl create secret generic mongo-database-secret -n $NAMESPACE_OF_SECRET \
-            --from-literal=MONGO_DATABASE_NAME="$ADDITIONAL_ARG_1" \
-            --from-literal=MONGO_USER="$DB_USERNAME" \
-            --from-literal=MONGO_PASSWORD="$DB_PASSWORD" \
-            --from-literal=MONGO_HOST="chat-history-mongodb.$DB_NAMESPACE.svc" \
-            --from-literal=MONGO_PORT="27017"
-    fi
-}
-
 
 function print_header() {
     echo "$1"

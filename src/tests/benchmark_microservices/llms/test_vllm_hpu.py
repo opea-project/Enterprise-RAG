@@ -257,7 +257,7 @@ HARDCODED_SETUP_CONFIGURATIONS = [
 
 GENERAL_BENCHMARK_PARAMETERS = {
     "service": ["model_server"],
-    "streaming": [True],
+    "stream": [True],
     "num_burst_requests": [1, 4, 8],
     "input_token_num": [128, 256, 512, 1024, 2048],
     "max_new_tokens": [512, 1024],

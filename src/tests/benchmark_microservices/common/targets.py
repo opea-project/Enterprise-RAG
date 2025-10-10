@@ -119,7 +119,7 @@ class LlmMicroserviceBenchTarget(BenchTarget):
             "typical_p": 0.95,
             "temperature": 0,
             "repetition_penalty": 1.03,
-            "streaming": self._benchmark_params.streaming,
+            "stream": self._benchmark_params.streaming,
             # "do_sample": False  # Makes fixed answer length
         }
 

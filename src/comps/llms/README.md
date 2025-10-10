@@ -138,8 +138,8 @@ curl http://localhost:9000/v1/health_check \
 You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`. See the example below for more of an understanding.
 
 The `streaming` parameter controls the API response format:
- - `streaming=false` returns a complete text string,
- - `streaming=true` streams the text in real time.
+ - `stream=false` returns a complete text string,
+ - `stream=true` streams the text in real time.
 
 > [!NOTE]
 > Ensure that your model server is running at `LLM_MODEL_SERVER_ENDPOINT` and is ready to accept requests. Be aware that the server may take some time to become fully operational; otherwise, the microservice will return an Internal Server Error.
@@ -151,14 +151,20 @@ The `streaming` parameter controls the API response format:
 curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: What is Deep Learning? \n\n"
-                    },
+                "messages": [
+                      {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
+                      },
+                      {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                      }
+                    ],
                 "max_new_tokens":32,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":false
+                "stream":false
             }' \
         -H 'Content-Type: application/json'
 ```
@@ -168,14 +174,20 @@ curl http://localhost:9000/v1/chat/completions \
 curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: What is Deep Learning? \n\n"
-                    },
+                "messages": [
+                      {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
+                      },
+                      {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                      }
+                    ],
                 "max_new_tokens":32,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":true
+                "stream":true
             }' \
         -H 'Content-Type: application/json'
 ```
@@ -184,18 +196,18 @@ curl http://localhost:9000/v1/chat/completions \
 
 The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
 
-- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+- In **non-streaming mode** (stream=false), the service returns a single JSON response:
 
 ```json
 {
   "id":"9a1b09face84c316c9a6297052d8b791",
   "text":"System: I am a helpful, respectful, and honest assistant designed to help you",
   "prompt":"### Question: Who are you? \n\n",
-  "streaming":false,
+  "stream":false,
   "output_guardrail_params":null
 }
 ```
-- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
 ```
 data: '\n'
 data: 'Deep'
@@ -218,19 +230,19 @@ data: [DONE]
 
 If additional data is passed in LLMParamsDoc.data attribute, additional data is appended to the response. For example:
 
-- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+- In **non-streaming mode** (stream=false), the service returns a single JSON response:
 
 ```json
 {
   "id": "9a1b09face84c316c9a6297052d8b791",
   "text": "System: I am a helpful, respectful, and honest assistant designed to help you",
   "prompt": "### Question: Who are you? \n\n",
-  "streaming": false,
+  "stream": false,
   "output_guardrail_params": null,
   "data": { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 }
 ```
-- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
 ```
 data: '\n'
 data: 'Deep'

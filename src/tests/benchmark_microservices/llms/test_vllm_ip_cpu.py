@@ -161,7 +161,7 @@ async def call_microservice(
         "typical_p": 0.95,
         "temperature": 0,
         "repetition_penalty": 1.03,
-        "streaming": True,
+        "stream": True,
         # "do_sample": False  # Makes fixed answer length
     }
     data = json.dumps(request_body)

@@ -153,14 +153,20 @@ docker compose -f docker-compose-hpu.yaml down
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: Who are you? \n\n"
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
                     },
+                    {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                    }
+                ],
                 "max_new_tokens":17,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":false
+                "stream":false
             }' \
         -H 'Content-Type: application/json'
     ```
@@ -170,14 +176,20 @@ docker compose -f docker-compose-hpu.yaml down
     curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: What is Deep Learning? \n\n"
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
                     },
+                    {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                    }
+                ],
                 "max_new_tokens":32,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":true
+                "stream":true
             }' \
         -H 'Content-Type: application/json'
     ```

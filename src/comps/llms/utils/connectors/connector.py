@@ -38,8 +38,8 @@ class LLMConnector(ABC):
 
     async def _validate(self) -> None:
         try:
-            tested_params = {"messages": {"system": "test", "user": "test"}, "max_new_tokens": 5}
-            test_input = LLMParamsDoc(**tested_params, streaming=False)
+            tested_params = {"messages": [{"role": "system", "content": "test"}, {"role": "user", "content": "test"}], "max_new_tokens": 5}
+            test_input = LLMParamsDoc(**tested_params, stream=False)
             await self.generate(test_input)
             logger.info("Connection with LLM model server validated successfully.")
         except ReadTimeout as e:

@@ -266,7 +266,7 @@ class Evaluator:
 
     def send_request(self, query, arguments, max_retries=3, wait_seconds=5):
         parameters = {
-            "streaming": False,
+            "stream": False,
             "temperature": arguments.temperature if arguments.temperature is not None else self.system_args["temperature"],
             "max_new_tokens": arguments.max_new_tokens if arguments.max_new_tokens is not None else self.system_args["max_new_tokens"],
             "top_p": self.system_args["top_p"],

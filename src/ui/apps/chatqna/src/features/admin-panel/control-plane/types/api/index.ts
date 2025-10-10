@@ -49,7 +49,7 @@ export interface AppendArgumentsParameters {
   typical_p: number;
   temperature: number;
   repetition_penalty: number;
-  streaming: boolean;
+  stream: boolean;
   search_type: string;
   k: number;
   distance_threshold: number | null;

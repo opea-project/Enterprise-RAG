@@ -158,7 +158,7 @@ class OPEAPromptTemplate:
             if doc.text is None or doc.metadata is None:
                 logger.error(f"Document {doc} does not contain metadata or text.")
                 raise ValueError(f"Document {doc} does not contain metadata or text.")
-                
+
             source_info = { "type": "unknown" }
             if "url" in doc.metadata:
                 source_info = {
@@ -170,7 +170,7 @@ class OPEAPromptTemplate:
                     "type": "File",
                     "source": "/".join([doc.metadata["bucket_name"], doc.metadata["object_name"]])
                 }
-            
+
             if source_info["type"] == "unknown":
                 # Cannot reference this document in any way
                 logger.warning(f"Document {doc} does not contain valid source information.")
@@ -257,7 +257,12 @@ class OPEAPromptTemplate:
             logger.error(f"Failed to get prompt from template, err={e}")
             raise
 
-        response = LLMParamsDoc(messages=LLMPromptTemplate(system=final_system_prompt, user=final_user_prompt), data=input.data)
+        response = LLMParamsDoc(
+            messages=[
+                LLMPromptTemplate(role="system", content=final_system_prompt),
+                LLMPromptTemplate(role="user", content=final_user_prompt)
+                ],
+            data=input.data)
 
         return response
 

@@ -36,7 +36,7 @@ class BaseLLMsTest:
             "typical_p": 0.95,
             "temperature": 0.01,
             "repetition_penalty": 1.03,
-            "streaming": False
+            "stream": False
         }
         headers = {"Content-Type": "application/json"}
         response = requests.post(url, json=request_body, headers=headers)

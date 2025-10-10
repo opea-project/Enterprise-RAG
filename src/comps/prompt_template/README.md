@@ -131,7 +131,7 @@ Output:
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": true,
+  "stream": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }
@@ -176,7 +176,7 @@ Output:
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": true,
+  "stream": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }
@@ -223,7 +223,7 @@ Output:
   "typical_p": 0.95,
   "temperature": 0.01,
   "repetition_penalty": 1.03,
-  "streaming": true,
+  "stream": true,
   "input_guardrail_params": null,
   "output_guardrail_params": null
 }

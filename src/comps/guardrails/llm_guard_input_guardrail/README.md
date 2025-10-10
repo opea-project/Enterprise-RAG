@@ -250,7 +250,7 @@ curl http://localhost:8050/v1/llmguardinput \
         "typical_p":0.95,
         "temperature":0.01,
         "repetition_penalty":1.03,
-        "streaming":false
+        "stream":false
     }' \
   -H 'Content-Type: application/json'
 ```
@@ -269,7 +269,7 @@ The output of an input guardrail microservice is a JSON object that includes the
     "typical_p":0.95,
     "temperature":0.01,
     "repetition_penalty":1.03,
-    "streaming":false,
+    "stream":false,
     "input_guardrail_params":null,
     "output_guardrail_params":null
 }
@@ -290,7 +290,7 @@ curl http://localhost:8050/v1/llmguardinput \
         "typical_p":0.95,
         "temperature":0.01,
         "repetition_penalty":1.03,
-        "streaming":false,
+        "stream":false,
         "input_guardrail_params":
             {"ban_substrings":
                 {"enabled":true,

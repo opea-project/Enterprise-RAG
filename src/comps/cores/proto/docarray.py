@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Literal, Dict, Optional, Tuple, Any
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -352,11 +352,11 @@ class TextDocList(BaseDoc):
     dataprep_guardrail_params: Optional[LLMGuardDataprepGuardrailParams] = None
 
 class LLMPromptTemplate(BaseDoc):
-    system: str
-    user: str
+    role: Literal["system", "user", "assistant"]
+    content: str
 
 class LLMParamsDoc(BaseDoc):
-    messages: LLMPromptTemplate
+    messages: List[LLMPromptTemplate]
     model: Optional[str] = None  # for openai and ollama
     max_new_tokens: PositiveInt = 1024
     top_k: PositiveInt = 10
@@ -364,15 +364,27 @@ class LLMParamsDoc(BaseDoc):
     typical_p: NonNegativeFloat = 0.95
     temperature: NonNegativeFloat = 0.01
     repetition_penalty: NonNegativeFloat = 1.03
-    streaming: bool = True
+    stream: bool = True
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
     data: Optional[Dict[str, Any]] = None
 
+class ChatCompletionMessage(BaseModel):
+    role: str
+    content: str
+    audio: Optional[Dict[str, Any]] = None
+
+class ChatCompletionResponseChoice(BaseModel):
+    index: int
+    message: ChatCompletionMessage
+    finish_reason: Optional[Literal["stop", "length"]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
-    streaming: bool = True
+    stream: bool = True
+    choices: Optional[List[ChatCompletionResponseChoice]] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
     data: Optional[Dict[str, Any]] = None
 
@@ -383,7 +395,7 @@ class LLMParams(BaseDoc):
     typical_p: NonNegativeFloat = 0.95
     temperature: NonNegativeFloat = 0.01
     repetition_penalty: NonNegativeFloat = 1.03
-    streaming: bool = True
+    stream: bool = True
 
 
 class RAGASParams(BaseDoc):

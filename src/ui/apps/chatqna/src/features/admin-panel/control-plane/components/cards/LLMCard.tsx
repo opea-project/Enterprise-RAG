@@ -66,8 +66,8 @@ const LLMCard = ({
         onArgumentValidityChange={onArgumentValidityChange}
       />
       <ServiceArgumentCheckbox
-        {...llmFormConfig.streaming}
-        value={argumentsForm.streaming}
+        {...llmFormConfig.stream}
+        value={argumentsForm.stream}
         onArgumentValueChange={onArgumentValueChange}
       />
     </SelectedServiceCard>

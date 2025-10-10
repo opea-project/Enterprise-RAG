@@ -12,8 +12,10 @@ from fastapi.responses import StreamingResponse
 from requests.exceptions import ConnectionError, ReadTimeout, RequestException
 
 from comps import (
+    ChatCompletionResponseChoice,
     GeneratedDoc,
     LLMParamsDoc,
+    LLMPromptTemplate,
     get_opea_logger,
     TextDoc
 )
@@ -39,18 +41,13 @@ class VLLMConnector:
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
-            messages = [
-                {"role": "system", "content": input.messages.system},
-                {"role": "user", "content": input.messages.user}
-                ]
-
             generator = await self._client.chat.completions.create(
                 model=self._model_name,
-                messages=messages,
+                messages=input.messages.model_dump() if isinstance(input.messages, LLMPromptTemplate) else input.messages,
                 max_tokens=input.max_new_tokens,
                 temperature=input.temperature,
                 top_p=input.top_p,
-                stream=input.streaming and not self._disable_streaming,
+                stream=input.stream and not self._disable_streaming,
             )
         except ReadTimeout as e:
             error_message = f"Failed to stream from the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
@@ -79,13 +76,18 @@ class VLLMConnector:
             logger.debug(f"Reranked documents found in input data. {input.data['reranked_docs']}")
             reranked_docs_output = [TextDoc(**rdoc).to_reranked_doc().model_dump(exclude=['id']) for rdoc in input.data['reranked_docs']]
 
-        if input.streaming and not self._disable_streaming:
+        user_prompt = [msg.content for msg in input.messages if msg.role == "user"]
+        if not user_prompt:
+            raise ValueError("No user prompt found in messages.")
+        user_prompt = user_prompt[0]
+
+        if input.stream and not self._disable_streaming:
             if self._llm_output_guard_exists:
                 chat_response = ""
                 async for chunk in generator:
                     text = chunk.choices[0].delta.content
                     chat_response += text
-                return GeneratedDoc(text=chat_response, prompt=input.messages.user, streaming=input.streaming,
+                return GeneratedDoc(text=chat_response, prompt=user_prompt, stream=input.stream,
                                 output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
 
             stream_gen_time = []
@@ -130,7 +132,8 @@ class VLLMConnector:
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            return GeneratedDoc(text=generator.choices[0].message.content, prompt=input.messages.user, streaming=input.streaming,
+            choices = [ChatCompletionResponseChoice(**c.dict()) for c in generator.choices if c.message and c.message.content]
+            return GeneratedDoc(choices=choices, text=generator.choices[0].message.content, prompt=user_prompt, stream=input.stream,
                                 output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
 
 SUPPORTED_INTEGRATIONS = {

@@ -5,7 +5,7 @@ from llm_guard import scan_prompt
 from fastapi import HTTPException
 
 from comps.guardrails.llm_guard_input_guardrail.utils.llm_guard_input_scanners import InputScannersConfig
-from comps import get_opea_logger, LLMParamsDoc
+from comps import get_opea_logger, LLMParamsDoc, LLMPromptTemplate
 
 logger = get_opea_logger("opea_llm_guard_input_guardrail_microservice")
 
@@ -111,7 +111,11 @@ class OPEALLMGuardInputGuardrail:
             if not fresh_scanners:
                 logger.info("Recreating anonymize scanner if exists to clear the Vault.")
                 self._recreate_anonymize_scanner_if_exists()
-            user_prompt = input_doc.messages.user
+
+            user_prompt = [msg.content for msg in input_doc.messages if msg.role == "user"]
+            if not user_prompt:
+                raise ValueError("No user prompt found in messages.")
+            user_prompt = user_prompt[0]
 
             if "### Question:" in user_prompt:
                 # Default template is used
@@ -125,7 +129,9 @@ class OPEALLMGuardInputGuardrail:
 
             self._analyze_scan_outputs(user_prompt, user_results_valid, user_results_score)
 
-            input_doc.messages.user = sanitized_user_prompt
+            input_doc.messages.remove(next(msg for msg in input_doc.messages if msg.role == "user"))
+            input_doc.messages.append(LLMPromptTemplate(role="user", content=sanitized_user_prompt))
+
             if input_doc.output_guardrail_params is not None and 'Anonymize' in user_results_valid:
                 input_doc.output_guardrail_params.anonymize_vault = self._get_anonymize_vault()
             elif input_doc.output_guardrail_params is None and 'Anonymize' in user_results_valid:

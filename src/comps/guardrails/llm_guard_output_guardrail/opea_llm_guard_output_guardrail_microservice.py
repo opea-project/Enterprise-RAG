@@ -81,8 +81,8 @@ async def process(llm_output: Request) -> Response: # GeneratedDoc or StreamingR
 
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
 
-    if doc.streaming is False:
-        return GeneratedDoc(text=scanned_output, prompt=doc.prompt, streaming=False, data=doc.data)
+    if doc.stream is False:
+        return GeneratedDoc(text=scanned_output, prompt=doc.prompt, stream=False, data=doc.data)
     else:
         async def stream_generator():
             chat_response = ""

@@ -62,7 +62,7 @@ class FingerprintApiHelper(ApiRequestHelper):
         """
         Disable streaming
         """
-        self._change_llm_parameters(streaming=streaming)
+        self._change_llm_parameters(stream=streaming)
 
     def set_llm_parameters(self, **parameters):
         """

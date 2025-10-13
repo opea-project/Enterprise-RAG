@@ -51,11 +51,13 @@ export const getFilesTableColumns = ({
   {
     accessorKey: "size",
     header: "Size",
+    enableGlobalFilter: false,
     cell: ({ row }) => formatFileSize(row.getValue("size")),
   },
   {
     id: "chunks",
     header: "Chunks",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {
@@ -72,6 +74,7 @@ export const getFilesTableColumns = ({
   },
   {
     header: "Processing Time",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {

@@ -9,6 +9,7 @@ import { BucketSynchronizationIcon } from "@/icons/BucketSynchronizationIcon";
 import { ChatBotIcon } from "@/icons/ChatBotIcon";
 import { ChatIcon } from "@/icons/ChatIcon";
 import { CheckboxCheckIcon } from "@/icons/CheckboxCheckIcon";
+import { ClearIcon } from "@/icons/ClearIcon";
 import { CloseIcon } from "@/icons/CloseIcon";
 import { CloseNotificationIcon } from "@/icons/CloseNotificationIcon";
 import { ConfigurableServiceIcon } from "@/icons/ConfigurableServiceIcon";
@@ -39,10 +40,14 @@ import { PromptSendIcon } from "@/icons/PromptSendIcon";
 import { PromptStopIcon } from "@/icons/PromptStopIcon";
 import { RefreshIcon } from "@/icons/RefreshIcon";
 import { ScrollToBottomIcon } from "@/icons/ScrollToBottomIcon";
+import { SearchIcon } from "@/icons/SearchIcon";
 import { SelectInputArrowDown } from "@/icons/SelectInputArrowDown";
 import { SelectInputArrowUp } from "@/icons/SelectInputArrowUp";
 import { SettingsIcon } from "@/icons/SettingsIcon";
 import { SideMenuIcon } from "@/icons/SideMenuIcon";
+import { SortDownIcon } from "@/icons/SortDownIcon";
+import { SortUpDownIcon } from "@/icons/SortUpDownIcon";
+import { SortUpIcon } from "@/icons/SortUpIcon";
 import { SuccessIcon } from "@/icons/SuccessIcon";
 import { TelemetryIcon } from "@/icons/TelemetryIcon";
 import { UploadIcon } from "@/icons/UploadIcon";
@@ -53,6 +58,7 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "chat-bot": ChatBotIcon,
   chat: ChatIcon,
   "checkbox-check": CheckboxCheckIcon,
+  clear: ClearIcon,
   close: CloseIcon,
   "close-notification": CloseNotificationIcon,
   "configurable-service": ConfigurableServiceIcon,
@@ -83,9 +89,13 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   refresh: RefreshIcon,
   "side-menu": SideMenuIcon,
   "scroll-to-bottom": ScrollToBottomIcon,
+  search: SearchIcon,
   "select-input-arrow-down": SelectInputArrowDown,
   "select-input-arrow-up": SelectInputArrowUp,
   settings: SettingsIcon,
+  "sort-down": SortDownIcon,
+  "sort-up-down": SortUpDownIcon,
+  "sort-up": SortUpIcon,
   success: SuccessIcon,
   telemetry: TelemetryIcon,
   upload: UploadIcon,

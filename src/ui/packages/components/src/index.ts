@@ -23,6 +23,7 @@ export * from "@/Notifications/types";
 export * from "@/Popover/Popover";
 export * from "@/Popover/usePopover";
 export * from "@/ProgressBar/ProgressBar";
+export * from "@/SearchBar/SearchBar";
 export * from "@/SelectInput/SelectInput";
 export * from "@/Switch/Switch";
 export * from "@/TextAreaInput/TextAreaInput";

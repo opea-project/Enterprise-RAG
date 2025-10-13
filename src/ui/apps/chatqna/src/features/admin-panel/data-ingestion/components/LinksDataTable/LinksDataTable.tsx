@@ -1,8 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { DataTable } from "@intel-enterprise-rag-ui/components";
-import { useCallback, useMemo } from "react";
+import "./LinksDataTable.scss";
+
+import { DataTable, SearchBar } from "@intel-enterprise-rag-ui/components";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   useDeleteLinkMutation,
@@ -18,6 +20,7 @@ const LinksDataTable = () => {
 
   const [deleteLink] = useDeleteLinkMutation();
   const [retryLinkAction] = useRetryLinkActionMutation();
+  const [filter, setFilter] = useState("");
 
   const retryHandler = useCallback(
     (uuid: string) => {
@@ -36,16 +39,29 @@ const LinksDataTable = () => {
   const defaultData = links || [];
 
   const linksTableColumns = useMemo(
-    () => getLinksTableColumns({ retryHandler, deleteHandler }),
+    () =>
+      getLinksTableColumns({
+        retryHandler,
+        deleteHandler,
+      }),
     [retryHandler, deleteHandler],
   );
 
   return (
-    <DataTable
-      defaultData={defaultData}
-      columns={linksTableColumns}
-      isDataLoading={isLoading}
-    />
+    <div className="flex flex-col gap-2">
+      <SearchBar
+        value={filter}
+        placeholder="Filter links by status or link"
+        onChange={setFilter}
+      />
+      <DataTable
+        defaultData={defaultData}
+        columns={linksTableColumns}
+        isDataLoading={isLoading}
+        globalFilter={filter}
+        className="links-data-table"
+      />
+    </div>
   );
 };
 

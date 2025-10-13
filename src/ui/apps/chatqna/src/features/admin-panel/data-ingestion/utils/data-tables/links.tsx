@@ -44,6 +44,7 @@ export const getLinksTableColumns = ({
   {
     id: "chunks",
     header: "Chunks",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {
@@ -60,6 +61,7 @@ export const getLinksTableColumns = ({
   },
   {
     header: "Processing Time",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {

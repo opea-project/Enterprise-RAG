@@ -16,7 +16,9 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
     "@tanstack/react-table": "^8.20.6",
+    "@tanstack/react-virtual": "^3.13.12",
     "classnames": "^2.5.1",
+    "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",
     "react-aria-components": "^1.7.1",
     "react-dom": "^18.3.1",

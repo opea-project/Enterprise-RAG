@@ -41,4 +41,26 @@ table.data-table {
       @apply h-8;
     }
   }
+
+  & thead,
+  & tbody {
+    @apply block w-full;
+  }
+
+  & thead tr,
+  & tbody tr {
+    @apply table w-full table-fixed;
+  }
+}
+
+th.sortable {
+  @apply cursor-pointer select-none;
+}
+
+.data-table-body {
+  @apply max-h-[500px] min-h-[50px] overflow-y-auto overflow-x-hidden;
+}
+
+.virtual-row-spacer td {
+  @apply border-none p-0;
 }

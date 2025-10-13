@@ -64,11 +64,9 @@
     .text-input__label-wrapper {
       @apply gap-1;
     }
-
     .text-input__input {
       @apply px-2 py-1 text-xs;
     }
-
     .text-input__error {
       @apply pl-2 text-xs;
     }

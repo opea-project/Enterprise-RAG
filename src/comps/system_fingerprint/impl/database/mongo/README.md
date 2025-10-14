@@ -2,6 +2,8 @@
 
 This document focuses on using the [MongoDB](https://mongodb.com/) for System Fingerprint Microservice.
 
+Please note: component(s) depend on software subject to non-open source licenses. If you use or redistribute this software, it is your sole responsibility to ensure compliance with such licenses.
+
 ## Getting Started
 
 ### Prerequisites

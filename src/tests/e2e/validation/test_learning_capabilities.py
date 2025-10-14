@@ -379,6 +379,43 @@ def test_adoc_substitutions(edp_helper, chatqa_api_helper):
     assert "zumbleflick" in response.lower(), UNRELATED_RESPONSE_MSG
 
 
+@allure.testcase("IEASG-T249")
+def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+    """
+    Upload a file with a list of 20 elements.
+    Ask a question that requires the entire list to be included in the answer.
+    With retriever's search type set to 'similarity', expect the answer to be incomplete.
+    Change the retriever's search type to 'similarity_with_siblings' and expect the answer to be complete.
+    """
+
+    current_parameters = fingerprint_api_helper.append_arguments("").json().get("parameters", {})
+    original_k = current_parameters.get("k")
+    original_search_type = current_parameters.get("search_type")
+    if not original_k or not original_search_type:
+        pytest.skip("Failed to get current retriever's parameters")
+
+    file = "test_similarity_search_with_siblings.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    question = "List 20 Principles for a Meaningful Life by Giorgiooo"
+
+    try:
+        if original_search_type != "similarity":
+            fingerprint_api_helper.set_component_parameters("retriever", search_type="similarity", k=original_k)
+
+        response = ask_question(chatqa_api_helper, question)
+        assert "Stay humble" not in response, ("'Stay humble' is the last principle in the list. It should not be "
+                                               "included in the answer when search_type='similarity'")
+
+        # Change search type to similarity_with_siblings. Expect the response to be longer
+        fingerprint_api_helper.set_component_parameters("retriever", search_type="similarity_search_with_siblings",
+                                                        k=original_k)
+        response = ask_question(chatqa_api_helper, question)
+        assert "Stay humble" in response, "With similarity_with_siblings search type, the answer should be longer"
+    finally:
+        # Restore default parameters
+        fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
+
+
 @allure.testcase("IEASG-T196")
 def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper):
     """

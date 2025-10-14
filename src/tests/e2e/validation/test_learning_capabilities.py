@@ -379,6 +379,51 @@ def test_adoc_substitutions(edp_helper, chatqa_api_helper):
     assert "zumbleflick" in response.lower(), UNRELATED_RESPONSE_MSG
 
 
+@allure.testcase("IEASG-T262")
+def test_logs_parsing_capability(edp_helper, chatqa_api_helper):
+    """Check if chatbot can extract information from log files"""
+    file = "system_logs.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+
+    question = ("How many WARNING logs came from the MonitoringService? "
+                "These logs have the following string inside: '[MonitoringService] WARNING'")
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(["3", "three"], response), UNRELATED_RESPONSE_MSG
+
+    question = "At what time did the ERROR from InventoryService occur?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "10:01:47" in response.lower(), UNRELATED_RESPONSE_MSG
+
+    question = ("What was the last WARNING that comes from PaymentService? Provide the full log line. "
+                "It should contain [PaymentService] string inside.")
+    response = ask_question(chatqa_api_helper, question)
+    assert "transaction tx1005 delayed due to network latency" in response.lower(), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T264")
+def test_reupload(edp_helper, chatqa_api_helper):
+    """Check if re-uploading the same file and updated file works as expected"""
+    file = "test_reupload_1.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+
+    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "187" in response, UNRELATED_RESPONSE_MSG
+
+    # Re-upload the same file
+    file = "test_reupload_1.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "187" in response, UNRELATED_RESPONSE_MSG
+
+    # Upload updated file
+    file = "test_reupload_2.txt"  # updated file with different number of vinyl records
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "212" in response, UNRELATED_RESPONSE_MSG
+
 @allure.testcase("IEASG-T249")
 def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerprint_api_helper):
     """

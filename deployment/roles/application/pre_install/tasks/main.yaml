@@ -35,6 +35,16 @@
   tags:
     - always
 
+- name: Load credentials from password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: lookup.yaml
+    apply:
+      tags:
+        - install
+  tags:
+    - install
+
 - name: Disable istio injection for all namespaces
   vars:
     istio_injection: false

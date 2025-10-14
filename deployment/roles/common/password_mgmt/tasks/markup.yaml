@@ -1,0 +1,46 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Password management tasks for deployment passwords
+  vars:
+    namespace: "{{ undef() }}"
+    secret_name: "{{ undef() }}"
+    password_mappings: "{{ undef() }}"
+    managed_secret_label: "meta.erag/has-generated-passwords"
+    password_mappings_annotation: "meta.erag/password-mappings"
+
+  block:
+    - name: Label secret with managed secret indicator
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ secret_name }}"
+            namespace: "{{ namespace }}"
+            labels: "{{ {managed_secret_label: 'true'} }}"
+        merge_type: merge
+
+    - name: Create password mappings annotation value
+      set_fact:
+        password_mappings_annotation_value: |
+          {% for entry in (password_mappings) -%}
+          - {{ entry.variable }}={{ entry.key }}
+          {% if 'user' in entry and entry.user -%}
+          - {{ entry.variable.replace('_PASSWORD', '_USERNAME') }}={{ entry.user }}
+          {% endif -%}
+          {% endfor %}
+
+    - name: Apply password mappings annotation to secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ secret_name }}"
+            namespace: "{{ namespace }}"
+            annotations:
+              meta.erag/password-mappings: "{{ password_mappings_annotation_value | trim }}"
+        merge_type: merge

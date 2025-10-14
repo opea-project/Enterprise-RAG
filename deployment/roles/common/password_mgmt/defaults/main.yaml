@@ -1,0 +1,8 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+managed_secret_label: "meta.erag/has-generated-passwords"
+password_mappings_annotation: "meta.erag/password-mappings"
+log_dir: "{{ undef() }}"
+password_file: "{{ log_dir }}/default_credentials.yaml"

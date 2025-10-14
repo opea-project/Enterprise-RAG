@@ -122,6 +122,21 @@
   tags:
     - install
 
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ keycloak.namespace }}"
+    - secret_name: "{{ keycloak.auth.admin.password_secret_name }}"
+    - password_mappings:
+      - { key: admin-password, variable: KEYCLOAK_REALM_ADMIN_PASSWORD, user: "{{ keycloak.auth.admin.username }}" }
+  tags:
+    - install
+
 - name: Initial keycloak configuration
   ansible.builtin.include_tasks: configure_keycloak.yaml
   tags:

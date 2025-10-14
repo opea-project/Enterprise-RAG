@@ -25,10 +25,10 @@ mongodb:
     usernames:
       - {{ chat_history.mongo.auth.user.db_user }}
     passwords:
-      - {{ MONGO_DB_PASSWORD }}
+      - {{ CHAT_HISTORY_MONGO_DB_PASSWORD }}
     databases:
       - {{ chat_history.mongo.auth.db_name }}
-    rootPassword: {{ MONGO_ADMIN_PASSWORD }}
+    rootPassword: {{ CHAT_HISTORY_MONGO_ADMIN_PASSWORD }}
 {% if tdx.coco.enabled %}
   podAnnotations:
     io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"

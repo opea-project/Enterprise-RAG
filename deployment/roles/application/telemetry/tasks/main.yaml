@@ -198,6 +198,21 @@
   tags:
     - install
 
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ telemetry.monitoring.namespace }}"
+    - secret_name: "{{ telemetry.grafana.auth.admin.password_secret_name }}"
+    - password_mappings:
+      - { key: password, variable: GRAFANA_PASSWORD, user: "{{ telemetry.grafana.auth.admin.username }}" }
+  tags:
+    - install
+
 - name: Install Prometheus Adapter Helm chart
   kubernetes.core.helm:
     name: prometheus-adapter

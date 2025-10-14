@@ -153,6 +153,32 @@
   tags:
     - install
 
+- name: Mark secrets for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    namespace: "{{ edp.namespace }}"
+    secret_name: "{{ item.secret_name }}"
+    password_mappings: "{{ item.password_mappings }}"
+  loop:
+    - secret_name: "edp-access-secret"
+      password_mappings:
+        - { key: EDP_ACCESS_KEY, variable: EDP_MINIO_ACCESS_KEY, user: "" }
+        - { key: EDP_SECRET_KEY, variable: EDP_MINIO_SECRET_KEY, user: "" }
+    - secret_name: "edp-redis-secret"
+      password_mappings:
+        - { key: redis-password, variable: EDP_REDIS_PASSWORD, user: "{{ edp.redis.auth.user.db_username }}" }
+    - secret_name: "edp-postgresql-secret"
+      password_mappings:
+        - { key: DATABASE_PASSWORD, variable: EDP_POSTGRESQL_PASSWORD, user: "{{ edp.postgresql.auth.user.db_username }}" }
+        - { key: DATABASE_ADMIN_PASSWORD, variable: EDP_POSTGRESQL_ADMIN_PASSWORD, user: "{{ edp.postgresql.auth.admin.db_username }}" }
+  tags:
+    - install
+
 - name: Uninstall Helm chart
   kubernetes.core.helm:
     name: "{{ edp.helm.release_name }}"

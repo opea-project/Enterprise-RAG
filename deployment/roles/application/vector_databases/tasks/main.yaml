@@ -173,6 +173,21 @@
   tags:
     - install
 
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ vector_databases.namespace }}"
+    - secret_name: "{{ 'redis-cluster-secret' if vector_databases.vector_store == 'redis-cluster' else 'redis-secret' }}"
+    - password_mappings:
+      - { key: REDIS_PASSWORD, variable: REDIS_PASSWORD, user: "default" }
+  tags:
+    - install
+
 - name: Uninstall Helm chart
   kubernetes.core.helm:
     name: "{{ vector_databases.helm.release_name }}"

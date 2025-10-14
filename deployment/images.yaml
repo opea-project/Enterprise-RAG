@@ -47,6 +47,10 @@ images:
     image_name: llm
     dockerfile_path: src/comps/llms/impl/microservice/Dockerfile
     docker_context: src
+  mosecEmbedding:
+    image_name: mosec_embedding
+    dockerfile_path: src/comps/embeddings/impl/model_server/mosec/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/mosec
   otelcolContribJournalctl:
     image_name: otelcol-contrib-journalctl
     dockerfile_path: Dockerfile-otelcol-contrib-journalctl
@@ -55,6 +59,10 @@ images:
     image_name: out-guard
     dockerfile_path: src/comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile
     docker_context: src
+  ovmsEmbedding:
+    image_name: ovms_embedding
+    dockerfile_path: src/comps/embeddings/impl/model_server/ovms/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/ovms
   promptTemplateUsvc:
     image_name: prompt_template
     dockerfile_path: src/comps/prompt_template/impl/microservice/Dockerfile

@@ -14,6 +14,7 @@ extraUiConfigVars:
   grafanaDomainName: "{{ telemetry.domainName }}"
   keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
   s3DomainName: "{{ edp.minio.apiDomainName }}"
+  chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
 
 service:
   type: ClusterIP

@@ -14,6 +14,7 @@ data:
       "ADMIN_RESOURCE_ROLE": "{{ .Values.extraUiConfigVars.adminResourceRole }}",
       "GRAFANA_DASHBOARD_URL": "https://{{ .Values.extraUiConfigVars.grafanaDomainName }}",
       "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}",
-      "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}"
+      "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}",
+      "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}"
     }
 {{- end }}

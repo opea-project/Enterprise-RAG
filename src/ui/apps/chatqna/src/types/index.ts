@@ -21,4 +21,5 @@ export type AppEnvKey =
   | "ADMIN_RESOURCE_ROLE"
   | "GRAFANA_DASHBOARD_URL"
   | "KEYCLOAK_ADMIN_PANEL_URL"
-  | "S3_URL";
+  | "S3_URL"
+  | "CHAT_DISCLAIMER_TEXT";

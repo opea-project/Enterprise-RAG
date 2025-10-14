@@ -31,6 +31,8 @@ extraUiConfigVars:
   grafanaDomainName: "grafana.erag.com"
   keycloakAdminPanelDomainName: "auth.erag.com"
   s3DomainName: "s3.erag.com"
+  chatDisclaimerText: "Responses from this solution may require further verification. You are solely responsible for verifying the accuracy of the information provided and how you choose to use it."
+
 
 image:
   ui:

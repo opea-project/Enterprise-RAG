@@ -16,8 +16,6 @@ kube-prometheus-stack:
         login_maximum_inactive_lifetime_duration: 30m    # default 7d -> 30m
         token_rotation_interval_minutes: 10m             # default 10m
 
-    plugins:
-      - grafana-lokiexplore-app 1.0.26
     env:
       https_proxy: ""
       http_proxy: ""
@@ -75,7 +73,7 @@ habana-exporter:
   image:
     # for other possible tags check: https://vault.habana.ai/ui/native/gaudi-metric-exporter/metric-exporter/
     #tag: 1.16.2-2
-    tag: 1.17.0-495
+    tag: 1.22.1-6
 
 ### ============================================================================
 # Redis exporter and Prometehus monitor

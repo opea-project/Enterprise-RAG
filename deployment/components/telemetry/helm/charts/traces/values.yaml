@@ -55,11 +55,14 @@ tempo:
       query_frontend:
         {{- toYaml .Values.tempo.queryFrontend | nindent 6 }}
       overrides:
+        {{- if .Values.tempo.global_overrides }}
         {{- toYaml .Values.tempo.global_overrides | nindent 6 }}
+        {{- end }}
         {{- if .Values.tempo.metricsGenerator.enabled }}
             metrics_generator_processors:
             - 'service-graphs'
             - 'span-metrics'
+            - 'localblocks'
       metrics_generator:
             storage:
               path: "/tmp/tempo"
@@ -108,7 +111,7 @@ otel-operator:
       # we need contrib for kubernetes processor/prometheus exporter
       # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
       repository: "otel/opentelemetry-collector-contrib"
-      tag: "0.110.0"
+      tag: "0.136.0"
       # over writen by spec.image from CR
       # image: "otel/opentelemetry-collector-contrib:0.109.0"
     extraArgs:

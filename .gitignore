@@ -2,6 +2,7 @@
 deployment/**/bin/
 deployment/*.out
 **/charts/*.tgz
+**/tmpcharts*/*.tgz
 deployment/*.key
 deployment/*.crt
 deployment/logs

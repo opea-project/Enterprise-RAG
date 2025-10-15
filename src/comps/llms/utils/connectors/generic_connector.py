@@ -150,7 +150,7 @@ class GenericLLMConnector(LLMConnector):
             if (cls._instance._endpoint != endpoint or
                 cls._instance._model_server != model_server or
                 cls._instance._disable_streaming != disable_streaming or
-                cls._llm_output_guard_exists != llm_output_guard_exists):
+                cls._instance._llm_output_guard_exists != llm_output_guard_exists):
                 logger.warning(f"Existing GenericLLMConnector instance has different parameters: "
                               f"{cls._instance._endpoint} != {endpoint}, "
                               f"{cls._instance._model_server} != {model_server}, "

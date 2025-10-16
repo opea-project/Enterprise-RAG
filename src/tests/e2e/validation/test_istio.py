@@ -6,9 +6,11 @@
 import allure
 import logging
 import pytest
+import kr8s
 from helpers.istio_helper import ConnectionType
 
 logger = logging.getLogger(__name__)
+
 
 # List of endpoints to test
 http_endpoints = [
@@ -75,8 +77,7 @@ http_endpoints = [
 ]
 
 redis_endpoints = [
-    #"redis-vector-db.chatqa.svc.cluster.local:6379",
-    "edp-redis-master.edp.svc.cluster.local:6379"
+    # gets populated within prepare_tests fixture
 ]
 
 postgres_endpoints = [
@@ -96,9 +97,42 @@ istio_test_data = {
 }
 
 
+def get_vector_db_endpoints():
+    # Check for redis-cluster implementation first
+    try:
+        services = kr8s.get("services", "vdb-redis-cluster-headless", namespace="vdb")
+        if len(services) == 1:
+            service = services[0]
+            logger.info("Found redis-cluster vector DB service: %s", service.name)
+            return [f"{service.name}.vdb.svc.cluster.local:6379"]
+    except (RuntimeError, ValueError, AttributeError):
+        pass
+
+    # Check for redis implementation
+    try:
+        services = kr8s.get("services", "vdb-redis-headless", namespace="vdb")
+        if len(services) == 1:
+            service = services[0]
+            logger.info("Found redis vector DB service: %s", service.name)
+            return [f"{service.name}.vdb.svc.cluster.local:6379"]
+    except (RuntimeError, ValueError, AttributeError):
+        pass
+
+    raise RuntimeError("No vector database services found with expected names (vdb-redis-cluster or vdb-redis)")
+
+
+def get_edp_redis_endpoints():
+    return ["edp-redis-master.edp.svc.cluster.local:6379"]
+
+
 @pytest.fixture(scope="module", autouse=True)
 def prepare_tests(istio_helper):
     logger.info("============= Prepare Istio Authorization tests =====================")
+
+    # Dynamically populate redis endpoints
+    redis_endpoints.extend(get_edp_redis_endpoints())
+    redis_endpoints.extend(get_vector_db_endpoints())
+
     istio_helper.create_namespace(inmesh=True)
     endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}
     sample_endpoints = dict(list(endpoints.items())[:7])
@@ -106,9 +140,9 @@ def prepare_tests(istio_helper):
     istio_helper.query_multiple_endpoints(dict(sample_endpoints))
     log_ts_offset = istio_helper.apply_log_timestamp_offsets()
     if log_ts_offset < 0:
-        logger.warning(f"Detected negative time offset {log_ts_offset} sec between kubernetes log and test host")
+        logger.warning("Detected negative time offset %s sec between kubernetes log and test host", log_ts_offset)
     else:
-        logger.info(f"Detected time offset {log_ts_offset} sec between kubernetes log and test host")
+        logger.info("Detected time offset %s sec between kubernetes log and test host", log_ts_offset)
     istio_helper.delete_namespace()
     yield
 

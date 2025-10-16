@@ -19,6 +19,10 @@ redis-cluster:
     enabled: true
   existingSecret: "redis-cluster-secret"
   existingSecretPasswordKey: "REDIS_PASSWORD"
+  networkPolicy:
+    extraIngress:
+      - ports:
+        - port: 15008
   cluster:
     nodes: 3
     replicas: 0
@@ -63,6 +67,10 @@ redis:
   commonConfiguration: |-
     loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
     loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
+  networkPolicy:
+    extraIngress:
+      - ports:
+        - port: 15008
   master:
     persistence:
       enabled: true

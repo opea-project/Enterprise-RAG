@@ -56,9 +56,9 @@ export const ActionDialog = ({
       ref={dialogRef}
       title={title}
       maxWidth={maxWidth}
+      onClose={handleClose}
       isCentered
       hasPlainHeader
-      onClose={handleClose}
       {...rest}
     >
       <div className="action-dialog">

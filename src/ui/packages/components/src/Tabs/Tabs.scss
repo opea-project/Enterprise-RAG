@@ -1,0 +1,22 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.tabs {
+  @apply border-b-light-border dark:border-b-dark-border flex h-8 gap-16 border-b px-16;
+
+  & .tab-button {
+    @apply cursor-pointer;
+    @apply border-b-transparent transition-colors;
+    @apply rounded-none border-b-4 bg-transparent px-0;
+    @apply text-light-text-accent dark:text-dark-text-accent;
+
+    &.active-tab {
+      @apply border-b-light-accent dark:border-b-dark-accent;
+    }
+  }
+}
+
+.tab-panel {
+  @apply relative;
+  @apply max-h-[calc(100vh_-_8rem)] overflow-y-auto;
+}

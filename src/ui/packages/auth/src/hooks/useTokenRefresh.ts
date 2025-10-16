@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 
-import { KeycloakService } from "@/keycloakService";
+import { KeycloakService } from "@/service/keycloak";
 
 /**
  * Custom React hook to periodically refresh the Keycloak token.

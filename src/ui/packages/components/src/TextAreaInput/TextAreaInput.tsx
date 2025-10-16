@@ -45,6 +45,7 @@ export const TextAreaInput = ({
   isInvalid,
   placeholder,
   tooltipText,
+  className,
   ...rest
 }: TextAreaInputProps) => {
   const id = useId();
@@ -54,9 +55,14 @@ export const TextAreaInput = ({
     <AriaTextField
       isInvalid={isInvalid}
       aria-invalid={isInvalid}
-      className={classNames("textarea-input", {
-        "textarea-input--sm": size === "sm",
-      })}
+      className={classNames(
+        "textarea-input",
+        {
+          "textarea-input--sm": size === "sm",
+          "textarea-input--with-label": label,
+        },
+        className,
+      )}
     >
       {label && (
         <span className="textarea-input__label-wrapper">

@@ -1,15 +1,16 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { LogoutButton } from "@intel-enterprise-rag-ui/auth";
 import { ColorSchemeSwitch } from "@intel-enterprise-rag-ui/components";
 import { AppNameText, UsernameText } from "@intel-enterprise-rag-ui/layouts";
 import { useLocation } from "react-router-dom";
 
-import { LogoutButton } from "@/components/LogoutButton/LogoutButton";
 import ViewSwitchButton from "@/components/ViewSwitchButton/ViewSwitchButton";
 import { paths } from "@/config/paths";
 import ChatSideMenuIconButton from "@/features/chat/components/ChatSideMenuIconButton/ChatSideMenuIconButton";
 import NewChatButton from "@/features/chat/components/NewChatButton/NewChatButton";
+import { resetStore } from "@/store/utils";
 import { keycloakService } from "@/utils/auth";
 
 export const AppHeaderLeftSideContent = () => {
@@ -36,7 +37,12 @@ export const AppHeaderRightSideContent = () => {
       {keycloakService.isAdminUser() && <ViewSwitchButton />}
       <ColorSchemeSwitch />
       <UsernameText username={keycloakService.getUsername()} />
-      <LogoutButton />
+      <LogoutButton
+        onPress={() => {
+          resetStore();
+          keycloakService.redirectToLogout();
+        }}
+      />
     </>
   );
 };

@@ -234,8 +234,8 @@ const RetrieverDebugDialog = () => {
           <Button
             size="sm"
             isDisabled={isFormatJSONButtonDisabled()}
-            fullWidth
             onPress={formatSearchByJSON}
+            fullWidth
           >
             Format JSON
           </Button>

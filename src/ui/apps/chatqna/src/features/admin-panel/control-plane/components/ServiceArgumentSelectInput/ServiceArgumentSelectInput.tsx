@@ -48,8 +48,8 @@ const ServiceArgumentSelectInput = ({
       name={name}
       size="sm"
       tooltipText={tooltipText}
-      fullWidth
       onChange={handleChange}
+      fullWidth
     />
   );
 };

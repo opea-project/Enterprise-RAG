@@ -46,8 +46,8 @@ const AutorefreshSettingsOption = () => {
           label={label}
           size="sm"
           isSelected={isAutorefreshEnabled}
-          dense
           onChange={handleChange}
+          dense
         />
       }
       description={description}

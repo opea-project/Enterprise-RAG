@@ -1,15 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./FilesInput.scss";
-
-import { Button } from "@intel-enterprise-rag-ui/components";
-import { FileIcon } from "@intel-enterprise-rag-ui/icons";
+import { FileInput } from "@intel-enterprise-rag-ui/components";
 import {
   ChangeEvent,
   Dispatch,
   DragEvent,
-  Fragment,
   SetStateAction,
   useRef,
   useState,
@@ -19,16 +15,6 @@ import { sanitizeFiles } from "@/features/admin-panel/data-ingestion/utils";
 import { supportedFileExtensions } from "@/features/admin-panel/data-ingestion/utils/constants";
 import { validateFileInput } from "@/features/admin-panel/data-ingestion/validators/filesInput";
 import { clientMaxBodySize } from "@/utils/validators/constants";
-
-const fileInputAccept = supportedFileExtensions
-  .map((extension) => `.${extension}`)
-  .join(",");
-
-const supportedFileFormatsMsg = `Supported file formats:  ${supportedFileExtensions
-  .map((extension) => extension.toUpperCase())
-  .join(", ")}`;
-
-const totalSizeLimitMsg = `Single upload size limit: ${clientMaxBodySize}MB`;
 
 interface FilesInputProps {
   files: File[];
@@ -65,14 +51,6 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
     await processNewFiles(newFiles);
   };
 
-  const handleFileInputDragOver = (event: DragEvent) => {
-    event.preventDefault();
-  };
-
-  const handleBrowseFilesButtonPress = () => {
-    fileInputRef.current!.click();
-  };
-
   const handleFileInputChange = async (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
@@ -83,40 +61,14 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
   };
 
   return (
-    <>
-      <div
-        className="files-input-box"
-        onDragOver={handleFileInputDragOver}
-        onDrop={handleFileInputDrop}
-      >
-        <FileIcon fontSize={20} />
-        <p>Drag and Drop Files Here</p>
-        <p className="text-xs">or</p>
-        <Button size="sm" onPress={handleBrowseFilesButtonPress}>
-          Browse Files
-        </Button>
-        <p className="text-xs">{totalSizeLimitMsg}</p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={fileInputAccept}
-          className="hidden"
-          multiple
-          onChange={handleFileInputChange}
-        />
-      </div>
-      {errorMessage !== "" && (
-        <p className="files-input-error-alert">
-          {errorMessage.split("\n").map((msg, index) => (
-            <Fragment key={`files-input-error-msg-${index}`}>
-              {msg}
-              <br />
-            </Fragment>
-          ))}
-        </p>
-      )}
-      <p className="pt-2 text-xs">{supportedFileFormatsMsg}</p>
-    </>
+    <FileInput
+      errorMessage={errorMessage}
+      totalSizeLimit={clientMaxBodySize}
+      supportedFileExtensions={supportedFileExtensions}
+      onDrop={handleFileInputDrop}
+      onChange={handleFileInputChange}
+      multiple
+    />
   );
 };
 

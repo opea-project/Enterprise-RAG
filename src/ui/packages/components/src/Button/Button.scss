@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .button {
-  @apply h-9 rounded;
-  @apply cursor-pointer select-none whitespace-nowrap text-nowrap px-4 py-1.5 text-base;
+  @apply flex h-9 items-center justify-center gap-2 rounded;
+  @apply cursor-pointer select-none whitespace-nowrap text-nowrap px-4 py-1.5 text-sm;
   @apply bg-light-primary dark:bg-dark-primary;
   @apply text-white dark:text-white;
 
@@ -55,10 +55,10 @@
   }
 
   &.button--with-icon {
-    @apply flex items-center gap-2 pl-3;
+    @apply pl-3;
 
     & svg {
-      @apply text-lg;
+      @apply text-sm;
     }
   }
 
@@ -66,7 +66,11 @@
     @apply bg-transparent dark:bg-transparent;
     @apply text-light-text-primary dark:text-dark-text-primary;
     @apply hover:bg-light-bg-1/50 dark:hover:bg-dark-bg-1/50;
-
     @apply disabled:text-light-text-disabled dark:disabled:text-dark-text-disabled;
+    @apply disabled:bg-transparent dark:disabled:bg-transparent;
+  }
+
+  &.button--full-width {
+    @apply w-full;
   }
 }

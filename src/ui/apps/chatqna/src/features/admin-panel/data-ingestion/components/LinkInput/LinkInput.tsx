@@ -157,8 +157,8 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
           ref={fileInputRef}
           type="file"
           accept=".txt"
-          hidden
           onChange={handleFileUpload}
+          hidden
         />
       </div>
     </div>

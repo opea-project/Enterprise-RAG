@@ -1,0 +1,34 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.history-item {
+  @apply grid grid-cols-[2.5rem_1fr_auto] items-center;
+  @apply max-h-10 min-h-10 rounded pr-1 text-sm;
+  @apply hover:bg-light-bg-1/80 dark:hover:bg-dark-bg-1/80;
+  @apply border border-transparent;
+  @apply cursor-pointer;
+
+  &--active {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+  }
+
+  &--has-menu-open {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+    @apply border-light-border dark:border-dark-border border;
+  }
+
+  & > svg:first-of-type {
+    @apply w-10 text-base;
+  }
+
+  &:not(&:last-child) {
+    @apply mb-2;
+  }
+
+  &__title,
+  & span[role="button"]:first-of-type {
+    @apply text-left;
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+    @apply max-w-72;
+  }
+}

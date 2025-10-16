@@ -2,15 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .button.color-scheme-switch {
-  @apply flex h-6 w-[3.688rem] items-center rounded-xl border-[0.03125rem] border-solid p-0.5;
-  @apply border-light-accent dark:border-dark-accent rounded-xl border-[0.03125rem] border-solid;
+  @apply h-6 w-[3.688rem] p-0.5;
+  @apply flex items-center justify-normal gap-0;
+  @apply rounded-xl border-[0.03125rem] border-solid;
+  @apply border-light-accent dark:border-dark-accent;
   @apply bg-light-bg-1 dark:bg-dark-bg-1;
 
   & .color-scheme-switch__thumb {
-    @apply flex h-5 w-5 items-center justify-center rounded-[0.625rem] border-[0.03125rem] border-solid transition-transform duration-[0.3s];
+    @apply h-5 w-5;
+    @apply flex items-center justify-center;
+    @apply rounded-[0.625rem] border-[0.03125rem] border-solid;
     @apply border-light-border dark:border-dark-bg-1;
     @apply bg-light-bg-1 dark:bg-dark-bg-inverse;
     @apply text-base;
+    @apply transition-transform duration-[0.3s];
   }
 
   & .color-scheme-switch__label {

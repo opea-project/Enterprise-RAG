@@ -97,8 +97,8 @@ const SelectedServiceCardFooter = ({
       size="sm"
       color="success"
       isDisabled={isConfirmChangesButtonDisabled}
-      fullWidth
       onPress={onConfirmChangesButtonClick}
+      fullWidth
     >
       Confirm Changes
     </Button>
@@ -106,8 +106,8 @@ const SelectedServiceCardFooter = ({
       size="sm"
       variant="outlined"
       isDisabled={isConfirmChangesButtonDisabled}
-      fullWidth
       onPress={onCancelChangesButtonClick}
+      fullWidth
     >
       Cancel
     </Button>

@@ -179,8 +179,32 @@ importers:
         specifier: ^1.4.0
         version: 1.7.0
 
+  apps/docsum:
+    dependencies:
+      '@intel-enterprise-rag-ui/auth':
+        specifier: workspace:^
+        version: link:../../packages/auth
+      '@intel-enterprise-rag-ui/components':
+        specifier: workspace:^
+        version: link:../../packages/components
+      '@intel-enterprise-rag-ui/icons':
+        specifier: workspace:^
+        version: link:../../packages/icons
+      '@intel-enterprise-rag-ui/layouts':
+        specifier: workspace:^
+        version: link:../../packages/layouts
+      '@intel-enterprise-rag-ui/tailwind-theme':
+        specifier: workspace:^
+        version: link:../../packages/tailwind-theme
+      '@intel-enterprise-rag-ui/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
+
   packages/auth:
     dependencies:
+      '@intel-enterprise-rag-ui/components':
+        specifier: workspace:^
+        version: link:../components
       keycloak-js:
         specifier: ^26.0.7
         version: 26.2.0

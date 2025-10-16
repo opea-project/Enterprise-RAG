@@ -105,11 +105,11 @@ const ChatQnAGraphFlow = () => {
       zoomOnPinch={false}
       zoomOnDoubleClick={false}
       deleteKeyCode={null}
-      fitView
       onNodesChange={handleNodesChange}
       onEdgesChange={onChatQnAGraphEdgesChange}
       onConnect={onChatQnAGraphConnect}
       onSelectionChange={handleSelectionChange}
+      fitView
     >
       <Controls showInteractive={false} fitViewOptions={fitViewOptions} />
     </ReactFlow>

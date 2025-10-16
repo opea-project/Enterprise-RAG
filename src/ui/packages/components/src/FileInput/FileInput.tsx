@@ -3,7 +3,7 @@
 
 import "./FileInput.scss";
 
-import { Button } from "@intel-enterprise-rag-ui/components";
+import { Button } from "@/Button/Button";
 import { FileIcon } from "@intel-enterprise-rag-ui/icons";
 import classNames from "classnames";
 import {

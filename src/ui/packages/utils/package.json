@@ -10,9 +10,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/intel-enterprise-rag-ui-utils.js",
-      "require": "./dist/intel-enterprise-rag-ui-utils.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/intel-enterprise-rag-ui-utils.umd.cjs"
     }
   },
   "files": [

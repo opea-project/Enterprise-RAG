@@ -40,10 +40,10 @@ COPY ./ui/packages/markdown/ ./packages/markdown/
 COPY ./ui/apps/chatqna/ ./apps/chatqna/
 
 # Build all packages used by the app
-RUN pnpm --filter @intel-enterprise-rag-ui/auth build
 RUN pnpm --filter @intel-enterprise-rag-ui/icons build
 RUN pnpm --filter @intel-enterprise-rag-ui/utils build
 RUN pnpm --filter @intel-enterprise-rag-ui/components build
+RUN pnpm --filter @intel-enterprise-rag-ui/auth build
 RUN pnpm --filter @intel-enterprise-rag-ui/layouts build
 RUN pnpm --filter @intel-enterprise-rag-ui/markdown build
 

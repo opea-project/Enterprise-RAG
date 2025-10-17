@@ -424,6 +424,7 @@ def test_reupload(edp_helper, chatqa_api_helper):
     response = ask_question(chatqa_api_helper, question)
     assert "212" in response, UNRELATED_RESPONSE_MSG
 
+
 @allure.testcase("IEASG-T249")
 def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerprint_api_helper):
     """
@@ -565,6 +566,57 @@ def test_json_config_file_insights(edp_helper, chatqa_api_helper):
     enabled_services = ["auth-service", "user-service", "order-service", "reporting-service"]
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.all_words_in_response(enabled_services, response), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T248")
+def test_multi_doc_reasoning(edp_helper, chatqa_api_helper):
+    """
+    Upload 2 documents:
+    A: Marianooo has 20 balls for a game called Marianoball.
+    B: One ball for the game called Marianoball costs 15$.
+    Check if chatbot can combine information from both documents to answer the question:
+    "What is the total value of all Marianooo's balls for the game called Marianoball?"
+    """
+    file1 = "multi_doc_retrieval_1.txt"
+    file2 = "multi_doc_retrieval_2.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file1))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file2))
+
+    question = "What is the total value of all Marianooo's balls for the game called Marianoball?"
+    response = ask_question(chatqa_api_helper, question)
+    assert "300" in response.lower(), UNRELATED_RESPONSE_MSG
+
+
+@allure.testcase("IEASG-T247")
+def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+    """
+    Upload 2 documents:
+    A: Emanueleee has got 4 RC cars.
+    B: Raffaeleee has got 27 RC cars.
+    Ask a question that requires information from both documents to be answered:
+    "How many RC cars do Emanueleee and Raffaeleee have in total?"
+    Change top_n parameter to 1 and check if the answer is wrong (only one document should be used to answer the question).
+    Change top_n parameter to 3 and check if the answer is correct (both documents should be used to answer the question).
+    """
+    current_parameters = fingerprint_api_helper.append_arguments("").json().get("parameters", {})
+    original_n = current_parameters.get("top_n")
+
+    file1 = "test_top_n_1.txt"
+    file2 = "test_top_n_2.txt"
+    question = "How many RC cars do Emanueleee and Raffaeleee have in total?"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file1))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file2))
+
+    try:
+        fingerprint_api_helper.set_component_parameters("reranker", top_n=1)
+        response = ask_question(chatqa_api_helper, question)
+        assert "31" not in response.lower(), "only a single document should be used to answer the question"
+        fingerprint_api_helper.set_component_parameters("reranker", top_n=3)
+        response = ask_question(chatqa_api_helper, question)
+        assert "31" in response.lower(), "3 documents should be used to answer the question"
+    finally:
+        # revert top_n back to original value
+        fingerprint_api_helper.set_component_parameters("reranker", top_n=original_n)
 
 
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question=""):

@@ -8,6 +8,24 @@ global:
 
 # Set on the command line:
 vector_database_password:
+vector_database_name:
+vector_database_username:
+
+pgvector:
+  enabled: false
+  image:
+    repository: "pgvector/pgvector"
+    tag: "pg18-trixie"
+  persistence:
+    enabled: true
+    size: "10Gi"
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 16
+      memory: 16Gi
 
 redis-cluster:
   image:
@@ -94,3 +112,29 @@ redis:
       limits:
         cpu: 16
         memory: 16Gi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContextWithTemp:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000

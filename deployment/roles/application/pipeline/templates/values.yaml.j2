@@ -120,6 +120,7 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
+    vector_store: {{ vector_databases.vector_store }}
     envs:
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
@@ -129,6 +130,7 @@ images:
 {% if edp.rbac is defined and edp.rbac.enabled is true %}
       VECTOR_DB_RBAC: "true"
 {% endif %}
+      VECTOR_STORE: {{ vector_databases.vector_store }}
       VECTOR_DATATYPE: {{ vector_databases.vector_datatype }}
       VECTOR_DIMS: {{ vector_databases.vector_dims }}
   llm-usvc:

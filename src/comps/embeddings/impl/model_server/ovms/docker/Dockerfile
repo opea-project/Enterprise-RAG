@@ -26,8 +26,8 @@ COPY ./docker/uv.lock uv.lock
 RUN uv sync --locked --no-cache
 
 # Copy OpenVINO Tokenizers library to the correct location
-RUN cp /ovms/lib/libopenvino_tokenizers.so /home/user/.venv/lib/python3.12/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
-RUN chmod 644 /home/user/.venv/lib/python3.12/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
+RUN cp /ovms/lib/libopenvino_tokenizers.so /home/user/.venv/lib/python3.11/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
+RUN chmod 644 /home/user/.venv/lib/python3.11/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
 RUN chown -R 1000:1000 /home/user/.venv
 
 # Set the working directory and entrypoint

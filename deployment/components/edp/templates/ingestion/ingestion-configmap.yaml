@@ -7,6 +7,7 @@ metadata:
   name: edp-ingestion-configmap
   namespace: edp
 data:
+  VECTOR_STORE: {{ .Values.ingestion.config.vector_store | quote }}
   VECTOR_ALGORITHM: {{ .Values.ingestion.config.vector_algorithm | quote }}
   VECTOR_DIMS: {{ .Values.ingestion.config.vector_dims | quote }}
   VECTOR_DATATYPE: {{ .Values.ingestion.config.vector_datatype | quote }}

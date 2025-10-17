@@ -1,0 +1,21 @@
+{{- if index .Values "pgvector" "enabled" }} 
+{{- if index .Values "pgvector" "persistence" "enabled" -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgvector-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: pgvector
+    app.kubernetes.io/instance: pgvector
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pgvector.persistence.size | default "10Gi" | quote }}
+{{- end -}}
+{{- end -}}

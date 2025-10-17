@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch, MagicMock
 from minio.error import S3Error
 from app.main import app
@@ -166,6 +167,7 @@ def test_presigned_url():
             "object_name": "my-object",
             "method": method
         }
+        os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
         with patch('app.main.generate_presigned_url') as mock_generate_presigned_url:
             mock_generate_presigned_url.return_value = "http://example.com/presigned-url"
             response = client.post('/api/presignedUrl', json=payload)
@@ -181,6 +183,7 @@ def test_presigned_url_missing_data():
             "method": 'GET'
         }
         payload[field] = ""
+        os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
         with patch('app.main.generate_presigned_url') as mock_generate_presigned_url:
             mock_generate_presigned_url.return_value = "http://example.com/presigned-url"
             response = client.post('/api/presignedUrl', json=payload)
@@ -195,6 +198,7 @@ def test_presigned_url_s3_error():
             "object_name": "my-object",
             "method": method
         }
+        os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
         with patch('app.main.generate_presigned_url' ) as mock_generate_presigned_url:
             mock_generate_presigned_url.side_effect = S3Error(
                 code='NoSuchBucket',
@@ -216,7 +220,7 @@ def test_presigned_url_wrong_method():
             "object_name": "my-object",
             "method": method
         }
-
+        os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
         response = client.post('/api/presignedUrl', json=payload)
         assert response.status_code == 400
         assert response.json() == {'detail': 'Invalid method'}

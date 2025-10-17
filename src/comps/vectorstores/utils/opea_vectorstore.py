@@ -47,7 +47,8 @@ class OPEAVectorStore():
 
         self._SUPPORTED_VECTOR_STORES = {
             "redis": self._import_redis,
-            "redis-cluster": self._import_redis
+            "redis-cluster": self._import_redis,
+            "pgvector": self._import_pgvector,
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
@@ -150,3 +151,13 @@ class OPEAVectorStore():
             self.vector_store = ConnectorRedis()
         except ModuleNotFoundError:
             logger.exception("exception when loading ConnectorRedis")
+
+    def _import_pgvector(self):
+        """
+        Imports the ConnectorPgVector connector.
+        """
+        try:
+            from comps.vectorstores.utils.connectors.connector_pgvector import ConnectorPgVector
+            self.vector_store = ConnectorPgVector()
+        except ModuleNotFoundError:
+            logger.exception("exception when loading ConnectorPgVector")

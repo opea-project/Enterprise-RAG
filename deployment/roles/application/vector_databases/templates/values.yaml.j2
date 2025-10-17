@@ -3,9 +3,18 @@ Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
-vector_database_password: {{ REDIS_PASSWORD }}
+{% if vector_databases.vector_store == "pgvector" %}
+vector_database_password: {{ POSTGRES_PASSWORD }}
+vector_database_username: {{ vector_database_connection_username | default("edp") }}
+vector_database_name: {{ vector_database_name | default("vdb") }}
+
+pgvector:
+  enabled: true
+
+{% endif %}
 
 {% if vector_databases.vector_store == "redis" %}
+vector_database_password: {{ REDIS_PASSWORD }}
 
 redis:
   enabled: true
@@ -16,6 +25,7 @@ redis:
 {% endif %}
 
 {% if vector_databases.vector_store == "redis-cluster" %}
+vector_database_password: {{ REDIS_PASSWORD }}
 
 redis-cluster:
   password: {{ REDIS_PASSWORD }}

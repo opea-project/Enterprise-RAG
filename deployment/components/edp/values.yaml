@@ -25,6 +25,7 @@ edpSecretKey: ""
 edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 edpOidcClientSecret: ""
 bucketNameRegexFilter: '.*'
+presignedUrlCredentialsSystemFallback: "false"
 
 minioApiDomain: &minioApiDomain "s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "minio.erag.com"
@@ -586,6 +587,11 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: RERANKER_ENDPOINT
+    - name: "PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     rbac:

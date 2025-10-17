@@ -4,6 +4,8 @@
 import os
 from typing import List, Union
 import uuid
+
+import urllib3
 import validators
 from datetime import timedelta
 from datetime import datetime, timezone
@@ -186,17 +188,34 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
     try:
         credentials = None
         access_token = request.headers.get('Authorization')
+        token_fallback = str(os.getenv('PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK')).lower() in ['true', '1', 't', 'y', 'yes']
         if access_token:
             access_token = access_token.replace('Bearer ', '')
             token = { "access_token": access_token }
             local_client = get_local_minio_client_using_token_credentials(token)
-            local_client._provider.retrieve()
-            credentials = local_client._provider._credentials
+            try:
+                local_client._provider.retrieve() # throws ValueError
+                credentials = local_client._provider._credentials
+            except (ValueError, urllib3.exceptions.MaxRetryError) as e:
+                if token_fallback:
+                    logger.warning(f"Falling back to system credentials for presignedUrl due to a problem with retrieving token credentials. {e}")
+                    credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
+                else:
+                    raise ValueError("PresignedUrl generation failed using token credentials and system fallback is disabled.")
+        else:
+            if token_fallback:
+                logger.warning("Falling back to system credentials for presignedUrl since no Authorization header was provided.")
+                credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
+            else:
+                raise ValueError("Authorization header is required for token credentials and system fallback is disabled.")
         url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
-        logger.debug(f"Generated presigned url for [{method}] {bucket_name}/{object_name}")
+        logger.debug(f"Generated presignedUrl for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
     except S3Error as e:
         logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=400, detail="An error occurred while generating a presigned URL.")
+    except ValueError as e:
+        logger.error(f"Error when generating presignedUrl: {e}")
         raise HTTPException(status_code=400, detail="An error occurred while generating a presigned URL.")
 
 @app.get('/api/list_buckets')

@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-Text_Compression_Microservice"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "docarray[full] == 0.40.0",

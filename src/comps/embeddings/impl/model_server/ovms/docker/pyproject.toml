@@ -4,7 +4,7 @@
 [project]
 name = "Intel-Enterprise-RAG-Embedding-OpenVINO"
 version = "1.0.1"
-requires-python = "==3.12.*"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "openvino_tokenizers==2025.0.0.0",

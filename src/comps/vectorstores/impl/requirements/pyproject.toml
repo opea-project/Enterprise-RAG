@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-VectorStores"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "shortuuid==1.0.13",

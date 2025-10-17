@@ -66,8 +66,8 @@ Feel free to check out the architecture of the pipeline. For the detailed micros
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
 | Operating System    | Ubuntu 22.04/24.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
-| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                        |
-| Python              | 3.10                                                                                                               |
+| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                       |
+| Python              | 3.11                                                                                                              |
 
 ## Software Prerequisites
 - **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. Default models can be inspected in [config.yaml](deployment/inventory/sample/config.yaml).

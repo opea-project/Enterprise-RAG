@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-Hierarchical_Dataprep_Microservice"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "aiohttp==3.12.14",
@@ -13,16 +13,16 @@ dependencies = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "prometheus-fastapi-instrumentator==7.0.0",
-    "numpy==1.26.4",
+    "numpy==2.1.0",
     "docarray[full]==0.40.0",
     "httpx==0.28.1",
     "h11==0.16.0",
     "uvicorn==0.30.1",
     "huggingface_hub==0.24.5",
-    "langchain==0.3.6",
-    "langchain-community==0.3.0",
-    "langchain-text-splitters==0.3.0",
-    "langsmith==0.1.125",
+    "langchain==0.3.26",
+    "langchain-community==0.3.27",
+    "langchain-text-splitters==0.3.9",
+    "langsmith==0.3.45",
     "pypdf==6.0.0",
     "openai==1.77.0",
     "shortuuid==1.0.13",

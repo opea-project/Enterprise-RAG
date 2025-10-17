@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-Chat_History_Microservice"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "beanie==1.26.0",
@@ -17,7 +17,7 @@ dependencies = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "opentelemetry-semantic-conventions==0.46b0",
-    "Pillow==10.3.0",
+    "Pillow==11.3.0",
     "prometheus-fastapi-instrumentator==7.0.0",
     "pymongo==4.8.0",
     "pyyaml==6.0.1",

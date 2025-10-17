@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-Ingestion_Microservice"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "Intel_Enterprise_RAG-VectorStores",
@@ -14,7 +14,7 @@ dependencies = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "prometheus-fastapi-instrumentator==7.0.0",
-    "numpy==1.26.4",
+    "numpy==2.1.0",
     "docarray[full]==0.40.0",
     "uvicorn==0.30.1",
     "starlette==0.47.2",

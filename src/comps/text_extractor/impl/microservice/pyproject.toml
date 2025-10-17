@@ -4,7 +4,7 @@
 [project]
 name = "Intel_Enterprise_RAG-Text_Extractor_Microservice"
 version = "1.4.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "fastapi==0.116.1",
@@ -16,11 +16,11 @@ dependencies = [
     "docarray[full]==0.40.0",
     "uvicorn==0.30.1",
     "beautifulsoup4==4.12.3",
-    "huggingface_hub==0.26.0",
-    "langchain==0.3.25",
-    "langchain-community==0.3.24",
-    "langchain-text-splitters==0.3.8",
-    "langsmith==0.1.125",
+    "huggingface_hub==0.34.0",
+    "langchain==0.3.26",
+    "langchain-community==0.3.27",
+    "langchain-text-splitters==0.3.9",
+    "langsmith==0.3.45",
     "markdown==3.0.0",
     "pandas==2.2.2",
     "Pillow==11.3.0",
@@ -42,7 +42,7 @@ dependencies = [
     "torch==2.7.1",
     "torchvision==0.22.1",
     "h11==0.16.0",
-    "transformers==4.50.0",
+    "transformers==4.53.0",
     "markitdown==0.1.2",
     "setuptools == 80.9.0",     # security update
     "requests == 2.32.4",

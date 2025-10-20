@@ -11,7 +11,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class OPEALlm:
-    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic", disable_streaming: Optional[bool] = False, llm_output_guard_exists: Optional[bool] = True, headers: Optional[Dict[str, str]] = None):
+    def __init__(self, model_name: str, model_server: str, model_server_endpoint: str, connector_name: Optional[str] = "generic", disable_streaming: Optional[bool] = False, llm_output_guard_exists: Optional[bool] = True, openai_format_streaming: Optional[bool] = False, headers: Optional[Dict[str, str]] = None):
         """
         Initialize the OPEALlm instance with the given parameters.
 
@@ -19,6 +19,7 @@ class OPEALlm:
         :param model_server: Server hosting the LLM model.
         :param model_server_endpoint: Endpoint for the LLM model server.
         :param connector_name: Connector name for the LLM.
+        :param openai_format_streaming: Whether to use OpenAI-compliant streaming format (default: False).
 
         Raises:
             ValueError: If any of the required environment variables are missing or empty.
@@ -30,6 +31,7 @@ class OPEALlm:
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
+        self._openai_format_streaming = openai_format_streaming
         self._validate_config()
         self._connector = self._get_connector()
 
@@ -43,7 +45,7 @@ class OPEALlm:
             return langchain_connector.LangchainLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists, self._headers)
         elif self._connector_name.upper() == "GENERIC" or not self._connector_name.strip():
             from comps.llms.utils.connectors import generic_connector
-            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists, self._headers)
+            return generic_connector.GenericLLMConnector(self._model_name, self._model_server, self._model_server_endpoint, self._disable_streaming, self._llm_output_guard_exists, self._openai_format_streaming, self._headers)
         else:
             raise ValueError(f"Invalid connector name: {self._connector_name}. Expected to be either 'langchain', 'generic', or unset.")
 

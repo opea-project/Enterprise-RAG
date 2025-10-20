@@ -7,7 +7,9 @@ import numpy as np
 from docarray import BaseDoc, DocList
 from docarray.documents import AudioDoc
 from docarray.typing import AudioUrl
-from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat
+from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat, NonNegativeInt
+
+from .api_protocol import ChatCompletionResponseChoice
 
 class ComponentArgument(BaseDoc):
     name: str
@@ -140,8 +142,8 @@ class TextCompressionInput(BaseDoc):
 
 class TextSplitterInput(BaseDoc):
     loaded_docs: List[TextDoc]
-    chunk_size: Optional[int] = None
-    chunk_overlap: Optional[int] = None
+    chunk_size: Optional[PositiveInt] = None
+    chunk_overlap: Optional[NonNegativeInt] = None
     use_semantic_chunking: Optional[bool] = None
     semantic_chunk_params: Optional[Dict[str, Any]] = None
 
@@ -350,6 +352,8 @@ class TextDocList(BaseDoc):
     docs: List[TextDoc]
     history_id: Optional[str] = None
     dataprep_guardrail_params: Optional[LLMGuardDataprepGuardrailParams] = None
+    summary_type: Optional[str] = None
+    stream: Optional[bool] = True
 
 class LLMPromptTemplate(BaseDoc):
     role: Literal["system", "user", "assistant"]
@@ -368,17 +372,6 @@ class LLMParamsDoc(BaseDoc):
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
     data: Optional[Dict[str, Any]] = None
-
-class ChatCompletionMessage(BaseModel):
-    role: str
-    content: str
-    audio: Optional[Dict[str, Any]] = None
-
-class ChatCompletionResponseChoice(BaseModel):
-    index: int
-    message: ChatCompletionMessage
-    finish_reason: Optional[Literal["stop", "length"]] = None
-    metadata: Optional[Dict[str, Any]] = None
 
 class GeneratedDoc(BaseDoc):
     text: str

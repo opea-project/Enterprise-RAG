@@ -28,7 +28,6 @@ from comps.cores.proto.docarray import (
     DocPath,
     EmbedDoc,
     GeneratedDoc,
-    ChatCompletionResponseChoice,
     GraphDoc,
     LLMParamsDoc,
     LLMPromptTemplate,

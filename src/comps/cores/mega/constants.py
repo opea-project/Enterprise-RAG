@@ -51,6 +51,7 @@ class ServiceType(Enum):
     TEXT2KG = 33
     STRUCT2GRAPH = 34
     # End GenAIComps exclusive
+    DOC_SUMMARY = 35
 
 
 class MegaServiceEndpoint(Enum):

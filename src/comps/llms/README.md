@@ -53,6 +53,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
+| `LLM_OPENAI_FORMAT_STREAMING`   | When set to "True" (default), uses OpenAI-compliant JSON streaming format. When "False", uses legacy string format.   |
 
 Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
 | `LLM_VLLM_CLIENT_ID`                      | The id of the client in auth provider |
@@ -207,7 +208,9 @@ The following examples demonstrate the LLM microservice output in both non-strea
   "output_guardrail_params":null
 }
 ```
-- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated.
+
+**With default format** (when `LLM_OPENAI_FORMAT_STREAMING=False`):
 ```
 data: '\n'
 data: 'Deep'
@@ -223,6 +226,16 @@ data: ' uses'
 data: ' artificial'
 data: ' neural'
 data: ' networks'
+data: [DONE]
+```
+
+  **With OpenAI-compliant format** (default, when `LLM_OPENAI_FORMAT_STREAMING=True`):
+```
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":"Deep"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" learning"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" is"},"finish_reason":null}]}
+...
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}]}
 data: [DONE]
 ```
 
@@ -242,7 +255,9 @@ If additional data is passed in LLMParamsDoc.data attribute, additional data is 
   "data": { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 }
 ```
-- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated.
+
+**With default format** (when `LLM_OPENAI_FORMAT_STREAMING=False`):
 ```
 data: '\n'
 data: 'Deep'
@@ -258,6 +273,17 @@ data: ' uses'
 data: ' artificial'
 data: ' neural'
 data: ' networks'
+data: [DONE]
+json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
+```
+
+**With OpenAI-compliant format** (default, when `LLM_OPENAI_FORMAT_STREAMING=True`):
+```
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":"Deep"},"finish_reason":null}]}
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" learning"},"finish_reason":null}]}
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" is"},"finish_reason":null}]}
+...
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}]}
 data: [DONE]
 json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 ```

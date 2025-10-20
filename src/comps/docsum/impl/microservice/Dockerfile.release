@@ -1,0 +1,11 @@
+FROM docsum-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/docsum
+CMD ["python", "opea_docsum_microservice.py"]

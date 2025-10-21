@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Literal, Dict, Optional, Tuple, Any
+from typing import List, Literal, Dict, Optional, Tuple, Any, Union
 
 import numpy as np
 from docarray import BaseDoc, DocList
@@ -41,6 +41,7 @@ class TextDoc(BaseDoc, TopologyInfo):
     text: str
     metadata: Optional[dict] = {}
     history_id: Optional[str] = None
+    return_pooling: Optional[bool] = None
 
     def to_reranked_doc(self):
         if self.metadata and 'url' in self.metadata:
@@ -88,7 +89,7 @@ class DocPath(BaseDoc):
 
 class EmbedDoc(BaseDoc):
     text: str
-    embedding: conlist(float, min_length=0)
+    embedding: Union[conlist(float, min_length=0), conlist(conlist(float, min_length=0), min_length=0)]
     search_type: str = "similarity"
     k: PositiveInt = 10
     distance_threshold: Optional[float] = None
@@ -352,6 +353,7 @@ class TextDocList(BaseDoc):
     docs: List[TextDoc]
     history_id: Optional[str] = None
     dataprep_guardrail_params: Optional[LLMGuardDataprepGuardrailParams] = None
+    return_pooling: Optional[bool] = None
     summary_type: Optional[str] = None
     stream: Optional[bool] = True
 

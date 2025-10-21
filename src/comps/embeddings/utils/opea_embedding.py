@@ -93,7 +93,7 @@ class OPEAEmbedding:
             if input.text.strip() == "":
                 raise ValueError("Input text is empty. Provide a valid input text.")
 
-            embed_vector = await self.embed_documents([input.text])
+            embed_vector = await self.embed_documents(texts=[input.text], return_pooling=input.return_pooling)
             if len(embed_vector) == 1 and isinstance(embed_vector[0], list):
                 embed_vector = embed_vector[0]
             res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
@@ -110,7 +110,7 @@ class OPEAEmbedding:
             async def multithreaded_embed_query(i, batch, semaphore):
                 async with semaphore:
                     texts = [doc.text for doc in batch]
-                    res_vectors = await self.embed_documents(texts)
+                    res_vectors = await self.embed_documents(texts=texts, return_pooling=input.return_pooling)
 
                     if len(res_vectors) == 1:
                         res_vector = res_vectors[0]

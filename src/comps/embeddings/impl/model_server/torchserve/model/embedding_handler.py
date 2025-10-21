@@ -42,6 +42,12 @@ from ts.torch_handler.base_handler import BaseHandler
 
 logger = logging.getLogger(__name__)
 
+# List of models that require trust_remote_code=True for proper functionality.
+TRUSTED_MODELS = [
+    "jinaai/jina-embeddings-v2-base-en",
+    # Add more trusted models here as needed
+]
+
 # The handler is responsible for defining how a model processes incoming requests during inference
 
 class EmbeddingHandler(BaseHandler, ABC):
@@ -87,7 +93,13 @@ class EmbeddingHandler(BaseHandler, ABC):
             pass
 
         try:
-            self.model = sentence_transformers.SentenceTransformer(model_name)
+            trust_remote_code = False
+            if model_name.lower() in TRUSTED_MODELS:
+                logger.info(f"Model '{model_name}' is in trusted list. Loading with trust_remote_code=True.")
+                trust_remote_code = True
+
+            self.model = sentence_transformers.SentenceTransformer(model_name, device=self.device_type, trust_remote_code=trust_remote_code)
+
             self.model = self.model.to(memory_format=torch.channels_last)
             self.model.eval()
 
@@ -106,39 +118,92 @@ class EmbeddingHandler(BaseHandler, ABC):
 
     def preprocess(self, requests):
         texts = []
-        logger.debug(f"Received requests: {requests}")
 
         bodies = [data.get("data") or data.get("body") for data in requests]
 
         for body in bodies:
             input_text = body['inputs']
+            parameters = body.get('parameters', {})
 
             t_b = [t.strip().replace("\n", " ") for t in input_text]
-            texts.append(t_b)
 
-        logger.debug(f"Received texts: {texts}")
+            texts.append({"text": t_b, "return_pooling": parameters.get("return_pooling", False)})
+
         return texts
 
-    def _run_embedding_model(self, input_batch):
-        with torch.inference_mode(), torch.no_grad(), self.additional_context:
-            embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
-        
-        return embeddings.tolist()
+
+    def _run_embedding_model(self, input_batch, return_pooling=False):
+
+        if return_pooling:
+            # for late chunking use case
+            logger.debug("The parameter return_pooling is set to True. Generating embeddings using model output's last_hidden_state.")
+            with torch.inference_mode(), torch.no_grad(), self.additional_context:
+                inputs = self.model.tokenizer(input_batch, padding=True, truncation=True, return_tensors='pt')
+                model_output = self.model._first_module().auto_model(**inputs)
+                embeddings = model_output.last_hidden_state
+                return embeddings.tolist()
+
+        else:
+            # standard use case
+            logger.debug("The parameter return_pooling is set to False. Generating embeddings using model.encode().")
+            with torch.inference_mode(), torch.no_grad(), self.additional_context:
+                embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
+                return embeddings.tolist()
+
+
 
     def inference(self, input_batch):
         logger.debug(f"Received input_batch: {input_batch}")
 
         if len(input_batch) > 1:
-            # Batching detected
-            texts = []
+            #Batching detected
             num_texts_in_batch = []
+            pooling_flags = []
             
             for text_pair in input_batch:
-                num_texts_in_batch.append(len(text_pair))
-                texts.extend(text_pair)
-    
-            embeddings = self._run_embedding_model(texts)
+                num_texts_in_batch.append(len(text_pair["text"])) # record text length
+                pooling_flags.append(text_pair["return_pooling"]) # record pooling flag (boolean)
+
+
+            pooling_texts = [t["text"] for t in input_batch if t.get("return_pooling", True)]
+            non_pooling_texts = [t["text"] for t in input_batch if not t.get("return_pooling", True)]
+
+            # compute embeddings separately for each group
+            embeddings_pooling = []
+            embeddings_non_pooling = []
+
+            if pooling_texts:
+                    num_texts_in_pooling_texts = []
+                    texts = []
+                    for text_pair in pooling_texts:
+                        num_texts_in_pooling_texts.append(len(text_pair))
+                        texts.extend(text_pair)
             
+                    embeddings_pooling = self._run_embedding_model(
+                        pooling_texts,
+                        return_pooling=True
+                    )
+
+            if non_pooling_texts:
+                embeddings_non_pooling = self._run_embedding_model(
+                    non_pooling_texts,
+                    return_pooling=False
+                )
+ 
+            # merge the results for pooling and non-pooling texts
+            embeddings = []
+            pooling_index = 0
+            non_pooling_index = 0
+
+            for flag in pooling_flags:
+                if flag:
+                    embeddings.append(embeddings_pooling[pooling_index])
+                    pooling_index += 1
+                else:
+                    embeddings.append(embeddings_non_pooling[non_pooling_index])
+                    non_pooling_index += 1
+            
+            # reconstruct the original batch grouping
             og_embeddings = []
             index = 0
             for count in num_texts_in_batch:
@@ -148,8 +213,9 @@ class EmbeddingHandler(BaseHandler, ABC):
             
         else:
             # No Batching detected
+            logger.debug("No Batching detected")
             input_batch = input_batch[0]
-            embeddings = self._run_embedding_model(input_batch)
+            embeddings = self._run_embedding_model(input_batch["text"], input_batch["return_pooling"])
             return [embeddings]
 
 

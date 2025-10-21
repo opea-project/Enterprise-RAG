@@ -5,7 +5,7 @@ import asyncio
 from docarray import BaseDoc
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from comps import get_opea_logger
 from comps.embeddings.utils.connectors.connector import EmbeddingConnector
@@ -81,19 +81,26 @@ class LlamaIndexEmbedding(EmbeddingConnector):
 
         return SUPPORTED_INTEGRATIONS[self._model_server](model_name=self._model_name, base_url=self._endpoint, **kwargs)
 
-    async def embed_documents(self, input_text: List[str]) -> List[List[float]]:
+    async def embed_documents(self, input_text: List[str], **kwargs: Any) -> List[List[float]]:
         """
         Embeds a list of documents.
 
         Args:
-            texts (List[str]): The list of documents to embed.
+            input_text (List[str]): The list of documents to embed.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             List[List[float]]: The embedded document(s).
 
         """
         try:
+            if kwargs.get("return_pooling"):
+                logger.warning(
+                    "The 'return_pooling' argument is not supported for this LlamaIndex connector and will be ignored."
+                    )
+            
             output = await self._embedder._aget_text_embeddings(input_text)
+
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise

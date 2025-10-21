@@ -6,7 +6,7 @@ import json
 
 from langchain_core.embeddings import Embeddings
 from langchain_huggingface import HuggingFaceEndpointEmbeddings
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from comps import get_opea_logger
 from comps.embeddings.utils.connectors.connector import EmbeddingConnector
@@ -194,7 +194,7 @@ class LangchainEmbedding(EmbeddingConnector):
 
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 
-    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str], **kwargs: Any) -> List[List[float]]:
         """
         Embeds a list of documents.
 
@@ -205,6 +205,7 @@ class LangchainEmbedding(EmbeddingConnector):
             List[List[float]]: The embedded documents.
         """
         try:
+            self._embedder.model_kwargs = kwargs
             output = await self._embedder.aembed_documents(texts)
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")

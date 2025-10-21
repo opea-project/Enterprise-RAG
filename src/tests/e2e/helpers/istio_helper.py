@@ -495,7 +495,7 @@ class IstioHelper:
             elif query_workloads == []:
                 valid_dest_check = LogCheck(False, "no workloads found for query endpoint")
             elif m.group("workload") not in query_workloads:
-                valid_dest_check = LogCheck(False, f"workload {m.group("workload")} not in valid workloads for query {query_workloads}")
+                valid_dest_check = LogCheck(False, f"workload {m.group('workload')} not in valid workloads for query {query_workloads}")
             valid_logline_ts_check = LogCheck(False, "")
             if logline_ts is None:
                 valid_logline_ts_check = LogCheck(False, "no timestamp in log line")
@@ -536,26 +536,25 @@ class IstioHelper:
         # test if query has changed state due to timeout
         if self.handle_query_state_deadline(query):
             return
-        match start_state:
-            case QueryState.SELECTED:
-                self.prepare_query(query)
-                query.set_state(QueryState.PREPARING)
-            case QueryState.PREPARING:
-                pod = self.query_pods[query.query_key]
-                if pod.get_ready():
-                    logger.debug(f"Pod is ready for query {query.query_key}; pod_ip is {pod.pod_ip}")
-                    query.set_state(QueryState.READY)
-            case QueryState.READY:
-                self.execute_query(query)
-                if query.state == start_state: # unchanged by method
-                    query.set_state(QueryState.EXECUTED, ERROR_LOG_TIMEOUT_SEC)
-            case QueryState.EXECUTED:
-                self.verify_query_blocked(query)
-            case QueryState.NEW|QueryState.RETRY:
-                # handled in query loop
-                return
-            case _:
-                logger.info(f"Unhandled query state: {query.state}")
+        if start_state == QueryState.SELECTED:
+            self.prepare_query(query)
+            query.set_state(QueryState.PREPARING)
+        elif start_state == QueryState.PREPARING:
+            pod = self.query_pods[query.query_key]
+            if pod.get_ready():
+                logger.debug(f"Pod is ready for query {query.query_key}; pod_ip is {pod.pod_ip}")
+                query.set_state(QueryState.READY)
+        elif start_state == QueryState.READY:
+            self.execute_query(query)
+            if query.state == start_state:  # unchanged by method
+                query.set_state(QueryState.EXECUTED, ERROR_LOG_TIMEOUT_SEC)
+        elif start_state == QueryState.EXECUTED:
+            self.verify_query_blocked(query)
+        elif start_state == QueryState.NEW or start_state == QueryState.RETRY:
+            # handled in query loop
+            return
+        else:
+            logger.info(f"Unhandled query state: {query.state}")
 
     def query_endpoints(self, connection_type: ConnectionType, endpoints: list[str]):
         self.query_multiple_endpoints({e: connection_type for e in endpoints})
@@ -654,24 +653,44 @@ class IstioHelper:
         return connections_not_blocked
 
     def build_test_command(self, query_key: ServiceQueryKey):
-        match query_key.connection_type:
-            case ConnectionType.HTTP:
-                command = ['sh', '-c', 'echo "ts:$(date +%s.%N)"; echo; '+ f"curl -s -o /dev/null -w '%{{http_code}}' {query_key.endpoint} >/dev/null 2>&1 || true"]
-            case ConnectionType.REDIS:
-                redis_port = query_key.endpoint.split(":")[-1]
-                host = query_key.endpoint.split(":")[0]
-                command = ['sh', '-c', 'echo "ts:$(date +%s.%N)"; echo; '+ f"redis-cli -h {host} -p {redis_port} QUIT >/dev/null 2>&1 || true"]
-            case ConnectionType.POSTGRESQL:
-                port = query_key.endpoint.split(":")[-1]
-                host = query_key.endpoint.split(":")[0]
-                command = ['sh', '-c', 'echo "ts:$(date +%s.%N)"; echo; '+ f"psql -h {host} -p {port} -U postgres >/dev/null 2>&1 || true"]
-            case ConnectionType.MONGODB:
-                host = query_key.endpoint.split(":")[0]
-                port = query_key.endpoint.split(":")[-1]
-                command = ['sh', '-c', 'echo "ts:$(date +%s.%N)"; echo; '+ f"mongo --host {host} --port {port} --eval 'db.runCommand({{connectionStatus: 1}})' >/dev/null 2>&1 || true"]
-            case _:
-                logger.info(f"Error: unsupported connection type {query_key.connection_type} to {query_key.endpoint}")
-                return None
+        if query_key.connection_type == ConnectionType.HTTP:
+            command = [
+                'sh',
+                '-c',
+                'echo "ts:$(date +%s.%N)"; echo; ' +
+                f"curl -s -o /dev/null -w '%{{http_code}}' {query_key.endpoint} >/dev/null 2>&1 || true"
+            ]
+        elif query_key.connection_type == ConnectionType.REDIS:
+            redis_port = query_key.endpoint.split(":")[-1]
+            host = query_key.endpoint.split(":")[0]
+            command = [
+                'sh',
+                '-c',
+                'echo "ts:$(date +%s.%N)"; echo; ' +
+                f"redis-cli -h {host} -p {redis_port} QUIT >/dev/null 2>&1 || true"
+            ]
+        elif query_key.connection_type == ConnectionType.POSTGRESQL:
+            port = query_key.endpoint.split(":")[-1]
+            host = query_key.endpoint.split(":")[0]
+            command = [
+                'sh',
+                '-c',
+                'echo "ts:$(date +%s.%N)"; echo; ' +
+                f"psql -h {host} -p {port} -U postgres >/dev/null 2>&1 || true"
+            ]
+        elif query_key.connection_type == ConnectionType.MONGODB:
+            host = query_key.endpoint.split(":")[0]
+            port = query_key.endpoint.split(":")[-1]
+            command = [
+                'sh',
+                '-c',
+                'echo "ts:$(date +%s.%N)"; echo; ' +
+                f"mongo --host {host} --port {port} --eval 'db.runCommand({{connectionStatus: 1}})' >/dev/null 2>&1 || true"
+            ]
+        else:
+            logger.info(f"Error: unsupported connection type {query_key.connection_type} to {query_key.endpoint}")
+            return None
+
         return command
 
     def run_query_test(self, query_key: ServiceQueryKey, pod: TestPod):

@@ -79,7 +79,7 @@ def suppress_logging():
 
 
 @pytest.fixture(scope="session")
-def k8s_helper(request):
+def k8s_helper(request, suppress_logging):
     return K8sHelper()
 
 

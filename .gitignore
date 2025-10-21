@@ -62,4 +62,6 @@ deployment/default_credentials.txt
 **/tmp_corpus.txt
 src/tests/e2e/evals/evaluation/rag_eval/examples/output/
 
-
+# UI test framework dependencies and results
+src/tests/node_modules
+test-results

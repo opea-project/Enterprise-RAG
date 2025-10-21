@@ -311,13 +311,16 @@ class EdpHelper(ApiRequestHelper):
             # all files from filenames should be present in the EDP
             if not (filenames & filenames_in_edp == filenames):
                 if fails_remaining > 0:
+
                     fails_remaining -= 1
-                    logger.warning(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}")
+                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
+                    logger.warning(f"Not all files are present in the EDP:\n{missing_files}")
                     logger.warning(f"Will wait {SLEEP_INTERVAL}s.. Remaining checks: {fails_remaining}/{MAX_RDP_REGISTER_RETRIES}")
                     time.sleep(SLEEP_INTERVAL)
                     continue
                 else:
-                    raise RuntimeError(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}, failed {MAX_RDP_REGISTER_RETRIES} times.")
+                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
+                    raise RuntimeError(f"Not all files are present in the EDP:\n{missing_files}, failed {MAX_RDP_REGISTER_RETRIES} times.")
 
             filenames_ingested = set([f["object_name"] for f in edp_files if f["status"] == "ingested"])
             if filenames & filenames_ingested == filenames:

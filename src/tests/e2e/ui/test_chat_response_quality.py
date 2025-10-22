@@ -108,7 +108,7 @@ class LocalResponseEvaluator:
         if expected_keywords:
             expected_words = set(kw.lower() for kw in expected_keywords)
             found_keywords = len(expected_words & response_words)
-            keyword_bonus = (found_keywords / len(expected_keywords)) * 0.3 if expected_keywords else 0
+            keyword_bonus = (found_keywords / len(expected_keywords)) * 0.3
             relevance = min(1.0, relevance + keyword_bonus)
         
         return relevance

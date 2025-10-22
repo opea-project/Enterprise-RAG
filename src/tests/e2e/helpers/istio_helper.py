@@ -330,6 +330,7 @@ class LogWatcher(threading.Thread):
         # Fetch all ztunnel pods
         initialize_stop = time.time() + LogWatcher.INITIALIZE_WAIT_TIME_SEC
         initialize_retries = 0
+        pods = []
         while time.time() < initialize_stop and initialize_retries < LogWatcher.INITIALIZE_RETRIES:
             pods = kr8s.get("pods", namespace=ztunnel_namespace, label_selector=ztunnel_label_selector)
             if len(pods) >= 1:

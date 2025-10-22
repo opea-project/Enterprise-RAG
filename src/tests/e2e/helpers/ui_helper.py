@@ -223,9 +223,7 @@ class ChatUIHelper:
             if not element_handle:
                 return None
             texts = await element_handle.evaluate("(el) => { const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false); const arr = []; let node; while ((node = walker.nextNode())) { const t = node.textContent.trim(); if (t) arr.push(t); } return arr; }")
-            if texts and isinstance(texts, list):
-                return ' '.join(texts) if texts else None
-            return None
+            return ' '.join(texts)
         except Exception as e:
             logger.debug(f"_extract_message_text failed: {e}")
             return None

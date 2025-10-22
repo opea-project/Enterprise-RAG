@@ -4,7 +4,7 @@
 ---
 - name: Set up port forwarding for Keycloak service
   ansible.builtin.command: >
-    kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80
+    kubectl port-forward svc/keycloak-http -n {{ keycloak.namespace }} {{ keycloak.fport }}:80
   async: 180
   poll: 0
   register: port_forward_job
@@ -39,6 +39,6 @@
 
 - name: Stop port forwarding
   ansible.builtin.command: >
-    pkill -f "kubectl port-forward svc/keycloak -n {{ keycloak.namespace }} {{ keycloak.fport }}:80"
+    pkill -f "kubectl port-forward svc/keycloak-http -n {{ keycloak.namespace }} {{ keycloak.fport }}:80"
   tags:
     - install

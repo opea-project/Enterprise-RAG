@@ -45,7 +45,7 @@ edpInternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.e
 bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
 {% endif %}
 
-edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 
 redisUsername: {{ edp.redis.auth.user.db_username }}
 redisPassword: "{{ EDP_REDIS_PASSWORD }}"

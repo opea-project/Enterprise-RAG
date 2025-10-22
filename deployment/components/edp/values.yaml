@@ -22,7 +22,7 @@ edpBaseRegion: 'us-east-1'
 edpSqsEventQueueUrl: ""
 edpAccessKey: ""
 edpSecretKey: ""
-edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 edpOidcClientSecret: ""
 bucketNameRegexFilter: '.*'
 presignedUrlCredentialsSystemFallback: "false"

@@ -51,7 +51,7 @@
     noProxy: >-
       {{
         (['localhost', '.svc', '.monitoring', '.monitoring-traces'] +
-         (additionalNoProxy.split(',') if (additionalNoProxy is defined and additionalNoProxy != '') else [])) |
+         ((additionalNoProxy | default('', true)) | string | split(',') | list)) |
         reject('equalto', '') |
         list |
         unique |

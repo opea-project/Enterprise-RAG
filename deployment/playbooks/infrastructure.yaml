@@ -27,11 +27,11 @@
         local_path_provisioner_enabled: "{{ install_csi == 'local-path-provisioner' }}"
         kubeconfig_localhost: true
         kube_version: "{{ k8s_version | default('1.31.9') }}"
-        supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + groups['kube_control_plane'] | map('extract', hostvars, ['ansible_host']) | list }}"
+        supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + (groups['kube_control_plane'] | default([]) | map('extract', hostvars, ['ansible_host']) | list) }}"
 
 - name: Pre-setup tasks
   become: false
-  hosts: local
+  hosts: localhost
   tasks:
     - name: Pre-configure environment role
       ansible.builtin.include_role:
@@ -102,7 +102,7 @@
 
 - name: Pre-deletion warnings
   become: false
-  hosts: local
+  hosts: localhost
   tags:
     - delete
     - never
@@ -127,7 +127,7 @@
 - name: Post-installation tasks
   become: false
   gather_facts: false
-  hosts: local
+  hosts: localhost
   vars:
     helm_timeout: 15m0s
     secure_logs: true
@@ -150,13 +150,15 @@
   tags:
     - delete
     - never
+  vars:
+    reset_confirmation: yes
   when:
     - deploy_k8s
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.reset
 
 - name: Remove Kubernetes cluster artifacts
   become: false
-  hosts: local
+  hosts: localhost
   tags:
     - delete
     - never

@@ -7,7 +7,7 @@
   tags:
     - build-images
 
-- name: Build and push images to the registry; This task can take up to 30 minutes
+- name: Build and push images to the registry; This task is highly dependand on network speed.
   command: >
     bash update_images.sh
     {% if setup_registry | default(false) %}

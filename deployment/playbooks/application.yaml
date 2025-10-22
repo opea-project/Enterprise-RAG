@@ -4,7 +4,11 @@
 - name: Install application
   hosts: localhost
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+    K8S_AUTH_KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != "" and kubeconfig != "FILL_HERE")
+        else lookup('env', 'KUBECONFIG')
+      }}
     KUSTOMIZE_HOME: "{{ playbook_dir }}/../renderer"
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
@@ -14,8 +18,7 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
     tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
-  tasks:
-
+  pre_tasks:
     # Pre-tasks section (initialization and configuration)
     - name: Pre-configure environment role
       ansible.builtin.include_role:
@@ -23,6 +26,14 @@
       tags:
         - configure
 
+    - name: Pre-install role
+      ansible.builtin.include_role:
+        name: pre_install
+      tags:
+        - install
+        - display-configuration
+        - uninstall
+  tasks:
     - name: Build and push images
       ansible.builtin.include_role:
         name: images
@@ -35,6 +46,7 @@
         tasks_from: verify_variables.yaml
       tags:
         - install
+        - display-configuration
 
     - name: TDX Attest
       ansible.builtin.include_role:
@@ -43,13 +55,6 @@
       tags:
         - install
       when: tdx.enabled and tdx.attestation.enabled
-
-    - name: Pre-install role
-      ansible.builtin.include_role:
-        name: pre_install
-      tags:
-        - install
-        - uninstall
 
     - name: Install NRI balloons policy
       include_role:
@@ -66,8 +71,6 @@
       tags:
         - install
         - uninstall
-
-    # Main roles section (core application components)
 
     - name: Istio role
       ansible.builtin.include_role:

@@ -47,8 +47,9 @@ kubeconfig: FILL_HERE  # Provide absolute path to kubeconfig (e.g. /home/ubuntu/
 
 httpProxy:
 httpsProxy:
-# If HTTP/HTTPS proxy is set, update the noProxy field with the following:
-noProxy: #"localhost,.svc,.monitoring,.monitoring-traces"
+# If HTTP/HTTPS proxy is set, you can specify additional noProxy entries:
+# Common entries like localhost,.svc,.monitoring,.monitoring-traces are automatically added
+additionalNoProxy: #"custom.domain.com,192.168.1.0/24"
 
 FQDN: "erag.com" # Provide the FQDN for the deployment
 

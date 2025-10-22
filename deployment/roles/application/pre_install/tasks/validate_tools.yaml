@@ -1,0 +1,171 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Initialize validation issues list
+  ansible.builtin.set_fact:
+    validation_issues: []
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Check if jq is installed
+  ansible.builtin.command:
+    cmd: jq --version
+  register: jq_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+    - validate-tools
+
+- name: Add jq validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['jq is required but not installed. Please install jq before continuing.'] }}"
+  when: jq_check.rc != 0
+  tags:
+    - install
+    - validate-tools
+
+- name: Check if curl is installed
+  ansible.builtin.command:
+    cmd: curl --version
+  register: curl_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+    - validate-tools
+
+- name: Add curl validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['curl is required but not installed on the control node. Please install curl before continuing.'] }}"
+  when: curl_check.rc != 0
+  tags:
+    - install
+    - validate-tools
+
+- name: Check if helm is installed
+  ansible.builtin.command:
+    cmd: helm version --short
+  register: helm_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Add helm validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['helm is required but not installed on the control node. Please install helm before continuing.'] }}"
+  when: helm_check.rc != 0
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Check if kubectl is installed
+  ansible.builtin.command:
+    cmd: kubectl version --client
+  register: kubectl_check
+  changed_when: false
+  ignore_errors: true
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Add kubectl validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['kubectl is required but not installed. Please install kubectl before continuing.'] }}"
+  when: kubectl_check.rc != 0
+  tags:
+    - install
+    - validate-tools
+
+- name: Validate if kubeconfig file exists
+  ansible.builtin.stat:
+    path: "{{ kubeconfig }}"
+  register: kubeconfig_file
+  ignore_errors: true
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Add kubeconfig file validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['The kubeconfig file \"' + kubeconfig + '\" does not exist.'] }}"
+  when: not kubeconfig_file.stat.exists
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Validate if kubeconfig can connect to the cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: kubeconfig_connection
+  ignore_errors: true
+  when: kubeconfig_file.stat.exists
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Add kubeconfig connection validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['Failed to connect to the Kubernetes cluster using the provided kubeconfig. Ensure the kubeconfig file \"' + kubeconfig + '\" is valid and the cluster is reachable.'] }}"
+  when:
+    - kubeconfig_file.stat.exists
+    - kubeconfig_connection is failed
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Display validation summary
+  ansible.builtin.debug:
+    msg: |
+
+      ==================== VALIDATION SUMMARY ====================
+
+      TOOLS VALIDATION SUCCESSFUL
+
+      All validation checks passed successfully!
+
+      Tool Validation:
+        • jq: {{ jq_check.stdout | default('installed') }}
+        • curl: {{ 'installed' if curl_check is defined and curl_check.rc == 0 else 'not found' }}
+        • docker: {{ 'installed' if docker_check is defined and docker_check.rc == 0 else 'not found' }}
+        • helm: {{ 'installed' if helm_check is defined and helm_check.rc == 0 else 'not found' }}
+        • kubectl: {{ 'installed' if kubectl_check is defined and kubectl_check.rc == 0 else 'not found' }}
+        • kubeconfig: {{ kubeconfig }} (exists and connects)
+
+      Ready to proceed with deployment!
+      ============================================================
+  when: validation_issues | length == 0
+  tags:
+    - install
+    - validate-tools
+
+- name: Fail with all validation issues
+  ansible.builtin.fail:
+    msg: |
+      VALIDATION FAILED
+
+      {{ validation_issues | length }} issue(s) must be resolved before continuing:
+
+      {% for issue in validation_issues %}
+      {{ loop.index }}. {{ issue }}
+      {% endfor %}
+
+      Please resolve all issues above and run the validation again.
+  when: validation_issues | length > 0
+  tags:
+    - install
+    - validate-tools
+    - uninstall

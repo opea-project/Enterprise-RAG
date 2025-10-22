@@ -31,6 +31,10 @@
       - software-properties-common
     state: present
     update_cache: true
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   tags:
     - configure
 

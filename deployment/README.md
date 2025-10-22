@@ -1,17 +1,18 @@
-# Intel® AI for Enterprise RAG deployment guide
+# Intel® AI for Enterprise RAG Deployment Guide
 
-This document details the deployment of Intel® AI for Enterprise RAG. By default, the guide assumes a Xeon deployment. If your hardware stack contains Gaudi, modify configuration values accordingly to deployment instructions.
+This document details the deployment of Intel® AI for Enterprise RAG using the unified installer script. By default, the guide assumes a Xeon deployment. If your hardware stack contains Gaudi, modify configuration values accordingly to deployment instructions.
 
 ## Table of Contents
 
 1. [Intel® AI for Enterprise RAG Deployment](#intel-ai-for-enterprise-rag-deployment)
-   1. [Virtual Environment Setup](#virtual-environment-setup)
-   2. [Validate Hardware Requirements](#validate-hardware-requirements)
-   3. [Install a Kubernetes cluster (optional - if you don't have one)](#install-a-kubernetes-cluster-optional---if-you-dont-have-one)
-   4. [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
-   5. [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
-   6. [Update application components (models, configurations) as needed](#update-application-components-models-configurations-as-needed)
-   7. [Create and restore backups of user data and configurations](#create-and-restore-backups-of-user-data-and-configurations)
+   1. [Prerequisites](#prerequisites)
+   2. [Virtual Environment Setup](#virtual-environment-setup)
+   3. [Configuration Setup](#configuration-setup)
+   4. [Validate Hardware Requirements](#validate-hardware-requirements)
+   5. [Complete Stack Deployment (Recommended)](#complete-stack-deployment-recommended)
+   6. [Manual Step-by-Step Deployment](#manual-step-by-step-deployment)
+   7. [Update Application Components](#update-application-components)
+   8. [Create and Restore Backups](#create-and-restore-backups)
 2. [Interact with ChatQnA](#interact-with-chatqna)
    1. [Test Deployment](#test-deployment)
    2. [Access the UI/Grafana](#access-the-uigrafana)
@@ -21,101 +22,392 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
    6. [Credentials for Enhanced Dataprep Pipeline (EDP)](#credentials-for-enhanced-dataprep-pipeline-edp)
    7. [Data Ingestion, UI and Telemetry](#data-ingestion-ui-and-telemetry)
    8. [Configure Single Sign-On Integration Using Microsoft Entra ID](#configure-single-sign-on-integration-using-microsoft-entra-id)
-3. [Remove the installation when no longer needed](#remove-the-installation-when-no-longer-needed)
+3. [Remove the Installation](#remove-the-installation)
 
 ---
 
 # Intel® AI for Enterprise RAG Deployment
 
-Intel® AI for Enterprise RAG contains [ansible playbooks](./playbooks) which provide a complete deployment workflow:
+Intel® AI for Enterprise RAG provides a unified installer script (`installer.sh`) that automates the complete deployment workflow:
 
-0. **Validate hardware requirements** (recommended before deployment)
-1. **Install a Kubernetes cluster** (optional - if you don't have one)
-2. **Install infrastructure components** (storage, operators, backup tools)
-3. **Deploy the Intel® AI for Enterprise RAG application** on top of the prepared infrastructure
-4. **Update application components** (models, configurations) as needed
-5. **Create and restore backups** of user data and configurations
-6. **Remove the installation** when no longer needed
+0. **Prerequisites setup** (passwordless sudo, configuration files)
+1. **Virtual environment initialization** (Python dependencies and Ansible)
+2. **Hardware validation** (recommended before deployment)
+3. **System configuration** (dependencies, tools, services)
+4. **Kubernetes cluster deployment** (optional - if you don't have one)
+5. **Infrastructure components installation** (storage, operators, backup tools)
+6. **Enterprise RAG application deployment** (complete application stack)
+7. **Update and maintenance** (models, configurations, backups)
+8. **Cleanup and removal** (when no longer needed)
 
-The validation step helps ensure your hardware meets the minimum requirements for Intel® AI for Enterprise RAG before proceeding with the deployment. The following sections guide you through each of these steps.
+The installer script provides both automated complete stack deployment and granular step-by-step control for advanced users.
+
+## Prerequisites
+
+### Passwordless Sudo Configuration
+
+The installer requires passwordless sudo for system-level operations. Configure this by running:
+
+```bash
+echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/erag-installer
+```
+
+> [!WARNING]
+> This grants passwordless sudo access. For production environments, consider limiting sudo privileges to specific commands needed by the installer.
+
+#### Alternative Password Management
+
+If passwordless sudo is not desired or possible, you can manage sudo passwords through Ansible inventory variables:
+
+**Option 1: Using ansible_become_pass in inventory**
+```ini
+[all]
+server1 ansible_host=192.168.1.10 ansible_become_pass=your_sudo_password
+server2 ansible_host=192.168.1.11 ansible_become_pass=your_sudo_password
+```
+
+**Option 2: Using Ansible Vault for encrypted passwords**
+Ansible Vault can be used to encrypt sensitive password information in inventory files for enhanced security.
+
+### System Requirements
+
+- **Operating System**: Ubuntu/Debian (tested on Ubuntu 20.04+)
+- **Python**: Python 3.8 or higher with venv module
+- **Connectivity**: Internet access for downloading dependencies
+- **Hardware**: See hardware validation section for specific requirements
 
 ## Virtual Environment Setup
 
-Playbooks can be executed after creating a virtual environment and installing all prerequisites that allow running ansible on your local machine. Use the below script to create a virtual environment:
+Initialize the Python virtual environment with all required dependencies:
 
-```sh
+```bash
 cd deployment
-sudo apt-get install python3-venv
-python3 -m venv erag-venv
-source erag-venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-ansible-galaxy collection install -r requirements.yaml --upgrade
+./installer.sh setup python-env
 ```
+
+This command will:
+- Create a Python virtual environment (`erag-venv`)
+- Install pip and upgrade it to the latest version
+- Install Ansible and all Python dependencies from `requirements.txt`
+- Install required Ansible collections from `requirements.yaml`
+
+**After initialization, activate the virtual environment:**
+
+```bash
+source erag-venv/bin/activate
+```
+
+> **⚠️ Important**: 
+> 
+> If you see `Failed to import the required Python library (kubernetes)` or similar import errors, 
+> check that:
+> 1. You activated the virtual environment before running installer commands
+> 2. You added `ansible_python_interpreter` to your inventory for localhost
+
+
+This ensures Ansible uses the virtual environment's Python for localhost tasks, providing better package isolation.
+
+### Shell Auto-Completion (Optional)
+
+Enable tab completion for the installer script to improve usability:
+
+```bash
+# For Bash
+source scripts/installer-completion.bash
+
+# For Zsh
+source scripts/_installer.sh
+```
+
+For permanent setup, see [COMPLETION.md](COMPLETION.md) for detailed installation instructions.
+
+## Configuration Setup
+
+### Option 1: Interactive Configuration (Recommended for first-time users)
+
+Generate configuration files interactively:
+
+```bash
+./installer.sh setup config
+```
+
+To create configuration in a custom directory:
+
+```bash
+./installer.sh setup config /path/to/new-config-directory
+```
+
+The interactive setup will:
+1. **Prompt for inventory type selection:**
+   - **localhost**: For deploying applications on an existing Kubernetes cluster
+   - **sample**: For multi-node cluster deployment
+2. **Copy configuration files:**
+   - `config.yaml` (always from `inventory/sample/` - shared configuration)
+   - `inventory.ini` (from selected type: `inventory/localhost/` or `inventory/sample/`)
+3. **Prompt for configuration values:**
+   - Hugging Face Token (required for gated model downloads)
+   - FQDN (Fully Qualified Domain Name, default: erag.com)
+   - Kubernetes deployment choice (new cluster vs existing cluster)
+   - Storage CSI driver (local-path-provisioner/nfs/netapp-trident)
+   - Kubeconfig path (for existing clusters only - auto-set to `{config_dir}/artifacts/admin.conf` for new clusters)
+   - Proxy settings (HTTP/HTTPS proxy configuration)
+
+> **Note**: The `config.yaml` file is always sourced from `inventory/sample/` to maintain a single source of truth. Only the `inventory.ini` differs between localhost and sample deployments.
+
+### Option 2: Manual Configuration
+
+Create your configuration files manually:
+
+1. **Copy sample configuration and choose inventory:**
+   ```bash
+   # For localhost deployment (existing Kubernetes cluster)
+   mkdir -p /path/to/your/config-dir
+   cp inventory/sample/config.yaml /path/to/your/config-dir/
+   cp inventory/localhost/inventory.ini /path/to/your/config-dir/
+   
+   # OR for multi-node cluster deployment
+   mkdir -p /path/to/your/config-dir
+   cp inventory/sample/config.yaml /path/to/your/config-dir/
+   cp inventory/sample/inventory.ini /path/to/your/config-dir/
+   ```
+
+2. **Edit configuration files:**
+   ```bash
+   # Edit main configuration
+   vim /path/to/your/config-dir/config.yaml
+   
+   # Edit inventory for your hosts
+   vim /path/to/your/config-dir/inventory.ini
+   ```
+
+### Environment Variables
+
+The installer automatically loads environment variables from your shell session. These variables can be set before running deployment commands:
+
+```bash
+# Set default config directory (automatically used by installer)
+export ERAG_CONFIG_DIR=/path/to/your/config-dir
+
+# Set Hugging Face token (if not defined in config.yaml ENV will be used)
+export HF_TOKEN=your_huggingface_token
+
+# Set kubeconfig path (if not defined in config.yaml ENV will be used)
+export KUBECONFIG=$HOME/.kube/config
+
+# Note: When deploy_k8s=true, KUBECONFIG is automatically set to:
+# {config_directory}/artifacts/admin.conf
+
+# Set proxy settings (automatically suggested by installer)
+export HTTP_PROXY=http://proxy.company.com:8080
+export HTTPS_PROXY=http://proxy.company.com:8080
+export NO_PROXY=localhost,127.0.0.1,10.0.0.0/8
+```
+
+**How Environment Variables Work:**
+
+- `ERAG_CONFIG_DIR`: If set, the installer uses this as the default config directory instead of `inventory/cluster`
+- `HF_TOKEN`: If config.yaml does not set huggingToken value env will be used.
+- `KUBECONFIG`: If config.yaml does not set kubeconfig value env will be used.
 
 ## Validate Hardware Requirements
 
-Before proceeding with the deployment, it's recommended to validate that your hardware meets the requirements for Intel® AI for Enterprise RAG. To perform hardware validation, you need to create an inventory.ini file first.
+Before proceeding with deployment, validate your hardware meets the requirements:
 
-An example inventory.ini file structure and detailed instructions are provided in the [Cluster Deployment Guide](../docs/cluster_deployment_guide.md).
-
-Once you have created the inventory.ini file, you can validate your hardware resources using the validate playbook located at `playbooks/validate.yaml`:
-
-```sh
-ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-cluster/inventory.ini
+```bash
+./installer.sh validate hardware --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
 ```
 
 > [!NOTE]
-> If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`
+> For Gaudi deployments, ensure your `config.yaml` includes `is_gaudi_platform: true`
 
-## Install a Kubernetes cluster (optional - if you don't have one)
+You can also validate just the configuration without hardware checks:
 
-Intel® AI for Enterprise RAG offers ansible automation for creating a K8s cluster. If you want to set up a K8s cluster, follow the [Cluster Deployment Guide](../docs/cluster_deployment_guide.md).
-
-## Install infrastructure components (storage, operators, backup tools)
-
-The Intel® AI for Enterprise RAG repository offers installation of additional infrastructure components on the deployed K8s cluster:
-- **Gaudi_operator** - dedicated for K8s clusters with nodes that use Gaudi AI accelerators
-- **CSI drivers** - need to dynamically provision storage for PODs
-- **Velero** - installing Velero backup tool
-- **Local registry** - creates a pod with registry to store Docker images, useful for multi-node setups where internal Docker registry would not be sufficient as it will be accessible from single node, not from entire K8s cluster. See [Local Image Building](../docs/advanced_configuration.md#local-image-building) for configuration details.
-
-If your K8s cluster requires installing any of these tools, follow the [Infrastructure Components Guide](../docs/infrastructure_components_guide.md).
-
-## Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
-
-Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Follow the [Application Deployment Guide](../docs/application_deployment_guide.md).
-
-## Update application components (models, configurations) as needed
-
-After the application is installed, you can update its components (for example, change the LLM or embedding model) by editing your configuration file and running the install tag again. The deployment scripts will detect changes and update only the involved components, minimizing downtime and unnecessary redeployments.
-
-To update the application:
-
-1. Edit `inventory/test-cluster/config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings).
-2. Run:
-
-```sh
-ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
+```bash
+./installer.sh validate config --config=/path/to/config.yaml
 ```
 
-This will apply the changes and update only the affected services.
+### Inventory Requirements for Different Operations
 
-## Create and restore backups of user data and configurations
+The installer supports different inventory types depending on your deployment scenario. All deployments use the same `config.yaml` (from `inventory/sample/`), but differ in their `inventory.ini` file.
 
-The application supports taking backups and restoring user data, including ingested vector data, ingested documents, user accounts and credentials, and chat history.
+**Localhost Inventory (Application-Only Deployment)**
 
-For detailed instructions on how to configure backup functionality, create backups, and restore from backups, refer to the [Backup and Restore Guide](../docs/backup.md).
+Use `inventory/localhost/inventory.ini` when:
+- Deploying only the Enterprise RAG application on an existing Kubernetes cluster
+- Your Kubernetes cluster is already set up and accessible via `KUBECONFIG`
+- You're running the installer from a machine that can access the cluster
+
+Example localhost inventory:
+```ini
+<hostname> ansible_connection=local ansible_python_interpreter=<repository_path>/deployment/erag-venv/bin/python3
+
+[kube_control_plane]
+<hostname>
+
+[kube_node]
+<hostname>
+
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+```
+
+**Sample Inventory (Multi-Node Cluster Deployment)**
+
+Use `inventory/sample/inventory.ini` when:
+- Deploying a new Kubernetes cluster across multiple nodes
+- You have control plane and worker nodes to configure
+- Setting up the complete infrastructure from scratch
+
+Example sample inventory:
+```ini
+kube-master-1 ansible_host=<node1_ip_address>
+kube-worker-1 ansible_host=<node2_ip_address>
+
+[kube_control_plane]
+kube-master-1
+
+[kube_node]
+kube-worker-1
+```
+
+**Configuration Files Structure:**
+
+- `config.yaml`: Always use `inventory/sample/config.yaml` (single source of truth)
+- `inventory.ini`: Choose between `inventory/localhost/inventory.ini` or `inventory/sample/inventory.ini`
+
+**Operation Requirements:**
+
+| Operation | Inventory Type | Notes |
+|-----------|---------------|-------|
+| `cluster deploy` | Localhost or Sample  | Requires all cluster nodes defined |
+| `cluster delete` | Localhost or Sample  | Must match deployment inventory |
+| `application install` | Localhost or Sample | Both work; localhost for existing clusters |
+| `application uninstall` | Localhost or Sample | Match what was used for install |
+| `stack deploy-complete` | Localhost or Sample | Choose based on cluster setup needs |
+
+## Complete Stack Deployment (Recommended)
+
+> **⚠️ Before Starting**: Ensure the virtual environment is activated:
+> ```bash
+> source erag-venv/bin/activate
+> ```
+
+Deploy the entire Enterprise RAG stack with a single command:
+
+```bash
+./installer.sh stack deploy-complete \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini
+```
+
+This comprehensive deployment includes:
+- **System dependencies and tools configuration**
+- **Kubernetes cluster deployment** (if configured)
+- **Infrastructure components installation**
+- **Enterprise RAG application deployment**
+
+The complete stack deployment will:
+1. Configure the system and install required tools
+2. Deploy Kubernetes cluster (if `deploy_k8s: true` in config)
+3. Deploy the Enterprise RAG application stack
+
+> [!TIP]
+> Use environment variables to simplify commands:
+> ```bash
+> export ERAG_CONFIG_DIR=/path/to/your/config-dir
+> ./installer.sh stack deploy-complete
+> ```
+
+## Manual Step-by-Step Deployment
+
+For advanced users who prefer granular control:
+
+### 1. System Configuration
+
+Configure the deployment environment and install required tools:
+
+```bash
+./installer.sh setup configure --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+```
+
+### 2. Container Images (Optional)
+
+Build and push custom container images:
+
+```bash
+./installer.sh setup images --tag=custom_build --registry=your-registry.com
+```
+
+### 3. Kubernetes Cluster Deployment
+
+Deploy a new Kubernetes cluster:
+
+```bash
+./installer.sh cluster deploy --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+```
+
+Perform post-installation tasks:
+
+```bash
+./installer.sh cluster post-install --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+```
+
+### 4. Application Deployment
+
+Deploy the Enterprise RAG application:
+
+```bash
+./installer.sh application install --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+```
+
+Check deployment status and configuration:
+
+```bash
+./installer.sh application show-config --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+```
+
+> [!TIP]
+> Use environment variables to simplify commands:
+> ```bash
+> export ERAG_CONFIG_DIR=/path/to/your/config-dir
+> ./installer.sh <command> <action>
+> ```
+
+## Update Application Components
+
+After the application is installed, you can update components (models, configurations) by editing your configuration file and rerunning the install:
+
+1. **Edit your configuration:**
+   ```bash
+   vim /path/to/config.yaml
+   # Modify settings like llm_model, embedding_model_name, etc.
+   ```
+
+2. **Apply the changes:**
+   ```bash
+   ./installer.sh application install --config=/path/to/config.yaml --inventory=/path/to/inventory.ini
+   ```
+
+The deployment scripts will detect changes and update only the affected components, minimizing downtime.
+
+## Create and Restore Backups
+
+The application supports comprehensive backup and restore functionality for user data, configurations, and chat history.
+
+For detailed instructions on backup configuration and operations, refer to the [Backup and Restore Guide](../docs/backup.md).
 
 # Interact with ChatQnA
 
 ## Test Deployment
 
-To verify that the deployment was successful, run the following command:
+Verify that the deployment was successful:
+
 ```bash
 ./scripts/test_connection.sh
 ```
-If the deployment is complete, you should observe the following output:
+
+Expected output for a successful deployment:
 ```
 deployment.apps/client-test created
 Waiting for all pods to be running and ready....All pods in the chatqa namespace are running and ready.
@@ -131,95 +423,245 @@ Test finished successfully
 
 ## Access the UI/Grafana
 
-To access the UI, follow these steps:
-1. Forward the port from the ingress pod:
-    ```bash
-    sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
-    ```
-2. If you want to access the UI from another machine, tunnel the port from the host:
-    ```bash
-    ssh -L 443:localhost:443 user@ip
-    ```
-3. Update the `/etc/hosts` file on the machine where you want to access the UI to match the domain name with the externally exposed IP address of the cluster. On a Windows machine, this file is typically located at `C:\Windows\System32\drivers\etc\hosts`.
+### Port Forwarding Setup
 
-    For example, the updated file content should resemble the following:
+1. **Forward the ingress port:**
+   ```bash
+   sudo -E kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 443:https
+   ```
 
-    ```
-    127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
-    ```
+2. **Access from another machine (optional):**
+   ```bash
+   ssh -L 443:localhost:443 user@cluster-host-ip
+   ```
 
-> [!NOTE]
-> This is the IPv4 address of the local machine.
+3. **Update `/etc/hosts` file:**
+   
+   Add the following entries to your `/etc/hosts` file:
+   ```
+   127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+   ```
+   
+   > [!NOTE]
+   > On Windows, this file is located at `C:\Windows\System32\drivers\etc\hosts`
 
-Once the update is complete, you can access the Intel® AI for Enterprise RAG UI by typing the following URL in your web browser:
-`https://erag.com`
+### Access URLs
 
-Keycloak can be accessed via:
-`https://auth.erag.com`
+Once configured, access the services via:
 
-Grafana can be accessed via:
-`https://grafana.erag.com`
-
-MinIO Console can be accessed via:
-`https://minio.erag.com`
-
-S3 API is exposed at:
-`https://s3.erag.com`
+- **Enterprise RAG UI**: `https://erag.com`
+- **Keycloak (Authentication)**: `https://auth.erag.com`
+- **Grafana (Monitoring)**: `https://grafana.erag.com`
+- **MinIO Console**: `https://minio.erag.com`
+- **S3 API**: `https://s3.erag.com`
 
 > [!CAUTION]
-> If using self-signed certificates (default configuration), access `https://s3.erag.com` in your browser before ingesting data to accept the certificate warning. This step is not required if you have configured custom SSL certificates.
+> If using self-signed certificates (default configuration), visit `https://s3.erag.com` in your browser and accept the certificate warning before data ingestion. This step is not required with custom SSL certificates.
 
 ## UI Credentials for the First Login
 
-Once deployment is complete, a file named `default_credentials.txt` will be created in the `deployment/ansible-logs` folder with one-time passwords for the application admin and user. After entering the one-time password, you will be required to change the default password.
+After deployment, find initial credentials in:
+```
+deployment/ansible-logs/default_credentials.txt
+```
 
-> [!CAUTION]
-> Remove the `default_credentials.txt` file after the first successful login.
+This file contains one-time passwords for:
+- **Application Admin**: Full administrative access
+- **Application User**: Standard user access
+
+> [!IMPORTANT]
+> - Change default passwords after first login
+> - Remove the `default_credentials.txt` file after setup
+> - Users will be prompted to change passwords on first login
 
 ## Credentials for Grafana and Keycloak
 
-Default credentials for Keycloak and Grafana:
-- **username:** admin
-- **password:** stored in `ansible-logs/default_credentials.yaml` file. Change passwords after first login in Grafana or Keycloak.
+**Default Administrator Access:**
+- **Username**: `admin`
+- **Password**: Located in `ansible-logs/default_credentials.yaml`
 
 > [!CAUTION]
-> Use ansible-vault to secure the password file `ansible-logs/default_credentials.yaml` after the first successful login by running: `ansible-vault encrypt ansible-logs/default_credentials.yaml`. After that, remember to add `--ask-vault-pass` to the `ansible-playbook` command.
+> Secure the credentials file after first login:
+> ```bash
+> ansible-vault encrypt ansible-logs/default_credentials.yaml
+> ```
+> After encryption, add `--ask-vault-pass` to installer commands when needed.
 
 ## Credentials for Vector Store
 
-Default credentials for the selected Vector Store are stored in `ansible-logs/default_credentials.yaml` and are generated on first deployment.
+Vector store credentials are automatically generated and stored in:
+```
+ansible-logs/default_credentials.yaml
+```
 
 ## Credentials for Enhanced Dataprep Pipeline (EDP)
 
-Default credentials for Enhanced Dataprep services:
+**MinIO Object Storage:**
+- Use `erag-admin` user credentials for API and Web UI access
 
-MinIO:
-- For accessing MinIO either by API or Web UI (MinIO Console), use the user credentials for `erag-admin`.
+**Internal EDP Services:**
 
-Internal EDP services credentials:
+- **Redis**:
+  - Username: `default`
+  - Password: In `ansible-logs/default_credentials.yaml`
 
-Redis:
-- **username:** default
-- **password:** stored in `ansible-logs/default_credentials.yaml`
-
-Postgres:
-- **username:** edp
-- **password:** stored in `ansible-logs/default_credentials.yaml`
+- **PostgreSQL**:
+  - Username: `edp`
+  - Password: In `ansible-logs/default_credentials.yaml`
 
 ## Data Ingestion, UI and Telemetry
 
-For adding data to the knowledge base and exploring the UI interface, visit [this](../docs/UI_features.md) page.
-
-For accessing Grafana dashboards for all services, visit [this](../docs/telemetry.md) page.
+- **UI Features and Data Ingestion**: [UI Features Guide](../docs/UI_features.md)
+- **Monitoring and Telemetry**: [Telemetry Guide](../docs/telemetry.md)
 
 ## Configure Single Sign-On Integration Using Microsoft Entra ID
 
-For instructions on how to configure single sign-on, visit [this](../docs/single_sign_on_configuration_on_keyclock.md) page.
+For enterprise SSO integration: [Single Sign-On Configuration Guide](../docs/single_sign_on_configuration_on_keyclock.md)
 
-# Remove the installation when no longer needed
+# Remove the Installation
 
-To remove Intel® AI for Enterprise RAG from your cluster, execute:
+## Complete Stack Removal
 
-```sh
-ansible-playbook playbooks/application.yaml --tags uninstall -e @inventory/test-cluster/config.yaml
+Remove the entire Enterprise RAG deployment:
+
+```bash
+./installer.sh stack delete-complete \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini
 ```
+
+> [!WARNING]
+> This operation is **DESTRUCTIVE** and **IRREVERSIBLE**. It will permanently delete:
+> - All Enterprise RAG applications and data
+> - Monitoring and observability stack
+> - Kubernetes cluster (if deployed by this tool)
+> - All persistent volumes and data
+> - Configuration directories
+
+## Application-Only Removal
+
+Remove just the Enterprise RAG application (keeping the Kubernetes cluster):
+
+```bash
+./installer.sh application uninstall \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini
+```
+
+## Cluster-Only Removal
+
+Remove just the Kubernetes cluster:
+
+```bash
+./installer.sh cluster delete \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini
+```
+
+---
+
+## Advanced Usage
+
+### Custom Tags and Registries
+
+```bash
+# Use custom image tags
+./installer.sh application install \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini \
+  --tag=v2.0.0
+
+# Use custom registry
+./installer.sh setup images \
+  --registry=company-registry.com/erag \
+  --tag=production
+```
+
+### Verbose Logging
+
+Enable detailed Ansible output for troubleshooting:
+
+```bash
+./installer.sh application install \
+  --config=/path/to/config.yaml \
+  --inventory=/path/to/inventory.ini \
+  -vvv
+```
+
+### Non-Interactive Configuration
+
+Skip interactive prompts and use defaults:
+
+```bash
+./installer.sh setup config /path/to/new-config-directory \
+  --non-interactive
+```
+
+### Environment Variable Configuration
+
+```bash
+# Set config directory globally
+export ERAG_CONFIG_DIR=/opt/erag/configs
+
+# Use simplified commands
+./installer.sh validate hardware
+./installer.sh stack deploy-complete
+./installer.sh application show-config
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Failed to import the required Python library (kubernetes)**: You forgot to activate the virtual environment! Run `source erag-venv/bin/activate` first
+2. **Permission Denied**: Ensure passwordless sudo is configured
+3. **Python Virtual Environment**: Run `./installer.sh setup python-env` first
+4. **Configuration Missing**: Verify config.yaml and inventory.ini exist
+5. **Network Issues**: Check proxy settings in environment variables
+
+### Python Environment Issues
+
+**Problem**: `Failed to import the required Python library (kubernetes)` or similar import errors
+
+**Root Cause**: Ansible is using the system Python instead of the virtual environment Python
+
+**Solution**: Always activate the virtual environment before running any installer commands:
+
+```bash
+# Activate the virtual environment
+source erag-venv/bin/activate
+
+# For localhost-only deployments, set the Python interpreter
+export ANSIBLE_PYTHON_INTERPRETER=$(pwd)/erag-venv/bin/python
+
+# Verify Ansible is using the correct Python
+ansible --version
+which ansible
+```
+
+**Why this happens**: The virtual environment contains all required Python packages (kubernetes, etc.), but without activation, Ansible uses the system Python which typically lacks these dependencies. The error message `on igk-0940.igk.intel.com's Python /usr/bin/python3` shows it's using system Python instead of the venv Python.
+
+**Note**: The installer will automatically detect and use the virtual environment's ansible-playbook if available, but manual activation ensures consistent Python package access.
+
+### Getting Help
+
+```bash
+# Show detailed help
+./installer.sh --help
+
+# Show component-specific help
+./installer.sh setup --help
+```
+
+### Log Files
+
+Check deployment logs in:
+```
+ansible-logs/
+```
+
+---
+
+*For additional documentation and advanced configuration options, refer to the [docs](../docs/) directory.*

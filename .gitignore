@@ -9,6 +9,7 @@ deployment/logs
 deployment/ansible-logs
 deployment/inventory/*
 !deployment/inventory/sample
+!deployment/inventory/localhost
 
 # Telemetry
 /deployment/components/telemetry/helm/example/pcm/

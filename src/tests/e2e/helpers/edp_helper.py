@@ -249,10 +249,10 @@ class EdpHelper(ApiRequestHelper):
         return results
 
     def retrieve(self, payload: dict[str, Any]) -> requests.Response:
-        """Make post call to /api/retrieve endpoint with the given payload"""
+        """Make post call to /api/v1/edp/retrieve endpoint with the given payload"""
         logger.debug(f"Attempting to retrieve documents using the following payload: {payload}")
         response = requests.post(
-            url=f"{EDP_API_PATH}/retrieve/",
+            url=f"{EDP_API_PATH}/retrieve",
             headers=self.get_headers(),
             json=payload,
             verify=False

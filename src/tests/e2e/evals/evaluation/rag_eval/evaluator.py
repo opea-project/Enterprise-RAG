@@ -176,8 +176,13 @@ class Evaluator:
         query = self.get_query(data)
         golden_context = self.get_golden_context(data)
 
-        retrieved_documents = self.get_retrieved_documents(query)
-        reranked_documents = self.get_reranked_documents(query)
+        try:
+            retrieved_documents = self.get_retrieved_documents(query)
+            reranked_documents = self.get_reranked_documents(query)
+        except (ConnectionError, ValueError) as e:
+            # Log the error and re-raise to stop evaluation
+            logger.error(f"Failed to retrieve documents for query '{query}': {e}")
+            raise
 
         # Measure metrics using documents after reranking
         results = metric.measure({
@@ -359,6 +364,19 @@ class Evaluator:
     def _get_documents(self, query: str, rerank: bool = True, max_retries: int = 3, wait_seconds: int = 5) -> list[str]:
         """
         Internal helper method to retrieve reranked documents, optionally all retrieved documents when rerank set to False.
+
+        Args:
+            query: The query string to retrieve documents for
+            rerank: Whether to apply reranking (default: True)
+            max_retries: Maximum number of retry attempts (default: 3)
+            wait_seconds: Wait time between retries in seconds (default: 5)
+
+        Returns:
+            List of document texts
+
+        Raises:
+            ConnectionError: If all retry attempts fail or HTTP error occurs
+            ValueError: If response format is invalid
         """
         texts = []
 
@@ -379,24 +397,47 @@ class Evaluator:
             payload["rerank_score_threshold"] = self.system_args["rerank_score_threshold"]
 
         logger.info(f"Retrieving documents with payload: {payload}")
-        try:
 
-            for attempt in range(max_retries):
+        response = None
+        for attempt in range(max_retries):
+            try:
                 response = self.edp_helper.retrieve(payload)
-                if response.status_code != 200:
-                    if attempt < max_retries - 1:
-                        logger.warning(
-                            f"[Attempt {attempt + 1}] Document retrieval failed with status {response.status_code}. "
-                            f"Response: {response.text}. Retrying in {wait_seconds} seconds..."
-                        )
-                        time.sleep(wait_seconds)
-                        continue
-                    else:
-                        logger.error("All document retrieval attempts failed.")
-                        raise ConnectionError(
-                            f"Document retrieval failed. HTTP {response.status_code}: {response.text}"
-                        )
 
+                if response.status_code == 200:
+                    # Success - break out of retry loop
+                    break
+
+                # Handle HTTP errors
+                error_msg = f"Document retrieval failed with HTTP {response.status_code}: {response.text}"
+
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"[Attempt {attempt + 1}/{max_retries}] {error_msg}. "
+                        f"Retrying in {wait_seconds} seconds..."
+                    )
+                    time.sleep(wait_seconds)
+                else:
+                    logger.error(f"[Attempt {attempt + 1}/{max_retries}] {error_msg}. All retry attempts exhausted.")
+                    raise ConnectionError(error_msg)
+
+            except requests.exceptions.RequestException as e:
+                error_msg = f"Request exception during document retrieval: {e}"
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"[Attempt {attempt + 1}/{max_retries}] {error_msg}. "
+                        f"Retrying in {wait_seconds} seconds..."
+                    )
+                    time.sleep(wait_seconds)
+                else:
+                    logger.error(f"[Attempt {attempt + 1}/{max_retries}] {error_msg}. All retry attempts exhausted.")
+                    raise ConnectionError(error_msg) from e
+
+        # Check if we have a successful response
+        if response is None or response.status_code != 200:
+            raise ConnectionError("Document retrieval failed after all retry attempts")
+
+        # Parse the response
+        try:
             docs = response.json()["docs"]
 
             if rerank:
@@ -411,12 +452,17 @@ class Evaluator:
                 logger.warning(
                     f"No documents returned from {'reranking' if rerank else 'retriever'} for query '{query}'")
 
-        except json.JSONDecodeError:
-            logger.error("Response is not in JSON format.")
+        except json.JSONDecodeError as e:
+            error_msg = f"Response is not in valid JSON format: {e}"
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
         except KeyError as e:
-            logger.error(f"Missing expected key in JSON response: {e}")
+            error_msg = f"Missing expected key in JSON response: {e}. Response structure: {response.json()}"
+            logger.error(error_msg)
+            raise ValueError(error_msg) from e
         except Exception as e:
-            logger.error(
-                f"Unexpected error processing retrieved documents: {e}")
+            error_msg = f"Unexpected error processing retrieved documents: {e}"
+            logger.error(error_msg)
+            raise
 
         return texts

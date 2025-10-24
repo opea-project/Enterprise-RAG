@@ -11,7 +11,13 @@ from tests.e2e.validation.constants import ERAG_AUTH_DOMAIN, VITE_KEYCLOAK_CLIEN
 
 
 logger = logging.getLogger(__name__)
-DEFAULT_CREDENTIALS_PATH = "../../deployment/ansible-logs/default_credentials.txt"
+
+# Determine the absolute path to the default credentials file
+# This file is located relative to the src/tests/e2e/helpers directory
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_DEFAULT_CREDENTIALS_RELATIVE = "../../../../deployment/ansible-logs/default_credentials.txt"
+
+DEFAULT_CREDENTIALS_PATH = os.path.normpath(os.path.join(_CURRENT_DIR, _DEFAULT_CREDENTIALS_RELATIVE))
 
 
 class CredentialsNotFound(Exception):
@@ -45,7 +51,9 @@ class KeycloakHelper:
         User's required actions need to be temporarily removed in order to obtain the token.
         """
         if as_user:
+            # For user tokens, don't cache to avoid complexity
             return self.get_user_access_token(self.erag_user_username, self.erag_user_password)
+
         return self.get_user_access_token(self.erag_admin_username, self.erag_admin_password)
 
     def get_credentials(self, credentials_file):

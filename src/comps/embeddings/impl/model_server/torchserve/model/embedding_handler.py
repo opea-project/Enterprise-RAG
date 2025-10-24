@@ -165,14 +165,15 @@ class EmbeddingHandler(BaseHandler, ABC):
                 pooling_flags.append(text_pair["return_pooling"]) # record pooling flag (boolean)
 
 
-            pooling_texts = [t["text"] for t in input_batch if t.get("return_pooling", True)]
-            non_pooling_texts = [t["text"] for t in input_batch if not t.get("return_pooling", True)]
+            pooling_texts = [t["text"] for t in input_batch if t.get("return_pooling", False)]
+            non_pooling_texts = [t["text"] for t in input_batch if not t.get("return_pooling", False)]
 
             # compute embeddings separately for each group
             embeddings_pooling = []
             embeddings_non_pooling = []
 
             if pooling_texts:
+                    # Flatten the list of text arrays into a single list
                     num_texts_in_pooling_texts = []
                     texts = []
                     for text_pair in pooling_texts:
@@ -180,36 +181,54 @@ class EmbeddingHandler(BaseHandler, ABC):
                         texts.extend(text_pair)
             
                     embeddings_pooling = self._run_embedding_model(
-                        pooling_texts,
+                        texts,
                         return_pooling=True
                     )
 
             if non_pooling_texts:
+                # Flatten the list of text arrays into a single list
+                num_texts_in_non_pooling_texts = []
+                texts = []
+                for text_pair in non_pooling_texts:
+                    num_texts_in_non_pooling_texts.append(len(text_pair))
+                    texts.extend(text_pair)
+
                 embeddings_non_pooling = self._run_embedding_model(
-                    non_pooling_texts,
+                    texts,
                     return_pooling=False
                 )
  
-            # merge the results for pooling and non-pooling texts
+            # Regroup embeddings based on the original structure
+            # For pooling embeddings, regroup based on num_texts_in_pooling_texts
+            regrouped_pooling = []
+            if pooling_texts:
+                index = 0
+                for count in num_texts_in_pooling_texts:
+                    regrouped_pooling.append(embeddings_pooling[index:index + count])
+                    index += count
+
+            # For non-pooling embeddings, regroup based on num_texts_in_non_pooling_texts
+            regrouped_non_pooling = []
+            if non_pooling_texts:
+                index = 0
+                for count in num_texts_in_non_pooling_texts:
+                    regrouped_non_pooling.append(embeddings_non_pooling[index:index + count])
+                    index += count
+
+            # Merge the results for pooling and non-pooling texts in the original order
             embeddings = []
             pooling_index = 0
             non_pooling_index = 0
 
             for flag in pooling_flags:
                 if flag:
-                    embeddings.append(embeddings_pooling[pooling_index])
+                    embeddings.append(regrouped_pooling[pooling_index])
                     pooling_index += 1
                 else:
-                    embeddings.append(embeddings_non_pooling[non_pooling_index])
+                    embeddings.append(regrouped_non_pooling[non_pooling_index])
                     non_pooling_index += 1
             
-            # reconstruct the original batch grouping
-            og_embeddings = []
-            index = 0
-            for count in num_texts_in_batch:
-                og_embeddings.append(embeddings[index:index + count])
-                index += count
-            return og_embeddings
+            return embeddings
             
         else:
             # No Batching detected

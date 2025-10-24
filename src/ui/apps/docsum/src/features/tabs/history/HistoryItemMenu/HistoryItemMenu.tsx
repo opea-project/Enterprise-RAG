@@ -18,8 +18,8 @@ import {
 import { useState } from "react";
 import { Key as AriaKey } from "react-aria-components";
 
+import ExportActionDialog from "@/components/ExportActionDialog/ExportActionDialog";
 import DeleteActionDialog from "@/features/tabs/history/DeleteActionDialog/DeleteActionDialog";
-import ExportActionDialog from "@/features/tabs/history/ExportActionDialog/ExportActionDialog";
 import RenameActionDialog from "@/features/tabs/history/RenameActionDialog/RenameActionDialog";
 import { HistoryItemData } from "@/types";
 
@@ -79,11 +79,14 @@ const HistoryItemMenu = ({
         isOpen={selectedOption === "rename"}
         onOpenChange={() => setSelectedOption(null)}
       />
-      <ExportActionDialog
-        itemData={itemData}
-        isOpen={selectedOption === "export"}
-        onOpenChange={() => setSelectedOption(null)}
-      />
+      {itemData.summary && (
+        <ExportActionDialog
+          summary={itemData.summary}
+          fileName={itemData.title}
+          isOpen={selectedOption === "export"}
+          onOpenChange={() => setSelectedOption(null)}
+        />
+      )}
       <DeleteActionDialog
         itemData={itemData}
         isOpen={selectedOption === "delete"}

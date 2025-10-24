@@ -7,13 +7,23 @@ import {
   CopyButton,
   LoadingFallback,
 } from "@intel-enterprise-rag-ui/components";
+import { useState } from "react";
+
+import ExportActionDialog from "@/components/ExportActionDialog/ExportActionDialog";
+import ExportButton from "@/components/ExportButton/ExportButton";
 
 interface GeneratedSummaryProps {
   summary?: string;
   isLoading?: boolean;
+  fileName?: string;
 }
 
-const GeneratedSummary = ({ summary, isLoading }: GeneratedSummaryProps) => {
+const GeneratedSummary = ({
+  summary,
+  isLoading,
+  fileName,
+}: GeneratedSummaryProps) => {
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const getContent = () => {
     if (isLoading) {
       return (
@@ -42,10 +52,25 @@ const GeneratedSummary = ({ summary, isLoading }: GeneratedSummaryProps) => {
   };
 
   return (
-    <div className="generated-summary">
-      <p>Summary</p>
-      {getContent()}
-    </div>
+    <>
+      <div className="generated-summary">
+        <div className="generated-summary__header">
+          <p>Summary</p>
+          {summary && fileName && (
+            <ExportButton onPress={() => setIsExportDialogOpen(true)} />
+          )}
+        </div>
+        {getContent()}
+      </div>
+      {summary && fileName && (
+        <ExportActionDialog
+          summary={summary}
+          fileName={fileName}
+          isOpen={isExportDialogOpen}
+          onOpenChange={setIsExportDialogOpen}
+        />
+      )}
+    </>
   );
 };
 

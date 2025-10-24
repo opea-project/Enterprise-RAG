@@ -15,6 +15,7 @@ import GeneratedSummary from "@/components/GeneratedSummary/GeneratedSummary";
 import GenerateSummaryButton from "@/components/GenerateSummaryButton/GenerateSummaryButton";
 import { addHistoryItem } from "@/features/tabs/history/store/history.slice";
 import { useAppDispatch } from "@/store/hooks";
+import { shortenText } from "@/utils/text";
 
 const CHARACTER_LIMIT = 1000;
 
@@ -55,7 +56,7 @@ const PasteTextTab = () => {
       if (data) {
         dispatch(
           addHistoryItem({
-            title: `${text.slice(0, 20)}${text.length > 20 ? "..." : ""}`,
+            title: shortenText(text),
             sourceType: "plainText",
             summary: data.summary,
             source: text,
@@ -121,7 +122,11 @@ const PasteTextTab = () => {
         />
       </div>
       <div className="paste-text-tab__summary-col">
-        <GeneratedSummary summary={data?.summary} isLoading={isLoading} />
+        <GeneratedSummary
+          summary={data?.summary}
+          isLoading={isLoading}
+          fileName={shortenText(text)}
+        />
       </div>
     </div>
   );

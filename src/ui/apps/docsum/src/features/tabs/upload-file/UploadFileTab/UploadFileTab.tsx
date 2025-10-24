@@ -120,7 +120,11 @@ const UploadFileTab = () => {
         />
       </div>
       <div className="upload-file-tab__summary-col">
-        <GeneratedSummary summary={data?.summary} isLoading={isLoading} />
+        <GeneratedSummary
+          summary={data?.summary}
+          isLoading={isLoading}
+          fileName={file?.name}
+        />
       </div>
     </div>
   );

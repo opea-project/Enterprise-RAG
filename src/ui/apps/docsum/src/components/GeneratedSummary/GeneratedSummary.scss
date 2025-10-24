@@ -5,8 +5,12 @@
   @apply grid grid-cols-1 grid-rows-[auto_1fr];
   @apply h-full max-h-full;
 
-  & > p:first-of-type {
-    @apply mb-2 font-medium;
+  &__header {
+    @apply mb-2 flex items-center justify-between;
+
+    & > p {
+      @apply font-medium;
+    }
   }
 
   &__loading,

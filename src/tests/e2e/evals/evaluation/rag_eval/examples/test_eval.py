@@ -44,6 +44,7 @@ def test_retrieval_metrics():
     main_run(args)
 
 
+@pytest.mark.skip("RAGAs metric requires additional components")
 def test_ragas_metrics():
     args = MagicMock(ragas_metrics=True)
     main_run(args)

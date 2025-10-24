@@ -82,22 +82,19 @@ upload_relevant_documents()
 {
 	orig_dir=$(pwd)
 	mkdir -p $TEMP_DIR
+	exp_documents=$(cat documents.csv | wc -l)
 
 	cd $TEMP_DIR
 	echo "downloading documents"
-	while IFS= read -r line
-	do
-		echo $line
-		wget --adjust-extension  $line
-	done < "${orig_dir}/documents.txt"
-
-	for filename in *.utf-8; do
-		filename=$(basename ${filename})
-		fn2="${filename/.utf-8/}"
-		mv $filename $fn2
-	done
+	while IFS=';' read -r url output; do
+		echo "Downloading $url and saving as $output"
+		wget -q $url -O $output
+	done < "${orig_dir}/documents.csv"
 
 	cd $orig_dir
+	avail_documents=$(ls $TEMP_DIR | wc -l)
+	echo "downloaded $avail_documents of $exp_documents expected documents"
+
 	echo "ingesting documents into rag"
 	for filename in $TEMP_DIR/*; do
 		filename=$(basename ${filename})

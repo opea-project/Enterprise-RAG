@@ -342,3 +342,127 @@ class ChatUIHelper:
         except Exception as e:
             logger.error(f"Failed to get response: {e}")
             return None
+
+    async def check_element_rendered(
+            self,
+            selector: str = None,
+            aria_label: str = None,
+            css_class: str = None,
+            check_children: bool = False,
+            timeout: int = 10000
+        ) -> bool:
+            """Check if element is rendered using various selector strategies.
+            
+            Args:
+                selector: Direct CSS selector (e.g., '.my-class', '#my-id', 'button[type="submit"]')
+                aria_label: The aria-label attribute value to search for
+                css_class: CSS class name (without dot prefix)
+                check_children: Whether to verify element has child elements
+                timeout: Maximum time to wait in milliseconds
+                
+            Returns:
+                True if element is rendered (and has children if checked), False otherwise
+            """
+            try:
+                # Determine which selector to use
+                if selector:
+                    locator_str = selector
+                    selector_desc = f"selector '{selector}'"
+                elif aria_label:
+                    locator_str = f'[aria-label="{aria_label}"]'
+                    selector_desc = f"aria-label='{aria_label}'"
+                elif css_class:
+                    locator_str = f'.{css_class}'
+                    selector_desc = f"class '{css_class}'"
+                else:
+                    logger.error("No selector provided (selector, aria_label, or css_class required)")
+                    return False
+                
+                logger.info(f"Checking if element with {selector_desc} is rendered...")
+                
+                # Locate element
+                element = self.page.locator(locator_str)
+                
+                # Wait for element to be visible
+                await element.wait_for(state="visible", timeout=timeout)
+                
+                # Verify element exists
+                element_count = await element.count()
+                if element_count == 0:
+                    logger.error(f"Element with {selector_desc} not found")
+                    return False
+                
+                logger.info(f"Element with {selector_desc} is rendered")
+                
+                # Check for children if required
+                if check_children:
+                    # Get all children
+                    children = element.locator('> *')
+                    children_count = await children.count()
+                    
+                    if children_count == 0:
+                        logger.error("Element has no children")
+                        return False
+                    
+                    logger.info(f"Element has {children_count} child elements")
+                
+                return True
+                
+            except Exception as e:
+                logger.error(f"Failed to check element: {e}")
+                return False
+
+# ==================== Chat UI Helper ====================
+
+    async def navigate_to_control_plane(self) -> bool:
+        """Navigate to Control Plane by clicking the Admin Panel button.
+        
+        Returns:
+            True if navigation successful, False otherwise
+        """
+        try:
+            logger.info("Navigating to Control Plane...")
+            
+            # Locate and click the Admin Panel button
+            admin_button = self.page.locator('button[aria-label="Switch to Admin Panel"]')
+            
+            if not await admin_button.count():
+                logger.error("Admin Panel button not found")
+                return False
+            
+            await admin_button.click()
+            
+            # Wait for navigation
+            await self.page.wait_for_load_state("networkidle")
+            
+            logger.info(f"Navigated to: {self.page.url}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to navigate to Control Plane: {e}")
+            return False
+    
+    async def verify_control_plane_url(self, expected_path: str = "/admin-panel/control-plane") -> bool:
+        """Verify current URL matches expected Control Plane path.
+        
+        Args:
+            expected_path: Expected path after base URL
+            
+        Returns:
+            True if URL matches, False otherwise
+        """
+        try:
+            current_url = self.page.url
+            expected_url = f"{self.ui_helper.base_url}{expected_path}"
+            
+            if current_url == expected_url:
+                logger.info(f"URL verified: {current_url}")
+                return True
+            else:
+                logger.error(f"URL mismatch: expected {expected_url}, got {current_url}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to verify URL: {e}")
+            return False
+        

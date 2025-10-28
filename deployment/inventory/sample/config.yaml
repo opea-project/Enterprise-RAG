@@ -93,6 +93,7 @@ reranking_model_name: "BAAI/bge-reranker-base"
 balloons:
   enabled: true
   namespace: kube-system # alternatively, set custom namespace for balloons
+  wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
   services:
     vllm:
       resources:

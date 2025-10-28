@@ -36,10 +36,13 @@ tdx:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
-{% if balloons.enabled is defined %}
+{% if balloons.enabled is defined and balloons.enabled %}
 balloons:
   enabled: {{ balloons.enabled }}
+  namespace: {{ balloons.namespace }}
+  wait_timeout: {{ balloons.wait_timeout }}
   services: {{ balloons.services }}
+  chart_name: {{ balloons_chart_name }}
 {% endif %}
 
 {% if gmc.pvc is defined and gmc.pvc.models is defined %}
@@ -173,3 +176,8 @@ images:
     image: "erag-chat-history"
     repository: *repo
     tag: *tag
+  init-container:
+    image: "erag-init-container"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always

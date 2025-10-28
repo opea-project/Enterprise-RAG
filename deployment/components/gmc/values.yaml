@@ -261,3 +261,8 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+  init-container:
+    image: "erag-init-container"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always

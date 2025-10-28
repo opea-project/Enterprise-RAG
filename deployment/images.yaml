@@ -103,3 +103,7 @@ images:
     image_name: vllm-gaudi
     dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/hpu/Dockerfile
     docker_context: src/comps/llms/impl/model_server/vllm
+  initContainer:
+    image_name: init-container
+    dockerfile_path: deployment/components/utils/init-container/Dockerfile
+    docker_context: deployment/components/utils/init-container

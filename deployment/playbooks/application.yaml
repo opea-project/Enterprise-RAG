@@ -64,6 +64,14 @@
         - install
         - uninstall
 
+    - name: Clean-up NRI plugin resources if balloons disabled
+      include_role:
+        name: nri_balloons
+        tasks_from: uninstall.yaml
+      when: not balloons.enabled
+      tags:
+        - install
+
     - name: Run vector_databases role
       include_role:
         name: vector_databases

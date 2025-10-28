@@ -112,3 +112,33 @@ subjects:
 - kind: ServiceAccount
   name: {{ include "gmc.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
+{{- if .Values.balloons.enabled }}
+---
+{{- $balloonsClusterRoleName := "nri-readiness-reader" }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $balloonsClusterRoleName }}
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $balloonsClusterRoleName }}-binding-{{ .Values.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $balloonsClusterRoleName }}
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: {{ .Values.namespace }}
+{{- end }}

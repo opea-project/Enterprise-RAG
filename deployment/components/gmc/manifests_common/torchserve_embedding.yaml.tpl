@@ -88,6 +88,10 @@ spec:
           operator: "Equal"
           value: "true"
           effect: "PreferNoSchedule"
+      {{- if .Values.balloons.enabled }}
+      initContainers:
+        {{- include "manifest.balloons.initContainer" . | nindent 8 }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- include "gmc.imagePullSecrets" . }}

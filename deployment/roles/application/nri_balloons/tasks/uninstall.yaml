@@ -8,6 +8,7 @@
     kind: BalloonsPolicy
     namespace: "{{ balloons.namespace }}"
   register: balloons_policies
+  ignore_errors: true
   tags:
     - always
 
@@ -18,7 +19,8 @@
     name: "{{ item.metadata.name }}"
     namespace: "{{ balloons.namespace }}"
     state: absent
-  loop: "{{ balloons_policies.resources }}"
+  loop: "{{ balloons_policies.resources | default([]) }}"
+  ignore_errors: true
   tags:
     - always
 
@@ -32,6 +34,7 @@
   kubernetes.core.k8s:
     state: present
     src: "{{ balloons.helm.reset_balloon_file }}"
+  ignore_errors: true
   tags:
     - always
 

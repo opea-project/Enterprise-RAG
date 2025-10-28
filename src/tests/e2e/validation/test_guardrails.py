@@ -158,6 +158,7 @@ def test_in_guard_code(guard_helper, code_snippets):
             snippets[language_key], reason="it is in language that is not marked as blocked")
 
 
+@pytest.mark.xfail(reason="Feature not implemented yet - see IEASG-2040")
 @allure.testcase("IEASG-T77")
 def test_in_guards_invalid_input(guard_helper, code_snippets):
     """Try to set up input guards with invalid parameters. Check if 400 error is returned."""

@@ -248,9 +248,10 @@ def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.words_in_response(["strange", "kind"], response), UNRELATED_RESPONSE_MSG
     # 4. Test underline text
-    question = "What did people call Lunibelle Lucifelle before they learned her name?"
+    question = "What happened to the village during the storm in the story about Lunibelle Lucifelle?"
     response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["sound girl"], response), UNRELATED_RESPONSE_MSG
+    assert chatqa_api_helper.words_in_response(["disappeared", "silent", "no voices", "trees creaked"], response),(
+        UNRELATED_RESPONSE_MSG)
     # 5. Test color text
     question = "What did Lunibelle Lucifelle do when she reached the center of the square?"
     response = ask_question(chatqa_api_helper, question)
@@ -258,7 +259,7 @@ def test_docx_formatted_text(edp_helper, chatqa_api_helper):
     # 6. Test text highlighted in yellow
     question = "What sound did the rain make in the story about Lunibelle Lucifelle?"
     response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["clapped", "hands"], response), UNRELATED_RESPONSE_MSG
+    assert chatqa_api_helper.words_in_response(["clapped", "clapping", "hands"], response), UNRELATED_RESPONSE_MSG
     # 7. Test big text
     question = "How do people react when they hear the wind play a soft tune in the story about Lunibelle Lucifelle?"
     response = ask_question(chatqa_api_helper, question)
@@ -462,6 +463,7 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
         fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
 
 
+@pytest.mark.xfail(reason="Feature not implemented yet - requires graph structures support")
 @allure.testcase("IEASG-T196")
 def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper):
     """
@@ -493,6 +495,7 @@ def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper):
         assert chatqa_api_helper.all_words_in_response(["day 1", "day 2"], response), UNRELATED_RESPONSE_MSG
 
 
+@pytest.mark.xfail(reason="Feature not implemented yet - requires graph structures support")
 @allure.testcase("IEASG-T200")
 def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper):
     """

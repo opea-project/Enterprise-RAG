@@ -233,7 +233,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/default
-        - cluster.local/ns/chatqa/sa/telemetry-kube-prometheus-prometheus
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
 # retriever-svc
 apiVersion: security.istio.io/v1

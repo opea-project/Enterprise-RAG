@@ -12,5 +12,5 @@ istio:
     chart_name: "istio"
     chart_directory: "{{ playbook_dir }}/../components/istio"
     release_name: "istio"
-    chart_version: "1.1.0"
+    chart_version: "1.2.0"
     default_values_file: "{{ playbook_dir }}/../components/istio/values.yaml"

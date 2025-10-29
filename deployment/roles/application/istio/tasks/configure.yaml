@@ -10,10 +10,12 @@
   tags:
     - install
 
-- name: Include tasks to get enabled namespaces
+- name: Generate list of enabled namespaces
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_namespaces.yaml
+  when:
+    enabled_namespaces | default([]) | length == 0
   tags:
     - install
     - uninstall
@@ -23,6 +25,18 @@
     src: templates/mtls-strict.yaml.j2
     dest: "{{ log_dir }}/tmp/{{ item }}-mtls-strict.yaml"
     mode: '0644'
+  loop: "{{ enabled_namespaces }}"
+  tags:
+    - install
+
+- name: Ensure enabled namespaces exist
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
   loop: "{{ enabled_namespaces }}"
   tags:
     - install

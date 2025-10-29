@@ -72,8 +72,8 @@ http_endpoints = [
     "telemetry-prometheus-redis-exporter.monitoring.svc.cluster.local:9121",
     # # Rag-ui endpoints
     "ui-chart.rag-ui.svc.cluster.local:4173",
-    # System endpoints
-    "gmc-controller.system.svc.cluster.local:9443",
+    # System endpoints - disabled because gmc needs to be open to connections from kube-apiserver
+    # "gmc-controller.system.svc.cluster.local:9443",
 ]
 
 redis_endpoints = [

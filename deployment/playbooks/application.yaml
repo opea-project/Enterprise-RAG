@@ -72,18 +72,27 @@
       tags:
         - install
 
-    - name: Run vector_databases role
-      include_role:
-        name: vector_databases
-      when: vector_databases.enabled
-      tags:
-        - install
-        - uninstall
-
     - name: Istio role
       ansible.builtin.include_role:
         name: istio
       when: istio.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Enable Istio for namespaces in the solution
+      ansible.builtin.include_role:
+        name: istio
+        tasks_from: configure.yaml
+      when: istio.enabled
+      tags:
+        - install
+        - uninstall
+
+    - name: Run vector_databases role
+      include_role:
+        name: vector_databases
+      when: vector_databases.enabled
       tags:
         - install
         - uninstall
@@ -156,15 +165,6 @@
       ansible.builtin.include_role:
         name: telemetry
       when: telemetry.enabled
-      tags:
-        - install
-        - uninstall
-
-    - name: Configure Istio
-      ansible.builtin.include_role:
-        name: istio
-        tasks_from: configure.yaml
-      when: istio.enabled
       tags:
         - install
         - uninstall

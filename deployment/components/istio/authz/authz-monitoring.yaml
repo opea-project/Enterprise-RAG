@@ -213,6 +213,7 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/loki
+        - cluster.local/ns/monitoring/sa/minio-sa
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

@@ -58,16 +58,6 @@
   tags:
     - install
 
-- name: Disable istio injection for all namespaces
-  vars:
-    istio_injection: false
-  ansible.builtin.include_role:
-    name: istio
-    tasks_from: manage_injection.yaml
-  tags:
-    - install
-    - uninstall
-
 - name: Load init passwords
   ansible.builtin.include_role:
     name: generate_password

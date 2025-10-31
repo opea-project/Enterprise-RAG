@@ -4,15 +4,8 @@
 ---
 - name: Set override_values.yaml path
   ansible.builtin.set_fact:
-    chat_history_helm_override_values_path: "{{ tmp_dir }}/{{ chat_history.helm.release_name }}-override-values.yaml"
-  tags:
-    - install
-
-- name: Ensure Helm repository is present
-  kubernetes.core.helm_repository:
-    name: "{{ chat_history.helm.repo_name }}"
-    repo_url: "{{ chat_history.helm.repo_url }}"
-    state: present
+    chat_history_helm_override_values_path: >-
+      {{ tmp_dir }}/{{ chat_history.helm.release_name }}-override-values.yaml
   tags:
     - install
 
@@ -32,8 +25,8 @@
     name: generate_password
     tasks_from: generate_password.yaml
   loop:
-    - { name: CHAT_HISTORY_MONGO_DB, user: "{{ chat_history.mongo.auth.user.db_user }}" }
-    - { name: CHAT_HISTORY_MONGO_ADMIN, user: "{{ chat_history.mongo.auth.admin.db_user }}" }
+    - name: CHAT_HISTORY_POSTGRES
+      user: "{{ chat_history.database.auth.user.db_user }}"
   tags:
     - install
 
@@ -80,14 +73,13 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ chat_history.mongo.auth.password_secret_name }}"
+        name: "{{ chat_history.database.auth.password_secret_name }}"
         namespace: "{{ item }}"
       data:
-        MONGO_DATABASE_NAME: "{{ chat_history.mongo.auth.db_name | b64encode }}"
-        MONGO_USER: "{{ chat_history.mongo.auth.user.db_user | b64encode }}"
-        MONGO_PASSWORD: "{{ CHAT_HISTORY_MONGO_DB_PASSWORD | b64encode }}"
-        MONGO_HOST: "{{ ('chat-history-mongodb.' + chat_history.namespace + '.svc') | b64encode }}"
-        MONGO_PORT: "{{ '27017' | b64encode }}"
+        POSTGRES_PASSWORD: "{{ CHAT_HISTORY_POSTGRES_PASSWORD | b64encode }}"
+        POSTGRES_USER: >-
+          {{ chat_history.database.auth.user.db_user | b64encode }}
+        POSTGRES_DB: "{{ 'postgres' | b64encode }}"
   no_log: "{{ secure_logs }}"
   loop:
     - "{{ chat_history.namespace }}"
@@ -107,7 +99,8 @@
     values_files: >
       {{
         [chat_history.helm.default_values_file] +
-        ([chat_history.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
+        ([chat_history.helm.tdx_resources_file]
+        if (tdx.coco.enabled | bool) else []) +
         [chat_history_helm_override_values_path]
       }}
   tags:
@@ -124,7 +117,9 @@
     timeout: "{{ helm_timeout }}"
 #    This can replace chart and template based deployments with TDX
 #    post_renderer:
-#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ chat_history.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
+#      "{{ tdx_post_renderer_executable ~
+#       ' --post-renderer-args \"' ~ chat_history.namespace ~
+#       ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
   register: helm_repo_install_result
   until: helm_repo_install_result is succeeded
@@ -141,11 +136,12 @@
       tags:
         - install
   vars:
-    - namespace: "{{ chat_history.namespace }}"
-    - secret_name: "{{ chat_history.namespace }}-mongodb"
-    - password_mappings:
-      - { key: mongodb-passwords, variable: CHAT_HISTORY_MONGO_DB_PASSWORD, user: "{{ chat_history.mongo.auth.user.db_user }}" }
-      - { key: mongodb-root-password, variable: CHAT_HISTORY_MONGO_ADMIN_PASSWORD, user: "{{ chat_history.mongo.auth.admin.db_user }}" }
+    namespace: "{{ chat_history.namespace }}"
+    secret_name: "{{ chat_history.database.auth.password_secret_name }}"
+    password_mappings:
+      - key: POSTGRES_PASSWORD
+        variable: CHAT_HISTORY_POSTGRES_PASSWORD
+        user: "{{ chat_history.database.auth.user.db_user }}"
   tags:
     - install
 

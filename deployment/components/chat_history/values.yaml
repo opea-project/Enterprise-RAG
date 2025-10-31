@@ -5,8 +5,6 @@ replicaCount: 1
 
 nameOverride: "chat-history"
 fullnameOverride: "chat-history-svc"
-mongoRootPassword: ""
-mongoPassword: ""
 
 alternateTagging: false
 
@@ -22,24 +20,22 @@ service:
   port: 6012
   name: http
 
-mongodb:
-  image:
-    repository: bitnamilegacy/mongodb
+ferretdb:
+  nameOverride: "chat-history-mongodb"
   fullnameOverride: "chat-history-mongodb"
-  name: CHAT_HISTORY
-  replica:
-    replicaCount: 0
-  auth:
-    enabled: true
   service:
+    type: ClusterIP
     port: 27017
-  networkPolicy:
-    extraIngress:
-      - ports:
-        - port: 15008
-  persistence:
-    enabled: true
-    size: 4Gi
+    targetPort: 27017
+  postgresql:
+    auth:
+      database: "postgres"
+      username: "chat_history"
+      password: "{{ CHAT_HISTORY_POSTGRES_PASSWORD }}"
+      secretName: "mongo-database-secret"
+    persistence:
+      enabled: true
+      size: 4Gi
 
 proxy:
   httpProxy: ""

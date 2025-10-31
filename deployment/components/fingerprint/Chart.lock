@@ -1,6 +1,6 @@
 dependencies:
-- name: mongodb
-  repository: https://charts.bitnami.com/bitnami
-  version: 16.5.45
-digest: sha256:34eae8abcb61e8ee3829e36e11ab10ab4f17e2e8186c176f8d8e3e45447afaf8
-generated: "2025-09-09T12:22:57.327242697+02:00"
+- name: ferretdb
+  repository: file://../ferretdb
+  version: 0.1.4
+digest: sha256:6c5b2907f7e2b972862db959001d3dc134a7145225709c5a8ccf055ecac7fe53
+generated: "2025-10-20T17:35:00.000000000+00:00"

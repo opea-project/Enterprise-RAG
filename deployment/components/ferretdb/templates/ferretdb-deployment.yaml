@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ferretdb.fullname" . }}-ferretdb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ferretdb.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ferretdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ferretdb.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ferretdb
+  template:
+    metadata:
+      labels:
+        {{- include "ferretdb.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ferretdb
+    spec:
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+      - name: ferretdb
+        image: "{{ .Values.ferretdb.image.repository }}:{{ .Values.ferretdb.image.tag }}"
+        imagePullPolicy: {{ .Values.ferretdb.image.pullPolicy }}
+        securityContext:
+          {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        ports:
+        - name: mongodb
+          containerPort: {{ .Values.ferretdb.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+              key: POSTGRES_DB
+        - name: FERRETDB_POSTGRESQL_URL
+          value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ include "ferretdb.fullname" . }}-postgresql:{{ .Values.postgresql.service.port }}/$(POSTGRES_DB)?sslmode=disable"
+        - name: FERRETDB_HANDLER
+          value: "postgresql"
+        - name: FERRETDB_MODE
+          value: "normal"
+        - name: FERRETDB_TEST_DISABLE_FILTER_PUSHDOWN
+          value: "true"
+        resources:
+          {{- toYaml .Values.resources.ferretdb | nindent 10 }}
+        livenessProbe:
+          tcpSocket:
+            port: mongodb
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          tcpSocket:
+            port: mongodb
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+      initContainers:
+      - name: wait-for-postgresql
+        image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+        securityContext:
+          {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          until pg_isready -h {{ include "ferretdb.fullname" . }}-postgresql -p {{ .Values.postgresql.service.port }} -U $POSTGRES_USER; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+              key: POSTGRES_USER

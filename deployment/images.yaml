@@ -53,7 +53,7 @@ images:
     docker_context: src/comps/embeddings/impl/model_server/mosec
   otelcolContribJournalctl:
     image_name: otelcol-contrib-journalctl
-    dockerfile_path: Dockerfile-otelcol-contrib-journalctl
+    dockerfile_path: deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl
     docker_context: deployment/components/telemetry/helm/charts/logs
   outGuardUsvc:
     image_name: out-guard

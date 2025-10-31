@@ -94,7 +94,7 @@ To deploy the solution on a platform with Gaudi® AI Accelerator you need to hav
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
--  **Gaudi driver**: `1.21.3`
+-  **Gaudi driver**: `1.22.1`
 
 # Getting Started
 

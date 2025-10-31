@@ -72,7 +72,7 @@ For Intel Gaudi AI accelerators:
 
 ```yaml
 gaudi_operator: true              # Default: false
-habana_driver_version: "1.21.3-57"
+habana_driver_version: "1.22.1-6"
 
 pipelines:
   - namespace: chatqa

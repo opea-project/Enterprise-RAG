@@ -62,8 +62,8 @@ LOCAL_PATH_STORAGE_DIR=""
 ETCD_DATA_DIR=""
 
 # Hardware configuration (Gaudi-specific)
-HABANA_DRIVER_VERSION="1.21.1"
-HABANA_RUNTIME_VERSION="1.21.1-16"
+HABANA_DRIVER_VERSION="1.22.1"
+HABANA_RUNTIME_VERSION="1.22.1-6"
 
 #==============================================================================
 # USAGE AND HELP

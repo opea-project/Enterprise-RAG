@@ -81,12 +81,12 @@ class EmbeddingConnector(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def embed_query(self, input_text: str) -> BaseDoc:
+    def embed_query(self, text: str) -> BaseDoc:
         """
         Embeds a query.
 
         Args:
-            input_text (str): The query text.
+            text (str): The query text.
 
         Returns:
             BaseDoc: The embedded query.

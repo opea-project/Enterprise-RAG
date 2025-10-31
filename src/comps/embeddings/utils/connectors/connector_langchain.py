@@ -213,18 +213,18 @@ class LangchainEmbedding(EmbeddingConnector):
 
         return output
 
-    async def embed_query(self, input_text: str) -> List[float]:
+    async def embed_query(self, text: str) -> List[float]:
         """
         Embeds a query.
 
         Args:
-            input_text (str): The query text.
+            text (str): The query text.
 
         Returns:
             List[float]: The embedded query.
         """
         try:
-            output = await self._embedder.aembed_query(input_text)
+            output = await self._embedder.aembed_query(text)
         except Exception as e:
             logger.exception(f"Error embedding query: {e}")
             raise

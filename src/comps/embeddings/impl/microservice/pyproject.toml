@@ -19,7 +19,7 @@ dependencies = [
     "langchain-huggingface == 0.1.2",
     "langsmith == 0.3.45",
     "huggingface_hub == 0.30.0",
-    "llama-index-embeddings-text-embeddings-inference == 0.1.4",
+    "llama-index-embeddings-text-embeddings-inference == 0.4.2",
     "torch == 2.8.0",
     "transformers == 4.53.3",
     "setuptools == 80.9.0",

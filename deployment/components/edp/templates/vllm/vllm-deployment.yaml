@@ -89,8 +89,6 @@ spec:
             - "$(LLM_VLLM_MODEL_NAME)"
             - --port
             - "8008"
-            - --device
-            - "cpu"
             - --tensor-parallel-size
             - "$(VLLM_TP_SIZE)"
             - --pipeline-parallel-size

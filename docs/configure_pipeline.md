@@ -94,7 +94,7 @@ To use a custom model or adjust the configuration of an existing one:
           OMP_NUM_THREADS: "32"
           VLLM_PP_SIZE: "1"
           VLLM_MAX_MODEL_LEN: "4096"
-        extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
+        extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
    ```
 
 3. **Reference the model** in your Helm [`values.yaml`](../deployment/components/gmc/microservices-connector/helm/values.yaml) file:
@@ -136,7 +136,7 @@ modelConfigs:
       OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
+    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
 
   "casperhansen/llama-3-8b-instruct-awq":
     <<: *generic_base_awq_cpu
@@ -156,7 +156,7 @@ modelConfigs:
       OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
+    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq"]
 ```
 
 </details>

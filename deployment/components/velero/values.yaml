@@ -130,7 +130,4 @@ velero:
     extraEnvVars:
       - name: "NO_PROXY"
         value: "velero-minio.velero.svc"
-  kubectl:
-    image:
-      repository: docker.io/bitnamilegacy/kubectl
 

@@ -102,3 +102,12 @@ velero:
     extraEnvVars:
       - name: "NO_PROXY"
         value: "velero-minio.velero.svc"
+  kubectl:
+    image:
+{% if use_alternate_tagging is defined and use_alternate_tagging %}
+      repository: {{ registry }}
+      tag: erag-init-container_{{ tag }}
+{% else %}
+      repository: {{ registry }}/erag-init-container
+      tag: {{ tag }}
+{% endif %}

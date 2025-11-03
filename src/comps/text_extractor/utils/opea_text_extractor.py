@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import nltk
 import os
 import re
 import time
@@ -27,6 +28,11 @@ class OPEATextExtractor:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(OPEATextExtractor, cls).__new__(cls)
+            
+            # Download NLTK data once at instance creation to avoid slower performance on first call
+            nltk.download('punkt_tab', quiet=True)
+            nltk.download('averaged_perceptron_tagger', quiet=True)
+            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
         return cls._instance
 
     def load_data(self, files: any, link_list: list) -> List[TextDoc]:

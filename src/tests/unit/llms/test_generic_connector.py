@@ -314,6 +314,7 @@ def test_generic_connector_singleton(reset_singleton):
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers={}
             )
@@ -324,6 +325,7 @@ def test_generic_connector_singleton(reset_singleton):
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers={}
             )
@@ -342,6 +344,7 @@ def test_generic_connector_singleton_different_params(reset_singleton):
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers={}
             )
@@ -353,6 +356,7 @@ def test_generic_connector_singleton_different_params(reset_singleton):
                     endpoint="http://different:8000",
                     disable_streaming=True,
                     llm_output_guard_exists=False,
+                    insecure_endpoint=False,
                     openai_format_streaming=True,
                     headers={}
                 )
@@ -371,6 +375,7 @@ def test_generic_connector_invalid_model_server(reset_singleton):
             endpoint="http://localhost:8000",
             disable_streaming=False,
             llm_output_guard_exists=True,
+            insecure_endpoint=False,
             openai_format_streaming=False,
             headers={}
         )
@@ -391,6 +396,7 @@ async def test_generic_connector_generate(reset_singleton, sample_llm_params):
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers={}
             )
@@ -417,6 +423,7 @@ def test_generic_connector_change_configuration_not_implemented(reset_singleton)
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers={}
             )
@@ -438,6 +445,7 @@ def test_generic_connector_with_headers(reset_singleton):
                 endpoint="http://localhost:8000",
                 disable_streaming=False,
                 llm_output_guard_exists=True,
+                insecure_endpoint=False,
                 openai_format_streaming=False,
                 headers=headers
             )

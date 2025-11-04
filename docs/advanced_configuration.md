@@ -9,7 +9,8 @@ This document describes configuration options available when deploying Intel® A
    1. [What are Pipelines?](#what-are-pipelines)
    2. [Default Pipeline Configuration](#default-pipeline-configuration)
    3. [Switching to Gaudi (HPU) Pipeline](#switching-to-gaudi-hpu-pipeline)
-   4. [Resource Configuration Files](#resource-configuration-files)
+   4. [Using external inference endpoint](#using-external-inference-endpoint)
+   5. [Resource Configuration Files](#resource-configuration-files)
 3. [Multi-Node Support and Storage Requirements](#multi-node-support-and-storage-requirements)
    1. [Checking Your Default Storage Class](#checking-your-default-storage-class)
    2. [Storage Options](#storage-options)
@@ -81,6 +82,39 @@ pipelines:
     modelConfigPath: chatqa/resources-model-hpu.yaml
     type: chatqa
 ```
+
+### Using external inference endpoint
+
+External inference endpoint with OpenAI compatible API can be also used:
+
+```yaml
+pipelines:
+  - namespace: chatqa
+    samplePath: chatqa/reference-external-endpoint.yaml
+    resourcesPath: chatqa/resources-reference-external-endpoint.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
+    type: chatqa
+```
+
+This requires additional configuration in `reference-external-endpoint.yaml` in llm step. I. e.
+```yaml
+      - name: Llm
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: llm-svc
+          config:
+            endpoint: /v1/chat/completions
+            LLM_MODEL_SERVER: vllm
+            LLM_MODEL_SERVER_ENDPOINT: example.com
+            LLM_MODEL_NAME: model-name
+```
+
+This supports two types of authentication:
+- OAuth
+- Api key
+
+Refer to the [llm-usvc-readme](../src/comps/llms/README.md) for configuration.
 
 ### Resource Configuration Files
 

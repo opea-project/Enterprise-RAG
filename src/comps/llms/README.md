@@ -53,6 +53,7 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
+| `LLM_TLS_SKIP_VERIFY`           | Skips tls certificate verification for inference endpoint |
 | `LLM_OPENAI_FORMAT_STREAMING`   | When set to "True" (default), uses OpenAI-compliant JSON streaming format. When "False", uses legacy string format.   |
 
 Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
@@ -60,6 +61,8 @@ Set below environment variables only for VLLM if remote model server is enabled 
 | `LLM_VLLM_CLIENT_SECRET`                 | The secret of the client in auth provider |
 | `LLM_VLLM_TOKEN_URL`                     | The token URL to get the access token |
 
+Alternatively, static API KEY can be provided. This will override OAuth settings.
+| `LLM_VLLM_API_KEY` | static API key for vllm endpoint |
 
 ## Getting started
 

@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -275,10 +276,20 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 			var newEnvVars []corev1.EnvVar
 			if svcCfg != nil {
 				for name, value := range *svcCfg {
-					if name == "endpoint" || name == "nodes" {
+					if name == "endpoint" || name == "nodes" || name == "LLM_VLLM_API_KEY" {
 						continue
 					}
-
+					if name == "LLM_MODEL_SERVER_ENDPOINT" {
+						_, err = url.ParseRequestURI(value)
+						if err == nil {
+							itemEnvVar := corev1.EnvVar{
+								Name:  name,
+								Value: value,
+							}
+							newEnvVars = append(newEnvVars, itemEnvVar)
+							continue
+						}
+					}
 					var endpoint, ns string
 					var fetch bool
 

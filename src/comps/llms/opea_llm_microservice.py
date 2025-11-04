@@ -38,6 +38,10 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 # Get the token
 access_token = get_access_token(sanitize_env(os.getenv('LLM_VLLM_TOKEN_URL')), sanitize_env(os.getenv('LLM_VLLM_CLIENT_ID')), sanitize_env(os.getenv('LLM_VLLM_CLIENT_SECRET'))) if sanitize_env(os.getenv('LLM_VLLM_TOKEN_URL')) and sanitize_env(os.getenv('LLM_VLLM_CLIENT_ID')) and sanitize_env(os.getenv('LLM_VLLM_CLIENT_SECRET')) else None
+# If token is passed directly override it
+if os.getenv('LLM_VLLM_API_KEY'):
+    access_token = sanitize_env(os.getenv('LLM_VLLM_API_KEY')) 
+
 headers = {}
 if access_token:
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -47,6 +51,7 @@ opea_llm = OPEALlm(
     model_name=sanitize_env(os.getenv('LLM_MODEL_NAME')),
     model_server=sanitize_env(os.getenv('LLM_MODEL_SERVER')),
     model_server_endpoint=sanitize_env(os.getenv('LLM_MODEL_SERVER_ENDPOINT')),
+    insecure_endpoint=(sanitize_env(os.getenv('LLM_TLS_SKIP_VERIFY')) == "True"),
     connector_name=sanitize_env(os.getenv('LLM_CONNECTOR')),
     disable_streaming=(sanitize_env(os.getenv('LLM_DISABLE_STREAMING')) == "True"),
     llm_output_guard_exists=(sanitize_env(os.getenv('LLM_OUTPUT_GUARD_EXISTS')) == "True"),

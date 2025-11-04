@@ -182,6 +182,25 @@
   tags:
     - install
 
+- name: Extract LLM_VLLM_API_KEY from pipeline configuration
+  ansible.builtin.set_fact:
+    llm_vllm_api_key: "{{ (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | map(attribute='internalService.config.LLM_VLLM_API_KEY') | first | default('') }}"
+  when:
+    - item.samplePath is defined
+    - (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | selectattr('internalService.config.LLM_VLLM_API_KEY', 'defined') | list | length > 0
+  tags:
+    - install
+
+- name: Create VLLM API key secret from template
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'vllm-api-key-secret.yaml.j2') | from_yaml }}"
+  when:
+    - llm_vllm_api_key is defined
+    - llm_vllm_api_key != ''
+  tags:
+    - install
+
 - name: Apply pipeline
   kubernetes.core.k8s:
     state: present

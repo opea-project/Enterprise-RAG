@@ -16,12 +16,13 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
         self._endpoint = endpoint+"/v1"
         self._model_name = model_name
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
+        self._insecure_endpoint = insecure_endpoint
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
 

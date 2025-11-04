@@ -1,3 +1,5 @@
+{{- $envData := include "manifest.addEnvsAndEnvFile" (list .filename .) -}}
+{{- $filteredEnvData := regexReplaceAll "(?m)^LLM_VLLM_API_KEY:.*\n?" $envData "" -}}
 ---
 # Source: llm-usvc/templates/configmap.yaml
 # Copyright (C) 2024-2025 Intel Corporation
@@ -10,7 +12,7 @@ metadata:
   labels:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
-  {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
+  {{- $filteredEnvData | nindent 2 }}
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
@@ -76,10 +78,13 @@ spec:
             - sh
             - -c
             - |
+                if [ -n "$LLM_TLS_SKIP_VERIFY" ]; then
+                  ADDITIONAL_CURL_FLAGS="-k"
+                fi;
                 if [ -z "$LLM_MODEL_SERVER_ENDPOINT" ]; then
                   echo "Environment variable LLM_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
                 else
-                  until curl -s $LLM_MODEL_SERVER_ENDPOINT; do
+                  until curl $ADDITIONAL_CURL_FLAGS -s $LLM_MODEL_SERVER_ENDPOINT; do
                     echo "waiting for embedding model server $LLM_MODEL_SERVER_ENDPOINT to be ready...";
                     sleep 2;
                   done;
@@ -101,6 +106,12 @@ spec:
                   name: hf-token-secret
                   key: HF_TOKEN
           {{- end }}
+            - name: LLM_VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vllm-api-key-secret
+                  key: LLM_VLLM_API_KEY
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

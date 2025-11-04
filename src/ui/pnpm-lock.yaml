@@ -21,6 +21,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.13.12
         version: 3.13.12(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@xyflow/react':
+        specifier: ^12.3.1
+        version: 12.8.2(@types/react@18.3.23)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       classnames:
         specifier: ^2.5.1
         version: 2.5.1
@@ -45,6 +48,9 @@ importers:
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
+      yup:
+        specifier: ^1.4.0
+        version: 1.7.0
     devDependencies:
       '@eslint/compat':
         specifier: ^1.1.1
@@ -154,6 +160,9 @@ importers:
       '@intel-enterprise-rag-ui/components':
         specifier: workspace:^
         version: link:../../packages/components
+      '@intel-enterprise-rag-ui/control-plane':
+        specifier: workspace:^
+        version: link:../../packages/control-plane
       '@intel-enterprise-rag-ui/icons':
         specifier: workspace:^
         version: link:../../packages/icons
@@ -169,15 +178,9 @@ importers:
       '@intel-enterprise-rag-ui/utils':
         specifier: workspace:^
         version: link:../../packages/utils
-      '@xyflow/react':
-        specifier: ^12.3.1
-        version: 12.8.2(@types/react@18.3.23)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       luxon:
         specifier: ^3.6.1
         version: 3.7.1
-      yup:
-        specifier: ^1.4.0
-        version: 1.7.0
 
   apps/docsum:
     dependencies:
@@ -187,6 +190,9 @@ importers:
       '@intel-enterprise-rag-ui/components':
         specifier: workspace:^
         version: link:../../packages/components
+      '@intel-enterprise-rag-ui/control-plane':
+        specifier: workspace:^
+        version: link:../../packages/control-plane
       '@intel-enterprise-rag-ui/icons':
         specifier: workspace:^
         version: link:../../packages/icons
@@ -245,6 +251,24 @@ importers:
       '@react-types/menu':
         specifier: ^3.10.2
         version: 3.10.3(react@18.3.1)
+
+  packages/control-plane:
+    dependencies:
+      '@intel-enterprise-rag-ui/components':
+        specifier: workspace:^
+        version: link:../components
+      '@intel-enterprise-rag-ui/icons':
+        specifier: workspace:^
+        version: link:../icons
+      react:
+        specifier: '>=18.0.0'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 18.3.1(react@18.3.1)
+      react-redux:
+        specifier: '>=9.0.0'
+        version: 9.2.0(@types/react@18.3.23)(react@18.3.1)(redux@5.0.1)
 
   packages/icons:
     dependencies:

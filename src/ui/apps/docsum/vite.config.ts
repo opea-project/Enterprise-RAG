@@ -31,8 +31,12 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ["react", "react-dom"],
+          "intel-enterprise-rag-ui-auth": ["@intel-enterprise-rag-ui/auth"],
           "intel-enterprise-rag-ui-components": [
             "@intel-enterprise-rag-ui/components",
+          ],
+          "intel-enterprise-rag-ui-control-plane": [
+            "@intel-enterprise-rag-ui/control-plane",
           ],
           "intel-enterprise-rag-ui-icons": ["@intel-enterprise-rag-ui/icons"],
           "intel-enterprise-rag-ui-layouts": [
@@ -40,6 +44,15 @@ export default defineConfig({
           ],
           "intel-enterprise-rag-ui-utils": ["@intel-enterprise-rag-ui/utils"],
         },
+      },
+    },
+  },
+  server: {
+    proxy: {
+      "^/api/v1/docsum": {
+        target: "https://erag.com",
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

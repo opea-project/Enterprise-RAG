@@ -1,43 +1,27 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "@xyflow/react/dist/style.css";
-import "./ControlPlaneTab.scss";
-
-import { LoadingFallback } from "@intel-enterprise-rag-ui/components";
-import { ConfigurableServiceIcon } from "@intel-enterprise-rag-ui/icons";
+import { useColorScheme } from "@intel-enterprise-rag-ui/components";
+import {
+  ControlPlanePanel,
+  PipelineGraph,
+} from "@intel-enterprise-rag-ui/control-plane";
+import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
+import { useCallback, useMemo } from "react";
 
 import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
-import ChatQnAGraph from "@/features/admin-panel/control-plane/components/ChatQnAGraph/ChatQnAGraph";
-import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
-import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
 import {
+  chatQnAGraphEdgesSelector,
   chatQnAGraphIsLoadingSelector,
   chatQnAGraphIsRenderableSelector,
+  chatQnAGraphNodesSelector,
+  onChatQnAGraphConnect,
+  onChatQnAGraphEdgesChange,
+  onChatQnAGraphNodesChange,
+  setChatQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
-import { ServiceStatus } from "@/features/admin-panel/control-plane/types";
-import { useAppSelector } from "@/store/hooks";
-
-const ServiceStatusLegend = () => (
-  <div className="chatqna-graph-legend">
-    <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.Ready} noTooltip />
-      <p>Ready</p>
-    </div>
-    <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.NotReady} noTooltip />
-      <p>Not Ready</p>
-    </div>
-    <div className="chatqna-graph-legend-item">
-      <ServiceStatusIndicator status={ServiceStatus.NotAvailable} noTooltip />
-      <p>Status Not Available</p>
-    </div>
-    <div className="chatqna-graph-legend-item mt-3">
-      <ConfigurableServiceIcon className="text-xs" />
-      <p>Configurable Service</p>
-    </div>
-  </div>
-);
+import { ServiceData } from "@/features/admin-panel/control-plane/types";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
   useGetServicesDataQuery();
@@ -45,32 +29,57 @@ const ControlPlaneTab = () => {
   const isLoading = useAppSelector(chatQnAGraphIsLoadingSelector);
   const isRenderable = useAppSelector(chatQnAGraphIsRenderableSelector);
 
-  const getControlPlaneContent = () => {
-    if (isLoading) {
-      return <LoadingFallback />;
-    } else {
-      if (isRenderable) {
-        return (
-          <>
-            <ServiceStatusLegend />
-            <ChatQnAGraph />
-          </>
-        );
-      } else {
-        return (
-          <div className="flex h-full w-full items-center justify-center">
-            <p>Pipeline graph cannot be rendered</p>
-          </div>
-        );
-      }
-    }
+  return (
+    <ControlPlanePanel
+      isLoading={isLoading}
+      isRenderable={isRenderable}
+      Graph={ChatQnAGraph}
+    />
+  );
+};
+
+const ChatQnAGraph = () => {
+  const dispatch = useAppDispatch();
+  const nodes = useAppSelector(chatQnAGraphNodesSelector);
+  const edges = useAppSelector(chatQnAGraphEdgesSelector);
+
+  const { colorScheme: colorMode } = useColorScheme();
+
+  const handleSelectionChange = useCallback(
+    ({ nodes }: { nodes: Node<Record<string, unknown>>[] }) => {
+      dispatch(
+        setChatQnAGraphSelectedServiceNode(nodes as Node<ServiceData>[]),
+      );
+    },
+    [dispatch],
+  );
+
+  const handleNodesChange = (
+    changes: NodeChange<Node<Record<string, unknown>>>[],
+  ) => {
+    dispatch(
+      onChatQnAGraphNodesChange(changes as NodeChange<Node<ServiceData>>[]),
+    );
   };
 
+  const fitViewOptions: FitViewOptions = useMemo(
+    () => ({
+      padding: nodes.length > 9 ? 0.25 : 0.5,
+    }),
+    [nodes.length],
+  );
+
   return (
-    <div className="control-plane-panel">
-      <div className="chatqna-graph-wrapper">{getControlPlaneContent()}</div>
-      <ServiceCard />
-    </div>
+    <PipelineGraph
+      nodes={nodes}
+      edges={edges}
+      fitViewOptions={fitViewOptions}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={onChatQnAGraphEdgesChange}
+      onSelectionChange={handleSelectionChange}
+      onConnect={onChatQnAGraphConnect}
+      colorMode={colorMode}
+    />
   );
 };
 

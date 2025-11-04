@@ -1,13 +1,20 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import MainPage from "@/app/MainPage";
-import AppProvider from "@/app/provider";
+import { useTokenRefresh } from "@intel-enterprise-rag-ui/auth";
 
-const App = () => (
-  <AppProvider>
-    <MainPage />
-  </AppProvider>
-);
+import AppProvider from "@/app/provider";
+import AppRouter from "@/app/router";
+import { keycloakService } from "@/utils/auth";
+
+const App = () => {
+  useTokenRefresh(keycloakService);
+
+  return (
+    <AppProvider>
+      <AppRouter />
+    </AppProvider>
+  );
+};
 
 export default App;

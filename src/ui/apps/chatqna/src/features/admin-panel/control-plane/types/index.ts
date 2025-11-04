@@ -1,7 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Position } from "@xyflow/react";
+import { ServiceNodeData } from "@intel-enterprise-rag-ui/control-plane";
 
 import { ServiceArgumentCheckboxValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentCheckbox/ServiceArgumentCheckbox";
 import { ServiceArgumentNumberInputValue } from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
@@ -36,15 +36,7 @@ export interface ServiceDetails {
   [key: string]: string | boolean | number;
 }
 
-export enum ServiceStatus {
-  Ready = "Ready",
-  NotReady = "Not ready",
-  NotAvailable = "Status Not Available",
-}
-
-export interface ServiceData extends Record<string, unknown> {
-  id: string;
-  displayName: string;
+export interface ServiceData extends ServiceNodeData {
   llmArgs?: LLMArgs;
   retrieverArgs?: RetrieverArgs;
   rerankerArgs?: RerankerArgs;
@@ -52,13 +44,4 @@ export interface ServiceData extends Record<string, unknown> {
   inputGuardArgs?: LLMInputGuardArgs;
   outputGuardArgs?: LLMOutputGuardArgs;
   details?: ServiceDetails;
-  targetPosition?: Position;
-  sourcePosition?: Position;
-  additionalTargetPosition?: Position;
-  additionalTargetId?: string;
-  additionalSourcePosition?: Position;
-  additionalSourceId?: string;
-  selected?: boolean;
-  status?: ServiceStatus;
-  configurable?: boolean;
 }

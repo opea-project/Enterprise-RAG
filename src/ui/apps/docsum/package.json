@@ -1,7 +1,7 @@
 {
   "name": "@intel-enterprise-rag-ui/docsum",
   "private": true,
-  "version": "1.5.0",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
   "dependencies": {
     "@intel-enterprise-rag-ui/auth": "workspace:^",
     "@intel-enterprise-rag-ui/components": "workspace:^",
+    "@intel-enterprise-rag-ui/control-plane": "workspace:^",
     "@intel-enterprise-rag-ui/icons": "workspace:^",
     "@intel-enterprise-rag-ui/layouts": "workspace:^",
     "@intel-enterprise-rag-ui/tailwind-theme": "workspace:^",

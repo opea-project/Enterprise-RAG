@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ### ============================================================================
+# Global settings
+### ============================================================================
+# Namespace where the application services are deployed
+namespace: chatqa
+
+### ============================================================================
 # BASE components: grafana/prometheus+operator + all Kubernetes basic extension
 ### ============================================================================
 kube-prometheus-stack:

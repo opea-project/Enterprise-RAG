@@ -3,6 +3,8 @@ Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
+namespace: {{ item.namespace }}
+
 proxy:
   httpProxy: {{ httpProxy }}
   httpsProxy: {{ httpsProxy }}
@@ -123,7 +125,9 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
+{% if vector_databases.enabled %}
     vector_store: {{ vector_databases.vector_store }}
+{% endif %}
     envs:
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
@@ -133,9 +137,11 @@ images:
 {% if edp.rbac is defined and edp.rbac.enabled is true %}
       VECTOR_DB_RBAC: "true"
 {% endif %}
+{% if vector_databases.enabled %}
       VECTOR_STORE: {{ vector_databases.vector_store }}
       VECTOR_DATATYPE: {{ vector_databases.vector_datatype }}
       VECTOR_DIMS: {{ vector_databases.vector_dims }}
+{% endif %}
   llm-usvc:
     image: "erag-llm"
     repository: *repo
@@ -174,6 +180,10 @@ images:
     tag: *tag
   chat-history-usvc:
     image: "erag-chat-history"
+    repository: *repo
+    tag: *tag
+  docsum-usvc:
+    image: "erag-docsum"
     repository: *repo
     tag: *tag
   init-container:

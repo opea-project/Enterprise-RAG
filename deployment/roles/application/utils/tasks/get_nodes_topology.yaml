@@ -90,7 +90,7 @@
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'equalto', 'chatqa')
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
               | map(attribute='resourcesPath')
               | first
             ), errors='ignore')
@@ -134,7 +134,7 @@
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'equalto', 'chatqa')
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
               | map(attribute='resourcesPath')
               | first
             ), errors='ignore')

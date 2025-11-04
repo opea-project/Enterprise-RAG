@@ -141,16 +141,19 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_extractor/impl/microservice/.env"
   text-compression-usvc:
     image: "erag-text-compression"
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_compression/impl/microservice/.env"
   text-splitter-usvc:
     image: "erag-text-splitter"
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_splitter/impl/microservice/.env"
   embedding-usvc:
     image: "erag-embedding"
     repository: *repo
@@ -261,6 +264,12 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+  docsum-usvc:
+    image: "erag-docsum"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envfile: "src/comps/docsum/impl/microservice/.env"
   init-container:
     image: "erag-init-container"
     repository: *repo

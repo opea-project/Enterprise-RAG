@@ -125,6 +125,7 @@ class DataPrepFile(BaseDoc):
 class DataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
     links: List[str] = []
+    texts: List[str] = []
 
 class HierarchicalDataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []

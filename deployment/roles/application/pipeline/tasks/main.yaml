@@ -32,7 +32,7 @@
 - name: Calculate maxReplicasGaudi_VLLM
   ansible.builtin.set_fact:
     maxReplicasGaudi_VLLM: >-
-      {%- if item.namespace == 'chatqa' and item.modelConfigPath is defined -%}
+      {%- if item.type in ['chatqa', 'docsum'] and item.modelConfigPath is defined -%}
         {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
         {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
         {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}

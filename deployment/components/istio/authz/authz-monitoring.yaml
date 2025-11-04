@@ -280,6 +280,7 @@ spec:
         notPrincipals:
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
         - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/docsum/sa/default
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

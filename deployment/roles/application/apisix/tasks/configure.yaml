@@ -24,6 +24,84 @@
   tags:
     - install
 
+- name: Generate dynamic pipeline endpoints from pipelines configuration
+  ansible.builtin.set_fact:
+    dynamic_pipeline_endpoints: >-
+      {{
+        dynamic_pipeline_endpoints | default([]) + [{
+          'name': ('chatqna' if item.namespace == 'chatqa' else item.namespace),
+          'enabled': true,
+          'namespace': item.namespace,
+          'path': '/api/v1/' ~ ('chatqna' if item.namespace == 'chatqa' else item.namespace),
+          'backend_service': 'router-service',
+          'service_port': 8080,
+          'service_path': '/',
+          'rate_limit_count': 30,
+          'permissions': ['admin#admin-access', 'user#user-access']
+        }]
+      }}
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  when:
+    - apisix.enabled
+    - pipelines is defined
+  tags:
+    - install
+
+- name: Merge dynamic pipeline endpoints with default endpoints
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints': apisix_routes_raw_config.endpoints + (dynamic_pipeline_endpoints | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - dynamic_pipeline_endpoints is defined
+  tags:
+    - install
+
+- name: Generate dynamic API watcher endpoints from pipelines configuration
+  ansible.builtin.set_fact:
+    dynamic_api_endpoints: >-
+      {{
+        dynamic_api_endpoints | default([]) + [{
+          'name': 'k8s-api-watcher-' ~ item.namespace,
+          'namespace': 'default',
+          'path': '/api/v1/' ~ item.namespace ~ '/status',
+          'backend_service': 'kubernetes',
+          'rate_limit_count': 30,
+          'service_port': 443,
+          'scheme': 'https',
+          'service_path': '/apis/gmc.opea.io/v1alpha3/namespaces/' ~ item.namespace ~ '/gmconnectors/' ~ item.namespace ~ '/status',
+          'permissions': ['admin#admin-access']
+        }]
+      }}
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  when:
+    - apisix.enabled
+    - pipelines is defined
+  tags:
+    - install
+
+- name: Merge dynamic API watcher endpoints with default endpoints_api
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints_api': apisix_routes_raw_config.endpoints_api + (dynamic_api_endpoints | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - dynamic_api_endpoints is defined
+  tags:
+    - install
+
 - name: Filter endpoints with existing namespaces
   ansible.builtin.set_fact:
     filtered_endpoints: >-
@@ -51,7 +129,8 @@
   ansible.builtin.set_fact:
     merged_endpoints: "{{ merged_endpoints | default([]) + [updated_endpoint] }}"
   vars:
-    default_endpoints: "{{ (lookup('file', apisix_routes.helm.default_values_file) | from_yaml).endpoints }}"
+    # Use apisix_routes_raw_config which already has dynamic endpoints merged
+    default_endpoints: "{{ apisix_routes_raw_config.endpoints }}"
     override_map: >-
       {{
         (lookup('file', apisix_routes_helm_override_values_path) | from_yaml)
@@ -69,7 +148,7 @@
   set_fact:
     merged_apisix_values: >-
       {{
-        (lookup('file', apisix_routes.helm.default_values_file) | from_yaml)
+        apisix_routes_raw_config
         | combine({'endpoints': merged_endpoints}, recursive=True)
       }}
   when: apisix.enabled

@@ -7,6 +7,7 @@ import time
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from fastapi.responses import Response
+from openai import BadRequestError
 from requests.exceptions import ConnectionError, RequestException
 
 from comps import (
@@ -65,6 +66,10 @@ async def process(input: TextDocList) -> Response:
     try:
         # Pass the input to the 'run' method of the microservice instance
         res = await opea_docsum.run(input)
+    except BadRequestError as e:
+        error_message = f"A BadRequestError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
     except ValueError as e:
         error_message = f"A ValueError occurred while processing: {str(e)}"
         logger.exception(error_message)

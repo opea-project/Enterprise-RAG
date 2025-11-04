@@ -2,18 +2,18 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
+kind: ServiceMonitor
 metadata:
-  name: router-service
+  name: text-extractor-svc
   labels:
     release: {{.Release.Name}}
 spec:
   namespaceSelector:
     matchNames:
-    - {{ .Values.namespace | default "chatqa" }}
+    - docsum
   selector:
     matchLabels:
-      app: router-service
-  podMetricsEndpoints:
-  - targetPort: 8080
+      app.kubernetes.io/instance: text-extractor-usvc
+  endpoints:
+  - port: "text-extractor"
 {{- end }}

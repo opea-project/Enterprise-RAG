@@ -33,10 +33,10 @@ def test_singleton_behavior(reset_singleton):
 def test_load_data_with_no_input(mock_logging, reset_singleton):
     """Test that load_data raises ValueError when no files or links are provided."""
     text_extractor = OPEATextExtractor()
-    input_data = DataPrepInput(files=[], links=[])
+    input_data = DataPrepInput(files=[], links=[], texts=[])
 
     with pytest.raises(ValueError) as exc_info:
-        text_extractor.load_data(files=input_data.files, link_list=input_data.links)
+        text_extractor.load_data(files=input_data.files, link_list=input_data.links, texts=input_data.texts)
         assert str(exc_info.value) == "No links and/or files passed for data preparation."
 
 @patch.object(OPEATextExtractor, '_load_files')
@@ -48,7 +48,7 @@ def test_load_data_with_files_only(mock_load_links, mock_load_files, reset_singl
     mock_docs = [TextDoc(text="test content", metadata={"filename": "test.txt"})]
     mock_load_files.return_value = mock_docs
 
-    result = text_extractor.load_data(files=mock_files, link_list=None)
+    result = text_extractor.load_data(files=mock_files, link_list=None, texts=None)
 
     mock_load_files.assert_called_once_with(files=mock_files)
     mock_load_links.assert_not_called()
@@ -63,11 +63,26 @@ def test_load_data_with_links_only(mock_load_links, mock_load_files, reset_singl
     mock_docs = [TextDoc(text="test content", metadata={"url": "https://example.com"})]
     mock_load_links.return_value = mock_docs
 
-    result = text_extractor.load_data(files=None, link_list=mock_links)
+    result = text_extractor.load_data(files=None, link_list=mock_links, texts=None)
 
     mock_load_links.assert_called_once_with(links=mock_links)
     mock_load_files.assert_not_called()
     assert result == mock_docs
+
+@patch.object(OPEATextExtractor, '_load_files')
+@patch.object(OPEATextExtractor, '_load_links')
+def test_load_data_with_texts_only(mock_load_links, mock_load_files, reset_singleton):
+    """Test load_data with only texts provided."""
+    text_extractor = OPEATextExtractor()
+    mock_text = ["This is sample text content."]
+    mock_docs = [TextDoc(text="This is sample text content.", metadata={})]
+
+    result = text_extractor.load_data(files=None, link_list=None, texts=mock_text)
+
+    mock_load_links.assert_not_called()
+    mock_load_files.assert_not_called()
+    assert len(result) == 1
+    assert result[0].text == mock_docs[0].text
 
 @patch.object(OPEATextExtractor, '_load_files')
 @patch.object(OPEATextExtractor, '_load_links')
@@ -82,7 +97,7 @@ def test_load_data_with_both_files_and_links(mock_load_links, mock_load_files, r
     mock_load_files.return_value = file_docs
     mock_load_links.return_value = link_docs
 
-    result = text_extractor.load_data(files=mock_files, link_list=mock_links)
+    result = text_extractor.load_data(files=mock_files, link_list=mock_links, texts=None)
 
     mock_load_files.assert_called_once_with(files=mock_files)
     mock_load_links.assert_called_once_with(links=mock_links)
@@ -96,7 +111,7 @@ def test_load_data_file_exception(mock_load_files, reset_singleton):
     mock_load_files.side_effect = Exception("Test error")
 
     with pytest.raises(ValueError, match="Failed to load file"):
-        text_extractor.load_data(files=mock_files, link_list=None)
+        text_extractor.load_data(files=mock_files, link_list=None, texts=None)
 
 # Tests for _load_files method
 

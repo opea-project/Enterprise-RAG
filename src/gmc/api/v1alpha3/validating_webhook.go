@@ -35,7 +35,6 @@ var (
 		"TeiRerankingGaudi",
 		"PromptTemplate",
 		"Llm",
-		"DocSum",
 		"Router",
 		"WebRetriever",
 		"Asr",
@@ -57,6 +56,10 @@ var (
 		"VLLMGaudi",
 		"VLLM",
 		"LanguageDetection",
+		"TextExtractor",
+		"TextCompression",
+		"TextSplitter",
+		"DocSum",
 	}
 )
 

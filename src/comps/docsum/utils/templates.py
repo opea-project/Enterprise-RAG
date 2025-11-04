@@ -1,18 +1,18 @@
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-templ_en = """Write a concise summary of the following:
+templ_en = """Write a thorough summary of the following text. Cover the main topics, key points, and important details in 2-3 paragraphs:
 
 
 "{text}"
 
 
-CONCISE SUMMARY:"""
+SUMMARY:"""
 
 
-templ_refine_en = """Your job is to produce a final summary.
+templ_refine_en = """Your job is to produce a thorough final summary.
 We have provided an existing summary up to a certain point, then we will provide more context.
-You need to refine the existing summary (only if needed) with new context and generate a final summary.
+Refine the existing summary with the new context, incorporating key points and important information. Keep the summary well-organized and informative.
 
 
 Existing Summary:
@@ -25,6 +25,6 @@ New Context:
 
 
 
-Final Summary:
+Refined Summary:
 
 """

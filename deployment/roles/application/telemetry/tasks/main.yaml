@@ -160,6 +160,7 @@
     name: vector-database-config
     namespace: chatqa
   register: secret_info
+  when: vector_databases.enabled
   no_log: "{{ secure_logs }}"
   tags:
     - install
@@ -177,6 +178,7 @@
         namespace: "{{ telemetry.monitoring.namespace }}"
       data: "{{ secret_info.resources[0].data }}"
       type: "{{ secret_info.resources[0].type }}"
+  when: vector_databases.enabled
   no_log: "{{ secure_logs }}"
   tags:
     - install
@@ -275,6 +277,13 @@
   tags:
     - install
 
+- name: Get pipeline namespaces for traces instrumentation
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: get_pipelines_namespaces.yaml
+  tags:
+    - install
+
 - name: Install traces instrumentation Helm chart
   kubernetes.core.helm:
     name: telemetry-traces-instr
@@ -282,6 +291,9 @@
     release_namespace: "{{ telemetry.traces.namespace }}"
     state: present
     values_files: "{{ telemetry.traces_instr.helm_default_values_file }}"
+    values:
+      instrumentation:
+        namespaces: "{{ pipeline_namespaces }}"
     create_namespace: true
     wait: true
     timeout: "{{ helm_timeout }}"

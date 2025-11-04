@@ -1,4 +1,8 @@
 images:
+  docsumUsvc:
+    image_name: docsum
+    dockerfile_path: src/comps/docsum/impl/microservice/Dockerfile
+    docker_context: src
   dpguardUsvc:
     image_name: dpguard
     dockerfile_path: src/comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile

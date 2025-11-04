@@ -3,6 +3,8 @@ Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
+namespace: {{ pipelines[0].namespace }}
+
 kube-prometheus-stack:
     grafana:
 {% if telemetry.additional_values.ingress is not defined %}
@@ -30,24 +32,26 @@ kube-prometheus-stack:
 {{ telemetry.additional_values | to_nice_yaml }}
 {% endif %}
 
-{% if vector_databases.vector_store == "redis" %}
-prometheus-redis-exporter:
-  enabled: true
-  redisAddress: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
-  serviceMonitor:
+{% if vector_databases.enabled and vector_databases.vector_store is defined %}
+  {% if vector_databases.vector_store == "redis" %}
+  prometheus-redis-exporter:
     enabled: true
-    targets:
-      - url: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
-        name: redis-vector-db
-{% endif %}
+    redisAddress: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
+    serviceMonitor:
+      enabled: true
+      targets:
+        - url: redis://vdb-redis-headless.vdb.svc.cluster.local:6379
+          name: redis-vector-db
+  {% endif %}
 
-{% if vector_databases.vector_store == "redis-cluster" %}
-prometheus-redis-exporter:
-  enabled: true
-  redisAddress: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
-  serviceMonitor:
+  {% if vector_databases.vector_store == "redis-cluster" %}
+  prometheus-redis-exporter:
     enabled: true
-    targets:
-      - url: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
-        name: redis-vector-db
+    redisAddress: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
+    serviceMonitor:
+      enabled: true
+      targets:
+        - url: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
+          name: redis-vector-db
+  {% endif %}
 {% endif %}

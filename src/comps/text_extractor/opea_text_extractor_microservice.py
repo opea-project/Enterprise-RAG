@@ -33,11 +33,12 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 # Initialize an instance of the OPEADataprep class with environment variables.
 # OPEADataprep is a singleton so we initialize it with the environment variables.
 # Next, text_extractor calls can be overriden with the input parameters if passed.
-def run_text_extractor(files, links):
+def run_text_extractor(files, links, texts):
     text_extractor = OPEATextExtractor()
     textdocs = text_extractor.load_data(
         files=files,
-        link_list=links
+        link_list=links,
+        texts=texts
     )
     return textdocs
 
@@ -60,7 +61,7 @@ pool = ProcessPoolExecutor(max_workers=6)
     service_type=ServiceType.TEXT_EXTRACTOR,
     endpoint=str(MegaServiceEndpoint.TEXT_EXTRACTOR),
     host="0.0.0.0",
-    port=int(os.getenv('text_extractor_USVC_PORT', default=9398)),
+    port=int(os.getenv('TEXT_EXTRACTOR_USVC_PORT', default=9398)),
     input_datatype=DataPrepInput,
     output_datatype=TextSplitterInput,
 )
@@ -72,9 +73,11 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
 
     files = input.files
     link_list = input.links
+    texts = input.texts
 
     logger.debug(f"Dataprep files: {files}")
     logger.debug(f"Dataprep link list: {link_list}")
+    logger.debug(f"Dataprep texts: {texts}")
 
     decoded_files = []
     if files:
@@ -102,7 +105,7 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
     loaded_docs = None
     loop = asyncio.get_event_loop()
     try:
-        loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list)
+        loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list, texts)
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"A Value Error occurred while processing: {str(e)}")

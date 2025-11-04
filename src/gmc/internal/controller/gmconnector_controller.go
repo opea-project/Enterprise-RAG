@@ -56,7 +56,6 @@ const (
 	TeiReranking             = "TeiReranking"
 	TeiRerankingGaudi        = "TeiRerankingGaudi"
 	Llm                      = "Llm"
-	DocSum                   = "DocSum"
 	Router                   = "router"
 	DataPrep                 = "DataPrep"
 	xeon                     = "xeon"
@@ -83,6 +82,10 @@ const (
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
 	LanguageDetection        = "LanguageDetection"
+	TextExtractor            = "TextExtractor"
+	TextCompression          = "TextCompression"
+	TextSplitter			 = "TextSplitter"
+	DocSum				     = "DocSum"
 )
 
 var yamlDict = map[string]string{
@@ -98,7 +101,6 @@ var yamlDict = map[string]string{
 	TeiReranking:        yaml_dir + "teirerank.yaml",
 	TeiRerankingGaudi:   yaml_dir + "teirerank_gaudi.yaml",
 	Llm:                 yaml_dir + "llm-usvc.yaml",
-	DocSum:              yaml_dir + "docsum-llm-uservice.yaml",
 	Router:              yaml_dir + "gmc-router.yaml",
 	WebRetriever:        yaml_dir + "web-retriever.yaml",
 	ASR:                 yaml_dir + "asr.yaml",
@@ -114,6 +116,10 @@ var yamlDict = map[string]string{
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 	VLLM:                yaml_dir + "vllm.yaml",
 	LanguageDetection:   yaml_dir + "langdtct-usvc.yaml",
+	TextExtractor:       yaml_dir + "text-extractor-usvc.yaml",
+	TextCompression:     yaml_dir + "text-compression-usvc.yaml",
+	TextSplitter:        yaml_dir + "text-splitter-usvc.yaml",
+	DocSum:              yaml_dir + "docsum-usvc.yaml",
 }
 
 var (
@@ -492,6 +498,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
+		keyname == "DOCSUM_LLM_USVC_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT"

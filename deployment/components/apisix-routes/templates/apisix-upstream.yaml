@@ -1,9 +1,0 @@
-{{- range .Values.upstreams }}
-apiVersion: apisix.apache.org/v2
-kind: ApisixUpstream
-metadata:
-  name: {{ .name }}
-  namespace: {{ .namespace }}
-spec:
-  scheme: {{ .scheme }}
-{{- end }}

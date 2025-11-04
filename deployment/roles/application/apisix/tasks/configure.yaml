@@ -1,6 +1,13 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix.helm.chart_name }}-override-values.yaml"
+    apisix_routes_helm_override_values_path: "{{ log_dir }}/{{ apisix_routes.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
 - name: Gather existing namespaces
   kubernetes.core.k8s_info:
     kind: Namespace
@@ -174,5 +181,36 @@
     namespace: "{{ apisix_routes.namespace }}"
     state: absent
   when: apisix.enabled
+  tags:
+    - uninstall
+
+# temporary until we split apisix routes per component
+- name: Delete ApisixUpstream resources from default namespace
+  kubernetes.core.k8s:
+    api_version: apisix.apache.org/v2
+    kind: ApisixUpstream
+    name: kubernetes-api-upstream
+    namespace: default
+    state: absent
+  ignore_errors: true
+  when: apisix.enabled
+  tags:
+    - uninstall
+
+# temporary until we split apisix routes per component
+- name: Delete dynamic ApisixRoute resources from default namespace (k8s API watchers)
+  kubernetes.core.k8s:
+    api_version: apisix.apache.org/v2
+    kind: ApisixRoute
+    name: "k8s-api-watcher-{{ item.namespace }}-route"
+    namespace: default
+    state: absent
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  ignore_errors: true
+  when:
+    - apisix.enabled
+    - pipelines is defined
   tags:
     - uninstall

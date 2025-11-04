@@ -16,6 +16,17 @@
   tags:
     - install
 
+- name: Build Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency build
+    chdir: "{{ keycloak.helm.chart_directory }}"
+  register: helm_dependency_build_result
+  until: helm_dependency_build_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - install
+
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     state: present
@@ -113,12 +124,6 @@
     src: "values.yaml.j2"
     dest: "{{ keycloak_helm_override_values_path }}"
     mode: '0644'
-  tags:
-    - install
-
-- name: Update Helm dependencies for Keycloak chart
-  ansible.builtin.command:
-    cmd: helm dependency update {{ keycloak.helm.chart_ref }}
   tags:
     - install
 

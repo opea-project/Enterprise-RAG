@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# Allow only APISIX gateway to access APISIX admin API
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
@@ -18,6 +19,8 @@ spec:
         - cluster.local/ns/auth-apisix/sa/auth-apisix-ingress-controller
         - cluster.local/ns/rag-ui/sa/chat-qna-ui-app
 ---
+# Restrict etcd access to only APISIX gateway and ingress-controller
+# NO password auth - relying on Istio mTLS for security
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
@@ -26,10 +29,11 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: etcd
+      app: auth-apisix-etcd
   action: DENY
   rules:
   - from:
     - source:
         notPrincipals:
         - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/auth-apisix/sa/auth-apisix-ingress-controller

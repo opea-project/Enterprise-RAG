@@ -1,0 +1,92 @@
+{{- /*
+Copyright (C) 2024-2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+*/ -}}
+{{- if .Values.k8s_api_rbac.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.k8s_api_rbac.cluster_role_name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+  # Read K8s core resources
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - endpoints
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  
+  # Read K8s resource status
+  - apiGroups: [""]
+    resources:
+      - pods/status
+      - services/status
+    verbs:
+      - get
+  
+  # Read apps resources
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - statefulsets
+      - replicasets
+      - daemonsets
+    verbs:
+      - get
+      - list
+      - watch
+  
+  # Read apps status
+  - apiGroups: ["apps"]
+    resources:
+      - deployments/status
+      - statefulsets/status
+      - replicasets/status
+      - daemonsets/status
+    verbs:
+      - get
+  
+  # Read GMC custom resources
+  - apiGroups: ["gmc.opea.io"]
+    resources:
+      - gmconnectors
+    verbs:
+      - get
+      - list
+      - watch
+  
+  # Read GMC status
+  - apiGroups: ["gmc.opea.io"]
+    resources:
+      - gmconnectors/status
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Values.k8s_api_rbac.cluster_role_binding_name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.k8s_api_rbac.cluster_role_name }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.k8s_api_rbac.service_account_name }}
+    namespace: {{ .Values.k8s_api_rbac.service_account_namespace }}
+{{- end }}

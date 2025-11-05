@@ -17,11 +17,20 @@ from comps.prompt_template.utils.chat_history_handler import ChatHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
+AVAILABLE_LANGUAGES = ["en", "pl"]
+
 class OPEAPromptTemplate:
-    def __init__(self, chat_history_endpoint: str = None,):
+    def __init__(self, chat_history_endpoint: str = None, prompt_template_language: str = "en") -> None:
         self._if_conv_history_in_prompt = False
         self._chat_history_placeholder = "conversation_history"
-        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint)
+
+        self.prompt_template_language = prompt_template_language.lower()
+        if self.prompt_template_language not in AVAILABLE_LANGUAGES:
+            err_msg = f"Prompt template language '{self.prompt_template_language}' is not supported. Available languages: {AVAILABLE_LANGUAGES}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
+
+        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint, prompt_template_language=self.prompt_template_language)
         try:
             self._validate(default_system_template, default_user_template)
             self.system_prompt_template = default_system_template

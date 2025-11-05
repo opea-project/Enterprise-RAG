@@ -43,6 +43,9 @@ proxy:
   httpsProxy: ""
   noProxy: ""
 
+systemFingerprint:
+  templateLanguage: "en"
+
 resources:
   requests:
     memory: "64Mi"

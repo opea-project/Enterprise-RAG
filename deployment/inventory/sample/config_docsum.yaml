@@ -92,15 +92,7 @@ balloons:
   enabled: true
   namespace: kube-system # alternatively, set custom namespace for balloons
   wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
-  services:
-    vllm:
-      resources:
-        requests:
-          cpu: 32
-          memory: 64Gi
-        limits:
-          cpu: 32
-          memory: 100Gi
+  throughput_mode: true # set to true to optimize for horizontal scaling
 
 pipelines:
   - namespace: docsum

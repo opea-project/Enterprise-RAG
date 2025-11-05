@@ -81,6 +81,10 @@ spec:
                 secretKeyRef:
                   name: "mongo-database-secret"
                   key: POSTGRES_PASSWORD
+          {{- if .Values.systemFingerprint.templateLanguage }}
+            - name: SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE
+              value: {{ .Values.systemFingerprint.templateLanguage | quote }}
+          {{- end }}
           {{- if .Values.proxy.httpProxy }}
             - name: http_proxy
               value: {{ .Values.proxy.httpProxy }}

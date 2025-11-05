@@ -10,12 +10,23 @@ from comps import (
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
+USER_PREFIXES = {
+    "en": "User",
+    "pl": "Użytkownik"
+}
+
+ASSISTANT_PREFIXES = {
+    "en": "Assistant",
+    "pl": "Asystent"
+}
+
 class ChatHistoryHandler:
-    def __init__(self, chat_history_endpoint: str = None) -> None:
+    def __init__(self, chat_history_endpoint: str = None, prompt_template_language: str = "en") -> None:
         """
         Initializes the ChatHistoryHandler instance.
         """
         self.chat_history_endpoint = chat_history_endpoint
+        self.prompt_template_language = prompt_template_language
 
         if self.chat_history_endpoint is not None and self.chat_history_endpoint.strip() != "":
             r = requests.get(f"{self.chat_history_endpoint}/v1/health_check", headers={"Content-Type": "application/json"})
@@ -127,7 +138,8 @@ class ChatHistoryHandler:
 
         formatted_output = ""
         for conv in last_k_answers:
-            formatted_output += f"User: {conv.question}\nAssistant: {conv.answer}\n"
+            formatted_output += f"{USER_PREFIXES[self.prompt_template_language]}: {conv.question}\n\
+{ASSISTANT_PREFIXES[self.prompt_template_language]}: {conv.answer}\n"
 
         logger.info(formatted_output)
         return formatted_output.strip()

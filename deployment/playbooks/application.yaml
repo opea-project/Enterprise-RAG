@@ -63,6 +63,7 @@
       tags:
         - install
         - uninstall
+        - topology-preview
 
     - name: Clean-up NRI plugin resources if balloons disabled
       include_role:

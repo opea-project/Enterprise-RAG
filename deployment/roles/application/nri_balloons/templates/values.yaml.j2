@@ -19,11 +19,15 @@ spec:
       - vllm
       - edp-vllm
       - torchserve-reranking
+      - torchserve-embedding
   balloonTypes:
+  - name: reserved
+    minCPUs: 1
   - name: vllm-balloon
-    minCPUs: {{ vllm_cpus if amx_supported and maxBalloonsVLLM != 0 else -1 }}
-    maxCPUs: {{ vllm_cpus if amx_supported and maxBalloonsVLLM != 0 else -1 }}
-    maxBalloons: {{ maxBalloonsVLLM }}
+    minCPUs: {{ vllm_cpus if amx_supported and (vllm_cpus | int) > 0 and (maxBalloonsVLLM | int) != 0 and not gaudi else -1 }}
+    maxCPUs: {{ vllm_cpus if amx_supported and (vllm_cpus | int) > 0 and (maxBalloonsVLLM | int) != 0 and not gaudi else -1 }}
+    minBalloons: {{ maxBalloonsVLLM if not gaudi and (vllm_cpus | int) > 0 else 0 }}
+    maxBalloons: {{ maxBalloonsVLLM if not gaudi and (vllm_cpus | int) > 0 else 0 }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true
     loads:
@@ -35,9 +39,10 @@ spec:
       - vllm
       - edp-vllm
   - name: torchserve-reranking-balloon
-    minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and maxBalloonsReranker != 0 else -1 }}
-    maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and maxBalloonsReranker != 0 else -1 }}
-    maxBalloons: {{ maxBalloonsReranker }}
+    minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
+    maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
+    minBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
+    maxBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true
     loads:
@@ -47,6 +52,20 @@ spec:
       operator: In
       values:
       - torchserve-reranking
+  - name: torchserve-embedding-balloon
+    minCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
+    maxCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
+    minBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
+    maxBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
+    allocatorTopologyBalancing: true
+    preferNewBalloons: true
+    loads:
+    - llm-inference
+    matchExpressions:
+    - key: name
+      operator: In
+      values:
+      - torchserve-embedding
   instrumentation:
     httpEndpoint: :8891
     metrics:
@@ -65,7 +84,7 @@ spec:
   reservedPoolNamespaces:
     - kube-system
   reservedResources:
-    cpu: "2"
+    cpu: "1"
   loadClasses:
   - name: llm-inference
     level: core

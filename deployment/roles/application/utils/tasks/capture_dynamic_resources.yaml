@@ -1,0 +1,83 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Define dynamic resource naming patterns
+  ansible.builtin.set_fact:
+    workload_pattern: 'vllm-service-m|torchserve-reranking|torchserve-embedding'
+    pvc_pattern: 'model-volume-llm|model-volume-reranker|model-volume-embedding'
+  tags:
+    - install
+
+- name: Gather existing StatefulSets
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    namespace: "{{ pipeline_item.namespace }}"
+  register: all_statefulsets
+  tags:
+    - install
+
+- name: Gather existing Deployments
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    namespace: "{{ pipeline_item.namespace }}"
+  register: all_deployments
+  tags:
+    - install
+
+- name: Gather existing PVCs
+  kubernetes.core.k8s_info:
+    kind: PersistentVolumeClaim
+    namespace: "{{ pipeline_item.namespace }}"
+  register: all_pvcs
+  tags:
+    - install
+
+- name: Filter StatefulSets with dynamic naming patterns
+  ansible.builtin.set_fact:
+    pre_install_dynamic_statefulsets: >-
+      {{
+        all_statefulsets.resources | default([])
+        | selectattr('metadata.name', 'search', workload_pattern)
+        | map(attribute='metadata.name')
+        | list
+        | sort
+      }}
+  tags:
+    - install
+
+- name: Filter Deployments with dynamic naming patterns
+  ansible.builtin.set_fact:
+    pre_install_dynamic_deployments: >-
+      {{
+        all_deployments.resources | default([])
+        | selectattr('metadata.name', 'search', workload_pattern)
+        | map(attribute='metadata.name')
+        | list
+        | sort
+      }}
+  tags:
+    - install
+
+- name: Gather all PVCs with dynamic naming patterns
+  ansible.builtin.set_fact:
+    pre_install_dynamic_pvcs: >-
+      {{
+        all_pvcs.resources | default([])
+        | selectattr('metadata.name', 'search', pvc_pattern)
+        | map(attribute='metadata.name')
+        | list
+        | sort
+      }}
+  tags:
+    - install
+
+- name: Store baseline of dynamically-generated resources before installation
+  ansible.builtin.debug:
+    msg:
+      - "Captured baseline for namespace {{ pipeline_item.namespace }}:"
+      - "  StatefulSets: {{ pre_install_dynamic_statefulsets }}"
+      - "  Deployments: {{ pre_install_dynamic_deployments }}"
+      - "  PVCs: {{ pre_install_dynamic_pvcs }}"
+  tags:
+    - install

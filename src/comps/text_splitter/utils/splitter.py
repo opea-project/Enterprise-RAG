@@ -118,7 +118,12 @@ class MarkdownSplitter(AbstractSplitter):
     def strip_md_links_from_text(self, text: str) -> str:
         # Replace markdown links with just the text
         # [text](url) -> text
-        return re.sub(r'(?:\[)?([^\[\]]+)(?:\]\([^\)]+\))?', r'\1', text)
+        text = re.sub(r'(?:\[)?([^\[\]]+)(?:\]\([^\)]+\))?', r'\1', text)
+        
+        # Strip asterisks from the beginning and end
+        # **text** or *text* -> text
+        text = text.strip('*')
+        return text
 
     def split_text(self, text, extension: Optional[str] = None):
         splitters = self.text_splitter

@@ -25,7 +25,8 @@ change_opea_logger_level(logger, os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 mongo_controller = OPEASystemFingerprintController(
     db_name=sanitize_env(os.getenv("MONGODB_NAME")),
     mongodb_host=sanitize_env(os.getenv("SYSTEM_FINGERPRINT_MONGODB_HOST")),
-    mongodb_port=int(os.getenv("SYSTEM_FINGERPRINT_MONGODB_PORT")))
+    mongodb_port=int(os.getenv("SYSTEM_FINGERPRINT_MONGODB_PORT")),
+    template_language=sanitize_env(os.getenv("SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE", "en")))
 
 
 @register_microservice(

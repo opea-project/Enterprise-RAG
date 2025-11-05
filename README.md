@@ -84,7 +84,7 @@ To deploy the solution using Xeon only, you will need access to any platform wit
 -  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 > [!NOTE]
-> By default, Intel® AI for Enterprise RAG uses the NRI plugin for performance optimization. Please adjust NUMA node size before running application. For more info: [NRI plugin](deployment/components/nri-plugin/README.md#vllm-cpus-allocation-adjustment)
+> By default, Intel® AI for Enterprise RAG uses the NRI plugin for performance optimization. For more info: [NRI plugin](deployment/components/nri-plugin/README.md)
 
 ### Deployment on Xeon + Gaudi Accelerator
 

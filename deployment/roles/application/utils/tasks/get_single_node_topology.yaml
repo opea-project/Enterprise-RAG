@@ -7,6 +7,7 @@
   register: cpu_numa_mapping
   tags:
     - install
+    - topology-preview
 
 - name: Count CPUs per NUMA node
   ansible.builtin.shell: |
@@ -14,6 +15,7 @@
   register: cpu_counts_per_node
   tags:
     - install
+    - topology-preview
 
 - name: Extract CPU counts
   ansible.builtin.shell: |
@@ -21,18 +23,21 @@
   register: cpu_counts_raw
   tags:
     - install
+    - topology-preview
 
 - name: Set CPU counts list
   set_fact:
     cpu_counts_list: "{{ cpu_counts_raw.stdout_lines | map('int') | list }}"
   tags:
     - install
+    - topology-preview
 
 - name: Check if NUMA nodes are balanced
   set_fact:
     numa_balanced: "{{ cpu_counts_list | unique | length == 1 }}"
   tags:
     - install
+    - topology-preview
 
 - name: Display warning if NUMA nodes are imbalanced
   ansible.builtin.debug:
@@ -43,6 +48,7 @@
   when: not numa_balanced
   tags:
     - install
+    - topology-preview
 
 - name: Get number of NUMA nodes
   ansible.builtin.shell: |
@@ -50,6 +56,7 @@
   register: numa_nodes_result
   tags:
     - install
+    - topology-preview
 
 - name: Check for AMX support
   kubernetes.core.k8s_exec:
@@ -61,18 +68,7 @@
   ignore_errors: true
   tags:
     - install
-
-- name: Calculate maxBalloons for vLLM
-  set_fact:
-    maxBalloonsVLLM: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((VLLM_CPUS | int) * 2))) }}"
-  tags:
-    - install
-
-- name: Calculate maxBalloons for Reranker
-  set_fact:
-    maxBalloonsReranker: "{{ ((numa_nodes_result.stdout | int) * ((cpu_counts_list | min | int) // ((RERANKER_CPUS | int) * 2))) }}"
-  tags:
-    - install
+    - topology-preview
 
 - name: Get all pods scheduled on this node
   kubernetes.core.k8s_info:
@@ -82,6 +78,7 @@
   register: pods_info
   tags:
     - install
+    - topology-preview
 
 - name: Check if any pod name contains "habanalabs-device-plugin"
   set_fact:
@@ -94,6 +91,7 @@
       }}
   tags:
     - install
+    - topology-preview
 
 - name: Update cpu_topology_per_node dict
   set_fact:
@@ -105,11 +103,10 @@
             'cpus_per_numa_node': (cpu_counts_list | min),
             'amx_supported': (amx_check.rc == 0),
             'numa_balanced': numa_balanced,
-            'maxBalloonsVLLM': (maxBalloonsVLLM | int),
-            'maxBalloonsReranker': (maxBalloonsReranker | int),
             'gaudi': habana_plugin_present
           }
         })
       }}
   tags:
     - install
+    - topology-preview

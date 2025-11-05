@@ -43,8 +43,20 @@ balloons:
   enabled: {{ balloons.enabled }}
   namespace: {{ balloons.namespace }}
   wait_timeout: {{ balloons.wait_timeout }}
-  services: {{ balloons.services }}
   chart_name: {{ balloons_chart_name }}
+{% endif %}
+
+{% if optimal_replicas is defined %}
+vllmNodes:
+{% for node_name, node_info in optimal_replicas.items() %}
+{% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and (node_info.amx_supported == true or node_info.gaudi == true) %}
+  - name: {{ node_name }}
+    nodeSelector:
+      kubernetes.io/hostname: {{ node_name }}
+    VLLM_CPU: "{{ node_info.adjusted_vllm_size }}"
+    VLLM_INSTANCES: {{ node_info.replicas }}
+{% endif %}
+{% endfor %}
 {% endif %}
 
 {% if gmc.pvc is defined and gmc.pvc.models is defined %}
@@ -106,6 +118,8 @@ images:
     image: "erag-prompt_template"
     repository: *repo
     tag: *tag
+    envs:
+      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -178,6 +192,8 @@ images:
     image: "erag-system-fingerprint"
     repository: *repo
     tag: *tag
+    envs:
+      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
   chat-history-usvc:
     image: "erag-chat-history"
     repository: *repo

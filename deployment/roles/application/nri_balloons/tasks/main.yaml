@@ -37,6 +37,8 @@
   when: cpu_topology_per_node is not defined
   tags:
     - install
+    - uninstall
+    - topology-preview
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -95,34 +97,22 @@
   tags:
     - install
 
-- name: Fail if all nodes have maxBalloonsVLLM=0
-  ansible.builtin.fail:
-    msg: |
-      maxBalloonsVLLM is 0 on all nodes. This means no vLLM pods can be scheduled on any node with the current configuration.
-      This usually happens when the requested CPUs per vLLM pod is bigger than the number of physical cores available in a single NUMA node.
-      Please check your vLLM CPU request/limit values and set them to fit within the NUMA node size.
-      For more help, see the nri-plugin documentation:
-      https://github.com/opea-project/Enterprise-RAG/tree/main/deployment/components/nri-plugin
-  when: >-
-    not (
-      cpu_topology_per_node.values() | selectattr('maxBalloonsVLLM', 'ne', 0) | list | length > 0
-    ) and not (gaudi_detected | default(false))
-  tags:
-    - install
-
-- name: Fail if all nodes have maxBalloonsReranker=0
-  ansible.builtin.fail:
-    msg: |
-      maxBalloonsReranker is 0 on all nodes. This means no reranker pods can be scheduled on any node with the current configuration.
-      This usually happens when the requested CPUs per vLLM pod is bigger than the number of physical cores available in a single NUMA node.
-      Please check your reranker request/limit values and set them to fit within the NUMA node size.
-      For more help, see the nri-plugin documentation:
-      https://github.com/opea-project/Enterprise-RAG/tree/main/deployment/components/nri-plugin
-
-  when: >-
-    not (
-      cpu_topology_per_node.values() | selectattr('maxBalloonsReranker', 'ne', 0) | list | length > 0
-    )
+- name: Calculate maxReplicasGaudi_VLLM
+  ansible.builtin.set_fact:
+    maxReplicasGaudi_VLLM: >-
+      {%- if item.type in ['chatqa', 'docsum'] and item.modelConfigPath is defined -%}
+        {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
+        {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
+        {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}
+        {%- if tp_size is not none and (tp_size | int) != 0 -%}
+          {{ 8 // (tp_size | int) }}
+        {%- else -%}
+          {{ none }}
+        {%- endif -%}
+      {%- else -%}
+        {{ none }}
+      {%- endif -%}
+  loop: "{{ pipelines }}"
   tags:
     - install
 

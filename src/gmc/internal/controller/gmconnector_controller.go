@@ -268,7 +268,17 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				return nil, err
 			}
 			if svc != "" {
-				deploymentObj.SetName(svc + dplymtSubfix)
+				// Check for per-node deployment labels
+				embeddingNode, hasEmbeddingNode := deploymentObj.Spec.Template.Labels["embedding-node"]
+				rerankingNode, hasRerankingNode := deploymentObj.Spec.Template.Labels["reranking-node"]
+				
+				if hasEmbeddingNode && embeddingNode != "" {
+					deploymentObj.SetName(svc + "-" + embeddingNode)
+				} else if hasRerankingNode && rerankingNode != "" {
+					deploymentObj.SetName(svc + "-" + rerankingNode)
+				} else {
+					deploymentObj.SetName(svc + dplymtSubfix)
+				}
 				// Set the labels if they're specified
 				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
 				deploymentObj.Spec.Template.Labels["app"] = svc
@@ -379,18 +389,23 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				return nil, err
 			}
 		} else if obj.GetKind() == StatefulSet {
-			deploymentObj := &appsv1.StatefulSet{}
-			err = scheme.Scheme.Convert(obj, deploymentObj, nil)
-			if err != nil {
-				_log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
-				return nil, err
-			}
-			if svc != "" {
+	       deploymentObj := &appsv1.StatefulSet{}
+	       err = scheme.Scheme.Convert(obj, deploymentObj, nil)
+	       if err != nil {
+		       _log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
+		       return nil, err
+	       }
+		if svc != "" {
+			vllmNode, hasVllmNode := deploymentObj.Spec.Template.Labels["vllm-node"]
+			if hasVllmNode && vllmNode != "" {
+				deploymentObj.SetName(svc + "-" + vllmNode)
+		    } else {
 				deploymentObj.SetName(svc + dplymtSubfix)
-				// Set the labels if they're specified
-				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
-				deploymentObj.Spec.Template.Labels["app"] = svc
-			}
+		}
+		    // Set the labels if they're specified
+		    deploymentObj.Spec.Selector.MatchLabels["app"] = svc
+		    deploymentObj.Spec.Template.Labels["app"] = svc
+		}
 
 			deploymentObj.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
 				Type: appsv1.RollingUpdateStatefulSetStrategyType,

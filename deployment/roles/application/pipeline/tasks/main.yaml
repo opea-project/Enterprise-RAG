@@ -19,72 +19,11 @@
   tags:
     - install
 
-- name: Gather NUMA topology info
-  ansible.builtin.include_role:
-    name: utils
-    tasks_from: get_nodes_topology.yaml
-  when:
-    - balloons is defined and (balloons.enabled | bool)
-    - cpu_topology_per_node is not defined
-  tags:
-    - install
-
-- name: Calculate maxReplicasGaudi_VLLM
-  ansible.builtin.set_fact:
-    maxReplicasGaudi_VLLM: >-
-      {%- if item.type in ['chatqa', 'docsum'] and item.modelConfigPath is defined -%}
-        {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
-        {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
-        {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}
-        {%- if tp_size is not none and (tp_size | int) != 0 -%}
-          {{ 8 // (tp_size | int) }}
-        {%- else -%}
-          {{ none }}
-        {%- endif -%}
-      {%- else -%}
-        {{ none }}
-      {%- endif -%}
-  tags:
-    - install
-
 - name: Generate override resources values file from template
   ansible.builtin.template:
     src: "resources-values.yaml.j2"
     dest: "{{ helm_override_resources_path }}"
     mode: '0644'
-  vars:
-    maxReplicasVLLM: >-
-      {{
-        cpu_topology_per_node is defined
-        and cpu_topology_per_node.values() | length > 0
-        and (
-          cpu_topology_per_node.values()
-          | selectattr('amx_supported', 'equalto', true)
-          | map(attribute='maxBalloonsVLLM')
-          | sum
-        )
-        or none
-      }}
-    maxReplicasReranker: >-
-      {{
-        cpu_topology_per_node is defined
-        and cpu_topology_per_node.values() | length > 0
-        and (
-          (
-            cpu_topology_per_node.values()
-            | selectattr('amx_supported', 'equalto', true)
-            | list
-            +
-            cpu_topology_per_node.values()
-            | selectattr('gaudi', 'equalto', true)
-            | rejectattr('amx_supported', 'equalto', true)
-            | list
-          )
-          | map(attribute='maxBalloonsReranker')
-          | sum
-        )
-        or none
-      }}
   tags:
     - install
 
@@ -165,6 +104,15 @@
     - install
     - update
 
+- name: Capture baseline of dynamically-generated resources before installation
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: capture_dynamic_resources.yaml
+  vars:
+    pipeline_item: "{{ item }}"
+  tags:
+    - install
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ gmc.helm.release_name }}"
@@ -206,6 +154,15 @@
     state: present
     definition: "{{ lookup('file', pipelines_dir + item.samplePath) }}"
     namespace: "{{ item.namespace }}"
+  tags:
+    - install
+
+- name: Remove obsolete dynamically-generated resources
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: remove_obsolete_dynamic_resources.yaml
+  vars:
+    pipeline_item: "{{ item }}"
   tags:
     - install
 

@@ -50,10 +50,6 @@ COPY --chown=user:user model/embedding_handler.py /home/user/utils/embedding_han
 COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yaml
 RUN chmod +x /home/user/entrypoint.sh
 
-# Intel specific environment variables
-ENV KMP_SETTINGS=1
-ENV KMP_AFFINITY=granularity=fine,compact,1,0
-ENV KMP_BLOCKTIME=1
 # jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
 ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
 

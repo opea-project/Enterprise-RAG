@@ -2,21 +2,27 @@
 Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
-{% if balloons.enabled or maxReplicasGaudi_VLLM %}
+{% if (balloons is defined and balloons.enabled) or (maxReplicasGaudi_VLLM is defined and maxReplicasGaudi_VLLM) %}
 services:
 {% if balloons.enabled %}
   vllm:
     hpa:
-      maxReplicas: {{ maxReplicasVLLM }}
+      minReplicas: {{ optimal_replicas.total_replicas }}
+      maxReplicas: {{ optimal_replicas.total_replicas }}
   torchserve_reranking:
     hpa:
-      maxReplicas: {{ maxReplicasReranker }}
+      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
+      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
+  torchserve_embedding:
+    hpa:
+      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
+      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
 {% endif %}
 {% if maxReplicasGaudi_VLLM %}
   vllm_gaudi:
-    replicas: {{ maxReplicasGaudi_VLLM }}
+    replicas: {{ optimal_replicas.gaudi_nodes_count * (maxReplicasGaudi_VLLM | default(0)) }}
     hpa:
-      minReplicas: {{ maxReplicasGaudi_VLLM }}
-      maxReplicas: {{ maxReplicasGaudi_VLLM }}
+      minReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | int(0)) }}
+      maxReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | int(0)) }}
 {% endif %}
 {% endif %}

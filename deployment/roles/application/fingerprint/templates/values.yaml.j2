@@ -24,6 +24,10 @@ ferretdb:
   postgresql:
     auth:
       password: "{{ FINGERPRINT_POSTGRES_PASSWORD }}"
+
+systemFingerprint:
+  templateLanguage: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+
 {% if tdx.coco.enabled %}
   podAnnotations:
     io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"

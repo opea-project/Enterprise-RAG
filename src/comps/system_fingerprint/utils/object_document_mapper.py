@@ -213,6 +213,10 @@ class LLMGuardDataprepGuardrailParams(Document):
     toxicity: ToxicityModel = None
 
 class PromptTemplateParams(Document):
+    system_prompt_template: str
+    user_prompt_template: str
+
+class PromptTemplateEnParams(PromptTemplateParams):
     system_prompt_template: str = """### You are a helpful, respectful, and honest assistant to help the user with questions. \
 Include corresponding in-text citation IDs at the end of relevant sentences (in the format [1], [2] etc.) only if referring to information from search results. \
 Citation IDs are at the beginning of each search result in [n] format. \
@@ -229,6 +233,22 @@ If you don't know the answer to a question, please don't share false information
 """
     user_prompt_template: str = """### Question: {user_prompt} \n
 ### Answer:
+"""
+
+class PromptTemplatePlParams(PromptTemplateParams):
+    system_prompt_template: str = """### Jesteś pomocnym, uprzejmym i uczciwym asystentem, \
+który pomaga użytkownikowi w odpowiadaniu na zadane przez użytkownika pytania. \
+Odwołuj się do informacji z historii rozmowy, jeśli uznasz, że są one istotne dla bieżącego pytania. \
+Odpowiadaj na podstawie swojej najlepszej wiedzy, jeśli informacje z wyników wyszukiwania ani z historii \
+rozmowy nie są istotne. Ignoruj wszystkie informacje, które uznasz za nieistotne dla pytania. \
+Jeśli nie znasz odpowiedzi na pytanie, nie podawaj fałszywych informacji.\n\
+### Wyniki wyszukiwania:\n\
+{reranked_docs}\n\
+### Historia rozmowy:\n\
+{conversation_history}\n\
+"""
+    user_prompt_template: str = """###Pytanie: {user_prompt} \n
+###Odpowiedź:
 """
 
 class RetrieverParams(Document):

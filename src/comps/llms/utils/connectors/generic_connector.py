@@ -55,6 +55,8 @@ class VLLMConnector:
                 temperature=input.temperature,
                 top_p=input.top_p,
                 stream=input.stream and not self._disable_streaming,
+                # Stop words implementation changed after vllm update 0.10.2 - it needs more validation
+                # stop=["###Pytanie", "###Odpowiedź", "###Historia rozmowy"] if "pllum" in self._model_name.lower() else None,
             )
         except ReadTimeout as e:
             error_message = f"Failed to stream from the Generic VLLM Connector. Connection established with '{e.request.url}' but " \

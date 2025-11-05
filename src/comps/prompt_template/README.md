@@ -29,6 +29,7 @@ The configuration for the Prompt Template Microservice is specified in the [impl
 | Environment Variable              | Default Value | Description                                              |
 |-----------------------------------|---------------|----------------------------------------------------------|
 | `CHAT_HISTORY_ENDPOINT`           | `http://localhost:6012/` | Chat History endpoint, required for getting current history details        |
+| `PROMPT_TEMPLATE_LANGUAGE`        | `en`                     | The language of the prompt template. Only `en` and `pl` are supported. |
 | `PROMPT_TEMPLATE_USVC_PORT`       | `7900`                   | (Optional) Prompt Template microservice port  |
 
 ## Getting started

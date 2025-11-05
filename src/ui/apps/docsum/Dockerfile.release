@@ -1,4 +1,4 @@
-FROM chatqna-conversation-ui-base:latest
+FROM docsum-ui-base:latest
 
 COPY compliance /compliance
 

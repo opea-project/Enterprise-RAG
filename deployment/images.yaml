@@ -99,9 +99,13 @@ images:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
     docker_context: src/comps/reranks/impl/model_server/torchserve
-  uiUsvc:
+  chatQnAUiUsvc:
     image_name: chatqna-conversation-ui
     dockerfile_path: src/ui/apps/chatqna/Dockerfile
+    docker_context: src
+  docsumUiUsvc:
+    image_name: docsum-ui
+    dockerfile_path: src/ui/apps/docsum/Dockerfile
     docker_context: src
   vllmGaudi:
     image_name: vllm-gaudi

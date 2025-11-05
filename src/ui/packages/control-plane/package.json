@@ -26,7 +26,8 @@
   },
   "dependencies": {
     "@intel-enterprise-rag-ui/components": "workspace:^",
-    "@intel-enterprise-rag-ui/icons": "workspace:^"
+    "@intel-enterprise-rag-ui/icons": "workspace:^",
+    "@intel-enterprise-rag-ui/tailwind-theme": "workspace:^"
   },
   "devDependencies": {},
   "peerDependencies": {

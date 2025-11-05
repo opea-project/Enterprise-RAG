@@ -260,6 +260,9 @@ importers:
       '@intel-enterprise-rag-ui/icons':
         specifier: workspace:^
         version: link:../icons
+      '@intel-enterprise-rag-ui/tailwind-theme':
+        specifier: workspace:^
+        version: link:../tailwind-theme
       react:
         specifier: '>=18.0.0'
         version: 18.3.1

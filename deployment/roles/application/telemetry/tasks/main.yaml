@@ -50,11 +50,11 @@
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ item }}"
-  loop:
-    - "{{ telemetry.monitoring.charts_path }}"
-    - "{{ telemetry.logging.charts_path }}"
-    - "{{ telemetry.traces.charts_path }}"
-    - "{{ telemetry.traces_instr.charts_path }}"
+  loop: >-
+    {{
+      [telemetry.monitoring.charts_path, telemetry.logging.charts_path] +
+      ([telemetry.traces.charts_path, telemetry.traces_instr.charts_path] if telemetry.traces.enabled else [])
+    }}
   register: helm_repo_add_result
   until: helm_repo_add_result is succeeded
   retries: 5
@@ -70,9 +70,11 @@
       kind: Namespace
       metadata:
         name: "{{ item }}"
-  loop:
-    - "{{ telemetry.monitoring.namespace }}"
-    - "{{ telemetry.traces.namespace }}"
+  loop: >-
+    {{
+      [telemetry.monitoring.namespace] +
+      ([telemetry.traces.namespace] if telemetry.traces.enabled else [])
+    }}
   tags:
     - install
 
@@ -87,9 +89,11 @@
         labels:
           pod-security.kubernetes.io/enforce: "privileged"
   when: enforcePSS
-  loop:
-    - "{{ telemetry.monitoring.namespace }}"
-    - "{{ telemetry.traces.namespace }}"
+  loop: >-
+    {{
+      [telemetry.monitoring.namespace] +
+      ([telemetry.traces.namespace] if telemetry.traces.enabled else [])
+    }}
   tags:
     - install
 
@@ -274,6 +278,7 @@
     create_namespace: true
     wait: true
     timeout: "{{ helm_timeout }}"
+  when: telemetry.traces.enabled
   tags:
     - install
 
@@ -281,6 +286,7 @@
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_pipelines_namespaces.yaml
+  when: telemetry.traces.enabled
   tags:
     - install
 
@@ -297,6 +303,7 @@
     create_namespace: true
     wait: true
     timeout: "{{ helm_timeout }}"
+  when: telemetry.traces.enabled
   tags:
     - install
 
@@ -308,6 +315,7 @@
       kind: CustomResourceDefinition
       metadata:
         name: otelcols/otelcol-traces
+  when: telemetry.traces.enabled
   tags:
     - uninstall
 
@@ -317,6 +325,7 @@
     api_version: admissionregistration.k8s.io/v1
     kind: MutatingWebhookConfiguration
     name: telemetry-traces-otel-operator-mutation
+  when: telemetry.traces.enabled
   ignore_errors: true
   tags:
     - uninstall
@@ -327,6 +336,7 @@
     api_version: admissionregistration.k8s.io/v1
     kind: ValidatingWebhookConfiguration
     name: telemetry-traces-otel-operator-validation
+  when: telemetry.traces.enabled
   ignore_errors: true
   tags:
     - uninstall
@@ -336,6 +346,7 @@
     cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
   environment:
     KUBECONFIG: "{{ kubeconfig }}"
+  when: telemetry.traces.enabled
   ignore_errors: true
   tags:
     - uninstall
@@ -369,6 +380,7 @@
     name: telemetry-traces-instr
     release_namespace: "{{ telemetry.traces.namespace }}"
     state: absent
+  when: telemetry.traces.enabled
   tags:
     - uninstall
 
@@ -377,6 +389,7 @@
     name: telemetry-traces
     release_namespace: "{{ telemetry.traces.namespace }}"
     state: absent
+  when: telemetry.traces.enabled
   tags:
     - uninstall
 
@@ -388,8 +401,10 @@
       kind: Namespace
       metadata:
         name: "{{ item }}"
-  with_items:
-    - "{{ telemetry.monitoring.namespace }}"
-    - "{{ telemetry.traces.namespace }}"
+  with_items: >-
+    {{
+      [telemetry.monitoring.namespace] +
+      ([telemetry.traces.namespace] if telemetry.traces.enabled else [])
+    }}
   tags:
     - uninstall

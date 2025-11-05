@@ -183,6 +183,8 @@ velero:
 
 telemetry:
   enabled: true
+  traces:
+    enabled: false
 
 ui:
   enabled: true

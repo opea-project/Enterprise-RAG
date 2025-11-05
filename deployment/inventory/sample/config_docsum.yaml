@@ -184,6 +184,7 @@ telemetry:
   monitoring:
     namespace: monitoring
   traces:
+    enabled: false
     namespace: monitoring-traces
 
 ui:

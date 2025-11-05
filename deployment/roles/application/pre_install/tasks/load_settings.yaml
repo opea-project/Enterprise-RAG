@@ -50,7 +50,8 @@
   ansible.builtin.set_fact:
     noProxy: >-
       {{
-        (['localhost', '.svc', '.monitoring', '.monitoring-traces'] +
+        (['localhost', '.svc', '.monitoring'] +
+         (['.monitoring-traces'] if telemetry.traces.enabled | default(false) else []) +
          ((additionalNoProxy | default('', true)) | string | split(',') | list)) |
         reject('equalto', '') |
         list |
@@ -199,6 +200,7 @@
         • EDP: {{ edp.enabled | default('undefined') }}
         • UI: {{ ui.enabled | default('undefined') }}
         • Telemetry: {{ telemetry.enabled | default('undefined') }}
+        • Traces (Telemetry): {{ telemetry.traces.enabled | default('undefined') }}
         • TDX: {{ tdx.enabled | default('undefined') }}
 
       Ready to proceed with deployment!

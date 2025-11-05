@@ -33,6 +33,7 @@ telemetry:
     helm_journalctl_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/values-journalctl.yaml"
 
   traces:
+    enabled: false  # Traces can be enabled/disabled independently from telemetry
     charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/traces"
     helm_default_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/traces/values.yaml"
     namespace: "monitoring-traces"

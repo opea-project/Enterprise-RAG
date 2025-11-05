@@ -78,7 +78,11 @@
   block:
     - name: Set required no_proxy values
       ansible.builtin.set_fact:
-        required_no_proxy_values: ["localhost", ".svc", ".monitoring", ".monitoring-traces"]
+        required_no_proxy_values: >-
+          {{
+            ["localhost", ".svc", ".monitoring"] +
+            ([".monitoring-traces"] if telemetry.traces.enabled else [])
+          }}
 
     - name: Set current no_proxy values
       ansible.builtin.set_fact:

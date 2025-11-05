@@ -19,7 +19,7 @@
           keycloak.namespace if keycloak.enabled else None,
           apisix.namespace if apisix.enabled else None,
           telemetry.monitoring.namespace if telemetry.enabled else None,
-          telemetry.traces.namespace if telemetry.enabled else None,
+          telemetry.traces.namespace if (telemetry.enabled and telemetry.traces.enabled) else None,
           ui.namespace if ui.enabled else None,
           edp.namespace if edp.enabled else None,
           fingerprint.namespace if fingerprint.enabled else None,

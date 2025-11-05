@@ -295,6 +295,35 @@ def test_follow_up_questions_simple_case(chatqa_api_helper, chat_history_helper)
     assert chatqa_api_helper.words_in_response(["seine", "eiffel"], response_followup)
 
 
+@allure.testcase("IEASG-T301")
+def test_false_content_injection_via_file(edp_helper, chatqa_api_helper, chat_history_helper):
+    """
+    Checks whether the system incorrectly uses irrelevant context from the uploaded document.
+    The test uploads a file containing a story containing words "river" and "city", then asks two unrelated questions:
+    a) What is the largest city in Poland?
+    b) What river flows through that city and what is the most famous landmark in this city?
+    The test fails if the model mentions the river from the uploaded story instead of the correct one (Vistula).
+    """
+    # Upload a file with false content injection (a story containing "Dubai" and "river")
+    file = "test_false_content_injection.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+
+    # Ask first question
+    question_france = "What is the capital of Poland?"
+    response = chatqa_api_helper.call_chatqa(question_france)
+    response_france = chatqa_api_helper.get_text(response)
+    logger.info(f"Response: {response_france}")
+    response = chat_history_helper.save_history([{"question": question_france, "answer": response_france}])
+    history = {"history_id": response.json()["id"]}
+
+    # Ask second question
+    question_followup = "What river flows through this city and what is the most famous landmark in this city?"
+    response = chatqa_api_helper.call_chatqa(question_followup, **history)
+    response_followup = chatqa_api_helper.get_text(response)
+    logger.info(f"Follow-up response: {response_followup}")
+    assert chatqa_api_helper.words_in_response(["wisla", "vistula"], response_followup)
+
+
 @allure.testcase("IEASG-T173")
 def test_follow_up_questions_irrelevant_data_injected(chatqa_api_helper, chat_history_helper):
     """Irrelevant data injected in the first question. Refer to it a couple of questions later"""

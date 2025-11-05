@@ -238,15 +238,17 @@ redis:
       size: 10Gi
 
 postgresql:
+  enabled: true
+  fullnameOverride: "edp-postgresql"
   image:
-    repository: bitnamilegacy/postgresql
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
   auth:
     username: "edp" # cannot refence secret
     database: "edp" # cannot refence secret
     existingSecret: "edp-postgresql-secret"
-    secretKeys:
-      userPasswordKey: "DATABASE_PASSWORD"
-      adminPasswordKey: "DATABASE_ADMIN_PASSWORD"
+    secretKey: "DATABASE_PASSWORD"
   resources:
     requests:
       cpu: "1"
@@ -254,23 +256,9 @@ postgresql:
     limits:
       cpu: "2"
       memory: "4Gi"
-  primary:
-    resources:
-      requests:
-        cpu: "1"
-        ephemeral-storage: "50Mi"
-        memory: "2Gi"
-      limits:
-        cpu: "2"
-        ephemeral-storage: "1Gi"
-        memory: "4Gi"
-    networkPolicy:
-      extraIngress:
-        - ports:
-          - port: 15008
-    persistence:
-      enabled: true
-      size: 10Gi
+  persistence:
+    enabled: true
+    size: "10Gi"
 
 celery:
   nameOverride: "edp-celery"

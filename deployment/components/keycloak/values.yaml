@@ -57,10 +57,23 @@ keycloakx:
 # PostgreSQL is deployed as part of this chart
 postgresql:
   enabled: true
-  username: keycloak
-  database: keycloak
-  storage: "10Gi"
-
-  existingSecret: "keycloak-postgresql-secret"  # If set, use this secret instead of creating one
-  passwordKey: "password"  # Key in the secret for PostgreSQL user password
-  adminPasswordKey: "postgres-password"  # Key in the secret for postgres admin password
+  fullnameOverride: "keycloak-postgresql"
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    username: keycloak
+    database: keycloak
+    existingSecret: "keycloak-postgresql-secret"
+    secretKey: "password"
+  persistence:
+    enabled: true
+    size: "10Gi"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"

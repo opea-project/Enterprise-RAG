@@ -103,7 +103,6 @@ pipelines:
 
 gmc:
   enabled: true
-  namespace: system
   pvc:
     accessMode: ReadWriteOnce
     models:
@@ -114,23 +113,18 @@ gmc:
 ingress:
   enabled: true
   service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
-  namespace: ingress-nginx
 
 keycloak:
   enabled: true
-  namespace: auth
 
 apisix:
   enabled: true
-  namespace: auth-apisix
 
 istio:
   enabled: true
-  namespace: istio-system
 
 velero:
   enabled: false
-  namespace: velero
 
   velero_pod_labels:
     app.kubernetes.io/instance: velero
@@ -173,15 +167,11 @@ velero:
 
 telemetry:
   enabled: true
-  monitoring:
-    namespace: monitoring
   traces:
     enabled: false
-    namespace: monitoring-traces
 
 ui:
   enabled: true
-  namespace: rag-ui
 
 edp:
   enabled: false

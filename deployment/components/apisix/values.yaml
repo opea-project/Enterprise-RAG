@@ -45,6 +45,13 @@ apisix:
           name: apisix-secret
           key: CLIENT_SECRET
 
+  apisix:
+    nginx:
+      configurationSnippet:
+        httpStart: |
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;
+
 # Custom etcd deployment (CoreOS etcd without auth - Istio mTLS for security)
 etcd:
   enabled: true

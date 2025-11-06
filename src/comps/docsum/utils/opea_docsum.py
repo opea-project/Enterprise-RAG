@@ -52,7 +52,7 @@ class OPEADocsum:
                 "max_new_tokens": 5
                 }
         try:
-            response = requests.post(f"{self.llm_usvc_endpoint}/chat/completions", json=tested_params, timeout=10)
+            response = requests.post(f"{self.llm_usvc_endpoint}/chat/completions", json=tested_params, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             logger.error(f"Failed to connect to LLM microservice at {self.llm_usvc_endpoint}: {e}")
@@ -79,7 +79,7 @@ class OPEADocsum:
 
         client = ChatOpenAI(base_url=self.llm_usvc_endpoint,
                             api_key="dummy",
-                            timeout=120,
+                            timeout=180,
                             max_retries=2
                             )
 

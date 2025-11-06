@@ -41,7 +41,7 @@ class VLLMConnector:
         self._client = openai.AsyncOpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
-            timeout=120,
+            timeout=180,
             default_headers=self._headers,
             http_client=httpx.AsyncClient(headers={"Connection": "close"}, verify=not self._insecure_endpoint)
         )

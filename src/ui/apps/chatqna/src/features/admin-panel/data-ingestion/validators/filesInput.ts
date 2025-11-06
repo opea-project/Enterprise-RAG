@@ -1,28 +1,23 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { array, mixed, ValidationError } from "yup";
-
 import {
-  supportedFileExtensions,
-  supportedFilesMIMETypes,
-} from "@/features/admin-panel/data-ingestion/utils/constants";
-import { clientMaxBodySize } from "@/utils/validators/constants";
-import {
+  getFilenameInvalidCharactersMsg,
+  getFileSizeWithinLimitMsg,
+  getUnsupportedFileExtensionMsg,
+  getUnsupportedFileMIMETypeMsg,
   isFileExtensionSupported,
   isMIMETypeSupported,
   noInvalidCharactersInFileName,
   totalFileSizeWithinLimit,
-} from "@/utils/validators/functions/fileInput";
+} from "@intel-enterprise-rag-ui/input-validation";
+import { array, mixed, ValidationError } from "yup";
 
-const getUnsupportedFileExtensionMsg = ({ value: file }: { value: File }) =>
-  `The file ${file.name} has an unsupported extension\nPlease upload a file with one of supported formats listed below`;
-const getUnsupportedFileMIMETypeMsg = ({ value: file }: { value: File }) =>
-  `The file MIME type not recognized for ${file.name}\nPlease upload a file with a valid MIME type`;
-const getFilenameInvalidCharactersMsg = ({ value: file }: { value: File }) =>
-  `The file name - ${file.name} contain invalid characters\nPlease change the name of this file and try again`;
-
-const totalFileSizeWithinLimitMsg = `Total upload size will exceed the limit: ${clientMaxBodySize}MB\nPlease upload files separately or in smaller batches`;
+import { CLIENT_MAX_BODY_SIZE } from "@/config/api";
+import {
+  SUPPORTED_FILE_EXTENSIONS,
+  SUPPORTED_FILES_MIME_TYPES,
+} from "@/features/admin-panel/data-ingestion/utils/constants";
 
 const validationSchema = array()
   .of(
@@ -30,12 +25,12 @@ const validationSchema = array()
       .test(
         "supported-file-extension",
         getUnsupportedFileExtensionMsg,
-        isFileExtensionSupported(supportedFileExtensions),
+        isFileExtensionSupported(SUPPORTED_FILE_EXTENSIONS),
       )
       .test(
         "supported-file-mime-type",
         getUnsupportedFileMIMETypeMsg,
-        isMIMETypeSupported(supportedFilesMIMETypes),
+        isMIMETypeSupported(SUPPORTED_FILES_MIME_TYPES),
       )
       .test(
         "no-invalid-characters-in-file-name",
@@ -45,8 +40,8 @@ const validationSchema = array()
   )
   .test(
     "total-file-size-within-limit",
-    totalFileSizeWithinLimitMsg,
-    totalFileSizeWithinLimit,
+    getFileSizeWithinLimitMsg(CLIENT_MAX_BODY_SIZE),
+    totalFileSizeWithinLimit(CLIENT_MAX_BODY_SIZE),
   );
 
 export const validateFileInput = async (files: File[] | FileList) => {

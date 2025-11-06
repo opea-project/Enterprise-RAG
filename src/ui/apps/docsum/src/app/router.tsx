@@ -25,14 +25,14 @@ const AdminPanelRoute = lazy(
 const router = createBrowserRouter([
   {
     path: paths.root,
-    element: <Navigate to={paths.docsum} replace />,
+    element: <Navigate to={`${paths.docsum}/paste-text`} replace />,
     errorElement: <ErrorRoute />,
   },
   {
     element: <RootLayout />,
     children: [
       {
-        path: paths.docsum,
+        path: `${paths.docsum}/*`,
         element: (
           <Suspense fallback={<LoadingFallback />}>
             <DocSumRoute />

@@ -9,3 +9,5 @@ export const ERROR_MESSAGES = {
   GET_FILE_PRESIGNED_URL: "Failed to get presigned URL for file",
   DOWNLOAD_FILE: "Failed to download file",
 } as const;
+
+export const CLIENT_MAX_BODY_SIZE = 64; // 64 MB - must match client_max_body_size in nginx config

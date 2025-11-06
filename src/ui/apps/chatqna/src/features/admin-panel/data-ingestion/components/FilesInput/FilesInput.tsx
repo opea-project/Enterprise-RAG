@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { FileInput } from "@intel-enterprise-rag-ui/components";
+import { sanitizeFiles } from "@intel-enterprise-rag-ui/utils";
 import {
   ChangeEvent,
   Dispatch,
@@ -11,10 +12,9 @@ import {
   useState,
 } from "react";
 
-import { sanitizeFiles } from "@/features/admin-panel/data-ingestion/utils";
-import { supportedFileExtensions } from "@/features/admin-panel/data-ingestion/utils/constants";
+import { CLIENT_MAX_BODY_SIZE } from "@/config/api";
+import { SUPPORTED_FILE_EXTENSIONS } from "@/features/admin-panel/data-ingestion/utils/constants";
 import { validateFileInput } from "@/features/admin-panel/data-ingestion/validators/filesInput";
-import { clientMaxBodySize } from "@/utils/validators/constants";
 
 interface FilesInputProps {
   files: File[];
@@ -63,8 +63,8 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
   return (
     <FileInput
       errorMessage={errorMessage}
-      totalSizeLimit={clientMaxBodySize}
-      supportedFileExtensions={supportedFileExtensions}
+      totalSizeLimit={CLIENT_MAX_BODY_SIZE}
+      supportedFileExtensions={SUPPORTED_FILE_EXTENSIONS}
       onDrop={handleFileInputDrop}
       onChange={handleFileInputChange}
       multiple

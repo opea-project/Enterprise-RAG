@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { TextInput } from "@intel-enterprise-rag-ui/components";
+import { NumberInputRange } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, FocusEvent, useEffect, useRef, useState } from "react";
 import { ValidationError } from "yup";
@@ -11,7 +12,6 @@ import {
   OnArgumentValueChangeHandler,
 } from "@/features/admin-panel/control-plane/types";
 import { validateServiceArgumentNumberInput } from "@/features/admin-panel/control-plane/validators/service-arguments/numberInput";
-import { NumberInputRange } from "@/utils/validators/types";
 
 export type ServiceArgumentNumberInputValue =
   | string

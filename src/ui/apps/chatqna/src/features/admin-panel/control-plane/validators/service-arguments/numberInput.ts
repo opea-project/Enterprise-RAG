@@ -1,13 +1,13 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { object, string } from "yup";
-
 import {
+  getIsInRangeMessage,
   isInRange,
   isValidNumber,
-} from "@/utils/validators/functions/numberInput";
-import { NumberInputRange } from "@/utils/validators/types";
+  NumberInputRange,
+} from "@intel-enterprise-rag-ui/input-validation";
+import { object, string } from "yup";
 
 const createValidationSchema = (
   range: NumberInputRange,
@@ -18,7 +18,7 @@ const createValidationSchema = (
       .test("is-valid-number", "Enter a valid number value", isValidNumber)
       .test(
         "is-in-range",
-        `Enter number between ${range.min} and ${range.max}`,
+        getIsInRangeMessage(range),
         isInRange(range, isNullable),
       ),
   });

@@ -1,13 +1,13 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { AnyObject, object, string, TestFunction } from "yup";
-
-import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
 import {
   containsRequiredValues,
   noEmpty,
-} from "@/utils/validators/functions/textInput";
+} from "@intel-enterprise-rag-ui/input-validation";
+import { AnyObject, object, string, TestFunction } from "yup";
+
+import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/promptTemplate";
 
 type PromptTemplateTestFunction = TestFunction<string | undefined, AnyObject>;
 

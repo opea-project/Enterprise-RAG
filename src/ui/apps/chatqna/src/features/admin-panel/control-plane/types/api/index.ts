@@ -6,7 +6,7 @@ import { ServiceStatus } from "@intel-enterprise-rag-ui/control-plane";
 import { LLMInputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmInputGuard";
 import { LLMOutputGuardArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/guards/llmOutputGuard";
 import { LLMArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/llm";
-import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
+import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/promptTemplate";
 import { RerankerArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/reranker";
 import { RetrieverArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/retriever";
 import { ServiceArgumentInputValue } from "@/features/admin-panel/control-plane/types";

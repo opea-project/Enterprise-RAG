@@ -39,8 +39,14 @@ export default defineConfig({
             "@intel-enterprise-rag-ui/control-plane",
           ],
           "intel-enterprise-rag-ui-icons": ["@intel-enterprise-rag-ui/icons"],
+          "intel-enterprise-rag-ui-input-validation": [
+            "@intel-enterprise-rag-ui/input-validation",
+          ],
           "intel-enterprise-rag-ui-layouts": [
             "@intel-enterprise-rag-ui/layouts",
+          ],
+          "intel-enterprise-rag-ui-markdown": [
+            "@intel-enterprise-rag-ui/markdown",
           ],
           "intel-enterprise-rag-ui-utils": ["@intel-enterprise-rag-ui/utils"],
         },

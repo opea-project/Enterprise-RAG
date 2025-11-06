@@ -7,10 +7,12 @@ import {
 } from "@intel-enterprise-rag-ui/components";
 import { configureStore } from "@reduxjs/toolkit";
 
-import { summarizationApi } from "@/api";
 import { controlPlaneApi } from "@/features/admin-panel/control-plane/api";
 import docSumGraphReducer from "@/features/admin-panel/control-plane/store/docSumGraph.slice";
-import historyReducer from "@/features/docsum/tabs/history/store/history.slice";
+import { summarizationApi } from "@/features/docsum/api";
+import historyReducer from "@/features/docsum/store/history.slice";
+import pasteTextTabReducer from "@/features/docsum/store/pasteTextTab.slice";
+import uploadFileTabReducer from "@/features/docsum/store/uploadFileTab.slice";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +20,8 @@ export const store = configureStore({
     history: historyReducer,
     notifications: notificationsReducer,
     docSumGraph: docSumGraphReducer,
+    pasteTextTab: pasteTextTabReducer,
+    uploadFileTab: uploadFileTabReducer,
     [summarizationApi.reducerPath]: summarizationApi.reducer,
     [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,
   },

@@ -34,7 +34,7 @@ export const handleChatStreamResponse = async (
   const decoder = new TextDecoder("utf-8");
 
   let done = false;
-  while (!done) {
+  do {
     const result = await reader?.read();
     done = result?.done ?? true;
     if (done) break;
@@ -81,7 +81,7 @@ export const handleChatStreamResponse = async (
         }
       }
     }
-  }
+  } while (!done);
 };
 
 export const createGuardrailsErrorResponse = async (response: Response) => {

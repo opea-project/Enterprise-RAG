@@ -49,7 +49,7 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
       yup:
-        specifier: ^1.4.0
+        specifier: ^1.7.0
         version: 1.7.0
     devDependencies:
       '@eslint/compat':
@@ -166,6 +166,9 @@ importers:
       '@intel-enterprise-rag-ui/icons':
         specifier: workspace:^
         version: link:../../packages/icons
+      '@intel-enterprise-rag-ui/input-validation':
+        specifier: workspace:^
+        version: link:../../packages/input-validation
       '@intel-enterprise-rag-ui/layouts':
         specifier: workspace:^
         version: link:../../packages/layouts
@@ -196,9 +199,15 @@ importers:
       '@intel-enterprise-rag-ui/icons':
         specifier: workspace:^
         version: link:../../packages/icons
+      '@intel-enterprise-rag-ui/input-validation':
+        specifier: workspace:^
+        version: link:../../packages/input-validation
       '@intel-enterprise-rag-ui/layouts':
         specifier: workspace:^
         version: link:../../packages/layouts
+      '@intel-enterprise-rag-ui/markdown':
+        specifier: workspace:^
+        version: link:../../packages/markdown
       '@intel-enterprise-rag-ui/tailwind-theme':
         specifier: workspace:^
         version: link:../../packages/tailwind-theme
@@ -284,6 +293,12 @@ importers:
       react-icons:
         specifier: ^5.3.0
         version: 5.5.0(react@18.3.1)
+
+  packages/input-validation:
+    dependencies:
+      '@intel-enterprise-rag-ui/utils':
+        specifier: workspace:^
+        version: link:../utils
 
   packages/layouts:
     dependencies:

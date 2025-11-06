@@ -3,7 +3,6 @@
 
 import "./FileInput.scss";
 
-import { Button } from "@/Button/Button";
 import { FileIcon } from "@intel-enterprise-rag-ui/icons";
 import classNames from "classnames";
 import {
@@ -17,6 +16,8 @@ import {
   useRef,
   useState,
 } from "react";
+
+import { Button } from "@/Button/Button";
 
 export interface FileInputHandle {
   clear: () => void;

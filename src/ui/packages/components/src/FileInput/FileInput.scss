@@ -6,7 +6,6 @@
     @apply h-48 w-full select-none rounded p-6 text-center;
     @apply flex flex-col items-center justify-center gap-2.5;
     @apply bg-light-bg-2 dark:bg-dark-bg-2;
-    @apply border-light-border dark:border-dark-border border-2 border-dashed;
 
     &__caption {
       @apply text-xs;

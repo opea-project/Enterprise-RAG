@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@intel-enterprise-rag-ui/components";
+import { formatFileSize } from "@intel-enterprise-rag-ui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
@@ -9,7 +10,6 @@ import DataItemStatus from "@/features/admin-panel/data-ingestion/components/Dat
 import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
-import { formatFileSize } from "@/features/admin-panel/data-ingestion/utils";
 
 interface FileActionsHandlers {
   downloadHandler: (name: string, bucketName: string) => void;

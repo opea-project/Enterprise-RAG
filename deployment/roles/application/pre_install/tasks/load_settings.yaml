@@ -16,6 +16,7 @@
     - nri_balloons
     - pipeline
     - tdx
+    - rag_utils
   tags:
     - install
     - display-configuration

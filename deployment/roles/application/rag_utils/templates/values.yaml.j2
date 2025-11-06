@@ -1,0 +1,37 @@
+{#
+Copyright (C) 2025 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+
+rag_watcher:
+  config:
+    deploymentMode: "{{ rag_utils.rag_watcher.config.deploymentMode }}"
+    schedule: "{{ rag_utils.rag_watcher.config.schedule }}"
+    successfulJobsHistoryLimit: {{ rag_utils.rag_watcher.config.successfulJobsHistoryLimit }}
+    failedJobsHistoryLimit: {{ rag_utils.rag_watcher.config.failedJobsHistoryLimit }}
+  
+  data:
+    watcher_enabled: {{ rag_utils.rag_watcher.data.watcher_enabled | lower }}
+    node_selector: "{{ rag_utils.rag_watcher.data.node_selector }}"
+    refresh_istio: {{ rag_utils.rag_watcher.data.refresh_istio | lower }}
+    skip_workload_selector: "{{ rag_utils.rag_watcher.data.skip_workload_selector }}"
+    skip_verify_selector: "{{ rag_utils.rag_watcher.data.skip_verify_selector }}"
+    refresh_strategy: "{{ rag_utils.rag_watcher.data.refresh_strategy }}"
+    app_namespaces: "{{ rag_utils.rag_watcher.data.app_namespaces }}"
+    ns_selector: "{{ rag_utils.rag_watcher.data.ns_selector }}"
+
+{% if use_alternate_tagging is defined %}
+alternateTagging: {{ use_alternate_tagging }}
+{% endif %}
+
+images:
+  init-container:
+{% if use_alternate_tagging is defined and use_alternate_tagging %}
+    repository: {{ registry }}
+    image: erag-init-container
+{% else %}
+    repository: {{ registry }}
+    image: erag-init-container
+{% endif %}
+    tag: "{{ tag }}"
+    pullPolicy: IfNotPresent

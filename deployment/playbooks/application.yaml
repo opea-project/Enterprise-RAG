@@ -98,6 +98,14 @@
         - install
         - uninstall
 
+    - name: RAG Utils role
+      ansible.builtin.include_role:
+        name: rag_utils
+      when: rag_utils.enabled
+      tags:
+        - install
+        - uninstall
+
     - name: Fingerprint role
       ansible.builtin.include_role:
         name: fingerprint

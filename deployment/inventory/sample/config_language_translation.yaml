@@ -124,6 +124,10 @@ edp:
   semantic_chunking:
     enabled: false
 
+rag_utils:
+  enabled: false
+  namespace: default
+
 fingerprint:
   enabled: false
   namespace: fingerprint

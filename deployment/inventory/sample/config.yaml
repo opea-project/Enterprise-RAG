@@ -214,6 +214,10 @@ edp:
     # NOTE: If enabled, embedding_model_name must be 'jinaai/jina-embeddings-v2-base-en' for late chunking to work.
     enabled: false
 
+rag_utils:
+  enabled: true
+  namespace: default
+
 fingerprint:
   enabled: true
   namespace: fingerprint

@@ -33,6 +33,14 @@
     OIDC_CLIENT_SECRET: "{{ keycloak.oidc.client_secret | default('') }}"
     OIDC_ADMIN_GID: "{{ keycloak.oidc.admin_gid | default('') }}"
     OIDC_USER_GID: "{{ keycloak.oidc.user_gid | default('') }}"
+    FEDERATION_ENDPOINT: "{{ keycloak.federation.endpoint | default('') }}"
+    FEDERATION_BIND_DN: "{{ keycloak.federation.bind_dn | default('') }}"
+    FEDERATION_BIND_PASSWORD: "{{ keycloak.federation.bind_password | default('') }}"
+    FEDERATION_USERS_DN: "{{ keycloak.federation.users_dn | default('') }}"
+    FEDERATION_USER_ATTRIBUTE: "{{ keycloak.federation.user_attribute | default('sAMAccountName') }}"
+    FEDERATION_GROUPS_DN: "{{ keycloak.federation.groups_dn | default('') }}"
+    FEDERATION_USER_GROUP_LDAP_FILTER: "{{ keycloak.federation.user_group_ldap_filter | default('(cn=erag-user-group)') }}"
+    FEDERATION_ADMIN_GROUP_LDAP_FILTER: "{{ keycloak.federation.admin_group_ldap_filter | default('(cn=erag-admin-group)') }}"
   no_log: "{{ secure_logs }}"
   tags:
     - install

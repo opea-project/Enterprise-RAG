@@ -45,6 +45,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[single_sign_on_configuration_on_keyclock.md](single_sign_on_configuration_on_keyclock.md)**
   Instructions for configuring Single Sign-On integration using Microsoft Entra ID with Keycloak for enterprise authentication.
 
+- **[ad_federation_on_keycloak.md](ad_federation_on_keycloak.md)**
+  Instructions for configuring Keycloak user federation using Microsoft Active Directory for enterprise authentication. 
+
 ### Service Mesh and Security
 
 - **[istio.md](istio.md)**

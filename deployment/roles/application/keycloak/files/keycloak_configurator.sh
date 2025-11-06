@@ -137,7 +137,7 @@ function curl_keycloak() {
 
     if [[ "$response" =~ ^2 ]]; then
         return 0
-elif [[ "$response" == 401 && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
+    elif [[ "$response" == 401 && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
         print_log "Access token expired. Retrying with a new token..."
         get_access_token
         curl_keycloak "$url" "$json" "$method" $((retry_count + 1))
@@ -770,7 +770,6 @@ function assign_client_scope() {
     fi
 }
 
-
 function create_client_scope() {
     local realm_name=$1
     local scope_name=$2
@@ -908,6 +907,121 @@ function create_client_permission() {
     fi
 }
 
+function create_ad_federation() {
+    local realm_name=$1
+    local ad_endpoint=$2
+    local ad_bind_dn=$3
+    local ad_bind_password=$4
+    local ad_users_dn=$5
+    local ad_username_attribute=$6
+
+    local url="${KEYCLOAK_URL}/admin/realms/$realm_name/components"
+
+    NEW_AD_FEDERATION='{
+        "config": {
+            "enabled": ["true"],
+            "vendor": ["ad"],
+            "connectionUrl": ["'$ad_endpoint'"],
+            "startTls": ["false"],
+            "useTruststoreSpi": ["always"],
+            "connectionPooling": ["false"],
+            "connectionTimeout": [""],
+            "authType": ["simple"],
+            "bindDn": ["'$ad_bind_dn'"],
+            "bindCredential": ["'$ad_bind_password'"],
+            "editMode": ["READ_ONLY"],
+            "usersDn": ["'$ad_users_dn'"],
+            "usernameLDAPAttribute": ["'$ad_username_attribute'"],
+            "rdnLDAPAttribute": ["cn"],
+            "uuidLDAPAttribute": ["objectGUID"],
+            "userObjectClasses": ["person, organizationalPerson, user"],
+            "customUserSearchFilter": [""],
+            "searchScope": ["1"],
+            "readTimeout": [""],
+            "pagination": ["false"],
+            "referral": [""],
+            "importEnabled": ["true"],
+            "syncRegistrations": ["true"],
+            "batchSizeForSync": [""],
+            "allowKerberosAuthentication": ["false"],
+            "useKerberosForPasswordAuthentication": ["false"],
+            "cachePolicy": ["NO_CACHE"],
+            "usePasswordModifyExtendedOp": ["false"],
+            "validatePasswordPolicy": ["false"],
+            "trustEmail": ["true"],
+            "fullSyncPeriod": [604800],
+            "changedSyncPeriod": [86400]
+        },
+        "providerId": "ldap",
+        "providerType": "org.keycloak.storage.UserStorageProvider",
+        "name": "Active Directory Federation"
+    }'
+
+    if curl_keycloak "$url" "$NEW_AD_FEDERATION"; then
+        print_log "AD Federation '$ad_name' created successfully"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "AD Federation '$ad_name' already exists"
+    else
+        print_log "Failed to create AD Federation '$ad_name' with $HTTP_CODE"
+    fi
+}
+
+function get_ad_federation_id() {
+    local realm_name=$1
+    local federation_name=$2
+
+    local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/components"
+
+    local federation_id=""
+    federation_id=$(curl_get_id "$url")
+    federation_id=$(echo $federation_id | jq -r --arg key "name" --arg value "$federation_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+
+    echo "$federation_id"
+}
+
+function create_federation_mapper() {
+    local realm_name=$1
+    local federation_name=$2
+
+    local mapper_name=$3
+    local users_role_dn=$4
+    local ldap_filter=$5
+    local client_name=$6
+
+    federation_id=$(get_ad_federation_id "$realm_name" "$federation_name")
+
+    local url="${KEYCLOAK_URL}/admin/realms/$realm_name/components"
+
+    NEW_MAPPER='{
+        "parentId": "'$federation_id'",
+        "providerType": "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+        "name": "'$mapper_name'",
+        "providerId": "role-ldap-mapper",
+        "config": {
+            "membership.attribute.type": ["DN"],
+            "mode": ["READ_ONLY"],
+            "user.roles.retrieve.strategy": ["LOAD_ROLES_BY_MEMBER_ATTRIBUTE"],
+            "roles.dn": ["'$users_role_dn'"],
+            "role.name.ldap.attribute": ["cn"],
+            "role.object.classes": ["group"],
+            "membership.ldap.attribute": ["member"],
+            "membership.user.ldap.attribute": ["sAMAccountName"],
+            "roles.ldap.filter": ["'$ldap_filter'"],
+            "memberof.ldap.attribute": ["memberOf"],
+            "use.realm.roles.mapping": ["false"],
+            "client.id": ["'$client_name'"]
+        }
+    }'
+
+    if curl_keycloak "$url" "$NEW_MAPPER"; then
+        print_log "Federation mapper '$mapper_name' created successfully"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "Federation mapper '$mapper_name' already exists"
+    else
+        print_log "Failed to create federation mapper '$mapper_name' with $HTTP_CODE"
+    fi
+}
+
 # Initial configuration
 print_header "Configuring Keycloak"
 
@@ -983,3 +1097,14 @@ create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-policy
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin-permission" "admin" "admin-policy"
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-permission" "user" "user-policy"
 
+# Active Directory Federation
+if [[ "$FEDERATION_ENDPOINT" =~ ^ldaps?:// ]]; then
+    create_ad_federation "$KEYCLOAK_REALM" "$FEDERATION_ENDPOINT" "$FEDERATION_BIND_DN" "$FEDERATION_BIND_PASSWORD" "$FEDERATION_USERS_DN" "$FEDERATION_USER_ATTRIBUTE"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "ERAG-admin-oidc" "$FEDERATION_GROUPS_DN" "$FEDERATION_ADMIN_GROUP_LDAP_FILTER" "EnterpriseRAG-oidc"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "ERAG-user-oidc" "$FEDERATION_GROUPS_DN" "$FEDERATION_USER_GROUP_LDAP_FILTER" "EnterpriseRAG-oidc"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "ERAG-admin-oidc-backend" "$FEDERATION_GROUPS_DN" "$FEDERATION_ADMIN_GROUP_LDAP_FILTER" "EnterpriseRAG-oidc-backend"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "ERAG-user-oidc-backend" "$FEDERATION_GROUPS_DN" "$FEDERATION_USER_GROUP_LDAP_FILTER" "EnterpriseRAG-oidc-backend"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "consoleAdmin-oidc-minio" "$FEDERATION_GROUPS_DN" "(cn=consoleAdmin)" "EnterpriseRAG-oidc-minio"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "erag-admin-group-oidc-minio" "$FEDERATION_GROUPS_DN" "(cn=erag-admin-group)" "EnterpriseRAG-oidc-minio"
+    create_federation_mapper "$KEYCLOAK_REALM" "Active Directory Federation" "erag-user-group-oidc-minio" "$FEDERATION_GROUPS_DN" "(cn=erag-user-group)" "EnterpriseRAG-oidc-minio"
+fi

@@ -17,6 +17,16 @@ keycloakx:
 
   replicas: 1
 
+  extraVolumes: |
+    - name: certs
+      secret:
+        secretName: keycloak-certs
+
+  extraVolumeMounts: |
+    - name: certs
+      mountPath: /opt/keycloak/conf/truststores
+      readOnly: true
+
   resources:
     requests:
       cpu: "500m"

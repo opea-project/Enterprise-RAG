@@ -27,6 +27,13 @@ keycloakx:
           - {{ keycloak.domainName }}
         secretName: {{ keycloak.tls.secret_name }}
 
+{% if keycloak.hostAliases is defined and keycloak.hostAliases | length > 0 %}
+  hostAliases:
+{% for alias in keycloak.hostAliases %}
+  - {{ alias | to_nice_yaml | indent(4) }}
+{%- endfor %}
+{% endif %}
+
   database:
     database: {{ keycloak.postgresql.database }}
     username: {{ keycloak.postgresql.username }}

@@ -102,6 +102,11 @@ images:
     tag: *tag
     envs:
       RERANKING_MODEL_NAME: *reranking_model_name
+{% if edp.late_chunking.enabled is true %}
+      RERANKING_LATE_CHUNKING_ENABLED: "True"
+{% else %}
+      RERANKING_LATE_CHUNKING_ENABLED: "False"
+{% endif %}
   teirerank:
     image: "erag-teirerank"
     repository: *repo
@@ -207,3 +212,9 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+  late-chunking-usvc:
+    image: "erag-late-chunking"
+    repository: *repo
+    tag: *tag
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name

@@ -42,6 +42,10 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.hierarchicalDataprep.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "helm-edp.lateChunking.name" -}}
+{{- default .Chart.Name .Values.lateChunking.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
 {{- define "helm-edp.dpguard.name" -}}
 {{- default .Chart.Name .Values.dpguard.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -59,7 +63,7 @@ Expand the name of the chart.
 {{- end }}
 
 {{- define "helm-edp.noProxyWithContainers" -}}
-{{- printf "%s,edp-backend,edp-celery,edp-hierarchical-dataprep,edp-text-extractor,edp-text-compression,edp-text-splitter,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
+{{- printf "%s,edp-backend,edp-celery,edp-hierarchical-dataprep,edp-text-extractor,edp-text-compression,edp-text-splitter,edp-late-chunking,edp-dpguard,edp-embedding,edp-flower,edp-ingestion,edp-vllm,edp-minio,edp-postgresql-0,edp-redis-master-0" .Values.proxy.noProxy }}
 {{- end }}
 
 {{- define "helm-edp.awsSqs.name" -}}
@@ -176,6 +180,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+lateChunking labels
+*/}}
+{{- define "helm-edp.lateChunking.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-edp.lateChunking.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 textExtractor labels
 */}}
 {{- define "helm-edp.textExtractor.selectorLabels" -}}
@@ -240,6 +252,8 @@ labels:
   {{- include "helm-edp.textCompression.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-text-splitter" }}
   {{- include "helm-edp.textSplitter.selectorLabels" $context | nindent 2 }}
+  {{- else if eq $deploymentName "edp-late-chunking" }}
+  {{- include "helm-edp.lateChunking.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-dpguard" }}
   {{- include "helm-edp.dpguard.selectorLabels" $context | nindent 2 }}
   {{- else if eq $deploymentName "edp-embedding" }}

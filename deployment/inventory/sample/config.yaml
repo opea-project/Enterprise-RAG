@@ -210,6 +210,9 @@ edp:
     kChunks: 2
   semantic_chunking:
     enabled: false
+  late_chunking:
+    # NOTE: If enabled, embedding_model_name must be 'jinaai/jina-embeddings-v2-base-en' for late chunking to work.
+    enabled: false
 
 fingerprint:
   enabled: true
@@ -223,7 +226,8 @@ chat_history:
 # For examples, check deployment/components/vector_databases/values.yaml
 vector_databases:
   enabled: true
-  vector_store: redis-cluster # Supported: redis, redis-cluster
+  namespace: vdb
+  vector_store: redis-cluster
   vector_datatype: FLOAT32
   vector_dims: 768
 

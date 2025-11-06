@@ -8,25 +8,6 @@
   tags:
     - install
 
-- name: Ensure Helm repository is present
-  kubernetes.core.helm_repository:
-    name: "{{ vector_databases.helm.repo_name }}"
-    repo_url: "{{ vector_databases.helm.repo_url }}"
-    state: present
-  tags:
-    - install
-
-- name: Build Helm chart dependencies
-  ansible.builtin.command:
-    cmd: helm dependency build
-    chdir: "{{ vector_databases.helm.chart_directory }}"
-  register: helm_repo_add_result
-  until: helm_repo_add_result is succeeded
-  retries: 5
-  delay: 15
-  tags:
-    - install
-
 - name: Enforce PSS
   kubernetes.core.k8s:
     state: present
@@ -41,28 +22,29 @@
   tags:
     - install
 
-- name: Configure Redis-like vector store
-  when: vector_databases.vector_store == 'redis' or vector_databases.vector_store == 'redis-cluster'
+- name: Configure Redis-based vector store
+  when: vector_databases.vector_store == 'redis-cluster'
   tags:
     - install
   block:
-    - name: Generate password
+    - name: Generate password for Redis
       ansible.builtin.include_role:
         name: generate_password
         tasks_from: generate_password.yaml
       loop:
         - { name: 'REDIS', user: "default" }
+      when: REDIS_PASSWORD is not defined
       tags:
         - install
 
-    - name: Generate user connection details for vector store
+    - name: Generate user connection details for Redis vector store
       ansible.builtin.set_fact:
         vector_database_connection_username: "default"
         vector_database_connection_port: "6379"
       tags:
         - install
 
-    - name: Generate host connection details for vector store
+    - name: Generate host connection details for Redis vector store
       ansible.builtin.set_fact:
         vector_database_connection_host: >-
           {{
@@ -72,7 +54,7 @@
       tags:
         - install
 
-    - name: Generate uri connection details for vector store
+    - name: Generate uri connection details for Redis vector store
       ansible.builtin.set_fact:
         vector_database_connection_host_with_auth: >-
           {{
@@ -170,7 +152,7 @@
         REDIS_PORT: "{{ vector_database_connection_port | b64encode }}"
         REDIS_USERNAME: "{{ vector_database_connection_username | b64encode }}"
         REDIS_PASSWORD: '{{ REDIS_PASSWORD | b64encode }}'
-  when: vector_databases.vector_store == 'redis' or vector_databases.vector_store == 'redis-cluster'
+  when:  vector_databases.vector_store == 'redis-cluster'
   no_log: "{{ secure_logs }}"
   loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
   tags:
@@ -245,9 +227,10 @@
         - install
   vars:
     - namespace: "{{ vector_databases.namespace }}"
-    - secret_name: "{{ 'redis-cluster-secret' if vector_databases.vector_store == 'redis-cluster' else 'redis-secret' }}"
+    - secret_name: "redis-cluster-secret"
     - password_mappings:
-      - { key: REDIS_PASSWORD, variable: REDIS_PASSWORD, user: "default" }
+      - { key: password, variable: REDIS_PASSWORD, user: "default" }
+  when: vector_databases.vector_store in ['redis-cluster']
   tags:
     - install
 

@@ -168,6 +168,7 @@ images:
     pullPolicy: Always
     envs:
       RERANKING_MODEL_NAME: *reranking_model_name
+      RERANKING_LATE_CHUNKING_ENABLED: "False"
   teirerank:
     image: "erag-teirerank"
     repository: *repo
@@ -190,6 +191,14 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+  late-chunking-usvc:
+    image: "erag-late_chunking"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envfile: "src/comps/late_chunking/impl/microservice/.env"
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo

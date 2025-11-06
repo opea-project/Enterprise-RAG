@@ -59,6 +59,8 @@ class OPEAEmbedding:
         self._APIs = []
 
         self.REQUEST_BATCH_SIZE = 16 # how many texts are in one request
+        self.REQUEST_BATCH_SIZE_POOLING = 2 # smaller batch size for return_pooling=True (returns all token embeddings)
+
         self.ASYNCIO_MAX_TASKS_NUMBER = 128
 
         self._api_config = None
@@ -107,6 +109,11 @@ class OPEAEmbedding:
 
             # Multithreaded executor is needed to enabled batching in the model server
             logger.debug(f"Received {len(docs_to_parse)} texts in the request.")
+            
+            # Use smaller batch size for return_pooling=True to avoid exceeding max_response_size
+            # When return_pooling=True, the response contains all token embeddings (much larger)
+            batch_size = self.REQUEST_BATCH_SIZE_POOLING if input.return_pooling else self.REQUEST_BATCH_SIZE
+            
             async def multithreaded_embed_query(i, batch, semaphore):
                 async with semaphore:
                     texts = [doc.text for doc in batch]
@@ -121,7 +128,7 @@ class OPEAEmbedding:
                         embed_docs.append(EmbedDoc(text=doc.text, embedding=res_vector, metadata=doc.metadata))
                     return embed_docs
 
-            batches = [docs_to_parse[i:i + self.REQUEST_BATCH_SIZE] for i in range(0, len(docs_to_parse), self.REQUEST_BATCH_SIZE)]
+            batches = [docs_to_parse[i:i + batch_size] for i in range(0, len(docs_to_parse), batch_size)]
 
             semaphore = asyncio.Semaphore(self.ASYNCIO_MAX_TASKS_NUMBER)
             tasks = [multithreaded_embed_query(i, batch, semaphore) for i, batch in enumerate(batches)]

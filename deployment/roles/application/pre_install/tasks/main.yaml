@@ -16,6 +16,12 @@
     - validate-tools
     - uninstall
 
+- name: Validate configuration
+  ansible.builtin.include_role:
+    name: common/validate_config
+  tags:
+    - install
+
 - name: Create log directory if it does not exist
   ansible.builtin.file:
     path: "{{ item }}"

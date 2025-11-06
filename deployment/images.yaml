@@ -47,6 +47,10 @@ images:
     image_name: language-detection
     dockerfile_path: src/comps/language_detection/impl/microservice/Dockerfile
     docker_context: src
+  lateChunkingUsvc:
+    image_name: late-chunking
+    dockerfile_path: src/comps/late_chunking/impl/microservice/Dockerfile
+    docker_context: src
   llmUsvc:
     image_name: llm
     dockerfile_path: src/comps/llms/impl/microservice/Dockerfile

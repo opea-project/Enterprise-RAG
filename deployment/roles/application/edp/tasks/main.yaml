@@ -171,7 +171,7 @@
         - { key: EDP_SECRET_KEY, variable: EDP_MINIO_SECRET_KEY, user: "" }
     - secret_name: "edp-redis-secret"
       password_mappings:
-        - { key: redis-password, variable: EDP_REDIS_PASSWORD, user: "{{ edp.redis.auth.user.db_username }}" }
+        - { key: password, variable: EDP_REDIS_PASSWORD, user: "{{ edp.redis.auth.user.db_username }}" }
     - secret_name: "edp-postgresql-secret"
       password_mappings:
         - { key: DATABASE_PASSWORD, variable: EDP_POSTGRESQL_PASSWORD, user: "{{ edp.postgresql.auth.user.db_username }}" }
@@ -179,21 +179,22 @@
   tags:
     - install
 
-- name: Uninstall Helm chart
+# UNINSTALL TASKS
+- name: Uninstall EDP Helm release
   kubernetes.core.helm:
     name: "{{ edp.helm.release_name }}"
     namespace: "{{ edp.namespace }}"
     state: absent
+  when: edp.enabled
   tags:
     - uninstall
 
-- name: Delete namespace
+- name: Delete EDP namespace
   kubernetes.core.k8s:
     state: absent
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: "{{ edp.namespace }}"
+    api_version: v1
+    kind: Namespace
+    name: "{{ edp.namespace }}"
+  when: edp.enabled
   tags:
     - uninstall

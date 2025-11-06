@@ -44,6 +44,7 @@ The configuration for the Reranking Microservice is specified in the [impl/micro
 | `RERANKING_USVC_PORT`       | The port of the microservice, by default 8000                              |
 | `RERANKING_SERVICE_ENDPOINT`     | The endpoint of the reranking service, e.g., "http://localhost:6060" |
 | `RERANKING_MODEL_SERVER`     | The name of model server chose, e.g. "torchserve" |
+| `RERANKING_LATE_CHUNKING_ENABLED` | Flag informing if the late chunking is enabled. Default: False |
 
 
 ## Getting started

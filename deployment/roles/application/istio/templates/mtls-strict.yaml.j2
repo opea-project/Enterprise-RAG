@@ -36,4 +36,11 @@ spec:
   portLevelMtls:
     9443:
       mode: PERMISSIVE
+{% elif item == "vdb" %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis-cluster
+  portLevelMtls:
+    16379:
+      mode: DISABLE
 {% endif %}

@@ -121,6 +121,7 @@ class ObjectResponse(BaseModel):
     text_compression_duration: int
     text_splitter_duration: int
     dpguard_duration: int
+    late_chunking_duration: int
     embedding_duration: int
     ingestion_duration: int
     processing_duration: int
@@ -141,7 +142,7 @@ class ObjectStatus(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked
+    status = Column(String, index=False) # uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, late_chunking, embedding, ingested, deleting, canceled, blocked
     job_name = Column(String, index=False) # file_processing_job, file_deleting_job
     job_message = Column(String, index=False)
 
@@ -157,6 +158,8 @@ class ObjectStatus(Base):
     text_splitter_end = Column(DateTime, index=False)
     dpguard_start = Column(DateTime, index=False)
     dpguard_end = Column(DateTime, index=False)
+    late_chunking_start = Column(DateTime, index=False)
+    late_chunking_end = Column(DateTime, index=False)
     embedding_start = Column(DateTime, index=False)
     embedding_end = Column(DateTime, index=False)
     ingestion_start = Column(DateTime, index=False)
@@ -180,6 +183,7 @@ class ObjectStatus(Base):
         text_compression_duration = format_duration(self.text_compression_start, self.text_compression_end)
         text_splitter_duration = format_duration(self.text_splitter_start, self.text_splitter_end)
         dpguard_duration = format_duration(self.dpguard_start, self.dpguard_end)
+        late_chunking_duration = format_duration(self.late_chunking_start, self.late_chunking_end)
         embedding_duration = format_duration(self.embedding_start, self.embedding_end)
         ingestion_duration = format_duration(self.ingestion_start, self.ingestion_end)
         return class_type(
@@ -196,9 +200,10 @@ class ObjectStatus(Base):
             text_compression_duration=text_compression_duration,
             text_splitter_duration=text_splitter_duration,
             dpguard_duration=dpguard_duration,
+            late_chunking_duration=late_chunking_duration,
             embedding_duration=embedding_duration,
             ingestion_duration=ingestion_duration,
-            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+ingestion_duration,
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration+ingestion_duration,
             **kwargs
         )
 

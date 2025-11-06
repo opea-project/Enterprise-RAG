@@ -2,11 +2,11 @@ dependencies:
 - name: minio
   repository: https://charts.bitnami.com/bitnami
   version: 14.10.3
-- name: redis
-  repository: https://charts.bitnami.com/bitnami
-  version: 21.2.1
+- name: edp-redis
+  repository: file://charts/edp-redis
+  version: 1.0.0
 - name: postgresql
   repository: file://../postgresql
   version: 0.1.0
-digest: sha256:c2257c1acd57e86a82762adde160c0d2c47d28a05a81df4db08e42a7f5a981ff
-generated: "2025-11-04T04:58:22.212553922-08:00"
+digest: sha256:985d9da111b8309178248b9dcbc5fcab5a51c12a1b12eda30bf934d8632db14c
+generated: "2025-11-05T12:07:28.356959671-08:00"

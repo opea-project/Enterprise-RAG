@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 FILES_DIR = "e2e/files/extract_text"
 FILES_PREFIX = "extract_text_test_"
-IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding"]
+IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "late_chunking", "embedding"]
 
 @pytest.fixture(autouse=True)
 def cleanup(edp_helper):

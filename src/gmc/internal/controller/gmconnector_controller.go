@@ -86,6 +86,7 @@ const (
 	TextCompression          = "TextCompression"
 	TextSplitter			 = "TextSplitter"
 	DocSum				     = "DocSum"
+	LateChunking             = "LateChunking"
 )
 
 var yamlDict = map[string]string{
@@ -120,6 +121,7 @@ var yamlDict = map[string]string{
 	TextCompression:     yaml_dir + "text-compression-usvc.yaml",
 	TextSplitter:        yaml_dir + "text-splitter-usvc.yaml",
 	DocSum:              yaml_dir + "docsum-usvc.yaml",
+	LateChunking:        yaml_dir + "late_chunking_usvc.yaml",
 }
 
 var (

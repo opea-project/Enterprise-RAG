@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 # List of models that require trust_remote_code=True for proper functionality.
 TRUSTED_MODELS = [
     "jinaai/jina-embeddings-v2-base-en",
+    "jinaai/jina-embeddings-v3"
     # Add more trusted models here as needed
 ]
 

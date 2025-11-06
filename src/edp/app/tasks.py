@@ -45,6 +45,7 @@ TEXT_EXTRACTOR_ENDPOINT  = os.environ.get('TEXT_EXTRACTOR_ENDPOINT')
 TEXT_COMPRESSION_ENDPOINT  = os.environ.get('TEXT_COMPRESSION_ENDPOINT')
 TEXT_SPLITTER_ENDPOINT  = os.environ.get('TEXT_SPLITTER_ENDPOINT')
 EMBEDDING_ENDPOINT = os.environ.get('EMBEDDING_ENDPOINT')
+LATE_CHUNKING_ENDPOINT = os.environ.get('LATE_CHUNKING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
 
 class WithEDPTask(Task):
@@ -99,6 +100,7 @@ def response_err(response):
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 3})
 def process_file_task(self, file_id: Any, *args, **kwargs):
+
     file_db = self.db.query(FileStatus).filter(FileStatus.id == file_id).first()
     if file_db is None:
         raise Exception(f"File with id {file_id} not found")
@@ -235,7 +237,12 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         file_db.job_message = 'Data splitting in progress.'
         self.safe_commit()
 
-        response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs })
+        late_chunking_enabled = os.getenv('LATE_CHUNKING_ENABLED', "false").lower()
+        additional_params = {}
+        if late_chunking_enabled == "true":
+            additional_params = { 'chunk_size': 8192, 'chunk_overlap': 1024 }
+        
+        response = requests.post(TEXT_SPLITTER_ENDPOINT, json={ 'loaded_docs': dataprep_compressed_docs, **additional_params })
         if response.status_code != 200:
             file_db.status = 'error'
             file_db.job_message = f"Error encountered while data splitting. {response_err(response)}"
@@ -308,49 +315,113 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         self.safe_commit()
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
-    # Step 5 - Call the embedding service and ingestion service in batches
-    batch_size = os.getenv('BATCH_SIZE', 128)
-    file_db.embedding_start = datetime.datetime.now()
-    file_db.ingestion_start = file_db.embedding_start
-    file_db.status = 'embedding'
-    file_db.job_message = 'Data embedding in progress.'
-    self.safe_commit()
-    total_embedding_duration = datetime.timedelta()
-    total_ingestion_duration = datetime.timedelta()
-    for i in range(0, len(dataprep_docs), batch_size):
-        # Step 5.1 - send each chunk of text from dataprep to the embedding service
-        docs_batch = dataprep_docs[i:i+batch_size]
-        start_embedding_time = datetime.datetime.now()
-        response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
-        end_embedding_time = datetime.datetime.now()
-        total_embedding_duration += (end_embedding_time - start_embedding_time)
-        logger.debug(f"[{file_db.id}] Chunk {i} embedding completed.")
-        if response.status_code == 200:
-            # Step 5.2 - save each chunk of text and embedding to the vector database
-            start_ingestion_time = datetime.datetime.now()
-            response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
-            end_ingestion_time = datetime.datetime.now()
-            total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
-            logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
-            if response.status_code != 200:
+    if late_chunking_enabled == "true":
+        # Step 5 - Call the late chunking service and ingestion service in batches
+        batch_size = os.getenv('BATCH_SIZE', 8) # smaller batch size for late chunking due to larger chunks
+        file_db.late_chunking_start = datetime.datetime.now()
+        file_db.ingestion_start = file_db.late_chunking_start
+        file_db.status = 'late_chunking'
+        file_db.job_message = 'Data late chunking in progress.'
+        self.safe_commit()
+        total_late_chunking_duration = datetime.timedelta()
+        total_ingestion_duration = datetime.timedelta()
+        final_chunk_number = 0
+        final_chunk_size = 0
+        
+        for i in range(0, len(dataprep_docs), batch_size):
+            # Step 5.1 - send each chunk of text from dataprep to the late chunking service
+            docs_batch = dataprep_docs[i:i+batch_size]
+            
+            start_late_chunking_time = datetime.datetime.now()
+            response = requests.post(LATE_CHUNKING_ENDPOINT, json={ "docs": docs_batch })
+            end_late_chunking_time = datetime.datetime.now()
+            total_late_chunking_duration += (end_late_chunking_time - start_late_chunking_time)
+            logger.debug(f"[{file_db.id}] Chunk {i} late chunking completed.")
+
+            if response.status_code == 200:
+                # Step 5.2 - save each chunk of text and embedding to the vector database
+                lc_docs = response.json()["docs"]
+                final_chunk_number += len(lc_docs)
+                final_chunk_size = len(lc_docs[0])
+
+                start_ingestion_time = datetime.datetime.now()
+                response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
+                end_ingestion_time = datetime.datetime.now()
+                total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
+                logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
+                if response.status_code != 200:
+                    file_db.status = 'error'
+                    file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
+                    file_db.late_chunking_end = datetime.datetime.now()
+                    self.safe_commit()
+                    raise Exception(f"Error encountered while ingestion. {response_err(response)}")
+            else:
                 file_db.status = 'error'
-                file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
+                file_db.job_message = f"Error encountered while late_chunking. {response_err(response)}"
+                file_db.late_chunking_end = datetime.datetime.now()
+                self.safe_commit()
+                raise Exception(f"Error encountered while late chunking. {response_err(response)}")
+
+            # Update the pipeline progress
+            file_db.chunks_processed = i + len(docs_batch)
+            file_db.late_chunking_end = file_db.late_chunking_start + total_late_chunking_duration
+            file_db.ingestion_start = file_db.late_chunking_end
+            file_db.ingestion_end = file_db.late_chunking_end + total_ingestion_duration
+            self.safe_commit()
+
+        file_db.chunk_size = final_chunk_size
+        file_db.chunks_total = final_chunk_number
+        file_db.chunks_processed = final_chunk_number
+        self.safe_commit()
+    else:
+        # Step 5 - Call the embedding service and ingestion service in batches
+        batch_size = os.getenv('BATCH_SIZE', 128)
+        file_db.embedding_start = datetime.datetime.now()
+        file_db.ingestion_start = file_db.embedding_start
+        file_db.status = 'embedding'
+        file_db.job_message = 'Data embedding in progress.'
+        self.safe_commit()
+        total_embedding_duration = datetime.timedelta()
+        total_ingestion_duration = datetime.timedelta()
+
+
+        for i in range(0, len(dataprep_docs), batch_size):
+            # Step 5.1 - send each chunk of text from dataprep to the embedding service
+            docs_batch = dataprep_docs[i:i+batch_size]
+            
+            start_embedding_time = datetime.datetime.now()
+            response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
+            
+            end_embedding_time = datetime.datetime.now()
+            total_embedding_duration += (end_embedding_time - start_embedding_time)
+            logger.debug(f"[{file_db.id}] Chunk {i} embedding completed.")
+            
+            if response.status_code == 200:
+                # Step 5.2 - save each chunk of text and embedding to the vector database
+                start_ingestion_time = datetime.datetime.now()
+                response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
+                end_ingestion_time = datetime.datetime.now()
+                total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
+                logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
+                if response.status_code != 200:
+                    file_db.status = 'error'
+                    file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
+                    file_db.embedding_end = datetime.datetime.now()
+                    self.safe_commit()
+                    raise Exception(f"Error encountered while ingestion. {response_err(response)}")
+            else:
+                file_db.status = 'error'
+                file_db.job_message = f"Error encountered while embedding. {response_err(response)}"
                 file_db.embedding_end = datetime.datetime.now()
                 self.safe_commit()
-                raise Exception(f"Error encountered while ingestion. {response_err(response)}")
-        else:
-            file_db.status = 'error'
-            file_db.job_message = f"Error encountered while embedding. {response_err(response)}"
-            file_db.embedding_end = datetime.datetime.now()
+                raise Exception(f"Error encountered while embedding. {response_err(response)}")
+            
+            # Update the pipeline progress
+            file_db.chunks_processed = i + len(docs_batch)
+            file_db.embedding_end = file_db.embedding_start + total_embedding_duration
+            file_db.ingestion_start = file_db.embedding_end
+            file_db.ingestion_end = file_db.embedding_end + total_ingestion_duration
             self.safe_commit()
-            raise Exception(f"Error encountered while embedding. {response_err(response)}")
-
-        # Update the pipeline progress
-        file_db.chunks_processed = i + len(docs_batch)
-        file_db.embedding_end = file_db.embedding_start + total_embedding_duration
-        file_db.ingestion_start = file_db.embedding_end
-        file_db.ingestion_end = file_db.embedding_end + total_ingestion_duration
-        self.safe_commit()
 
     # Update the processing time
     file_db.status = 'ingested'

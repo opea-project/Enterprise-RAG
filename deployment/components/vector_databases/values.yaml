@@ -1,11 +1,6 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# allowInsecureImages due to repository override to: [bitnamilegacy]
-global:
-  security:
-    allowInsecureImages: true
-
 # Set on the command line:
 vector_database_password:
 vector_database_name:
@@ -28,13 +23,24 @@ pgvector:
       memory: 16Gi
 
 redis-cluster:
+  enabled: true
   image:
-    repository: bitnamilegacy/redis-cluster
-  enabled: false
+    repository: redis
+  serviceAccount:
+    name: vdb-redis-cluster
   metrics:
-    image:
-      repository: bitnamilegacy/redis-exporter
     enabled: true
+    image:
+      repository: oliver006/redis_exporter
+      tag: v1.80.0
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
   existingSecret: "redis-cluster-secret"
   existingSecretPasswordKey: "REDIS_PASSWORD"
   networkPolicy:
@@ -46,7 +52,9 @@ redis-cluster:
     replicas: 0
   redis:
     image:
-      repository: bitnamilegacy/redis
+      repository: redis
+      tag: 8.2.2
+      pullPolicy: IfNotPresent
     readinessProbe:
       enabled: false
       initialDelaySeconds: 180
@@ -58,8 +66,12 @@ redis-cluster:
       periodSeconds: 10
       timeoutSeconds: 10
     configmap: |-
-      loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
-      loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
+      # Cluster timeout
+      cluster-node-timeout 15000
+
+      # Load Redis modules with their configuration
+      loadmodule /usr/local/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
+      loadmodule /usr/local/lib/redis/modules/rejson.so MAXDEPTH 1000
     resources:
       requests:
         cpu: 2
@@ -69,49 +81,6 @@ redis-cluster:
         memory: 16Gi
   persistence:
     size: "10Gi"
-
-redis:
-  enabled: false
-  image:
-    repository: bitnamilegacy/redis
-  metrics:
-    image:
-      repository: bitnamilegacy/redis-exporter
-    enabled: true
-  auth:
-    enabled: true
-    existingSecret: "redis-secret"
-    existingSecretPasswordKey: "REDIS_PASSWORD"
-  commonConfiguration: |-
-    loadmodule /opt/bitnami/redis/lib/redis/modules/redisearch.so MAXSEARCHRESULTS 10000 MAXAGGREGATERESULTS 10000 TIMEOUT 5000
-    loadmodule /opt/bitnami/redis/lib/redis/modules/rejson.so MAXDEPTH 1000
-  networkPolicy:
-    extraIngress:
-      - ports:
-        - port: 15008
-  master:
-    persistence:
-      enabled: true
-      size: "10Gi"
-    resources:
-      requests:
-        cpu: 2
-        memory: 4Gi
-      limits:
-        cpu: 16
-        memory: 16Gi
-  replica:
-    replicaCount: 0
-    persistence:
-      enabled: true
-      size: "10Gi"
-    resources:
-      requests:
-        cpu: 2
-        memory: 4Gi
-      limits:
-        cpu: 16
-        memory: 16Gi
 
 podSecurityContext:
   runAsNonRoot: true

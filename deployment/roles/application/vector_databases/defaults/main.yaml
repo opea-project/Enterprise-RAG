@@ -1,27 +1,42 @@
+---
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
----
 vector_databases:
-  # Deployment namespace
-  namespace: "vdb"
-  vector_store_secret_name: 'vector-database-connection-details'
-  # Select one from: redis-cluster, redis
-  vector_store: "redis-cluster"
+  namespace: vdb
+  vector_store: redis-cluster
+  vector_datatype: FLOAT32
+  vector_dims: 768
 
   helm:
-    version: "v3.16.1"
-    repo_name: "bitnami"
-    repo_url: "https://charts.bitnami.com/bitnami"
-    chart_version: "1.1.0"
+    # Kept for compatibility, but not used with local charts
+    version: "2.0.0"
+    repo_name: ""  # Empty - using local chart
+    repo_url: ""   # Empty - using local chart
+    chart_version: "2.0.0"
     release_name: "vdb"
     chart_directory: "{{ playbook_dir }}/../components/vector_databases"
     default_values_file: "{{ playbook_dir }}/../components/vector_databases/values.yaml"
 
-  redis:
-    replicaCount: 0
-
   redis-cluster:
+    name: redis-cluster
+    version: "8.2.2"
+
     cluster:
       nodes: 3
-      replicas: 0
+      replicasPerMaster: 0
+
+    maxmemory: "2gb"
+
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+
+    persistence:
+      enabled: true
+      size: "8Gi"
+      storageClass: ""  # Empty means use default storage class

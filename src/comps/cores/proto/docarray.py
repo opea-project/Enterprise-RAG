@@ -358,6 +358,12 @@ class TextDocList(BaseDoc):
     summary_type: Optional[str] = None
     stream: Optional[bool] = True
 
+class LateChunkingInput(BaseDoc):
+    docs: List[TextDoc]
+    chunk_size: Optional[PositiveInt] = None
+    chunk_overlap: Optional[NonNegativeInt] = None
+
+
 class LLMPromptTemplate(BaseDoc):
     role: Literal["system", "user", "assistant"]
     content: str

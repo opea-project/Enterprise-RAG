@@ -125,6 +125,25 @@
     - install
     - display-configuration
 
+- name: Add late chunking embedding model compatibility issue
+  when:
+    - edp.enabled and edp.late_chunking.enabled
+  block:
+    - name: Set compatible embedding models for late chunking
+      ansible.builtin.set_fact:
+        late_chunking_compatible_models:
+          - "jinaai/jina-embeddings-v2-base-en"
+          # Add more compatible models here in the future
+
+    - name: Validate embedding model compatibility for late chunking
+      ansible.builtin.set_fact:
+        configuration_issues: "{{ configuration_issues + ['Late chunking is enabled but the current embedding model is not compatible. Current value: \"' + (embedding_model_name | default('undefined')) + '\". Compatible models: \"' + (late_chunking_compatible_models | join('\", \"')) + '\". Please change embedding_model_name to one of the compatible models.'] }}"
+      when:
+        - embedding_model_name | default('undefined') not in late_chunking_compatible_models
+  tags:
+    - install
+    - display-configuration
+
 - name: Display HF_TOKEN warning if not set
   ansible.builtin.debug:
     msg: |
@@ -138,6 +157,7 @@
   tags:
     - install
     - display-configuration
+
 
 - name: Display configuration summary
   ansible.builtin.debug:
@@ -198,10 +218,19 @@
         • APISIX: {{ apisix.enabled | default('undefined') }}
         • Vector DB: {{ vector_databases.enabled | default('undefined') }}
         • EDP: {{ edp.enabled | default('undefined') }}
+      {% if edp.enabled and edp.late_chunking is defined %}
+        • Late Chunking: {{ edp.late_chunking.enabled | default('undefined') }}
+      {% endif %}
         • UI: {{ ui.enabled | default('undefined') }}
         • Telemetry: {{ telemetry.enabled | default('undefined') }}
         • Traces (Telemetry): {{ telemetry.traces.enabled | default('undefined') }}
         • TDX: {{ tdx.enabled | default('undefined') }}
+
+      Model Configuration:
+        • LLM Model: {{ llm_model | default('undefined') }}
+        • Embedding Model: {{ embedding_model_name | default('undefined') }}
+        • Reranking Model: {{ reranking_model_name | default('undefined') }}
+
 
       Ready to proceed with deployment!
       ============================================================

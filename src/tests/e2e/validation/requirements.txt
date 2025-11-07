@@ -7,3 +7,5 @@ allure-pytest==2.13.5 # Apache 2.0
 requests==2.32.4 # Apache 2.0
 kr8s==0.17.4 # BSD 3-Clause License
 pytest-timeout==2.3.1 # MIT
+sentence-transformers==5.1.2 # Apache 2.0
+rouge==1.0.1 # Apache 2.0

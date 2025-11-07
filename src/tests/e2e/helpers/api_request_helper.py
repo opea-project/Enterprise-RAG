@@ -3,6 +3,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 import secrets
 import socket
@@ -11,10 +12,16 @@ from urllib.parse import urljoin
 
 import kr8s
 import requests
-from tests.e2e.validation.constants import ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
-CHATQA_API_PATH = f"{ERAG_DOMAIN}/api/v1/chatqna"
+
+
+class InvalidChatqaResponseBody(Exception):
+    """
+    Raised when the call to /v1/chatqa returns a body does not follow
+    'Server-Sent Events' structure
+    """
+    pass
 
 
 class CustomPortForward(object):
@@ -104,3 +111,62 @@ class ApiRequestHelper:
         else:
             self.default_headers["authorization"] = f"Bearer {self.keycloak_helper.access_token}" if self.keycloak_helper else ""
         return self.default_headers
+
+    def format_response(self, response):
+        """
+        Parse raw response_body from the chatqa response and return a human-readable text
+        """
+        response_text = ""
+        reranked_docs = []
+        if response.headers.get("Content-Type") == "application/json":
+            response = response.json()
+            response_text = response.get("text")
+            if response_text is None:
+                response_text = response.get("error")
+            resonse_json_key = response.get("json")
+            if resonse_json_key:
+                reranked_docs = resonse_json_key.get("reranked_docs", [])
+        elif response.headers.get("Content-Type") == "text/event-stream":
+            text = self.fix_encoding(response.text)
+            response_lines = text.splitlines()
+            response_text = ""
+            for line in response_lines:
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8')
+                if line == "":
+                    continue
+                if line.startswith("json:"):
+                    # Remove 'json: ' prefix and parse the JSON content
+                    reranked_docs = line[5:]
+                    reranked_docs = json.loads(reranked_docs)
+                    reranked_docs = reranked_docs.get("reranked_docs", [])
+                # Sometimes (depending on the pipeline) the response is wrapped in single quotes
+                elif line.startswith("data: '"):
+                    line = line.removeprefix("data: '")
+                    response_text += line.removesuffix("'")
+                elif line.startswith("data: "):
+                    response_text += line.removeprefix("data: ")
+                else:
+                    logger.warning(f"Unexpected line in the response: {line}")
+                    raise InvalidChatqaResponseBody(
+                        "Chatqa API response body does not follow 'Server-Sent Events' structure. "
+                        f"Response: {response.text}.\n\nHeaders: {response.headers}"
+                    )
+            # Replace new line characters for better output
+            response_text = response_text.replace('\\n', '\n')
+        else:
+            raise InvalidChatqaResponseBody(
+                f"Unexpected Content-Type in the response: {response.headers.get('Content-Type')}")
+        return response_text, reranked_docs
+
+    def fix_encoding(self, string):
+        try:
+            # Encode as bytes, then decode with UTF-8
+            return string.encode('latin1').decode('utf-8')
+        except Exception:
+            return string  # Append original if there's an error
+
+    def get_text(self, response):
+        """Extract the text from the response"""
+        response_text, _ = self.format_response(response)
+        return response_text

@@ -8,8 +8,13 @@ import json
 import os
 import pytest
 
-from constants import TEST_FILES_DIR
+from constants import DATAPREP_UPLOAD_DIR
 from helpers.guard_helper import GuardType, GuardQuestions as questions
+from validation.buildcfg import cfg
+
+# Skip all tests if fingerprint is not deployed
+if not cfg.get("fingerprint", {}).get("enabled"):
+    pytestmark = pytest.mark.skip(reason="Fingerprint is not deployed")
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +86,7 @@ def test_in_guard_ban_substrings_when_string_injected_into_file(guard_helper, ed
     assert "sound" not in response_text
 
     file = "word_zerquilloo_in_file.txt"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
     edp_helper.upload_file_and_wait_for_ingestion(file_path)
 
     _, response_text = guard_helper.call_chatqa(questions.ZERQUILLOO)
@@ -145,17 +150,16 @@ def test_in_guard_code(guard_helper, code_snippets):
         "threshold": 0.95
     }
     guard_helper.setup(GuardType.INPUT, "code", guard_params)
-    snippets = code_snippets()
 
     # Questions with blocked languages should be blocked
     for language_key in ["javascript", "python", "python_with_plain_text", "c++", "python_v2", "c++_v2", "python_v3",
                          "java", "python_and_scala", "java_and_ruby"]:
-        guard_helper.assert_blocked(snippets[language_key], reason="it is in language that is marked as blocked")
+        guard_helper.assert_blocked(code_snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
     for language_key in ["ruby", "scala"]:
         guard_helper.assert_allowed(
-            snippets[language_key], reason="it is in language that is not marked as blocked")
+            code_snippets[language_key], reason="it is in language that is not marked as blocked")
 
 
 @pytest.mark.xfail(reason="Feature not implemented yet - see IEASG-2040")
@@ -433,9 +437,8 @@ def test_in_guard_mix(guard_helper, code_snippets):
     }
     guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
 
-    snippets = code_snippets()
     guard_helper.assert_blocked(
-        snippets["scala"], reason="Scala code was detected even though ban_substrings guard allowed the question")
+        code_snippets["scala"], reason="Scala code was detected even though ban_substrings guard allowed the question")
 
 
 @allure.testcase("IEASG-T90")

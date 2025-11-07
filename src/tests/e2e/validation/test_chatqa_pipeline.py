@@ -15,8 +15,16 @@ import statistics
 import string
 import time
 
-from constants import TEST_FILES_DIR
-from helpers.chatqa_api_helper import InvalidChatqaResponseBody
+from constants import DATAPREP_UPLOAD_DIR
+from helpers.api_request_helper import InvalidChatqaResponseBody
+from validation.buildcfg import cfg
+
+# Skip all tests if chatqa pipeline is not deployed
+for pipeline in cfg.get("pipelines", []):
+    if pipeline.get("type") == "chatqa":
+        break
+else:
+    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +262,7 @@ def test_chatqa_chunks_in_sources(chatqa_api_helper, edp_helper, fingerprint_api
     assert len(reranked_docs) == 0, "It's unexpected that there are some reranked docs in the response"
 
     file = "test_chunks.txt"
-    with edp_helper.ephemeral_upload(os.path.join(TEST_FILES_DIR, file)):
+    with edp_helper.ephemeral_upload(os.path.join(DATAPREP_UPLOAD_DIR, file)):
         fingerprint_api_helper.set_component_parameters("llm", stream=False)
         response = chatqa_api_helper.call_chatqa("What is Corwenshirel?")
         reranked_docs = chatqa_api_helper.get_reranked_docs(response)
@@ -306,7 +314,7 @@ def test_false_content_injection_via_file(edp_helper, chatqa_api_helper, chat_hi
     """
     # Upload a file with false content injection (a story containing "Dubai" and "river")
     file = "test_false_content_injection.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
 
     # Ask first question
     question_france = "What is the capital of Poland?"
@@ -365,17 +373,16 @@ def test_follow_up_questions_contradictory_history(chatqa_api_helper, chat_histo
 
 
 @allure.testcase("IEASG-T175")
-def test_follow_up_questions_long_history(chatqa_api_helper, chat_history_helper, code_snippets):
+def test_follow_up_questions_long_history(chatqa_api_helper, chat_history_helper, long_code_snippets):
     """
     There might be a case when the sum of tokens of 3 previous questions and answers
     is longer than the model's token limit. Expect it not to fail in such case.
     """
     question = "In which programming languages have I prepared a TODO list application?"
-    snippets = code_snippets("code_snippets_long")
     response = chat_history_helper.save_history([
-        {"question": f"This is a first version of TODO list application: {snippets['java']}", "answer": f"The code: {snippets['java']} looks ok",},
-        {"question": f"This is a second version of TODO list application: {snippets['js']}", "answer": f"The code {snippets['js']} looks ok"},
-        {"question": f"This is a third version of TODO list application: {snippets['python']}", "answer": f"The code: {snippets['python']} looks ok"},
+        {"question": f"This is a first version of TODO list application: {long_code_snippets['java']}", "answer": f"The code: {long_code_snippets['java']} looks ok",},
+        {"question": f"This is a second version of TODO list application: {long_code_snippets['js']}", "answer": f"The code {long_code_snippets['js']} looks ok"},
+        {"question": f"This is a third version of TODO list application: {long_code_snippets['python']}", "answer": f"The code: {long_code_snippets['python']} looks ok"},
     ])
     history_id = response.json()["id"]
     history = {"history_id": history_id}

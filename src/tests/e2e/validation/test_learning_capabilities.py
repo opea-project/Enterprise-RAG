@@ -9,10 +9,18 @@ import pytest
 import time
 import os
 
-from constants import TEST_FILES_DIR
+from constants import DATAPREP_UPLOAD_DIR
+from validation.buildcfg import cfg
+
+# Skip all tests if chatqa pipeline is not deployed
+for pipeline in cfg.get("pipelines", []):
+    if pipeline.get("type") == "chatqa":
+        break
+else:
+    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
+
 
 logger = logging.getLogger(__name__)
-
 UNRELATED_RESPONSE_MSG = "Chatbot should return answer that is strictly related to the previously uploaded file"
 
 # The following test cases are meant to check if chatbot learns from uploaded files.
@@ -295,7 +303,7 @@ def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper)
     file_name = "story_to_be_deleted.txt"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, file_name, question)
     assert chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
-    response = delete_file(edp_helper, os.path.join(TEST_FILES_DIR, file_name))
+    response = delete_file(edp_helper, os.path.join(DATAPREP_UPLOAD_DIR, file_name))
     assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
     logger.debug("Sleeping to make sure the file is deleted")
     time.sleep(10)
@@ -384,7 +392,7 @@ def test_adoc_substitutions(edp_helper, chatqa_api_helper):
 def test_logs_parsing_capability(edp_helper, chatqa_api_helper):
     """Check if chatbot can extract information from log files"""
     file = "system_logs.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
 
     question = ("How many WARNING logs came from the MonitoringService? "
                 "These logs have the following string inside: '[MonitoringService] WARNING'")
@@ -414,7 +422,7 @@ def test_reupload(edp_helper, chatqa_api_helper):
 
     question = "How many vinyl records does Frankooo have as of September 17, 2025?"
     file = "test_reupload.txt"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
 
     # Upload initial file
     edp_helper.upload_file_and_wait_for_ingestion(file_path)
@@ -429,12 +437,11 @@ def test_reupload(edp_helper, chatqa_api_helper):
     # Upload updated file
     try:
         modify_file(file_path, "187", "212")
-        edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+        edp_helper.upload_file_and_wait_for_ingestion(file_path)
         response = ask_question(chatqa_api_helper, question)
         assert "212" in response, UNRELATED_RESPONSE_MSG
     finally:
         modify_file(file_path, "212", "187")  # restore original file content
-
 
 
 @allure.testcase("IEASG-T249")
@@ -453,7 +460,7 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
         pytest.skip("Failed to get current retriever's parameters")
 
     file = "test_similarity_search_with_siblings.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
     question = "List 20 Principles for a Meaningful Life by Giorgiooo"
 
     try:
@@ -483,7 +490,7 @@ def test_long_agenda_simple_questions(edp_helper, chatqa_api_helper):
     was identified and classified correctly.
     """
     file = "long-agenda.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
 
     with (allure.step("Ask about time of event")):
         question = "When is the lunch break on Day 2?"
@@ -514,7 +521,7 @@ def test_long_agenda_summary_questions(edp_helper, chatqa_api_helper):
         This test verifies if chatbot can summarize all information related to a given day.
         """
     file = "long-agenda.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
     with allure.step("Summarize question about a day"):
         required_mentions = ["registration", "welcome", "warm-up", "stretching", "skill development",
                              "lunch", "team building", "scrimmage", "cool down", "dinner", "entertainment", "wind down",
@@ -539,7 +546,7 @@ def test_updated_file(edp_helper, chatqa_api_helper):
     expected_3_after = ["carnivor", "fish", "birds"]
 
     file = "test_updated_document.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
 
     response_1_before = ask_question(chatqa_api_helper, question_1)
     assert chatqa_api_helper.words_in_response(expected_1_before, response_1_before), UNRELATED_RESPONSE_MSG
@@ -551,7 +558,7 @@ def test_updated_file(edp_helper, chatqa_api_helper):
     assert chatqa_api_helper.words_in_response(expected_3_before, response_3_before), UNRELATED_RESPONSE_MSG
 
     with edp_helper.substitute_file("test_updated_document.txt", "test_updated_document-updated.txt"):
-        edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+        edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
 
         response_1_after = ask_question(chatqa_api_helper, question_1)
         assert chatqa_api_helper.words_in_response(expected_1_after, response_1_after), UNRELATED_RESPONSE_MSG
@@ -571,7 +578,7 @@ def test_json_config_file_insights(edp_helper, chatqa_api_helper):
     Force the chatbot to extract information from across the entire file, not just from a single line.
     """
     file = "sample_config.json"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
     question = "What is the database type used by the user-service?"
     response = ask_question(chatqa_api_helper, question)
     assert "mysql" in response.lower(), UNRELATED_RESPONSE_MSG
@@ -593,8 +600,8 @@ def test_multi_doc_reasoning(edp_helper, chatqa_api_helper):
     """
     file1 = "multi_doc_retrieval_1.txt"
     file2 = "multi_doc_retrieval_2.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file1))
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file2))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file1))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file2))
 
     question = "What is the total value of all Marianooo's balls for the game called Marianoball?"
     response = ask_question(chatqa_api_helper, question)
@@ -618,8 +625,8 @@ def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper):
     file1 = "test_top_n_1.txt"
     file2 = "test_top_n_2.txt"
     question = "How many RC cars do Emanueleee and Raffaeleee have in total?"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file1))
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file2))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file1))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file2))
 
     try:
         fingerprint_api_helper.set_component_parameters("reranker", top_n=1)
@@ -634,7 +641,7 @@ def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper):
 
 
 def upload_and_ask_question(edp_helper, chatqa_api_helper, file, question=""):
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
     return ask_question(chatqa_api_helper, question)
 
 

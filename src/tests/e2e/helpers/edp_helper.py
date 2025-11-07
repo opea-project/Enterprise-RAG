@@ -14,8 +14,9 @@ from typing import Any
 
 import aiohttp
 import requests
-from tests.e2e.helpers.api_request_helper import ApiRequestHelper
-from tests.e2e.validation.constants import TEST_FILES_DIR, ERAG_DOMAIN
+from helpers.api_request_helper import ApiRequestHelper
+from validation.buildcfg import cfg
+from validation.constants import DATAPREP_UPLOAD_DIR, ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +31,18 @@ class EdpHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper, bucket_name=None):
         super().__init__(keycloak_helper=keycloak_helper)
-        if bucket_name:
-            self.default_bucket = bucket_name
+        if cfg.get("edp") is None or cfg.get("edp").get("enabled") is not True:
+            self.available_buckets = []
+            self.default_bucket = None
         else:
-            self.available_buckets = self.list_buckets().json().get("buckets")
-            # Use the first bucket that is not read-only as the default bucket
-            self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
-            logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
-                         f"{self.available_buckets}")
+            if bucket_name:
+                self.default_bucket = bucket_name
+            else:
+                self.available_buckets = self.list_buckets().json().get("buckets")
+                # Use the first bucket that is not read-only as the default bucket
+                self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
+                logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
+                             f"{self.available_buckets}")
 
     def list_buckets(self, as_user=False):
         """Call /api/list_buckets endpoint"""
@@ -371,8 +376,8 @@ class EdpHelper(ApiRequestHelper):
     def substitute_file(self, to_substitute, substitution):
         """Temporarily substitute file and yield. Rollback file after context manager exits."""
 
-        file_path_to_substitute = os.path.join(TEST_FILES_DIR, to_substitute)
-        file_path_substitution = os.path.join(TEST_FILES_DIR, substitution)
+        file_path_to_substitute = os.path.join(DATAPREP_UPLOAD_DIR, to_substitute)
+        file_path_substitution = os.path.join(DATAPREP_UPLOAD_DIR, substitution)
         backup_path = file_path_to_substitute + ".backup"
         try:
             # Rename the original file to create a backup

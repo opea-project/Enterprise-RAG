@@ -4,14 +4,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
+import logging
 import pytest
 
-import logging
+from validation.buildcfg import cfg
+
+# Skip all tests if chat_history is not deployed
+if not cfg.get("chat_history", {}).get("enabled"):
+    pytestmark = pytest.mark.skip(reason="Chat history is not deployed")
 
 logger = logging.getLogger(__name__)
-
-
-SIMPLE_CHAT_HISTORY = [ 
+SIMPLE_CHAT_HISTORY = [
     {
     "question": "What is the capital of Poland?", "answer": "Warsaw.", "metadata": {}
     },

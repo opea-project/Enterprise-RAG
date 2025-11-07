@@ -13,11 +13,12 @@ import tarfile
 import urllib3
 import yaml
 
-from validation import buildcfg
-from validation.constants import CODE_SNIPPETS_DIR
+from validation.buildcfg import cfg
+from validation.constants import TEST_FILES_DIR
 from helpers.api_request_helper import ApiRequestHelper
 from helpers.chatqa_api_helper import ChatQaApiHelper
 from helpers.chat_history_helper import ChatHistoryHelper
+from helpers.docsum_helper import DocSumHelper
 
 from helpers.edp_helper import EdpHelper
 from helpers.fingerprint_api_helper import FingerprintApiHelper
@@ -26,7 +27,8 @@ from helpers.istio_helper import IstioHelper
 from helpers.k8s_helper import K8sHelper
 from helpers.keycloak_helper import KeycloakHelper
 
-NAMESPACES = ["chatqa", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]  # List of namespaces to fetch logs from
+# List of namespaces to fetch logs from
+NAMESPACES = ["auth-apisix", "chatqa",  "docsum", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]
 TEST_LOGS_DIR = "test_logs"
 
 logger = logging.getLogger(__name__)
@@ -55,7 +57,7 @@ def pytest_configure(config):
             build_configuration = yaml.safe_load(f)
 
         # store into global cfg
-        buildcfg.cfg.update(build_configuration)
+        cfg.update(build_configuration)
     else:
         logger.warning("Build configuration file not found. Proceeding with empty configuration.")
 
@@ -74,6 +76,9 @@ def suppress_logging():
     logging.getLogger("asyncio").setLevel(logging.ERROR)
     logging.getLogger("httpx").setLevel(logging.ERROR)
     logging.getLogger("urllib3").setLevel(logging.ERROR)
+    logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+    logging.getLogger("transformers").setLevel(logging.ERROR)
+    logging.getLogger("tqdm").setLevel(logging.ERROR)
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     yield
 
@@ -131,7 +136,9 @@ def disable_guards_at_startup(guard_helper, suppress_logging, temporarily_remove
     Note that supress_logging fixture is deliberately placed here to ensure that it is executed
     before this fixture (otherwise we'd see a lot of unwanted logs at startup)
     """
-    guard_helper.disable_all_guards()
+    fingerprint_enabled = cfg.get("fingerprint", {}).get("enabled")
+    if fingerprint_enabled:
+        guard_helper.disable_all_guards()
     yield
 
 
@@ -191,6 +198,11 @@ def chat_history_helper(keycloak_helper):
 
 
 @pytest.fixture(scope="session")
+def docsum_helper(keycloak_helper):
+    return DocSumHelper(keycloak_helper)
+
+
+@pytest.fixture(scope="session")
 def fingerprint_api_helper(keycloak_helper):
     return FingerprintApiHelper(keycloak_helper)
 
@@ -217,16 +229,41 @@ def code_snippets():
     a dictionary mapping each snippet's name (without the file extension)
     to its content.
     """
-    def _code_snippets(snippets_dir="code_snippets"):
-        code_snippets = {}
+    return _read_test_files("code_snippets")
 
-        snippets_dir = f"{CODE_SNIPPETS_DIR}/{snippets_dir}"
-        for filename in os.listdir(snippets_dir):
-            file_path = os.path.join(snippets_dir, filename)
-            with open(file_path, 'r') as file:
-                content = file.read()
-                name_without_extension = os.path.splitext(filename)[0]
-                code_snippets[name_without_extension] = content
-        return code_snippets
 
-    return _code_snippets
+@pytest.fixture(scope="session")
+def long_code_snippets():
+    """
+    Reads code snippet files from a specified directory and returns
+    a dictionary mapping each snippet's name (without the file extension)
+    to its content.
+    """
+    return _read_test_files("code_snippets_long")
+
+
+@pytest.fixture(scope="module")
+def texts():
+    """
+    Reads text files from a specified directory and returns
+    a dictionary mapping each text's name (without the file extension)
+    to its content.
+    """
+    return _read_test_files("docsum")
+
+
+def _read_test_files(test_files_subdirectory="docsum"):
+    """
+    Reads test files from a specified subdirectory within the TEST_FILES_DIR
+    and returns a dictionary mapping each file's name (without the file extension)
+    to its content.
+    """
+    test_files = {}
+    directory_with_test_files = f"{TEST_FILES_DIR}/{test_files_subdirectory}"
+    for filename in os.listdir(directory_with_test_files):
+        file_path = os.path.join(directory_with_test_files, filename)
+        with open(file_path, 'r') as file:
+            content = file.read()
+            name_without_extension = os.path.splitext(filename)[0]
+            test_files[name_without_extension] = content
+    return test_files

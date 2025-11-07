@@ -1,7 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 # This OS Version and its journalctl must be ABI compatible with host OS
-FROM ubuntu:24.04
+FROM debian:bookworm
 # Install systemd just to get journalctl
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -yq systemd && apt-get clean && rm -rf /var/lib/apt/lists/*
 # Install otelcol binary and its config from "otel/opentelemetry-collector-contrib".

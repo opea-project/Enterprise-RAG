@@ -20,3 +20,15 @@ jobs:
         with:
           ref: ${{ env.BASE_RELEASE }}
 
+      - name: Check if slim release exists
+        id: check_slim_release
+        run: |
+          if gh release view "${{ env.BASE_RELEASE }}${{ env.SLIM_SUFFIX }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Slim release ${{ env.BASE_RELEASE }}${{ env.SLIM_SUFFIX }} already exists"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Slim release ${{ env.BASE_RELEASE }}${{ env.SLIM_SUFFIX }} does not exist"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

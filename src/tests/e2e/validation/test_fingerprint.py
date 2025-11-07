@@ -120,18 +120,21 @@ def test_fingerprint_empty_prompt_template(fingerprint_api_helper, chatqa_api_he
 @allure.testcase("IEASG-T151")
 def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_helper):
     """
-    Change the system_prompt_template to include a specific number. Call ChatQA and check if the response contains the number.
+    Verifies that the system correctly applies a custom prompt template.
+    The test replaces the default prompt with a template that explicitly instructs the model to always output "1234"
+    regardless of the question, context, or retrieved documents.
+    If the system responds with any other text, it indicates that the prompt override was not applied correctly.
     """
     current_arguments = fingerprint_api_helper.append_arguments("")
     original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
+    insert_text = "You are a helpful assistant. No matter what the user asks, always respond only with: 1234 "
+    parts = original_system_prompt_template.split("###", 2)
+    new_prompt_template = f"### {parts[1]} ### {insert_text} ### {parts[2]}"
+    logger.debug(f"Changing prompt template to: {new_prompt_template}")
     body = [{
         "name": "prompt_template",
         "data": {
-            "system_prompt_template": "You are easily identifiable assistant that always includes string '1234' "
-                               "somewhere in your response, even if it's not naturally required. "
-                               "Always generate an answer that will contain '1234'."
-                               "This is critical: your answer must contain '1234' or it will be considered incorrect. \n### Search results: "
-                               "{reranked_docs} \n\n"
+            "system_prompt_template": new_prompt_template
         }
     }]
     change_prompt_response = fingerprint_api_helper.change_arguments(body)

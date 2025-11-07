@@ -404,26 +404,37 @@ def test_logs_parsing_capability(edp_helper, chatqa_api_helper):
 @allure.testcase("IEASG-T264")
 def test_reupload(edp_helper, chatqa_api_helper):
     """Check if re-uploading the same file and updated file works as expected"""
-    file = "test_reupload_1.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+
+    def modify_file(file__to_modify, old_value, new_value):
+        with open(file__to_modify, "r+") as f:
+            content = f.read().replace(old_value, new_value)
+            f.seek(0)
+            f.write(content)
+            f.truncate()
 
     question = "How many vinyl records does Frankooo have as of September 17, 2025?"
+    file = "test_reupload.txt"
+    file_path = os.path.join(TEST_FILES_DIR, file)
+
+    # Upload initial file
+    edp_helper.upload_file_and_wait_for_ingestion(file_path)
     response = ask_question(chatqa_api_helper, question)
     assert "187" in response, UNRELATED_RESPONSE_MSG
 
     # Re-upload the same file
-    file = "test_reupload_1.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
-    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
+    edp_helper.upload_file_and_wait_for_ingestion(file_path)
     response = ask_question(chatqa_api_helper, question)
     assert "187" in response, UNRELATED_RESPONSE_MSG
 
     # Upload updated file
-    file = "test_reupload_2.txt"  # updated file with different number of vinyl records
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
-    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
-    response = ask_question(chatqa_api_helper, question)
-    assert "212" in response, UNRELATED_RESPONSE_MSG
+    try:
+        modify_file(file_path, "187", "212")
+        edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+        response = ask_question(chatqa_api_helper, question)
+        assert "212" in response, UNRELATED_RESPONSE_MSG
+    finally:
+        modify_file(file_path, "212", "187")  # restore original file content
+
 
 
 @allure.testcase("IEASG-T249")

@@ -71,7 +71,7 @@ Feel free to check out the architecture of the pipeline. For the detailed micros
 
 ## Software Prerequisites
 - **Hugging Face Model Access**: Ensure you have the necessary access to download and use the chosen Hugging Face model. Default models can be inspected in [config.yaml](deployment/inventory/sample/config.yaml).
-- For **multi-node clusters** CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX) is required. NFS server with CSI driver that supports RWX can be installed via [deployment guide](deployment/README.md) or you can check out more detailed instructions in [deployment/README.md](deployment/README.md).
+- For **multi-node clusters** CSI driver with StorageClass supporting accessMode ReadWriteMany (RWX) is required. NFS server with CSI driver that supports RWX can be installed via [deployment guide](deployment/README.md).
 
 ## Hardware Requirements
 
@@ -98,7 +98,7 @@ To deploy the solution on a platform with Gaudi® AI Accelerator you need to hav
 
 # Getting Started
 
-Install the prerequisities.
+Install the prerequisites.
 
 ```sh
 cd deployment/

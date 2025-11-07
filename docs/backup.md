@@ -31,7 +31,7 @@ To have a working backup and restore functionality, the following items need to 
   ```yaml
   install_csi: nfs
   ```
-  See the section on [preparing configuration files](../deployment/README.md#prepare-configuration-files) in deployment documentation for details.
+  See the Multi-Node Support and Storage Requirements section in the [Advanced Configuration Guide](advanced_configuration.md#multi-node-support-and-storage-requirements) for detailed configuration instructions.
 
 - Enabling the installation of VMware Velero along with the RAG solution.<br>
   To ensure that Velero is installed during the deployment of the cluster, update `config.yaml` to have at least these parameters set accordingly:

@@ -51,7 +51,7 @@ gmc-contoller-8bcb9d469-l6fsj   1/1     Running   0          55s
 
 ## Next step
 
-After the GMC is installed, you can follow the [GMC user guide](../usage_guide.md) for sample use cases.
+After the GMC is installed, you can follow the [GMC user guide](../../../src/gmc/usage_guide.md) for sample use cases.
 
 ## Uninstall
 

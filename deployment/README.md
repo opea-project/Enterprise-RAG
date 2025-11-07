@@ -214,7 +214,7 @@ For accessing Grafana dashboards for all services, visit [this](../docs/telemetr
 
 ## Configure Single Sign-On Integration Using Microsoft Entra ID
 
-For instructions on how to configure single sign-on, visit [this](../docs/single_sign_on_configuration_on_keyclock.md) page.
+For instructions on how to configure single sign-on, visit [this](../docs/single_sign_on_configuration_on_keycloak.md) page.
 
 # Remove the installation when no longer needed
 

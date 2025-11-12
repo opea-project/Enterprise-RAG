@@ -1,0 +1,70 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Get Vector Database deployment name
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    namespace: "{{ vector_databases.namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=redis-cluster
+      - app.kubernetes.io/instance=vdb
+  register: vdb_deployment
+  tags:
+    - pre-upgrade
+
+- name: Get Vector Database pod name
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ vector_databases.namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=redis-cluster
+      - app.kubernetes.io/instance=vdb
+  register: vdb_pods
+  tags:
+    - pre-upgrade
+
+- name: Set VDB pod name
+  ansible.builtin.set_fact:
+    vdb_pod: "{{ vdb_pods.resources[0].metadata.name }}"
+    vdb_deployment_name: "{{ vdb_deployment.resources[0].metadata.name if vdb_deployment.resources else vector_databases.vector_store }}"
+  when: vdb_pods.resources | length > 0
+  tags:
+    - pre-upgrade
+
+- name: Query Redis for number of keys (using container environment)
+  kubernetes.core.k8s_exec:
+    namespace: "{{ vector_databases.namespace }}"
+    pod: "{{ vdb_pod }}"
+    command: >
+      bash -c '[[ -f "$REDIS_PASSWORD_FILE" ]] && export REDIS_PASSWORD="$(< "$REDIS_PASSWORD_FILE")"; redis-cli -a "$REDIS_PASSWORD" DBSIZE'
+  register: vdb_keys_count
+  when: vdb_pod is defined
+  no_log: true
+  tags:
+    - pre-upgrade
+
+- name: Extract key count from Redis response
+  ansible.builtin.set_fact:
+    vdb_keys_total: "{{ vdb_keys_count.stdout_lines[-1] | regex_search('\\d+') | default('0') }}"
+  when:
+    - vdb_keys_count is defined
+    - vdb_keys_count.stdout is defined
+  tags:
+    - pre-upgrade
+
+- name: Set default key count if not determined
+  ansible.builtin.set_fact:
+    vdb_keys_total: "0"
+  when: vdb_keys_total is not defined
+  tags:
+    - pre-upgrade
+
+- name: Save VDB data to facts for YAML report
+  ansible.builtin.set_fact:
+    vdb_report_data:
+      component: "{{ vdb_deployment_name }}"
+      keys_count: "{{ vdb_keys_total | int }}"
+  when: vdb_pod is defined
+  tags:
+    - pre-upgrade

@@ -33,7 +33,14 @@
         - install
         - display-configuration
         - uninstall
+        - pre-upgrade
   tasks:
+    - name: Generate data consistency report
+      ansible.builtin.include_role:
+        name: data_consistency_check
+      tags:
+        - pre-upgrade
+
     - name: Build and push images
       ansible.builtin.include_role:
         name: images

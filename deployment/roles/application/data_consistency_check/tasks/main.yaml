@@ -1,0 +1,97 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set up data consistency report directory and variables
+  ansible.builtin.set_fact:
+    data_consistency_report_dir: "{{ deployment_dir }}/upgrade/reports"
+    data_consistency_yaml_report_name: "{{ data_consistency_yaml_report_name | default('consistency-report.pre.yaml') }}"
+    data_consistency_markdown_report_name: "consistency-report.md"
+  tags:
+    - pre-upgrade
+
+- name: Ensure reports directory exists
+  ansible.builtin.file:
+    path: "{{ data_consistency_report_dir }}"
+    state: directory
+    mode: '0755'
+  tags:
+    - pre-upgrade
+
+- name: Remove old Markdown reports
+  ansible.builtin.find:
+    paths: "{{ data_consistency_report_dir }}"
+    patterns: "consistency-report-*.md"
+  register: old_markdown_reports
+  tags:
+    - pre-upgrade
+
+- name: Delete old Markdown reports
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_markdown_reports.files }}"
+  when: old_markdown_reports.files | length > 0
+  tags:
+    - pre-upgrade
+
+- name: Remove old YAML report
+  ansible.builtin.file:
+    path: "{{ data_consistency_report_dir }}/{{ data_consistency_yaml_report_name }}"
+    state: absent
+  tags:
+    - pre-upgrade
+
+- name: Remove old Markdown report
+  ansible.builtin.file:
+    path: "{{ data_consistency_report_dir }}/{{ data_consistency_markdown_report_name }}"
+    state: absent
+  tags:
+    - pre-upgrade
+
+- name: Check EDP data consistency
+  ansible.builtin.include_tasks: check_edp.yaml
+  when: edp is defined and edp.enabled | default(false)
+  tags:
+    - pre-upgrade
+
+- name: Check Vector Database data consistency
+  ansible.builtin.include_tasks: check_vdb.yaml
+  when: vector_databases is defined and vector_databases.enabled | default(false)
+  tags:
+    - pre-upgrade
+
+- name: Check MinIO data consistency
+  ansible.builtin.include_tasks: check_minio.yaml
+  when: edp is defined and edp.enabled | default(false) and edp.storageType | default('') == "minio"
+  tags:
+    - pre-upgrade
+
+- name: Check Fingerprint data consistency
+  ansible.builtin.include_tasks: check_fingerprint.yaml
+  when: fingerprint is defined and fingerprint.enabled | default(false)
+  tags:
+    - pre-upgrade
+
+- name: Check Chat History data consistency
+  ansible.builtin.include_tasks: check_chat_history.yaml
+  when: chat_history is defined and chat_history.enabled | default(false)
+  tags:
+    - pre-upgrade
+
+- name: Check Keycloak data consistency
+  ansible.builtin.include_tasks: check_keycloak.yaml
+  when: keycloak is defined and keycloak.enabled | default(false)
+  tags:
+    - pre-upgrade
+
+- name: Generate summary data consistency report
+  ansible.builtin.include_tasks: generate_summary.yaml
+  tags:
+    - pre-upgrade
+
+- name: Display data consistency report location
+  ansible.builtin.debug:
+    msg: "Data consistency report generated at: {{ data_consistency_report_dir }}/{{ data_consistency_markdown_report_name }}"
+  tags:
+    - pre-upgrade

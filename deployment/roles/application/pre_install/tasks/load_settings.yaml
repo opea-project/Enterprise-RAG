@@ -21,6 +21,7 @@
     - install
     - display-configuration
     - uninstall
+    - pre-upgrade
 
 - name: Initialize configuration issues list
   ansible.builtin.set_fact:

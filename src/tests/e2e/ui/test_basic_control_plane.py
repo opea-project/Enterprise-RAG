@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # TEST CASES
 # ============================================================================
 
-@allure.testcase("IEASG-283")
+@allure.testcase("IEASG-T283")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_control_plane_navigation(chat_ui_helper):
@@ -63,7 +63,7 @@ async def test_control_plane_navigation(chat_ui_helper):
     logger.info("Test completed: Control Plane navigation validated")
 
 
-@allure.testcase("IEASG-284")
+@allure.testcase("IEASG-T284")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_no_service_selected_card(chat_ui_helper):
@@ -98,7 +98,7 @@ async def test_no_service_selected_card(chat_ui_helper):
     logger.info("Test completed: No service selected card validated")
 
 
-@allure.testcase("IEASG-285")
+@allure.testcase("IEASG-T285")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_control_plane_panel_rendered(chat_ui_helper):
@@ -136,7 +136,7 @@ async def test_control_plane_panel_rendered(chat_ui_helper):
     logger.info("Test completed: Control Plane panel validated")
 
 
-@allure.testcase("IEASG-286")
+@allure.testcase("IEASG-T286")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_chatqa_graph_legend_rendered(chat_ui_helper):
@@ -176,7 +176,7 @@ async def test_chatqa_graph_legend_rendered(chat_ui_helper):
     logger.info("Test completed: ChatQnA graph legend validated")
 
 
-@allure.testcase("IEASG-287")
+@allure.testcase("IEASG-T287")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_control_plane_zoom_controls(chat_ui_helper):

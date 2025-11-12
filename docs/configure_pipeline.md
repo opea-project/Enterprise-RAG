@@ -1,6 +1,8 @@
-## This document explains how to configure the Enterprise RAG pipeline
+# Configure the Intel&reg; AI for Enterprise RAG pipelines
 
-Enterprise RAG pipeline is being configured based on [manifests](../deployment/components/gmc/microservices-connector/config/manifests) and [flow configuration files](../deployment/pipelines/chatqa/)
+Intel&reg; AI for Enterprise RAG pipelines are configured based on [manifests](../deployment/components/gmc/microservices-connector/config/manifests) and flow configuration files:
+- ChatQA pipeline: [deployment/pipelines/chatqa/](../deployment/pipelines/chatqa/)
+- Document Summarization (Docsum) pipeline: [deployment/pipelines/docsum/](../deployment/pipelines/docsum/)
 
 `Manifests` show the default component configuration, while `flow configuration files` define how those components are connected together.
 
@@ -31,10 +33,16 @@ It's possible to update the resource requests and limits in the appropriate YAML
 
 ### Resource Files
 
-The resource configurations are defined in separate YAML files:
+The resource configurations are defined in separate YAML files for each pipeline:
+
+**ChatQA Pipeline:**
 - [`resources-reference-cpu.yaml`](../deployment/pipelines/chatqa/resources-reference-cpu.yaml)
 - [`resources-reference-hpu.yaml`](../deployment/pipelines/chatqa/resources-reference-hpu.yaml)
 - [`resources-tdx.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml)
+
+**Docsum Pipeline:**
+- [`resources-reference-cpu.yaml`](../deployment/pipelines/docsum/resources-reference-cpu.yaml)
+- [`resources-reference-hpu.yaml`](../deployment/pipelines/docsum/resources-reference-hpu.yaml)
 
 These files contain the resource requests and limits for each microservice.
 
@@ -60,12 +68,12 @@ services:
 ```
 
 > [!NOTE]
-From all the resources defined, only those mentioned in the specific [pipeline](../deployment/pipelines/chatqa/) file that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.
+From all the resources defined, only those mentioned in the specific pipeline file (e.g., [ChatQA](../deployment/pipelines/chatqa/) or [Docsum](../deployment/pipelines/docsum/)) that the user will run will be used for deployment. Users should take this into account when calculating the resources needed for deployment based on the specific configurations they choose to include.
 
 
 ## Supported list of models
 
-The Enterprise RAG pipeline allows you to select a model from a predefined list of supported models. These lists, along with their configuration options, are maintained in the following files:
+Intel&reg; AI for Enterprise RAG pipelines allow you to select a model from a predefined list of supported models. These lists, along with their configuration options, are maintained in the following files:
 
 - [`resources-model-cpu.yaml`](../deployment/pipelines/chatqa/resources-model-cpu.yaml) (for CPU-based models)
 - [`resources-model-hpu.yaml`](../deployment/pipelines/chatqa/resources-model-hpu.yaml) (for Gaudi/HPU-based models)
@@ -165,7 +173,8 @@ modelConfigs:
 ### Passing the Model Config File in Ansible Pipelines
 
 The model configuration file is specified under the `pipelines` section of your main [configuration file](./../deployment/README.md#prepare-main-configuration-file).
-For example:
+
+**ChatQA Pipeline Example:**
 ```yaml
 pipelines:
   - namespace: chatqa
@@ -174,4 +183,15 @@ pipelines:
     modelConfigPath: chatqa/resources-model-cpu.yaml
     type: chatqa
 ```
+
+**Docsum Pipeline Example:**
+```yaml
+pipelines:
+  - namespace: docsum
+    samplePath: docsum/reference-cpu.yaml
+    resourcesPath: docsum/resources-reference-cpu.yaml
+    modelConfigPath: chatqa/resources-model-cpu.yaml
+    type: docsum
+```
+
 This allows you to control which model list and configuration are used for each pipeline deployment.

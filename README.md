@@ -4,11 +4,12 @@ Intel® AI for Enterprise RAG simplifies transforming your enterprise data into 
 
 ## Why use Intel® AI for Enterprise RAG?
 
-Enable intelligent ChatQ&A experiences that understand your business context:
+Enable intelligent AI experiences that understand your business context:
 
-* **Domain-Specific Intelligence** - Enrich conversations with your organizational knowledge without training or fine-tuning models
-* **Rapid Deployment** - Transform enterprise documents into conversational AI experiences in minutes, not months
-* **Enterprise-Ready Scale** - Deploy secure, compliant ChatQ&A solutions that grow with your business needs
+* **Domain-Specific Intelligence** - Enrich conversations and document processing with your organizational knowledge without training or fine-tuning models
+* **Multiple Use Cases** - Support for ChatQ&A for conversational AI and Document Summarization for extracting key insights from documents
+* **Rapid Deployment** - Transform enterprise documents into AI-powered experiences in minutes, not months
+* **Enterprise-Ready Scale** - Deploy secure, compliant AI solutions that grow with your business needs
 
 ## Core Features
 * **One-Click Enterprise Deployment** - Fully automated Kubernetes cluster provisioning with Ansible playbooks, supporting both single-node and multi-node configurations with comprehensive infrastructure setup.
@@ -75,7 +76,9 @@ Feel free to check out the architecture of the pipeline. For the detailed micros
 
 ## Hardware Requirements
 
-These are minimal requirements to run Intel® AI for Enterprise RAG with default settings. In case of more(or less) resources available, feel free to adjust the parameters in [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml), depending on the chosen hardware.
+These are minimal requirements to run Intel® AI for Enterprise RAG with default settings. In case of more(or less) resources available, feel free to adjust the parameters in the resource configuration files for your chosen pipeline:
+- ChatQA: [resources-reference-cpu.yaml](deployment/pipelines/chatqa/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/chatqa/resources-reference-hpu.yaml)
+- Docsum: [resources-reference-cpu.yaml](deployment/pipelines/docsum/resources-reference-cpu.yaml) or [resources-reference-hpu.yaml](deployment/pipelines/docsum/resources-reference-hpu.yaml)
 
 ### Deployment on Xeon only
 To deploy the solution using Xeon only, you will need access to any platform with Intel® Xeon® Scalable processor that meet below requirements:

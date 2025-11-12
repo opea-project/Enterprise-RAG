@@ -92,11 +92,11 @@ After the application is installed, you can update its components (for example, 
 
 To update the application:
 
-1. Edit `inventory/test-cluster/config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings).
+1. Edit `config.yaml` and adjust the relevant parameters (e.g., `llm_model`, `embedding_model_name`, or other settings). Feel free to checkout [Advanced Configuration Guide](../docs/advanced_configuration.md) with tips on modifying the parameters.
 2. Run:
 
 ```sh
-ansible-playbook playbooks/application.yaml --tags install -e @inventory/test-cluster/config.yaml
+ansible-playbook playbooks/application.yaml --tags install -e @<path to config.yaml>
 ```
 
 This will apply the changes and update only the affected services.
@@ -107,11 +107,13 @@ The application supports taking backups and restoring user data, including inges
 
 For detailed instructions on how to configure backup functionality, create backups, and restore from backups, refer to the [Backup and Restore Guide](../docs/backup.md).
 
-# Interact with ChatQnA
+# Interact with the Deployed Pipeline
 
 ## Test Deployment
 
-To verify that the deployment was successful, run the following command:
+To verify that the deployment was successful, run the appropriate test command for your pipeline:
+
+**For ChatQA Pipeline:**
 ```bash
 ./scripts/test_connection.sh
 ```
@@ -128,6 +130,12 @@ data: 'X'
 data: [DONE]
 Test finished successfully
 ```
+
+**For Docsum Pipeline:**
+```bash
+./scripts/test_docsum.sh
+```
+This will test the document summarization functionality by sending a sample document for summarization.
 
 ## Access the UI/Grafana
 

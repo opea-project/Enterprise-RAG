@@ -15,7 +15,10 @@ This document describes how to install Intel® AI for Enterprise RAG application
 
 ## Checking Your Default Storage Class
 
-**Critical**: Intel® AI for Enterprise RAG only works if your chosen storage class is set as the default. Verify this before deployment:
+> [!IMPORTANT]
+> Intel® AI for Enterprise RAG only works if your chosen storage class is set as the default.
+
+Verify this before deployment:
 
 ```bash
 # Check current default storage class
@@ -36,31 +39,46 @@ kubectl patch storageclass <other-storage-class> -p '{"metadata": {"annotations"
 ## Installation Steps
 
 1. **Edit the configuration file:**
-   - Open `inventory/test-cluster/config.yaml`
-   - Fill in the required values:
-     - `huggingToken` - Your Hugging Face API token
+   - Pick a desired pipeline to run:
+     - **ChatQA pipeline**: Available in [config.yaml](../deployment/inventory/sample/config.yaml)
+     - **Document Summarization (Docsum) pipeline**: Available in [config_docsum.yaml](../deployment/inventory/sample/config_docsum.yaml)
+   - Open chosen configuration file and modify following fields:   
+      - `httpProxy` and `httpsProxy` values if you are using proxy
+      - `kubeconfig`: path to your kubeconfig file 
+      - `FQDN`: Provide the FQDN for the deployment, for example "erag.com"
+
+   - If you have K8s cluster containing nodes with `Gaudi AI accelerator`, please change pipelines section as default pipeline is utilizing CPU:
+     
+     **For ChatQA pipeline:**
+     ```yaml
+     pipelines:
+        - namespace: chatqa
+        samplePath: chatqa/reference-hpu.yaml
+        resourcesPath: chatqa/resources-reference-hpu.yaml
+        modelConfigPath: chatqa/resources-model-hpu.yaml
+        type: chatqa
+     ```
+     
+     **For Docsum pipeline:**
+     ```yaml
+     pipelines:
+        - namespace: docsum
+        samplePath: docsum/reference-hpu.yaml
+        resourcesPath: docsum/resources-reference-hpu.yaml
+        modelConfigPath: chatqa/resources-model-hpu.yaml
+        type: docsum
+     ```
+
 > [!Note]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.
-> Ensure your HUGGINGFACEHUB_API_TOKEN grants access to this model.  
+> This model is publically available. However, if you choose to change the model to the gated/restricted one, remember to adjust `huggingToken` field.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
-     - `httpProxy` and `httpsProxy` values if you are using proxy
-     - `kubeconfig`: path to your kubeconfig file 
-     - `FQDN`: Provide the FQDN for the deployment, for example "erag.com"
 
-     - If you have K8s cluster containing nodes with `Gaudi AI accelerator`, please change pipelines section as default pipeline is utilizing CPU:
-     ```
-     pipelines:
-       - namespace: chatqa
-         samplePath: chatqa/reference-hpu.yaml
-         resourcesPath: chatqa/resources-reference-hpu.yaml
-         modelConfigPath: chatqa/resources-model-hpu.yaml
-         type: chatqa
-         ```
 2. **Advanced Configuration:**
    
    For detailed configuration options and advanced settings, refer to the [Advanced Configuration Guide](./advanced_configuration.md).
 
 3. **Run the installation:**
    ```bash
-   ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @inventory/test-cluster/config.yaml
+   ansible-playbook -u $USER -K playbooks/application.yaml --tags configure,install -e @<path to chosen config.yaml>
    ```

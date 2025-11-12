@@ -57,8 +57,8 @@ Pipelines define the complete AI workflow including:
 
 **Default**: CPU-optimized ChatQA pipeline
 
+**ChatQA Pipeline:**
 ```yaml
-# Default configuration
 pipelines:
   - namespace: chatqa                                      # Default: chatqa
     samplePath: chatqa/reference-cpu.yaml                 # Default: CPU reference
@@ -67,10 +67,24 @@ pipelines:
     type: chatqa                                          # Default: chatqa
 ```
 
+**Document Summarization (Docsum) Pipeline:**
+
+The sample configuration file for Docsum is available at [inventory/sample/config_docsum.yaml](../deployment/inventory/sample/config_docsum.yaml).
+```yaml
+# Configuration for Docsum
+pipelines:
+  - namespace: docsum                                      # Namespace: docsum
+    samplePath: docsum/reference-cpu.yaml                 # CPU reference for Docsum
+    resourcesPath: docsum/resources-reference-cpu.yaml    # CPU resources for Docsum
+    modelConfigPath: chatqa/resources-model-cpu.yaml      # CPU models (shared with ChatQA)
+    type: docsum                                          # Pipeline type: docsum
+```
+
 ### Switching to Gaudi (HPU) Pipeline
 
 For Intel Gaudi AI accelerators:
 
+**ChatQA Pipeline:**
 ```yaml
 gaudi_operator: true              # Default: false
 habana_driver_version: "1.22.1-6"
@@ -81,6 +95,19 @@ pipelines:
     resourcesPath: chatqa/resources-reference-hpu.yaml
     modelConfigPath: chatqa/resources-model-hpu.yaml
     type: chatqa
+```
+
+**Docsum Pipeline:**
+```yaml
+gaudi_operator: true              # Default: false
+habana_driver_version: "1.22.1-6"
+
+pipelines:
+  - namespace: docsum
+    samplePath: docsum/reference-hpu.yaml
+    resourcesPath: docsum/resources-reference-hpu.yaml
+    modelConfigPath: chatqa/resources-model-hpu.yaml
+    type: docsum
 ```
 
 ### Using external inference endpoint
@@ -335,6 +362,21 @@ hpaEnabled: true
 
 ### Additional Pipelines
 
+#### Document Summarization (Docsum) Pipeline
+
+The Document Summarization pipeline provides capabilities to generate summaries of documents. The pipeline processes documents through a sequence of microservices including TextExtractor, TextCompression, TextSplitter, and generates summaries using LLM services.
+
+**Configuration File:** [deployment/inventory/sample/config_docsum.yaml](../deployment/inventory/sample/config_docsum.yaml)
+
+**Pipeline Definition:** [deployment/pipelines/docsum/](../deployment/pipelines/docsum/)
+
+To test the Docsum pipeline after deployment:
+```bash
+./scripts/test_docsum.sh
+```
+
+For more details about the Docsum pipeline architecture and available configurations, refer to the [Docsum Pipeline README](../deployment/pipelines/docsum/README.md).
+
 #### Language Translation Pipeline
 
 > [!NOTE] 
@@ -401,9 +443,6 @@ certs:
 
 ### Trust Domain Extensions (TDX)
 
-> [!NOTE]
-> TDX is an experimental feature for enhanced security using Intel Trust Domain Extensions.
-
 Intel® Trust Domain Extensions (Intel® TDX) provides hardware-based trusted execution environments for confidential computing:
 
 ```yaml
@@ -423,7 +462,7 @@ tdx:
 **Requirements**:
 - 4th Gen Intel® Xeon® Scalable processors or later
 - Ubuntu 24.04 with TDX enabled
-- Compatible Kubernetes version (1.29.5+, 1.30.8+, or 1.31.4+)
+- Compatible Kubernetes version (1.31+)
 
 Only enable TDX if you have compatible Intel hardware and understand the experimental nature of this feature. For detailed TDX deployment instructions, see: [TDX Deployment Guide](tdx.md)
 
@@ -439,7 +478,6 @@ local_registry: false               # Default: false (use public registry)
 
 Intel® AI for Enterprise RAG provides the ability to build Docker images locally instead of using pre-built images from public registries. This is particularly useful for:
 
-- **Air-gapped environments** where internet access is restricted
 - **Custom modifications** to microservices or components
 - **Security requirements** that mandate locally built and verified images
 - **Development and testing** of custom pipeline modifications

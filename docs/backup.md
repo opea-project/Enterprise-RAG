@@ -47,7 +47,12 @@ To have a working backup and restore functionality, the following items need to 
     install_server: true
     install_client: true
   ```
-  Please review the cluster config file `deployment/inventory/sample/config.yaml` for details.
+  Please review the cluster config file for your chosen pipeline:
+  - ChatQA: `deployment/inventory/sample/config.yaml`
+  - Docsum: `deployment/inventory/sample/config_docsum.yaml`
+
+> [!NOTE]
+> When using a pipeline other than ChatQA, ensure that the `namespaceOrder` and `deployments` sections in the backup configuration match your deployed pipeline namespace (e.g., `docsum` instead of `chatqa`).
 
 ## User Data Backup
 

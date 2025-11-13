@@ -97,6 +97,12 @@ teirerank:
 ```
 
 ### VLLM Scaling
+
+> [!NOTE]
+> **Automatic Configuration:** When [Balloons Policy](../deployment/components/nri-plugin/README.md) is enabled (`balloons.enabled: true` in config.yaml), the system automatically discovers node topology and calculates optimal VLLM replica distribution. Manual configuration is only required when `balloons.enabled: false`.
+
+**Manual Configuration:**
+
 * For machines with ≤64 physical cores per socket: use 1 replica per socket
 * For machines with >64 physical cores per socket (e.g., 96 or 128): use 2 replicas per socket
 * Adjust in [resources-reference-cpu.yaml](../deployment/pipelines/chatqa/resources-reference-cpu.yaml).
@@ -165,12 +171,16 @@ hpaEnabled: true
 ---
 
 ## Balloons Policy
-* [Balloons Policy](../deployment/components/nri-plugin/README.md) is responsible for assigning optimal resources for LLM inference pods such as vLLM and it is crucial for the performance of the whole deployment.
+* [Balloons Policy](../deployment/components/nri-plugin/README.md) is responsible for assigning optimal resources for inference pods such as vLLM, embedding, reranking and it is crucial for the performance of the whole deployment.
 * It can be enabled in [config.yaml](../deployment/inventory/sample/config.yaml):
 
 ```yaml
 balloons:
   enabled: true
+  namespace: kube-system # alternatively, set custom namespace for balloons
+  wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
+  throughput_mode: true # set to true to optimize for horizontal scaling
+  memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested
 ```
 
 ---

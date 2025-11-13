@@ -95,6 +95,7 @@ balloons:
   namespace: kube-system # alternatively, set custom namespace for balloons
   wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
   throughput_mode: true # set to true to optimize for horizontal scaling
+  memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested; valid range: 0.0 to 1.0
 
 pipelines:
   - namespace: chatqa

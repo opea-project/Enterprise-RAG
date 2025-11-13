@@ -4,7 +4,68 @@ import json
 import argparse
 import sys
 
-def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode):
+def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size, node_memory_size, replicas, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent):
+    """
+    Verify if memory requirements exceed available node memory and adjust replicas if needed.
+    
+    Args:
+        current_vllm_size: Current VLLM CPU size
+        reranking_size: Reranking CPU size
+        embedding_size: Embedding CPU size
+        node_memory_size: Total memory in GiB
+        replicas: Number of replicas calculated
+        edp_enabled: Boolean flag indicating if EDP is enabled
+        telemetry_enabled: Boolean flag indicating if telemetry is enabled
+        vector_databases_enabled: Boolean flag indicating if vector databases are enabled
+        memory_overcommit_buffer_percent: Memory buffer percentage for pod memory overcommit/burst
+        
+    Returns:
+        Tuple: (verified_replicas_count, memory_usage_percent)
+    """
+
+    VLLM_MEMORY = 64 if current_vllm_size > 0 else 0   # [GiB]
+    EMBEDDING_MEMORY = 4 if embedding_size > 0 else 0  # [GiB]
+    RERANKING_MEMORY = 4 if reranking_size > 0 else 0  # [GiB]
+
+    # Calculate total memory required for initial number of inference group replicas
+    inference_memory_sum = VLLM_MEMORY + EMBEDDING_MEMORY + RERANKING_MEMORY
+    total_memory_needed = inference_memory_sum * replicas
+
+    # Set RAG core services memory request
+    CORE_SERVICES_MEMORY = 32  # [GiB]
+
+    # Calculate OPTIONAL_SERVICES_MEMORY based on enabled components
+    OPTIONAL_SERVICES_MEMORY = 0
+    if edp_enabled:
+        OPTIONAL_SERVICES_MEMORY += 17  # memory request for EDP [GiB]
+    if vector_databases_enabled:
+        OPTIONAL_SERVICES_MEMORY += 13  # memory request for redis [GiB]
+    if telemetry_enabled:
+        OPTIONAL_SERVICES_MEMORY += 13  # memory request for telemetry [GiB]
+
+    # Calculate memory buffer
+    MEMORY_BUFFER_PERCENT = 0.1  # 10% buffer for system, OS, safety margin
+    MEMORY_BUFFER = node_memory_size * MEMORY_BUFFER_PERCENT
+
+    # Set additional memory buffer for pod memory overcommit/burst
+    MEMORY_OVERCOMMIT_BUFFER = node_memory_size * memory_overcommit_buffer_percent
+
+    # Calculate available memory for inference pods
+    max_allocatable_memory = node_memory_size - CORE_SERVICES_MEMORY - OPTIONAL_SERVICES_MEMORY - MEMORY_BUFFER - MEMORY_OVERCOMMIT_BUFFER
+
+    # Check if required memory exceeds available
+    if total_memory_needed <= max_allocatable_memory:
+        memory_usage_percent = (total_memory_needed / node_memory_size) * 100
+        return replicas, memory_usage_percent
+    else:
+        # Reduce replicas to fit max allocatable memory threshold
+        verified_replicas_count = int(max_allocatable_memory // inference_memory_sum)
+        # Ensure we don't return more replicas than originally calculated
+        verified_replicas_count = min(verified_replicas_count, replicas)
+        memory_usage_percent = (verified_replicas_count * inference_memory_sum / node_memory_size) * 100
+        return verified_replicas_count, memory_usage_percent
+
+def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent):
     """
     Calculate optimal replica distribution for VLLM, reranking, and embedding services.
 
@@ -14,6 +75,10 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
         reranking_size: CPU requirement for reranking (will be multiplied by 2)
         embedding_size: CPU requirement for embedding (will be multiplied by 2)
         throughput_mode: Boolean flag for throughput optimization.
+        edp_enabled: Boolean flag indicating if EDP is enabled
+        telemetry_enabled: Boolean flag indicating if telemetry is enabled
+        vector_databases_enabled: Boolean flag indicating if vector databases are enabled
+        memory_overcommit_buffer_percent: Memory buffer percentage for pod memory overcommit/burst
 
     Returns:
         Dict with node names as keys and calculations with metadata as values.
@@ -47,6 +112,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
     for node_name, node_data in nodes_dict.items():
         numa_nodes_count = node_data['numa_nodes']
         numa_node_size = node_data['cpus_per_numa_node']
+        node_memory_size = node_data['total_memory_GiB']
 
         # Initialize VLLM size for this node (may be adjusted based on calculation mode)
         current_vllm_size = vllm_size
@@ -101,29 +167,43 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
             else:
                 replicas = numa_nodes_count // 2
 
+        # Verify memory requirements
+        verified_replicas_count, memory_usage_percent = verify_memory_requirements(
+            current_vllm_size,
+            reranking_size,
+            embedding_size,
+            node_memory_size,
+            replicas,
+            edp_enabled,
+            telemetry_enabled,
+            vector_databases_enabled,
+            memory_overcommit_buffer_percent
+        )
+
         results[node_name] = {
-            'replicas': replicas,
+            'replicas': verified_replicas_count,
             'adjusted_vllm_size': current_vllm_size // 2,
             'calculation_method': _get_calculation_method(n, numa_node_size, vllm_size, reranking_size, embedding_size, throughput_mode),
             'gaudi': node_data.get('gaudi', False),
             'amx_supported': node_data.get('amx_supported', False),
+            'memory_usage_percent': round(memory_usage_percent, 2),
             'vllm': {
-                'replicas': replicas,
+                'replicas': verified_replicas_count,
                 'adjusted_cpu_size': current_vllm_size // 2
             },
             'torchserve_embedding': {
-                'replicas': replicas,
+                'replicas': verified_replicas_count,
                 'cpu_size': embedding_size // 2
             },
             'torchserve_reranking': {
-                'replicas': replicas,
+                'replicas': verified_replicas_count,
                 'cpu_size': reranking_size // 2
             }
         }
 
         # Sum replicas only for nodes with amx_supported which are not Gaudi nodes
         if node_data.get('amx_supported', False) and not node_data.get('gaudi', False):
-            total_replicas += replicas
+            total_replicas += verified_replicas_count
         # Count Gaudi nodes
         if node_data.get('gaudi', False):
             gaudi_nodes_count += 1
@@ -148,6 +228,10 @@ if __name__ == "__main__":
     parser.add_argument('--reranking-size', type=int, required=True, help='Reranking CPU size')
     parser.add_argument('--embedding-size', type=int, required=True, help='Embedding CPU size')
     parser.add_argument('--throughput-mode', type=lambda x: x.lower() == 'true', required=True, help='Enable throughput mode')
+    parser.add_argument('--edp-enabled', type=lambda x: x.lower() == 'true', required=True, help='EDP enabled flag')
+    parser.add_argument('--telemetry-enabled', type=lambda x: x.lower() == 'true', required=True, help='Telemetry enabled flag')
+    parser.add_argument('--vector-databases-enabled', type=lambda x: x.lower() == 'true', required=True, help='Vector databases enabled flag')
+    parser.add_argument('--memory-overcommit-buffer-percent', type=float, default=0.1, help='Memory buffer percentage for pod memory overcommit/burst (default: 0.1)')
 
     args = parser.parse_args()
 
@@ -158,6 +242,10 @@ if __name__ == "__main__":
         args.vllm_size,
         args.reranking_size,
         args.embedding_size,
-        args.throughput_mode
+        args.throughput_mode,
+        args.edp_enabled,
+        args.telemetry_enabled,
+        args.vector_databases_enabled,
+        args.memory_overcommit_buffer_percent
     )
     sys.stdout.write(json.dumps(results))

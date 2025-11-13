@@ -93,6 +93,17 @@
     - install
     - topology-preview
 
+- name: Get total memory in GiB
+  kubernetes.core.k8s_exec:
+    pod: "{{ pod_name }}"
+    container: ubuntu
+    namespace: topology-discovery
+    command: bash -c "grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}'"
+  register: total_memory_GiB
+  tags:
+    - install
+    - topology-preview
+
 - name: Update cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: >-
@@ -103,7 +114,8 @@
             'cpus_per_numa_node': (cpu_counts_list | min),
             'amx_supported': (amx_check.rc == 0),
             'numa_balanced': numa_balanced,
-            'gaudi': habana_plugin_present
+            'gaudi': habana_plugin_present,
+            'total_memory_GiB': (total_memory_GiB.stdout | int)
           }
         })
       }}

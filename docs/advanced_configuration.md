@@ -313,14 +313,11 @@ Balloons enables CPU pinning and NUMA-aware scheduling for optimal performance:
 ```yaml
 # Default configuration
 balloons:
-  enabled: true                    # Default: true
-  namespace: kube-system          # Default: kube-system
-  services:
-    vllm:
-      resources:
-        requests:
-          cpu: 32                 # Default: 32 cores
-          memory: 64Gi           # Default: 64Gi
+  enabled: true
+  namespace: kube-system # alternatively, set custom namespace for balloons
+  wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
+  throughput_mode: true # set to true to optimize for horizontal scaling
+  memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested
 ```
 
 **Benefits**:
@@ -329,12 +326,7 @@ balloons:
 - Reduced context switching
 - Better cache locality
 
-**When to customize**:
-- You have different CPU topology
-- You want to allocate more/fewer cores to specific services
-- You need to balance resources across multiple services
-
-For detailed information, refer to: [deployment/components/nri-plugin/README.md](../deployment/components/nri-plugin/README.md)
+For detailed information, refer to: [Balloons Policy Overview](../deployment/components/nri-plugin/README.md)
 
 ## Horizontal Pod Autoscaling (HPA)
 

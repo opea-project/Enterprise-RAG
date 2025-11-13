@@ -177,7 +177,11 @@
       --vllm-size {{ VLLM_CPUS }} \
       --reranking-size {{ RERANKER_CPUS }} \
       --embedding-size {{ EMBEDDING_CPUS }} \
-      --throughput-mode {{ balloons.throughput_mode | default(true) }}
+      --throughput-mode {{ balloons.throughput_mode | default(true) }} \
+      --edp-enabled {{ edp.enabled | default(false) }} \
+      --telemetry-enabled {{ telemetry.enabled | default(false) }} \
+      --vector-databases-enabled {{ vector_databases.enabled | default(false) }} \
+      --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }}
   register: replicas_calculation_result
   tags:
     - install
@@ -243,6 +247,7 @@
         Calculation Method: {{ info.calculation_method }}
         Gaudi: {{ info.gaudi | default(false) }}
         AMX Supported: {{ info.amx_supported | default(false) }}
+        Inference memory request: {{ info.memory_usage_percent }}%
         VLLM Replicas: {{ info.vllm.replicas }}
         VLLM CPU Size: {{ info.vllm.adjusted_cpu_size }}
         Embedding Replicas: {{ info.torchserve_embedding.replicas }}

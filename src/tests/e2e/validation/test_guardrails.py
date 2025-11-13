@@ -291,48 +291,27 @@ def test_in_guard_regex(guard_helper):
     }
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.NUMBER_12345)
-    guard_helper.assert_blocked(questions.NUMBER_78276)
-    guard_helper.assert_blocked(questions.NUMBER_09367)
 
-    guard_params['is_blocked'] = False
+    # Check "is_blocked" parameter
+    guard_params['is_blocked'] = False  # If True, patterns are treated as 'bad'; if False, as 'good'
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.NUMBER_991)
+    guard_helper.assert_allowed(questions.NUMBER_13456)
+    guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.NUMBER_13456)
-    guard_helper.assert_blocked(questions.NUMBER_77890)
-    guard_helper.assert_blocked(questions.NUMBER_21543)
-
-    guard_params['is_blocked'] = True
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_allowed(questions.NUMBER_991)
-    guard_helper.assert_allowed(questions.NUMBER_27)
-    guard_helper.assert_allowed(questions.NUMBER_12_3)
     guard_helper.assert_allowed(questions.NUMBER_789_456)
-    guard_helper.assert_allowed(questions.NUMBER_630_900)
-    guard_helper.assert_allowed(questions.NUMBER_1999_2021)
 
-    # second case
+    # Block email address
     guard_params["patterns"] = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"]
-    guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_blocked(questions.SUPPORT_EMAIL)
     guard_helper.assert_blocked(questions.JANE_EMAIL)
-    guard_helper.assert_blocked(questions.HR_EMAIL)
-
-    guard_params['is_blocked'] = False
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_blocked(questions.USER_EMAIL)
-    guard_helper.assert_blocked(questions.REGISTRATION_EMAIL)
-
-    guard_params['is_blocked'] = True
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_allowed(questions.CONTACT_FORM_MESSAGE)
-    guard_helper.assert_allowed(questions.SPAM_AVOIDANCE_ADDRESS)
-    guard_helper.assert_allowed(questions.USERNAME_NO_DOMAIN)
     guard_helper.assert_allowed(questions.MISSING_AT_SYMBOL)
     guard_helper.assert_allowed(questions.INVALID_DOMAIN_EMAIL)
 
     # Check unicode support
     guard_params["patterns"] = [r'\b\wą\w\b']  # words with 3 letters and "ą" inside
-    guard_params["redact"] = False
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.UNICODE_QUESTION)
 

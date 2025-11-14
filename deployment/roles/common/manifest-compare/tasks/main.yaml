@@ -1,0 +1,269 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Upgrade Transformer - Convert multi-document YAML to single document with list
+- name: Transform upgrade file to manifest format
+  ansible.builtin.shell: |
+    python3 -c "
+    import yaml
+    import sys
+
+    # Read multi-document YAML
+    with open('{{ upgrade_file_path }}', 'r') as f:
+        docs = list(yaml.safe_load_all(f))
+
+    # Filter out None/empty documents
+    docs = [doc for doc in docs if doc is not None]
+
+    # Write as single document with list
+    with open('{{ upgrade_file_path }}.transformed.yaml', 'w') as f:
+        yaml.dump(docs, f, default_flow_style=False, sort_keys=True)
+    "
+  args:
+    creates: "{{ upgrade_file_path }}.transformed.yaml"
+
+- name: Transform manifest file (already in correct format)
+  ansible.builtin.copy:
+    src: "{{ manifest_file_path }}"
+    dest: "{{ manifest_file_path }}.transformed.yaml"
+    remote_src: true
+
+# Manifest Transformer - Process ConfigMaps
+- name: Process manifest files with transformer
+  ansible.builtin.shell: |
+    python3 -c "
+    import yaml
+    import re
+    import sys
+    from collections import OrderedDict, deque
+
+    def sanitize_yaml_content(content):
+        '''Sanitize YAML content from escaped strings'''
+        # Remove quotes and unescape newlines
+        if content.startswith('\"') and content.endswith('\"'):
+            content = content[1:-1]
+        content = content.replace('\\n', '\n')
+        return content
+
+    def transform_lines(content):
+        '''Transform lines according to requirements'''
+        lines = content.split('\n')
+        processed_lines = []
+
+        for line in lines:
+            # Strip trailing whitespace
+            line = line.rstrip()
+
+            # Skip empty lines
+            if not line or line.isspace():
+                continue
+
+            # Skip comment-only lines
+            if line.strip().startswith('#'):
+                continue
+
+            # Remove inline comments
+            if '#' in line:
+                # Find comment position (not inside quotes)
+                in_quotes = False
+                quote_char = None
+                for i, char in enumerate(line):
+                    if char in ['\"', \"'\"] and (i == 0 or line[i-1] != '\\\\'):
+                        if not in_quotes:
+                            in_quotes = True
+                            quote_char = char
+                        elif char == quote_char:
+                            in_quotes = False
+                            quote_char = None
+                    elif char == '#' and not in_quotes:
+                        line = line[:i].rstrip()
+                        break
+
+            if line:  # Only add non-empty lines
+                processed_lines.append(line)
+
+        return '\n'.join(processed_lines)
+
+    def normalize_key(filename):
+        '''Convert filename to normalized key format'''
+        # Remove extension and convert to lowercase
+        base = filename.lower()
+        # Replace non-alphanumeric characters with dashes
+        normalized = re.sub(r'[^a-z0-9]', '-', base)
+        # Remove consecutive dashes and leading/trailing dashes
+        normalized = re.sub(r'-+', '-', normalized).strip('-')
+        return normalized
+
+    def is_file_data_key(key):
+        '''Check if key represents a file (has extension)'''
+        return '.' in key and not key.startswith('.')
+
+    def is_yaml_file(key):
+        '''Check if key represents a YAML file'''
+        return key.lower().endswith(('.yaml', '.yml'))
+
+    def has_document_separators(content):
+        '''Check if content contains YAML document separators'''
+        return '---' in content
+
+    def sort_yaml_keys(content):
+        '''Sort YAML keys if content is valid YAML'''
+        try:
+            data = yaml.safe_load(content)
+            if isinstance(data, dict):
+                return yaml.dump(data, default_flow_style=False, sort_keys=True)
+            return content
+        except:
+            return content
+
+    def has_file_keys(configmap_data):
+        '''Check if ConfigMap contains any file-defining keys'''
+        return any(is_file_data_key(key) for key in configmap_data.keys())
+
+    def parse_yaml_documents(content):
+        '''Parse YAML content that may contain multiple documents'''
+        try:
+            # Parse as multi-document YAML
+            docs = list(yaml.safe_load_all(content))
+            # Filter out None/empty documents
+            return [doc for doc in docs if doc is not None]
+        except:
+            return []
+
+    def process_file(filepath):
+        with open(filepath, 'r') as f:
+            data = yaml.safe_load(f)
+
+        if not isinstance(data, list):
+            data = [data] if data else []
+
+        # Create a queue for resources to process
+        resource_queue = deque(data)
+        result = {}
+
+        while resource_queue:
+            resource = resource_queue.popleft()
+
+            if not resource or resource.get('kind') != 'ConfigMap':
+                continue
+
+            configmap_name = resource.get('metadata', {}).get('name', 'unknown')
+            configmap_data = resource.get('data', {})
+
+            if has_file_keys(configmap_data):
+                # ConfigMap defines files - process each file separately
+                has_nested_configmaps = False
+
+                for key, value in configmap_data.items():
+                    if is_file_data_key(key):
+                        if key.lower().endswith('.sh'):
+                            # Skip shell scripts
+                            continue
+                        # Check if it's a YAML file with document separators
+                        if is_yaml_file(key):
+                            # Sanitize YAML content first
+                            sanitized_content = sanitize_yaml_content(value)
+
+                            # Check if it contains document separators
+                            if has_document_separators(sanitized_content):
+                                # Parse as multi-document YAML
+                                nested_resources = parse_yaml_documents(sanitized_content)
+
+                                # Add ConfigMap resources back to the queue for processing
+                                for nested_resource in nested_resources:
+                                    if nested_resource and nested_resource.get('kind') == 'ConfigMap':
+                                        resource_queue.append(nested_resource)
+                                        has_nested_configmaps = True
+
+                                # SKIP storing the original YAML content if it has nested ConfigMaps
+                                if not has_nested_configmaps:
+                                    normalized_key = normalize_key(key)
+                                    combined_key = f'{configmap_name}-{normalized_key}'
+
+                                    # Transform lines and sort YAML keys
+                                    transformed_content = transform_lines(sanitized_content)
+                                    final_content = sort_yaml_keys(transformed_content)
+                                    result[combined_key] = final_content
+                            else:
+                                # Regular YAML file without document separators
+                                normalized_key = normalize_key(key)
+                                combined_key = f'{configmap_name}-{normalized_key}'
+
+                                # Transform lines and sort YAML keys
+                                transformed_content = transform_lines(sanitized_content)
+                                final_content = sort_yaml_keys(transformed_content)
+                                result[combined_key] = final_content
+                        else:
+                            # Non-YAML file
+                            normalized_key = normalize_key(key)
+                            combined_key = f'{configmap_name}-{normalized_key}'
+                            final_content = transform_lines(value)
+                            result[combined_key] = final_content
+                    # Skip non-file keys in file-defining ConfigMaps
+            else:
+                # ConfigMap doesn't define files - treat as regular config
+                # Combine all key-value pairs into one block
+                config_lines = []
+                for key, value in sorted(configmap_data.items()):
+                    transformed_value = transform_lines(str(value))
+                    config_lines.append(f'{key}: {transformed_value}')
+
+                if config_lines:
+                    result[configmap_name] = '\n'.join(config_lines)
+
+        return result
+
+    # Process both files
+    manifest_result = process_file('{{ manifest_file_path }}.transformed.yaml')
+    upgrade_result = process_file('{{ upgrade_file_path }}.transformed.yaml')
+
+    # Convert to list format with literal block scalars
+    def dict_to_yaml_list(data_dict):
+        yaml_lines = []
+        for key, value in sorted(data_dict.items()):
+            yaml_lines.append(f'- {key}: |')
+            # Add indented content
+            for line in value.split('\n'):
+                if line.strip():  # Only add non-empty lines
+                    yaml_lines.append(f'    {line}')
+        return '\n'.join(yaml_lines)
+
+    # Save processed results in new format
+    with open('{{ manifest_file_path }}.processed.yaml', 'w') as f:
+        f.write(dict_to_yaml_list(manifest_result))
+
+    with open('{{ upgrade_file_path }}.processed.yaml', 'w') as f:
+        f.write(dict_to_yaml_list(upgrade_result))
+
+    print('Files processed successfully')
+    "
+
+- name: Load processed manifest data
+  ansible.builtin.slurp:
+    src: "{{ manifest_file_path }}.processed.yaml"
+  register: processed_manifest_data
+
+- name: Load processed upgrade data
+  ansible.builtin.slurp:
+    src: "{{ upgrade_file_path }}.processed.yaml"
+  register: processed_upgrade_data
+
+- name: Generate structured diff with hierarchical paths
+  ansible.builtin.command:
+    cmd: >
+      python3 {{ playbook_dir }}/../scripts/metadata_diff.py
+      {{ manifest_file_path }}.processed.yaml
+      {{ upgrade_file_path }}.processed.yaml
+      {{ upgrade_metadata_dir }}/{{ release_namespace }}-{{ release_name }}-upgrade.diff
+  register: structured_diff_result
+
+# Cleanup temporary files
+- name: Clean up temporary files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ manifest_file_path }}.transformed.yaml"
+    - "{{ upgrade_file_path }}.transformed.yaml"
+    - "{{ manifest_file_path }}.processed.yaml"
+    - "{{ upgrade_file_path }}.processed.yaml"

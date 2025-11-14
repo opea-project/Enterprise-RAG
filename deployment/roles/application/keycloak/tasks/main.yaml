@@ -7,6 +7,7 @@
     keycloak_helm_override_values_path: "{{ tmp_dir }}/{{ keycloak.helm.chart_name }}-override-values.yaml"
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
@@ -15,6 +16,7 @@
     state: present
   tags:
     - install
+    - pre-upgrade
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
@@ -37,6 +39,7 @@
         name: "{{ keycloak.namespace }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -82,10 +85,14 @@
   ansible.builtin.include_role:
     name: generate_password
     tasks_from: generate_password.yaml
+    apply:
+      tags:
+        - pre-upgrade
   loop:
     - { name: KEYCLOAK_REALM_ADMIN, user: "{{ keycloak.auth.admin.username }}" }
   tags:
     - install
+    - pre-upgrade
 
 - name: Create Keycloak admin secret
   kubernetes.core.k8s:
@@ -126,6 +133,30 @@
     mode: '0644'
   tags:
     - install
+    - pre-upgrade
+
+- name: Update Helm dependencies for Keycloak chart
+  ansible.builtin.command:
+    cmd: helm dependency build {{ keycloak.helm.chart_ref }}
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ keycloak.namespace }}"
+    release_name: "{{ keycloak.helm.release_name }}"
+    release_enabled: "{{ keycloak.enabled }}"
+    chart_ref: "{{ keycloak.helm.chart_ref }}"
+    release_values_files: >
+      {{
+        [keycloak.helm.default_values_file] +
+        [keycloak_helm_override_values_path]
+      }}
+  tags:
+    - pre-upgrade
 
 - name: Install Keycloak Helm chart
   kubernetes.core.helm:

@@ -1,0 +1,16 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for auth-apisix
+# These rules are checked FIRST (before default rules)
+# Using first-match logic: the first matching rule determines the action
+
+validation_rules:
+  # Approve APISIX nginx configuration snippet changes
+  - path_regex: ".*/apisix/nginx/configurationSnippet"
+    response: "approve"
+    note: "APISIX nginx configuration snippet changes are approved"
+
+  - path_regex: ".*"
+    response: "reject"
+    note: "Uncategorized auth-apisix changes require explicit approval - no matching rule found"

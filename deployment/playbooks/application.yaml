@@ -52,9 +52,13 @@
       ansible.builtin.include_role:
         name: tdx
         tasks_from: verify_variables.yaml
+        apply:
+          tags:
+            - pre-upgrade
       tags:
         - install
         - display-configuration
+        - pre-upgrade
 
     - name: TDX Attest
       ansible.builtin.include_role:
@@ -67,10 +71,11 @@
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons
-      when: balloons.enabled
+      when: balloons.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
         - topology-preview
 
     - name: Clean-up NRI plugin resources if balloons disabled
@@ -101,10 +106,11 @@
     - name: Run vector_databases role
       include_role:
         name: vector_databases
-      when: vector_databases.enabled
+      when: vector_databases.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: RAG Utils role
       ansible.builtin.include_role:
@@ -117,18 +123,20 @@
     - name: Fingerprint role
       ansible.builtin.include_role:
         name: fingerprint
-      when: fingerprint.enabled
+      when: fingerprint.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Chat History role
       ansible.builtin.include_role:
         name: chat_history
-      when: chat_history.enabled
+      when: chat_history.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Pipeline role
       ansible.builtin.include_role:
@@ -137,46 +145,52 @@
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Ingress role
       ansible.builtin.include_role:
         name: ingress
-      when: ingress.enabled
+      when: ingress.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Keycloak role
       ansible.builtin.include_role:
         name: keycloak
-      when: keycloak.enabled
+      when: keycloak.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Apisix role
       ansible.builtin.include_role:
         name: apisix
-      when: apisix.enabled
+      when: apisix.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: UI role
       ansible.builtin.include_role:
         name: ui
-      when: ui.enabled
+      when: ui.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: EDP role
       ansible.builtin.include_role:
         name: edp
-      when: edp.enabled
+      when: edp.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+        - pre-upgrade
 
     - name: Telemetry role
       ansible.builtin.include_role:
@@ -190,10 +204,53 @@
       ansible.builtin.include_role:
         name: apisix
         tasks_from: configure.yaml
-      when: apisix.enabled
+      when: apisix.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
+
+    # Pre-upgrade validation and reporting
+    - name: Load upgrade role defaults
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../roles/application/upgrade/defaults/main.yaml"
+      tags:
+        - pre-upgrade
+        - test-upgrade
+
+    - name: Run metadata upgrade validation
+      ansible.builtin.include_tasks:
+        file: "{{ playbook_dir }}/../roles/application/upgrade/tasks/metadata_upgrade.yaml"
+        apply:
+          tags:
+            - pre-upgrade
+            - test-upgrade
+      tags:
+        - pre-upgrade
+        - test-upgrade
+
+    - name: Generate pre-upgrade report
+      ansible.builtin.include_role:
+        name: upgrade
+        tasks_from: pre_upgrade_report.yaml
+        apply:
+          tags:
+            - pre-upgrade
+            - test-upgrade
+      tags:
+        - pre-upgrade
+        - test-upgrade
+
+    - name: Evaluate upgrade result
+      ansible.builtin.include_role:
+        name: upgrade
+        tasks_from: upgrade_result.yaml
+        apply:
+          tags:
+            - pre-upgrade
+            - test-upgrade
+      tags:
+        - pre-upgrade
+        - test-upgrade
 
     # Post-tasks section (finalization and cleanup)
 

@@ -7,6 +7,7 @@
     edp_helm_override_values_path: "{{ tmp_dir }}/{{ edp.helm.chart_name }}-override-values.yaml"
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure Helm repositories
   kubernetes.core.helm_repository:
@@ -15,6 +16,7 @@
     state: present
   tags:
     - install
+    - pre-upgrade
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
@@ -26,6 +28,7 @@
   delay: 15
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -83,8 +86,12 @@
   ansible.builtin.include_role:
     name: keycloak
     tasks_from: get_secret_id
+    apply:
+      tags:
+        - pre-upgrade
   tags:
     - install
+    - pre-upgrade
 
 - name: Set secret client_secret_id
   ansible.builtin.set_fact:
@@ -92,22 +99,30 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate random string for keys
   ansible.builtin.include_role:
     name: generate_password
     tasks_from: generate_key
+    apply:
+      tags:
+        - pre-upgrade
   loop:
     - { name: EDP_MINIO_ACCESS_KEY }
     - { name: EDP_MINIO_SECRET_KEY }
   no_log: "{{ secure_logs }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate password
   ansible.builtin.include_role:
     name: generate_password
     tasks_from: generate_password
+    apply:
+      tags:
+        - pre-upgrade
   loop:
     - { name: EDP_REDIS, user: "{{ edp.redis.auth.user.db_username }}" }
     - { name: EDP_POSTGRESQL, user: "{{ edp.postgresql.auth.user.db_username }}" }
@@ -115,6 +130,7 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -123,6 +139,7 @@
     mode: '0644'
   tags:
     - install
+    - pre-upgrade
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -134,6 +151,19 @@
       }}
   tags:
     - install
+    - pre-upgrade
+
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ edp.namespace }}"
+    release_name: "{{ edp.helm.release_name }}"
+    release_enabled: "{{ edp.enabled }}"
+    chart_ref: "{{ edp.helm.chart_directory }}"
+    release_values_files: "{{ values_files }}"
+  tags:
+    - pre-upgrade
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

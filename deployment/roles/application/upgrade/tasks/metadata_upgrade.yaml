@@ -1,0 +1,23 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Metadata Upgrade Task - Main Entry Point
+# This task orchestrates metadata verification and reporting
+
+- name: Execute metadata verification
+  ansible.builtin.include_tasks:
+    file: metadata_verify.yaml
+
+- name: Generate metadata report
+  ansible.builtin.include_tasks:
+    file: metadata_report.yaml
+
+- name: Display final verification status
+  ansible.builtin.debug:
+    msg:
+      - "========================================"
+      - "Metadata Upgrade Verification Complete"
+      - "========================================"
+      - "Status: {{ metadata_verification_result.status | upper }}"
+      - "Report: {{ upgrade_reports_dir }}/02_metadata-check.md"
+      - "========================================"

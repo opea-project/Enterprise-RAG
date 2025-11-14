@@ -11,18 +11,18 @@ services:
       maxReplicas: {{ optimal_replicas.total_replicas }}
   torchserve_reranking:
     hpa:
-      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
-      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
+      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | default(0) | int) }}
+      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | default(0) | int) }}
   torchserve_embedding:
     hpa:
-      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
-      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | int(0)) }}
+      minReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | default(0) | int) }}
+      maxReplicas: {{ (optimal_replicas.total_replicas | int(0)) + (optimal_replicas.gaudi_nodes_count | int(0)) * (maxReplicasGaudi_VLLM | default(0) | int) }}
 {% endif %}
-{% if maxReplicasGaudi_VLLM %}
+{% if maxReplicasGaudi_VLLM is defined and maxReplicasGaudi_VLLM %}
   vllm_gaudi:
-    replicas: {{ optimal_replicas.gaudi_nodes_count * (maxReplicasGaudi_VLLM | default(0)) }}
+    replicas: {{ optimal_replicas.gaudi_nodes_count * (maxReplicasGaudi_VLLM | default(0) | int) }}
     hpa:
-      minReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | int(0)) }}
-      maxReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | int(0)) }}
+      minReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | default(0) | int) }}
+      maxReplicas: {{ optimal_replicas.gaudi_nodes_count | int(0) * (maxReplicasGaudi_VLLM | default(0) | int) }}
 {% endif %}
 {% endif %}

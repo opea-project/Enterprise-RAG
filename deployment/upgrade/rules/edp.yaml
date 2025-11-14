@@ -1,0 +1,30 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for edp
+# These rules are checked FIRST (before default rules)
+# Using first-match logic: the first matching rule determines the action
+
+validation_rules:
+  # Disregard OIDC client secret changes (highest priority - security)
+  - path_regex: ".*release-values.*"
+    data_regex: ".*OidcClientSecret.*"
+    response: "approve"
+    note: "OIDC client secret may change"
+
+  # Require mitigation for vector dimension changes
+  - path_regex: ".*VECTOR_DIMS.*|.*vector_dims.*"
+    response: "reject"
+    note: "Vector dimension changes require verification of model compatibility and may require data re-indexing"
+
+  # Require mitigation for ingestion configuration changes
+  - path_regex: ".*ingestion.*"
+    data_regex: ".*batch.*|.*chunk.*"
+    response: "mitigate"
+    action: "verify_ingestion_config"
+    note: "Ingestion configuration changes require validation of processing pipeline"
+
+  # Reject all other edp changes
+  - path_regex: ".*"
+    response: "reject"
+    note: "Unsupported changes affecting EDP require explicit approval"

@@ -261,6 +261,7 @@
       ==========================================
   tags:
     - topology-preview
+  when: '"topology-preview" in ansible_run_tags'
 
 - name: Parse replicas calculation output
   set_fact:
@@ -276,6 +277,7 @@
       The current hardware topology does not allow any service replicas to be scheduled.
       Please check your cluster configuration and available resources.
   when:
+    - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
     - optimal_replicas.total_replicas == 0
     - optimal_replicas.gaudi_nodes_count == 0
   tags:

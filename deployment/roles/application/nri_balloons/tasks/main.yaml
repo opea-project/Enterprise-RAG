@@ -9,6 +9,7 @@
     state: present
   tags:
     - install
+    - pre-upgrade
 
 - name: Get all BalloonsPolicies
   kubernetes.core.k8s_info:
@@ -34,9 +35,13 @@
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_nodes_topology.yaml
+    apply:
+      tags:
+        - pre-upgrade
   when: cpu_topology_per_node is not defined
   tags:
     - install
+    - pre-upgrade
     - uninstall
     - topology-preview
 
@@ -51,6 +56,7 @@
   when: balloons.namespace != 'kube-system'
   tags:
     - install
+    - pre-upgrade
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -68,11 +74,24 @@
   tags:
     - install
 
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ balloons.namespace }}"
+    release_name: "{{ balloons.helm.release_name }}"
+    release_enabled: "{{ balloons.enabled }}"
+    chart_ref: "{{ balloons.helm.repo_name }}/{{ balloons.helm.chart_name }}"
+    release_values_files: "{{ balloons.helm.reset_values_file }}"
+  tags:
+    - pre-upgrade
+
 - name: Set balloons_chart_name fact for cross-role usage
   ansible.builtin.set_fact:
     balloons_chart_name: "{{ balloons.helm.chart_name }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Apply nri-resource-policy-balloons chart
   kubernetes.core.helm:

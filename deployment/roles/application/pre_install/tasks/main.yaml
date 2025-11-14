@@ -3,7 +3,11 @@
 
 ---
 - name: Load settings
-  ansible.builtin.include_tasks: load_settings.yaml
+  ansible.builtin.include_tasks:
+    file: load_settings.yaml
+    apply:
+      tags:
+        - pre-upgrade
   tags:
     - install
     - display-configuration
@@ -11,7 +15,11 @@
     - pre-upgrade
 
 - name: Validate tools
-  ansible.builtin.include_tasks: validate_tools.yaml
+  ansible.builtin.include_tasks:
+    file: validate_tools.yaml
+    apply:
+      tags:
+        - pre-upgrade
   tags:
     - install
     - validate-tools
@@ -64,11 +72,18 @@
     apply:
       tags:
         - install
+        - pre-upgrade
   tags:
     - install
+    - pre-upgrade
 
 - name: Load init passwords
   ansible.builtin.include_role:
     name: generate_password
+    apply:
+      tags:
+        - install
+        - pre-upgrade
   tags:
     - install
+    - pre-upgrade

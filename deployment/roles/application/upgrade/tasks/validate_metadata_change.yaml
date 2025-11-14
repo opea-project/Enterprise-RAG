@@ -1,0 +1,73 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Validate Individual Metadata Change
+# This task applies validation rules using first-match logic
+
+- name: Extract change type and path from block
+  ansible.builtin.set_fact:
+    change_type: "{{ 'removed' if change_block.startswith('<<<') and not change_block.startswith('>>>') else ('added' if change_block.startswith('>>>') else 'modified') }}"
+    change_path: "{{ change_block | regex_search('^[<>]{3}([^:]+):', '\\1') | first | default('unknown') }}"
+    change_content_lines: "{{ change_block | regex_replace('^[<>]{3}[^:]+:\\n', '') | regex_replace('<<<>>>$', '') | split('\n') | reject('equalto', '') | list }}"
+
+- name: Initialize validation state
+  ansible.builtin.set_fact:
+    validation_response: ""
+    validation_note: ""
+    mitigation_action: ""
+    rule_matched: false
+
+- name: Apply first matching validation rule
+  ansible.builtin.set_fact:
+    validation_response: "{{ rule.response }}"
+    validation_note: "{{ rule.note | default('') }}"
+    mitigation_action: "{{ rule.action | default('') }}"
+    rule_matched: true
+  when:
+    - not rule_matched
+    # path_regex: if defined, must match; if not defined, skip this check
+    - rule.path_regex is not defined or change_path is regex(rule.path_regex)
+    # data_regex: if defined, must match; if not defined, skip this check
+    - rule.data_regex is not defined or (change_content_lines | join('\n') is regex(rule.data_regex))
+  loop: "{{ all_validation_rules }}"
+  loop_control:
+    loop_var: rule
+    label: "{{ rule.path_regex | default('data:' ~ rule.data_regex | default('unknown')) }}"
+
+- name: Fallback if no rules matched (should never happen)
+  ansible.builtin.set_fact:
+    validation_response: "reject"
+    validation_note: "No matching validation rule found"
+  when: not rule_matched
+
+- name: Build validation record
+  ansible.builtin.set_fact:
+    validation_record_base:
+      component: "{{ component_name }}"
+      file: "{{ diff_file_name }}"
+      change_index: "{{ change_index }}"
+      change_type: "{{ change_type }}"
+      change_path: "{{ change_path }}"
+      change_lines: "{{ change_content_lines | length }}"
+      response: "{{ validation_response }}"
+      note: "{{ validation_note if validation_note else 'Approved' }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+
+- name: Add mitigation action if present
+  ansible.builtin.set_fact:
+    validation_record_base: "{{ validation_record_base | combine({'mitigation_action': mitigation_action}) }}"
+  when: mitigation_action != ''
+
+- name: Record validation response
+  ansible.builtin.set_fact:
+    metadata_validations: "{{ metadata_validations + [validation_record_base] }}"
+
+- name: Track required mitigation
+  ansible.builtin.set_fact:
+    metadata_mitigations_required: "{{ metadata_mitigations_required + [{'component': component_name, 'action': mitigation_action, 'change_path': change_path, 'status': 'pending'}] }}"
+  when: validation_response == 'mitigate'
+
+- name: Track validation error
+  ansible.builtin.set_fact:
+    metadata_validation_errors: "{{ metadata_validation_errors + [{'component': component_name, 'change_path': change_path, 'reason': validation_note}] }}"
+  when: validation_response == 'reject'

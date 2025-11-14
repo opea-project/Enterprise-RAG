@@ -8,6 +8,7 @@
       {{ tmp_dir }}/{{ fingerprint.helm.release_name }}-override-values.yaml
   tags:
     - install
+    - pre-upgrade
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
@@ -19,16 +20,21 @@
   delay: 15
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate password
   ansible.builtin.include_role:
     name: generate_password
     tasks_from: generate_password.yaml
+    apply:
+      tags:
+        - pre-upgrade
   loop:
     - name: FINGERPRINT_POSTGRES
       user: "{{ fingerprint.database.auth.user.db_user }}"
   tags:
     - install
+    - pre-upgrade
 
 # Creates chatqa_namespace
 - name: Get chatqa namespace
@@ -94,6 +100,7 @@
     mode: '0644'
   tags:
     - install
+    - pre-upgrade
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -106,6 +113,19 @@
       }}
   tags:
     - install
+    - pre-upgrade
+
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ fingerprint.namespace }}"
+    release_name: "{{ fingerprint.helm.release_name }}"
+    release_enabled: "{{ fingerprint.enabled }}"
+    chart_ref: "{{ fingerprint.helm.chart_directory }}"
+    release_values_files: "{{ values_files }}"
+  tags:
+    - pre-upgrade
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

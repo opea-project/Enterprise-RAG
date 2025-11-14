@@ -7,6 +7,7 @@
     vector_databases_helm_override_values_path: "{{ tmp_dir }}/{{ vector_databases.helm.release_name }}-override-values.yaml"
   tags:
     - install
+    - pre-upgrade
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -26,16 +27,21 @@
   when: vector_databases.vector_store == 'redis-cluster'
   tags:
     - install
+    - pre-upgrade
   block:
     - name: Generate password for Redis
       ansible.builtin.include_role:
         name: generate_password
         tasks_from: generate_password.yaml
+        apply:
+          tags:
+            - pre-upgrade
       loop:
         - { name: 'REDIS', user: "default" }
       when: REDIS_PASSWORD is not defined
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate user connection details for Redis vector store
       ansible.builtin.set_fact:
@@ -43,6 +49,7 @@
         vector_database_connection_port: "6379"
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate host connection details for Redis vector store
       ansible.builtin.set_fact:
@@ -53,6 +60,7 @@
           }}
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate uri connection details for Redis vector store
       ansible.builtin.set_fact:
@@ -62,6 +70,7 @@
           }}
       tags:
         - install
+        - pre-upgrade
 
 - name: Configure Postgres-like vector store
   when: vector_databases.vector_store == 'pgvector'
@@ -72,10 +81,14 @@
       ansible.builtin.include_role:
         name: generate_password
         tasks_from: generate_password.yaml
+        apply:
+          tags:
+            - pre-upgrade
       loop:
         - { name: 'POSTGRES', user: "default" }
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate user connection details for vector store
       ansible.builtin.set_fact:
@@ -84,6 +97,7 @@
         vector_database_name: "vdb"
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate host connection details for vector store
       ansible.builtin.set_fact:
@@ -93,6 +107,7 @@
           }}
       tags:
         - install
+        - pre-upgrade
 
     - name: Generate uri connection details for vector store
       ansible.builtin.set_fact:
@@ -102,13 +117,18 @@
           }}
       tags:
         - install
+        - pre-upgrade
 
 - name: Get pipelines namespaces
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_pipelines_namespaces.yaml
+    apply:
+      tags:
+        - pre-upgrade
   tags:
     - install
+    - pre-upgrade
 
 - name: Create namespace list for creating vector db connection details
   ansible.builtin.set_fact:
@@ -122,6 +142,7 @@
       }}
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure required namespaces exist for vector store configs
   kubernetes.core.k8s:
@@ -188,6 +209,7 @@
     mode: '0644'
   tags:
     - install
+    - pre-upgrade
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -198,6 +220,19 @@
       }}
   tags:
     - install
+    - pre-upgrade
+
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ vector_databases.namespace }}"
+    release_name: "{{ vector_databases.helm.release_name }}"
+    release_enabled: "{{ vector_databases.enabled }}"
+    chart_ref: "{{ vector_databases.helm.chart_directory }}"
+    release_values_files: "{{ values_files }}"
+  tags:
+    - pre-upgrade
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:

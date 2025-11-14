@@ -8,6 +8,8 @@ deployment/*.crt
 deployment/logs
 deployment/ansible-logs
 deployment/inventory/*
+upgrade/metadata
+upgrade/reports
 !deployment/inventory/sample
 !deployment/inventory/localhost
 

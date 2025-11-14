@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 import requests
 import time
@@ -8,6 +9,7 @@ import time
 from fastapi.responses import StreamingResponse
 from langchain.chains.summarize import load_summarize_chain
 from langchain.docstore.document import Document
+from langchain_core.outputs import LLMResult
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from typing import Union
@@ -21,24 +23,79 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 SUPPORTED_SUMMARY_TYPES = ["map_reduce", "refine", "stuff"]
 
+
+class ConcurrencyLimitedChatOpenAI(ChatOpenAI):
+    """ChatOpenAI with concurrency limiting for batch operations."""
+    
+    _semaphore: asyncio.Semaphore
+    
+    def __init__(self, semaphore: asyncio.Semaphore, **kwargs):
+        """
+        Initialize the concurrency-limited ChatOpenAI client.
+        
+        Args:
+            semaphore: The semaphore to use for concurrency control
+            **kwargs: All other arguments passed to ChatOpenAI
+        """
+        super().__init__(**kwargs)
+        object.__setattr__(self, '_semaphore', semaphore)
+    
+    async def agenerate_prompt(self, prompts, stop=None, callbacks=None, **kwargs) -> LLMResult:
+        """
+        Override agenerate_prompt to add concurrency control.
+        This is the method called by LangChain's old chain API (aapply).
+        
+        Args:
+            prompts: List of prompts to process
+            stop: Stop sequences
+            callbacks: Callbacks
+            **kwargs: Additional keyword arguments
+            
+        Returns:
+            LLMResult with generations
+        """
+        logger.debug(f"agenerate_prompt called with {len(prompts)} prompts, max_concurrency={self._semaphore._value}")
+        
+        async def process_single(prompt):
+            async with self._semaphore:
+                logger.debug(f"Processing prompt (semaphore acquired, {self._semaphore._value} remaining)")
+                # Process a single prompt by calling the parent method with a list of one prompt
+                result = await super(ConcurrencyLimitedChatOpenAI, self).agenerate_prompt(
+                    [prompt], stop=stop, callbacks=callbacks, **kwargs
+                )
+                return result.generations[0]
+        
+        # Process all prompts with concurrency control
+        tasks = [process_single(prompt) for prompt in prompts]
+        generations = await asyncio.gather(*tasks)
+        
+        return LLMResult(generations=list(generations))
+
+
 class OPEADocsum:
     """OPEA Document Summarization Component."""
-    def __init__(self, llm_usvc_endpoint: str, default_summary_type: str = "map_reduce"):
+    def __init__(self, llm_usvc_endpoint: str, default_summary_type: str = "map_reduce", max_concurrency: int = 16):
         """
         Initialize the OPEADocsum component.
 
         Args:
             default_summary_type (str): The default summary type to use if not specified in the request.
             llm_usvc_endpoint (str): The endpoint of the LLM microservice to use for summarization.
+            max_concurrency (int): Maximum number of concurrent requests to the LLM service. Default is 16.
+                                   This prevents overwhelming the LLM service when processing many documents
+                                   in map_reduce mode.
         """
         default_summary_type = default_summary_type.lower()
         if default_summary_type not in SUPPORTED_SUMMARY_TYPES:
             raise ValueError(f"Unsupported default_summary_type: {default_summary_type}. Supported types are: {SUPPORTED_SUMMARY_TYPES}")
         if not llm_usvc_endpoint:
             raise ValueError("LLM microservice endpoint must be provided and non-empty.")
+        if max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1.")
 
         self.default_summary_type = default_summary_type
         self.llm_usvc_endpoint = llm_usvc_endpoint
+        self.max_concurrency = max_concurrency
 
         if not self.llm_usvc_endpoint.endswith("/v1"):
             self.llm_usvc_endpoint = self.llm_usvc_endpoint.rstrip("/") + "/v1"
@@ -60,7 +117,6 @@ class OPEADocsum:
 
         logger.info("OPEADocsum configuration validated successfully.")
 
-
     async def run(self, input: TextDocList) -> Union[GeneratedDoc, StreamingResponse]:
         """
         Process the given TextDocList input and return a summary.
@@ -76,12 +132,16 @@ class OPEADocsum:
             if summary_type not in SUPPORTED_SUMMARY_TYPES:
                 raise ValueError(f"Unsupported summary_type: {summary_type}. Supported types are: {SUPPORTED_SUMMARY_TYPES}")
         use_stream = input.stream if input.stream is not None else True
+        
+        chat_semaphore = asyncio.Semaphore(self.max_concurrency)
 
-        client = ChatOpenAI(base_url=self.llm_usvc_endpoint,
-                            api_key="dummy",
-                            timeout=180,
-                            max_retries=2
-                            )
+        client = ConcurrencyLimitedChatOpenAI(
+            semaphore=chat_semaphore,
+            base_url=self.llm_usvc_endpoint,
+            api_key="dummy",
+            timeout=300,
+            max_retries=1
+        )
 
         logger.debug(f"Input documents count: {len(input.docs)}")
         logger.debug(f"Using summary_type: {summary_type}")

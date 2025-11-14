@@ -194,7 +194,7 @@ data:
             listen       {{ .Values.service.port }};
             server_name  localhost;
 
-            client_max_body_size 1m;
+            client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
 
             location / {
                 root   /usr/share/nginx/html;
@@ -213,8 +213,8 @@ data:
                 proxy_pass {{ .Values.extraNginxVars.docsumEndpoint }};
                 client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
                 proxy_set_header Host $host;
-                proxy_send_timeout 10m;
-                proxy_read_timeout 10m;
+                proxy_send_timeout 90m;
+                proxy_read_timeout 90m;
                 proxy_buffering off;
                 proxy_cache off;
             }

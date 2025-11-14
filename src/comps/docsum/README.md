@@ -31,8 +31,9 @@ The configuration for the Document Summarization Microservice is specified in th
 | Environment Variable            | Description                                                                                                           |
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `DOCSUM_USVC_PORT`              | The port of the microservice, by default 9001.                                                                        |
-| `DOCSUM_DEFAULT_SUMMARY_TYPE`   | The default summarization strategy. Supported values: "map_reduce", "refine", "stuff". Default is "map_reduce".                |
+| `DOCSUM_DEFAULT_SUMMARY_TYPE`   | The default summarization strategy. Supported values: "map_reduce", "refine", "stuff". Default is "map_reduce".       |
 | `DOCSUM_LLM_USVC_ENDPOINT`      | URL of the LLM microservice endpoint, e.g., "http://localhost:9000/v1"                                                |
+| `DOCSUM_MAX_CONCURRENCY`        | Specifies the amount of maximum concurrency requests that can be sent at the same time during one summarization chain. Cannot be lower than 1. Default is 16. |
 | `OPEA_LOGGER_LEVEL`             | Log level for the microservice. Supported values: DEBUG, INFO, WARNING, ERROR. Default is INFO.                       |
 
 ## Summary types

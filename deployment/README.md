@@ -12,7 +12,7 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
    5. [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
    6. [Update application components (models, configurations) as needed](#update-application-components-models-configurations-as-needed)
    7. [Create and restore backups of user data and configurations](#create-and-restore-backups-of-user-data-and-configurations)
-2. [Interact with ChatQnA](#interact-with-chatqna)
+2. [Interact with the Deployed Pipeline](#interact-with-the-deployed-pipeline)
    1. [Test Deployment](#test-deployment)
    2. [Access the UI/Grafana](#access-the-uigrafana)
    3. [UI Credentials for the First Login](#ui-credentials-for-the-first-login)

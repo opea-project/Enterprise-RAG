@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import os
 import time
 
@@ -36,7 +37,18 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 # Initialize an instance of the OPEADocsum class with environment variables.
 opea_docsum = OPEADocsum(llm_usvc_endpoint=sanitize_env(os.getenv("DOCSUM_LLM_USVC_ENDPOINT")),
-                         default_summary_type=sanitize_env(os.getenv("DOCSUM_DEFAULT_SUMMARY_TYPE")))
+                         default_summary_type=sanitize_env(os.getenv("DOCSUM_DEFAULT_SUMMARY_TYPE")),
+                         max_concurrency=int(os.getenv("DOCSUM_MAX_CONCURRENCY", default=16))
+                         )
+# Semaphore will be lazily initialized in the async context
+endpoint_semaphore = None
+
+def get_endpoint_semaphore():
+    """Lazily initialize the semaphore in the running event loop."""
+    global endpoint_semaphore
+    if endpoint_semaphore is None:
+        endpoint_semaphore = asyncio.Semaphore(6)
+    return endpoint_semaphore
 
 # Register the microservice with the specified configuration.
 @register_microservice(
@@ -47,7 +59,7 @@ opea_docsum = OPEADocsum(llm_usvc_endpoint=sanitize_env(os.getenv("DOCSUM_LLM_US
     port=int(os.getenv('DOCSUM_USVC_PORT', default=9001)),
     input_datatype=TextDocList,
     output_datatype=Response, # can be either "comps.GeneratedDoc" for non-streaming mode, or "fastapi.responses.StreamingResponse" for streaming mode
-    validate_methods=[opea_docsum._validate]
+    validate_methods=[]
 )
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
@@ -62,34 +74,36 @@ async def process(input: TextDocList) -> Response:
     Returns:
         Response: The response from the OPEA DocSum microservice.
     """
-    start = time.time()
-    try:
-        # Pass the input to the 'run' method of the microservice instance
-        res = await opea_docsum.run(input)
-    except BadRequestError as e:
-        error_message = f"A BadRequestError occurred while processing: {str(e)}"
-        logger.exception(error_message)
-        raise HTTPException(status_code=400, detail=error_message)
-    except ValueError as e:
-        error_message = f"A ValueError occurred while processing: {str(e)}"
-        logger.exception(error_message)
-        raise HTTPException(status_code=400, detail=error_message)
-    except ConnectionError as e:
-        error_message = f"A Connection error occurred while processing: {str(e)}"
-        logger.exception(error_message)
-        raise HTTPException(status_code=404, detail=error_message)
-    except RequestException as e:
-        error_code = e.response.status_code if e.response else 500
-        error_message = f"A RequestException occurred while processing: {str(e)}"
-        logger.exception(error_message)
-        raise HTTPException(status_code=error_code, detail=error_message)
-    except Exception as e:
-        error_message = f"An error occurred while processing: {str(e)}"
-        logger.exception(error_message)
-        raise HTTPException(status_code=500, detail=error_message)
+    semaphore = get_endpoint_semaphore()
+    async with semaphore:
+        start = time.time()
+        try:
+            # Pass the input to the 'run' method of the microservice instance
+            res = await opea_docsum.run(input)
+        except BadRequestError as e:
+            error_message = f"A BadRequestError occurred while processing: {str(e)}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
+        except ValueError as e:
+            error_message = f"A ValueError occurred while processing: {str(e)}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=400, detail=error_message)
+        except ConnectionError as e:
+            error_message = f"A Connection error occurred while processing: {str(e)}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=404, detail=error_message)
+        except RequestException as e:
+            error_code = e.response.status_code if e.response else 500
+            error_message = f"A RequestException occurred while processing: {str(e)}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=error_code, detail=error_message)
+        except Exception as e:
+            error_message = f"An error occurred while processing: {str(e)}"
+            logger.exception(error_message)
+            raise HTTPException(status_code=500, detail=error_message)
 
-    statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
-    return res
+        statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
+        return res
 
 
 if __name__ == "__main__":

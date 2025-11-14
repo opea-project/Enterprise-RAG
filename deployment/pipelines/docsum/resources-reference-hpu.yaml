@@ -9,10 +9,10 @@ services:
     resources:
       requests:
         cpu: 4
-        memory: 1Gi
+        memory: 2Gi
       limits:
         cpu: 8
-        memory: 8Gi
+        memory: 12Gi
   text-compression-usvc:
     replicas: 1
     resources:

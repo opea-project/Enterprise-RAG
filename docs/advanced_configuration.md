@@ -21,9 +21,10 @@ This document describes configuration options available when deploying Intel® A
    3. [Reranking Model](#reranking-model)
    4. [Model Compatibility Notes](#model-compatibility-notes)
 5. [Performance Tuning Tips](#performance-tuning-tips)
-6. [Balloons - Topology-Aware Resource Scheduling](#balloons---topology-aware-resource-scheduling)
-7. [Horizontal Pod Autoscaling (HPA)](#horizontal-pod-autoscaling-hpa)
-8. [Additional Configuration Options](#additional-configuration-options)
+6. [Accuracy Tuning Tips](#accuracy-tuning-tips)
+7. [Balloons - Topology-Aware Resource Scheduling](#balloons---topology-aware-resource-scheduling)
+8. [Horizontal Pod Autoscaling (HPA)](#horizontal-pod-autoscaling-hpa)
+9. [Additional Configuration Options](#additional-configuration-options)
    1. [Additional Pipelines](#additional-pipelines)
    2. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
    3. [EDP Storage Types](#edp-storage-types)
@@ -303,6 +304,10 @@ When changing models, consider:
 ## Performance Tuning Tips
 
 For comprehensive performance optimization guidance, see: [Performance Tuning Guide](performance_tuning_tips.md)
+
+## Accuracy Tuning Tips
+
+For advanced techniques to improve retrieval and answer accuracy, see: [Accuracy Tuning Guide](accuracy_tuning_tips.md)
 
 ## Balloons - Topology-Aware Resource Scheduling
 

@@ -34,10 +34,13 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[backup.md](backup.md)**
   Comprehensive guide for configuring backup functionality with Velero, creating backups, and restoring user data and configurations.
 
-### Performance and Monitoring
+### Performance, Accuracy and Monitoring
 
 - **[performance_tuning_tips.md](performance_tuning_tips.md)**
   Best practices and optimization techniques for improving Intel® AI for Enterprise RAG system performance.
+
+- **[accuracy_tuning_tips.md](accuracy_tuning_tips.md)**
+  Advanced techniques for improving Intel® AI for Enterprise RAG system accuracy.
 
 - **[telemetry.md](telemetry.md)**
   Monitoring, logging, and observability setup for Intel® AI for Enterprise RAG deployments with metrics collection.

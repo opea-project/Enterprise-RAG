@@ -146,14 +146,14 @@ async def test_chatqa_graph_legend_rendered(chat_ui_helper):
     Steps:
     1. Login as admin (handled by fixture)
     2. Navigate to Control Plane
-    3. Check if div with class "chatqna-graph-legend" exists
+    3. Check if div with class "graph-legend" exists
     4. Verify it has child elements
     
     Success criteria:
-    - ChatQnA graph legend element is visible
+    - Graph legend element is visible
     - Legend contains child elements (legend items)
     
-    Note: The UI uses 'chatqna-graph-legend' (not 'chatqa')
+    Note: The UI uses 'graph-legend' class for the service status legend
     """
     logger.info("Test 4: ChatQnA Graph Legend Rendering")
     
@@ -162,16 +162,16 @@ async def test_chatqa_graph_legend_rendered(chat_ui_helper):
     assert navigation_success, "Failed to navigate to Control Plane"
     logger.info("Navigated to Control Plane")
     
-    # Check if chatqna-graph-legend is rendered with children using CSS class
+    # Check if graph-legend is rendered with children using CSS class
     legend_rendered = await chat_ui_helper.check_element_rendered(
-        css_class="chatqna-graph-legend",
+        css_class="graph-legend",
         check_children=True,
         timeout=10000
     )
     
     # Assert: Legend is rendered with children
-    assert legend_rendered, "ChatQnA graph legend not rendered or has no children"
-    logger.info("Assert: ChatQnA graph legend rendered with child elements")
+    assert legend_rendered, "Graph legend not rendered or has no children"
+    logger.info("Assert: Graph legend rendered with child elements")
     
     logger.info("Test completed: ChatQnA graph legend validated")
 

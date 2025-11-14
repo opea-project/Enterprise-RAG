@@ -28,11 +28,22 @@ If you're interested in getting a glimpse of how Intel® AI for Enterprise RAG w
 &nbsp;
 
 > [!NOTE]
-> The video provided below showcases the beta release of our project. As you've transitioned to next releases, users can anticipate an improved UI design, improved installation process along with other enhancements.
+> The video provided below showcases the beta release of our project. As we've transitioned to next releases, users can anticipate an improved UI design, improved installation process along with other enhancements.
 
-Feel free to check out the architecture of the pipeline. For the detailed microservices architecture, refer [here](./docs/microservices_architecture.png).
+### Pipeline Architecture
+Our system consists of two primary processing pipelines, each built on top of a shared microservices architecture. However, only one pipeline can be deployed at once. 
 
-![arch](./docs/images/architecture.png)
+* ChatQnA – enabling retrieval-augmented question answering through conversational interaction.
+* Document Summarization (DocSum) – responsible for generating concise summaries from input documents.
+
+The pipeline architecture for ChatQnA is shown below.
+For the detailed microservices architecture, refer [here](./docs/microservices_architecture.png).
+
+Document Summarization's pipeline architecture is available [here](./docs/images/architecture_docsum.svg).
+
+<div align="center">
+   <img alt="ChatQnA Architecture" src="./docs/images/architecture_chatqna.svg" width="900">
+</div>
 
 # Table of Contents
 

@@ -132,14 +132,15 @@ class ConnectorRedis(VectorStoreConnector):
 
         if self.index_dict.get(index_name, None) is not None:
             index = self.index_dict[index_name]
-            exists = await index.exists()
-            if exists:
-                return index
-            else:
-                logger.info(f"Index {index_name} memoized but not available in redis.")
+            try:
+                await index._redis_client.ping()
+                if await index.exists():
+                    return index
+            except (exceptions.ConnectionError, exceptions.TimeoutError, exceptions.RedisClusterException):
+                logger.warning("Redis connection was lost. Reconnecting...")
 
         index = await self._create_index(schema)
-        self.index_dict[index_name]=index
+        self.index_dict[index_name] = index
         return index
 
     def _process_data(self, texts: List[str], embeddings: List[List[float]], metadatas: List[dict]=None):

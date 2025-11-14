@@ -36,6 +36,29 @@ kubectl patch storageclass <your-storage-class-name> -p '{"metadata": {"annotati
 kubectl patch storageclass <other-storage-class> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 ```
 
+## Change number of iwatch open descriptors
+
+If the application is deployed with telemetry enabled, it is required to increase number of inotify user instances on every machine from the cluster. To do so, check the current number of users, by running
+
+```sh
+sudo sysctl -n fs.inotify.max_user_instances
+```
+
+To modify it, run:
+
+```sh
+cat <<EOF | sudo tee /etc/sysctl.d/99-enterprise-rag.conf
+# Enterprise RAG optimizations
+fs.inotify.max_user_instances = 8192
+fs.inotify.max_user_watches = 524288
+fs.file-max = 2097152
+vm.max_map_count = 262144
+EOF
+
+# Apply sysctl changes
+sudo sysctl --system
+```
+
 ## Installation Steps
 
 1. **Edit the configuration file:**

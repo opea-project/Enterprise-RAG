@@ -5,3 +5,8 @@ dependencies:
   - pip-uv
 pip-uv:
   file: "app/uv.lock"
+base-image:
+  override:
+    - python:3.11-slim-bookworm
+apt:
+  base-image-override: python:3.11-slim-bookworm

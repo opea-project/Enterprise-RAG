@@ -4,3 +4,8 @@ docker_context: "../"
 dependencies:
   - pip-uv
   - apt
+base-image:
+  override:
+    - python:3.11-slim-bookworm
+apt:
+  base-image-override: python:3.11-slim-bookworm

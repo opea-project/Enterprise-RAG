@@ -1,10 +1,8 @@
 ---
 dockerfile: "Dockerfile"
-docker_context: "../"
+docker_context: "./"
 dependencies:
-  - pnpm
+  - apt
 container_distribution: DockerHub
 dockerfile_distribution: GitHub
 comments: ""
-pnpm:
-  src_dir: "../.."

@@ -2,119 +2,100 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Get MinIO deployment name
-  kubernetes.core.k8s_info:
-    kind: Deployment
-    namespace: "{{ edp.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=minio
-  register: minio_deployment
+- name: Check MinIO data consistency
   tags:
     - pre-upgrade
+    - data-consistency
+  block:
+    - name: Get MinIO deployment name
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: "{{ edp.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=minio
+      register: minio_deployment
 
-- name: Get MinIO pod name
-  kubernetes.core.k8s_info:
-    kind: Pod
-    namespace: "{{ edp.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=minio
-  register: minio_pods
-  tags:
-    - pre-upgrade
+    - name: Get MinIO pod name
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ edp.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=minio
+      register: minio_pods
 
-- name: Set MinIO pod name
-  ansible.builtin.set_fact:
-    minio_pod: "{{ minio_pods.resources[0].metadata.name }}"
-    minio_deployment_name: "{{ minio_deployment.resources[0].metadata.name if minio_deployment.resources else 'edp-minio' }}"
-  when: minio_pods.resources | length > 0
-  tags:
-    - pre-upgrade
+    - name: Set MinIO pod name
+      ansible.builtin.set_fact:
+        minio_pod: "{{ minio_pods.resources[0].metadata.name }}"
+        minio_deployment_name: "{{ minio_deployment.resources[0].metadata.name if minio_deployment.resources else 'edp-minio' }}"
+      when: minio_pods.resources | length > 0
 
-- name: Get MinIO connection details from secret
-  kubernetes.core.k8s_info:
-    kind: Secret
-    name: edp-access-secret
-    namespace: "{{ edp.namespace }}"
-  register: minio_secret
-  no_log: true
-  tags:
-    - pre-upgrade
+    - name: Authenticate with MinIO
+      no_log: "{{ secure_logs }}"
+      block:
+        - name: Get MinIO connection details from secret
+          kubernetes.core.k8s_info:
+            kind: Secret
+            name: edp-access-secret
+            namespace: "{{ edp.namespace }}"
+          register: minio_secret
 
-- name: Decode MinIO credentials
-  ansible.builtin.set_fact:
-    minio_access_key: "{{ minio_secret.resources[0].data.EDP_ACCESS_KEY | b64decode }}"
-    minio_secret_key: "{{ minio_secret.resources[0].data.EDP_SECRET_KEY | b64decode }}"
-  when: minio_secret.resources | length > 0
-  no_log: true
-  tags:
-    - pre-upgrade
+        - name: Decode MinIO credentials
+          ansible.builtin.set_fact:
+            minio_access_key: "{{ minio_secret.resources[0].data.EDP_ACCESS_KEY | b64decode }}"
+            minio_secret_key: "{{ minio_secret.resources[0].data.EDP_SECRET_KEY | b64decode }}"
+          when: minio_secret.resources | length > 0
 
-- name: Configure MinIO client alias inside pod
-  kubernetes.core.k8s_exec:
-    namespace: "{{ edp.namespace }}"
-    pod: "{{ minio_pod }}"
-    command: >
-      mc alias set local http://localhost:9000 {{ minio_access_key }} {{ minio_secret_key }}
-  register: minio_alias_config
-  when: minio_pod is defined
-  no_log: true
-  tags:
-    - pre-upgrade
+        - name: Configure MinIO client alias inside pod
+          kubernetes.core.k8s_exec:
+            namespace: "{{ edp.namespace }}"
+            pod: "{{ minio_pod }}"
+            command: >
+              mc alias set local http://localhost:9000 {{ minio_access_key }} {{ minio_secret_key }}
+          register: minio_alias_config
+          when: minio_pod is defined
 
-- name: List all buckets in MinIO
-  kubernetes.core.k8s_exec:
-    namespace: "{{ edp.namespace }}"
-    pod: "{{ minio_pod }}"
-    command: mc ls local --json
-  register: minio_buckets_list
-  when: minio_pod is defined
-  tags:
-    - pre-upgrade
+    - name: List all buckets in MinIO
+      kubernetes.core.k8s_exec:
+        namespace: "{{ edp.namespace }}"
+        pod: "{{ minio_pod }}"
+        command: mc ls local --json
+      register: minio_buckets_list
+      when: minio_pod is defined
 
-- name: Parse bucket names from JSON output
-  ansible.builtin.set_fact:
-    minio_buckets: "{{ minio_buckets_list.stdout_lines | map('from_json') | selectattr('type', 'equalto', 'folder') | map(attribute='key') | list }}"
-  when:
-    - minio_buckets_list is defined
-    - minio_buckets_list.stdout_lines is defined
-  tags:
-    - pre-upgrade
+    - name: Parse bucket names from JSON output
+      ansible.builtin.set_fact:
+        minio_buckets: "{{ minio_buckets_list.stdout_lines | map('from_json') | selectattr('type', 'equalto', 'folder') | map(attribute='key') | list }}"
+      when:
+        - minio_buckets_list is defined
+        - minio_buckets_list.stdout_lines is defined
 
-- name: Initialize file count
-  ansible.builtin.set_fact:
-    minio_total_files: 0
-  tags:
-    - pre-upgrade
+    - name: Initialize file count
+      ansible.builtin.set_fact:
+        minio_total_files: 0
 
-- name: Count files in each bucket
-  kubernetes.core.k8s_exec:
-    namespace: "{{ edp.namespace }}"
-    pod: "{{ minio_pod }}"
-    command: >
-      mc find local/{{ item }} --json
-  register: minio_bucket_files
-  loop: "{{ minio_buckets | default([]) }}"
-  when:
-    - minio_pod is defined
-    - minio_buckets is defined
-  tags:
-    - pre-upgrade
+    - name: Count files in each bucket
+      kubernetes.core.k8s_exec:
+        namespace: "{{ edp.namespace }}"
+        pod: "{{ minio_pod }}"
+        command: >
+          mc find local/{{ item }} --json
+      register: minio_bucket_files
+      loop: "{{ minio_buckets | default([]) }}"
+      when:
+        - minio_pod is defined
+        - minio_buckets is defined
 
-- name: Calculate total files across all buckets
-  ansible.builtin.set_fact:
-    minio_total_files: "{{ minio_bucket_files.results | map(attribute='stdout_lines') | flatten | length }}"
-  when:
-    - minio_bucket_files is defined
-    - minio_bucket_files.results is defined
-  tags:
-    - pre-upgrade
+    - name: Calculate total files across all buckets
+      ansible.builtin.set_fact:
+        minio_total_files: "{{ minio_bucket_files.results | map(attribute='stdout_lines') | flatten | length }}"
+      when:
+        - minio_bucket_files is defined
+        - minio_bucket_files.results is defined
 
-- name: Save MinIO data to facts for YAML report
-  ansible.builtin.set_fact:
-    minio_report_data:
-      component: "{{ minio_deployment_name }}"
-      files_count: "{{ minio_total_files | int }}"
-      buckets_count: "{{ minio_buckets | length | int }}"
-  when: minio_pod is defined
-  tags:
-    - pre-upgrade
+    - name: Save MinIO data to facts for YAML report
+      ansible.builtin.set_fact:
+        minio_report_data:
+          component: "{{ minio_deployment_name }}"
+          files_count: "{{ minio_total_files | int }}"
+          buckets_count: "{{ minio_buckets | length | int }}"
+      when: minio_pod is defined

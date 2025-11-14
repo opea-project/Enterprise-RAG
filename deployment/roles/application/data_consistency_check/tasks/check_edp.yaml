@@ -2,74 +2,66 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Get EDP PostgreSQL deployment name
-  kubernetes.core.k8s_info:
-    kind: StatefulSet
-    namespace: "{{ edp.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=postgresql
-      - app.kubernetes.io/instance=edp
-  register: edp_postgresql_deployment
+- name: Check EDP data consistency
   tags:
     - pre-upgrade
+    - data-consistency
+  block:
+    - name: Get EDP PostgreSQL deployment name
+      kubernetes.core.k8s_info:
+        kind: StatefulSet
+        namespace: "{{ edp.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=postgresql
+          - app.kubernetes.io/instance=edp
+      register: edp_postgresql_deployment
 
-- name: Get EDP PostgreSQL pod name
-  kubernetes.core.k8s_info:
-    kind: Pod
-    namespace: "{{ edp.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=postgresql
-      - app.kubernetes.io/instance=edp
-  register: edp_postgresql_pods
-  tags:
-    - pre-upgrade
+    - name: Get EDP PostgreSQL pod name
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ edp.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=postgresql
+          - app.kubernetes.io/instance=edp
+      register: edp_postgresql_pods
 
-- name: Set EDP PostgreSQL pod name
-  ansible.builtin.set_fact:
-    edp_postgresql_pod: "{{ edp_postgresql_pods.resources[0].metadata.name }}"
-    edp_postgresql_deployment_name: "{{ edp_postgresql_deployment.resources[0].metadata.name if edp_postgresql_deployment.resources else 'edp-postgresql' }}"
-  when: edp_postgresql_pods.resources | length > 0
-  tags:
-    - pre-upgrade
+    - name: Set EDP PostgreSQL pod name
+      ansible.builtin.set_fact:
+        edp_postgresql_pod: "{{ edp_postgresql_pods.resources[0].metadata.name }}"
+        edp_postgresql_deployment_name: "{{ edp_postgresql_deployment.resources[0].metadata.name if edp_postgresql_deployment.resources else 'edp-postgresql' }}"
+      when: edp_postgresql_pods.resources | length > 0
 
-- name: Query PostgreSQL for number of files (using container environment)
-  kubernetes.core.k8s_exec:
-    namespace: "{{ edp.namespace }}"
-    pod: "{{ edp_postgresql_pod }}"
-    command: >
-      bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -t -c "SELECT COUNT(*) FROM files;"'
-  register: edp_files_count
-  when: edp_postgresql_pod is defined
-  no_log: true
-  tags:
-    - pre-upgrade
+    - name: Query database
+      no_log: "{{ secure_logs }}"
+      block:
+        - name: Query PostgreSQL for number of files (using container environment)
+          kubernetes.core.k8s_exec:
+            namespace: "{{ edp.namespace }}"
+            pod: "{{ edp_postgresql_pod }}"
+            command: >
+              bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -t -c "SELECT COUNT(*) FROM files;"'
+          register: edp_files_count
+          when: edp_postgresql_pod is defined
 
-- name: Query PostgreSQL for number of links (using container environment)
-  kubernetes.core.k8s_exec:
-    namespace: "{{ edp.namespace }}"
-    pod: "{{ edp_postgresql_pod }}"
-    command: >
-      bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -t -c "SELECT COUNT(*) FROM links;"'
-  register: edp_links_count
-  when: edp_postgresql_pod is defined
-  no_log: true
-  tags:
-    - pre-upgrade
+        - name: Query PostgreSQL for number of links (using container environment)
+          kubernetes.core.k8s_exec:
+            namespace: "{{ edp.namespace }}"
+            pod: "{{ edp_postgresql_pod }}"
+            command: >
+              bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DATABASE" -t -c "SELECT COUNT(*) FROM links;"'
+          register: edp_links_count
+          when: edp_postgresql_pod is defined
 
-- name: Set EDP data consistency facts
-  ansible.builtin.set_fact:
-    edp_files_total: "{{ edp_files_count.stdout | trim | default('0') }}"
-    edp_links_total: "{{ edp_links_count.stdout | trim | default('0') }}"
-  when: edp_postgresql_pod is defined
-  tags:
-    - pre-upgrade
+    - name: Set EDP data consistency facts
+      ansible.builtin.set_fact:
+        edp_files_total: "{{ edp_files_count.stdout | trim | default('0') }}"
+        edp_links_total: "{{ edp_links_count.stdout | trim | default('0') }}"
+      when: edp_postgresql_pod is defined
 
-- name: Save EDP data to facts for YAML report
-  ansible.builtin.set_fact:
-    edp_report_data:
-      component: "{{ edp_postgresql_deployment_name }}"
-      files_count: "{{ edp_files_total | int }}"
-      links_count: "{{ edp_links_total | int }}"
-  when: edp_postgresql_pod is defined
-  tags:
-    - pre-upgrade
+    - name: Save EDP data to facts for YAML report
+      ansible.builtin.set_fact:
+        edp_report_data:
+          component: "{{ edp_postgresql_deployment_name }}"
+          files_count: "{{ edp_files_total | int }}"
+          links_count: "{{ edp_links_total | int }}"
+      when: edp_postgresql_pod is defined

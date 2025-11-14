@@ -9,6 +9,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[cluster_deployment_guide.md](cluster_deployment_guide.md)**
   Step-by-step guide for deploying Kubernetes clusters for Intel® AI for Enterprise RAG with both single-node and multi-node configurations.
 
+- **[eks_deployment.md](eks_deployment.md)**
+  Guide for deploying Intel® AI for Enterprise RAG on Amazon Elastic Kubernetes Service (EKS).
+
 - **[application_deployment_guide.md](application_deployment_guide.md)**
   Complete instructions for deploying the Intel® AI for Enterprise RAG application on prepared Kubernetes infrastructure.
 
@@ -23,6 +26,8 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 
 - **[building_images.md](building_images.md)**
   Guide for building Docker images locally for Intel® AI for Enterprise RAG components and pushing them to registries.
+
+
 
 ### Backup and Recovery
 

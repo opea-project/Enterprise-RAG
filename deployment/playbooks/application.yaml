@@ -40,6 +40,7 @@
         name: data_consistency_check
       tags:
         - pre-upgrade
+        - data-consistency
 
     - name: Build and push images
       ansible.builtin.include_role:

@@ -13,6 +13,7 @@ import {
   Node,
   NodeChange,
   NodeTypes,
+  OnSelectionChangeFunc,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -43,7 +44,7 @@ interface PipelineGraphProps<
   onConnect?: (connection: Connection) => void;
   onEdgesChange?: (changes: EdgeChange[]) => void;
   onNodesChange?: (changes: NodeChange<Node<T>>[]) => void;
-  onSelectionChange?: (selection: { nodes: Node<T>[]; edges: Edge[] }) => void;
+  onSelectionChange?: OnSelectionChangeFunc;
 }
 
 const PipelineGraphFlow = ({
@@ -113,6 +114,7 @@ export const PipelineGraph = ({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onSelectionChange,
   colorMode,
   fitViewOptions = { padding: 0.5 },
 }: PipelineGraphProps) => (
@@ -125,6 +127,7 @@ export const PipelineGraph = ({
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
+      onSelectionChange={onSelectionChange}
     />
   </ReactFlowProvider>
 );

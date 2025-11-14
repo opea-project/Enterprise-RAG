@@ -6,6 +6,7 @@ import "./ControlPlanePanel.scss";
 
 import { LoadingFallback } from "@intel-enterprise-rag-ui/components";
 import { ConfigurableServiceIcon } from "@intel-enterprise-rag-ui/icons";
+import classNames from "classnames";
 import { ComponentType } from "react";
 
 import { ServiceStatusIndicator } from "@/components/ServiceStatusIndicator/ServiceStatusIndicator";
@@ -36,12 +37,14 @@ interface ControlPlanePanelProps {
   isLoading: boolean;
   isRenderable: boolean;
   Graph: ComponentType;
+  ConfigPanel?: ComponentType;
 }
 
 export const ControlPlanePanel = ({
   isLoading,
   isRenderable,
   Graph,
+  ConfigPanel,
 }: ControlPlanePanelProps) => {
   const getControlPlaneContent = () => {
     if (isLoading) {
@@ -64,9 +67,14 @@ export const ControlPlanePanel = ({
     }
   };
 
+  const className = classNames("control-plane-panel", {
+    "control-plane-panel__with-config-panel": !!ConfigPanel,
+  });
+
   return (
-    <div className="control-plane-panel">
+    <div className={className}>
       <div className="graph-wrapper">{getControlPlaneContent()}</div>
+      {ConfigPanel && <ConfigPanel />}
     </div>
   );
 };

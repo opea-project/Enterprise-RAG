@@ -4,7 +4,11 @@
 .control-plane-panel {
   @apply bg-light-bg-1 dark:bg-dark-bg-1 grid grid-cols-1;
 
-  & .control-plane-panel__not-renderable {
+  &__with-config-panel {
+    @apply grid-cols-[1fr_22rem];
+  }
+
+  &__not-renderable {
     @apply flex h-full w-full items-center justify-center;
   }
 }

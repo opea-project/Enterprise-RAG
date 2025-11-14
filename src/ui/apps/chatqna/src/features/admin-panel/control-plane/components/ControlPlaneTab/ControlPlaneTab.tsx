@@ -10,6 +10,7 @@ import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
 import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
+import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import {
   chatQnAGraphEdgesSelector,
   chatQnAGraphIsLoadingSelector,
@@ -34,6 +35,7 @@ const ControlPlaneTab = () => {
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={ChatQnAGraph}
+      ConfigPanel={ServiceCard}
     />
   );
 };

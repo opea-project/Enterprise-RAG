@@ -79,6 +79,7 @@ const PasteTextTab = () => {
   const handleGenerateSummaryButtonPress = useCallback(async () => {
     if (text.trim()) {
       summaryRef.current = "";
+      dispatch(setSummary(""));
       dispatch(setStreamingText(""));
       dispatch(setIsLoading(true));
 

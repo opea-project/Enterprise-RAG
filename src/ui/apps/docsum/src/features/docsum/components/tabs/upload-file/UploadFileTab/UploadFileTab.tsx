@@ -99,6 +99,7 @@ const UploadFileTab = () => {
   const handleGenerateSummaryButtonPress = useCallback(async () => {
     if (fileData !== null) {
       summaryRef.current = "";
+      dispatch(setSummary(""));
       dispatch(setStreamingText(""));
       dispatch(setIsLoading(true));
 

@@ -2,6 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+# not working on CI/CD
+# - name: Change ownership of artifacts directory
+#   become: true
+#   ansible.builtin.file:
+#     path: "{{ inventory_dir }}/artifacts"
+#     state: directory
+#     owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
+#     group: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
+#     recurse: true
+#   when: deploy_k8s
+#   tags:
+#     - install
+#     - post-install
+
 - name: Gaudi operator role
   ansible.builtin.include_role:
     name: gaudi_operator

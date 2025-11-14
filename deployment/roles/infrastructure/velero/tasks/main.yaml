@@ -384,7 +384,7 @@
   become: true
   ansible.builtin.file:
     path: /usr/local/bin/velero
-    owner: "{{ ansible_user }}"
+    owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
     mode: '0755'
   when:
     velero.install_client and velero_do_install_client

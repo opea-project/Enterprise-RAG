@@ -22,23 +22,44 @@ To deploy a K8s cluster, you need to fill the inventory.ini file that describes 
    ssh REMOTE_USER@MACHINE_IP
    ```
 
-Below is an example inventory.ini file that you need to fill with proper IP addresses:
+Below are example inventory.ini files for different deployment scenarios:
 
-1. **Edit the inventory file:**
-   - Open `inventory/test-cluster/inventory.ini`.
-   - Replace `LOCAL_USER`, `REMOTE_USER`, `MACHINE_HOSTNAME`, and `MACHINE_IP` with your actual values.
+### Localhost Deployment (Single-node, running from the node itself)
 
-Example `inventory.ini` for a single-node cluster:
+For deployments where you're running Ansible directly on the target node:
+
 ```ini
-# Kubernetes Cluster Inventory
-[local]
-localhost ansible_connection=local ansible_user=LOCAL_USER
+# Sample inventory for localhost deployment
+# Replace <hostname> with your actual hostname
 
-[all]
-# Control plane nodes
+localhost ansible_connection=local
+
+[kube_control_plane]
+localhost
+
+[kube_node]
+localhost
+
+[etcd:children]
+kube_control_plane
+
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+
+[k8s_cluster:vars]
+ansible_become=true
+```
+
+### Remote Deployment (Single-node or Multi-node)
+
+For deployments where you're managing remote nodes via SSH:
+
+**Single-node remote cluster:**
+```ini
+# Control plane node
 MACHINE_HOSTNAME ansible_host=MACHINE_IP
 
-# Define node groups
 [kube_control_plane]
 MACHINE_HOSTNAME
 
@@ -52,13 +73,52 @@ kube_control_plane
 kube_control_plane
 kube_node
 
-# Vars
 [k8s_cluster:vars]
 ansible_become=true
 ansible_user=REMOTE_USER
 ansible_connection=ssh
-ansible_ssh_private_key_file=PATH_TO_PRIVATE_SSH_KEY  # Path to the SSH private key for authentication
+ansible_ssh_private_key_file=PATH_TO_PRIVATE_SSH_KEY
 ```
+
+**Multi-node remote cluster:**
+```ini
+# Control plane nodes
+kube-master-1 ansible_host=<node1_ip_address>
+kube-master-2 ansible_host=<node2_ip_address>
+kube-master-3 ansible_host=<node3_ip_address>
+
+# Worker nodes
+kube-worker-1 ansible_host=<node4_ip_address>
+kube-worker-2 ansible_host=<node5_ip_address>
+kube-worker-3 ansible_host=<node6_ip_address>
+
+[kube_control_plane]
+kube-master-1
+kube-master-2
+kube-master-3
+
+[kube_node]
+kube-worker-1
+kube-worker-2
+kube-worker-3
+
+[etcd:children]
+kube_control_plane
+
+[k8s_cluster:children]
+kube_control_plane
+kube_node
+
+[k8s_cluster:vars]
+ansible_become=true
+ansible_user=REMOTE_USER
+ansible_connection=ssh
+ansible_ssh_private_key_file=PATH_TO_PRIVATE_SSH_KEY
+```
+
+1. **Edit the inventory file:**
+   - Open `inventory/test-cluster/inventory.ini`.
+   - Replace placeholders (`<hostname>`, `REMOTE_USER`, `MACHINE_HOSTNAME`, `MACHINE_IP`, etc.) with your actual values.
 
 For more information on preparing an Ansible inventory, see the [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
 

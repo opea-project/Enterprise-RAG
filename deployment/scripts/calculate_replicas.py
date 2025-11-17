@@ -29,6 +29,11 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
 
     # Calculate total memory required for initial number of inference group replicas
     inference_memory_sum = VLLM_MEMORY + EMBEDDING_MEMORY + RERANKING_MEMORY
+
+    # Guard against zero division
+    if inference_memory_sum == 0:
+        return 0, 0.0
+
     total_memory_needed = inference_memory_sum * replicas
 
     # Set RAG core services memory request
@@ -119,15 +124,25 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
 
         # Test if all services fit together in one NUMA node
         total_size = current_vllm_size + reranking_size + embedding_size
-        n = numa_node_size // total_size
+
+        # Guard against zero division
+        if total_size == 0:
+            n = 0
+        else:
+            n = numa_node_size // total_size
+
         use_fallback = False
 
         if n > 0:
             # All services fit in one NUMA node
             if throughput_mode:
                 # Check if we can fit more replicas while maintaining VLLM at 75% of original size
-                max_possible_replicas_per_numa = numa_node_size // (reranking_size + embedding_size + vllm_75_percent)
-                
+                inference_cpu_sum = reranking_size + embedding_size + vllm_75_percent
+                if inference_cpu_sum == 0:
+                    max_possible_replicas_per_numa = 0
+                else:
+                    max_possible_replicas_per_numa = numa_node_size // inference_cpu_sum
+
                 if max_possible_replicas_per_numa > n:
                     # We can fit more replicas
                     available_cpu_for_vllm = numa_node_size - max_possible_replicas_per_numa * (reranking_size + embedding_size)
@@ -143,7 +158,11 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
         elif n == 0 and throughput_mode:
             # Throughput mode: for the maximum possible replicas per NUMA node, find the maximum VLLM size
             # First, calculate the maximum number of replicas that can fit with minimum VLLM requirements
-            max_possible_replicas_per_numa = numa_node_size // (reranking_size + embedding_size + vllm_50_percent)
+            inference_cpu_sum = reranking_size + embedding_size + vllm_50_percent
+            if inference_cpu_sum == 0:
+                max_possible_replicas_per_numa = 0
+            else:
+                max_possible_replicas_per_numa = numa_node_size // inference_cpu_sum
 
             if max_possible_replicas_per_numa > 0:
                 # Calculate the maximum VLLM size for this replica count

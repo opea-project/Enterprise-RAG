@@ -2,6 +2,10 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# EXPERIMENTAL FEATURE
+# This installer script is currently an experimental feature and may undergo
+# significant changes. Use with caution in production environments.
+
 set -e
 set -o pipefail
 #set -x # Uncomment for debugging
@@ -15,6 +19,12 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# Display experimental feature warning
+echo -e "${YELLOW}EXPERIMENTAL FEATURE${NC}"
+echo -e "${YELLOW}This installer script is currently an experimental feature and may undergo significant changes.${NC}"
+echo -e "${YELLOW}Use with caution in production environments.${NC}"
+echo ""
 
 log() {
     local level=$1

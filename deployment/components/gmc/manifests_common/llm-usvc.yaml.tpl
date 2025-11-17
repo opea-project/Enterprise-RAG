@@ -85,7 +85,7 @@ spec:
                   echo "Environment variable LLM_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
                 else
                   until curl $ADDITIONAL_CURL_FLAGS -s $LLM_MODEL_SERVER_ENDPOINT; do
-                    echo "waiting for embedding model server $LLM_MODEL_SERVER_ENDPOINT to be ready...";
+                    echo "waiting for LLM server $LLM_MODEL_SERVER_ENDPOINT to be ready...";
                     sleep 2;
                   done;
                 fi;

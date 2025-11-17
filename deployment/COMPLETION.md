@@ -1,5 +1,8 @@
 # Installer.sh Auto-Completion
 
+> **EXPERIMENTAL FEATURE**
+> The auto-completion functionality is currently an experimental feature and may undergo significant changes. Use with caution in production environments.
+
 This directory contains shell auto-completion scripts for `installer.sh` located in the `scripts/` subdirectory to provide tab completion for commands, options, and file paths.
 
 ## Available Scripts

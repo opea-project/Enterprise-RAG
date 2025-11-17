@@ -3,6 +3,10 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# EXPERIMENTAL FEATURE
+# This completion script is currently an experimental feature and may undergo
+# significant changes. Use with caution in production environments.
+
 # Zsh completion script for installer.sh
 # Location: deployment/scripts/_installer.sh
 #

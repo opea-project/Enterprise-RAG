@@ -30,30 +30,19 @@ spec:
         - name: mongodb
           containerPort: {{ .Values.ferretdb.service.targetPort }}
           protocol: TCP
+        args:
+        - "--postgresql-url-file=/var/run/ferretdb-config/postgresql-url"
         env:
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
-              key: POSTGRES_PASSWORD
-        - name: POSTGRES_DB
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
-              key: POSTGRES_DB
-        - name: FERRETDB_POSTGRESQL_URL
-          value: "postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@{{ include "ferretdb.fullname" . }}-postgresql:{{ .Values.postgresql.service.port }}/$(POSTGRES_DB)?sslmode=disable"
         - name: FERRETDB_HANDLER
           value: "postgresql"
         - name: FERRETDB_MODE
           value: "normal"
         - name: FERRETDB_TEST_DISABLE_FILTER_PUSHDOWN
           value: "true"
+        volumeMounts:
+        - name: ferretdb-final
+          mountPath: /var/run/ferretdb-config
+          readOnly: true
         resources:
           {{- toYaml .Values.resources.ferretdb | nindent 10 }}
         livenessProbe:
@@ -72,23 +61,51 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 6
+      volumes:
+      - name: ferretdb-pass
+        secret:
+          secretName: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+          items:
+          - key: POSTGRES_PASSWORD
+            path: password
+      - name: ferretdb-final
+        emptyDir:
+          medium: Memory
       initContainers:
-      - name: wait-for-postgresql
-        image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+      - name: build-ferretdb-url
+        image: "busybox:latest"
+        imagePullPolicy: IfNotPresent
         securityContext:
           {{- toYaml .Values.containerSecurityContext | nindent 10 }}
         command:
         - /bin/sh
-        - -c
+        - -ec
         - |
-          until pg_isready -h {{ include "ferretdb.fullname" . }}-postgresql -p {{ .Values.postgresql.service.port }} -U $POSTGRES_USER; do
+          umask 077
+          mkdir -p /ferretdb-config
+
+          USER='{{ .Values.postgresql.auth.username }}'
+          DB='{{ .Values.postgresql.auth.database }}'
+          HOST='{{ include "ferretdb.fullname" . }}-postgresql'
+          PORT='{{ .Values.postgresql.service.port }}'
+          PASSWORD="$(cat /secret/password)"
+
+          until nc -z "$HOST" "$PORT"; do
             echo "Waiting for PostgreSQL to be ready..."
             sleep 2
           done
+
+          printf 'postgres://%s:%s@%s:%s/%s?sslmode=disable\n' \
+            "$USER" "$PASSWORD" "$HOST" "$PORT" "$DB" \
+            > /ferretdb-config/postgresql-url
+
+          chmod 0400 /ferretdb-config/postgresql-url
           echo "PostgreSQL is ready!"
-        env:
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
-              key: POSTGRES_USER
+        volumeMounts:
+        - name: ferretdb-pass
+          mountPath: /secret
+          readOnly: true
+        - name: ferretdb-final
+          mountPath: /ferretdb-config
+          readOnly: false
+

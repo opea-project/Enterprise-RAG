@@ -34,11 +34,8 @@ spec:
             secretKeyRef:
               name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
               key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
-              key: POSTGRES_PASSWORD
+        - name: POSTGRES_PASSWORD_FILE
+          value: /var/run/secrets/postgresql/POSTGRES_PASSWORD
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
@@ -49,6 +46,9 @@ spec:
         volumeMounts:
         - name: postgresql-data
           mountPath: /var/lib/postgresql/data
+        - name: postgresql-secret
+          mountPath: /var/run/secrets/postgresql
+          readOnly: true
         resources:
           {{- toYaml .Values.resources.postgresql | nindent 10 }}
         livenessProbe:
@@ -73,6 +73,17 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 6
+      volumes:
+      - name: postgresql-secret
+        secret:
+          secretName: {{ .Values.postgresql.auth.secretName | default "ferretdb-database-secret" }}
+          items:
+          - key: POSTGRES_PASSWORD
+            path: POSTGRES_PASSWORD
+      {{- if not .Values.postgresql.persistence.enabled }}
+      - name: postgresql-data
+        emptyDir: {}
+      {{- end }}
   {{- if .Values.postgresql.persistence.enabled }}
   volumeClaimTemplates:
   - metadata:

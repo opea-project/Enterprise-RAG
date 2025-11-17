@@ -28,24 +28,21 @@ spec:
         - name: redis
           containerPort: 6379
           protocol: TCP
-        env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: edp-redis-secret
-              key: password
         command:
-        - redis-server
-        args:
-        - --requirepass
-        - $(REDIS_PASSWORD)
-        - --appendonly
-        - "yes"
-        - --dir
-        - /data
+        - sh
+        - -c
+        - |
+          REDIS_PASSWORD=$(cat /run/secrets/redis/password)
+          exec redis-server \
+            --requirepass "$REDIS_PASSWORD" \
+            --appendonly yes \
+            --dir /data
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
+        - name: redis-secret
+          mountPath: /run/secrets/redis
+          readOnly: true
         - name: data
           mountPath: /data
         securityContext:
@@ -54,6 +51,13 @@ spec:
             drop:
             - ALL
           readOnlyRootFilesystem: false
+      volumes:
+      - name: redis-secret
+        secret:
+          secretName: edp-redis-secret
+          items:
+          - key: password
+            path: password
   volumeClaimTemplates:
   - metadata:
       name: data

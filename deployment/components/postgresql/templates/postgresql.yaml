@@ -58,11 +58,8 @@ spec:
           env:
             - name: POSTGRES_USER
               value: {{ .Values.auth.username | quote }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.auth.existingSecret }}
-                  key: {{ .Values.auth.secretKey }}
+            - name: POSTGRES_PASSWORD_FILE
+              value: /var/run/secrets/postgresql/password
             - name: POSTGRES_DB
               value: {{ .Values.auth.database | quote }}
             - name: POSTGRES_INITDB_ARGS
@@ -107,10 +104,19 @@ spec:
               mountPath: /var/lib/postgresql/data
             - name: init-scripts
               mountPath: /docker-entrypoint-initdb.d
+            - name: postgresql-secret
+              mountPath: /var/run/secrets/postgresql
+              readOnly: true
       volumes:
         - name: init-scripts
           configMap:
             name: {{ include "postgresql.fullname" . }}-init
+        - name: postgresql-secret
+          secret:
+            secretName: {{ .Values.auth.existingSecret }}
+            items:
+              - key: {{ .Values.auth.secretKey }}
+                path: password
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

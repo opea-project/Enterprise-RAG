@@ -69,6 +69,9 @@ ssh_key_name   = "your-key-pair-name"
 
 # Hugging Face Token
 hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
+
+# Solution Version (optional)
+solution_version = "release-2.0.0"  # Options: "release-2.0.0", "release-1.5.0", "main"
 ```
 
 ## Optional Variables
@@ -77,6 +80,10 @@ hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
 # Instance Configuration
 instance_type     = "r8i.32xlarge"    # CPU optimized instance
 root_volume_size  = 100             # GB
+
+# Version Control
+solution_version = "release-2.0.0"  # Git tag or branch (default: "release-2.0.0")
+                                     # Examples: "release-2.0.0", "release-1.5.0", "main"
 
 # Model Configuration
 llm_model_cpu         = ""

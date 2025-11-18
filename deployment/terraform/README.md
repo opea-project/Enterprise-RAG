@@ -1,11 +1,11 @@
-# Terraform Infrastructure for Enterprise RAG
+# Terraform Infrastructure for Intel® AI for Enterprise RAG
 
-This directory contains Terraform configurations for deploying Enterprise RAG solution on multiple cloud platforms.
+This directory contains Terraform configurations for deploying Intel® AI for Enterprise RAG solution on multiple cloud platforms.
 
 ## Supported Platforms
 
 ### **AWS (CPU)**
-Deploy Enterprise RAG on AWS using CPU-optimized instances.
+Deploy Intel® AI for Enterprise RAG on AWS using CPU-optimized instances.
 
 **Directory**: [`aws/`](./aws/)
 - **Instance Type**: r8i.48xlarge (CPU optimized)
@@ -14,7 +14,7 @@ Deploy Enterprise RAG on AWS using CPU-optimized instances.
 **[AWS Documentation](./aws/README.md)**
 
 ### **IBM Cloud (Intel Gaudi)**
-Deploy Enterprise RAG on IBM Cloud using Intel Gaudi AI accelerators.
+Deploy Intel® AI for Enterprise RAG on IBM Cloud using Intel Gaudi AI accelerators.
 
 **Directory**: [`ibm/`](./ibm/)
 - **Instance Type**: gx3d-160x1792x8gaudi3 (Intel Gaudi accelerators)
@@ -77,6 +77,21 @@ Before deploying on either platform, ensure you have:
 4. **API credentials** configured
 5. **Hugging Face token** for model downloads
 
+## Version Management
+
+The deployment supports specifying a particular version or tag of the Intel® AI for Enterprise RAG solution:
+
+```hcl
+# In terraform.tfvars
+solution_version = "release-2.0.0"    # Deploy specific tag (default)
+solution_version = "release-1.5.0"    # Deploy older version
+solution_version = "main"             # Deploy from main branch
+```
+
+This allows you to:
+- Deploy specific released versions for stability (e.g., release-2.0.0, release-1.5.0)
+- Test new features from specific branches (e.g., main)
+
 ## Destroy Infrastrucutre
 
 ```bash
@@ -97,4 +112,4 @@ For platform-specific issues, refer to the individual README files:
 - **AWS Issues**: See [aws/README.md](./aws/README.md#troubleshooting)
 - **IBM Cloud Issues**: See [ibm/README.md](./ibm/README.md#troubleshooting)
 
-For general Enterprise RAG questions, check the main repository documentation.
+For general Intel® AI for Enterprise RAG questions, check the main repository documentation.

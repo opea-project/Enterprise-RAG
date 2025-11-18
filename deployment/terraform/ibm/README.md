@@ -101,6 +101,9 @@ ssh_user = "ubuntu"
 
 # Hugging Face Token
 hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
+
+# Solution Version (optional)
+solution_version = "release-2.0.0"  # Options: "release-2.0.0", "release-1.5.0", "main"
 ```
 
 ## Optional Variables
@@ -109,6 +112,10 @@ hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
 # Instance Configuration
 instance_profile = "gx3d-160x1792x8gaudi3"  # Intel Gaudi instance
 boot_volume_size = 250                       # GB
+
+# Version Control
+solution_version = "release-2.0.0"         # Git tag or branch (default: "release-2.0.0")
+                                            # Examples: "release-2.0.0", "release-1.5.0", "main"
 
 # Model Configuration (Intel Gaudi optimized)
 deployment_type       = "hpu"

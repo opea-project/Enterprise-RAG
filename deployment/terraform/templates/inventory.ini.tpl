@@ -1,8 +1,4 @@
-[local]
-localhost ansible_connection=local ansible_user=${ssh_user} ansible_python_interpreter=/tmp/Enterprise-RAG/deployment/erag-venv/bin/python3
-
-[all]
-${instance_name} ansible_host=${host_ip} ansible_ssh_private_key_file=/home/ubuntu/.ssh/ansible
+${instance_name} ansible_connection=local ansible_user=${ssh_user} ansible_python_interpreter=/home/ubuntu/erag-venv/bin/python3
 
 # Define node groups
 [kube_control_plane]

@@ -72,12 +72,7 @@ const handleSummaryStreamResponse = async (
 
           // extract chunk of text from event data message
           let newTextChunk = event.slice(6);
-          let quoteRegex = /(?<!\\)'/g;
-          if (newTextChunk.startsWith('"')) {
-            quoteRegex = /"/g;
-          }
           newTextChunk = newTextChunk
-            .replace(quoteRegex, "")
             .replace(/\\t/g, "  \t")
             .replace(/\\n\\n/g, "  \n\n")
             .replace(/\\n/g, "  \n");

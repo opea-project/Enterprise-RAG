@@ -15,6 +15,13 @@ This vLLM Model Server delivers high-performance Large Language Model inference 
 
 This service integrates with OPEA ERAG LLM Microservice.
 
+## Disclaimer
+
+This container image is intended for demo purposes only and not intended for production use.
+To receive expanded security maintenance from Canonical on the Ubuntu base layer,
+you may follow the [how-to guide to enable Ubuntu Pro in a Dockerfile](https://documentation.ubuntu.com/pro-client/en/docs/howtoguides/enable_in_dockerfile/) 
+which will require the image to be rebuilt.
+
 ## License
 
 OPEA ERAG is licensed under the Apache License, Version 2.0.

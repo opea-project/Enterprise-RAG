@@ -1,1 +1,1 @@
-Intel® AI for Enterprise RAG Late Chunking Microservice for enhanced embedding quality through embed-then-chunk approach.
+Intel® AI for Enterprise RAG Late Chunking Microservice for enhanced embedding quality.

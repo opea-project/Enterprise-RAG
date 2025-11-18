@@ -10,7 +10,7 @@ pgvector:
   enabled: false
   image:
     repository: "pgvector/pgvector"
-    tag: "pg18-trixie"
+    tag: "0.8.1-pg18-trixie"
   persistence:
     enabled: true
     size: "10Gi"

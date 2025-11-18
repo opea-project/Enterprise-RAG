@@ -1,4 +1,25 @@
 ---
+- name: Pre-fetch role defaults for early availability
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../roles/application/{{ item }}/defaults/main.yaml"
+  loop:
+    - istio
+    - ingress
+    - keycloak
+    - apisix
+    - telemetry
+    - ui
+    - vector_databases
+    - edp
+    - fingerprint
+    - chat_history
+    - nri_balloons
+    - pipeline
+    - tdx
+    - rag_utils
+  tags:
+    - config
+
 - name: Set default ansible fact
   ansible.builtin.set_fact:
     config_valid: true
@@ -31,19 +52,15 @@
   tags:
     - config
   block:
-    - name: Resolve kubeconfig path
-      ansible.builtin.set_fact:
-        resolved_kubeconfig: "{{ kubeconfig | default(inventory_dir + '/artifacts/admin.conf') }}"
-
     - name: Check if kubeconfig exists
       ansible.builtin.stat:
-        path: "{{ resolved_kubeconfig }}"
+        path: "{{ kubeconfig }}"
       register: kubeconfig_stat
 
     - name: Set kubeconfig issues if file doesn't exist
       ansible.builtin.set_fact:
         config_valid: false
-        kubeconfig_issues: "{{ kubeconfig_issues | default([]) + ['Kubeconfig file not found at ' + resolved_kubeconfig] }}"
+        kubeconfig_issues: "{{ kubeconfig_issues | default([]) + ['Kubeconfig file not found at ' + kubeconfig] }}"
       when: not kubeconfig_stat.stat.exists
 
 # Check CSI driver type
@@ -69,34 +86,6 @@
       loop:
         - { issue: "Certificate path not specified", value: "{{ certs.pathToCert | default('') }}" }
         - { issue: "Certificate key path not specified", value: "{{ certs.pathToKey | default('') }}" }
-
-# Check if proxy settings are properly configured
-- name: Check proxy configuration
-  when: (httpProxy is defined and httpProxy | length > 0) or (httpsProxy is defined and httpsProxy | length > 0)
-  tags:
-    - config
-  block:
-    - name: Set required no_proxy values
-      ansible.builtin.set_fact:
-        required_no_proxy_values: >-
-          {{
-            ["localhost", ".svc", ".monitoring"] +
-            ([".monitoring-traces"] if telemetry.traces.enabled else [])
-          }}
-
-    - name: Set current no_proxy values
-      ansible.builtin.set_fact:
-        current_no_proxy_values: "{{ (noProxy | default('') | string).split(',') }}"
-
-    - name: Check for missing no_proxy values
-      ansible.builtin.set_fact:
-        missing_no_proxy_values: "{{ missing_no_proxy_values | default([]) + [item] }}"
-      when: item not in current_no_proxy_values
-      loop: "{{ required_no_proxy_values }}"
-
-    - name: Update config validity based on no_proxy check
-      ansible.builtin.set_fact:
-        config_valid: "{{ config_valid and (missing_no_proxy_values is not defined or missing_no_proxy_values | length == 0) }}"
 
 # Check late chunking and embedding model compatibility
 - name: Check late chunking and embedding model compatibility
@@ -129,11 +118,6 @@
       {% if missing_fields is defined and missing_fields|length > 0 %}
       - Missing required fields: {{ missing_fields | join(', ') }}
       {% endif %}
-      {% if missing_no_proxy_values is defined and missing_no_proxy_values|length > 0 %}
-      - Missing required no_proxy values: {{ missing_no_proxy_values | join(',') }}
-        When using HTTP/HTTPS proxies, these values must be in your noProxy setting to ensure internal communication works properly.
-        Please update your config.yaml to include these values.
-      {% endif %}
       {% if kubeconfig_issues is defined and kubeconfig_issues|length > 0 %}
       - Kubeconfig issues:
         {% for issue in kubeconfig_issues %}
@@ -151,10 +135,7 @@
       {% endif %}
       {% else %}
       VALIDATION PASSED: Configuration is valid
-      {% if httpProxy is defined and httpProxy | length > 0 or httpsProxy is defined and httpsProxy | length > 0 %}
-      - Proxy configuration is valid with required no_proxy values
-      {% endif %}
-      - Kubeconfig: {{ resolved_kubeconfig }} exists.
+      - Kubeconfig: {{ kubeconfig }} exists.
       {% if huggingToken is defined and huggingToken | length > 0 %}
       - Hugging Face token is configured properly
       {% endif %}

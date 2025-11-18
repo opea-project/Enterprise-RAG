@@ -6,10 +6,7 @@
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     log_dir: "{{ deployment_dir }}/ansible-logs"
-    kubeconfig: "{{ inventory_dir + '/artifacts/admin.conf' }}"
     secure_logs: true
-  environment:
-    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
   tasks:
     - name: Validate configuration
       ansible.builtin.include_role:

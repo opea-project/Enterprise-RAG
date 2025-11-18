@@ -78,7 +78,7 @@
     path: "~/.docker/"
     state: directory
     mode: 0777
-  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure
 
@@ -87,7 +87,7 @@
     src: templates/config.json.j2
     dest: "~/.docker/config.json"
     mode: 0777
-  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure
 
@@ -109,14 +109,14 @@
     src: templates/daemon.json.j2
     dest: /etc/docker/daemon.json
     mode: '0644'
-  when: httpProxy != "" or httpsProxy != "" or noProxy != "" or insecure_registry != ""
+  when: httpProxy != "" or httpsProxy != "" or insecure_registry != ""
   tags:
     - configure
 
 - name: Reload systemd manager configuration
   become: true
   ansible.builtin.command: systemctl daemon-reload
-  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure
 
@@ -126,6 +126,6 @@
     name: docker
     state: restarted
     enabled: true
-  when: httpProxy != "" or httpsProxy != "" or noProxy != ""
+  when: httpProxy != "" or httpsProxy != ""
   tags:
     - configure

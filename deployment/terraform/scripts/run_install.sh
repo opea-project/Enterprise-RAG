@@ -30,7 +30,7 @@ INSTALL_DEBUG_TOOLS=false      # Install debug tools (k9s, etc.)
 # Repository configuration
 REPO_URL="https://github.com/opea-project/Enterprise-RAG.git"
 REPO_DIR="/tmp/Enterprise-RAG"
-GIT_BRANCH="main"
+GIT_BRANCH="release-1.5.0"
 DEPLOYMENT_DIR="${REPO_DIR}/deployment"
 INVENTORY_DIR="${DEPLOYMENT_DIR}/inventory"
 CLUSTER_CONFIG_DIR="${INVENTORY_DIR}/cluster"

@@ -1,9 +1,15 @@
 name: "Create slim release tag"
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag for slim (e.g. release-1.5.0)"
+        required: true
+        type: string
+
+  release:
+    types: [ published ]
 
 jobs:
   run:
@@ -11,7 +17,7 @@ jobs:
     runs-on: [ innersource.prod.amr.dind ]
     container: cache-registry.caas.intel.com/cache/library/ubuntu:24.04
     env:
-      BASE_TAG: "rc3-2.0.0"
+      BASE_TAG: "${{ inputs.tag || github.event.release.tag_name }}"
     steps:
       - name: Install system dependencies
         run: apt update && apt install -y wget git curl

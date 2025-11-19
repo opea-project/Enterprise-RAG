@@ -1,4 +1,4 @@
-name: "Create slim release tag"
+name: "Create slim tag"
 
 on:
   workflow_dispatch:

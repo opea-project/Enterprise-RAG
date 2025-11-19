@@ -39,7 +39,7 @@ jobs:
       - name: Create slim tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./.github/slim-release/slim-release.sh ${{ env.BASE_TAG }}
+        run: ./.github/slim-tags/run.sh ${{ env.BASE_TAG }}
 
       - name: Push slim tag
         env:

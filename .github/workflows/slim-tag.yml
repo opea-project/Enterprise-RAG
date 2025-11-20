@@ -1,15 +1,9 @@
 name: "Create slim tag"
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag for slim (e.g. release-1.5.0)"
-        required: true
-        type: string
-
-  release:
-    types: [ published ]
+  pull_request:
+    branches:
+      - main
 
 jobs:
   run:
@@ -19,7 +13,7 @@ jobs:
       run:
         shell: bash
     env:
-      BASE_TAG: "${{ inputs.tag || github.event.release.tag_name }}"
+      BASE_TAG: "release-1.4.0"
     steps:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y wget git curl

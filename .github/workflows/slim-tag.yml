@@ -22,7 +22,7 @@ jobs:
       BASE_TAG: "${{ inputs.tag || github.event.release.tag_name }}"
     steps:
       - name: Install system dependencies
-        run: apt update && apt install -y wget git curl
+        run: sudo apt-get update && sudo apt-get install -y wget git curl
 
       - name: Checkout
         uses: actions/checkout@v4

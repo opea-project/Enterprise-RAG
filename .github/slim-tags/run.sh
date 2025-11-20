@@ -1,0 +1,164 @@
+#!/bin/bash
+
+# Simple script to create a slim release tag by keeping only deployment/terraform directory
+# Excludes everything except deployment/terraform to keep the release minimal
+
+set -e
+
+# Configuration
+KEEP_DIR="deployment/terraform"
+SLIM_SUFFIX="-slim"
+
+# Usage
+if [[ $# -ne 1 ]]; then
+    echo "Usage: $0 <tag-name>"
+    echo "Creates a slim version of the tag keeping only ${KEEP_DIR}"
+    echo ""
+    echo "Example: $0 release-1.5.0"
+    echo "Creates: release-1.5.0-slim"
+    exit 1
+fi
+
+TAG_NAME="$1"
+SLIM_TAG_NAME="${TAG_NAME}${SLIM_SUFFIX}"
+
+# Check if we're in a git repo
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Change to git repository root directory
+GIT_ROOT=$(git rev-parse --show-toplevel)
+echo "Changing to git repository root: $GIT_ROOT"
+cd "$GIT_ROOT" || {
+    echo "Error: Failed to change to git repository root"
+    exit 1
+}
+
+# Check if original tag exists
+if ! git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+    echo "Error: Tag '$TAG_NAME' does not exist"
+    exit 1
+fi
+
+# Check if slim tag already exists
+if git rev-parse --verify "refs/tags/$SLIM_TAG_NAME" >/dev/null 2>&1; then
+    echo "Error: Slim tag '$SLIM_TAG_NAME' already exists"
+    echo "Delete it first with: git tag -d $SLIM_TAG_NAME"
+    exit 1
+fi
+
+echo "Creating slim tag '$SLIM_TAG_NAME' from '$TAG_NAME'..."
+echo "Keeping only directory: $KEEP_DIR"
+
+TEMP_BRANCH="temp-slim-$$"
+git checkout -b "$TEMP_BRANCH" "$TAG_NAME"
+
+echo ""
+echo "Debug: Analyzing directory structure in $TAG_NAME..."
+git ls-tree -r --name-only "$TAG_NAME" | cut -d'/' -f1 | sort -u | while read -r dir; do
+    file_count=$(git ls-tree -r --name-only "$TAG_NAME" | grep "^$dir/" | wc -l)
+    echo "Directory: $dir/ ($file_count files)"
+done
+echo ""
+
+# Find all files NOT in the keep directory
+echo "Finding files to remove (everything except $KEEP_DIR)..."
+REMOVED_FILES="/tmp/removed_files_$$"
+
+# Get all files from the tag and filter out the keep directory
+git ls-tree -r --name-only "$TAG_NAME" | while read -r file; do
+    if [[ ! "$file" =~ ^${KEEP_DIR}/ ]]; then
+        echo "$file" >> "$REMOVED_FILES"
+        echo "Will remove: $file"
+    fi
+done
+
+# Count how many files will be removed
+if [[ -f "$REMOVED_FILES" ]]; then
+    REMOVED_COUNT=$(wc -l < "$REMOVED_FILES")
+    echo "Found $REMOVED_COUNT files to remove (keeping only $KEEP_DIR)"
+
+    # Remove files not in the keep directory
+    while read -r file; do
+        if [[ -f "$file" ]]; then
+            git rm "$file" 2>/dev/null || true
+        fi
+    done < "$REMOVED_FILES"
+
+    # Remove empty directories
+    find . -type d -empty -not -path "./.git*" -delete 2>/dev/null || true
+else
+    REMOVED_COUNT=0
+    echo "No files to remove (only $KEEP_DIR found)"
+fi
+
+rm -f "$REMOVED_FILES"
+echo "Processed files, removed: $REMOVED_COUNT"
+
+# Commit changes if any files were removed
+if ! git diff --cached --quiet; then
+    git commit -m "Create slim release - keep only ${KEEP_DIR}
+
+Original tag: $TAG_NAME
+Only ${KEEP_DIR} directory is included in this slim release.
+For complete sources, use the original tag: $TAG_NAME"
+
+    echo "Removed all files except those in $KEEP_DIR"
+else
+    echo "No files to remove (only $KEEP_DIR found)"
+fi
+
+# Create the slim tag
+git tag -a "$SLIM_TAG_NAME" -m "Slim release based on $TAG_NAME
+
+Contains only ${KEEP_DIR} directory for deployment purposes.
+Original tag: $TAG_NAME"
+
+# Clean up
+git checkout -
+git branch -D "$TEMP_BRANCH"
+
+echo ""
+echo "✓ Created slim tag: $SLIM_TAG_NAME"
+echo "✓ Push with: git push origin $SLIM_TAG_NAME"
+
+# Show size comparison
+echo ""
+echo "Size comparison:"
+
+# Ensure we're in git root for archive operations
+cd "$GIT_ROOT" || {
+    echo "Warning: Failed to change to git root for size comparison"
+}
+
+original_size=$(git archive --format=tar "$TAG_NAME" | wc -c)
+slim_size=$(git archive --format=tar "$SLIM_TAG_NAME" | wc -c)
+original_kb=$((original_size / 1024))
+slim_kb=$((slim_size / 1024))
+
+echo "Original ($TAG_NAME): ${original_kb}KB"
+echo "Slim ($SLIM_TAG_NAME): ${slim_kb}KB"
+
+if (( slim_size < original_size )); then
+    saved=$((original_size - slim_size))
+    saved_kb=$((saved / 1024))
+    echo "Saved: ${saved_kb}KB"
+fi
+
+# Show what's included in the slim release
+echo ""
+echo "Files included in slim release ($SLIM_TAG_NAME):"
+git ls-tree -r --name-only "$SLIM_TAG_NAME" | while read -r file; do
+    file_size=$(git cat-file -s "$SLIM_TAG_NAME:$file" 2>/dev/null || echo 0)
+    size_kb=$((file_size / 1024))
+    if (( size_kb > 0 )); then
+        printf "%4dKB  %s\n" "$size_kb" "$file"
+    else
+        printf "%4dB   %s\n" "$file_size" "$file"
+    fi
+done | sort -nr
+
+echo ""
+echo "Slim release contains only the $KEEP_DIR directory."

@@ -1,0 +1,47 @@
+name: "Create slim tag"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag for slim (e.g. release-1.5.0)"
+        required: true
+        type: string
+
+  release:
+    types: [ published ]
+
+jobs:
+  run:
+    name: "Run"
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      BASE_TAG: "${{ inputs.tag || github.event.release.tag_name }}"
+    steps:
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y wget git curl
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch complete history
+          fetch-tags: true  # Fetch all tags
+
+      - name: Configure Git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Create slim tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./.github/slim-tags/run.sh ${{ env.BASE_TAG }}
+
+      - name: Push slim tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git push origin tag ${{ env.BASE_TAG }}-slim

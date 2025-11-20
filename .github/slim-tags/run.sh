@@ -1,18 +1,20 @@
 #!/bin/bash
 
 # Simple script to create a slim release tag by keeping only deployment/terraform directory
-# Excludes everything except deployment/terraform to keep the release minimal
+# and the single file ibm_catalog.json
+# Excludes everything except these to keep the release minimal
 
 set -e
 
 # Configuration
 KEEP_DIR="deployment/terraform"
+KEEP_FILE="ibm_catalog.json"
 SLIM_SUFFIX="-slim"
 
 # Usage
 if [[ $# -ne 1 ]]; then
     echo "Usage: $0 <tag-name>"
-    echo "Creates a slim version of the tag keeping only ${KEEP_DIR}"
+    echo "Creates a slim version of the tag keeping only ${KEEP_DIR} and ${KEEP_FILE}"
     echo ""
     echo "Example: $0 release-1.5.0"
     echo "Creates: release-1.5.0-slim"
@@ -50,37 +52,34 @@ if git rev-parse --verify "refs/tags/$SLIM_TAG_NAME" >/dev/null 2>&1; then
 fi
 
 echo "Creating slim tag '$SLIM_TAG_NAME' from '$TAG_NAME'..."
-echo "Keeping only directory: $KEEP_DIR"
+echo "Keeping only directory: $KEEP_DIR and file: $KEEP_FILE"
 
 TEMP_BRANCH="temp-slim-$$"
 git checkout -b "$TEMP_BRANCH" "$TAG_NAME"
 
 echo ""
-echo "Debug: Analyzing directory structure in $TAG_NAME..."
+echo "Debug: Analyzing top-level directory structure in $TAG_NAME..."
 git ls-tree -r --name-only "$TAG_NAME" | cut -d'/' -f1 | sort -u | while read -r dir; do
     file_count=$(git ls-tree -r --name-only "$TAG_NAME" | grep "^$dir/" | wc -l)
     echo "Directory: $dir/ ($file_count files)"
 done
 echo ""
 
-# Find all files NOT in the keep directory
-echo "Finding files to remove (everything except $KEEP_DIR)..."
+echo "Finding files to remove (everything except $KEEP_DIR and $KEEP_FILE)..."
 REMOVED_FILES="/tmp/removed_files_$$"
 
-# Get all files from the tag and filter out the keep directory
 git ls-tree -r --name-only "$TAG_NAME" | while read -r file; do
-    if [[ ! "$file" =~ ^${KEEP_DIR}/ ]]; then
-        echo "$file" >> "$REMOVED_FILES"
-        echo "Will remove: $file"
+    if [[ "$file" == "$KEEP_FILE" || "$file" =~ ^${KEEP_DIR}/ ]]; then
+        continue
     fi
+    echo "$file" >> "$REMOVED_FILES"
+    echo "Will remove: $file"
 done
 
 # Count how many files will be removed
 if [[ -f "$REMOVED_FILES" ]]; then
     REMOVED_COUNT=$(wc -l < "$REMOVED_FILES")
-    echo "Found $REMOVED_COUNT files to remove (keeping only $KEEP_DIR)"
-
-    # Remove files not in the keep directory
+    echo "Found $REMOVED_COUNT files to remove (keeping only $KEEP_DIR and $KEEP_FILE)"
     while read -r file; do
         if [[ -f "$file" ]]; then
             git rm "$file" 2>/dev/null || true
@@ -91,7 +90,7 @@ if [[ -f "$REMOVED_FILES" ]]; then
     find . -type d -empty -not -path "./.git*" -delete 2>/dev/null || true
 else
     REMOVED_COUNT=0
-    echo "No files to remove (only $KEEP_DIR found)"
+    echo "No files to remove (only $KEEP_DIR and $KEEP_FILE found)"
 fi
 
 rm -f "$REMOVED_FILES"
@@ -99,21 +98,20 @@ echo "Processed files, removed: $REMOVED_COUNT"
 
 # Commit changes if any files were removed
 if ! git diff --cached --quiet; then
-    git commit -m "Create slim release - keep only ${KEEP_DIR}
+    git commit -m "Create slim release - keep only ${KEEP_DIR} and ${KEEP_FILE}
 
 Original tag: $TAG_NAME
-Only ${KEEP_DIR} directory is included in this slim release.
+Only ${KEEP_DIR} directory and file ${KEEP_FILE} are included in this slim release.
 For complete sources, use the original tag: $TAG_NAME"
-
-    echo "Removed all files except those in $KEEP_DIR"
+    echo "Removed all files except those in $KEEP_DIR and $KEEP_FILE"
 else
-    echo "No files to remove (only $KEEP_DIR found)"
+    echo "No files to remove (only $KEEP_DIR and $KEEP_FILE found)"
 fi
 
 # Create the slim tag
 git tag -a "$SLIM_TAG_NAME" -m "Slim release based on $TAG_NAME
 
-Contains only ${KEEP_DIR} directory for deployment purposes.
+Contains only ${KEEP_DIR} directory and ${KEEP_FILE} for deployment purposes.
 Original tag: $TAG_NAME"
 
 # Clean up
@@ -161,4 +159,4 @@ git ls-tree -r --name-only "$SLIM_TAG_NAME" | while read -r file; do
 done | sort -nr
 
 echo ""
-echo "Slim release contains only the $KEEP_DIR directory."
+echo "Slim release contains only the $KEEP_DIR directory and file $KEEP_FILE."

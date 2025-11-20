@@ -58,6 +58,12 @@ export const CopyButton = ({
   };
 
   const tooltipPlacement = forCodeSnippet ? "right" : "bottom";
+  const tooltipText =
+    copyState === "idle"
+      ? "Copy"
+      : copyState === "success"
+        ? "Copied!"
+        : "Error";
   const icon: IconName = copyState === "idle" ? "copy" : `copy-${copyState}`;
 
   const className = classNames("copy-btn", {
@@ -66,7 +72,7 @@ export const CopyButton = ({
 
   return (
     <Tooltip
-      title="Copy"
+      title={tooltipText}
       placement={tooltipPlacement}
       aria-label="Copy"
       trigger={

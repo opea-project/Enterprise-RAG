@@ -1,7 +1,10 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.11-slim
+ARG python_version=3.11
+ARG python_image_version=${python_version}-slim-trixie
+
+FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
@@ -20,8 +23,8 @@ RUN apt-get -y update                           \
  && apt-get clean
 
 RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/libtcmalloc.so
-RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
-RUN rm -rf /usr/local/lib/python3.11/site-packages/*
+RUN rm -rf /home/user/.local/lib/python${python_version}/site-packages/*
+RUN rm -rf /usr/local/lib/python${python_version}/site-packages/*
 
 # Create user and folders
 RUN useradd -u 1000 -m -s /bin/bash user        \
@@ -47,10 +50,6 @@ COPY --chown=user:user model/reranks_handler.py /home/user/utils/reranks_handler
 COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yaml
 RUN chmod +x /home/user/entrypoint.sh
 
-# Intel specific environment variables
-ENV KMP_SETTINGS=1
-ENV KMP_AFFINITY=granularity=fine,compact,1,0
-ENV KMP_BLOCKTIME=1
 # jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
 ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
 

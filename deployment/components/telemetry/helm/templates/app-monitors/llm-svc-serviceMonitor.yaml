@@ -10,7 +10,7 @@ metadata:
 spec:
   namespaceSelector:
     matchNames:
-    - chatqa
+    - {{ .Values.namespace | default "chatqa" }}
   selector:
     matchLabels:
       app.kubernetes.io/instance: llm-usvc

@@ -2,9 +2,5 @@ FROM chatqna-conversation-ui-base:latest
 
 COPY compliance /compliance
 
-WORKDIR /compliance/ospdt
-COPY Dockerfile .
-COPY package-lock.json .
-
 # CMD from base Dockerfile
 CMD ["nginx", "-g", "daemon off;"]

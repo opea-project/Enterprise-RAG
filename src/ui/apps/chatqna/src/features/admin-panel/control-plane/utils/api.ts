@@ -24,7 +24,7 @@ export const parseServicesParameters = (
     typical_p,
     temperature,
     repetition_penalty,
-    streaming,
+    stream,
     search_type,
     k,
     user_prompt_template,
@@ -47,7 +47,7 @@ export const parseServicesParameters = (
       typical_p,
       temperature,
       repetition_penalty,
-      streaming,
+      stream,
     },
     retrieverArgs: {
       search_type: search_type as RetrieverSearchType,

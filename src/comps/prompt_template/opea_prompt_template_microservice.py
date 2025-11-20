@@ -34,7 +34,8 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 # Initialize an instance of the OPEALlm class with environment variables.
-opea_prompt_template = OPEAPromptTemplate(chat_history_endpoint=sanitize_env(os.getenv("CHAT_HISTORY_ENDPOINT", None)))
+opea_prompt_template = OPEAPromptTemplate(chat_history_endpoint=sanitize_env(os.getenv("CHAT_HISTORY_ENDPOINT", None)),
+                                          prompt_template_language=os.getenv("PROMPT_TEMPLATE_LANGUAGE", "en"))
 
 async def get_access_token(request: Request) -> str:
     access_token = request.headers.get('Authorization')

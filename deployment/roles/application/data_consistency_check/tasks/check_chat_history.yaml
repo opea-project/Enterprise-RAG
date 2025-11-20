@@ -1,0 +1,80 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Check Chat History data consistency
+  tags:
+    - pre-upgrade
+    - data-consistency
+  block:
+    - name: Get Chat History MongoDB deployment name
+      kubernetes.core.k8s_info:
+        kind: StatefulSet
+        namespace: "{{ chat_history.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=chat-history-mongodb-postgresql
+          - app.kubernetes.io/instance=chat-history
+      register: chat_history_mongodb_deployment
+
+    - name: Get Chat History MongoDB pod name
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ chat_history.namespace }}"
+        label_selectors:
+          - app.kubernetes.io/name=chat-history-mongodb-postgresql
+          - app.kubernetes.io/instance=chat-history
+      register: chat_history_mongodb_pods
+
+    - name: Set Chat History MongoDB pod name
+      ansible.builtin.set_fact:
+        chat_history_mongodb_pod: "{{ chat_history_mongodb_pods.resources[0].metadata.name }}"
+        chat_history_mongodb_deployment_name: "{{ chat_history_mongodb_deployment.resources[0].metadata.name if chat_history_mongodb_deployment.resources else 'chat-history-mongodb' }}"
+      when: chat_history_mongodb_pods.resources | length > 0
+
+    - name: Query database
+      no_log: "{{ secure_logs }}"
+      block:
+        - name: Check if chat history data table exists
+          kubernetes.core.k8s_exec:
+            namespace: "{{ chat_history.namespace }}"
+            pod: "{{ chat_history_mongodb_pod }}"
+            command: >
+              bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '"'"'documentdb_data'"'"' AND table_name = '"'"'documents_2'"'"';"'
+          register: chat_history_table_exists
+          when: chat_history_mongodb_pod is defined
+          failed_when: false
+
+        - name: Query MongoDB for number of conversations (using PostgreSQL backend with environment)
+          kubernetes.core.k8s_exec:
+            namespace: "{{ chat_history.namespace }}"
+            pod: "{{ chat_history_mongodb_pod }}"
+            command: >
+              bash -c 'export PGPASSWORD="$POSTGRES_PASSWORD"; psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT COUNT(DISTINCT object_id) FROM documentdb_data.documents_2;"'
+          register: chat_history_conversations_count
+          when:
+            - chat_history_mongodb_pod is defined
+            - chat_history_table_exists is defined
+            - chat_history_table_exists.stdout is defined
+            - chat_history_table_exists.stdout | trim | int > 0
+
+    - name: Set Chat History data consistency facts
+      ansible.builtin.set_fact:
+        chat_history_conversations_total: "{{ chat_history_conversations_count.stdout | trim | default('0') }}"
+      when:
+        - chat_history_mongodb_pod is defined
+        - chat_history_conversations_count is defined
+        - chat_history_conversations_count.stdout is defined
+
+    - name: Set default Chat History count when no data exists
+      ansible.builtin.set_fact:
+        chat_history_conversations_total: "0"
+      when:
+        - chat_history_mongodb_pod is defined
+        - chat_history_conversations_total is not defined
+
+    - name: Save Chat History data to facts for YAML report
+      ansible.builtin.set_fact:
+        chat_history_report_data:
+          component: "{{ chat_history_mongodb_deployment_name }}"
+          conversations_count: "{{ chat_history_conversations_total | int }}"
+      when: chat_history_mongodb_pod is defined

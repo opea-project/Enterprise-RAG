@@ -2,12 +2,16 @@
 deployment/**/bin/
 deployment/*.out
 **/charts/*.tgz
+**/tmpcharts*/*.tgz
 deployment/*.key
 deployment/*.crt
 deployment/logs
 deployment/ansible-logs
 deployment/inventory/*
+upgrade/metadata
+upgrade/reports
 !deployment/inventory/sample
+!deployment/inventory/localhost
 
 # Telemetry
 /deployment/components/telemetry/helm/example/pcm/
@@ -61,4 +65,6 @@ deployment/default_credentials.txt
 **/tmp_corpus.txt
 src/tests/e2e/evals/evaluation/rag_eval/examples/output/
 
-
+# UI test framework dependencies and results
+src/tests/node_modules
+test-results

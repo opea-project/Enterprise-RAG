@@ -12,11 +12,16 @@ import os
 import time
 import uuid
 
+from constants import DATAPREP_UPLOAD_DIR
 from validation.buildcfg import cfg
-from constants import TEST_FILES_DIR
+
+# Skip all tests if edp is not deployed
+if not cfg.get("edp", {}).get("enabled"):
+    pytestmark = pytest.mark.skip(reason="EDP is not deployed")
+
 
 logger = logging.getLogger(__name__)
-IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding"]
+IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "late_chunking", "embedding"]
 
 
 @pytest.fixture(autouse=True)
@@ -114,7 +119,7 @@ def test_edp_delete_file_during_ingestion(edp_helper):
 def test_edp_upload_unsupported_file(edp_helper):
     """Upload a file with an unsupported file type and check that it is in error state"""
     file = "HelloWorld.c"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
     response = edp_helper.generate_presigned_url(file)
     response = edp_helper.upload_file(file_path, response.json().get("url"))
     assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
@@ -310,7 +315,7 @@ def test_edp_upload_invalid_body(edp_helper):
 def test_edp_upload_corrupted_file(edp_helper):
     """Upload a corrupted file and check that it is in error state"""
     file = "corrupt_file.docx"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
     response = edp_helper.generate_presigned_url(file)
     response = edp_helper.upload_file(file_path, response.json().get("url"))
     assert response.status_code == 200, f"Failed to upload file. Response: {response.text}"
@@ -433,7 +438,7 @@ def test_edp_regular_user_has_no_access_to_api(edp_helper, chatqa_api_helper, te
 
     # Test upload file API
     file = "story.txt"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
     response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
     response = edp_helper.upload_file(file_path, response.json().get("url"))
     assert response.status_code == 403, fail_msg
@@ -452,9 +457,9 @@ def test_edp_rbac(edp_helper, chatqa_api_helper, temporarily_remove_regular_user
         pytest.skip("EDP RBAC is disabled. Skipping the test")
 
     file = "file_in_admin_bucket.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="only-admin")
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file), bucket="only-admin")
     file = "file_in_public_bucket.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file), bucket="default")
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file), bucket="default")
 
     # Check that regular user has access only to the file in public bucket
     response = chatqa_api_helper.call_chatqa("How many Hot Wheels cars does Fabianoooo have?", as_user=True)

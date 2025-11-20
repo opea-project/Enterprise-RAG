@@ -18,7 +18,7 @@ import ServiceArgumentTextArea from "@/features/admin-panel/control-plane/compon
 import {
   PromptTemplateArgs,
   promptTemplateFormConfig,
-} from "@/features/admin-panel/control-plane/config/chat-qna-graph/prompt-template";
+} from "@/features/admin-panel/control-plane/config/chat-qna-graph/promptTemplate";
 import { ChangeArgumentsRequest } from "@/features/admin-panel/control-plane/types/api";
 import { validatePromptTemplateForm } from "@/features/admin-panel/control-plane/validators/promptTemplateInput";
 

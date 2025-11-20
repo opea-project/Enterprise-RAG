@@ -183,3 +183,49 @@ Helper for adding environment variables and env files
 {{- printf "%s/%s:%s" (index $values "images" $filename "repository") (index $values "images" $filename "image") (index $values "images" $filename "tag") -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Init container that waits for balloons DaemonSet to be ready
+Usage: {{ include "manifest.balloons.initContainer" . }}
+*/}}
+{{- define "manifest.balloons.initContainer" -}}
+{{- if .Values.balloons.enabled }}
+- name: wait-for-balloons
+  image: {{ include "manifest.image" (list "init-container" .Values) }}
+  securityContext:
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  command:
+    - /bin/sh
+    - -c
+    - |
+      set -e
+      echo "Waiting for all {{ .Values.balloons.chart_name }} DaemonSet pods to be ready..."
+      SECONDS=0
+      TIMEOUT={{ .Values.balloons.wait_timeout | default 300 }}
+      while true; do
+        DESIRED=$(kubectl get daemonset {{ .Values.balloons.chart_name }} -n {{ .Values.balloons.namespace }} -o jsonpath="{.status.desiredNumberScheduled}")
+        READY=$(kubectl get daemonset {{ .Values.balloons.chart_name }} -n {{ .Values.balloons.namespace }} -o jsonpath="{.status.numberReady}")
+        if [ "$DESIRED" = "$READY" ] && [ "$DESIRED" != "" ]; then
+          echo "All pods ready: $READY/$DESIRED"
+          break
+        fi
+        if [ "$SECONDS" -ge "$TIMEOUT" ]; then
+          echo "Timeout waiting for all pods to be ready ($READY/$DESIRED)"
+          exit 1
+        fi
+        echo "Waiting... ($READY/$DESIRED ready)"
+        sleep 5
+      done
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+{{- end -}}
+{{- end -}}

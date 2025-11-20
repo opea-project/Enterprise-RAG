@@ -1,0 +1,31 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for vdb
+# These rules are checked FIRST (before default rules)
+# Using first-match logic: the first matching rule determines the action
+
+validation_rules:
+  # - path_regex: ".*release-values-yaml/redis"
+  #   data_regex: "\\s+enabled: true"
+  #   response: "approve"
+  #   note: "Approve switching to Redis standalone"
+
+  # - path_regex: ".*release-values-yaml/redis-cluster"
+  #   data_regex: "\\s+enabled: true"
+  #   response: "approve"
+  #   note: "Approve switching to Redis cluster"
+
+  - path_regex: ".*release-values-yaml/(redis|redis-cluster)$"
+    data_regex: "\\s+commonConfiguration:.*"
+    response: "approve"
+    note: "Approve changes in Redis common configuration"
+
+  - path_regex: ".*release-values-yaml/redis-cluster/redis$"
+    data_regex: "\\s+configmap:.*"
+    response: "approve"
+    note: "Approve changes in Redis common configuration"
+
+  - path_regex: ".*"
+    response: "reject"
+    note: "Uncategorized vdb changes require explicit approval"

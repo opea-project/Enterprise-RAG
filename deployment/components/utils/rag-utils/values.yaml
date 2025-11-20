@@ -1,0 +1,77 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+rag_watcher:
+  config:
+    # One of: cronjob, job
+    deploymentMode: "cronjob"
+    # CronJob schedule (every 2 minutes by default)
+    schedule: "*/2 * * * *"
+
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 2
+
+    # Pod scheduling
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+
+    # Resource requirements
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 3000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
+    containerSecurityContext:
+      capabilities:
+        drop:
+          - ALL
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+
+  data:
+    # Enable operation of rag watcher
+    watcher_enabled: true
+    # Label selector for nodes to watch (empty = all nodes)
+    node_selector: ""
+    # Whether to restart Istio services on reboot
+    refresh_istio: true
+    # Label selector for workloads to be skipped (not refreshed)
+    skip_workload_selector: ""
+    # When set to true, verification of workloads won't be performed after scaling (except for Istio)
+    disable_workload_verify: "true"
+    # Label selector for workloads to skip verification (but still refresh)
+    skip_verify_selector: "app.kubernetes.io/name in (otelcol-traces-collector)"
+    # Refresh strategy: rollout-restart or downscale-upscale
+    refresh_strategy: "downscale-upscale"
+    # Comma-separated list of app namespaces (if empty, use ns_selector)
+    app_namespaces: ""
+    # Namespace selector to find app namespaces
+    ns_selector: "erag-istio-protected=true"
+    # Stored node boot IDs for tracking reboots
+    node_boot_ids: ""
+
+# Service Account configuration
+serviceAccount:
+  create: true
+  name: ""
+
+# Image configuration
+alternateTagging: false
+images:
+  init-container:
+    repository: "docker.io/opea"
+    image: "erag-init-container"
+    tag: "1.5.0"
+    pullPolicy: IfNotPresent

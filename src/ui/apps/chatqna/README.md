@@ -125,3 +125,5 @@ Frontend files are served by nginx web server which uses `default.conf` for conf
 Configuration values required to run and access **Intel® AI for Enterprise RAG ChatQnA UI** are set during the deployment process.
 
 If you would like to setup custom domain, please change value for `FQDN` in your inventory `config.yaml` file.
+
+To change disclaimer displayed under text input on the Chat page, please change chatDisclaimerText value in [UI configuration variables for deployment](../../../../deployment/roles/application/ui/defaults/main.yaml).

@@ -1,4 +1,8 @@
 images:
+  docsumUsvc:
+    image_name: docsum
+    dockerfile_path: src/comps/docsum/impl/microservice/Dockerfile
+    docker_context: src
   dpguardUsvc:
     image_name: dpguard
     dockerfile_path: src/comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/Dockerfile
@@ -43,18 +47,30 @@ images:
     image_name: language-detection
     dockerfile_path: src/comps/language_detection/impl/microservice/Dockerfile
     docker_context: src
+  lateChunkingUsvc:
+    image_name: late-chunking
+    dockerfile_path: src/comps/late_chunking/impl/microservice/Dockerfile
+    docker_context: src
   llmUsvc:
     image_name: llm
     dockerfile_path: src/comps/llms/impl/microservice/Dockerfile
     docker_context: src
+  mosecEmbedding:
+    image_name: mosec_embedding
+    dockerfile_path: src/comps/embeddings/impl/model_server/mosec/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/mosec
   otelcolContribJournalctl:
     image_name: otelcol-contrib-journalctl
-    dockerfile_path: Dockerfile-otelcol-contrib-journalctl
+    dockerfile_path: deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl
     docker_context: deployment/components/telemetry/helm/charts/logs
   outGuardUsvc:
     image_name: out-guard
     dockerfile_path: src/comps/guardrails/llm_guard_output_guardrail/impl/microservice/Dockerfile
     docker_context: src
+  ovmsEmbedding:
+    image_name: ovms_embedding
+    dockerfile_path: src/comps/embeddings/impl/model_server/ovms/docker/Dockerfile
+    docker_context: src/comps/embeddings/impl/model_server/ovms
   promptTemplateUsvc:
     image_name: prompt_template
     dockerfile_path: src/comps/prompt_template/impl/microservice/Dockerfile
@@ -87,11 +103,19 @@ images:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
     docker_context: src/comps/reranks/impl/model_server/torchserve
-  uiUsvc:
+  chatQnAUiUsvc:
     image_name: chatqna-conversation-ui
     dockerfile_path: src/ui/apps/chatqna/Dockerfile
+    docker_context: src
+  docsumUiUsvc:
+    image_name: docsum-ui
+    dockerfile_path: src/ui/apps/docsum/Dockerfile
     docker_context: src
   vllmGaudi:
     image_name: vllm-gaudi
     dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/hpu/Dockerfile
     docker_context: src/comps/llms/impl/model_server/vllm
+  initContainer:
+    image_name: init-container
+    dockerfile_path: deployment/components/utils/init-container/Dockerfile
+    docker_context: deployment/components/utils/init-container

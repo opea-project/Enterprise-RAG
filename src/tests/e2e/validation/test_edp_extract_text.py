@@ -8,11 +8,17 @@ import logging
 import pytest
 import os
 
-logger = logging.getLogger(__name__)
+from validation.buildcfg import cfg
 
+# Skip all tests if edp is not deployed
+if not cfg.get("edp", {}).get("enabled"):
+    pytestmark = pytest.mark.skip(reason="EDP is not deployed")
+
+logger = logging.getLogger(__name__)
 FILES_DIR = "e2e/files/extract_text"
 FILES_PREFIX = "extract_text_test_"
-IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding"]
+IN_PROGRESS_STATUSES = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "late_chunking", "embedding"]
+
 
 @pytest.fixture(autouse=True)
 def cleanup(edp_helper):

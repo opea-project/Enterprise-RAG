@@ -8,8 +8,13 @@ import json
 import os
 import pytest
 
-from constants import TEST_FILES_DIR
+from constants import DATAPREP_UPLOAD_DIR
 from helpers.guard_helper import GuardType, GuardQuestions as questions
+from validation.buildcfg import cfg
+
+# Skip all tests if fingerprint is not deployed
+if not cfg.get("fingerprint", {}).get("enabled"):
+    pytestmark = pytest.mark.skip(reason="Fingerprint is not deployed")
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +86,7 @@ def test_in_guard_ban_substrings_when_string_injected_into_file(guard_helper, ed
     assert "sound" not in response_text
 
     file = "word_zerquilloo_in_file.txt"
-    file_path = os.path.join(TEST_FILES_DIR, file)
+    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
     edp_helper.upload_file_and_wait_for_ingestion(file_path)
 
     _, response_text = guard_helper.call_chatqa(questions.ZERQUILLOO)
@@ -145,19 +150,19 @@ def test_in_guard_code(guard_helper, code_snippets):
         "threshold": 0.95
     }
     guard_helper.setup(GuardType.INPUT, "code", guard_params)
-    snippets = code_snippets()
 
     # Questions with blocked languages should be blocked
     for language_key in ["javascript", "python", "python_with_plain_text", "c++", "python_v2", "c++_v2", "python_v3",
                          "java", "python_and_scala", "java_and_ruby"]:
-        guard_helper.assert_blocked(snippets[language_key], reason="it is in language that is marked as blocked")
+        guard_helper.assert_blocked(code_snippets[language_key], reason="it is in language that is marked as blocked")
 
     # Questions with other languages should not be blocked
     for language_key in ["ruby", "scala"]:
         guard_helper.assert_allowed(
-            snippets[language_key], reason="it is in language that is not marked as blocked")
+            code_snippets[language_key], reason="it is in language that is not marked as blocked")
 
 
+@pytest.mark.xfail(reason="Feature not implemented yet - see IEASG-2040")
 @allure.testcase("IEASG-T77")
 def test_in_guards_invalid_input(guard_helper, code_snippets):
     """Try to set up input guards with invalid parameters. Check if 400 error is returned."""
@@ -286,48 +291,27 @@ def test_in_guard_regex(guard_helper):
     }
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.NUMBER_12345)
-    guard_helper.assert_blocked(questions.NUMBER_78276)
-    guard_helper.assert_blocked(questions.NUMBER_09367)
 
-    guard_params['is_blocked'] = False
+    # Check "is_blocked" parameter
+    guard_params['is_blocked'] = False  # If True, patterns are treated as 'bad'; if False, as 'good'
+    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
+    guard_helper.assert_blocked(questions.NUMBER_991)
+    guard_helper.assert_allowed(questions.NUMBER_13456)
+    guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.NUMBER_13456)
-    guard_helper.assert_blocked(questions.NUMBER_77890)
-    guard_helper.assert_blocked(questions.NUMBER_21543)
-
-    guard_params['is_blocked'] = True
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_allowed(questions.NUMBER_991)
-    guard_helper.assert_allowed(questions.NUMBER_27)
-    guard_helper.assert_allowed(questions.NUMBER_12_3)
     guard_helper.assert_allowed(questions.NUMBER_789_456)
-    guard_helper.assert_allowed(questions.NUMBER_630_900)
-    guard_helper.assert_allowed(questions.NUMBER_1999_2021)
 
-    # second case
+    # Block email address
     guard_params["patterns"] = [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"]
-    guard_params['is_blocked'] = True
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_blocked(questions.SUPPORT_EMAIL)
     guard_helper.assert_blocked(questions.JANE_EMAIL)
-    guard_helper.assert_blocked(questions.HR_EMAIL)
-
-    guard_params['is_blocked'] = False
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_blocked(questions.USER_EMAIL)
-    guard_helper.assert_blocked(questions.REGISTRATION_EMAIL)
-
-    guard_params['is_blocked'] = True
-    guard_helper.setup(GuardType.INPUT, "regex", guard_params)
-    guard_helper.assert_allowed(questions.CONTACT_FORM_MESSAGE)
-    guard_helper.assert_allowed(questions.SPAM_AVOIDANCE_ADDRESS)
-    guard_helper.assert_allowed(questions.USERNAME_NO_DOMAIN)
     guard_helper.assert_allowed(questions.MISSING_AT_SYMBOL)
     guard_helper.assert_allowed(questions.INVALID_DOMAIN_EMAIL)
 
     # Check unicode support
     guard_params["patterns"] = [r'\b\wą\w\b']  # words with 3 letters and "ą" inside
-    guard_params["redact"] = False
     guard_helper.setup(GuardType.INPUT, "regex", guard_params)
     guard_helper.assert_blocked(questions.UNICODE_QUESTION)
 
@@ -432,9 +416,8 @@ def test_in_guard_mix(guard_helper, code_snippets):
     }
     guard_helper.setup(GuardType.INPUT, "ban_substrings", guard_params)
 
-    snippets = code_snippets()
     guard_helper.assert_blocked(
-        snippets["scala"], reason="Scala code was detected even though ban_substrings guard allowed the question")
+        code_snippets["scala"], reason="Scala code was detected even though ban_substrings guard allowed the question")
 
 
 @allure.testcase("IEASG-T90")

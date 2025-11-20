@@ -10,6 +10,9 @@ metadata:
 data:
   CHUNK_SIZE: {{ .Values.textSplitter.config.chunk_size | quote }}
   CHUNK_OVERLAP: {{ .Values.textSplitter.config.chunk_overlap | quote }}
+  LATE_CHUNK_SIZE: {{ .Values.textSplitter.config.late_chunk_size | quote }}
+  LATE_CHUNK_OVERLAP: {{ .Values.textSplitter.config.late_chunk_overlap | quote }}
   EMBEDDING_SERVICE_ENDPOINT: {{ .Values.textSplitter.config.embedding_service_endpoint | quote }}
   USE_SEMANTIC_CHUNKING: {{ .Values.textSplitter.config.use_semantic_chunking | quote }}
+  USE_LATE_CHUNKING: {{ .Values.textSplitter.config.use_late_chunking | quote }}
 {{- end }}

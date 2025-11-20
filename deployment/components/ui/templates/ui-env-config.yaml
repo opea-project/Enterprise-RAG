@@ -1,0 +1,35 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+{{- if eq .Values.type "chatqa" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ui-env-config
+data:
+  config.json: |
+    {
+      "KEYCLOAK_URL": "https://{{ .Values.extraUiConfigVars.keycloakDomainName }}",
+      "KEYCLOAK_REALM": "{{ .Values.extraUiConfigVars.keycloakRealm }}",
+      "KEYCLOAK_CLIENT_ID": "{{ .Values.extraUiConfigVars.keycloakClientId }}",
+      "ADMIN_RESOURCE_ROLE": "{{ .Values.extraUiConfigVars.adminResourceRole }}",
+      "GRAFANA_DASHBOARD_URL": "https://{{ .Values.extraUiConfigVars.grafanaDomainName }}",
+      "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}",
+      "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}",
+      "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}"
+    }
+{{- else if eq .Values.type "docsum" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ui-env-config
+data:
+  config.json: |
+    {
+      "KEYCLOAK_URL": "https://{{ .Values.extraUiConfigVars.keycloakDomainName }}",
+      "KEYCLOAK_REALM": "{{ .Values.extraUiConfigVars.keycloakRealm }}",
+      "KEYCLOAK_CLIENT_ID": "{{ .Values.extraUiConfigVars.keycloakClientId }}",
+      "ADMIN_RESOURCE_ROLE": "{{ .Values.extraUiConfigVars.adminResourceRole }}",
+      "GRAFANA_DASHBOARD_URL": "https://{{ .Values.extraUiConfigVars.grafanaDomainName }}",
+      "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}"
+    }
+{{- end }}

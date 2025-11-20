@@ -14,6 +14,18 @@
     - install
     - post-install
 
+- name: Load credentials from password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: lookup.yaml
+    apply:
+      tags:
+        - install
+        - post-install
+  tags:
+    - install
+    - post-install
+
 - name: Validate options
   fail:
     msg: "Configuration is not valid: enabling velero requires install_server or install_client to be true."
@@ -25,6 +37,16 @@
 - name: Set roles facts
   ansible.builtin.set_fact:
     velero_helm_override_values_path: "{{ tmp_dir }}/{{ velero.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+    - post-install
+
+- name: Ensure Helm dependency repositories added
+  kubernetes.core.helm_repository:
+    name: "{{ velero.helm.repo_depend_name }}"
+    repo_url: "{{ velero.helm.repo_depend_url }}"
+    state: present
+  when: velero.install_server
   tags:
     - install
     - post-install
@@ -44,6 +66,10 @@
     cmd: helm dependency build
     chdir: "{{ velero.helm.chart_directory }}"
   when: velero.install_server
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
     - post-install
@@ -215,6 +241,29 @@
     create_namespace: true
     timeout: "{{ helm_timeout }}"
     wait: true
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - install
+    - post-install
+
+- name: Mark secrets for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+        - post-install
+  vars:
+    - namespace: "{{ velero.namespace }}"
+    - secret_name: "velero-access-secret"
+    - password_mappings:
+      - { key: VELERO_ACCESS_KEY, variable: VELERO_MINIO_ACCESS_KEY, user: "" }
+      - { key: VELERO_SECRET_KEY, variable: VELERO_MINIO_SECRET_KEY, user: "" }
+      - { key: MINIO_ADMIN_PASSWORD, variable: MINIO_ADMIN_PASSWORD, user: "{{ velero.minio.auth.admin_username }}" }
   tags:
     - install
     - post-install
@@ -335,7 +384,7 @@
   become: true
   ansible.builtin.file:
     path: /usr/local/bin/velero
-    owner: "{{ ansible_user }}"
+    owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
     mode: '0755'
   when:
     velero.install_client and velero_do_install_client

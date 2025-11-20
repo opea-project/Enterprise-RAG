@@ -302,7 +302,7 @@ resource "null_resource" "run_install_system" {
     }
     inline = [
       "chmod +x /tmp/run_install.sh",
-      "/tmp/run_install.sh --platform ibm --gaudi --stage system"
+      "/tmp/run_install.sh --platform ibm --gaudi --stage system --tag ${var.solution_version}"
     ]
   }
 }
@@ -326,7 +326,7 @@ resource "null_resource" "run_install_cluster" {
       proxy_port   = var.use_proxy ? var.proxy_port : null
     }
     inline = [
-      "/tmp/run_install.sh --platform ibm --gaudi --stage cluster"
+      "/tmp/run_install.sh --platform ibm --gaudi --stage cluster --tag ${var.solution_version}"
     ]
   }
 }
@@ -350,7 +350,7 @@ resource "null_resource" "run_install_application" {
       proxy_port   = var.use_proxy ? var.proxy_port : null
     }
     inline = [
-      "/tmp/run_install.sh --platform ibm --gaudi --stage application"
+      "/tmp/run_install.sh --platform ibm --gaudi --stage application --tag ${var.solution_version}"
     ]
   }
 }

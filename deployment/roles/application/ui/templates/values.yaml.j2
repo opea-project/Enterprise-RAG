@@ -3,6 +3,12 @@ Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
+{% for pipeline in pipelines %}
+{% if pipeline.type == "docsum" %}
+type: docsum
+{% endif %}
+{% endfor %}
+
 domainName: &dname {{ ui.domainName }}
 tlsSecret: &tsecret {{ ui.tls.secret_name }}
 
@@ -14,6 +20,7 @@ extraUiConfigVars:
   grafanaDomainName: "{{ telemetry.domainName }}"
   keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
   s3DomainName: "{{ edp.minio.apiDomainName }}"
+  chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
 
 service:
   type: ClusterIP
@@ -31,9 +38,14 @@ tdx:
 {% if tag is defined %}
 image:
   ui:
-    tag: {{ tag }}
+{% for pipeline in pipelines %}
+{% if pipeline.type == "docsum" %}
+    name: erag-docsum-ui
 {% endif %}
+{% endfor %}
+    tag: {{ tag }}
     repository: {{ registry }}
+{% endif %}
 ingress:
   enabled: true
   className: nginx

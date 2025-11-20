@@ -18,11 +18,18 @@ spec:
     protocol: TCP
   #otlp-http and otlp-grpc will set automatically on pod
 
+  # Fix for the error: invalid configuration: processors::k8sattributes::filter: `node_from_env_var` is configured but envvar "K8S_NODE_NAME" is not set
+  # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34075
+  env:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
 
   # we need contrib for kubernetes processor/prometheus exporter
   # Check manifests.yaml for different components available:
   # https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions
-  image: "otel/opentelemetry-collector-contrib:0.109.0" 
+  image: "otel/opentelemetry-collector-contrib:0.136.0"
   #image: "otel/opentelemetry-collector-k8s:0.109.0"	# string	Image indicates the container image to use for the OpenTelemetry Collector.
   #imagePullPolicy: "Always" # string	ImagePullPolicy indicates the pull policy to be used for retrieving the container image (Always, Never, IfNotPresent)
 

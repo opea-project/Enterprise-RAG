@@ -1,6 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { ServiceStatus } from "@intel-enterprise-rag-ui/control-plane";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   addEdge,
@@ -22,7 +23,6 @@ import {
 import {
   ServiceData,
   ServiceDetails,
-  ServiceStatus,
 } from "@/features/admin-panel/control-plane/types";
 import {
   FetchedServiceDetails,

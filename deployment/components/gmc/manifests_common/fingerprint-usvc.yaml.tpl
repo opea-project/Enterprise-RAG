@@ -14,7 +14,7 @@ data:
   http_proxy: {{ .Values.proxy.httpProxy | quote }}
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
-  SYSTEM_FINGERPRINT_MONGODB_HOST: "fingerprint-mongodb.fingerprint.svc"
+  SYSTEM_FINGERPRINT_MONGODB_HOST: "fingerprint-mongodb-ferretdb.fingerprint.svc"
   SYSTEM_FINGERPRINT_MONGODB_PORT: "27017"
   MONGODB_NAME: "SYSTEM_FINGERPRINT"
 
@@ -73,49 +73,24 @@ spec:
       {{- include "gmc.imagePullSecrets" . }}
       serviceAccountName: fgp-usvc
       initContainers:
-        - name: wait-for-mongo
+        - name: wait-for-ferretdb
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: docker.io/bitnamilegacy/mongodb:8.0.13-debian-12-r0
+          image: busybox:1.35
           env:
-            - name: MONGO_DATABASE_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_DATABASE_NAME
-            - name: MONGO_USER
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_USER
-            - name: MONGO_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_PASSWORD
-            - name: MONGO_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_HOST
-            - name: MONGO_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_PORT
+            - name: FERRETDB_HOST
+              value: "fingerprint-mongodb-ferretdb.fingerprint.svc"
+            - name: FERRETDB_PORT
+              value: "27017"
           command:
             - sh
             - -c
             - |
-                if [ -z "$MONGO_DATABASE_NAME" ] || [ -z "$MONGO_HOST" ] || [ -z "$MONGO_PORT" ] || [ -z "$MONGO_USER" ] || [ -z "$MONGO_PASSWORD" ]; then
-                  echo "Environment variables MONGO_DATABASE_NAME, MONGO_HOST, MONGO_PORT, MONGO_USER or MONGO_PASSWORD are not set. Skipping wait-for-mongo init container.";
-                  exit 1
-                else
-                  until mongosh $MONGO_HOST:$MONGO_PORT/$MONGO_DATABASE_NAME --username $MONGO_USER --password $MONGO_PASSWORD --quiet --eval "db.runCommand({ connectionStatus: 1 })"; do
-                    echo "Waiting for MongoDB server $MONGO_HOST:$MONGO_PORT to be ready...";
-                    sleep 2;
-                  done;
-                fi;
+                until nc -z $FERRETDB_HOST $FERRETDB_PORT; do
+                  echo "Waiting for FerretDB server $FERRETDB_HOST:$FERRETDB_PORT to be ready...";
+                  sleep 2;
+                done;
+                echo "FerretDB server $FERRETDB_HOST:$FERRETDB_PORT is ready!";
       containers:
         - name: fgp-usvc
           image: {{ include "manifest.image" (list .filename .Values) }}
@@ -126,20 +101,17 @@ spec:
               protocol: TCP
           env:
             - name: MONGODB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: mongo-database-secret
-                  key: MONGO_DATABASE_NAME
+              value: "SYSTEM_FINGERPRINT"
             - name: MONGO_USER
               valueFrom:
                 secretKeyRef:
                   name: mongo-database-secret
-                  key: MONGO_USER
+                  key: POSTGRES_USER
             - name: MONGO_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: mongo-database-secret
-                  key: MONGO_PASSWORD
+                  key: POSTGRES_PASSWORD
           envFrom:
             - configMapRef:
                 name: fgp-usvc-config

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@intel-enterprise-rag-ui/components";
+import { formatFileSize } from "@intel-enterprise-rag-ui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 
 import ChunksProgressBar from "@/features/admin-panel/data-ingestion/components/ChunksProgressBar/ChunksProgressBar";
@@ -9,7 +10,6 @@ import DataItemStatus from "@/features/admin-panel/data-ingestion/components/Dat
 import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/FileTextExtractionDialog/FileTextExtractionDialog";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
-import { formatFileSize } from "@/features/admin-panel/data-ingestion/utils";
 
 interface FileActionsHandlers {
   downloadHandler: (name: string, bucketName: string) => void;
@@ -51,11 +51,13 @@ export const getFilesTableColumns = ({
   {
     accessorKey: "size",
     header: "Size",
+    enableGlobalFilter: false,
     cell: ({ row }) => formatFileSize(row.getValue("size")),
   },
   {
     id: "chunks",
     header: "Chunks",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {
@@ -72,6 +74,7 @@ export const getFilesTableColumns = ({
   },
   {
     header: "Processing Time",
+    enableGlobalFilter: false,
     cell: ({
       row: {
         original: {
@@ -79,6 +82,7 @@ export const getFilesTableColumns = ({
           text_compression_duration,
           text_splitter_duration,
           dpguard_duration,
+          late_chunking_duration,
           embedding_duration,
           ingestion_duration,
           processing_duration,
@@ -92,6 +96,7 @@ export const getFilesTableColumns = ({
         textCompressionDuration={text_compression_duration}
         textSplitterDuration={text_splitter_duration}
         dpguardDuration={dpguard_duration}
+        lateChunkingDuration={late_chunking_duration}
         embeddingDuration={embedding_duration}
         ingestionDuration={ingestion_duration}
         processingDuration={processing_duration}

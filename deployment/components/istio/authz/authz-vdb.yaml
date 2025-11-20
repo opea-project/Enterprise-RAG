@@ -4,7 +4,7 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: redis
+  name: redis-cluster
   namespace: vdb
 spec:
   selector:
@@ -15,10 +15,11 @@ spec:
   - from:
     - source:
         notPrincipals:
+        - cluster.local/ns/vdb/sa/vdb-redis-cluster
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
-        - cluster.local/ns/vdb/sa/vdb-chart
-        - cluster.local/ns/chatqna/sa/chatqna-chart
+        - cluster.local/ns/monitoring/sa/telemetry-prometheus-redis-exporter
+        - cluster.local/ns/chatqa/sa/retriever-usvc
 
 ---
 
@@ -36,7 +37,8 @@ spec:
   - from:
     - source:
         notPrincipals:
+        - cluster.local/ns/vdb/sa/vdb-redis
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
-        - cluster.local/ns/vdb/sa/vdb-chart
-        - cluster.local/ns/chatqna/sa/chatqna-chart
+        - cluster.local/ns/monitoring/sa/telemetry-prometheus-redis-exporter
+        - cluster.local/ns/chatqa/sa/retriever-usvc

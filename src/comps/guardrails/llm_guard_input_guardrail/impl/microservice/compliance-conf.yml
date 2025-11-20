@@ -9,3 +9,8 @@ spacy-manual:
   packages:
     - zh_core_web_sm
     - en_core_web_sm
+base-image:
+  override:
+    - python:3.11-slim-bookworm
+apt:
+  base-image-override: python:3.11-slim-bookworm

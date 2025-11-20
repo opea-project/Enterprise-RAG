@@ -132,8 +132,6 @@ class LLMsVllmIP_CPU_DockerSetup(LLMsDockerSetup):
             command=[
                 "--model",
                 f"{self.get_docker_env(self._ENV_KEYS.LLM_VLLM_MODEL_NAME)}",
-                "--device",
-                "cpu",
                 "--tensor-parallel-size",
                 f"{self.get_docker_env(self._ENV_KEYS.VLLM_TP_SIZE)}",
                 "--pipeline-parallel-size",

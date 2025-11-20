@@ -1,7 +1,7 @@
 {
   "name": "@intel-enterprise-rag-ui/components",
   "private": true,
-  "version": "1.5.0",
+  "version": "2.0.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Components for Intel Enterprise RAG UI",
@@ -11,9 +11,9 @@
   "style": "./dist/style.css",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/intel-enterprise-rag-ui-components.js",
-      "require": "./dist/intel-enterprise-rag-ui-components.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/intel-enterprise-rag-ui-components.umd.cjs"
     },
     "./style.css": "./dist/style.css",
     "./style": "./src/style.ts"

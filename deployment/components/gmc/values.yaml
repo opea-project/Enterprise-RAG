@@ -141,16 +141,19 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_extractor/impl/microservice/.env"
   text-compression-usvc:
     image: "erag-text-compression"
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_compression/impl/microservice/.env"
   text-splitter-usvc:
     image: "erag-text-splitter"
     repository: *repo
     tag: *tag
     pullPolicy: Always
+    envfile: "src/comps/text_splitter/impl/microservice/.env"
   embedding-usvc:
     image: "erag-embedding"
     repository: *repo
@@ -165,6 +168,7 @@ images:
     pullPolicy: Always
     envs:
       RERANKING_MODEL_NAME: *reranking_model_name
+      RERANKING_LATE_CHUNKING_ENABLED: "False"
   teirerank:
     image: "erag-teirerank"
     repository: *repo
@@ -187,6 +191,14 @@ images:
     repository: *repo
     tag: *tag
     pullPolicy: Always
+  late-chunking-usvc:
+    image: "erag-late_chunking"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envfile: "src/comps/late_chunking/impl/microservice/.env"
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -258,6 +270,17 @@ images:
     envfile: "src/comps/language_detection/impl/microservice/.env"
   fingerprint-usvc:
     image: "erag-system-fingerprint"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  docsum-usvc:
+    image: "erag-docsum"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envfile: "src/comps/docsum/impl/microservice/.env"
+  init-container:
+    image: "erag-init-container"
     repository: *repo
     tag: *tag
     pullPolicy: Always

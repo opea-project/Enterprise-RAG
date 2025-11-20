@@ -1,0 +1,11 @@
+FROM late-chunking-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/late_chunking
+CMD ["python", "opea_late_chunking_microservice.py"]

@@ -31,6 +31,10 @@
       - software-properties-common
     state: present
     update_cache: true
+  environment:
+    http_proxy: "{{ httpProxy | default('') }}"
+    https_proxy: "{{ httpsProxy | default('') }}"
+    no_proxy: "{{ noProxy | default('') }}"
   tags:
     - configure
 
@@ -73,7 +77,7 @@
     url: https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl
     dest: /usr/local/bin/kubectl
     mode: '0755'
-    owner: "{{ ansible_user }}"
+    owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
   environment:
     http_proxy: "{{ httpProxy | default('') }}"
     https_proxy: "{{ httpsProxy | default('') }}"
@@ -119,7 +123,7 @@
   become: true
   ansible.builtin.file:
     path: /usr/bin/helm
-    owner: "{{ ansible_user }}"
+    owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
     mode: '0755'
   when: helm_check.rc != 0
   tags:

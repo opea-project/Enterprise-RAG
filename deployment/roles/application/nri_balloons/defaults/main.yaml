@@ -5,10 +5,14 @@
 balloons:
   enabled: false
   namespace: "kube-system"
+  wait_timeout: 300
+  throughput_mode: true
   helm:
     repo_url: "https://containers.github.io/nri-plugins"
     repo_name: "nri-plugins"
     chart_name: "nri-resource-policy-balloons"
     release_name: "nri-balloons"
+    chart_version: "v0.10.1"
     default_values_file: "{{ playbook_dir }}/../components/nri-plugin/values.yaml"
     reset_values_file: "{{ playbook_dir }}/../components/nri-plugin/reset-values.yaml"
+    reset_balloon_file: "{{ playbook_dir }}/../components/nri-plugin/reset-balloon.yaml"

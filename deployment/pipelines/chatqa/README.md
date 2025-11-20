@@ -8,3 +8,4 @@
 | `examples/cpu-torch.yaml`                    | Xeon     | Basic ChatQnA pipeline for Xeon using TorchServe for embeddings.           |
 | `reference-cpu.yaml`                         | Xeon     | A pipeline for ChatQnA with Xeon backend that uses TorchServe for embeddings and includes LLMGuard for input scanning. |
 | `examples/hpu-torch-inguard-outguard.yaml`   | Xeon     | Similar to the examples/cpu-torch.yaml pipeline but includes LLMGuard for both input and output scanning. Uses TorchServe for embeddings. |
+| `reference-external-endpoint.yaml`   | Xeon     | Similar to the reference-cpu.yaml pipeline but it uses external endpoint for inference instead of deploying vLLM |

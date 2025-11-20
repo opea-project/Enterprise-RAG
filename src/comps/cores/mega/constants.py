@@ -51,6 +51,8 @@ class ServiceType(Enum):
     TEXT2KG = 33
     STRUCT2GRAPH = 34
     # End GenAIComps exclusive
+    DOC_SUMMARY = 35
+    LATE_CHUNKING = 36
 
 
 class MegaServiceEndpoint(Enum):
@@ -97,6 +99,7 @@ class MegaServiceEndpoint(Enum):
     TEXT_COMPRESSION = "/v1/text_compression"
     TEXT_SPLITTER = "/v1/text_splitter"
     CHAT_HISTORY = "/v1/chat_history"
+    LATE_CHUNKING = "/v1/late_chunking"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

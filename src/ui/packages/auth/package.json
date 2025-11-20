@@ -1,7 +1,7 @@
 {
   "name": "@intel-enterprise-rag-ui/auth",
   "private": true,
-  "version": "1.5.0",
+  "version": "2.0.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Keycloak authentication utilities for Intel Enterprise RAG UI",
@@ -10,9 +10,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/intel-enterprise-rag-ui-auth.js",
-      "require": "./dist/intel-enterprise-rag-ui-auth.umd.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/intel-enterprise-rag-ui-auth.umd.cjs"
     }
   },
   "files": [
@@ -22,6 +22,7 @@
     "build": "tsc && vite build"
   },
   "dependencies": {
+    "@intel-enterprise-rag-ui/components": "workspace:^",
     "keycloak-js": "^26.0.7"
   },
   "peerDependencies": {

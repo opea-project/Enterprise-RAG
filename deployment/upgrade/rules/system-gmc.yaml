@@ -1,0 +1,40 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Component-specific validation rules for system-gmc
+# These rules are checked FIRST (before default rules)
+# Using first-match logic: the first matching rule determines the action
+#
+# Rule matching logic (all use AND logic):
+#   - path_regex only:  matches if path matches the regex
+#   - data_regex only:  matches if content matches the regex
+#   - both specified:   matches if BOTH path AND content match (AND logic)
+
+validation_rules:
+  - path_regex: "embedding-usvc-config"
+    data_regex: ".*EMBEDDING_MODEL_NAME.*"
+    response: "reject"
+    note: "changing EMBEDDING_MODEL_NAME breaks operation of deployed solution"
+
+  # Approve VECTOR_STORE configuration changes from redis-cluster to redis
+  - path_regex: ".*VECTOR_STORE.*"
+    data_regex: "redis-cluster|redis"
+    response: "approve"
+    note: "VECTOR_STORE configuration change from redis-cluster to redis is approved"
+
+  # Approve vector_store configuration changes (lowercase variant)
+  - path_regex: ".*vector_store.*"
+    data_regex: "redis-cluster|redis"
+    response: "approve"
+    note: "vector_store configuration change from redis-cluster to redis is approved"
+
+  # Approve retriever-usvc configuration changes
+  - path_regex: ".*retriever-usvc.*"
+    data_regex: "redis-cluster|redis|VECTOR_STORE"
+    response: "approve"
+    note: "Retriever USVC configuration changes for vector store migration are approved"
+
+  # Reject all other system-gmc changes
+  - path_regex: ".*"
+    response: "reject"
+    note: "All system-gmc changes require explicit approval"

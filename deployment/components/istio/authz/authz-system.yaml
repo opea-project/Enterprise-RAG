@@ -10,9 +10,13 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: gmc
-  action: DENY
+  action: ALLOW
   rules:
   - from:
     - source:
-        notPrincipals:
+        principals:
         - cluster.local/ns/auth-apisix/sa/auth-apisix
+  - to:
+    - operation:
+        ports:
+        - "9443"

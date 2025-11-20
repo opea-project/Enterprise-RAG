@@ -27,10 +27,10 @@ Rebuild pnpm workspace to include new dependency:
 pnpm install && pnpm -r build
 ```
 
-Import `index.scss` from this package into your main SCSS file:
+Import `style.scss` from this package into your main SCSS file:
 
 ```scss
-@import "@intel-enterprise-rag-ui/markdown/index.scss";
+@import "@intel-enterprise-rag-ui/markdown/style.scss";
 ```
 
 Import `MarkdownRenderer` component into your code:

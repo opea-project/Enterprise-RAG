@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import nltk
 import os
 import re
 import time
@@ -27,12 +28,17 @@ class OPEATextExtractor:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(OPEATextExtractor, cls).__new__(cls)
+            
+            # Download NLTK data once at instance creation to avoid slower performance on first call
+            nltk.download('punkt_tab', quiet=True)
+            nltk.download('averaged_perceptron_tagger', quiet=True)
+            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
         return cls._instance
 
-    def load_data(self, files: any, link_list: list) -> List[TextDoc]:
+    def load_data(self, files: any, link_list: list, texts: list) -> List[TextDoc]:
 
-        if not files and not link_list:
-            raise ValueError("No links and/or files passed for data preparation.")
+        if not files and not link_list and not texts:
+            raise ValueError("No links and/or files and/or texts passed for data preparation.")
 
         loaded_docs: List[TextDoc] = []
 
@@ -53,6 +59,22 @@ class OPEATextExtractor:
             except Exception as e:
                 logger.error(e)
                 raise ValueError(f"Failed to load link. Exception: {e}")
+
+        # Save texts
+        if texts:
+            try:
+                for text in texts:
+                    if text.strip() == "":
+                        logger.warning("Empty text found, skipping...")
+                        continue
+
+                    metadata = {
+                        'timestamp': time.time()
+                    }
+                    loaded_docs.append(TextDoc(text=text, metadata=metadata))
+            except Exception as e:
+                logger.error(e)
+                raise ValueError(f"Failed to load text. Exception: {e}")
 
         logger.info(f"Done preprocessing. Loaded {len(loaded_docs)} documents.")
         return loaded_docs

@@ -67,7 +67,7 @@ Please refer to this [guide](../../../../../../deployment/README.md) to launch t
 If your system uses a proxy, ensure the no_proxy environment variable includes the following to allow local access without proxying:
 
 ```sh
-export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com
+export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com,auth.erag.com
 ```
 
 ### Launch Service of LLM-as-a-Judge
@@ -76,9 +76,11 @@ _This step is required only for computing RAGAS metrics._
 
 To calculate RAGAS metrics, a separate LLM as a Judge service, a dedicated language model responsible for evaluating answer quality, is required. You can launch the service by using existing scripts provided elsewhere in the project.
 
-To run VLLM model server, navigate to [src/comps/llms/impl/model_server/vllm](../../../../../../src/comps/llms/impl/model_server/vllm) and run the `run_vllm.sh` script:
+To start the VLLM model server, navigate to [src/comps/llms/impl/model_server/vllm](../../../../../../src/comps/llms/impl/model_server/vllm) and run the following commands:
 
 ```bash
+cd ../../../../../../src/comps/llms/impl/model_server/vllm
+
 # (Required) Hugging Face token
 export HF_TOKEN=your_hf_token
 
@@ -90,13 +92,23 @@ export NO_PROXY=localhost,127.0.0.1
 export HTTP_PROXY=
 export HTTPS_PROXY=
 
-# (Optional) Customize port and model before starting
-export LLM_VLLM_MODEL_NAME="meta-llama/Llama-3-8B-Instruct"
+# (Optional) Customize port and model if needed
+export LLM_VLLM_MODEL_NAME=meta-llama/Llama-3.1-8B-Instruct
 export LLM_VLLM_PORT=8008
 
 # Start the VLLM service
 ./run_vllm.sh
 ```
+
+> [!NOTE]
+> The startup may take several minutes as the model downloads, loads, and warms up. You can monitor the progress by following the logs:
+> ```bash
+> docker logs -f llm-vllm-model-server
+> ```
+> The service is ready when you see the message:
+> ```
+> INFO:     Application startup complete.
+> ```
 
 To verify that the LLM-as-a-Judge service is running by sending a test request:
 ```bash
@@ -109,18 +121,29 @@ _This step is required only for computing RAGAS metrics._
 
 To calculate RAGAS metrics, a separate embedding service that provides vector representations of text is required. You can launch this service using existing scripts provided elsewhere in the project. 
 
-To run the TEI embedding model server, navigate to the folder [src/comps/embeddings/impl/model_server/tei](../../../../../../src/comps/embeddings/impl/model_server/tei) and execute the script `run_tei.sh`.
+To start the TEI embedding model server, navigate to [src/comps/embeddings/impl/model_server/tei](../../../../../../src/comps/embeddings/impl/model_server/tei) and run the following commands:
 
 ```bash
 cd ../../../../../../src/comps/embeddings/impl/model_server/tei
 
-# (Optional) Customize port and model before starting
+# (Optional) Customize port and model if needed
 export TEI_PORT=8090
 export TEI_MODEL_NAME=BAAI/bge-large-en-v1.5
 
 # Start the embedding service
 ./run_tei.sh
 ```
+
+> [!NOTE]
+> You can monitor the startup progress by following the logs:
+> ```bash
+> docker logs -f embedding-tei-model-server
+> ```
+> The service is ready when you see:
+> ```
+> INFO text_embeddings_router::http::server: Starting HTTP server: 0.0.0.0:80
+> INFO text_embeddings_router::http::server: Ready
+> ```
 
 ## Metrics
 
@@ -182,7 +205,7 @@ python eval_multihop.py --help
 | `--keep_checkpoint`    | *(flag)*                            | Keep the checkpoint file after evaluation (do not delete)                                   |
 | `--llm_judge_endpoint` | `http://localhost:8008`             | URL of the LLM judge service; only used for RAGAS evaluation                                |
 | `--embedding_endpoint` | `http://localhost:8090/embed`       | URL of the embedding service endpoint, only used for RAGAS                                  |
-| `--temperature`        | 	Read from RAG system config        | Controls text generation randomness; defaults to RAG system setting if omitted.             |
+| `--temperature`        |  Read from RAG system config        | Controls text generation randomness; defaults to RAG system setting if omitted.             |
 | `--max_new_tokens`     |  Read from RAG system config        | Maximum tokens generated; defaults to RAG system setting if omitted.                        |
 
 
@@ -246,13 +269,30 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
 
     _Metrics: answer_correctness, answer_relevancy, semantic_similarity,  context_precision, context_recall, faithfulness_
 
-    ⚠️ For RAGAS evaluation, you must have two external services running: an LLM-as-a-Judge service and an embedding service — see the Run LLM-as-a-Judge and Embedding section for setup instructions..
+    ⚠️ For RAGAS evaluation, you must have two external services running: an LLM-as-a-Judge service and an embedding service — see the Run LLM-as-a-Judge and Embedding section for setup instructions.
 
+    If both services are running on their default endpoints (`http://localhost:8008` for LLM judge and `http://localhost:8090/embed` for embeddings), you can simply run:
+    ```bash
+    python eval_multihop.py --ragas_metrics
+    ```
+
+    To use custom endpoints:
     ```bash
     python eval_multihop.py --ragas_metrics \
     --llm_judge_endpoint http://<llm_host>:<port> \
     --embedding_endpoint http://<embedding_host>:<port>/embed
     ```
+
+    > [!WARNING]
+    > **Proxy Configuration Issue**: If you encounter an authentication error like:
+    > ```
+    > Exception: Failed to get access token for user 'erag-admin'. Response: {"error":"invalid_grant","error_description":"Invalid user credentials"}
+    > ```
+    > This typically means your `no_proxy` environment variable is not configured correctly. Ensure it includes all required domains:
+    > ```bash
+    > export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com,auth.erag.com
+    > ```
+    > Then retry the evaluation.
 
 
 #### Example Output

@@ -12,7 +12,7 @@ from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class LLMConnector(ABC):
-    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None):
+    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, openai_format_streaming: bool = False, headers: Optional[Dict[str, str]] = None):
         """
         Initializes a Connector object.
 
@@ -30,6 +30,8 @@ class LLMConnector(ABC):
         self._disable_streaming = disable_streaming
         self._headers = headers if headers is not None else {}
         self._llm_output_guard_exists = llm_output_guard_exists
+        self._insecure_endpoint = insecure_endpoint
+        self._openai_format_streaming = openai_format_streaming
 
     @abstractmethod
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
@@ -38,8 +40,8 @@ class LLMConnector(ABC):
 
     async def _validate(self) -> None:
         try:
-            tested_params = {"messages": {"system": "test", "user": "test"}, "max_new_tokens": 5}
-            test_input = LLMParamsDoc(**tested_params, streaming=False)
+            tested_params = {"messages": [{"role": "system", "content": "test"}, {"role": "user", "content": "test"}], "max_new_tokens": 5}
+            test_input = LLMParamsDoc(**tested_params, stream=False)
             await self.generate(test_input)
             logger.info("Connection with LLM model server validated successfully.")
         except ReadTimeout as e:

@@ -11,3 +11,7 @@ config:
       namespaces:
         - '*'
       shareIdleCPUsInSame: system
+      reservedResources:
+        cpu: "1"
+      pinCPU: true
+      pinMemory: true

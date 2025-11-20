@@ -115,6 +115,16 @@ class MarkdownSplitter(AbstractSplitter):
 
         return markdown_text
 
+    def strip_md_links_from_text(self, text: str) -> str:
+        # Replace markdown links with just the text
+        # [text](url) -> text
+        text = re.sub(r'(?:\[)?([^\[\]]+)(?:\]\([^\)]+\))?', r'\1', text)
+        
+        # Strip asterisks from the beginning and end
+        # **text** or *text* -> text
+        text = text.strip('*')
+        return text
+
     def split_text(self, text, extension: Optional[str] = None):
         splitters = self.text_splitter
         if extension in [".pptx", ".ppt"]:
@@ -129,6 +139,12 @@ class MarkdownSplitter(AbstractSplitter):
                 text = splitter.split_documents(text)
             else:
                 raise ValueError(f"Unsupported splitter type: {splitter.__class__.__name__}")
+
+        # Clean metadata headers
+        for doc in text:
+            for key in doc.metadata:
+                if key.startswith("Header"):
+                    doc.metadata[key] = self.strip_md_links_from_text(doc.metadata[key])
         return text
 
     def get_text_splitter(self):

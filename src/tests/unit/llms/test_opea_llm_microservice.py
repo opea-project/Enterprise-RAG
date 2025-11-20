@@ -193,3 +193,167 @@ def test_microservice_process_failure(mock_run, mock_cores_mega_microservice, mo
    assert context.value.status_code == 500
    assert "An error occurred while processing: Test Exception" in context.value.detail
    mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_value_error(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles ValueError correctly"""
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_run.side_effect = ValueError("Invalid parameter value")
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 400
+   assert "A ValueError occurred while processing: Invalid parameter value" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_read_timeout(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles ReadTimeout correctly"""
+   from requests.exceptions import ReadTimeout
+
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_run.side_effect = ReadTimeout("Request timed out")
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 408
+   assert "A Timeout error occurred while processing: Request timed out" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_connection_error(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles ConnectionError correctly"""
+   from requests.exceptions import ConnectionError
+
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_run.side_effect = ConnectionError("Connection failed")
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 404
+   assert "A Connection error occurred while processing: Connection failed" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_bad_request_error(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles BadRequestError correctly"""
+   from openai import BadRequestError
+
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_response = MagicMock()
+   mock_run.side_effect = BadRequestError("Bad request", response=mock_response, body=None)
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 400
+   assert "A BadRequestError occured while processing" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_request_exception_with_status_code(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles RequestException with status code correctly"""
+   from requests.exceptions import RequestException
+
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_response = MagicMock()
+   mock_response.status_code = 503
+   mock_exception = RequestException("Service unavailable")
+   mock_exception.response = mock_response
+   mock_run.side_effect = mock_exception
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 503
+   assert "A RequestException occurred while processing: Service unavailable" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_request_exception_without_status_code(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles RequestException without status code correctly"""
+   from requests.exceptions import RequestException
+
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_exception = RequestException("Generic request error")
+   mock_exception.response = None
+   mock_run.side_effect = mock_exception
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 500
+   assert "A RequestException occurred while processing: Generic request error" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)
+
+
+@patch('comps.llms.opea_llm_microservice.OPEALlm.run')
+def test_microservice_process_not_implemented_error(mock_run, mock_cores_mega_microservice, mock_get_connector):
+   """Test microservice handles NotImplementedError correctly"""
+   mock_input = MagicMock(spec=LLMParamsDoc)
+   mock_run.side_effect = NotImplementedError("Feature not implemented")
+
+   try:
+      import comps.llms.opea_llm_microservice as test_module
+      importlib.reload(test_module)
+   except Exception as e:
+      pytest.fail(f"OPEA LLM Microservice init raised {type(e).__name__} unexpectedly!")
+
+   loop = asyncio.get_event_loop()
+   with pytest.raises(HTTPException) as context:
+      loop.run_until_complete(test_module.process(mock_input))
+
+   assert context.value.status_code == 501
+   assert "A NotImplementedError occurred while processing: Feature not implemented" in context.value.detail
+   mock_run.assert_called_once_with(mock_input)

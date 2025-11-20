@@ -17,7 +17,7 @@ data:
       typeName: Tempo
       typeLogoUrl: public/app/plugins/datasource/tempo/img/tempo_logo.svg
       access: proxy
-      url: http://{{.Release.Name}}-tempo.{{.Release.Namespace}}:3100
+      url: http://{{.Release.Name}}-tempo.{{.Release.Namespace}}:3200
       user: ''
       database: ''
       editable: true

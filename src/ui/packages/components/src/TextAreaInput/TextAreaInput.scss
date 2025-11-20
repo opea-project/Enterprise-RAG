@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 .textarea-input {
-  @apply mb-2 grid grid-rows-[1.5rem_1fr];
+  &--with-label {
+    @apply grid grid-rows-[1.5rem_1fr] gap-2;
+  }
 
   &__label-wrapper {
-    @apply mb-2 flex flex-row items-center gap-2;
+    @apply flex h-6 flex-row items-center gap-2;
   }
 
   &__input,
   &__input:is(:-webkit-autofill, :autofill) {
-    @apply mr-4 w-full;
+    @apply h-full w-full px-4 py-3;
     @apply resize-none;
     @apply border-light-border dark:border-dark-border rounded border;
     @apply bg-light-bg-contrast dark:bg-dark-bg-contrast;
@@ -53,8 +55,12 @@
   }
 
   &--sm {
+    .textarea-input--with-label {
+      @apply grid grid-rows-[1rem_1fr] gap-1;
+    }
+
     .textarea-input__label-wrapper {
-      @apply gap-1;
+      @apply h-4 gap-1;
     }
 
     .textarea-input__input {

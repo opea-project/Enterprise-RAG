@@ -1,0 +1,32 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+{{ include "rag-utils.validateNamespace" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rag-utils.fullname" . }}-watcher-config
+  namespace: {{ .Release.Namespace }}
+data:
+  # Map from node id to node boot id; null represents unknown/initial state
+  node_boot_ids: '{}'
+  # Temporary storage for workload information during refresh (format: "ns:kind:name:replicas")
+  saved-workloads: ''
+  # Enable operation of rag watcher
+  watcher_enabled: {{ .Values.rag_watcher.data.watcher_enabled | quote }}
+  # Label selector for nodes to watch (empty = all nodes)
+  node_selector: {{ .Values.rag_watcher.data.node_selector | quote }}
+  # Whether to restart Istio services on reboot
+  refresh_istio: {{ .Values.rag_watcher.data.refresh_istio | quote }}
+  # Label selector for workloads to be skipped (not refreshed)
+  skip_workload_selector: {{ .Values.rag_watcher.data.skip_workload_selector | quote }}
+  # When set to true, verification of workloads won't be performed after scaling (except for Istio)
+  disable_workload_verify: {{ .Values.rag_watcher.data.disable_workload_verify | quote }}
+  # Label selector for workloads to skip verification (but still refresh)
+  skip_verify_selector: {{ .Values.rag_watcher.data.skip_verify_selector | quote }}
+  # Refresh strategy: rollout-restart or downscale-upscale
+  refresh_strategy: {{ .Values.rag_watcher.data.refresh_strategy | quote }}
+  # Comma-separated list of app namespaces (if empty, use ns_selector)
+  app_namespaces: {{ .Values.rag_watcher.data.app_namespaces | quote }}
+  # Namespace selector to find app namespaces
+  ns_selector: {{ .Values.rag_watcher.data.ns_selector | quote }}

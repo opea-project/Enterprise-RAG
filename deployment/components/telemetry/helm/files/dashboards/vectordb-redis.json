@@ -1458,15 +1458,15 @@
     "list": [
       {
         "current": {
-          "selected": false,
-          "text": "monitoring",
-          "value": "monitoring"
+          "selected": true,
+          "text": "vdb",
+          "value": "vdb"
         },
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(redis_up,namespace)",
+        "definition": "label_values(redis_up{namespace=~\"vdb\"},namespace)",
         "hide": 0,
         "includeAll": false,
         "multi": false,
@@ -1474,7 +1474,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(redis_up,namespace)",
+          "query": "label_values(redis_up{namespace=~\"vdb\"},namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
@@ -1544,7 +1544,10 @@
     "to": "now-1m"
   },
   "timezone": "browser",
-  "tags": ["entrag", "vectordb"],
+  "tags": [
+    "entrag",
+    "vectordb"
+  ],
   "title": "EnterpriseRAG / VectorDB / Redis",
   "uid": "ddustuj5r0mbke",
   "version": 2,

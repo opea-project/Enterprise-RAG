@@ -1,0 +1,6 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Name of the YAML report file to generate
+data_consistency_yaml_report_name: "consistency-report.pre.yaml"

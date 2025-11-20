@@ -16,12 +16,16 @@ tlsSecret: &tsecret "tls-secret"
 type: chatqa
 
 extraNginxVars:
+  # ChatQnA endpoints
   chatqaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   systemFingerprintEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   chatHistoryEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   edpEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
-  statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   dataprepClientMaxBodySize: "64m"
+  # Docsum endpoints
+  docsumEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  # Status endpoint
+  statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
 
 extraUiConfigVars:
   keycloakDomainName: "auth.erag.com"
@@ -31,6 +35,7 @@ extraUiConfigVars:
   grafanaDomainName: "grafana.erag.com"
   keycloakAdminPanelDomainName: "auth.erag.com"
   s3DomainName: "s3.erag.com"
+  chatDisclaimerText: "Responses from this solution may require further verification. You are solely responsible for verifying the accuracy of the information provided and how you choose to use it."
 
 image:
   ui:
@@ -57,7 +62,7 @@ serviceAccount:
     kubernetes.io/ingress.class: "nginx"
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "chat-qna-ui-app"
+  name: "ui-app"
 
 podAnnotations: {}
 

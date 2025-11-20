@@ -48,7 +48,7 @@
   block:
     - name: Check for number of Gaudi cards
       ansible.builtin.shell:
-        cmd: "lspci | grep -i habana | grep -i -c -E '(gaudi2|gaudi3)' || echo '0'"
+        cmd: "grep PCI_ID /sys/bus/pci/devices/*/uevent | grep -icE '1da3:(1000|1001|1010|1011|1020|1030|106[0-9])' || echo '0'"
       register: gaudi_card_count
       failed_when: false
       delegate_to: "{{ item }}"

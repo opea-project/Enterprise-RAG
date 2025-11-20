@@ -30,6 +30,7 @@ const statusIconMap: Record<DataStatus, ReactNode> = {
   text_compression: <DataPrepIcon />,
   text_splitting: <DataPrepIcon />,
   dpguard: <DPGuardIcon />,
+  late_chunking: <EmbeddingIcon />,
   embedding: <EmbeddingIcon />,
   ingested: <SuccessIcon />,
   deleting: <DeleteIcon />,

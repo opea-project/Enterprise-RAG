@@ -1,4 +1,25 @@
 ---
+- name: Pre-fetch role defaults for early availability
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../roles/application/{{ item }}/defaults/main.yaml"
+  loop:
+    - istio
+    - ingress
+    - keycloak
+    - apisix
+    - telemetry
+    - ui
+    - vector_databases
+    - edp
+    - fingerprint
+    - chat_history
+    - nri_balloons
+    - pipeline
+    - tdx
+    - rag_utils
+  tags:
+    - config
+
 - name: Set default ansible fact
   ansible.builtin.set_fact:
     config_valid: true
@@ -12,8 +33,16 @@
     missing_fields: "{{ missing_fields | default([]) + [item.field] }}"
   when: (item.value is not defined) or (item.value | length == 0) or (item.value == 'FILL_HERE')
   loop:
-    - { field: "huggingToken", value: "{{ huggingToken | default('') }}" }
     - { field: "FQDN", value: "{{ FQDN | default('') }}" }
+  no_log: "{{ secure_logs }}"
+  tags:
+    - config
+
+# Check huggingToken and add warning if missing
+- name: Check huggingToken configuration
+  ansible.builtin.set_fact:
+    hugging_token_warnings: "{{ hugging_token_warnings | default([]) + ['Hugging Face token is not configured - gated models in Hugging Face will not be accessible'] }}"
+  when: (huggingToken is not defined) or (huggingToken | length == 0)
   no_log: "{{ secure_logs }}"
   tags:
     - config
@@ -23,19 +52,15 @@
   tags:
     - config
   block:
-    - name: Resolve kubeconfig path
-      ansible.builtin.set_fact:
-        resolved_kubeconfig: "{{ kubeconfig | default(inventory_dir + '/artifacts/admin.conf') }}"
-
     - name: Check if kubeconfig exists
       ansible.builtin.stat:
-        path: "{{ resolved_kubeconfig }}"
+        path: "{{ kubeconfig }}"
       register: kubeconfig_stat
 
     - name: Set kubeconfig issues if file doesn't exist
       ansible.builtin.set_fact:
         config_valid: false
-        kubeconfig_issues: "{{ kubeconfig_issues | default([]) + ['Kubeconfig file not found at ' + resolved_kubeconfig] }}"
+        kubeconfig_issues: "{{ kubeconfig_issues | default([]) + ['Kubeconfig file not found at ' + kubeconfig] }}"
       when: not kubeconfig_stat.stat.exists
 
 # Check CSI driver type
@@ -62,29 +87,26 @@
         - { issue: "Certificate path not specified", value: "{{ certs.pathToCert | default('') }}" }
         - { issue: "Certificate key path not specified", value: "{{ certs.pathToKey | default('') }}" }
 
-# Check if proxy settings are properly configured
-- name: Check proxy configuration
-  when: (httpProxy is defined and httpProxy | length > 0) or (httpsProxy is defined and httpsProxy | length > 0)
+# Check late chunking and embedding model compatibility
+- name: Check late chunking and embedding model compatibility
+  when: edp.enabled and edp.late_chunking.enabled
   tags:
     - config
   block:
-    - name: Set required no_proxy values
+    - name: Set compatible embedding models for late chunking
       ansible.builtin.set_fact:
-        required_no_proxy_values: ["localhost", ".svc", ".monitoring", ".monitoring-traces"]
+        late_chunking_compatible_models:
+          - "jinaai/jina-embeddings-v2-base-en"
+          # Add more compatible models here in the future
 
-    - name: Set current no_proxy values
+    - name: Validate embedding model compatibility for late chunking
       ansible.builtin.set_fact:
-        current_no_proxy_values: "{{ (noProxy | default('') | string).split(',') }}"
+        late_chunking_issues: "{{ late_chunking_issues | default([]) + ['Late chunking is enabled but the current embedding model is not compatible. Current value: \"' + (embedding_model_name | default('undefined')) + '\". Compatible models: \"' + (late_chunking_compatible_models | join('\", \"')) + '\". Please change embedding_model_name to one of the compatible models.'] }}"
+      when: embedding_model_name | default('undefined') not in late_chunking_compatible_models
 
-    - name: Check for missing no_proxy values
+    - name: Update config validity based on late chunking embedding model compatibility check
       ansible.builtin.set_fact:
-        missing_no_proxy_values: "{{ missing_no_proxy_values | default([]) + [item] }}"
-      when: item not in current_no_proxy_values
-      loop: "{{ required_no_proxy_values }}"
-
-    - name: Update config validity based on no_proxy check
-      ansible.builtin.set_fact:
-        config_valid: "{{ config_valid and (missing_no_proxy_values is not defined or missing_no_proxy_values | length == 0) }}"
+        config_valid: "{{ config_valid and (late_chunking_issues is not defined or late_chunking_issues | length == 0) }}"
 
 # Display validation results
 - name: Display validation results
@@ -96,11 +118,6 @@
       {% if missing_fields is defined and missing_fields|length > 0 %}
       - Missing required fields: {{ missing_fields | join(', ') }}
       {% endif %}
-      {% if missing_no_proxy_values is defined and missing_no_proxy_values|length > 0 %}
-      - Missing required no_proxy values: {{ missing_no_proxy_values | join(',') }}
-        When using HTTP/HTTPS proxies, these values must be in your noProxy setting to ensure internal communication works properly.
-        Please update your config.yaml to include these values.
-      {% endif %}
       {% if kubeconfig_issues is defined and kubeconfig_issues|length > 0 %}
       - Kubeconfig issues:
         {% for issue in kubeconfig_issues %}
@@ -110,13 +127,28 @@
       {% if invalid_csi is defined %}
       - Invalid CSI driver type: '{{ invalid_csi }}'. Supported types are: 'local-path-provisioner', 'nfs'
       {% endif %}
+      {% if late_chunking_issues is defined and late_chunking_issues|length > 0 %}
+      - Late chunking configuration issues:
+        {% for issue in late_chunking_issues %}
+        * {{ issue }}
+        {% endfor %}
+      {% endif %}
       {% else %}
       VALIDATION PASSED: Configuration is valid
+      - Kubeconfig: {{ kubeconfig }} exists.
+      {% if huggingToken is defined and huggingToken | length > 0 %}
       - Hugging Face token is configured properly
-      {% if httpProxy is defined and httpProxy | length > 0 or httpsProxy is defined and httpsProxy | length > 0 %}
-      - Proxy configuration is valid with required no_proxy values
       {% endif %}
-      - Kubeconfig: {{ resolved_kubeconfig }} exists.
+      {% if edp.enabled and edp.late_chunking.enabled %}
+      - Late chunking is configured properly with compatible embedding model: {{ embedding_model_name }}
+      {% endif %}
+      {% endif %}
+      {% if hugging_token_warnings is defined and hugging_token_warnings|length > 0 %}
+
+      WARNINGS:
+      {% for warning in hugging_token_warnings %}
+      - {{ warning }}
+      {% endfor %}
       {% endif %}
   tags:
     - config

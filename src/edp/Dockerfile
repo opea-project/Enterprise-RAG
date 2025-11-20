@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Use the official Python image from the Docker Hub
-FROM python:3.12-slim
+ARG python_version=3.11
+ARG python_image_version=${python_version}-slim-bookworm
+
+FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 # Add non-root user

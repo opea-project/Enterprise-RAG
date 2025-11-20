@@ -80,6 +80,7 @@ class OPEATextCompressor:
         compressed_docs = DocList[TextDoc]()
 
         for doc in docs:
+            compressed_text = ""
             if doc.text.strip() == "":
                 compressed_doc = TextDoc(text="", metadata=doc.metadata)
             else:

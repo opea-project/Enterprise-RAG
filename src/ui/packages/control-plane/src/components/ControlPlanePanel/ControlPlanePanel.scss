@@ -1,0 +1,57 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.control-plane-panel {
+  @apply bg-light-bg-1 dark:bg-dark-bg-1 grid grid-cols-1;
+
+  &__with-config-panel {
+    @apply grid-cols-[1fr_22rem];
+  }
+
+  &__not-renderable {
+    @apply flex h-full w-full items-center justify-center;
+  }
+}
+
+.graph-wrapper {
+  @apply relative h-[calc(100vh_-_8rem)] w-full;
+
+  & .react-flow {
+    @apply bg-light-bg-1;
+
+    &.dark {
+      @apply bg-dark-bg-1;
+    }
+  }
+
+  & .react-flow__controls {
+    @apply ml-16 flex flex-row gap-0.5;
+
+    & .react-flow__controls-button {
+      @apply rounded-none border-b-0;
+      @apply bg-light-primary text-light-text-inverse;
+      @apply dark:bg-light-bg-1 dark:text-dark-text-inverse;
+    }
+  }
+}
+
+.graph-legend {
+  @apply absolute z-10 ml-12 mt-4 flex flex-col gap-2 rounded p-4;
+  @apply bg-light-bg-1/50 dark:bg-dark-bg-1/70;
+
+  & .graph-legend__item {
+    @apply flex items-center gap-2;
+
+    & > p {
+      @apply text-xs;
+    }
+
+    &:last-of-type {
+      @apply mt-3;
+
+      & svg {
+        @apply text-xs;
+      }
+    }
+  }
+}

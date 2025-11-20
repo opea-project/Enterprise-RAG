@@ -4,7 +4,9 @@
 - name: Pre-setup tasks
   become: false
   gather_facts: true
-  hosts: local
+  hosts: localhost
+  vars:
+    deployment_dir: "{{ playbook_dir }}/.."
   tasks:
     - name: Pre-configure environment role
       ansible.builtin.include_role:
@@ -12,3 +14,8 @@
       tags:
         - configure
         - never
+    - name: Build and push images
+      ansible.builtin.include_role:
+        name: images
+      tags:
+        - build-images

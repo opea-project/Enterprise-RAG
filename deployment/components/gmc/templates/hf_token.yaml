@@ -1,3 +1,4 @@
+{{- if .Values.tokens.hugToken }}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -6,3 +7,4 @@ metadata:
 type: Opaque
 data:
   HF_TOKEN: {{ .Values.tokens.hugToken | b64enc | quote }}
+{{- end }}

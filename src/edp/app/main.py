@@ -4,6 +4,8 @@
 import os
 from typing import List, Union
 import uuid
+
+import urllib3
 import validators
 from datetime import timedelta
 from datetime import datetime, timezone
@@ -96,7 +98,7 @@ async def metrics():
             gauge_total_chunks = Gauge(name='edp_chunks_total', documentation='Total number of chunks', registry=registry)
             gauge_total_chunks.set((files_chunks.chunks_total_sum or 0) + (links_chunks.chunks_total_sum or 0))
 
-            for obj_status in 'uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, embedding, ingested, deleting, canceled, blocked'.split(', '):
+            for obj_status in 'uploaded, error, processing, text_extracting, text_compression, text_splitting, dpguard, late_chunking, embedding, ingested, deleting, canceled, blocked'.split(', '):
                 file_count = files_statuses.get(obj_status, 0)
                 file_gauge = Gauge(name=f'edp_files_{obj_status}_total', documentation=f'Total number of files with status {obj_status}', registry=registry)
                 file_gauge.set(file_count)
@@ -186,17 +188,34 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
     try:
         credentials = None
         access_token = request.headers.get('Authorization')
+        token_fallback = str(os.getenv('PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK')).lower() in ['true', '1', 't', 'y', 'yes']
         if access_token:
             access_token = access_token.replace('Bearer ', '')
             token = { "access_token": access_token }
             local_client = get_local_minio_client_using_token_credentials(token)
-            local_client._provider.retrieve()
-            credentials = local_client._provider._credentials
+            try:
+                local_client._provider.retrieve() # throws ValueError
+                credentials = local_client._provider._credentials
+            except (ValueError, urllib3.exceptions.MaxRetryError) as e:
+                if token_fallback:
+                    logger.warning(f"Falling back to system credentials for presignedUrl due to a problem with retrieving token credentials. {e}")
+                    credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
+                else:
+                    raise ValueError("PresignedUrl generation failed using token credentials and system fallback is disabled.")
+        else:
+            if token_fallback:
+                logger.warning("Falling back to system credentials for presignedUrl since no Authorization header was provided.")
+                credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
+            else:
+                raise ValueError("Authorization header is required for token credentials and system fallback is disabled.")
         url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
-        logger.debug(f"Generated presigned url for [{method}] {bucket_name}/{object_name}")
+        logger.debug(f"Generated presignedUrl for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
     except S3Error as e:
         logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=400, detail="An error occurred while generating a presigned URL.")
+    except ValueError as e:
+        logger.error(f"Error when generating presignedUrl: {e}")
         raise HTTPException(status_code=400, detail="An error occurred while generating a presigned URL.")
 
 @app.get('/api/list_buckets')
@@ -896,10 +915,16 @@ def api_file_text_extract(file_uuid: str, request: Request):
                     raise Exception(f'[{file.id}] No text compressed.')
 
                 TEXT_SPLITTER_ENDPOINT = os.environ.get('TEXT_SPLITTER_ENDPOINT')
+                late_chunking_enabled = os.getenv('LATE_CHUNKING_ENABLED', "false").lower()
+                default_chunk_size = 512
+                default_chunk_overlap = 64
+                if late_chunking_enabled == "true":
+                    default_chunk_size = 8192
+                    default_chunk_overlap = 1024
                 response = requests.post(TEXT_SPLITTER_ENDPOINT, json={
                                                                     'loaded_docs': dataprep_compressed_docs,
-                                                                    'chunk_size': request.query_params.get('chunk_size', 512),
-                                                                    'chunk_overlap': request.query_params.get('chunk_overlap', 0),
+                                                                    'chunk_size': request.query_params.get('chunk_size', default_chunk_size),
+                                                                    'chunk_overlap': request.query_params.get('chunk_overlap', default_chunk_overlap),
                                                                     'use_semantic_chunking': request.query_params.get('use_semantic_chunking', 'false'),
                                                                     })
                 if response.status_code != 200:

@@ -1,5 +1,5 @@
 FROM openvino/model_server:2025.0
-COPY --from=ghcr.io/astral-sh/uv:0.6.7 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
 
@@ -9,6 +9,7 @@ RUN mkdir -p /data /model /home/ovms && \
     chown -R 1000:1000 /data /model /home/ovms
 
 RUN rm -rf /ovms/python_deps/
+RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
 
 # Copy files and set permissions as root
 COPY docker/entrypoint.sh /home/ovms/entrypoint.sh
@@ -26,8 +27,8 @@ COPY ./docker/uv.lock uv.lock
 RUN uv sync --locked --no-cache
 
 # Copy OpenVINO Tokenizers library to the correct location
-RUN cp /ovms/lib/libopenvino_tokenizers.so /home/user/.venv/lib/python3.12/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
-RUN chmod 644 /home/user/.venv/lib/python3.12/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
+RUN cp /ovms/lib/libopenvino_tokenizers.so /home/user/.venv/lib/python3.11/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
+RUN chmod 644 /home/user/.venv/lib/python3.11/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so
 RUN chown -R 1000:1000 /home/user/.venv
 
 # Set the working directory and entrypoint

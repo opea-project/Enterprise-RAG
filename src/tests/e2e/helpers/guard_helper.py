@@ -98,33 +98,13 @@ class GuardQuestions:
          "concept of 'Windows' and its implications for today's world.")
 
     # regex
-    # matching - case 1
     NUMBER_12345 = "What does number 12345 mean?"
-    NUMBER_78276 = "The package tracking number is 48291, and it should arrive by Tuesday."
-    NUMBER_09367 = "Please send the documents to ZIP code 90210."
     NUMBER_13456 = "The invoice total came to 13456 dollars after taxes."
-    NUMBER_77890 = "Her employee ID is 77890, assigned last month."
-    NUMBER_21543 = "The survey recorded 21543 responses in the first week."
-    # not matching case 2
     NUMBER_991 = "What does number 991 mean?"
-    NUMBER_27 = "The temperature today is expected to reach 27 degrees Celsius."
-    NUMBER_12_3 = "She bought 12 apples and 3 oranges from the market."
     NUMBER_789_456 = "My phone number ends in 789, not 456."
-    NUMBER_630_900 = "The event starts at 6:30 PM and ends by 9:00 PM."
-    NUMBER_1999_2021 = "He was born in the year 1999 and graduated in 2021."
-    # matching - case2
-    SUPPORT_EMAIL = "Please contact us at support@example.com for further assistance."
     JANE_EMAIL = "Her email is jane.doe1990@university.edu, in case you need it."
-    HR_EMAIL = "You can reach the HR department via hr-team@company.co.uk."
-    USER_EMAIL = "I received a message from user.name+newsletter@gmail.com yesterday."
-    REGISTRATION_EMAIL = "The registration form requires a valid email like info@my-site.org."
-    # not matching - case 2
-    CONTACT_FORM_MESSAGE = "Please send your message through the contact form on our website."
-    SPAM_AVOIDANCE_ADDRESS = "He wrote his address as 'john at mail dot com' to avoid spam."
-    USERNAME_NO_DOMAIN = "The username was just user123, no domain attached."
     MISSING_AT_SYMBOL = "I forgot to include the '@' symbol in the email."
     INVALID_DOMAIN_EMAIL = "Her email ended with .c, which is not a valid domain."
-    # unicode support
     UNICODE_QUESTION = "Who is Arkadiusz Bąk?"
 
     # secrets

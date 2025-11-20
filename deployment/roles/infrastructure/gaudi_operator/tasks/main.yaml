@@ -141,6 +141,57 @@
     - install
     - post-install
 
+- name: Calculate retry count for pod readiness checks
+  set_fact:
+    wait_retries: "{{ ((helm_timeout | default('10m0s') | regex_replace('m0s$', '') | regex_replace('s$', '') | int) * 60 // 15) | default(40) }}"
+  tags:
+    - install
+    - post-install
+
+- name: Wait for all pods in habana-ai-operator namespace to be running
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: habana-ai-operator
+  register: all_pods_running_check
+  until: >
+    all_pods_running_check.resources | length > 0 and
+    all_pods_running_check.resources | selectattr('status.phase', 'equalto', 'Running') | list | length == all_pods_running_check.resources | length
+  retries: "{{ wait_retries }}"
+  delay: 15
+  tags:
+    - install
+    - post-install
+
+- name: Wait for all containers in pods to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: habana-ai-operator
+  register: all_containers_ready_check
+  until: >
+    all_containers_ready_check.resources | selectattr('status.containerStatuses', 'defined') |
+    map(attribute='status.containerStatuses') | sum(start=[]) |
+    selectattr('ready', 'equalto', false) | list | length == 0
+  retries: "{{ wait_retries }}"
+  delay: 15
+  failed_when: false
+  tags:
+    - install
+    - post-install
+
+- name: Fail if any Gaudi pod is not ready
+  fail:
+    msg: >-
+      Not all pods in habana-ai-operator namespace became ready within the timeout ({{ helm_timeout | default('10m0s') }}).
+      Check pod status with: kubectl get pods -n habana-ai-operator
+  when: >
+    all_containers_ready_check.resources | selectattr('status.containerStatuses', 'defined') |
+    map(attribute='status.containerStatuses') | sum(start=[]) |
+    selectattr('ready', 'equalto', false) | list | length > 0
+  tags:
+    - install
+    - post-install
+
+
 - name: Get all pods in the habana-ai-operator namespace
   kubernetes.core.k8s_info:
     kind: Pod

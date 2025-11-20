@@ -7,6 +7,7 @@
     ui_helm_override_values_path: "{{ tmp_dir }}/{{ ui.helm.chart_name }}-override-values.yaml"
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -15,6 +16,7 @@
     mode: '0644'
   tags:
     - install
+    - pre-upgrade
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -26,6 +28,7 @@
       }}
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -68,6 +71,18 @@
   tags:
     - install
 
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ ui.namespace }}"
+    release_name: "{{ ui.helm.release_name }}"
+    release_enabled: "{{ ui.enabled }}"
+    chart_ref: "{{ ui.helm.chart_directory }}"
+    release_values_files: "{{ values_files }}"
+  tags:
+    - pre-upgrade
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ ui.helm.release_name }}"
@@ -77,6 +92,10 @@
     state: present
     create_namespace: true
     timeout: "{{ helm_timeout }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

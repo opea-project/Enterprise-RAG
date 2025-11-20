@@ -31,6 +31,10 @@ spec:
         name: curl
         command: ["/bin/sh", "-c"]
         args: ["trap exit TERM; sleep 300 & wait"]
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "64Mi"
         securityContext:
           capabilities:
             drop:

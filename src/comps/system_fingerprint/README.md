@@ -30,6 +30,7 @@ Configuration is done by specifying the MongoDB connection details. Optionally, 
 | `SYSTEM_FINGERPRINT_MONGODB_HOST` | `127.0.0.1` | MongoDB host |
 | `SYSTEM_FINGERPRINT_MONGODB_PORT` | `27017` | MongoDB port |
 | `MONGODB_NAME` | `SYSTEM_FINGERPRINT` | Name of MongoDB |
+| `SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE` | `en` | The language of the default prompt template. Only `en` and `pl` are supported. |
 | `SYSTEM_FINGERPRINT_USVC_PORT` | `6012` | (Optional) Microservice port |
 
 ## Getting started

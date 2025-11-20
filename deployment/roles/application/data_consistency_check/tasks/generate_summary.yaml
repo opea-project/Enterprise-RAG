@@ -1,0 +1,144 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Generate data consistency summary report
+  tags:
+    - pre-upgrade
+    - data-consistency
+  block:
+    - name: Build markdown report content
+      ansible.builtin.set_fact:
+        markdown_content: |
+          # Data Consistency Report
+          Generated: {{ ansible_date_time.iso8601 }}
+
+          ---
+
+          ## Summary
+
+          This report contains data consistency information for the following components:
+          {% if edp_report_data is defined %}
+          - **EDP (Enhanced Data Prep)**: PostgreSQL database with files and links tracking
+          {% endif %}
+          {% if vdb_report_data is defined %}
+          - **Vector Database**: Vector store with embeddings
+          {% endif %}
+          {% if minio_report_data is defined %}
+          - **MinIO**: Object storage for document files
+          {% endif %}
+          {% if fingerprint_report_data is defined %}
+          - **Fingerprint**: MongoDB for document fingerprinting
+          {% endif %}
+          {% if chat_history_report_data is defined %}
+          - **Chat History**: Conversation tracking
+          {% endif %}
+          {% if keycloak_report_data is defined %}
+          - **Keycloak**: Identity and Access Management
+          {% endif %}
+
+          ---
+          {% if edp_report_data is defined %}
+
+          ## EDP Component
+
+          ### {{ edp_report_data.component }}
+          - files-count: {{ edp_report_data.files_count }}
+          - links-count: {{ edp_report_data.links_count }}
+          {% endif %}
+          {% if vdb_report_data is defined %}
+
+          ## Vector Database Component
+
+          ### {{ vdb_report_data.component }}
+          - keys-count: {{ vdb_report_data.keys_count }}
+          {% endif %}
+          {% if minio_report_data is defined %}
+
+          ## MinIO Component
+
+          ### {{ minio_report_data.component }}
+          - files-count: {{ minio_report_data.files_count }}
+          - buckets-count: {{ minio_report_data.buckets_count }}
+          {% endif %}
+          {% if fingerprint_report_data is defined %}
+
+          ## Fingerprint Component
+
+          ### {{ fingerprint_report_data.component }}
+          - collections-count: {{ fingerprint_report_data.collections_count }}
+          {% endif %}
+          {% if chat_history_report_data is defined %}
+
+          ## Chat History Component
+
+          ### {{ chat_history_report_data.component }}
+          - conversations-count: {{ chat_history_report_data.conversations_count }}
+          {% endif %}
+          {% if keycloak_report_data is defined %}
+
+          ## Keycloak Component
+
+          ### {{ keycloak_report_data.component }}
+          - users-count: {{ keycloak_report_data.users_count }}
+          - roles-count: {{ keycloak_report_data.roles_count }}
+          - clients-count: {{ keycloak_report_data.clients_count }}
+          - groups-count: {{ keycloak_report_data.groups_count }}
+          {% endif %}
+
+    - name: Write markdown report
+      ansible.builtin.copy:
+        content: "{{ markdown_content }}"
+        dest: "{{ data_consistency_report_dir }}/{{ data_consistency_markdown_report_name }}"
+        mode: '0644'
+
+    - name: Build YAML report data structure
+      ansible.builtin.set_fact:
+        yaml_report_data:
+          components: []
+
+    - name: Add EDP to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': edp_report_data.component, 'files_count': edp_report_data.files_count | int, 'links_count': edp_report_data.links_count | int}]}) }}"
+      when: edp_report_data is defined
+
+    - name: Add VDB to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': vdb_report_data.component, 'keys_count': vdb_report_data.keys_count | int}]}) }}"
+      when: vdb_report_data is defined
+
+    - name: Add MinIO to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': minio_report_data.component, 'buckets_count': minio_report_data.buckets_count | int, 'files_count': minio_report_data.files_count | int}]}) }}"
+      when: minio_report_data is defined
+
+    - name: Add Fingerprint to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': fingerprint_report_data.component, 'collections_count': fingerprint_report_data.collections_count | int}]}) }}"
+      when: fingerprint_report_data is defined
+
+    - name: Add Chat History to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': chat_history_report_data.component, 'conversations_count': chat_history_report_data.conversations_count | int}]}) }}"
+      when: chat_history_report_data is defined
+
+    - name: Add Keycloak to YAML report
+      ansible.builtin.set_fact:
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': keycloak_report_data.component, 'clients_count': keycloak_report_data.clients_count | int, 'groups_count': keycloak_report_data.groups_count | int, 'roles_count': keycloak_report_data.roles_count | int, 'users_count': keycloak_report_data.users_count | int}]}) }}"
+      when: keycloak_report_data is defined
+
+    - name: Generate YAML report
+      ansible.builtin.copy:
+        content: "{{ yaml_report_data | to_nice_yaml(indent=2, sort_keys=False) }}"
+        dest: "{{ data_consistency_report_dir }}/{{ data_consistency_yaml_report_name }}"
+        mode: '0644'
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg:
+          - "===================================================================="
+          - "Data Consistency Check Complete"
+          - "===================================================================="
+          - "Markdown Report: {{ data_consistency_report_dir }}/{{ data_consistency_markdown_report_name }}"
+          - "YAML Report: {{ data_consistency_report_dir }}/{{ data_consistency_yaml_report_name }}"
+          - "===================================================================="

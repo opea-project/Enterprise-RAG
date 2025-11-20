@@ -31,10 +31,12 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ["react", "react-dom"],
-          "xyflow-react": ["@xyflow/react"],
           "intel-enterprise-rag-ui-auth": ["@intel-enterprise-rag-ui/auth"],
           "intel-enterprise-rag-ui-components": [
             "@intel-enterprise-rag-ui/components",
+          ],
+          "intel-enterprise-rag-ui-control-plane": [
+            "@intel-enterprise-rag-ui/control-plane",
           ],
           "intel-enterprise-rag-ui-icons": ["@intel-enterprise-rag-ui/icons"],
           "intel-enterprise-rag-ui-layouts": [

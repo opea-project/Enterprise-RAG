@@ -1,18 +1,9 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import "./AdminPanelRoute.scss";
-
+import { TabId, Tabs } from "@intel-enterprise-rag-ui/components";
 import { PageLayout } from "@intel-enterprise-rag-ui/layouts";
-import classNames from "classnames";
 import { useEffect, useState } from "react";
-import {
-  Key as AriaKey,
-  Tab as AriaTab,
-  TabList as AriaTabList,
-  TabPanel as AriaTabPanel,
-  Tabs as AriaTabs,
-} from "react-aria-components";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -24,23 +15,28 @@ import DataIngestionTab from "@/features/admin-panel/data-ingestion/components/D
 import TelemetryAuthenticationTab from "@/features/admin-panel/telemetry-authentication/components/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
 
 const adminPanelTabs = [
-  { name: "Control Plane", path: "control-plane", panel: <ControlPlaneTab /> },
+  {
+    name: "Control Plane",
+    path: "control-plane",
+    id: "control-plane",
+    panel: <ControlPlaneTab />,
+  },
   {
     name: "Data Ingestion",
     path: "data-ingestion",
+    id: "data-ingestion",
     panel: <DataIngestionTab />,
   },
   {
     name: "Telemetry & Authentication",
     path: "telemetry-authentication",
+    id: "telemetry-authentication",
     panel: <TelemetryAuthenticationTab />,
   },
 ];
 
 const AdminPanelRoute = () => {
-  const [selectedTab, setSelectedTab] = useState<AriaKey>(
-    adminPanelTabs[0].path,
-  );
+  const [selectedTab, setSelectedTab] = useState<TabId>(adminPanelTabs[0].path);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,19 +44,19 @@ const AdminPanelRoute = () => {
     const path = location.pathname.split("/").pop();
     const tab = adminPanelTabs.find((tab) => tab.path === path);
     if (tab !== undefined) {
-      setSelectedTab(tab.path as AriaKey);
+      setSelectedTab(tab.id as TabId);
     } else {
       navigate(`/admin-panel/${adminPanelTabs[0].path}`, { replace: true });
     }
   }, [location.pathname, navigate]);
 
-  const handleTabBtnClick = (path: AriaKey | null) => {
-    if (path === null) {
-      return;
-    }
-    setSelectedTab(path);
+  const handleTabSelectionChange = (id: TabId) => {
+    setSelectedTab(id);
+    const tab = adminPanelTabs.find((tab) => tab.id === id);
     const queryParams = location.search;
-    let to = `/admin-panel/${path}`;
+    if (!tab) return;
+
+    let to = `/admin-panel/${tab.path}`;
     if (queryParams) {
       to += queryParams;
     }
@@ -74,40 +70,11 @@ const AdminPanelRoute = () => {
         rightSideContent: <AppHeaderRightSideContent />,
       }}
     >
-      <div className="admin-panel">
-        <AriaTabs
-          selectedKey={selectedTab}
-          onSelectionChange={handleTabBtnClick}
-        >
-          <AriaTabList
-            className="admin-panel-tabs"
-            aria-label="Admin Panel views"
-          >
-            {adminPanelTabs.map((tab) => (
-              <AriaTab
-                key={`${tab.path}-tab`}
-                id={tab.path}
-                className={({ isSelected }) =>
-                  classNames("admin-panel-tab-button", {
-                    "active-tab": isSelected,
-                  })
-                }
-              >
-                {tab.name}
-              </AriaTab>
-            ))}
-          </AriaTabList>
-          {adminPanelTabs.map((tab) => (
-            <AriaTabPanel
-              key={`${tab.path}-panel`}
-              id={tab.path}
-              className="admin-panel-tab-content"
-            >
-              {tab.panel}
-            </AriaTabPanel>
-          ))}
-        </AriaTabs>
-      </div>
+      <Tabs
+        tabs={adminPanelTabs}
+        selectedTab={selectedTab}
+        onSelectionChange={handleTabSelectionChange}
+      />
     </PageLayout>
   );
 };

@@ -1,0 +1,33 @@
+# Copyright (C) 2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Default Validation Rules
+# These rules are applied LAST (after component-specific rules)
+# Using first-match logic: the first matching rule determines the action
+#
+# Rule matching logic (all use AND logic):
+#   - path_regex only:  matches if path matches the regex
+#   - data_regex only:  matches if content matches the regex
+#   - both specified:   matches if BOTH path AND content match (AND logic)
+#
+# Examples:
+#   path_regex: ".*password.*"              # matches any path containing "password"
+#   data_regex: ".*password.*"              # matches any content containing "password"
+#   path_regex: ".*config.*"                # matches paths with "config" AND
+#   data_regex: ".*secret.*"                # content with "secret" (both required)
+
+validation_rules:
+  # sample - reject changes in release values supplied for installing helm release
+  # - path_regex: ".*release-values.*"
+  #   response: "reject"
+  #   note: "OIDC client secret may change"
+
+  # sample - comment changes are documentation only
+  # - path_regex: ".*comment.*"
+  #   response: "approve"
+  #   note: "Comment changes are documentation only"
+
+  # Default fallback - reject all other changes
+  - path_regex: ".*"
+    response: "reject"
+    note: "Uncategorized changes require explicit approval - no matching rule found"

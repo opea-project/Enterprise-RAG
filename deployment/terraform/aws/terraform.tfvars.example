@@ -15,6 +15,10 @@ ami_id         = "ami-0a116fa7c861dd5f9"       # Leave empty for auto-selection 
 # Hugging Face Token
 hugging_face_token = ""
 
+# Solution Version (default: "release-2.0.0")
+# Specify a git tag (e.g., "release-2.0.0", "release-1.5.0") or branch name ("main")
+#solution_version = "release-2.0.0"
+
 # Instance Configuration
 instance_type    = "r8i.32xlarge"
 root_volume_size = 300

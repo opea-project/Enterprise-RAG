@@ -12,6 +12,7 @@
         name: topology-discovery
   tags:
     - install
+    - topology-preview
 
 - name: label topology-discovery namespace
   kubernetes.core.k8s:
@@ -26,6 +27,7 @@
   when: enforcePSS
   tags:
     - install
+    - topology-preview
 
 - name: Create a topology discovery daemonset
   kubernetes.core.k8s:
@@ -53,8 +55,6 @@
               runAsUser: 1000
               seccompProfile:
                 type: RuntimeDefault
-            tolerations:
-              - operator: "Exists"
             containers:
             - name: ubuntu
               image: ubuntu
@@ -62,6 +62,7 @@
             restartPolicy: Always
   tags:
     - install
+    - topology-preview
 
 - name: Wait for node-topology-debugger pods to be ready
   kubernetes.core.k8s_info:
@@ -75,56 +76,36 @@
   delay: 10
   tags:
     - install
+    - topology-preview
 
 - name: Initialize cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: {}
   tags:
     - install
+    - topology-preview
 
 - name: Set default VLLM_CPUS from resources reference file
   set_fact:
-    VLLM_CPUS_DEFAULT: >-
+    VLLM_CPUS: >-
       {{
         (
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'equalto', 'chatqa')
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
               | map(attribute='resourcesPath')
               | first
             ), errors='ignore')
             | from_yaml
           )
           | default({})
-        ).get('services', {}).get('vllm', {}).get('resources', {}).get('requests', {}).get('cpu', 32)
+        ).get('services', {}).get('vllm', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
   tags:
     - install
-
-- name: Set VLLM_CPUS from balloons if enabled, else use default
-  set_fact:
-    VLLM_CPUS: >-
-      {{
-        (
-          (
-            balloons | default({})
-          ).get('services', {}).get('vllm', {}).get('resources', {}).get('requests', {}).get('cpu', VLLM_CPUS_DEFAULT)
-        )
-        | default(VLLM_CPUS_DEFAULT)
-        | int
-      }}
-  when: balloons.enabled | default(false)
-  tags:
-    - install
-
-- name: Set VLLM_CPUS to default if balloons not enabled
-  set_fact:
-    VLLM_CPUS: "{{ VLLM_CPUS_DEFAULT }}"
-  when: not (balloons.enabled | default(false))
-  tags:
-    - install
+    - topology-preview
 
 - name: Set RERANKER_CPUS from resources reference file
   set_fact:
@@ -134,18 +115,41 @@
           (
             lookup('file', pipelines_dir ~ '/' ~ (
               pipelines
-              | selectattr('type', 'equalto', 'chatqa')
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
               | map(attribute='resourcesPath')
               | first
             ), errors='ignore')
             | from_yaml
           )
           | default({})
-        ).get('services', {}).get('torchserve_reranking', {}).get('resources', {}).get('requests', {}).get('cpu', 4)
+        ).get('services', {}).get('torchserve_reranking', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
   tags:
     - install
+    - topology-preview
+
+- name: Set EMBEDDING_CPUS from resources reference file
+  set_fact:
+    EMBEDDING_CPUS: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | map(attribute='resourcesPath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          )
+          | default({})
+        ).get('services', {}).get('torchserve_embedding', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
+        | int
+      }}
+  tags:
+    - install
+    - topology-preview
 
 - name: Gather CPU/NUMA/AMX info for each node
   include_tasks: get_single_node_topology.yaml
@@ -157,12 +161,31 @@
     label: "{{ item.spec.nodeName }}"
   tags:
     - install
+    - topology-preview
 
 - name: Check if any node is Gaudi
   set_fact:
     gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
   tags:
     - install
+    - topology-preview
+
+- name: Calculate optimal replicas using Python script
+  ansible.builtin.shell: |
+    python3 {{ playbook_dir }}/../scripts/calculate_replicas.py \
+      --nodes-dict '{{ cpu_topology_per_node | to_json }}' \
+      --vllm-size {{ VLLM_CPUS }} \
+      --reranking-size {{ RERANKER_CPUS }} \
+      --embedding-size {{ EMBEDDING_CPUS }} \
+      --throughput-mode {{ balloons.throughput_mode | default(true) }} \
+      --edp-enabled {{ edp.enabled | default(false) }} \
+      --telemetry-enabled {{ telemetry.enabled | default(false) }} \
+      --vector-databases-enabled {{ vector_databases.enabled | default(false) }} \
+      --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }}
+  register: replicas_calculation_result
+  tags:
+    - install
+    - topology-preview
 
 - name: Delete node-topology-debugger daemonset
   kubernetes.core.k8s:
@@ -172,6 +195,8 @@
     namespace: topology-discovery
   tags:
     - install
+    - uninstall
+    - topology-preview
 
 - name: Delete topology-discovery namespace
   kubernetes.core.k8s:
@@ -180,12 +205,81 @@
     name: topology-discovery
   tags:
     - install
+    - uninstall
+    - topology-preview
 
-- name: Verify if cluster have AMX or Gaudi support
-  fail:
-    msg: "No node with AMX support detected and no node with Gaudi hardware present. At least one node must support AMX or Gaudi."
-  when:
-    - cpu_topology_per_node.values() | selectattr('amx_supported', 'equalto', true) | list | length == 0
-    - not gaudi_detected
+- name: Create log directory if it does not exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '755'
+  loop:
+    - "{{ log_dir }}"
+    - "{{ tmp_dir }}"
   tags:
     - install
+    - topology-preview
+
+- name: Save replicas calculation output to file
+  copy:
+    content: "{{ replicas_calculation_result.stdout | from_json | to_nice_json }}"
+    dest: "{{ tmp_dir }}/inference_pods_distribution.yaml"
+    mode: '0644'
+  tags:
+    - install
+    - topology-preview
+
+- name: Display topology calculation results
+  ansible.builtin.pause:
+    prompt: |
+      ============================================================
+      Topology calculation complete!
+      Results saved to: {{ tmp_dir }}/inference_pods_distribution.yaml
+
+      Review the results below and press ENTER to continue...
+      ============================================================
+
+      ====== Topology Calculation Summary ======
+      {% for node, info in (replicas_calculation_result.stdout | from_json).items() if node not in ['total_replicas', 'gaudi_nodes_count'] %}
+      Node: {{ node }}
+        Inference Groups: {{ info.replicas }}
+        Adjusted VLLM Size: {{ info.adjusted_vllm_size }}
+        Calculation Method: {{ info.calculation_method }}
+        Gaudi: {{ info.gaudi | default(false) }}
+        AMX Supported: {{ info.amx_supported | default(false) }}
+        Inference memory request: {{ info.memory_usage_percent }}%
+        VLLM Replicas: {{ info.vllm.replicas }}
+        VLLM CPU Size: {{ info.vllm.adjusted_cpu_size }}
+        Embedding Replicas: {{ info.torchserve_embedding.replicas }}
+        Embedding CPU Size: {{ info.torchserve_embedding.cpu_size }}
+        Reranking Replicas: {{ info.torchserve_reranking.replicas }}
+        Reranking CPU Size: {{ info.torchserve_reranking.cpu_size }}
+      ------------------------------------------
+      {% endfor %}
+      Total Inference Groups (Counted for non-Gaudi nodes with AMX support): {{ (replicas_calculation_result.stdout | from_json).total_replicas }}
+      Gaudi Nodes Count: {{ (replicas_calculation_result.stdout | from_json).gaudi_nodes_count }}
+      ==========================================
+  tags:
+    - topology-preview
+  when: '"topology-preview" in ansible_run_tags'
+
+- name: Parse replicas calculation output
+  set_fact:
+    optimal_replicas: "{{ replicas_calculation_result.stdout | trim | from_json }}"
+  tags:
+    - install
+    - topology-preview
+
+- name: Fail if no possible working setup (no replicas and no Gaudi nodes)
+  fail:
+    msg: >-
+      No possible working setup: total_replicas and gaudi_nodes_count are both zero.
+      The current hardware topology does not allow any service replicas to be scheduled.
+      Please check your cluster configuration and available resources.
+  when:
+    - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
+    - optimal_replicas.total_replicas == 0
+    - optimal_replicas.gaudi_nodes_count == 0
+  tags:
+    - install
+    - topology-preview

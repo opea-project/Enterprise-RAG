@@ -70,10 +70,9 @@ The top panel shows the current replica count for each service managed by HPA. B
 
 ## Logs
 
-In the left-hand panel, select the **Explore -> Logs** tab to access Grafana’s integrated log exploration feature. Here you can view, search, and filter logs.
+In the left-hand panel, select the **Drilldown -> Logs** tab to access Grafana’s integrated log exploration feature. Here you can view, search, and filter logs.
 
-![Explore Logs View](./images/telemetry/explore_logs.png)
+![Logs Drilldown View](./images/telemetry/explore_logs.png)
 
-It supports advanced filtering, real-time log streaming, and contextual log inspection to streamline troubleshooting and monitoring. For more information on using this powerful tool, see [Grafana Explore Logs documentation](https://grafana.com/docs/grafana/latest/explore/logs-integration/).
- 
+It supports advanced filtering, real-time log streaming, and contextual log inspection to streamline troubleshooting and monitoring. For more information on using this powerful tool, see [Grafana Logs Drilldown documentation](https://grafana.com/docs/grafana-cloud/visualizations/simplified-exploration/logs/get-started/).
 

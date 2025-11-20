@@ -132,14 +132,15 @@ class ConnectorRedis(VectorStoreConnector):
 
         if self.index_dict.get(index_name, None) is not None:
             index = self.index_dict[index_name]
-            exists = await index.exists()
-            if exists:
-                return index
-            else:
-                logger.info(f"Index {index_name} memoized but not available in redis.")
+            try:
+                await index._redis_client.ping()
+                if await index.exists():
+                    return index
+            except (exceptions.ConnectionError, exceptions.TimeoutError, exceptions.RedisClusterException):
+                logger.warning("Redis connection was lost. Reconnecting...")
 
         index = await self._create_index(schema)
-        self.index_dict[index_name]=index
+        self.index_dict[index_name] = index
         return index
 
     def _process_data(self, texts: List[str], embeddings: List[List[float]], metadatas: List[dict]=None):
@@ -452,7 +453,11 @@ class ConnectorRedis(VectorStoreConnector):
             start_index = doc.start_index
 
             has_headers = False
-            header_filter = Text('file_id') == object_id
+            header_filter = None
+            if filter_expression is None:
+                header_filter = Text('file_id') == object_id
+            else:
+                header_filter = filter_expression & (Text('file_id') == object_id)
 
             for i in range(1, 7):
                 header_key = f'Header{i}'
@@ -486,7 +491,11 @@ class ConnectorRedis(VectorStoreConnector):
                             sibling_docs.append(self._convert_to_text_doc(next_chunk))
             else:
                 # Case 2: Document doesn't have headers - get nearest chunks by start_index
-                before_filter = (Text('file_id') == object_id) & (Num('start_index') < int(start_index))
+                before_filter = None
+                if filter_expression is None:
+                    before_filter = (Text('file_id') == object_id) & (Num('start_index') < int(start_index))
+                else:
+                    before_filter = filter_expression & (Text('file_id') == object_id) & (Num('start_index') < int(start_index))
                 before_query = FilterQuery(filter_expression=before_filter, num_results=100)
                 before_result = await index.search(before_query)
 
@@ -495,7 +504,11 @@ class ConnectorRedis(VectorStoreConnector):
                     logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
                     sibling_docs.append(self._convert_to_text_doc(prev_chunk))
 
-                after_filter = (Text('file_id') == object_id) & (Num('start_index') > int(start_index))
+                after_filter = None
+                if filter_expression is None:
+                    after_filter = (Text('file_id') == object_id) & (Num('start_index') > int(start_index))
+                else:
+                    after_filter = filter_expression & (Text('file_id') == object_id) & (Num('start_index') > int(start_index))
                 after_query = FilterQuery(filter_expression=after_filter, num_results=100)
                 after_result = await index.search(after_query)
 

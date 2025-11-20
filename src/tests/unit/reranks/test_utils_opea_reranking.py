@@ -59,9 +59,9 @@ def test_initializaction_raises_exception_when_missing_required_arg():
 
     assert str(context.value).endswith("missing 2 required positional arguments: 'service_endpoint' and 'model_server'")
 
-    # empty string is passed
-    with pytest.raises(Exception) as context:
-        OPEAReranker(service_endpoint="",  model_server="tei")
+    # empty string is passed to trigger validation
+    with pytest.raises(ValueError) as context:
+        OPEAReranker(service_endpoint="",  model_server="tei", late_chunking_enabled=False)
 
     assert str(context.value) == "The 'RERANKING_SERVICE_ENDPOINT' cannot be empty."
 

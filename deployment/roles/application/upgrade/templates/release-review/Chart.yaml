@@ -1,0 +1,9 @@
+apiVersion: v2
+name: release-review
+description: A temporary chart supporting review of release values
+
+type: application
+
+version: 0.1.0
+
+appVersion: "1.0.0"

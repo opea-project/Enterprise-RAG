@@ -170,7 +170,7 @@ curl http://localhost:6000/v1/health_check \
   -H 'Content-Type: application/json'
 ```
 
-####  Sending a Request
+#### Sending a Request
 
 The embedding microservice accepts input as either a single text string or multiple documents containing text.
 
@@ -241,6 +241,59 @@ For multiple documents:
       "metadata": {}
     }
   ]
+}
+```
+
+
+### Parameter `return_pooling`
+
+By default, the embedding service returns a single vector per text. With TorchServe and the Langchain connector, setting `return_pooling=true` returns embeddings for each token instead of an aggregated vector. This enables a technique known as late chunking, where the input is embedded as a whole, and then chunked after embedding, based on token-level vector.
+
+
+> Note:
+> The return pooling is currently supported only with TorchServe + Langchain.
+
+**Example Input:**
+
+To request pooling layer output for a single text input:
+
+```bash
+curl http://localhost:6000/v1/embeddings \
+  -X POST \
+  -d '{"text":"Hello, world!", "return_pooling": true}' \
+  -H 'Content-Type: application/json'
+```
+
+For request pooling layer output for multiple documents:
+
+```bash
+curl http://localhost:6000/v1/embeddings\
+  -X POST \
+  -d '{"docs": [{"text":"Hello, world!"}, {"text":"Hello, world!"}], "return_pooling": true}' \
+  -H 'Content-Type: application/json'
+```
+
+
+**Example Output:**
+```json
+{
+  "id":"d4e67d3c7353b13c3821d241985705b1",
+  "text":"Hello, world!",
+  "embedding": [
+    [-0.23828125, -0.84765625,  0.498046875,  ...],
+    [-0.5078125,  -0.7578125,   0.2001953125, ...],
+    [-0.65625,    -0.87109375,  0.2392578125, ...],
+    [-0.3671875,  -0.875,       0.166015625,  ...],
+    [-0.30859375, -0.64453125,  0.546875,     ...],
+    [-0.609375,   -0.60546875,  0.375,        ...]
+  ],
+  "search_type":"similarity",
+  "k":4,
+  "distance_threshold":null,
+  "fetch_k":20,
+  "lambda_mult":0.5,
+  "score_threshold":0.2,
+  "metadata": {}
 }
 ```
 

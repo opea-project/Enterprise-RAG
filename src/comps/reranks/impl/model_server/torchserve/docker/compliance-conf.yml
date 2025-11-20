@@ -11,3 +11,8 @@ pip-manual:
     - torchserve
     - torch-model-archiver
     - packaging
+base-image:
+  override:
+    - python:3.11-slim-bookworm
+apt:
+  base-image-override: python:3.11-slim-bookworm

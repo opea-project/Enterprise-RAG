@@ -65,36 +65,13 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: retriever-usvc
       initContainers:
-        - name: wait-for-redis
-          image: redis:alpine
-          env:
-            - name: REDIS_URL
-              valueFrom:
-                secretKeyRef:
-                  name: vector-database-config
-                  key: REDIS_URL
-            - name: VECTOR_STORE
-              valueFrom:
-                secretKeyRef:
-                  name: vector-database-config
-                  key: VECTOR_STORE
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          command:
-            - sh
-            - -c
-            - |
-                if [ -z "$REDIS_URL" ]; then
-                  echo "Environment variable REDIS_URL is not set. Skipping wait-for-redis init container.";
-                  exit 1
-                else
-                  REDIS_CLUSTER_FLAG=$([ "$VECTOR_STORE" = "redis-cluster" ] && echo "-c" || echo "")
-                  REDIS_URL_OBFUSCATED=$(echo $REDIS_URL | sed -e 's|//.*:.*@|//********:********@|')
-                  until redis-cli $REDIS_CLUSTER_FLAG -u $REDIS_URL ping | grep -q PONG; do
-                    echo "waiting for redis server $REDIS_URL_OBFUSCATED to be ready...";
-                    sleep 2;
-                  done;
-                fi;
+        {{- if eq (index .Values "images" .filename "vector_store") "redis" }}
+          {{- include "redis_init_container" . | nindent 8 }}
+        {{- else if eq (index .Values "images" .filename "vector_store") "redis-cluster" }}
+          {{- include "redis_init_container" . | nindent 8 }}
+        {{- else if eq (index .Values "images" .filename "vector_store") "pgvector" }}
+          {{- include "postgresql_init_container" . | nindent 8 }}
+        {{- end }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:
         - name: retriever-usvc

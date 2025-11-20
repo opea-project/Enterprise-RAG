@@ -20,19 +20,19 @@ tdx:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
-mongodb:
-  auth:
-    usernames:
-      - {{ fingerprint.mongo.auth.user.db_user }}
-    passwords:
-      - {{ MONGO_DB_PASSWORD }}
-    databases:
-      - {{ fingerprint.mongo.auth.db_name }}
-    rootPassword: {{ MONGO_ADMIN_PASSWORD }}
+ferretdb:
+  postgresql:
+    auth:
+      password: "{{ FINGERPRINT_POSTGRES_PASSWORD }}"
+
+systemFingerprint:
+  templateLanguage: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+
 {% if tdx.coco.enabled %}
   podAnnotations:
     io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
 {% endif %}
+
 {% if fingerprint.additional_values is defined %}
 {{ fingerprint.additional_values | to_nice_yaml }}
 {% endif %}

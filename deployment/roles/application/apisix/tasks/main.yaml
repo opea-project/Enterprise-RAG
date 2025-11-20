@@ -9,21 +9,30 @@
   tags:
     - install
 
-
 - name: Ensure Helm repository is added
   kubernetes.core.helm_repository:
     name: "{{ apisix.helm.repo_name }}"
     repo_url: "{{ apisix.helm.repo_url }}"
     state: present
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 3
+  delay: 15
   tags:
     - install
+    - pre-upgrade
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
     cmd: helm dependency build
     chdir: "{{ apisix.helm.chart_directory }}"
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
+    - pre-upgrade
 
 # Creates client_secret_id
 - name: Get client_id keycloak
@@ -34,6 +43,7 @@
     tasks_from: get_secret_id.yaml
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -75,6 +85,18 @@
   tags:
     - install
 
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ apisix.namespace }}"
+    release_name: "{{ apisix.helm.release_name }}"
+    release_enabled: "{{ apisix.enabled }}"
+    chart_ref: "{{ apisix.helm.chart_directory }}"
+    release_values_files: "{{ apisix.helm.default_values_file }}"
+  tags:
+    - pre-upgrade
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ apisix.helm.release_name }}"
@@ -89,6 +111,10 @@
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ apisix.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 

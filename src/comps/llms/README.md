@@ -53,12 +53,16 @@ The configuration for the LLM Microservice is specified in the [impl/microservic
 | `LLM_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8008"                                                       |
 | `LLM_DISABLE_STREAMING`         | Disables streaming even if streaming has been enabled via the input query/request.                                    |
 | `LLM_OUTPUT_GUARD_EXISTS`       | Informs LLM service if there is LLM output guard service after LLM, so the streaming is taken by LLM output guard.    |
+| `LLM_TLS_SKIP_VERIFY`           | Skips tls certificate verification for inference endpoint |
+| `LLM_OPENAI_FORMAT_STREAMING`   | When set to "True" (default), uses OpenAI-compliant JSON streaming format. When "False", uses legacy string format.   |
 
 Set below environment variables only for VLLM if remote model server is enabled with token based authentication (OAuth).
 | `LLM_VLLM_CLIENT_ID`                      | The id of the client in auth provider |
 | `LLM_VLLM_CLIENT_SECRET`                 | The secret of the client in auth provider |
 | `LLM_VLLM_TOKEN_URL`                     | The token URL to get the access token |
 
+Alternatively, static API KEY can be provided. This will override OAuth settings.
+| `LLM_VLLM_API_KEY` | static API key for vllm endpoint |
 
 ## Getting started
 
@@ -138,8 +142,8 @@ curl http://localhost:9000/v1/health_check \
 You can set the following model parameters according to your actual needs, such as `max_new_tokens`, `streaming`. See the example below for more of an understanding.
 
 The `streaming` parameter controls the API response format:
- - `streaming=false` returns a complete text string,
- - `streaming=true` streams the text in real time.
+ - `stream=false` returns a complete text string,
+ - `stream=true` streams the text in real time.
 
 > [!NOTE]
 > Ensure that your model server is running at `LLM_MODEL_SERVER_ENDPOINT` and is ready to accept requests. Be aware that the server may take some time to become fully operational; otherwise, the microservice will return an Internal Server Error.
@@ -151,14 +155,20 @@ The `streaming` parameter controls the API response format:
 curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: What is Deep Learning? \n\n"
-                    },
+                "messages": [
+                      {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
+                      },
+                      {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                      }
+                    ],
                 "max_new_tokens":32,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":false
+                "stream":false
             }' \
         -H 'Content-Type: application/json'
 ```
@@ -168,14 +178,20 @@ curl http://localhost:9000/v1/chat/completions \
 curl http://localhost:9000/v1/chat/completions \
         -X POST \
         -d '{
-                "messages": {
-                    "system": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n",
-                    "user": "### Question: What is Deep Learning? \n\n"
-                    },
+                "messages": [
+                      {
+                        "role": "system",
+                        "content": "### You are a helpful, respectful, and honest assistant to help the user with questions. Please refer to the search results obtained from the local knowledge base. Refer also to the conversation history if you think it is relevant to the current question. Ignore all information that you think is not relevant to the question. If you dont know the answer to a question, please dont share false information. ### Search results:  \n\n"
+                      },
+                      {
+                        "role": "user",
+                        "content": "### Question: What is Deep Learning? \n\n"
+                      }
+                    ],
                 "max_new_tokens":32,
                 "top_p":0.95,
                 "temperature":0.01,
-                "streaming":true
+                "stream":true
             }' \
         -H 'Content-Type: application/json'
 ```
@@ -184,18 +200,20 @@ curl http://localhost:9000/v1/chat/completions \
 
 The following examples demonstrate the LLM microservice output in both non-streaming and streaming modes.
 
-- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+- In **non-streaming mode** (stream=false), the service returns a single JSON response:
 
 ```json
 {
   "id":"9a1b09face84c316c9a6297052d8b791",
   "text":"System: I am a helpful, respectful, and honest assistant designed to help you",
   "prompt":"### Question: Who are you? \n\n",
-  "streaming":false,
+  "stream":false,
   "output_guardrail_params":null
 }
 ```
-- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated.
+
+**With default format** (when `LLM_OPENAI_FORMAT_STREAMING=False`):
 ```
 data: '\n'
 data: 'Deep'
@@ -214,23 +232,35 @@ data: ' networks'
 data: [DONE]
 ```
 
+  **With OpenAI-compliant format** (default, when `LLM_OPENAI_FORMAT_STREAMING=True`):
+```
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":"Deep"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" learning"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" is"},"finish_reason":null}]}
+...
+data: {"id":"chatcmpl-xyz789","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}]}
+data: [DONE]
+```
+
 ##### Example Output with additional Data
 
 If additional data is passed in LLMParamsDoc.data attribute, additional data is appended to the response. For example:
 
-- In **non-streaming mode** (streaming=false), the service returns a single JSON response:
+- In **non-streaming mode** (stream=false), the service returns a single JSON response:
 
 ```json
 {
   "id": "9a1b09face84c316c9a6297052d8b791",
   "text": "System: I am a helpful, respectful, and honest assistant designed to help you",
   "prompt": "### Question: Who are you? \n\n",
-  "streaming": false,
+  "stream": false,
   "output_guardrail_params": null,
   "data": { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 }
 ```
-- In **streaming mode** (streaming=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated:
+- In **streaming mode** (stream=true), the response is sent in chunks, providing real-time updates for each word or phrase as it is generated.
+
+**With default format** (when `LLM_OPENAI_FORMAT_STREAMING=False`):
 ```
 data: '\n'
 data: 'Deep'
@@ -246,6 +276,17 @@ data: ' uses'
 data: ' artificial'
 data: ' neural'
 data: ' networks'
+data: [DONE]
+json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
+```
+
+**With OpenAI-compliant format** (default, when `LLM_OPENAI_FORMAT_STREAMING=True`):
+```
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":"Deep"},"finish_reason":null}]}
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" learning"},"finish_reason":null}]}
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":" is"},"finish_reason":null}]}
+...
+data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,"model":"mistralai/Mistral-7B-Instruct-v0.1","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}]}
 data: [DONE]
 json: { "reranked_docs": [{ "url": "https://example.com", "citation_id": 1, "vector_distance": 0.23, "reranker_score": 0.83 }] }
 ```

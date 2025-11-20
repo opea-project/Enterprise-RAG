@@ -9,7 +9,7 @@
     state: present
   tags:
     - install
-    - uninstall
+    - pre-upgrade
 
 - name: Get all BalloonsPolicies
   kubernetes.core.k8s_info:
@@ -19,7 +19,6 @@
   register: balloons_policies
   tags:
     - install
-    - uninstall
 
 - name: Remove all BalloonsPolicies
   kubernetes.core.k8s:
@@ -31,15 +30,20 @@
   loop: "{{ balloons_policies.resources }}"
   tags:
     - install
-    - uninstall
 
 - name: Gather NUMA topology info
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_nodes_topology.yaml
+    apply:
+      tags:
+        - pre-upgrade
   when: cpu_topology_per_node is not defined
   tags:
     - install
+    - pre-upgrade
+    - uninstall
+    - topology-preview
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -52,6 +56,7 @@
   when: balloons.namespace != 'kube-system'
   tags:
     - install
+    - pre-upgrade
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -69,11 +74,31 @@
   tags:
     - install
 
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ balloons.namespace }}"
+    release_name: "{{ balloons.helm.release_name }}"
+    release_enabled: "{{ balloons.enabled }}"
+    chart_ref: "{{ balloons.helm.repo_name }}/{{ balloons.helm.chart_name }}"
+    release_values_files: "{{ balloons.helm.reset_values_file }}"
+  tags:
+    - pre-upgrade
+
+- name: Set balloons_chart_name fact for cross-role usage
+  ansible.builtin.set_fact:
+    balloons_chart_name: "{{ balloons.helm.chart_name }}"
+  tags:
+    - install
+    - pre-upgrade
+
 - name: Apply nri-resource-policy-balloons chart
   kubernetes.core.helm:
     name: "{{ balloons.helm.release_name }}"
     chart_ref: "{{ balloons.helm.repo_name }}/{{ balloons.helm.chart_name }}"
     namespace: "{{ balloons.namespace }}"
+    chart_version: "{{ balloons.helm.chart_version }}"
     create_namespace: false
     values_files: "{{ balloons.helm.reset_values_file }}"
     state: present
@@ -84,39 +109,29 @@
 #    post_renderer:
 #      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ balloons.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
 #       if tdx.coco.enabled else omit }}"
-  tags:
-    - install
-    - uninstall
-
-
-- name: Fail if all nodes have maxBalloonsVLLM=0
-  ansible.builtin.fail:
-    msg: |
-      maxBalloonsVLLM is 0 on all nodes. This means no vLLM pods can be scheduled on any node with the current configuration.
-      This usually happens when the requested CPUs per vLLM pod is bigger than the number of physical cores available in a single NUMA node.
-      Please check your vLLM CPU request/limit values and set them to fit within the NUMA node size.
-      For more help, see the nri-plugin documentation:
-      https://github.com/opea-project/Enterprise-RAG/tree/main/deployment/components/nri-plugin
-  when: >-
-    not (
-      cpu_topology_per_node.values() | selectattr('maxBalloonsVLLM', 'ne', 0) | list | length > 0
-    ) and not (gaudi_detected | default(false))
+  register: helm_repo_add_result
+  until: helm_repo_add_result is succeeded
+  retries: 3
+  delay: 15
   tags:
     - install
 
-- name: Fail if all nodes have maxBalloonsReranker=0
-  ansible.builtin.fail:
-    msg: |
-      maxBalloonsReranker is 0 on all nodes. This means no reranker pods can be scheduled on any node with the current configuration.
-      This usually happens when the requested CPUs per vLLM pod is bigger than the number of physical cores available in a single NUMA node.
-      Please check your reranker request/limit values and set them to fit within the NUMA node size.
-      For more help, see the nri-plugin documentation:
-      https://github.com/opea-project/Enterprise-RAG/tree/main/deployment/components/nri-plugin
-
-  when: >-
-    not (
-      cpu_topology_per_node.values() | selectattr('maxBalloonsReranker', 'ne', 0) | list | length > 0
-    )
+- name: Calculate maxReplicasGaudi_VLLM
+  ansible.builtin.set_fact:
+    maxReplicasGaudi_VLLM: >-
+      {%- if item.type in ['chatqa', 'docsum'] and item.modelConfigPath is defined -%}
+        {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
+        {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
+        {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}
+        {%- if tp_size is not none and (tp_size | int) != 0 -%}
+          {{ 8 // (tp_size | int) }}
+        {%- else -%}
+          {{ none }}
+        {%- endif -%}
+      {%- else -%}
+        {{ none }}
+      {%- endif -%}
+  loop: "{{ pipelines }}"
   tags:
     - install
 
@@ -130,73 +145,8 @@
   tags:
     - install
 
-- name: Remove nri-resource-policy-balloons chart
-  kubernetes.core.helm:
-    name: "{{ balloons.helm.release_name }}"
-    namespace: "{{ balloons.namespace }}"
-    state: absent
-  tags:
-    - uninstall
-
-- name: Remove balloons namespace
-  kubernetes.core.k8s:
-    state: absent
-    kind: Namespace
-    api_version: v1
-    name: "{{ balloons.namespace }}"
-  when: balloons.namespace != 'kube-system'
-  tags:
-    - uninstall
-
-- name: Gather nodes info
-  kubernetes.core.k8s_info:
-    kind: Node
-    api_version: v1
-  register: all_nodes
-  tags:
-    - uninstall
-
-- name: Remove inference-eligible label from each node
-  kubernetes.core.k8s:
-    state: present
-    kind: Node
-    api_version: v1
-    name: "{{ node.metadata.name }}"
-    definition:
-      metadata:
-        labels:
-          inference-eligible: null
-  loop: "{{ all_nodes.resources }}"
-  loop_control:
-    loop_var: node
-  tags:
-    - uninstall
-
-- name: Remove NodeResourceTopologies from each node
-  kubernetes.core.k8s:
-    api_version: topology.node.k8s.io/v1alpha1
-    kind: NodeResourceTopology
-    name: "{{ node.metadata.name }}"
-    state: absent
-  loop: "{{ all_nodes.resources }}"
-  loop_control:
-    loop_var: node
-  ignore_errors: true
-  tags:
-    - uninstall
-
-- name: Remove inference_eligible taint from each node
-  kubernetes.core.k8s:
-    state: present
-    kind: Node
-    api_version: v1
-    name: "{{ node.metadata.name }}"
-    definition:
-      spec:
-        taints: >-
-          {{ node.spec.taints | rejectattr('key', 'equalto', 'inference_eligible') | list if node.spec.taints is defined else [] }}
-  loop: "{{ all_nodes.resources }}"
-  loop_control:
-    loop_var: node
+- name: Uninstall NRI balloons policy
+  ansible.builtin.include_tasks:
+    file: uninstall.yaml
   tags:
     - uninstall

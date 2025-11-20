@@ -1,38 +1,71 @@
 # IBM Cloud Terraform Configuration for Enterprise RAG (Intel Gaudi)
 
-This directory contains Terraform configuration files for deploying Enterprise RAG solution on IBM Cloud using Intel Gaudi accelerators.
+This directory contains Terraform configuration files for deploying the Enterprise RAG solution on IBM Cloud using Intel Gaudi accelerators.
 
-## Prerequisites
+## Complete Deployment Guide
 
+**For step-by-step deployment instructions, see: [→ docs/deployment-guide.md](docs/deployment-guide.md)**
+
+The comprehensive deployment guide covers:
+- Complete prerequisites checklist with examples
+- **IBM Cloud Schematics UI deployment** (recommended for beginners)
+- **Terraform CLI deployment** (recommended for advanced users)
+- Post-deployment configuration and first-time usage
+- Performance tuning and monitoring
+- Troubleshooting common issues
+- Cleanup and maintenance procedures
+
+## What Gets Deployed
+
+This deployment creates a complete Enterprise RAG infrastructure:
+
+**Infrastructure Components:**
+- Intel Gaudi3-powered VPC instance (`gx3d-160x1792x8gaudi3`)
+- VPC networking with subnet and security groups
+- Optimized storage configuration for AI workloads
+- Automated software installation and configuration
+
+**AI Software Stack:**
+- Intel Gaudi drivers and optimization libraries
+- Large Language Model service (Intel optimized)
+- Text embedding service for semantic search
+- Document reranking for improved relevance
+- Vector database for knowledge storage
+- RAG orchestration API
+- Optional web interface
+
+**Estimated Deployment Time:** 60 minutes
+
+## Quick Technical Reference
+
+### Prerequisites Summary
 1. **IBM Cloud Account** with appropriate permissions
 2. **IBM Cloud CLI** installed and configured
-3. **Terraform** version >= 1.0
+3. **Terraform** version >= 1.0 (for CLI deployment)
 4. **SSH Key Pair** created in IBM Cloud
 5. **Hugging Face Token** for model downloads
 
-## Quick Start
+### Quick CLI Start
+```bash
 
-1. **Initialize Terraform:**
-   ```bash
-   cd deployment/terraform/ibm
-   terraform init
-   ```
 
-2. **Create terraform.tfvars file:**
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   # Edit terraform.tfvars with your values
-   ```
+# 1. Initialize Terraform
+terraform init
 
-3. **Plan the deployment:**
-   ```bash
-   terraform plan
-   ```
+# 2. Configure (see detailed instructions in deployment guide)
+cp terraform.tfvars.example terraform.tfvars
+vim terraform.tfvars  # Edit with your values
 
-4. **Apply the configuration:**
-   ```bash
-   terraform apply
-   ```
+# 3. Deploy
+terraform plan
+terraform apply
+```
+
+**Essential Variables (minimum required):**
+- `api_key` - IBM Cloud API key
+- `ssh_key_name` - SSH key name in IBM Cloud  
+- `ssh_key` - Path to private SSH key file
+- `hugging_face_token` - Token for model downloads
 
 ## Configuration Files
 
@@ -69,11 +102,8 @@ ssh_user = "ubuntu"
 # Hugging Face Token
 hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
 
-# Model Configuration (Intel Gaudi optimized)
-deployment_type       = "hpu"
-llm_model_gaudi      = ""
-embedding_model_name = ""
-reranking_model_name = ""
+# Solution Version (optional)
+solution_version = "release-2.0.0"  # Options: "release-2.0.0", "release-1.5.0", "main"
 ```
 
 ## Optional Variables
@@ -82,6 +112,16 @@ reranking_model_name = ""
 # Instance Configuration
 instance_profile = "gx3d-160x1792x8gaudi3"  # Intel Gaudi instance
 boot_volume_size = 250                       # GB
+
+# Version Control
+solution_version = "release-2.0.0"         # Git tag or branch (default: "release-2.0.0")
+                                            # Examples: "release-2.0.0", "release-1.5.0", "main"
+
+# Model Configuration (Intel Gaudi optimized)
+deployment_type       = "hpu"
+llm_model_gaudi      = ""
+embedding_model_name = ""
+reranking_model_name = ""
 
 # Network Configuration (leave empty to create new resources)
 vpc            = ""                          # Use existing VPC
@@ -132,12 +172,6 @@ After successful deployment, Terraform provides:
 - `subnet_id` - Subnet ID
 - `security_group_id` - Security Group ID
 - `ssh_connection_command` - Ready-to-use SSH command
-
-## Generated Files
-
-The configuration generates:
-- `../../inventory.ini` - Ansible inventory file
-- `../../config-override.yaml` - Configuration override file
 
 ## Security Considerations
 

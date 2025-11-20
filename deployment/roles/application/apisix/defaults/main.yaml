@@ -6,7 +6,6 @@ apisix:
   enabled: false
   namespace: "auth-apisix"
   helm:
-    version: "v3.16.1"
     repo_name: "apisix"
     repo_url: "https://charts.apiseven.com"
     chart_directory: "{{ playbook_dir }}/../components/apisix"

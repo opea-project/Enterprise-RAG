@@ -83,6 +83,14 @@ const (
 	VLLM StepNameType = "VLLM"
 	// Language-Detection
 	LanguageDetection StepNameType = "LanguageDetection"
+	// TextExtractor
+	TextExtractor StepNameType = "TextExtractor"
+	// TextCompression
+	TextCompression StepNameType = "TextCompression"
+	// TextSplitter
+	TextSplitter StepNameType = "TextSplitter"
+	// DocSum
+	DocSum StepNameType = "DocSum"
 )
 
 type Executor struct {

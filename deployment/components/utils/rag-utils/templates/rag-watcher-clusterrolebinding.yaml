@@ -1,0 +1,16 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+{{ include "rag-utils.validateNamespace" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "rag-utils.fullname" . }}-watcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "rag-utils.fullname" . }}-watcher
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "rag-utils.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

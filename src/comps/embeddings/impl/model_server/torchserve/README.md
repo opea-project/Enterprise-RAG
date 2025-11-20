@@ -83,6 +83,11 @@ docker compose down
     curl http://localhost:8090/predictions/bge-large-en-v1.5 \
       -H "Content-Type: application/json" \
       -d '{"inputs": ["What is machine learning?"]}'
+
+    # inference with custom parameters; request pooling layer output
+    curl http://localhost:8090/predictions/bge-large-en-v1.5 \
+      -H "Content-Type: application/json" \
+      -d '{"inputs": ["What is machine learning?"], "parameters": {"return_pooling": true}}'
     ```
 
 - Check the `embedding-torchserve-microservice` status:

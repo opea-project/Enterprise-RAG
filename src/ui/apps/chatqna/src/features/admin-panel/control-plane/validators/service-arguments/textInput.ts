@@ -1,12 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { object, string } from "yup";
-
 import {
   containsSupportedCommaSeparatedValues,
   noEmpty,
-} from "@/utils/validators/functions/textInput";
+} from "@intel-enterprise-rag-ui/input-validation";
+import { object, string } from "yup";
 
 const createValidationSchema = (
   isNullable?: boolean,

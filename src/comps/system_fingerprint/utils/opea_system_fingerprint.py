@@ -10,7 +10,8 @@ from comps.cores.utils.mongodb import OPEAMongoConnector
 from comps.system_fingerprint.utils.object_document_mapper import (
     RetrieverParams,
     RerankerParams,
-    PromptTemplateParams,
+    PromptTemplateEnParams,
+    PromptTemplatePlParams,
     LLMParams,
     ComponentDetails,
     Fingerprint,
@@ -48,7 +49,7 @@ from comps.system_fingerprint.utils.object_document_mapper import (
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 document_models = [
-    RetrieverParams, RerankerParams, PromptTemplateParams, ComponentDetails, Fingerprint, Argument,
+    RetrieverParams, RerankerParams, PromptTemplateEnParams, PromptTemplatePlParams, ComponentDetails, Fingerprint, Argument,
     ComponentConfiguration, ComponentTopology, LLMGuardInputGuardrailParams,
     LLMGuardOutputGuardrailParams, LLMGuardDataprepGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
     BanSubstringsModel, BanTopicsModel,
@@ -62,7 +63,7 @@ document_models = [
 
 
 class OPEASystemFingerprintController(OPEAMongoConnector):
-    def __init__(self, db_name, mongodb_host, mongodb_port):
+    def __init__(self, db_name, mongodb_host, mongodb_port, template_language: str = "en"):
         super().__init__(host=mongodb_host,
                          port=mongodb_port,
                          documents=document_models,
@@ -73,6 +74,11 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         self.current_component_info = None
         self.current_fingerprint = None
         self.existing_collections = None
+
+        template_language = template_language.lower()
+        if template_language not in ["en", "pl"]:
+            raise ValueError("Unsupported template language. Only 'en' and 'pl' are supported.")
+        self.template_language = template_language
 
     async def init_async(self) -> None:
         """
@@ -209,7 +215,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     llm=LLMParams(),
                     retriever=RetrieverParams(),
                     reranker=RerankerParams(),
-                    prompt_template=PromptTemplateParams(),
+                    prompt_template=PromptTemplatePlParams() if self.template_language == "pl" else PromptTemplateEnParams(),
                     input_guard=LLMGuardInputGuardrailParams(
                         anonymize=AnonymizeModel(),
                         ban_substrings=BanSubstringsModel(),
@@ -432,7 +438,8 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     **param[1]
                 )
             elif param[0] == "prompt_template" and param[1] is not None:
-                self.current_arguments.parameters.prompt_template = PromptTemplateParams(
+                prompt_params = PromptTemplatePlParams if self.template_language == "pl" else PromptTemplateEnParams
+                self.current_arguments.parameters.prompt_template = prompt_params(
                     **param[1]
                 )
             elif param[0] == "llm" and param[1] is not None:

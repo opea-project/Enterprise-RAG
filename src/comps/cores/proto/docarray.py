@@ -1,13 +1,15 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Literal, Dict, Optional, Tuple, Any, Union
 
 import numpy as np
 from docarray import BaseDoc, DocList
 from docarray.documents import AudioDoc
 from docarray.typing import AudioUrl
-from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat
+from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat, NonNegativeInt
+
+from .api_protocol import ChatCompletionResponseChoice
 
 class ComponentArgument(BaseDoc):
     name: str
@@ -39,6 +41,7 @@ class TextDoc(BaseDoc, TopologyInfo):
     text: str
     metadata: Optional[dict] = {}
     history_id: Optional[str] = None
+    return_pooling: Optional[bool] = None
 
     def to_reranked_doc(self):
         if self.metadata and 'url' in self.metadata:
@@ -86,7 +89,7 @@ class DocPath(BaseDoc):
 
 class EmbedDoc(BaseDoc):
     text: str
-    embedding: conlist(float, min_length=0)
+    embedding: Union[conlist(float, min_length=0), conlist(conlist(float, min_length=0), min_length=0)]
     search_type: str = "similarity"
     k: PositiveInt = 10
     distance_threshold: Optional[float] = None
@@ -122,6 +125,7 @@ class DataPrepFile(BaseDoc):
 class DataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
     links: List[str] = []
+    texts: List[str] = []
 
 class HierarchicalDataPrepInput(BaseDoc):
     files: List[DataPrepFile] = []
@@ -140,8 +144,8 @@ class TextCompressionInput(BaseDoc):
 
 class TextSplitterInput(BaseDoc):
     loaded_docs: List[TextDoc]
-    chunk_size: Optional[int] = None
-    chunk_overlap: Optional[int] = None
+    chunk_size: Optional[PositiveInt] = None
+    chunk_overlap: Optional[NonNegativeInt] = None
     use_semantic_chunking: Optional[bool] = None
     semantic_chunk_params: Optional[Dict[str, Any]] = None
 
@@ -350,13 +354,22 @@ class TextDocList(BaseDoc):
     docs: List[TextDoc]
     history_id: Optional[str] = None
     dataprep_guardrail_params: Optional[LLMGuardDataprepGuardrailParams] = None
+    return_pooling: Optional[bool] = None
+    summary_type: Optional[str] = None
+    stream: Optional[bool] = True
+
+class LateChunkingInput(BaseDoc):
+    docs: List[TextDoc]
+    chunk_size: Optional[PositiveInt] = None
+    chunk_overlap: Optional[NonNegativeInt] = None
+
 
 class LLMPromptTemplate(BaseDoc):
-    system: str
-    user: str
+    role: Literal["system", "user", "assistant"]
+    content: str
 
 class LLMParamsDoc(BaseDoc):
-    messages: LLMPromptTemplate
+    messages: List[LLMPromptTemplate]
     model: Optional[str] = None  # for openai and ollama
     max_new_tokens: PositiveInt = 1024
     top_k: PositiveInt = 10
@@ -364,7 +377,7 @@ class LLMParamsDoc(BaseDoc):
     typical_p: NonNegativeFloat = 0.95
     temperature: NonNegativeFloat = 0.01
     repetition_penalty: NonNegativeFloat = 1.03
-    streaming: bool = True
+    stream: bool = True
     input_guardrail_params: Optional[LLMGuardInputGuardrailParams] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
     data: Optional[Dict[str, Any]] = None
@@ -372,7 +385,8 @@ class LLMParamsDoc(BaseDoc):
 class GeneratedDoc(BaseDoc):
     text: str
     prompt: str
-    streaming: bool = True
+    stream: bool = True
+    choices: Optional[List[ChatCompletionResponseChoice]] = None
     output_guardrail_params: Optional[LLMGuardOutputGuardrailParams] = None
     data: Optional[Dict[str, Any]] = None
 
@@ -383,7 +397,7 @@ class LLMParams(BaseDoc):
     typical_p: NonNegativeFloat = 0.95
     temperature: NonNegativeFloat = 0.01
     repetition_penalty: NonNegativeFloat = 1.03
-    streaming: bool = True
+    stream: bool = True
 
 
 class RAGASParams(BaseDoc):

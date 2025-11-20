@@ -3,12 +3,12 @@
 
 import "./ChatDisclaimer.scss";
 
+import { getChatQnAAppEnv } from "@/utils";
+
+const chatDisclaimerText = getChatQnAAppEnv("CHAT_DISCLAIMER_TEXT");
+
 const ChatDisclaimer = () => (
-  <p className="chat__disclaimer">
-    Responses from this solution may require further verification. You are
-    solely responsible for verifying the accuracy of the information provided
-    and how you choose to use it.
-  </p>
+  <p className="chat__disclaimer">{chatDisclaimerText}</p>
 );
 
 export default ChatDisclaimer;

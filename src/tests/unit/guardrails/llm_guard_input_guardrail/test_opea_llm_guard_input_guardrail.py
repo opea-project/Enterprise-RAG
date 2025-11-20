@@ -24,8 +24,8 @@ def mock_input_doc():
     input_guardrail_params = LLMGuardInputGuardrailParams(ban_substrings=ban_substrings_model)
 
     return LLMParamsDoc(
-        messages=LLMPromptTemplate(system="You are a helpful assistant", user="This is a test query"),
-        streaming=False,
+        messages=[LLMPromptTemplate(role="system", content="You are a helpful assistant"), LLMPromptTemplate(role="user", content="This is a test query")],
+        stream=False,
         max_new_tokens=50,
         repetition_penalty=1.0,
         temperature=0.7,

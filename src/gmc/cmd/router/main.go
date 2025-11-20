@@ -472,60 +472,100 @@ func callService(
 		}
 	}
 
-	//req, err := http.NewRequest("POST", serviceUrl, bytes.NewBuffer(input))
-	req, err := http.NewRequestWithContext(ctx, "POST", serviceUrl, bytes.NewBuffer(input))
-	if err != nil {
-		otlpr.WithContext(log, ctx).Error(err, "An error occurred while preparing request object with serviceUrl.", "serviceUrl", serviceUrl)
-		return nil, 500, err
+	// Determine timeout and max retries based on namespace and step name
+	timeout := CallClientTimeoutSeconds * time.Second
+	maxRetries := 0
+	
+	// Special handling for docsum namespace TextExtractor and TextSplitter steps
+	// FIXME: Workaroud for 2nd request after deployment freezing on services with ProcessPoolExecutor
+	if OtelNamespace == "docsum" && (step.StepName == "TextExtractor" || step.StepName == "TextSplitter") {
+		if step.StepName == "TextExtractor" {
+			timeout = 120 * time.Second
+		} else if step.StepName == "TextSplitter" {
+			timeout = 60 * time.Second
+		}
+		maxRetries = 2
+		otlpr.WithContext(log, ctx).Info("Using custom timeout and retries for step", "stepName", step.StepName, "timeout", timeout, "maxRetries", maxRetries)
 	}
 
-	if val := req.Header.Get("Content-Type"); val == "" {
-		req.Header.Add("Content-Type", "application/json")
-	}
-	if val := headers.Get("Authorization"); val != "" {
-		req.Header.Add("Authorization", val)
-	}
-	// normal client
-	// callClient := http.Client{
-	// 	Transport: transport,
-	// 	Timeout:   600 * time.Second,
-	// }
+	var lastErr error
+	var resp *http.Response
 
-	// otel client
-	// we want to use existing tracer instad creating a new one, but how !!!
-	callClient := http.Client{
-		Transport: otelhttp.NewTransport(
-			transport,
-			otelhttp.WithServerName(serviceUrl),
-			otelhttp.WithSpanNameFormatter(
-				func(operation string, r *http.Request) string {
-					return "HTTP " + r.Method + " " + r.URL.String()
-				}),
-			otelhttp.WithFilter(func(r *http.Request) bool {
-				for _, excludedUrl := range OtelExcludedUrls {
-					if r.RequestURI == excludedUrl {
-						return false
+	// Retry loop
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			otlpr.WithContext(log, ctx).Info("Retrying request", "attempt", attempt, "maxRetries", maxRetries, "stepName", step.StepName)
+		}
+
+		//req, err := http.NewRequest("POST", serviceUrl, bytes.NewBuffer(input))
+		req, err := http.NewRequestWithContext(ctx, "POST", serviceUrl, bytes.NewBuffer(input))
+		if err != nil {
+			otlpr.WithContext(log, ctx).Error(err, "An error occurred while preparing request object with serviceUrl.", "serviceUrl", serviceUrl)
+			return nil, 500, err
+		}
+
+		if val := req.Header.Get("Content-Type"); val == "" {
+			req.Header.Add("Content-Type", "application/json")
+		}
+		if val := headers.Get("Authorization"); val != "" {
+			req.Header.Add("Authorization", val)
+		}
+		// normal client
+		// callClient := http.Client{
+		// 	Transport: transport,
+		// 	Timeout:   600 * time.Second,
+		// }
+
+		// otel client
+		// we want to use existing tracer instad creating a new one, but how !!!
+		callClient := http.Client{
+			Transport: otelhttp.NewTransport(
+				transport,
+				otelhttp.WithServerName(serviceUrl),
+				otelhttp.WithSpanNameFormatter(
+					func(operation string, r *http.Request) string {
+						return "HTTP " + r.Method + " " + r.URL.String()
+					}),
+				otelhttp.WithFilter(func(r *http.Request) bool {
+					for _, excludedUrl := range OtelExcludedUrls {
+						if r.RequestURI == excludedUrl {
+							return false
+						}
 					}
-				}
-				return true
-			}),
-			otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
-			// ////  GEnerate EXTRA spans for dns/sent/reciver
-			// otelhttp.WithClientTrace(
-			// 	func(ctx context.Context) *httptrace.ClientTrace {
-			// 		return otelhttptrace.NewClientTrace(ctx)
-			// 	},
-			// ),
-		),
-		Timeout: CallClientTimeoutSeconds * time.Second,
-	}
-	resp, err := callClient.Do(req)
-	if err != nil {
-		otlpr.WithContext(log, ctx).Error(err, "An error has occurred while calling service", "service", serviceUrl)
-		return nil, 500, err
+					return true
+				}),
+				otelhttp.WithMessageEvents(otelhttp.ReadEvents, otelhttp.WriteEvents),
+				// ////  GEnerate EXTRA spans for dns/sent/reciver
+				// otelhttp.WithClientTrace(
+				// 	func(ctx context.Context) *httptrace.ClientTrace {
+				// 		return otelhttptrace.NewClientTrace(ctx)
+				// 	},
+				// ),
+			),
+			Timeout: timeout,
+		}
+		resp, err = callClient.Do(req)
+		if err != nil {
+			lastErr = err
+			otlpr.WithContext(log, ctx).Error(err, "An error has occurred while calling service", "service", serviceUrl, "attempt", attempt)
+			
+			// If we have retries left, continue to next attempt
+			if attempt < maxRetries {
+				// Add a small backoff delay before retry
+				time.Sleep(time.Duration(attempt+1) * time.Second)
+				continue
+			}
+			// No more retries, return the error
+			return nil, 500, err
+		}
+
+		// Success - return the response
+		return resp.Body, resp.StatusCode, nil
 	}
 
-	return resp.Body, resp.StatusCode, nil
+	// If we get here, all retries failed
+	otlpr.WithContext(log, ctx).Error(lastErr, "All retry attempts failed", "service", serviceUrl, "maxRetries", maxRetries)
+	return nil, 500, lastErr
 }
 
 // Use step service name to create a K8s service if serviceURL is empty

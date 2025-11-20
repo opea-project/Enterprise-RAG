@@ -5,7 +5,7 @@ import asyncio
 from docarray import BaseDoc
 from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.embeddings.text_embeddings_inference import TextEmbeddingsInference
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from comps import get_opea_logger
 from comps.embeddings.utils.connectors.connector import EmbeddingConnector
@@ -34,8 +34,8 @@ class LlamaIndexEmbedding(EmbeddingConnector):
         _embedder (BaseEmbedding): The embedder object for performing embedding operations.
 
     Methods:
-        embed_documents(input_text: str) -> BaseDoc: Embeds a document or a list of documents.
-        embed_query(input_text: str) -> BaseDoc: Embeds a query.
+        embed_documents(texts: List[str]) -> List[List[float]]: Embeds a list of documents.
+        embed_query(text: str) -> BaseDoc: Embeds a query.
         change_configuration(**kwargs): Changes the configuration of the embedder.
 
     Raises:
@@ -81,38 +81,45 @@ class LlamaIndexEmbedding(EmbeddingConnector):
 
         return SUPPORTED_INTEGRATIONS[self._model_server](model_name=self._model_name, base_url=self._endpoint, **kwargs)
 
-    async def embed_documents(self, input_text: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str], **kwargs: Any) -> List[List[float]]:
         """
         Embeds a list of documents.
 
         Args:
             texts (List[str]): The list of documents to embed.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             List[List[float]]: The embedded document(s).
 
         """
         try:
-            output = await self._embedder._aget_text_embeddings(input_text)
+            if kwargs.get("return_pooling"):
+                logger.warning(
+                    "The 'return_pooling' argument is not supported for this LlamaIndex connector and will be ignored."
+                    )
+            
+            output = await self._embedder._aget_text_embeddings(texts)
+
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")
             raise
 
         return output
 
-    async def embed_query(self, input_text: str) -> BaseDoc:
+    async def embed_query(self, text: str) -> BaseDoc:
         """
         Embeds a query.
 
         Args:
-            input_text (str): The query text to be embedded.
+            text (str): The query text to be embedded.
 
         Returns:
             BaseDoc: The embedded query.
 
         """
         try:
-            output = await self._embedder._aget_query_embedding(input_text)
+            output = await self._embedder._aget_query_embedding(text)
         except Exception as e:
             logger.exception(f"Error embedding query: {e}")
             raise

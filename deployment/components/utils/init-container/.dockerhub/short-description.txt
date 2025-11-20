@@ -1,0 +1,1 @@
+Intel® AI for Enterprise RAG Init-Container Service for readiness checks during deployment

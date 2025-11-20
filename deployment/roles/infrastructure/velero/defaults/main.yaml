@@ -36,6 +36,8 @@ velero:
   helm:
     repo_name: "velero-tanzu"
     repo_url: "https://vmware-tanzu.github.io/helm-charts/"
+    repo_depend_name: "bitnami"
+    repo_depend_url: "https://charts.bitnami.com/bitnami"
     chart_name: "velero"
     chart_version: "10.0.5"
     release_name: "velero"

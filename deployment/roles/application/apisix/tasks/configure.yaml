@@ -1,6 +1,13 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    apisix_helm_override_values_path: "{{ log_dir }}/{{ apisix.helm.chart_name }}-override-values.yaml"
+    apisix_routes_helm_override_values_path: "{{ log_dir }}/{{ apisix_routes.helm.chart_name }}-override-values.yaml"
+  tags:
+    - install
+
 - name: Gather existing namespaces
   kubernetes.core.k8s_info:
     kind: Namespace
@@ -21,6 +28,84 @@
     file: "{{ apisix_routes.helm.default_values_file }}"
     name: apisix_routes_raw_config
   when: apisix.enabled
+  tags:
+    - install
+
+- name: Generate dynamic pipeline endpoints from pipelines configuration
+  ansible.builtin.set_fact:
+    dynamic_pipeline_endpoints: >-
+      {{
+        dynamic_pipeline_endpoints | default([]) + [{
+          'name': ('chatqna' if item.namespace == 'chatqa' else item.namespace),
+          'enabled': true,
+          'namespace': item.namespace,
+          'path': '/api/v1/' ~ ('chatqna' if item.namespace == 'chatqa' else item.namespace),
+          'backend_service': 'router-service',
+          'service_port': 8080,
+          'service_path': '/',
+          'rate_limit_count': 30,
+          'permissions': ['admin#admin-access', 'user#user-access']
+        }]
+      }}
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  when:
+    - apisix.enabled
+    - pipelines is defined
+  tags:
+    - install
+
+- name: Merge dynamic pipeline endpoints with default endpoints
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints': apisix_routes_raw_config.endpoints + (dynamic_pipeline_endpoints | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - dynamic_pipeline_endpoints is defined
+  tags:
+    - install
+
+- name: Generate dynamic API watcher endpoints from pipelines configuration
+  ansible.builtin.set_fact:
+    dynamic_api_endpoints: >-
+      {{
+        dynamic_api_endpoints | default([]) + [{
+          'name': 'k8s-api-watcher-' ~ item.namespace,
+          'namespace': 'default',
+          'path': '/api/v1/' ~ item.namespace ~ '/status',
+          'backend_service': 'kubernetes',
+          'rate_limit_count': 30,
+          'service_port': 443,
+          'scheme': 'https',
+          'service_path': '/apis/gmc.opea.io/v1alpha3/namespaces/' ~ item.namespace ~ '/gmconnectors/' ~ item.namespace ~ '/status',
+          'permissions': ['admin#admin-access']
+        }]
+      }}
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  when:
+    - apisix.enabled
+    - pipelines is defined
+  tags:
+    - install
+
+- name: Merge dynamic API watcher endpoints with default endpoints_api
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints_api': apisix_routes_raw_config.endpoints_api + (dynamic_api_endpoints | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - dynamic_api_endpoints is defined
   tags:
     - install
 
@@ -51,7 +136,8 @@
   ansible.builtin.set_fact:
     merged_endpoints: "{{ merged_endpoints | default([]) + [updated_endpoint] }}"
   vars:
-    default_endpoints: "{{ (lookup('file', apisix_routes.helm.default_values_file) | from_yaml).endpoints }}"
+    # Use apisix_routes_raw_config which already has dynamic endpoints merged
+    default_endpoints: "{{ apisix_routes_raw_config.endpoints }}"
     override_map: >-
       {{
         (lookup('file', apisix_routes_helm_override_values_path) | from_yaml)
@@ -69,7 +155,7 @@
   set_fact:
     merged_apisix_values: >-
       {{
-        (lookup('file', apisix_routes.helm.default_values_file) | from_yaml)
+        apisix_routes_raw_config
         | combine({'endpoints': merged_endpoints}, recursive=True)
       }}
   when: apisix.enabled
@@ -95,5 +181,36 @@
     namespace: "{{ apisix_routes.namespace }}"
     state: absent
   when: apisix.enabled
+  tags:
+    - uninstall
+
+# temporary until we split apisix routes per component
+- name: Delete ApisixUpstream resources from default namespace
+  kubernetes.core.k8s:
+    api_version: apisix.apache.org/v2
+    kind: ApisixUpstream
+    name: kubernetes-api-upstream
+    namespace: default
+    state: absent
+  ignore_errors: true
+  when: apisix.enabled
+  tags:
+    - uninstall
+
+# temporary until we split apisix routes per component
+- name: Delete dynamic ApisixRoute resources from default namespace (k8s API watchers)
+  kubernetes.core.k8s:
+    api_version: apisix.apache.org/v2
+    kind: ApisixRoute
+    name: "k8s-api-watcher-{{ item.namespace }}-route"
+    namespace: default
+    state: absent
+  loop: "{{ pipelines | default([]) }}"
+  loop_control:
+    label: "{{ item.namespace }}"
+  ignore_errors: true
+  when:
+    - apisix.enabled
+    - pipelines is defined
   tags:
     - uninstall

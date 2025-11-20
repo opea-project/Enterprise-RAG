@@ -22,14 +22,15 @@ edpBaseRegion: 'us-east-1'
 edpSqsEventQueueUrl: ""
 edpAccessKey: ""
 edpSecretKey: ""
-edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 edpOidcClientSecret: ""
 bucketNameRegexFilter: '.*'
+presignedUrlCredentialsSystemFallback: "false"
 
 minioApiDomain: &minioApiDomain "s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "minio.erag.com"
 
-redisUrl: "edp-redis-master:6379"
+redisUrl: "edp-redis:6379"
 redisUsername: "default"
 redisPassword: ""
 
@@ -212,40 +213,18 @@ minio:
         - mc event rm --event "put,delete" provisioning/only-admin arn:minio:sqs::EDP:webhook || true
         - mc event add --event "put,delete" provisioning/only-admin arn:minio:sqs::EDP:webhook
 
-redis:
-  image:
-    repository: bitnamilegacy/redis
-  networkPolicy:
-    extraIngress:
-      - ports:
-        - port: 15008
-  resources:
-    requests:
-      cpu: "1"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "4Gi"
-  replica:
-    replicaCount: 0
-  auth:
-    enabled: true
-    existingSecret: "edp-redis-secret"
-  master:
-    persistence:
-      enabled: true
-      size: 10Gi
-
 postgresql:
+  enabled: true
+  fullnameOverride: "edp-postgresql"
   image:
-    repository: bitnamilegacy/postgresql
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
   auth:
     username: "edp" # cannot refence secret
     database: "edp" # cannot refence secret
     existingSecret: "edp-postgresql-secret"
-    secretKeys:
-      userPasswordKey: "DATABASE_PASSWORD"
-      adminPasswordKey: "DATABASE_ADMIN_PASSWORD"
+    secretKey: "DATABASE_PASSWORD"
   resources:
     requests:
       cpu: "1"
@@ -253,23 +232,9 @@ postgresql:
     limits:
       cpu: "2"
       memory: "4Gi"
-  primary:
-    resources:
-      requests:
-        cpu: "1"
-        ephemeral-storage: "50Mi"
-        memory: "2Gi"
-      limits:
-        cpu: "2"
-        ephemeral-storage: "1Gi"
-        memory: "4Gi"
-    networkPolicy:
-      extraIngress:
-        - ports:
-          - port: 15008
-    persistence:
-      enabled: true
-      size: 10Gi
+  persistence:
+    enabled: true
+    size: "10Gi"
 
 celery:
   nameOverride: "edp-celery"
@@ -355,6 +320,11 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: TEXT_SPLITTER_ENDPOINT
+    - name: LATE_CHUNKING_ENDPOINT
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: LATE_CHUNKING_ENDPOINT
     - name: EMBEDDING_ENDPOINT
       valueFrom:
         configMapKeyRef:
@@ -405,6 +375,11 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: DPGUARD_ENABLED
+    - name: LATE_CHUNKING_ENABLED
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: LATE_CHUNKING_ENABLED
   replicas: 1
   resources:
     requests:
@@ -571,6 +546,11 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: TEXT_SPLITTER_ENDPOINT
+    - name: LATE_CHUNKING_ENABLED
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: LATE_CHUNKING_ENABLED
     - name: "EMBEDDING_ENDPOINT"
       valueFrom:
         configMapKeyRef:
@@ -586,6 +566,11 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: RERANKER_ENDPOINT
+    - name: "PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     rbac:
@@ -658,6 +643,53 @@ hierarchicalDataprep:
           value: 1
           periodSeconds: 15
 
+lateChunking:
+  enabled: false
+  nameOverride: "edp-late-chunking"
+  name: "erag-late-chunking"
+  repository: "docker.io/opea"
+  tag: latest
+  pullPolicy: Always
+  replicas: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  config:
+    chunk_size: "512"
+    chunk_overlap: "0"
+    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+    model_name: "jinaai/jina-embeddings-v2-base-en"
+  resources:
+    requests:
+      cpu: "4"
+      memory: "1Gi"
+    limits:
+      cpu: "8"
+      memory: "8Gi"
+  hpa:
+    minReplicas: 1
+    maxReplicas: 2
+    targetValue: 2
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 60
+        policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 15
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+      scaleUp:
+        selectPolicy: Max
+        stabilizationWindowSeconds: 0
+        policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 15
+
 textExtractor:
   nameOverride: "edp-text-extractor"
   name: "erag-text-extractor"
@@ -674,13 +706,17 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
+    - name: PDF_MAX_WORKERS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
   resources:
     requests:
       cpu: "1"
-      memory: "1Gi"
+      memory: "2Gi"
     limits:
-      cpu: "4"
-      memory: "8Gi"
+      cpu: "6"
+      memory: "12Gi"
   hpa:
     minReplicas: 2
     maxReplicas: 4
@@ -761,9 +797,13 @@ textSplitter:
   config:
     chunk_size: "512"
     chunk_overlap: "64"
+    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
     # For semantic chunking
     use_semantic_chunking: "False"
-    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+    # For late chunking
+    use_late_chunking: "False"
+    late_chunk_size: "8192"
+    late_chunk_overlap: "1024"
   resources:
     requests:
       cpu: "1"

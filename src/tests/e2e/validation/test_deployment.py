@@ -12,7 +12,7 @@ import os
 from typing import Dict, Any, Union
 
 from helpers.guard_helper import GuardType
-from constants import TEST_FILES_DIR
+from constants import DATAPREP_UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def test_hpa(edp_helper, chatqa_api_helper, guard_helper):
 
     logger.info("Recheck HPA objects' metrics after uploading a file and providing additional question...")
     file = "story.pdf"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, file))
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
     guard_params = {
         "enabled": True
     }

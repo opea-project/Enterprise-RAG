@@ -87,8 +87,8 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
       <AriaModal
         className="dialog"
         isOpen={isOpen}
-        isDismissable
         onOpenChange={onOpenChange}
+        isDismissable
       >
         <div className={dialogWrapperClassName} style={{ maxWidth }}>
           <AriaDialog

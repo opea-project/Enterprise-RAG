@@ -7,21 +7,19 @@ fingerprint:
   namespace: "fingerprint"
   helm:
     version: "v3.16.1"
-    repo_name: "bitnami"
-    repo_url: "https://charts.bitnami.com/bitnami"
     chart_version: "1.1.0"
     release_name: "fingerprint"
     chart_directory: "{{ playbook_dir }}/../components/fingerprint"
-    default_values_file: "{{ playbook_dir }}/../components/fingerprint/values.yaml"
-    tdx_resources_file: "{{ playbook_dir }}/../components/fingerprint/resources-tdx.yaml"
+    default_values_file: >-
+      {{ playbook_dir }}/../components/fingerprint/values.yaml
+    tdx_resources_file: >-
+      {{ playbook_dir }}/../components/fingerprint/resources-tdx.yaml
 
-  mongo:
+  # FerretDB/PostgreSQL authentication settings
+  database:
     auth:
       db_name: "SYSTEM_FINGERPRINT"
       password_secret_name: "mongo-database-secret"
       user:
-        db_user: "usr"
-        password_file_name: "fingerprint-password"
-      admin:
-        db_user: "root"
-        password_file_name: "fingerprint-admin-password"
+        db_user: "fingerprint"
+        password_file_name: "fingerprint-postgres-password"

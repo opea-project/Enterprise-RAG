@@ -1265,14 +1265,14 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(http_requests_total{namespace=~\"chatqa|edp|fingerprint|chat-history\"},namespace)",
+        "definition": "label_values(http_requests_total{namespace=~\"chatqa|edp|fingerprint|chat-history|docsum\"},namespace)",
         "includeAll": true,
         "label": "Namespace",
         "name": "namespace",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(http_requests_total{namespace=~\"chatqa|edp|fingerprint|chat-history\"},namespace)",
+          "query": "label_values(http_requests_total{namespace=~\"chatqa|edp|fingerprint|chat-history|docsum\"},namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

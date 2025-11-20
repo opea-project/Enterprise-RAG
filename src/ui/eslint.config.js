@@ -47,7 +47,7 @@ export default typescriptEslint.config(
       "react/jsx-sort-props": [
         "error",
         {
-          callbacksLast: true,
+          callbacksLast: false,
           shorthandLast: true,
           multiline: "ignore",
           ignoreCase: false,

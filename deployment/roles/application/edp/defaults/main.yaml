@@ -24,10 +24,36 @@ edp:
         db_username: default
 
   redis:
+    name: edp-redis
+    serviceAccountName: edp-redis-sa
+
     auth:
       user:
         db_username: default
         password_file_name: "edp-redis-password"
+
+    password:
+      secretName: edp-redis-secret
+
+    kubernetesConfig:
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "512Mi"
+        limits:
+          cpu: "2000m"
+          memory: "2Gi"
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: "8Gi"
+          storageClassName: ""
+
+    redisConfig:
+      maxmemory: "2gb"
 
   postgresql:
     auth:
@@ -61,3 +87,7 @@ edp:
     externalUrl: "https://s3.example.com"
     edpExternalCertVerify: true
     edpInternalCertVerify: true
+
+  late_chunking:
+    # NOTE: If enabled, embedding_model_name must be 'jinaai/jina-embeddings-v2-base-en' for late chunking to work.
+    enabled: false

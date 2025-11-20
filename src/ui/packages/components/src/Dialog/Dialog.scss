@@ -3,7 +3,7 @@
 
 .dialog {
   @apply fixed top-0 z-[100];
-  @apply h-[100vh] w-full overflow-hidden bg-transparent;
+  @apply h-screen w-full overflow-hidden bg-transparent;
 
   & .dialog__wrapper {
     @apply flex min-h-full w-full items-start justify-center p-4;

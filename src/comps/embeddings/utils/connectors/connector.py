@@ -4,7 +4,7 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from docarray import BaseDoc
 
@@ -68,7 +68,7 @@ class EmbeddingConnector(ABC):
                 logger.warning(f"Invalid configuration for {k}: {v}")
 
     @abstractmethod
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: List[str], **kwargs: Any) -> List[List[float]]:
         """
         Embeds a list of documents.
 
@@ -81,12 +81,12 @@ class EmbeddingConnector(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def embed_query(self, input_text: str) -> BaseDoc:
+    def embed_query(self, text: str) -> BaseDoc:
         """
         Embeds a query.
 
         Args:
-            input_text (str): The query text.
+            text (str): The query text.
 
         Returns:
             BaseDoc: The embedded query.

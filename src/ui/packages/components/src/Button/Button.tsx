@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variant === "outlined" && color === "primary",
         "button--outlined-error": variant === "outlined" && color === "error",
         "button--with-icon": icon,
-        "w-full": fullWidth,
+        "button--full-width": fullWidth,
       },
       className,
     ]);

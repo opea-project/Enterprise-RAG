@@ -126,7 +126,7 @@ variable "resource_prefix" {
 }
 
 variable "fqdn" {
-  description = "Fully Qualified Domain Name for the eRAG deployment"
+  description = "Fully Qualified Domain Name for the Intel® AI for Enterprise RAG deployment"
   type        = string
   default     = "erag.com"
 }
@@ -191,4 +191,10 @@ variable "vllm_size_vcpu" {
   description = "Number of vCPUs for the VLLM service"
   type        = number
   default     = 24
+}
+
+variable "solution_version" {
+  description = "Intel® AI for Enterprise RAG solution version to deploy - can be a tag (e.g., 'release-2.0.0') or branch name (e.g., 'main', 'develop')"
+  type        = string
+  default     = "release-2.0.0"
 }

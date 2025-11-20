@@ -1,0 +1,159 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Verify baseline variables exist from previous capture step
+  ansible.builtin.debug:
+    msg: "Using baseline captured before installation"
+  when:
+    - pre_install_dynamic_statefulsets is defined
+    - pre_install_dynamic_deployments is defined
+    - pre_install_dynamic_pvcs is defined
+  tags:
+    - install
+
+- name: Skip cleanup if baseline was not captured
+  ansible.builtin.debug:
+    msg: "No baseline captured before installation."
+  when: >
+    pre_install_dynamic_statefulsets is not defined or
+    pre_install_dynamic_deployments is not defined or
+    pre_install_dynamic_pvcs is not defined
+  tags:
+    - install
+
+- name: Compare current state with baseline and remove obsolete dynamically-generated resources
+  block:
+    - name: Retrieve gmc-config ConfigMap
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        name: gmc-config
+        namespace: "{{ gmc.namespace }}"
+      register: gmc_config_result
+
+    - name: Extract gmc-config YAML content as text
+      ansible.builtin.set_fact:
+        gmc_config_text: "{{ (gmc_config_result.resources[0].data | default({})).values() | list | join('\n') }}"
+      when: gmc_config_result.resources | length > 0
+
+    - name: Initialize lists for resources to remove (not declared in gmc-config)
+      ansible.builtin.set_fact:
+        resources_to_remove_statefulsets: []
+        resources_to_remove_deployments: []
+        resources_to_remove_pvcs: []
+      when: gmc_config_text is defined
+
+    - name: Identify StatefulSets not declared in gmc-config
+      ansible.builtin.set_fact:
+        resources_to_remove_statefulsets: "{{ resources_to_remove_statefulsets + [statefulset_name] }}"
+      loop: "{{ pre_install_dynamic_statefulsets | default([]) }}"
+      loop_control:
+        loop_var: statefulset_name
+      when:
+        - gmc_config_text is defined
+        - gmc_config_text is not search('\\bname:\\s*' ~ statefulset_name ~ '\\b', multiline=True)
+
+    - name: Identify Deployments not declared in gmc-config
+      ansible.builtin.set_fact:
+        resources_to_remove_deployments: "{{ resources_to_remove_deployments + [deployment_name] }}"
+      loop: "{{ pre_install_dynamic_deployments | default([]) }}"
+      loop_control:
+        loop_var: deployment_name
+      when:
+        - gmc_config_text is defined
+        - gmc_config_text is not search('\\bname:\\s*' ~ deployment_name ~ '\\b', multiline=True)
+
+    - name: Identify PVCs not declared in gmc-config
+      ansible.builtin.set_fact:
+        resources_to_remove_pvcs: "{{ resources_to_remove_pvcs + [pvc_name] }}"
+      loop: "{{ pre_install_dynamic_pvcs | default([]) }}"
+      loop_control:
+        loop_var: pvc_name
+      when:
+        - gmc_config_text is defined
+        - gmc_config_text is not search('\\bname:\\s*' ~ pvc_name ~ '\\b', multiline=True)
+
+    - name: Display resources not declared in gmc-config
+      ansible.builtin.debug:
+        msg:
+          - "Resources not declared in gmc-config (will be removed to match desired state):"
+          - "  StatefulSets: {{ resources_to_remove_statefulsets }}"
+          - "  Deployments: {{ resources_to_remove_deployments }}"
+          - "  PVCs: {{ resources_to_remove_pvcs }}"
+      when: gmc_config_text is defined
+
+    - name: Determine if any resources need to be removed
+      ansible.builtin.set_fact:
+        resources_need_removal: >-
+          {{
+            (resources_to_remove_statefulsets | length > 0) or
+            (resources_to_remove_deployments | length > 0) or
+            (resources_to_remove_pvcs | length > 0)
+          }}
+
+    - name: Display cleanup decision
+      ansible.builtin.debug:
+        msg:
+          - "StatefulSets to remove: {{ resources_to_remove_statefulsets }}"
+          - "Deployments to remove: {{ resources_to_remove_deployments }}"
+          - "PVCs to remove: {{ resources_to_remove_pvcs }}"
+          - "Any resources need removal: {{ resources_need_removal }}"
+
+    - name: No action needed - all resources match gmc-config desired state
+      ansible.builtin.debug:
+        msg: "All dynamically-generated resources match gmc-config desired state. No removal needed."
+      when: not resources_need_removal
+
+    - name: Remove resources not declared in gmc-config to match desired state
+      block:
+        - name: Remove StatefulSets not in gmc-config
+          kubernetes.core.k8s:
+            kind: StatefulSet
+            name: "{{ statefulset_name }}"
+            namespace: "{{ pipeline_item.namespace }}"
+            state: absent
+            wait: yes
+          loop: "{{ resources_to_remove_statefulsets }}"
+          loop_control:
+            loop_var: statefulset_name
+            label: "{{ statefulset_name }}"
+          when: resources_to_remove_statefulsets | length > 0
+
+        - name: Remove Deployments not in gmc-config
+          kubernetes.core.k8s:
+            kind: Deployment
+            name: "{{ deployment_name }}"
+            namespace: "{{ pipeline_item.namespace }}"
+            state: absent
+            wait: yes
+          loop: "{{ resources_to_remove_deployments }}"
+          loop_control:
+            loop_var: deployment_name
+            label: "{{ deployment_name }}"
+          when: resources_to_remove_deployments | length > 0
+
+        - name: Remove PVCs not in gmc-config
+          kubernetes.core.k8s:
+            kind: PersistentVolumeClaim
+            name: "{{ pvc_name }}"
+            namespace: "{{ pipeline_item.namespace }}"
+            state: absent
+            wait: yes
+          loop: "{{ resources_to_remove_pvcs }}"
+          loop_control:
+            loop_var: pvc_name
+            label: "{{ pvc_name }}"
+          when: resources_to_remove_pvcs | length > 0
+
+        - name: Resources successfully removed to match gmc-config desired state
+          ansible.builtin.debug:
+            msg: "Successfully removed resources not declared in gmc-config. Cluster now matches desired state."
+
+      when: resources_need_removal
+
+  when:
+    - pre_install_dynamic_statefulsets is defined
+    - pre_install_dynamic_deployments is defined
+    - pre_install_dynamic_pvcs is defined
+  tags:
+    - install

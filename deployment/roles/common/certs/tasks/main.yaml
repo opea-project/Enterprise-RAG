@@ -4,6 +4,8 @@
 ---
 - name: Generate self-signed certificate
   when: certs_autogenerate
+  tags:
+    - install
   block:
     - name: Check if extra_san is defined
       ansible.builtin.fail:
@@ -41,3 +43,5 @@
     pathToCert: "{{ certs_preset_pathToCert }}"
     pathToKey: "{{ certs_preset_pathToKey }}"
   when: not certs_autogenerate
+  tags:
+    - install

@@ -27,5 +27,20 @@ spec:
   portLevelMtls:
     6443:
       mode: PERMISSIVE
+    443:
+      mode: PERMISSIVE
+{% elif item == "system" %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gmc
+  portLevelMtls:
+    9443:
+      mode: PERMISSIVE
+{% elif item == "vdb" %}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis-cluster
+  portLevelMtls:
+    16379:
+      mode: DISABLE
 {% endif %}
-

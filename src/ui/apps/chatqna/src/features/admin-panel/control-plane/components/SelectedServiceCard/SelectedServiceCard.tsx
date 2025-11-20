@@ -4,15 +4,15 @@
 import "./SelectedServiceCard.scss";
 
 import { Button } from "@intel-enterprise-rag-ui/components";
+import {
+  ServiceStatus,
+  ServiceStatusIndicator,
+} from "@intel-enterprise-rag-ui/control-plane";
 import classNames from "classnames";
 import { Fragment, PropsWithChildren } from "react";
 import { PressEvent } from "react-aria-components";
 
-import ServiceStatusIndicator from "@/features/admin-panel/control-plane/components/ServiceStatusIndicator/ServiceStatusIndicator";
-import {
-  ServiceDetails,
-  ServiceStatus,
-} from "@/features/admin-panel/control-plane/types";
+import { ServiceDetails } from "@/features/admin-panel/control-plane/types";
 
 interface SelectedServiceCardProps extends PropsWithChildren {
   serviceStatus?: ServiceStatus;
@@ -97,8 +97,8 @@ const SelectedServiceCardFooter = ({
       size="sm"
       color="success"
       isDisabled={isConfirmChangesButtonDisabled}
-      fullWidth
       onPress={onConfirmChangesButtonClick}
+      fullWidth
     >
       Confirm Changes
     </Button>
@@ -106,8 +106,8 @@ const SelectedServiceCardFooter = ({
       size="sm"
       variant="outlined"
       isDisabled={isConfirmChangesButtonDisabled}
-      fullWidth
       onPress={onCancelChangesButtonClick}
+      fullWidth
     >
       Cancel
     </Button>

@@ -52,7 +52,7 @@ def mock_default_response_data():
     ut = template_user_english.format(
         user_prompt="This is my sample query?"
     ).strip()
-    return LLMPromptTemplate(system=st, user=ut)
+    return [LLMPromptTemplate(role="system", content=st), LLMPromptTemplate(role="user", content=ut)]
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def mock_default_response_data_with_chat_history():
     ut = template_user_english.format(
         user_prompt="This is my sample query?"
     ).strip()
-    return LLMPromptTemplate(system=st, user=ut)
+    return [LLMPromptTemplate(role="system", content=st), LLMPromptTemplate(role="user", content=ut)]
 
 
 def test_opea_prompt_template_initialization_succeeds():
@@ -126,6 +126,11 @@ def test_opea_prompt_template_validate_raises_exception(test_class, system_templ
     with pytest.raises(ValueError, match=expected_message):
         test_class._validate(system_template, user_template, placeholders)
 
+def get_system_and_user_messages(messages):
+    system_message = next((msg for msg in messages if msg.role == "system"), None)
+    user_message = next((msg for msg in messages if msg.role == "user"), None)
+    return system_message, user_message
+
 @pytest.mark.asyncio
 async def test_opea_prompt_run_suceeds_with_defaults(test_class, mock_default_input_data, mock_default_response_data):
     try:
@@ -136,8 +141,11 @@ async def test_opea_prompt_run_suceeds_with_defaults(test_class, mock_default_in
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'messages'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_default_response_data.system, "Query does not match the expected response"
-    assert result.messages.user == mock_default_response_data.user, "Query does not match the expected response"
+
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    mock_system, mock_user = get_system_and_user_messages(mock_default_response_data)
+    assert result_system.content == mock_system.content, "Query does not match the expected response"
+    assert result_user.content == mock_user.content, "Query does not match the expected response"
 
 
 @pytest.mark.asyncio
@@ -177,8 +185,11 @@ async def test_opea_prompt_run_suceeds_with_chat_history(mock_get, mock_default_
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'query'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_default_response_data_with_chat_history.system, "Query does not match the expected response"
-    assert result.messages.user == mock_default_response_data_with_chat_history.user, "Query does not match the expected response"
+
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    mock_system, mock_user = get_system_and_user_messages(mock_default_response_data_with_chat_history)
+    assert result_system.content == mock_system.content, "Query does not match the expected response"
+    assert result_user.content == mock_user.content, "Query does not match the expected response"
 
     assert mock_get.call_count == 2
     mock_get.assert_any_call("http://test-endpoint/v1/health_check", headers={"Content-Type": "application/json"})
@@ -208,8 +219,10 @@ async def test_opea_prompt_run_suceeds_with_custom_prompt_template(test_class):
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'messages'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_system_response, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response, "Query does not match the expected response"
+
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    assert result_system.content == mock_system_response, "Query does not match the expected response"
+    assert result_user.content == mock_user_response, "Query does not match the expected response"
 
 
 @pytest.mark.asyncio
@@ -238,8 +251,10 @@ async def test_opea_prompt_run_suceeds_with_dict_in_data(test_class):
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'messages'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_system_response, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response, "Query does not match the expected response"
+
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    assert result_system.content == mock_system_response, "Query does not match the expected response"
+    assert result_user.content == mock_user_response, "Query does not match the expected response"
 
 @pytest.mark.asyncio
 async def test_opea_prompt_run_raises_exception_when_template_lacks_placeholders(test_class):
@@ -302,8 +317,10 @@ async def test_opea_prompt_run_succeeds_with_empty_value_in_reranked_docs(test_c
     assert result is not None, "Result is None"
     assert hasattr(result, 'messages'), "Result does not contain field 'messages'"
     assert result.messages is not None, "Messages are empty"
-    assert result.messages.system == mock_system_response_data, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response_data, "Query does not match the expected response"
+
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    assert result_system.content == mock_system_response_data, "Query does not match the expected response"
+    assert result_user.content == mock_user_response_data, "Query does not match the expected response"
 
 @pytest.mark.asyncio
 async def test_opea_prompt_run_raises_exception_when_data_is_invalid(test_class):
@@ -325,8 +342,9 @@ async def test_opea_prompt_run_raises_exception_when_data_is_invalid(test_class)
     except Exception as e:
         pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
 
-    assert result.messages.system == mock_system_response_data, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response_data, "Query does not match the expected response"
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    assert result_system.content == mock_system_response_data, "Query does not match the expected response"
+    assert result_user.content == mock_user_response_data, "Query does not match the expected response"
 
     # step2: remove the placeholder1 from the data
     mock_invalid_input_data = PromptTemplateInput(
@@ -361,8 +379,8 @@ async def test_prompt_run_raises_exception_with_additional_fields_in_data_when_p
     except Exception as e:
         pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
 
-    assert result.messages.system == mock_system_response_data, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response_data, "Query does not match the expected response"
+    assert result.messages[0].content == mock_system_response_data, "Query does not match the expected response"
+    assert result.messages[1].content == mock_user_response_data, "Query does not match the expected response"
 
     # step2: add additional field placeholder3 in data
     mock_invalid_input_data = PromptTemplateInput(
@@ -399,8 +417,9 @@ async def test_operator_prompt_run_raises_exception_on_unexpected_placeholder_in
     except Exception as e:
         pytest.fail(f"OPEA Prompt Template Microservice init raised {type(e)} unexpectedly!")
 
-    assert result.messages.system == mock_system_response_data, "Query does not match the expected response"
-    assert result.messages.user == mock_user_response_data, "Query does not match the expected response"
+    result_system, result_user = get_system_and_user_messages(result.messages)
+    assert result_system.content == mock_system_response_data, "Query does not match the expected response"
+    assert result_user.content == mock_user_response_data, "Query does not match the expected response"
 
     # step2: try to add placeholder3 to the template
     mock_invalid_input_data = PromptTemplateInput(

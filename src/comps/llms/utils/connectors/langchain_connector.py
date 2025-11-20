@@ -9,19 +9,20 @@ from fastapi.responses import StreamingResponse
 from langchain_community.llms import VLLMOpenAI
 from requests.exceptions import ConnectionError, ReadTimeout
 
-from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger, TextDoc
+from comps import GeneratedDoc, LLMParamsDoc, LLMPromptTemplate, get_opea_logger, TextDoc
 from comps.llms.utils.connectors.connector import LLMConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
 class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, headers: Optional[Dict[str, str]] = None): # TODO: change 'llm_output_guard_exists', when parameters will be avaialble directly to service
         self._endpoint = endpoint+"/v1"
         self._model_name = model_name
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
+        self._insecure_endpoint = insecure_endpoint
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
 
@@ -33,7 +34,7 @@ class VLLMConnector:
                 model_name=self._model_name,
                 top_p=input.top_p,
                 temperature=input.temperature,
-                streaming=input.streaming and not self._disable_streaming,
+                streaming=input.stream and not self._disable_streaming,
                 default_headers=self._headers
             )
         except Exception as e:
@@ -41,23 +42,25 @@ class VLLMConnector:
             logger.error(error_message)
             raise Exception(f"{error_message}: {e}")
 
-        messages = [
-            {"role": "system", "content": input.messages.system},
-            {"role": "user", "content": input.messages.user}
-            ]
+        messages = input.messages.model_dump() if isinstance(input.messages, LLMPromptTemplate) else input.messages,
 
         reranked_docs_output = []
         if isinstance(input.data, dict) and 'reranked_docs' in input.data:
             logger.debug(f"Reranked documents found in input data. {input.data['reranked_docs']}")
             reranked_docs_output = [TextDoc(**rdoc).to_reranked_doc().model_dump(exclude=['id']) for rdoc in input.data['reranked_docs']]
 
-        if input.streaming and not self._disable_streaming:
+        user_prompt = [msg.content for msg in input.messages if msg.role == "user"]
+        if not user_prompt:
+            raise ValueError("No user prompt found in messages.")
+        user_prompt = user_prompt[0]
+
+        if input.stream and not self._disable_streaming:
             try:
                 if self._llm_output_guard_exists:
                     chat_response = ""
                     async for text in llm.astream(messages):
                         chat_response += text
-                    return GeneratedDoc(text=chat_response, prompt=input.messages.user, streaming=input.streaming,
+                    return GeneratedDoc(text=chat_response, prompt=user_prompt, stream=input.stream,
                                     output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
                 async def stream_generator():
                     chat_response = ""
@@ -91,7 +94,7 @@ class VLLMConnector:
         else:
             try:
                 response = await llm.ainvoke(messages)
-                return GeneratedDoc(text=response, prompt=input.messages.user, streaming=input.streaming,
+                return GeneratedDoc(text=response, prompt=user_prompt, stream=input.stream,
                                     output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
             except ReadTimeout as e:
                 error_message = f"Failed to invoke the Langchain VLLM Connector. Connection established with '{e.request.url}' but " \

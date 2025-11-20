@@ -30,8 +30,8 @@ export const llmFormConfig = {
     name: "repetition_penalty",
     range: { min: 1, max: 2 },
   },
-  streaming: {
-    name: "streaming",
+  stream: {
+    name: "stream",
   },
 };
 
@@ -42,7 +42,7 @@ export const llmArgumentsDefault: LLMArgs = {
   typical_p: null,
   temperature: null,
   repetition_penalty: null,
-  streaming: true,
+  stream: true,
 };
 
 export interface LLMArgs extends Record<string, ServiceArgumentInputValue> {
@@ -52,5 +52,5 @@ export interface LLMArgs extends Record<string, ServiceArgumentInputValue> {
   typical_p: ServiceArgumentNumberInputValue;
   temperature: ServiceArgumentNumberInputValue;
   repetition_penalty: ServiceArgumentNumberInputValue;
-  streaming: ServiceArgumentCheckboxValue;
+  stream: ServiceArgumentCheckboxValue;
 }

@@ -6,6 +6,8 @@
   ansible.builtin.include_role:
     name: utils
     tasks_from: get_namespaces.yaml
+  when:
+    enabled_namespaces | default([]) | length == 0
   tags:
     - install
     - uninstall

@@ -240,6 +240,40 @@ services:
           - type: Pods
             value: 1
             periodSeconds: 15
+  torchserve_embedding:
+    replicas: 4
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi
+      limits:
+        cpu: 4
+        memory: 16Gi
+    hpa:
+      minReplicas: 4
+      maxReplicas: 10
+      targetValue: 0.5
+      # this value represents average processing time of single request (Queue Latency + interference latency)
+      # will increase when embedding documents with high number of chunks
+      # depends on used hardware and embedding model used
+      # metric used for scale up 'avg(rate(ts_inference_requests_total{namespace="chatqa",service="torchserve-embedding-svc"}[2m])) by (<<.GroupBy>>)'
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 30
+          - type: Pods
+            value: 1
+            periodSeconds: 15
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          selectPolicy: Max
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 15
   vllm_gaudi:
     replicas: 1
     # Note: For vllm_gaudi, the habana.ai/gaudi limit is set to the tensor-parallel-size value defined in deployment/pipelines/chatqa/resources-model-hpu.yaml

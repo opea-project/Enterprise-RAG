@@ -15,6 +15,10 @@ ssh_user = "ubuntu"
 # Hugging Face Token
 hugging_face_token = ""
 
+# Solution Version (default: "release-2.0.0")
+# Specify a git tag (e.g., "release-2.0.0", "release-1.5.0") or branch name ("main")
+#solution_version = "release-2.0.0"
+
 # Model Configuration (Intel Gaudi optimized)
 #deployment_type       = "hpu"
 #llm_model_gaudi      = ""

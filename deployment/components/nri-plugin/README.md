@@ -1,17 +1,19 @@
 # Resources Scheduling and vLLM CPUs Pinning Based on System Topology and Balloons Policy
 
-> ℹ️ **Info:**  
-> This is a **preview** feature and is intended for Intel Xeon-only platforms.
-It is not supported on Gaudi or non-NUMA architectures.
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [vLLM CPU Allocation Adjustment](#vllm-cpus-allocation-adjustment)
+- [Configuration](#configuration)
+  - [Resource Requirements](#resource-requirements)
 - [Node Topology Discovery and Scheduling](#node-topology-discovery-and-scheduling)
 - [Configuration Example](#configuration-example)
 - [Calculating maxBalloons](#calculating-maxballoons)
+  - [Calculation Algorithm](#calculation-algorithm)
+  - [Configuration Parameters](#configuration-parameters)
+  - [Calculation Examples](#calculation-examples)
+  - [Preview Topology Calculation](#preview-topology-calculation)
 - [Limitations](#limitations)
 - [Reset Balloons Policy Manually](#reset-balloons-policy-manually)
 
@@ -27,31 +29,38 @@ It incorporates the use of the [NRI Plugin](https://containers.github.io/nri-plu
 - Spread vLLM pods equally between NUMA nodes, balancing placement according to the system topology on each cluster node.
 - Keep each vLLM pod isolated to a single NUMA node, and avoid spanning across NUMA nodes.
 - Allocate CPUs for vLLM pod; the sibling CPUs are available for non-vLLM workloads.
-- Supports dynamic scaling with Horizontal Pod Autoscaler (HPA).  
-  **Note:** When `balloons.enabled` is set, the `maxReplicas` value in HPA is automatically set to the calculated `maxBalloons` value (see [Calculating maxBalloons](#calculating-maxballoons)).
 
-## vLLM CPUs Allocation Adjustment
+## Configuration
 
-By default, each vLLM pod reserves `32` CPUs (referred to as **`VLLM_CPU_REQUEST`** throughout this document).  
-If the NUMA node size is **less than 32 physical CPUs**, **`VLLM_CPU_REQUEST`** must be changed to match the hardware.
-This value is configured by the file specified in `config.yaml` as the `resourcesPath` parameter.  
-By default, this file is [`resources-reference-cpu.yaml`](../../pipelines/chatqa/resources-reference-cpu.yaml).
+The balloons feature is configured in your configuration file (e.g., [`deployment/inventory/sample/config.yaml`](../../inventory/sample/config.yaml)):
 
-**Example:**
 ```yaml
-vllm:
-  resources:
-    requests:
-      cpu: ${VLLM_CPU_REQUEST}
-    limits:
-      cpu: ${VLLM_CPU_REQUEST}
+# Topology-aware resource scheduling and CPU pinning for vLLM
+# For detailed documentation, refer to: deployment/components/nri-plugin/README.md
+balloons:
+  enabled: true
+  namespace: kube-system
+  throughput_mode: true
+  wait_timeout: 300
 ```
-**`VLLM_CPU_REQUEST`** should be set to the number of CPUs to allocate per vLLM pod.
+**Configuration Options:**
+- **`enabled`**: Set to `true` to activate topology-aware resource scheduling
+- **`namespace`**: Kubernetes namespace for the NRI balloons plugin (typically `kube-system`)
+- **`throughput_mode`**: Enable throughput optimization to maximize replica count (see [Calculation Algorithm](#calculation-algorithm))
+- **`wait_timeout`**: Maximum time in seconds NRI managed pods wait for plugin readiness
 
-**Note:**
-If `edp.vllm.enabled` is set to `true`, **`VLLM_CPU_REQUEST`** should also be adjusted in
-[`edp values file`](../edp/values.yaml)
-under the `vllm.resources` section.
+### Resource Requirements
+
+CPU and memory resources for vLLM, reranking, and embedding services are **automatically read** from the pipeline's resource configuration file (e.g., `pipelines/chatqa/resources-reference-cpu.yaml`). The system uses these values to calculate optimal pod distribution across NUMA nodes.
+
+**Default CPU allocations:**
+- **vLLM**: 32 CPUs per pod (referred to as **`VLLM_CPU_REQUEST`**)
+- **Reranking**: 4 CPUs per pod
+- **Embedding**: 4 CPUs per pod
+
+To adjust these values, modify the resource configuration in your pipeline's `resources-reference-cpu.yaml` file under the `services` section for each component.
+
+**Note:** If `edp.vllm.enabled` is set to `true`, ensure that vLLM resources are also properly configured in the [`edp values file`](../edp/values.yaml) under the `vllm.resources` section.
 
 ## Node Topology Discovery and Scheduling
 
@@ -98,37 +107,171 @@ The plugin will automatically detect:
 
 ## Calculating maxBalloons
 
-The maximum number of vLLM pods ("balloons") that can run concurrently is determined by the available NUMA nodes and CPU requirements **on each k8s node**:
+The system calculates the optimal number of inference pod groups (referred to as **maxBalloons**) using the [`calculate_replicas.py`](../../scripts/calculate_replicas.py) script. This calculation considers not only vLLM pods but also the complete inference service group consisting of vLLM, reranking, and embedding services that work together.
 
-- Each vLLM pod reserves **`VLLM_CPU_REQUEST`** CPUs, and also blocks the corresponding **`VLLM_CPU_REQUEST`** hyperthreads (sibling threads) from use by other vLLM pods. Effectively, each vLLM pod "reserves" **`VLLM_CPU_REQUEST`** × 2 CPUs (from the perspective of other vLLM pods).
-- The number of vLLM pods that can be placed per NUMA node is calculated as:  
-  `max vLLM per NUMA node = NUMANodeSize // (VLLM_CPU_REQUEST × 2)`
-- Therefore,  
-  `maxBalloons = NUMANodes * (NUMANodeSize // (VLLM_CPU_REQUEST × 2))`
+### Calculation Algorithm
 
-Here, the `//` operator means integer (floor) division, i.e., the result is rounded down to the nearest whole number. For example, `130 // 64 = 2`.
+The calculation employs a multi-mode algorithm that adapts based on hardware topology and configuration:
 
-**Examples:**  
-Assume **`VLLM_CPU_REQUEST`** = 32
+**Key Considerations:**
+- All CPU values account for hyperthreading by multiplying by 2 (e.g., requesting 32 CPUs reserves 64 logical CPUs)
+- Each inference group includes: vLLM, torchserve reranking, and torchserve embedding services
+- Services should be isolated within a single NUMA node to avoid cross-NUMA communication overhead
 
-- If a k8s node has 2 NUMA nodes, and each NUMA node has 80 logical CPUs:
+**Calculation Modes:**
 
-  ```
-  maxBalloons = 2 * (80 // 64) = 2 * 1 = 2
-  ```
-  *Result: Only one vLLM pod can be scheduled per NUMA node, two in total on that k8s node.*
+The algorithm first checks if all services fit in one NUMA node:
+```
+n = NUMANodeSize // (VLLM_SIZE × 2 + RERANKER_SIZE × 2 + EMBEDDING_SIZE × 2)
+```
 
-- If a cluster node has 2 NUMA nodes, and each NUMA node has 128 logical CPUs:
+**Case 1: Services Fit (`n > 0`)**
 
-  ```
-  maxBalloons = 2 * (128 // 64) = 2 * 2 = 4
-  ```
-  *Result: Two vLLM pods can be scheduled per NUMA node, four in total on that k8s node.*
+When all three services fit together in one NUMA node:
+
+- **With `throughput_mode: false`:**
+  - Uses standard calculation: `replicas = n × numa_nodes_count`
+  - VLLM maintains original size
+
+- **With `throughput_mode: true`:**
+  - Attempts to maximize replicas while maintaining VLLM ≥ 75% of original size
+  - Calculates maximum replicas possible, then distributes available CPU to VLLM
+  - If optimization doesn't help, uses standard calculation
+
+**Case 2: Services Don't Fit (`n == 0`)**
+
+When services cannot fit together with full VLLM size:
+
+- **With `throughput_mode: false`:**
+  - **Fallback Mode:** Allocates one inference group per 2 NUMA nodes
+  - Formula: `replicas = numa_nodes_count // 2`
+  - VLLM can use up to full NUMA node size if needed
+  - Returns 0 replicas if VLLM size falls below 25% of original
+
+- **With `throughput_mode: true`:**
+  - **Throughput Adjustment:** Maximizes replicas while keeping VLLM ≥ 50% of original size
+  - Calculates maximum possible replicas per NUMA node with reduced VLLM
+  - Allocates remaining CPU capacity to VLLM
+  - If cannot fit any replicas with 50% of original VLLM size, falls back to Case 2 fallback mode
+
+**Note:** Returns 0 replicas if VLLM size falls below 25% of original in fallback mode. (NUMA node size < 25% of original VLLM size)
+
+### Configuration Parameters
+
+The calculation uses CPU resource requirements from the pipeline configuration:
+- **`VLLM_CPU_REQUEST`**: CPUs for vLLM pod
+- **`RERANKER_CPU_REQUEST`**: CPUs for reranking pod
+- **`EMBEDDING_CPU_REQUEST`**: CPUs for embedding pod
+- **`throughput_mode`**: Boolean flag enabling throughput optimization
+
+### Calculation Examples
+
+All examples use default service requirements: **VLLM=32, Reranker=4, Embedding=4** CPUs per pod.
+
+**Example 1: Small NUMA Nodes (Services Don't Fit)**
+- **Hardware:** 2 NUMA nodes × 64 logical CPUs each
+- **Total required per set:** (32 + 4 + 4) × 2 = 80 logical CPUs (accounting for hyperthreading)
+- **Check if services fit:** n = 64 // 80 = 0 (services don't fit in one NUMA node)
+
+  **With `throughput_mode: false` (Fallback Mode):**
+  - Fallback: allocate 1 inference group per 2 NUMA nodes
+  - Result: `replicas = 2 // 2 = 1` inference group total
+  - VLLM size: Can use up to 64 CPUs (full NUMA node if needed)
+
+  **With `throughput_mode: true` (Throughput Mode Adjustment):**
+  - Try to fit replicas with reduced VLLM (minimum 50% = 16 CPUs)
+  - Required per replica: (16 + 4 + 4) × 2 = 48 logical CPUs
+  - Max replicas per NUMA: 64 // 48 = 1
+  - Available CPU for VLLM: 64 - 1×(8+8) = 48 logical CPUs → 24 CPUs per VLLM
+  - Result: `replicas = 1 × 2 = 2` inference groups, VLLM adjusted to 24 CPUs (75% of original)
+
+**Example 2: Medium NUMA Nodes (Exact Fit)**
+- **Hardware:** 2 NUMA nodes × 80 logical CPUs each
+- **Total required per set:** (32 + 4 + 4) × 2 = 80 logical CPUs
+- **Check if services fit:** n = 80 // 80 = 1 (exactly one complete set fits per NUMA node)
+
+  **With `throughput_mode: false` (Standard Mode):**
+  - Result: `replicas = 1 × 2 = 2` inference groups total
+  - VLLM size: 32 CPUs (original size maintained)
+
+  **With `throughput_mode: true` (All Services Fit Mode with optimization):**
+  - Services fit, but no spare capacity to add more replicas while maintaining VLLM ≥ 75%
+  - Result: `replicas = 1 × 2 = 2` inference groups total
+  - VLLM size: 32 CPUs (original size maintained)
+
+**Example 3: Large NUMA Nodes (Multiple Sets Fit)**
+- **Hardware:** 2 NUMA nodes × 128 logical CPUs each
+- **Total required per set:** (32 + 4 + 4) × 2 = 80 logical CPUs
+- **Check if services fit:** n = 128 // 80 = 1 (one complete set fits per NUMA node)
+
+  **With `throughput_mode: false` (Standard Mode):**
+  - Result: `replicas = 1 × 2 = 2` inference groups total
+  - VLLM size: 32 CPUs (original size maintained)
+  - Unused capacity: 48 logical CPUs per NUMA node
+
+  **With `throughput_mode: true` (All Services Fit Mode with optimization):**
+  - Check if we can fit more replicas while maintaining VLLM ≥ 75% (24 CPUs minimum)
+  - Required per replica with VLLM=24: (24 + 4 + 4) × 2 = 64 logical CPUs
+  - Max replicas per NUMA: 128 // 64 = 2
+  - Available CPU for VLLM: 128 - 2×(8+8) = 96 logical CPUs → 48 CPUs per VLLM (96÷2÷2 = 24)
+  - 24 CPUs = 75% of original, so this fits the threshold
+  - Result: `replicas = 2 × 2 = 4` inference groups total, VLLM adjusted to 24 CPUs (75% of original)
+
+### Preview Topology Calculation
+
+You can preview the topology calculation results without deploying the infrastructure using the **topology-preview** mode. This dry-run mode:
+
+- Discovers node topology for each cluster node
+- Calculates optimal replica distribution
+- Displays detailed results per node
+- Saves output to `deployment/ansible-logs/tmp/inference_pods_distribution.yaml`
+- Does not modify real topology state
+
+**To run topology preview:**
+
+```bash
+cd deployment
+source erag-venv/bin/activate
+ansible-playbook -u $USER -K playbooks/application.yaml \
+  --tags topology-preview \
+  -e @inventory/sample/config.yaml
+```
+
+**Sample Output:**
+
+```
+====== Topology Calculation Summary ======
+Node: node1
+  Inference Groups: 2
+  Adjusted VLLM Size: 32
+  Calculation Method: all_services_fit
+  Gaudi: false
+  AMX Supported: true
+  VLLM Replicas: 2
+  VLLM CPU Size: 32
+  Embedding Replicas: 2
+  Embedding CPU Size: 4
+  Reranking Replicas: 2
+  Reranking CPU Size: 4
+------------------------------------------
+Total Inference Groups: 2
+Gaudi Nodes Count: 0
+==========================================
+```
+
+The output file contains per-node breakdowns showing:
+- Number of inference groups (replicas) per node
+- Adjusted VLLM CPU size (may differ from original if optimized)
+- Calculation method used (`all_services_fit`, `throughput_mode_adjustment`, or `fallback_mode`)
+- Hardware features (Gaudi, AMX support)
+- Individual service replica counts and CPU allocations
+
+This information helps validate your cluster topology and resource configuration before actual deployment.
 
 ## Limitations
 
-- **Xeon only:** Unsupported on Gaudi or non-NUMA platforms.
 - **Hyperthreading:** Must be enabled on each node.
+- **Minimum NUMA node size:** Each NUMA node must have at least 16 vCPUs (logical CPUs including hyperthreads) to accommodate the minimum vLLM CPU requirement.
 
 ## Reset Balloons Policy Manually
 

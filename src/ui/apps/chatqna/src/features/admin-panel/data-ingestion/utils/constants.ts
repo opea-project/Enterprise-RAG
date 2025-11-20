@@ -1,14 +1,7 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-// - Characters reserved for file systems (<>:"/\\|?*)
-// - ASCII control characters (\x00-\x1F)
-// eslint-disable-next-line no-control-regex
-export const filenameUnsafeCharsRegex = new RegExp(/[<>:"/\\|?*\x00-\x1F]/g);
-
-export const filenameMaxLength = 255;
-
-export const supportedFileExtensions = [
+export const SUPPORTED_FILE_EXTENSIONS = [
   "adoc",
   "pdf",
   "html",
@@ -32,7 +25,7 @@ export const supportedFileExtensions = [
   "svg",
 ];
 
-export const supportedFilesMIMETypes = [
+export const SUPPORTED_FILES_MIME_TYPES = [
   "application/pdf",
   "text/html",
   "text/plain",
@@ -52,5 +45,5 @@ export const supportedFilesMIMETypes = [
   "image/svg+xml",
 ];
 
-export const linkErrorMessage =
+export const LINK_ERROR_MESSAGE =
   "Enter valid URL that starts with protocol (http:// or https://).";

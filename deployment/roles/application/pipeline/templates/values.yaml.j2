@@ -3,12 +3,16 @@ Copyright (C) 2024-2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
+namespace: {{ item.namespace }}
+
 proxy:
   httpProxy: {{ httpProxy }}
   httpsProxy: {{ httpsProxy }}
   noProxy: {{ noProxy }}
+{% if (huggingToken is defined) and (huggingToken != "") %}
 tokens:
   hugToken: {{ huggingToken }}
+{% endif %}
 common_tag: &tag {{ tag }}
 common_registry: &repo {{ registry }}
 
@@ -34,10 +38,25 @@ tdx:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
-{% if balloons.enabled is defined %}
+{% if balloons.enabled is defined and balloons.enabled %}
 balloons:
   enabled: {{ balloons.enabled }}
-  services: {{ balloons.services }}
+  namespace: {{ balloons.namespace }}
+  wait_timeout: {{ balloons.wait_timeout }}
+  chart_name: {{ balloons_chart_name }}
+{% endif %}
+
+{% if optimal_replicas is defined %}
+vllmNodes:
+{% for node_name, node_info in optimal_replicas.items() %}
+{% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and (node_info.amx_supported == true or node_info.gaudi == true) %}
+  - name: {{ node_name }}
+    nodeSelector:
+      kubernetes.io/hostname: {{ node_name }}
+    VLLM_CPU: "{{ node_info.adjusted_vllm_size }}"
+    VLLM_INSTANCES: {{ node_info.replicas }}
+{% endif %}
+{% endfor %}
 {% endif %}
 
 {% if gmc.pvc is defined and gmc.pvc.models is defined %}
@@ -83,6 +102,11 @@ images:
     tag: *tag
     envs:
       RERANKING_MODEL_NAME: *reranking_model_name
+{% if edp.late_chunking.enabled is true %}
+      RERANKING_LATE_CHUNKING_ENABLED: "True"
+{% else %}
+      RERANKING_LATE_CHUNKING_ENABLED: "False"
+{% endif %}
   teirerank:
     image: "erag-teirerank"
     repository: *repo
@@ -99,6 +123,8 @@ images:
     image: "erag-prompt_template"
     repository: *repo
     tag: *tag
+    envs:
+      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -118,6 +144,9 @@ images:
     image: "erag-retriever"
     repository: *repo
     tag: *tag
+{% if vector_databases.enabled %}
+    vector_store: {{ vector_databases.vector_store }}
+{% endif %}
     envs:
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
@@ -127,8 +156,11 @@ images:
 {% if edp.rbac is defined and edp.rbac.enabled is true %}
       VECTOR_DB_RBAC: "true"
 {% endif %}
+{% if vector_databases.enabled %}
+      VECTOR_STORE: {{ vector_databases.vector_store }}
       VECTOR_DATATYPE: {{ vector_databases.vector_datatype }}
       VECTOR_DIMS: {{ vector_databases.vector_dims }}
+{% endif %}
   llm-usvc:
     image: "erag-llm"
     repository: *repo
@@ -165,7 +197,24 @@ images:
     image: "erag-system-fingerprint"
     repository: *repo
     tag: *tag
+    envs:
+      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
   chat-history-usvc:
     image: "erag-chat-history"
     repository: *repo
     tag: *tag
+  docsum-usvc:
+    image: "erag-docsum"
+    repository: *repo
+    tag: *tag
+  init-container:
+    image: "erag-init-container"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+  late-chunking-usvc:
+    image: "erag-late-chunking"
+    repository: *repo
+    tag: *tag
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name

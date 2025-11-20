@@ -14,7 +14,7 @@ modelConfigs:
       OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data"]
+    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data"]
     tensor_parallel_size: "1" # not applied on CPU
 
   generic-base-awq-cpu: &generic_base_awq_cpu
@@ -27,7 +27,7 @@ modelConfigs:
       OMP_NUM_THREADS: "32"
       VLLM_PP_SIZE: "1"
       VLLM_MAX_MODEL_LEN: "4096"
-    extraCmdArgs: ["--device", "cpu", "--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq", "--enforce-eager"]
+    extraCmdArgs: ["--pipeline-parallel-size", "$(VLLM_PP_SIZE)", "--dtype", "$(VLLM_DTYPE)", "--max_model_len", "$(VLLM_MAX_MODEL_LEN)", "--max-num-seqs", "$(VLLM_MAX_NUM_SEQS)", "--disable-log-requests", "--download-dir", "/data", "--quantization", "awq", "--enforce-eager"]
     tensor_parallel_size: "1" # not applied on CPU
 
   "TechxGenus/Meta-Llama-3-8B-Instruct-AWQ":
@@ -103,6 +103,21 @@ modelConfigs:
       {%- endif %}
       {%- endfor %}
 
+# Polish language models
+# Attention!
+# If you use these models, make sure to ajust embedding and reranking models accordingly to support Polish language well.
+  "CYFRAGOVPL/Llama-PLLuM-8B-chat":
+    <<: *generic_base_cpu
+
+  "CYFRAGOVPL/Llama-PLLuM-8B-instruct":
+    <<: *generic_base_cpu
+
+  "CYFRAGOVPL/PLLuM-12B-chat":
+    <<: *generic_base_cpu
+
+  "CYFRAGOVPL/PLLuM-12B-instruct":
+    <<: *generic_base_cpu
+
 # Default arguments if the model ID is not found
 defaultModelConfigs:
   configMapValues:
@@ -111,4 +126,3 @@ defaultModelConfigs:
   extraCmdArgs: ["--block-size", "128", "--dtype", "bfloat16", "--max-model-len", "5196"]
   modelChatTemplate: ""     # default is empty
   tensor_parallel_size: "1" # not applied on CPU
-

@@ -58,21 +58,10 @@ class FingerprintApiHelper(ApiRequestHelper):
         logger.info(f"Fingerprint (/v1/system_fingerprint/append_arguments) call duration: {duration}")
         return ApiResponse(response, duration)
 
-    def set_streaming(self, streaming=True):
-        """
-        Disable streaming
-        """
-        self._change_llm_parameters(streaming=streaming)
-
-    def set_llm_parameters(self, **parameters):
-        """
-        Change LLM parameters
-        """
-        self._change_llm_parameters(**parameters)
-
-    def _change_llm_parameters(self, **parameters):
+    def set_component_parameters(self, component, **parameters):
+        """Change component parameters"""
         body = [{
-            "name": "llm",
+            "name": component,
             "data": {
                 **parameters
             }

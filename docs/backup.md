@@ -31,7 +31,7 @@ To have a working backup and restore functionality, the following items need to 
   ```yaml
   install_csi: nfs
   ```
-  See the section on [preparing configuration files](../deployment/README.md#prepare-configuration-files) in deployment documentation for details.
+  See the Multi-Node Support and Storage Requirements section in the [Advanced Configuration Guide](advanced_configuration.md#multi-node-support-and-storage-requirements) for detailed configuration instructions.
 
 - Enabling the installation of VMware Velero along with the RAG solution.<br>
   To ensure that Velero is installed during the deployment of the cluster, update `config.yaml` to have at least these parameters set accordingly:
@@ -47,7 +47,12 @@ To have a working backup and restore functionality, the following items need to 
     install_server: true
     install_client: true
   ```
-  Please review the cluster config file `deployment/inventory/sample/config.yaml` for details.
+  Please review the cluster config file for your chosen pipeline:
+  - ChatQA: `deployment/inventory/sample/config.yaml`
+  - Docsum: `deployment/inventory/sample/config_docsum.yaml`
+
+> [!NOTE]
+> When using a pipeline other than ChatQA, ensure that the `namespaceOrder` and `deployments` sections in the backup configuration match your deployed pipeline namespace (e.g., `docsum` instead of `chatqa`).
 
 ## User Data Backup
 

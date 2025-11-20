@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -55,7 +56,6 @@ const (
 	TeiReranking             = "TeiReranking"
 	TeiRerankingGaudi        = "TeiRerankingGaudi"
 	Llm                      = "Llm"
-	DocSum                   = "DocSum"
 	Router                   = "router"
 	DataPrep                 = "DataPrep"
 	xeon                     = "xeon"
@@ -82,6 +82,11 @@ const (
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
 	LanguageDetection        = "LanguageDetection"
+	TextExtractor            = "TextExtractor"
+	TextCompression          = "TextCompression"
+	TextSplitter			 = "TextSplitter"
+	DocSum				     = "DocSum"
+	LateChunking             = "LateChunking"
 )
 
 var yamlDict = map[string]string{
@@ -97,7 +102,6 @@ var yamlDict = map[string]string{
 	TeiReranking:        yaml_dir + "teirerank.yaml",
 	TeiRerankingGaudi:   yaml_dir + "teirerank_gaudi.yaml",
 	Llm:                 yaml_dir + "llm-usvc.yaml",
-	DocSum:              yaml_dir + "docsum-llm-uservice.yaml",
 	Router:              yaml_dir + "gmc-router.yaml",
 	WebRetriever:        yaml_dir + "web-retriever.yaml",
 	ASR:                 yaml_dir + "asr.yaml",
@@ -113,6 +117,11 @@ var yamlDict = map[string]string{
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 	VLLM:                yaml_dir + "vllm.yaml",
 	LanguageDetection:   yaml_dir + "langdtct-usvc.yaml",
+	TextExtractor:       yaml_dir + "text-extractor-usvc.yaml",
+	TextCompression:     yaml_dir + "text-compression-usvc.yaml",
+	TextSplitter:        yaml_dir + "text-splitter-usvc.yaml",
+	DocSum:              yaml_dir + "docsum-usvc.yaml",
+	LateChunking:        yaml_dir + "late_chunking_usvc.yaml",
 }
 
 var (
@@ -261,7 +270,17 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				return nil, err
 			}
 			if svc != "" {
-				deploymentObj.SetName(svc + dplymtSubfix)
+				// Check for per-node deployment labels
+				embeddingNode, hasEmbeddingNode := deploymentObj.Spec.Template.Labels["embedding-node"]
+				rerankingNode, hasRerankingNode := deploymentObj.Spec.Template.Labels["reranking-node"]
+				
+				if hasEmbeddingNode && embeddingNode != "" {
+					deploymentObj.SetName(svc + "-" + embeddingNode)
+				} else if hasRerankingNode && rerankingNode != "" {
+					deploymentObj.SetName(svc + "-" + rerankingNode)
+				} else {
+					deploymentObj.SetName(svc + dplymtSubfix)
+				}
 				// Set the labels if they're specified
 				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
 				deploymentObj.Spec.Template.Labels["app"] = svc
@@ -275,10 +294,20 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 			var newEnvVars []corev1.EnvVar
 			if svcCfg != nil {
 				for name, value := range *svcCfg {
-					if name == "endpoint" || name == "nodes" {
+					if name == "endpoint" || name == "nodes" || name == "LLM_VLLM_API_KEY" {
 						continue
 					}
-
+					if name == "LLM_MODEL_SERVER_ENDPOINT" {
+						_, err = url.ParseRequestURI(value)
+						if err == nil {
+							itemEnvVar := corev1.EnvVar{
+								Name:  name,
+								Value: value,
+							}
+							newEnvVars = append(newEnvVars, itemEnvVar)
+							continue
+						}
+					}
 					var endpoint, ns string
 					var fetch bool
 
@@ -362,18 +391,23 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				return nil, err
 			}
 		} else if obj.GetKind() == StatefulSet {
-			deploymentObj := &appsv1.StatefulSet{}
-			err = scheme.Scheme.Convert(obj, deploymentObj, nil)
-			if err != nil {
-				_log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
-				return nil, err
-			}
-			if svc != "" {
+	       deploymentObj := &appsv1.StatefulSet{}
+	       err = scheme.Scheme.Convert(obj, deploymentObj, nil)
+	       if err != nil {
+		       _log.Error(err, "Failed to convert unstructured to statefulset", "name", obj.GetName())
+		       return nil, err
+	       }
+		if svc != "" {
+			vllmNode, hasVllmNode := deploymentObj.Spec.Template.Labels["vllm-node"]
+			if hasVllmNode && vllmNode != "" {
+				deploymentObj.SetName(svc + "-" + vllmNode)
+		    } else {
 				deploymentObj.SetName(svc + dplymtSubfix)
-				// Set the labels if they're specified
-				deploymentObj.Spec.Selector.MatchLabels["app"] = svc
-				deploymentObj.Spec.Template.Labels["app"] = svc
-			}
+		}
+		    // Set the labels if they're specified
+		    deploymentObj.Spec.Selector.MatchLabels["app"] = svc
+		    deploymentObj.Spec.Template.Labels["app"] = svc
+		}
 
 			deploymentObj.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
 				Type: appsv1.RollingUpdateStatefulSetStrategyType,
@@ -481,6 +515,7 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "VLLM_ENDPOINT" ||
 		keyname == "LLM_MODEL_SERVER_ENDPOINT" ||
 		keyname == "EMBEDDING_MODEL_SERVER_ENDPOINT" ||
+		keyname == "DOCSUM_LLM_USVC_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
 		keyname == "TEI_ENDPOINT"

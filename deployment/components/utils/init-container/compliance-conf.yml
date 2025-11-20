@@ -1,0 +1,8 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "./"
+dependencies:
+  - apt
+container_distribution: DockerHub
+dockerfile_distribution: GitHub
+comments: ""

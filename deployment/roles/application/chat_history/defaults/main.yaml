@@ -7,21 +7,18 @@ chat_history:
   namespace: "chat-history"
   helm:
     version: "v3.16.1"
-    repo_name: "bitnami"
-    repo_url: "https://charts.bitnami.com/bitnami"
-    chart_version: "1.1.0"
     release_name: "chat-history"
     chart_directory: "{{ playbook_dir }}/../components/chat_history"
-    default_values_file: "{{ playbook_dir }}/../components/chat_history/values.yaml"
-    tdx_resources_file: "{{ playbook_dir }}/../components/chat_history/resources-tdx.yaml"
+    default_values_file: >-
+      {{ playbook_dir }}/../components/chat_history/values.yaml
+    tdx_resources_file: >-
+      {{ playbook_dir }}/../components/chat_history/resources-tdx.yaml
 
-  mongo:
+  # FerretDB/PostgreSQL authentication settings
+  database:
     auth:
       db_name: "CHAT_HISTORY"
       password_secret_name: "mongo-database-secret"
       user:
-        db_user: "usr"
-        password_file_name: "chat-history-password"
-      admin:
-        db_user: "root"
-        password_file_name: "chat-history-admin-password"
+        db_user: "chat_history"
+        password_file_name: "chat-history-postgres-password"

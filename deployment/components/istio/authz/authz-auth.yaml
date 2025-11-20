@@ -27,7 +27,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: postgresql
+      app: keycloak-postgresql
   action: DENY
   rules:
   - from:

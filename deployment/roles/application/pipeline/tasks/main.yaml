@@ -10,6 +10,7 @@
     helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath }}"
   tags:
     - install
+    - pre-upgrade
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -18,75 +19,16 @@
     mode: '0644'
   tags:
     - install
-
-- name: Gather NUMA topology info
-  ansible.builtin.include_role:
-    name: utils
-    tasks_from: get_nodes_topology.yaml
-  when:
-    - balloons is defined and (balloons.enabled | bool)
-    - cpu_topology_per_node is not defined
-  tags:
-    - install
-
-- name: Calculate maxReplicasGaudi_VLLM
-  ansible.builtin.set_fact:
-    maxReplicasGaudi_VLLM: >-
-      {%- if item.namespace == 'chatqa' and item.modelConfigPath is defined -%}
-        {%- set model_config = (lookup('file', pipelines_dir + '/' + item.modelConfigPath) | from_yaml).get('modelConfigs', {}) -%}
-        {%- set model_entry = model_config.get(llm_model_gaudi ~ '', {}) -%}
-        {%- set tp_size = model_entry.get('tensor_parallel_size', none) -%}
-        {%- if tp_size is not none and (tp_size | int) != 0 -%}
-          {{ 8 // (tp_size | int) }}
-        {%- else -%}
-          {{ none }}
-        {%- endif -%}
-      {%- else -%}
-        {{ none }}
-      {%- endif -%}
-  tags:
-    - install
+    - pre-upgrade
 
 - name: Generate override resources values file from template
   ansible.builtin.template:
     src: "resources-values.yaml.j2"
     dest: "{{ helm_override_resources_path }}"
     mode: '0644'
-  vars:
-    maxReplicasVLLM: >-
-      {{
-        cpu_topology_per_node is defined
-        and cpu_topology_per_node.values() | length > 0
-        and (
-          cpu_topology_per_node.values()
-          | selectattr('amx_supported', 'equalto', true)
-          | map(attribute='maxBalloonsVLLM')
-          | sum
-        )
-        or none
-      }}
-    maxReplicasReranker: >-
-      {{
-        cpu_topology_per_node is defined
-        and cpu_topology_per_node.values() | length > 0
-        and (
-          (
-            cpu_topology_per_node.values()
-            | selectattr('amx_supported', 'equalto', true)
-            | list
-            +
-            cpu_topology_per_node.values()
-            | selectattr('gaudi', 'equalto', true)
-            | rejectattr('amx_supported', 'equalto', true)
-            | list
-          )
-          | map(attribute='maxBalloonsReranker')
-          | sum
-        )
-        or none
-      }}
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure pipeline namespace exists
   kubernetes.core.k8s:
@@ -152,6 +94,7 @@
       }}
   tags:
     - install
+    - pre-upgrade
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -165,6 +108,31 @@
     - install
     - update
 
+- name: Capture baseline of dynamically-generated resources before installation
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: capture_dynamic_resources.yaml
+  vars:
+    pipeline_item: "{{ item }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Run pre-upgrade checks
+  ansible.builtin.include_role:
+    name: upgrade
+  vars:
+    release_namespace: "{{ gmc.namespace }}"
+    release_name: "{{ gmc.helm.release_name }}"
+    release_enabled: true
+    chart_ref: "{{ gmc.helm.chart_directory }}"
+    release_values_files: "{{ values_files }}"
+  tags:
+    - pre-upgrade
+
+
+
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ gmc.helm.release_name }}"
@@ -175,20 +143,29 @@
     create_namespace: true
     timeout: "{{ helm_timeout }}"
     wait: true
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
 
-- name: Include chatqa specific tasks
-  ansible.builtin.include_tasks:
-    file: chatqa.yaml
-  when: item.type=='chatqa'
+- name: Extract LLM_VLLM_API_KEY from pipeline configuration
+  ansible.builtin.set_fact:
+    llm_vllm_api_key: "{{ (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | map(attribute='internalService.config.LLM_VLLM_API_KEY') | first | default('') }}"
+  when:
+    - item.samplePath is defined
+    - (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | selectattr('internalService.config.LLM_VLLM_API_KEY', 'defined') | list | length > 0
   tags:
     - install
 
-- name: Sleep mitigation due to GMC Helm chart readiness
-  ansible.builtin.pause:
-    seconds: 5
-  when: item.type=='chatqa'
+- name: Create VLLM API key secret from template
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'vllm-api-key-secret.yaml.j2') | from_yaml }}"
+  when:
+    - llm_vllm_api_key is defined
+    - llm_vllm_api_key != ''
   tags:
     - install
 
@@ -197,6 +174,15 @@
     state: present
     definition: "{{ lookup('file', pipelines_dir + item.samplePath) }}"
     namespace: "{{ item.namespace }}"
+  tags:
+    - install
+
+- name: Remove obsolete dynamically-generated resources
+  ansible.builtin.include_role:
+    name: utils
+    tasks_from: remove_obsolete_dynamic_resources.yaml
+  vars:
+    pipeline_item: "{{ item }}"
   tags:
     - install
 

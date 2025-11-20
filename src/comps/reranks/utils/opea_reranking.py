@@ -30,13 +30,16 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 SUPPORTED_MODEL_SERVERS = ["torchserve", "tei"]
 
 class OPEAReranker:
-    def __init__(self, service_endpoint: str, model_server: str, model_name: str = None):
+    def __init__(self, service_endpoint: str, model_server: str, model_name: str = None, late_chunking_enabled: bool = True):
         """
          Initialize the OPEAReranker instance with the given parameter
         Sets up the reranker.
 
         Args:
             :param service_endpoint: the URL of the reranking service (e.g. TEI)
+            :param model_server: the model server type (e.g., 'torchserve', 'tei')
+            :param model_name: the model name (required for torchserve)
+            :param late_chunking_enabled: if True, bypass reranker and use vector distances
 
         Raises:
             ValueError: If the required param is missing or empty.
@@ -44,14 +47,16 @@ class OPEAReranker:
 
         self._service_endpoint = service_endpoint
         self._model_server = model_server.lower()
+        self.late_chunking_enabled = late_chunking_enabled
         self._validate_config()
 
-        if self._model_server == "torchserve":
-            if not model_name:
-                raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'torchserve' as the model server.")
-            self._service_endpoint = self._service_endpoint + f"/predictions/{model_name.split('/')[-1]}"
-        elif self._model_server == "tei":
-            self._service_endpoint = self._service_endpoint + "/rerank"
+        if not self.late_chunking_enabled:
+            if self._model_server == "torchserve":
+                if not model_name:
+                    raise ValueError("The 'RERANKING_MODEL_NAME' cannot be empty when using 'torchserve' as the model server.")
+                self._service_endpoint = self._service_endpoint + f"/predictions/{model_name.split('/')[-1]}"
+            elif self._model_server == "tei":
+                self._service_endpoint = self._service_endpoint + "/rerank"
 
         self._validate()
 
@@ -61,13 +66,18 @@ class OPEAReranker:
 
     def _validate_config(self):
         """Validate the configuration values."""
-        if not self._service_endpoint:
-            raise ValueError("The 'RERANKING_SERVICE_ENDPOINT' cannot be empty.")
+        if not self.late_chunking_enabled:
+            if not self._service_endpoint:
+                raise ValueError("The 'RERANKING_SERVICE_ENDPOINT' cannot be empty.")
 
         if self._model_server not in SUPPORTED_MODEL_SERVERS:
             raise ValueError(f"Unsupported model server: {self._model_server}. Supported model servers: {SUPPORTED_MODEL_SERVERS}")
 
     def _validate(self):
+        if self.late_chunking_enabled:
+            logger.info("Late chunking enabled. Skipping reranker service validation.")
+            return
+        
         initial_query = "What is DL?"
         retrieved_docs = ["DL is not...", "DL is..."]
         asyncio.run(self._async_call_reranker(initial_query, retrieved_docs))
@@ -94,46 +104,56 @@ class OPEAReranker:
 
         # Check if retrieved_docs is not empty and all documents have non-empty 'text' fields
         if input.retrieved_docs and all(doc.text for doc in input.retrieved_docs):
-            # Proceed with processing the retrieved documents
-            try:
-                retrieved_texts = [doc.text for doc in input.retrieved_docs]
-                response_data = await self._async_call_reranker(
-                    input.user_prompt, retrieved_texts
+            # If late chunking is enabled, bypass reranker and use vector distances
+            if self.late_chunking_enabled:
+                logger.info("Late chunking enabled. Using vector distances for filtering instead of reranker.")
+                logger.info(f"Retrieved documents: {input.retrieved_docs}")
+                reranked_docs = self._filter_top_n_by_vector_distance(
+                    input.retrieved_docs, 
+                    input.top_n
                 )
-                logger.debug(f"Received response from reranking service: {response_data}")
-                best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
-                if len(best_response_list) != len(retrieved_texts):
-                    logger.warning(f"Limiting the number of best responses to {input.top_n} based on {len(retrieved_texts)} retrieved documents using max score of {input.rerank_score_threshold}.")
-                logger.debug(f"Best responses after filtering: {best_response_list}")
-
-            except TimeoutError as e:
-                raise TimeoutError(e)
-            except Timeout as e:
-                raise Timeout(e)
-            except RequestException as e:
-                raise RequestException(e)
-            except HTTPError as e:
-                raise HTTPError(e)
-            except ClientResponseError:
-                raise
-            except Exception as e:
-                logger.error(f"Error during request to reranking service: {e}")
-                raise Exception(f"Error during request to reranking service: {e}")
-
-            if not response_data:
-                logger.warning("No best responses found. Using all retrieved documents.")
-                reranked_docs = input.retrieved_docs
+                logger.info(f"Filtered documents by vector distance: {reranked_docs}")
             else:
-                reranked_docs = []
-                for best_response in best_response_list:
-                    doc = input.retrieved_docs[best_response["index"]]
-                    doc.metadata['reranker_score'] = best_response["score"]
-                    reranked_docs.append(doc)
-                logger.debug(f"Retrieved documents: {input.retrieved_docs}")
-                logger.debug(f"Reranked documents via best responses: {reranked_docs}")
+                # Proceed with processing the retrieved documents
+                try:
+                    retrieved_texts = [doc.text for doc in input.retrieved_docs]
+                    response_data = await self._async_call_reranker(
+                        input.user_prompt, retrieved_texts
+                    )
+                    logger.debug(f"Received response from reranking service: {response_data}")
+                    best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
+                    if len(best_response_list) != len(retrieved_texts):
+                        logger.warning(f"Limiting the number of best responses to {input.top_n} based on {len(retrieved_texts)} retrieved documents using max score of {input.rerank_score_threshold}.")
+                    logger.debug(f"Best responses after filtering: {best_response_list}")
+
+                except TimeoutError as e:
+                    raise TimeoutError(e)
+                except Timeout as e:
+                    raise Timeout(e)
+                except RequestException as e:
+                    raise RequestException(e)
+                except HTTPError as e:
+                    raise HTTPError(e)
+                except ClientResponseError:
+                    raise
+                except Exception as e:
+                    logger.error(f"Error during request to reranking service: {e}")
+                    raise Exception(f"Error during request to reranking service: {e}")
+
+                if not response_data:
+                    logger.warning("No best responses found. Using all retrieved documents.")
+                    reranked_docs = input.retrieved_docs
+                else:
+                    reranked_docs = DocList[TextDoc]()
+                    for best_response in best_response_list:
+                        doc = input.retrieved_docs[best_response["index"]]
+                        doc.metadata['reranker_score'] = best_response["score"]
+                        reranked_docs.append(doc)
+                    logger.debug(f"Retrieved documents: {input.retrieved_docs}")
+                    logger.debug(f"Reranked documents via best responses: {reranked_docs}")
         else:
             logger.warning("No retrieved documents found")
-            reranked_docs = []
+            reranked_docs = DocList[TextDoc]()
 
         if input.sibling_docs:
             final_reranked_docs = self._combine_sibling_docs(reranked_docs, input.sibling_docs)
@@ -146,6 +166,8 @@ class OPEAReranker:
         citations = {}
 
         for doc in final_reranked_docs:
+            if not hasattr(doc, 'metadata'):
+                continue
             doc_id = doc.metadata.get('file_id') or doc.metadata.get('link_id')
             if doc_id not in citations:
                 citations[doc_id] = next_citation_id
@@ -258,3 +280,34 @@ class OPEAReranker:
             out = [s for s in top_n_outputs if s["score"] > score_threshold]
             return out
         return top_n_outputs
+
+    def _filter_top_n_by_vector_distance(self, retrieved_docs: DocList[TextDoc], top_n: int) -> DocList[TextDoc]:
+        """
+        Filter and return the top N documents based on their vector distances.
+        Lower vector distance means higher similarity.
+
+        Args:
+            retrieved_docs (DocList[TextDoc]): The list of retrieved documents with vector distances.
+            top_n (int): The number of top documents to filter.
+
+        Returns:
+            DocList[TextDoc]: The filtered list of top documents sorted by vector distance (ascending).
+        """
+        # Extract vector_distance from metadata, use a large default if not present
+        docs_with_distances = []
+        for doc in retrieved_docs:
+            vector_distance = doc.metadata.get('vector_distance', float('inf'))
+            docs_with_distances.append((doc, vector_distance))
+        
+        # Sort by vector_distance (ascending - lower is better)
+        # Use heapq.nsmallest for efficiency
+        top_docs_with_distances = heapq.nsmallest(top_n, docs_with_distances, key=lambda x: x[1])
+        
+        # Extract just the documents and return as DocList
+        top_docs = DocList[TextDoc]()
+        for doc, distance in top_docs_with_distances:
+            # For late chunking, we use vector_distance as the score
+            # Note: vector distance is already in metadata, no need to add reranker_score
+            top_docs.append(doc)
+        
+        return top_docs

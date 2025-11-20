@@ -1,0 +1,110 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Get all BalloonsPolicies
+  kubernetes.core.k8s_info:
+    api_version: config.nri/v1alpha1
+    kind: BalloonsPolicy
+    namespace: "{{ balloons.namespace }}"
+  register: balloons_policies
+  ignore_errors: true
+  tags:
+    - always
+
+- name: Remove all BalloonsPolicies
+  kubernetes.core.k8s:
+    api_version: config.nri/v1alpha1
+    kind: BalloonsPolicy
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ balloons.namespace }}"
+    state: absent
+  loop: "{{ balloons_policies.resources | default([]) }}"
+  ignore_errors: true
+  tags:
+    - always
+
+- name: Set balloons_chart_name fact for cross-role usage
+  ansible.builtin.set_fact:
+    balloons_chart_name: "{{ balloons.helm.chart_name }}"
+  tags:
+    - always
+
+- name: Apply resetting balloon
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ balloons.helm.reset_balloon_file }}"
+  ignore_errors: true
+  tags:
+    - always
+
+- name: Remove nri-resource-policy-balloons chart
+  kubernetes.core.helm:
+    name: "{{ balloons.helm.release_name }}"
+    namespace: "{{ balloons.namespace }}"
+    state: absent
+  tags:
+    - always
+
+- name: Remove balloons namespace
+  kubernetes.core.k8s:
+    state: absent
+    kind: Namespace
+    api_version: v1
+    name: "{{ balloons.namespace }}"
+  when: balloons.namespace != 'kube-system'
+  tags:
+    - always
+
+- name: Gather nodes info
+  kubernetes.core.k8s_info:
+    kind: Node
+    api_version: v1
+  register: all_nodes
+  tags:
+    - always
+
+- name: Remove inference-eligible label from each node
+  kubernetes.core.k8s:
+    state: present
+    kind: Node
+    api_version: v1
+    name: "{{ node.metadata.name }}"
+    definition:
+      metadata:
+        labels:
+          inference-eligible: null
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
+  tags:
+    - always
+
+- name: Remove NodeResourceTopologies from each node
+  kubernetes.core.k8s:
+    api_version: topology.node.k8s.io/v1alpha1
+    kind: NodeResourceTopology
+    name: "{{ node.metadata.name }}"
+    state: absent
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
+  ignore_errors: true
+  tags:
+    - always
+
+- name: Remove inference_eligible taint from each node
+  kubernetes.core.k8s:
+    state: present
+    kind: Node
+    api_version: v1
+    name: "{{ node.metadata.name }}"
+    definition:
+      spec:
+        taints: >-
+          {{ node.spec.taints | rejectattr('key', 'equalto', 'inference_eligible') | list if node.spec.taints is defined else [] }}
+  loop: "{{ all_nodes.resources }}"
+  loop_control:
+    loop_var: node
+  tags:
+    - always

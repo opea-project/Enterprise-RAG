@@ -4,8 +4,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+from datetime import datetime
 import json
 import os
+import urllib3
 
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,6 +16,9 @@ from comps import (
     change_opea_logger_level,
     get_opea_logger
 )
+
+# Disable SSL warnings for unverified HTTPS requests
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from tests.e2e.evals.evaluation.rag_eval import Evaluator
 from tests.e2e.evals.metrics.ragas import RagasMetric
@@ -184,23 +189,62 @@ class MultiHop_Evaluator(Evaluator):
     def prepare_ragas_record(self, data, arguments):
         query = self.get_query(data)
         generated_text = self.send_request(query, arguments)
-        retrieved_documents = self.get_reranked_documents(query)
+
+        try:
+            retrieved_documents = self.get_reranked_documents(query)
+        except (ConnectionError, ValueError) as e:
+            logger.error(f"Failed to retrieve documents for RAGAS evaluation on query '{query}': {e}")
+            raise
+
         return {
             "query": query,
             "generated_text": generated_text,
-            "retrieved_documents": retrieved_documents,
-            "ground_truth": self.get_ground_truth_text(data)
+            "ground_truth": self.get_ground_truth_text(data),
+            "golden_context": self.get_golden_context(data),
+            "retrieved_documents": retrieved_documents
         }
+
+    def _convert_ragas_result_to_dict(self, ragas_metrics):
+        """
+        Convert RAGAS EvaluationResult to a plain dictionary for JSON serialization.
+
+        Args:
+            ragas_metrics: RAGAS EvaluationResult object
+
+        Returns:
+            dict: Dictionary with metric names as keys and float values
+        """
+        # Use the internal _repr_dict which has already computed the mean values
+        if hasattr(ragas_metrics, '_repr_dict'):
+            return dict(ragas_metrics._repr_dict)
+
+        # Fallback to manual extraction if _repr_dict is not available
+        ragas_metrics_dict = {}
+        ragas_metric_names = ['answer_correctness', 'answer_relevancy', 'semantic_similarity',
+                       'context_precision', 'context_recall', 'faithfulness']
+
+        for metric_name in ragas_metric_names:
+            try:
+                if hasattr(ragas_metrics, metric_name):
+                    value = getattr(ragas_metrics, metric_name)
+                    ragas_metrics_dict[metric_name] = float(value)
+                elif metric_name in ragas_metrics:
+                    value = ragas_metrics[metric_name]
+                    ragas_metrics_dict[metric_name] = float(value)
+            except (TypeError, ValueError) as e:
+                logger.warning(f"Could not convert metric '{metric_name}' to float: {e}. Skipping.")
+
+        return ragas_metrics_dict
 
     # TODO: Explore if it's possible to make the results more traceable (e.g., results per query)
     # Add saving results to the output file
     def get_ragas_metrics(self, all_queries, arguments):
         # todo: no option to resume - all ragas_input are passed to metric.measure
         if arguments.resume_checkpoint:
-            logger.warning("Resuming evaluation is not supported for text generation metrics. Evaluation will proceed from the initial state.")
+            logger.warning("Resuming evaluation is not supported for RAGAS metrics. Evaluation will proceed from the initial state.")
 
         if arguments.keep_checkpoint:
-            logger.warning("Keep checkpoint option is not supported for text generation metrics. Evaluation will proceed without saving intermediate results.")
+            logger.warning("Keep checkpoint option is not supported for RAGAS metrics.")
 
 
         from langchain_huggingface import HuggingFaceEndpointEmbeddings
@@ -225,8 +269,12 @@ class MultiHop_Evaluator(Evaluator):
             "contexts": [],
         }
 
+        # Keep track of query metadata for results
+        query_metadata = []
+
         # Use ThreadPoolExecutor to parallelize the preparation of Ragas records
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        # TODO: max_workers=1 as keycloak handler does not handle multithreading properly
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [executor.submit(self.prepare_ragas_record, data, arguments) for data in all_queries]
 
             for future in tqdm(as_completed(futures), total=len(futures)):
@@ -237,6 +285,17 @@ class MultiHop_Evaluator(Evaluator):
                 ragas_inputs["ground_truth"].append(result["ground_truth"])
                 ragas_inputs["contexts"].append(result["retrieved_documents"])
 
+                # Store metadata for each query
+                query_metadata.append({
+                    "query": result["query"],
+                    "uuid": self.get_uuid(result["query"]),
+                    "generated_text": result["generated_text"],
+                    "ground_truth": result["ground_truth"],
+                    "golden_context": result["golden_context"],
+                    "num_reranked_documents": len(result["retrieved_documents"]),
+                    "reranked_documents": result["retrieved_documents"]
+                })
+
 
         try:
             ragas_metrics = metric.measure(ragas_inputs)
@@ -244,6 +303,41 @@ class MultiHop_Evaluator(Evaluator):
 
         except Exception as e:
             logger.error(f"Failed to compute Ragas metrics: {e}")
+            raise e
+
+        try:
+            # Convert EvaluationResult to dict for JSON serialization
+            ragas_metrics_dict = self._convert_ragas_result_to_dict(ragas_metrics)
+
+            # Add num field to overall metrics
+            ragas_metrics_dict["num"] = len(ragas_inputs["question"])
+
+            # Extract per-query results and enrich with metadata
+            per_query_results = []
+            if hasattr(ragas_metrics, 'scores'):
+                for idx, score in enumerate(ragas_metrics.scores):
+                    enriched_result = {
+                        "id": idx,
+                        "uuid": query_metadata[idx]["uuid"],
+                        "ragas_metrics": score,
+                        "log": {
+                            "query": query_metadata[idx]["query"],
+                            "generated_text": query_metadata[idx]["generated_text"],
+                            "ground_truth": query_metadata[idx]["ground_truth"],
+                            "golden_context": query_metadata[idx]["golden_context"],
+                            "num_reranked_documents": query_metadata[idx]["num_reranked_documents"],
+                            "reranked_documents": query_metadata[idx]["reranked_documents"],
+                            "evaluateDatetime": str(datetime.now()),
+                        },
+                        "valid": query_metadata[idx]["generated_text"] is not None and len(query_metadata[idx]["generated_text"].strip()) != 0
+                    }
+                    per_query_results.append(enriched_result)
+
+            output = {"overall": ragas_metrics_dict, "results": per_query_results}
+            self.save_output(output)
+
+        except Exception as e:
+            logger.error(f"Failed to save output: {e}")
 
         return ragas_metrics
 

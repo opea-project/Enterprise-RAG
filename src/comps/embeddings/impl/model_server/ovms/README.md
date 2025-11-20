@@ -102,7 +102,7 @@ docker compose down
 
 ### Verify the Services
 
-- Test the `embedding-torchserve-model-server` using the following command:
+- Test the `embedding-ovms-model-server` using the following command:
    ```bash
    export MODEL_NAME="bge-large-en-v1.5"
    curl -X POST http://localhost:9000/v2/models/${MODEL_NAME}/infer -H 'Content-Type: application/json' -d '{"inputs" : [ {"name" : "Parameter_1", "shape" : [1], "datatype"  : "BYTES", "data" : ["What is Intel Gaudi?"]}]}'

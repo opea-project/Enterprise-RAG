@@ -12,11 +12,14 @@
   vars:
     nodeName: "{{ item.key }}"
     amx_supported: "{{ item.value.amx_supported }}"
-    maxBalloonsVLLM: "{{ item.value.maxBalloonsVLLM }}"
-    maxBalloonsReranker: "{{ item.value.maxBalloonsReranker }}"
+    maxBalloonsVLLM: "{{ optimal_replicas[item.key].replicas }}"
+    maxBalloonsReranker: "{{ optimal_replicas[item.key].replicas }}"
+    maxBalloonsEmbedding: "{{ optimal_replicas[item.key].replicas }}"
     gaudi: "{{ item.value.gaudi }}"
-    vllm_cpus: "{{ VLLM_CPUS }}"
+    vllm_cpus: "{{ optimal_replicas[item.key].adjusted_vllm_size }}"
     reranker_cpus: "{{ RERANKER_CPUS }}"
+    embedding_cpus: "{{ EMBEDDING_CPUS }}"
+    maxReplicasGaudi_VLLM: "{{ maxReplicasGaudi_VLLM }}"
   tags:
     - install
 
@@ -30,14 +33,14 @@
 - name: Identify if node is eligible for inference
   set_fact:
     inference_eligible_label: >-
-      {{ 'true' if (item.value.amx_supported | bool and item.value.maxBalloonsReranker | int != 0) else 'false' }}
+      {{ 'true' if (item.value.amx_supported | bool and optimal_replicas[item.key].replicas | int != 0) else 'false' }}
   tags:
     - install
 
 - name: Identify if node is eligible for vllm
   set_fact:
     inference_eligible_vllm_label: >-
-      {{ 'true' if (item.value.amx_supported | bool and item.value.maxBalloonsVLLM | int != 0) else 'false' }}
+      {{ 'true' if (item.value.amx_supported | bool and optimal_replicas[item.key].replicas | int != 0) else 'false' }}
   tags:
     - install
 

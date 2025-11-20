@@ -177,7 +177,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum({__name__=~\"edp_(files|links)_(uploaded|processing|dpguard|text_extracting|text_compression|text_splitting|embedding)_total\"})",
+          "expr": "sum({__name__=~\"edp_(files|links)_(uploaded|processing|dpguard|text_extracting|text_compression|text_splitting|embedding|late_chunking)_total\"})",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"

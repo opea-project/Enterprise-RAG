@@ -1,0 +1,15 @@
+apiVersion: config.nri/v1alpha1
+kind: BalloonsPolicy
+metadata:
+  name: default
+  namespace: kube-system
+spec:
+  balloonTypes:
+  - name: reserved
+    namespaces:
+    - "*"
+    shareIdleCPUsInSame: system
+  reservedResources:
+    cpu: "1"
+  pinCPU: true
+  pinMemory: true

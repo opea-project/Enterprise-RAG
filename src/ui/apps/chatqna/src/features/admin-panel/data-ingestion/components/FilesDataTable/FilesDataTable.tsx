@@ -1,8 +1,10 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { DataTable } from "@intel-enterprise-rag-ui/components";
-import { useCallback, useMemo } from "react";
+import "./FilesDataTable.scss";
+
+import { DataTable, SearchBar } from "@intel-enterprise-rag-ui/components";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   useGetFilePresignedUrlMutation,
@@ -24,6 +26,7 @@ const FilesDataTable = () => {
   const [retryFileAction] = useRetryFileActionMutation();
   const [deleteFile] = useDeleteFileMutation();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
+  const [filter, setFilter] = useState("");
 
   const downloadHandler = useCallback(
     async (fileName: string, bucketName: string) => {
@@ -64,18 +67,31 @@ const FilesDataTable = () => {
 
   const filesTableColumns = useMemo(
     () =>
-      getFilesTableColumns({ downloadHandler, retryHandler, deleteHandler }),
+      getFilesTableColumns({
+        downloadHandler,
+        retryHandler,
+        deleteHandler,
+      }),
     [deleteHandler, downloadHandler, retryHandler],
   );
 
   const defaultData = files || [];
 
   return (
-    <DataTable
-      defaultData={defaultData}
-      columns={filesTableColumns}
-      isDataLoading={isLoading}
-    />
+    <div className="flex flex-col gap-2">
+      <SearchBar
+        value={filter}
+        placeholder="Filter files by status, bucket, or name"
+        onChange={setFilter}
+      />
+      <DataTable
+        defaultData={defaultData}
+        columns={filesTableColumns}
+        isDataLoading={isLoading}
+        globalFilter={filter}
+        className="files-data-table"
+      />
+    </div>
   );
 };
 

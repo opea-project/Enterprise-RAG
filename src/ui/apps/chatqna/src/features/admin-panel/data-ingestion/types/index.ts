@@ -14,6 +14,7 @@ export type DataStatus =
   | "text_compression"
   | "text_splitting"
   | "dpguard"
+  | "late_chunking"
   | "embedding"
   | "ingested"
   | "deleting"
@@ -34,6 +35,7 @@ export interface FileDataItem {
   text_compression_duration: number;
   text_splitter_duration: number;
   dpguard_duration: number;
+  late_chunking_duration: number;
   embedding_duration: number;
   ingestion_duration: number;
   processing_duration: number;
@@ -57,6 +59,7 @@ export interface LinkDataItem {
   text_compression_duration: number;
   text_splitter_duration: number;
   dpguard_duration: number;
+  late_chunking_duration: number;
   embedding_duration: number;
   ingestion_duration: number;
   processing_duration: number;

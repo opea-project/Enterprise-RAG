@@ -1,7 +1,10 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.11-slim-bookworm
+ARG python_version=3.11
+ARG python_image_version=${python_version}-slim-bookworm
+
+FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
@@ -14,8 +17,8 @@ RUN apt-get update -y &&                                     \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
-RUN rm -rf /home/user/.local/lib/python3.11/site-packages/*
-RUN rm -rf /usr/local/lib/python3.11/site-packages/*
+RUN rm -rf /home/user/.local/lib/python${python_version}/site-packages/*
+RUN rm -rf /usr/local/lib/python${python_version}/site-packages/*
 
 RUN useradd -m -s /bin/bash user
 USER user

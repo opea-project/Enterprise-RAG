@@ -29,8 +29,8 @@ INSTALL_DEBUG_TOOLS=false      # Install debug tools (k9s, etc.)
 
 # Repository configuration
 REPO_URL="https://github.com/opea-project/Enterprise-RAG.git"
-REPO_DIR="/tmp/Enterprise-RAG"
-GIT_BRANCH="main"
+REPO_DIR="$HOME/Enterprise-RAG"
+GIT_VERSION="release-2.0.0"       # Git version to checkout - can be tag or branch (default: 'release-2.0.0')
 DEPLOYMENT_DIR="${REPO_DIR}/deployment"
 INVENTORY_DIR="${DEPLOYMENT_DIR}/inventory"
 CLUSTER_CONFIG_DIR="${INVENTORY_DIR}/cluster"
@@ -45,7 +45,7 @@ FORCE_STAGE=false              # Force re-run of a completed stage
 
 # Python environment
 PYTHON_VENV_NAME="erag-venv"
-PYTHON_VENV_PATH="${DEPLOYMENT_DIR}/${PYTHON_VENV_NAME}"
+PYTHON_VENV_PATH="${HOME}/${PYTHON_VENV_NAME}"
 
 # Timeout
 HELM_TIMEOUT=30m00s
@@ -62,8 +62,8 @@ LOCAL_PATH_STORAGE_DIR=""
 ETCD_DATA_DIR=""
 
 # Hardware configuration (Gaudi-specific)
-HABANA_DRIVER_VERSION="1.21.1"
-HABANA_RUNTIME_VERSION="1.21.1-16"
+HABANA_DRIVER_VERSION="1.22.1"
+HABANA_RUNTIME_VERSION="1.22.1-6"
 
 #==============================================================================
 # USAGE AND HELP
@@ -83,7 +83,8 @@ OPTIONAL FLAGS:
     -d, --debug                   Install debug tools (k9s, htop, etc.)
     --stage STAGE                 Run specific stage: system, cluster, application
     --force                       Force re-run of completed stage
-    -b, --branch BRANCH           Git branch to use (default: internal_main)
+    -v, --version VERSION         Git version to checkout - can be tag or branch (default: release-2.0.0)
+    -t, --tag TAG                 Alias for --version (for backwards compatibility)
     --help                        Show this help message
 
 STAGES:
@@ -144,8 +145,8 @@ parse_arguments() {
                 FORCE_STAGE=true
                 shift
                 ;;
-            -b|--branch)
-                GIT_BRANCH="$2"
+            -v|--version|-t|--tag)
+                GIT_VERSION="$2"
                 shift 2
                 ;;
             --help)
@@ -392,9 +393,27 @@ prepare_repository() {
     log_info "Cloning repository from: $REPO_URL"
     git clone $REPO_URL $REPO_DIR
 
-    # Change branch if not main
-    if [[ "$GIT_BRANCH" != "main" ]]; then
-        cd $REPO_DIR && git fetch -a && git checkout $GIT_BRANCH
+    cd $REPO_DIR
+
+    # Checkout specified version (try as tag first, then as branch)
+    if [[ "$GIT_VERSION" != "main" && "$GIT_VERSION" != "" ]]; then
+        log_info "Fetching all tags and branches..."
+        git fetch --all --tags
+        
+        # Try to checkout as a tag first
+        if git show-ref --tags --quiet --verify "refs/tags/$GIT_VERSION"; then
+            log_info "Checking out tag: $GIT_VERSION"
+            git checkout "tags/$GIT_VERSION"
+        else
+            # If not a tag, try as a branch
+            log_info "Version '$GIT_VERSION' is not a tag, checking out as branch"
+            git checkout "$GIT_VERSION" 2>/dev/null || {
+                log_warn "Failed to checkout '$GIT_VERSION' as branch, using main"
+                git checkout main
+            }
+        fi
+    else
+        log_info "Using default branch: main"
     fi
 
     log_info "Repository prepared successfully"
@@ -918,7 +937,7 @@ show_configuration() {
     log_info "  Install Gaudi Driver: $INSTALL_GAUDI_DRIVER"
     log_info "  Configure Storage: $CONFIGURE_STORAGE"
     log_info "  Install Debug Tools: $INSTALL_DEBUG_TOOLS"
-    log_info "  Git Branch: $GIT_BRANCH"
+    log_info "  Git Version: $GIT_VERSION"
     log_info "  Storage Device: $STORAGE_DEVICE"
     log_info "  Storage Mount: $STORAGE_MOUNT_POINT"
 }

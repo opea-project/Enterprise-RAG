@@ -14,15 +14,16 @@ from typing import Any
 
 import aiohttp
 import requests
-from tests.e2e.helpers.api_request_helper import ApiRequestHelper
-from tests.e2e.validation.constants import TEST_FILES_DIR, ERAG_DOMAIN
+from helpers.api_request_helper import ApiRequestHelper
+from validation.buildcfg import cfg
+from validation.constants import DATAPREP_UPLOAD_DIR, ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
-DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "ingested"]
+DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "late_chunking", "ingested"]
 EDP_API_PATH = f"{ERAG_DOMAIN}/api/v1/edp"
 
 
@@ -30,14 +31,18 @@ class EdpHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper, bucket_name=None):
         super().__init__(keycloak_helper=keycloak_helper)
-        if bucket_name:
-            self.default_bucket = bucket_name
+        if cfg.get("edp") is None or cfg.get("edp").get("enabled") is not True:
+            self.available_buckets = []
+            self.default_bucket = None
         else:
-            self.available_buckets = self.list_buckets().json().get("buckets")
-            # Use the first bucket that is not read-only as the default bucket
-            self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
-            logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
-                         f"{self.available_buckets}")
+            if bucket_name:
+                self.default_bucket = bucket_name
+            else:
+                self.available_buckets = self.list_buckets().json().get("buckets")
+                # Use the first bucket that is not read-only as the default bucket
+                self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
+                logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
+                             f"{self.available_buckets}")
 
     def list_buckets(self, as_user=False):
         """Call /api/list_buckets endpoint"""
@@ -249,10 +254,10 @@ class EdpHelper(ApiRequestHelper):
         return results
 
     def retrieve(self, payload: dict[str, Any]) -> requests.Response:
-        """Make post call to /api/retrieve endpoint with the given payload"""
+        """Make post call to /api/v1/edp/retrieve endpoint with the given payload"""
         logger.debug(f"Attempting to retrieve documents using the following payload: {payload}")
         response = requests.post(
-            url=f"{EDP_API_PATH}/retrieve/",
+            url=f"{EDP_API_PATH}/retrieve",
             headers=self.get_headers(),
             json=payload,
             verify=False
@@ -311,13 +316,16 @@ class EdpHelper(ApiRequestHelper):
             # all files from filenames should be present in the EDP
             if not (filenames & filenames_in_edp == filenames):
                 if fails_remaining > 0:
+
                     fails_remaining -= 1
-                    logger.warning(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}")
+                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
+                    logger.warning(f"Not all files are present in the EDP:\n{missing_files}")
                     logger.warning(f"Will wait {SLEEP_INTERVAL}s.. Remaining checks: {fails_remaining}/{MAX_RDP_REGISTER_RETRIES}")
                     time.sleep(SLEEP_INTERVAL)
                     continue
                 else:
-                    raise RuntimeError(f"Not all files are present in the EDP:\n {'\n'.join(list(filenames - filenames_in_edp))}, failed {MAX_RDP_REGISTER_RETRIES} times.")
+                    missing_files = '\n'.join(list(filenames - filenames_in_edp))
+                    raise RuntimeError(f"Not all files are present in the EDP:\n{missing_files}, failed {MAX_RDP_REGISTER_RETRIES} times.")
 
             filenames_ingested = set([f["object_name"] for f in edp_files if f["status"] == "ingested"])
             if filenames & filenames_ingested == filenames:
@@ -368,8 +376,8 @@ class EdpHelper(ApiRequestHelper):
     def substitute_file(self, to_substitute, substitution):
         """Temporarily substitute file and yield. Rollback file after context manager exits."""
 
-        file_path_to_substitute = os.path.join(TEST_FILES_DIR, to_substitute)
-        file_path_substitution = os.path.join(TEST_FILES_DIR, substitution)
+        file_path_to_substitute = os.path.join(DATAPREP_UPLOAD_DIR, to_substitute)
+        file_path_substitution = os.path.join(DATAPREP_UPLOAD_DIR, substitution)
         backup_path = file_path_to_substitute + ".backup"
         try:
             # Rename the original file to create a backup

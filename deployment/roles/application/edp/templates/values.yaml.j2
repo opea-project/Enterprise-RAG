@@ -45,8 +45,11 @@ edpInternalCertVerify: "{{ lookup('env', 's3_cert_verify') or edp.s3compatible.e
 bucketNameRegexFilter: {{ lookup('env', 's3_bucket_name_regex_filter') or edp.s3compatible.bucketNameRegexFilter | default('.*', true) }}
 {% endif %}
 
-edpOidcConfigUrl: "http://keycloak.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
+edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-known/openid-configuration"
 
+# Use external Redis Operator cluster in same namespace
+redisHost: "edp-redis"
+redisPort: "6379"
 redisUsername: {{ edp.redis.auth.user.db_username }}
 redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 
@@ -65,7 +68,7 @@ postgresql:
     podAnnotations:
       io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
 redis:
-  master:
+  edp-redis:
     podAnnotations:
       io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
 {% endif %}
@@ -102,7 +105,19 @@ hierarchicalDataprep:
     vllm_server_endpoint: "http://vllm-gaudi-svc.chatqa.svc:80"
     summary_model_name: {{ llm_model_gaudi }}
 {% endif %}
-{% else %}
+{% endif %}
+{% if edp.late_chunking.enabled is true %}
+lateChunking:
+  enabled: {{ edp.late_chunking.enabled }}
+  tag: {{ tag }}
+  repository: {{ registry }}
+  name: "erag-late-chunking"
+  config:
+    chunk_size: "{{ edp.late_chunking.chunk_size | default('512') }}"
+    chunk_overlap: "{{ edp.late_chunking.chunk_overlap | default('0') }}"
+    embedding_service_endpoint: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"
+    model_name: "{{ edp.late_chunking.model_name | default('jinaai/jina-embeddings-v2-base-en') }}"
+{% elif not edp.hierarchical_indices.enabled %}
 textExtractor:
   tag: {{ tag }}
   repository: {{ registry }}
@@ -120,13 +135,16 @@ textSplitter:
 ingestion:
   tag: {{ tag }}
   repository: {{ registry }}
-{% if edp.hierarchical_indices.enabled is true %}
   config:
+{% if edp.hierarchical_indices.enabled is true %}
     use_hierarchical_indices: "True"
 {% endif %}
   config:
     vector_dims: {{ vector_databases.vector_dims }}
     vector_datatype: {{ vector_databases.vector_datatype }}
+{% if edp.late_chunking.enabled is true %}
+    use_late_chunking: "True"
+{% endif %}
 embedding:
   enabled: false
   remoteEmbeddingUri: "http://embedding-svc.chatqa.svc:6000/v1/embeddings"

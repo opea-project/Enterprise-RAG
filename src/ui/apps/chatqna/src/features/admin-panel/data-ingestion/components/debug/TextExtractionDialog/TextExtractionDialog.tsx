@@ -147,8 +147,8 @@ const ExtractedText = ({ extractedText, isError }: ExtractedTextProps) => {
         <Button
           size="sm"
           variant="outlined"
-          fullWidth
           onPress={handleLoadMoreTextButtonPress}
+          fullWidth
         >
           Load more text...
         </Button>

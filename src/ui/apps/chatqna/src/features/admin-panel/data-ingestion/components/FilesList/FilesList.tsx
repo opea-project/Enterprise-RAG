@@ -4,10 +4,10 @@
 import "./FilesList.scss";
 
 import { IconButton } from "@intel-enterprise-rag-ui/components";
+import { formatFileSize } from "@intel-enterprise-rag-ui/utils";
 import { Dispatch, SetStateAction } from "react";
 
 import ListHeader from "@/features/admin-panel/data-ingestion/components/ListHeader/ListHeader";
-import { formatFileSize } from "@/features/admin-panel/data-ingestion/utils";
 
 interface FilesListProps {
   files: File[];

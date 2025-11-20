@@ -1,0 +1,53 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Default values for postgresql chart
+
+# Override the name of the chart
+nameOverride: ""
+# Override the full name of the chart
+fullnameOverride: ""
+
+# PostgreSQL configuration
+image:
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+# Authentication settings
+auth:
+  # Username for PostgreSQL
+  username: "postgres"
+  # Database name
+  database: "postgres"
+  # Name of existing secret containing the password
+  existingSecret: ""
+  # Key in the secret containing the password
+  secretKey: "password"
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: "10Gi"
+  # storageClass: ""
+
+# Resource limits and requests
+resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+# Pod annotations
+podAnnotations: {}
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity for pod assignment
+affinity: {}

@@ -22,3 +22,4 @@ ui:
     keycloakRealm: "EnterpriseRAG"
     keycloakClientId: "EnterpriseRAG-oidc"
     adminResourceRole: "ERAG-admin"
+    chatDisclaimerText: "Responses from this solution may require further verification. You are solely responsible for verifying the accuracy of the information provided and how you choose to use it."

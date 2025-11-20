@@ -1,1 +1,0 @@
-This is simple text in a md file.

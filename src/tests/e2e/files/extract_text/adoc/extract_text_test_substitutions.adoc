@@ -1,4 +1,0 @@
-:a: sentence
-:b: substituted
-
-Simple {a} with {b} words.

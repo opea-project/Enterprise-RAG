@@ -1,9 +1,0 @@
-apiVersion: v2
-name: auth-apisix
-description: A Helm chart for installing a specific version of APISIX API gateway and APISIX ingress controller
-version: 2.0.0
-appVersion: "2.0.0"
-dependencies:
-  - name: apisix
-    version: 2.10.0
-    repository: https://charts.apiseven.com

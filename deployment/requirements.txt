@@ -1,7 +1,0 @@
-ansible==9.13.0
-kubernetes==32.0.1
-# Kubespray dependencies
-cryptography==45.0.2
-jmespath==1.0.1
-netaddr==1.3.0
-distlib==0.3.4

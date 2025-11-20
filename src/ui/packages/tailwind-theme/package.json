@@ -1,9 +1,0 @@
-{
-  "name": "@intel-enterprise-rag-ui/tailwind-theme",
-  "version": "2.0.0",
-  "main": "index.js",
-  "files": [
-    "tailwind.config.js",
-    "index.scss"
-  ]
-}

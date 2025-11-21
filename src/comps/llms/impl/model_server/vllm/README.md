@@ -115,7 +115,7 @@ mkdir -p data
 docker compose --env-file=.env -f docker-compose.yaml up --build -d
 ```
 
-Note: Due to secure container best practises, main process is started as non-priviledged user.
+Note: Due to secure container best practices, main process is started as non-privileged user.
 Due to the fact it uses volume mounts, the volume directory `data/` must be created beforehand.
 
 #### Service Cleanup

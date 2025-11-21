@@ -38,7 +38,6 @@ Similarity search with siblings is available as a built-in search type in the ve
 
 For detailed information on configuring this feature, see the [Vector Store documentation](../src/comps/vectorstores/README.md#search).
 
-s
 ## Late Chunking
 
 ### What is Late Chunking?

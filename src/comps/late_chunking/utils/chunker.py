@@ -47,6 +47,7 @@ class Chunker:
                 from huggingface_hub import hf_hub_download
                 tokenizer_file = hf_hub_download(repo_id=model_name, filename="tokenizer.json")
                 self.tokenizer = HFTokenizer.from_file(tokenizer_file)
+
             logger.info(f"Successfully loaded tokenizer for model: {model_name}")
         except Exception as e:
             logger.error(f"Failed to load tokenizer for model '{model_name}': {str(e)}")
@@ -205,13 +206,12 @@ class Chunker:
             
         """
 
-
         # Tokenize the full text to get token positions
         try:
-            encoding = self.tokenizer.encode(text)
-            tokens = encoding.ids
+            encoding = self.tokenizer.encode(text, add_special_tokens=False)
+            token_offsets = encoding.offsets
         except AttributeError:
-            raise ValueError("Tokenizer must have an 'encode' method that returns an object with 'ids' attribute")
+            raise ValueError("Tokenizer must have an 'encode' method that returns an object with 'offsets' attribute")
         except Exception as e:
             raise ValueError(f"Failed to tokenize text: {str(e)}")
 
@@ -220,25 +220,27 @@ class Chunker:
 
         # Calculate step size (chunk_size - overlap)
         step_size = chunk_size - chunk_overlap
+        num_tokens = len(token_offsets)
 
         # Split tokens into fixed-size chunks with overlap
-        for i in range(0, len(tokens), step_size):
-            start_pos = i
-            end_pos = min(i + chunk_size, len(tokens))
+        for i in range(0, num_tokens, step_size):
+            start_token_pos = i
+            end_token_pos = min(i + chunk_size, num_tokens)
 
-            # Get the chunk tokens
-            chunk_tokens = tokens[start_pos:end_pos]
+            # Get character offsets for the chunk
+            start_char = token_offsets[start_token_pos][0]
+            end_char = token_offsets[end_token_pos - 1][1]
 
-            # Decode tokens back to text
-            chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
+            # Extract chunk text from original text using character offsets
+            chunk_text = text[start_char:end_char]
+            logger.debug(f"_chunk_by_tokens - created chunk from token {start_token_pos} to {end_token_pos}: '{chunk_text}'")
 
             chunks.append(chunk_text)
-            span_annotations.append((start_pos, end_pos))
+            span_annotations.append((start_token_pos, end_token_pos))
 
-        logger.debug(f"_chunk - created {len(chunks)} chunks from {len(tokens)} tokens, chunk_size: {chunk_size}, chunk_overlap: {chunk_overlap}")
-        
+        logger.debug(f"_chunk_by_tokens - created {len(chunks)} chunks from {num_tokens} tokens, chunk_size: {chunk_size}, chunk_overlap: {chunk_overlap}")
+
         return chunks, span_annotations
-
 
     def chunk(
         self,

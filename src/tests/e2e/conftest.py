@@ -222,6 +222,17 @@ def guard_helper(chatqa_api_helper, fingerprint_api_helper):
     return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
 
 
+@pytest.fixture(scope="function")
+def temporarily_remove_brute_force_detection(keycloak_helper):
+    """
+    Disable brute force detection in Keycloak for the duration of the test.
+    This is to avoid locking the user out in case of many concurrent requests.
+    """
+    keycloak_helper.set_brute_force_detection(False)
+    yield
+    keycloak_helper.set_brute_force_detection(True)
+
+
 @pytest.fixture(scope="session")
 def code_snippets():
     """

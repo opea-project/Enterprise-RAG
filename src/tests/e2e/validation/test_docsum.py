@@ -7,6 +7,7 @@ import allure
 import logging
 import pytest
 import requests
+import statistics
 
 from validation.buildcfg import cfg
 
@@ -221,3 +222,41 @@ def test_docsum_invalid_request(docsum_helper):
     response = docsum_helper.call_with_payload(payload={
         "links": [link], "parameters": {"chunk_size": -100}})
     assert response.status_code in BAD_REQUEST_STATUS_CODES
+
+
+@allure.testcase("IEASG-T302")
+def test_docsum_concurrent_requests(docsum_helper, texts, temporarily_remove_brute_force_detection):
+    """
+    Make multiple concurrent DocSum API requests.
+    Expect all requests to be successful and have correct summaries.
+    Measure execution times.
+    """
+    text = texts["abdallah_the_unhappy_1k_words"]
+    concurrent_requests = 10
+    execution_times = []
+    failed_requests_counter = 0
+    similarity_failures = []
+
+    results = docsum_helper.call_in_parallel([text] * concurrent_requests, stream=True)
+    for result in results:
+        if result.exception is not None:
+            logger.info(result.exception)
+            failed_requests_counter = + 1
+        elif result.status_code != 200:
+            logger.info(f"Request failed with status code {result.status_code}. Response body: {result.text}")
+            failed_requests_counter += 1
+        else:
+            execution_times.append(result.response_time)
+            similarity_failures.extend(docsum_helper.evaluate_summary(result, text, "abdallah_the_unhappy_1k_words"))
+
+    mean_time = statistics.mean(execution_times)
+    max_time = max(execution_times)
+    min_time = min(execution_times)
+
+    logger.info(f'Total requests: {concurrent_requests}')
+    logger.info(f'Failed requests: {failed_requests_counter}')
+    logger.info(f'Mean Execution Time: {mean_time:.4f} seconds')
+    logger.info(f'Longest Execution Time: {max_time:.4f} seconds')
+    logger.info(f'Shortest Execution Time: {min_time:.4f} seconds')
+    assert failed_requests_counter == 0, "Some of the requests didn't return HTTP status code 200"
+    assert not similarity_failures, "\n".join(similarity_failures)

@@ -29,17 +29,6 @@ else:
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="function")
-def temporarily_remove_brute_force_detection(keycloak_helper):
-    """
-    Disable brute force detection in Keycloak for the duration of the test.
-    This is to avoid locking the user out in case of many concurrent requests.
-    """
-    keycloak_helper.set_brute_force_detection(False)
-    yield
-    keycloak_helper.set_brute_force_detection(True)
-
-
 @allure.testcase("IEASG-T32")
 def test_chatqa_timeout(chatqa_api_helper):
     """

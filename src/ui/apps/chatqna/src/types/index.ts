@@ -3,6 +3,13 @@
 
 import { SourceDocumentType } from "@/features/chat/types";
 
+export interface Chat {
+  id: string;
+  title: string;
+  turns: ChatTurn[];
+  inputValue: string;
+}
+
 // interface defined for chat elements displayed in UI
 export interface ChatTurn {
   id: string;

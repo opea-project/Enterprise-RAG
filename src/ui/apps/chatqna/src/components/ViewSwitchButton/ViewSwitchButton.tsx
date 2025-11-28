@@ -6,8 +6,11 @@ import { IconName } from "@intel-enterprise-rag-ui/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { paths } from "@/config/paths";
-import { selectCurrentChatId } from "@/features/chat/store/currentChat.slice";
 import { useAppSelector } from "@/store/hooks";
+import {
+  selectLastSelectedAdminTab,
+  selectLastSelectedChatId,
+} from "@/store/viewNavigation.slice";
 import { keycloakService } from "@/utils/auth";
 
 const options = {
@@ -31,7 +34,8 @@ const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentChatId = useAppSelector(selectCurrentChatId);
+  const lastSelectedChatId = useAppSelector(selectLastSelectedChatId);
+  const lastSelectedAdminTab = useAppSelector(selectLastSelectedAdminTab);
 
   if (!keycloakService.isAdminUser()) {
     return null;
@@ -48,13 +52,13 @@ const ViewSwitchButton = () => {
 
   const handlePress = () => {
     if (isAdminPanelPage) {
-      if (currentChatId) {
-        navigate(`${paths.chat}/${currentChatId}`);
-      } else {
-        navigate(paths.chat);
-      }
+      const chatRoute = lastSelectedChatId
+        ? `${paths.chat}/${lastSelectedChatId}`
+        : paths.chat;
+      navigate(chatRoute, { replace: true });
     } else {
-      navigate(paths.adminPanel);
+      const adminRoute = `${paths.adminPanel}/${lastSelectedAdminTab}`;
+      navigate(adminRoute, { replace: true });
     }
   };
 

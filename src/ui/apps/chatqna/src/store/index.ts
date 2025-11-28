@@ -16,17 +16,19 @@ import { s3Api } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import dataIngestionSettingsReducer from "@/features/admin-panel/data-ingestion/store/dataIngestionSettings.slice";
 import { chatHistoryApi } from "@/features/chat/api/chatHistory";
 import { chatQnAApi } from "@/features/chat/api/chatQnA";
+import chatHistoryReducer from "@/features/chat/store/chatHistory.slice";
 import chatSideMenusReducer from "@/features/chat/store/chatSideMenus.slice";
-import currentChatReducer from "@/features/chat/store/currentChat.slice";
+import viewNavigationReducer from "@/store/viewNavigation.slice";
 
 export const store = configureStore({
   reducer: {
-    currentChat: currentChatReducer,
     chatSideMenus: chatSideMenusReducer,
+    chatHistory: chatHistoryReducer,
     chatQnAGraph: chatQnAGraphReducer,
     colorScheme: colorSchemeReducer,
     notifications: notificationsReducer,
     dataIngestionSettings: dataIngestionSettingsReducer,
+    viewNavigation: viewNavigationReducer,
     [appApi.reducerPath]: appApi.reducer,
     [chatQnAApi.reducerPath]: chatQnAApi.reducer,
     [chatHistoryApi.reducerPath]: chatHistoryApi.reducer,

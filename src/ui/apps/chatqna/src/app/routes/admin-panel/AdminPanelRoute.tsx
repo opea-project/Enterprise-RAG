@@ -13,6 +13,11 @@ import {
 import ControlPlaneTab from "@/features/admin-panel/control-plane/components/ControlPlaneTab/ControlPlaneTab";
 import DataIngestionTab from "@/features/admin-panel/data-ingestion/components/DataIngestionTab/DataIngestionTab";
 import TelemetryAuthenticationTab from "@/features/admin-panel/telemetry-authentication/components/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  selectLastSelectedAdminTab,
+  setLastSelectedAdminTab,
+} from "@/store/viewNavigation.slice";
 
 const adminPanelTabs = [
   {
@@ -36,7 +41,20 @@ const adminPanelTabs = [
 ];
 
 const AdminPanelRoute = () => {
-  const [selectedTab, setSelectedTab] = useState<TabId>(adminPanelTabs[0].path);
+  const dispatch = useAppDispatch();
+  const lastSelectedAdminTab = useAppSelector(selectLastSelectedAdminTab);
+
+  // Initialize selected tab from store to prevent blinking on navigation
+  const [selectedTab, setSelectedTab] = useState<TabId>(() => {
+    const path = window.location.pathname.split("/").pop();
+    const tab = adminPanelTabs.find((tab) => tab.path === path);
+    return (
+      (tab?.id as TabId) ||
+      (lastSelectedAdminTab as TabId) ||
+      adminPanelTabs[0].path
+    );
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -45,10 +63,15 @@ const AdminPanelRoute = () => {
     const tab = adminPanelTabs.find((tab) => tab.path === path);
     if (tab !== undefined) {
       setSelectedTab(tab.id as TabId);
+      // Update last selected admin tab in store
+      dispatch(setLastSelectedAdminTab(tab.path));
     } else {
-      navigate(`/admin-panel/${adminPanelTabs[0].path}`, { replace: true });
+      // Navigate to last selected tab or default tab
+      const defaultTab = lastSelectedAdminTab || adminPanelTabs[0].path;
+      navigate(`/admin-panel/${defaultTab}`, { replace: true });
     }
-  }, [location.pathname, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, navigate, lastSelectedAdminTab]);
 
   const handleTabSelectionChange = (id: TabId) => {
     setSelectedTab(id);

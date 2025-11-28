@@ -54,13 +54,6 @@ export type SaveChatResponse = ChatItemData;
 
 export type GetAllChatsResponse = ChatItemData[];
 
-export interface APIGetChatByIdResponse {
-  _id: string;
-  history: ChatHistoryEntry[];
-  user_id: string;
-  history_name: string;
-}
-
 export interface GetChatByIdResponse {
   historyId: string;
   history: ChatHistoryEntry[];

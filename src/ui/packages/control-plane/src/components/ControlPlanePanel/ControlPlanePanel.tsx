@@ -13,7 +13,7 @@ import { ServiceStatusIndicator } from "@/components/ServiceStatusIndicator/Serv
 import { ServiceStatus } from "@/types";
 
 const ServiceStatusLegend = () => (
-  <div className="graph-legend">
+  <div className="graph-legend" data-testid="graph-legend">
     <div className="graph-legend__item">
       <ServiceStatusIndicator status={ServiceStatus.Ready} noTooltip />
       <p>Ready</p>
@@ -72,7 +72,7 @@ export const ControlPlanePanel = ({
   });
 
   return (
-    <div className={className}>
+    <div className={className} data-testid="control-plane-panel">
       <div className="graph-wrapper">{getControlPlaneContent()}</div>
       {ConfigPanel && <ConfigPanel />}
     </div>

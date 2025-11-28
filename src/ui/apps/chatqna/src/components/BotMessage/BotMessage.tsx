@@ -32,7 +32,7 @@ const BotMessage = ({ answer, error, isPending, sources }: BotMessageProps) => {
         <p>{error}</p>
       </div>
     ) : (
-      <div className="bot-message__text">
+      <div className="bot-message__text" data-testid="bot-message__text">
         <MarkdownRenderer content={sanitizedAnswer} />
         {showActions && (
           <footer className="bot-message__footer">
@@ -49,7 +49,7 @@ const BotMessage = ({ answer, error, isPending, sources }: BotMessageProps) => {
   });
 
   return (
-    <div className={className}>
+    <div className={className} data-testid="bot-message">
       <ChatBotIcon className="bot-message__chat-bot-icon" />
       {isWaitingForAnswer ? <PulsingDot /> : botResponse}
     </div>

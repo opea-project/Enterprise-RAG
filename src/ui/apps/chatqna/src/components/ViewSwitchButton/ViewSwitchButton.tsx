@@ -16,12 +16,14 @@ const options = {
     routePath: paths.adminPanel,
     icon: "admin-panel" as IconName,
     ariaLabel: "Switch to Admin Panel",
+    dataTestId: "view-switch-btn--to-admin-panel",
   },
   "admin-panel": {
     tooltip: "Switch to Chat",
     routePath: paths.chat,
     icon: "chat" as IconName,
     ariaLabel: "Switch to Chat",
+    dataTestId: "view-switch-btn--to-chat",
   },
 } as const;
 
@@ -61,6 +63,7 @@ const ViewSwitchButton = () => {
       title={options[currentView].tooltip}
       trigger={
         <IconButton
+          data-testid={options[currentView].dataTestId}
           icon={options[currentView].icon}
           aria-label={options[currentView].ariaLabel}
           onPress={handlePress}

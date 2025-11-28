@@ -8,9 +8,9 @@ import json
 import os
 import pytest
 
-from constants import DATAPREP_UPLOAD_DIR
-from helpers.guard_helper import GuardType, GuardQuestions as questions
-from validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.helpers.guard_helper import GuardType, GuardQuestions as questions
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if fingerprint is not deployed
 if not cfg.get("fingerprint", {}).get("enabled"):

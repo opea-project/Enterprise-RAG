@@ -15,9 +15,9 @@ import statistics
 import string
 import time
 
-from constants import DATAPREP_UPLOAD_DIR
-from helpers.api_request_helper import InvalidChatqaResponseBody
-from validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.helpers.api_request_helper import InvalidChatqaResponseBody
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if chatqa pipeline is not deployed
 for pipeline in cfg.get("pipelines", []):

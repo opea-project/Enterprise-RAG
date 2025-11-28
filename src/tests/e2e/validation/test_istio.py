@@ -7,8 +7,9 @@ import allure
 import logging
 import pytest
 import kr8s
-from helpers.istio_helper import ConnectionType
-from validation.buildcfg import cfg
+
+from tests.e2e.helpers.istio_helper import ConnectionType
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if istio is not deployed
 istio_enabled = cfg.get("istio", {}).get("enabled")

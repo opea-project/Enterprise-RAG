@@ -9,7 +9,7 @@ import pytest
 import requests
 import statistics
 
-from validation.buildcfg import cfg
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if docsum pipeline is not deployed
 for pipeline in cfg.get("pipelines", []):

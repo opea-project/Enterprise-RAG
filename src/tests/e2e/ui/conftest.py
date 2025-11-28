@@ -18,8 +18,8 @@ import pytest
 import pytest_asyncio
 from playwright.async_api import async_playwright
 
-from helpers.ui_helper import ChatUIHelper
-from validation.constants import ERAG_DOMAIN
+from tests.e2e.helpers.ui_helper import ChatUIHelper
+from tests.e2e.validation.constants import ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 

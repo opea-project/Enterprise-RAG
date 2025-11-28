@@ -7,7 +7,7 @@ import allure
 import logging
 import pytest
 
-from validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.constants import ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 

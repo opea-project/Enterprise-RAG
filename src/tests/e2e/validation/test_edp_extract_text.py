@@ -8,7 +8,7 @@ import logging
 import pytest
 import os
 
-from validation.buildcfg import cfg
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if edp is not deployed
 if not cfg.get("edp", {}).get("enabled"):

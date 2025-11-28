@@ -9,8 +9,8 @@ import pytest
 import time
 import os
 
-from constants import DATAPREP_UPLOAD_DIR
-from validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if chatqa pipeline is not deployed
 for pipeline in cfg.get("pipelines", []):

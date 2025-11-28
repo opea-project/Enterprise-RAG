@@ -13,19 +13,19 @@ import tarfile
 import urllib3
 import yaml
 
-from validation.buildcfg import cfg
-from validation.constants import TEST_FILES_DIR
-from helpers.api_request_helper import ApiRequestHelper
-from helpers.chatqa_api_helper import ChatQaApiHelper
-from helpers.chat_history_helper import ChatHistoryHelper
-from helpers.docsum_helper import DocSumHelper
+from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.validation.constants import TEST_FILES_DIR
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper
+from tests.e2e.helpers.chatqa_api_helper import ChatQaApiHelper
+from tests.e2e.helpers.chat_history_helper import ChatHistoryHelper
+from tests.e2e.helpers.docsum_helper import DocSumHelper
 
-from helpers.edp_helper import EdpHelper
-from helpers.fingerprint_api_helper import FingerprintApiHelper
-from helpers.guard_helper import GuardHelper
-from helpers.istio_helper import IstioHelper
-from helpers.k8s_helper import K8sHelper
-from helpers.keycloak_helper import KeycloakHelper
+from tests.e2e.helpers.edp_helper import EdpHelper
+from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
+from tests.e2e.helpers.guard_helper import GuardHelper
+from tests.e2e.helpers.istio_helper import IstioHelper
+from tests.e2e.helpers.k8s_helper import K8sHelper
+from tests.e2e.helpers.keycloak_helper import KeycloakHelper
 
 # List of namespaces to fetch logs from
 NAMESPACES = ["auth-apisix", "chatqa",  "docsum", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]

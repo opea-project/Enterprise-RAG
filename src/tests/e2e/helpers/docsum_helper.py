@@ -13,8 +13,8 @@ import time
 from rouge import Rouge
 from sentence_transformers import SentenceTransformer, util
 
-from validation.constants import ERAG_DOMAIN, TEST_FILES_DIR
-from helpers.api_request_helper import ApiRequestHelper, ApiResponse
+from tests.e2e.validation.constants import ERAG_DOMAIN, TEST_FILES_DIR
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 
 logger = logging.getLogger(__name__)
 

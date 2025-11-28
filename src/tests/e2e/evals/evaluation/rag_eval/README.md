@@ -70,6 +70,13 @@ If your system uses a proxy, ensure the no_proxy environment variable includes t
 export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com,auth.erag.com
 ```
 
+> [!IMPORTANT]
+> **Configure /etc/hosts**: Ensure that the RAG system domains are added to your `/etc/hosts` file to resolve to localhost.
+> For example, the updated file content should resemble the following:
+> ```
+> 127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+> ```
+
 ### Launch Service of LLM-as-a-Judge
 
 _This step is required only for computing RAGAS metrics._
@@ -200,6 +207,7 @@ python eval_multihop.py --help
 | `--ingest_docs`        | *(flag)*                            | Ingest documents into the vector database (use only on first run)                           |
 | `--generation_metrics` | *(flag)*                            | Compute text generation metrics (`BLEU`, `ROUGE`)                                           |
 | `--retrieval_metrics`  | *(flag)*                            | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                      |
+| `--skip_normalize`     | *(flag)*                            | Skip 'None' separator normalization for exact 1:1 text matching            |
 | `--ragas_metrics`      | *(flag)*                            | Compute RAGAS metrics (answer correctness, context precision, etc.)                         |
 | `--resume_checkpoint`  | *None*                              | Path to a checkpoint file to resume evaluation from previous state                          |
 | `--keep_checkpoint`    | *(flag)*                            | Keep the checkpoint file after evaluation (do not delete)                                   |
@@ -263,6 +271,20 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
     # To resume a previous run (useful in case of failure or interruption)
     python eval_multihop.py --retrieval_metrics --limits 200 --resume_checkpoint ./output/multihop_YYYYMMDDHHMMSS.checkpoint.jsonl
     ```
+
+    **Normalization of 'None' Separators:**
+
+    By default, retrieval metrics use text normalization that removes 'None' separators commonly found in table-extracted data. This improves evaluation accuracy when comparing golden context with retrieved documents containing additional separators.
+
+    ```bash
+    # Default behavior: normalization enabled (recommended for table data)
+    python eval_multihop.py --retrieval_metrics
+
+    # Exact 1:1 text matching without normalization
+    python eval_multihop.py --retrieval_metrics --skip_normalize
+    ```
+
+    Use `--skip_normalize` when you need strict, exact comparison between golden context and retrieved documents. Note that for content extracted from tables, evaluation scores may be lower due to additional separators like 'None' that appear in the retrieved text but not in the golden context.
 
 
   - **RAGAS Evaluation**

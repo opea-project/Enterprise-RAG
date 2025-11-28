@@ -5,8 +5,8 @@
 
 import logging
 import os
-
 import requests
+
 from tests.e2e.validation.constants import ERAG_AUTH_DOMAIN, VITE_KEYCLOAK_CLIENT_ID, VITE_KEYCLOAK_REALM
 
 
@@ -95,6 +95,10 @@ class KeycloakHelper:
                                          VITE_KEYCLOAK_CLIENT_ID)
 
     def _obtain_access_token(self, realm, username, password, client_id):
+        """
+        Proper error handling and troubleshooting information is essential here as authentication
+        failures can impact accuracy evaluator scripts and other tools that need to authenticate with the RAG system via keycloak helper.
+        """
         logger.debug(f"Obtaining access token for user '{username}'")
         token_url = f"{ERAG_AUTH_DOMAIN}/realms/{realm}/protocol/openid-connect/token"
         data = {
@@ -104,11 +108,35 @@ class KeycloakHelper:
             "client_id": client_id,
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(token_url, data=data, headers=headers, verify=False)
-        if response.status_code == 200:
+
+        # Common troubleshooting instructions
+        troubleshooting = (
+            "\nTroubleshooting:\n"
+            "1. Verify that 'auth.erag.com' is present in /etc/hosts:\n"
+            "   grep 'auth.erag.com' /etc/hosts\n"
+            "   Expected entry: 127.0.0.1 erag.com auth.erag.com minio.erag.com s3.erag.com\n\n"
+            "2. Check connectivity with a simple request:\n"
+            f"   curl -v -k {token_url}\n"
+            "   Expected: an HTTP response of any kind, indicating that the endpoint is reachable\n\n"
+        )
+
+        try:
+            response = requests.post(token_url, data=data, headers=headers, verify=False, timeout=10)
+            response.raise_for_status()  # Raises HTTPError for non-200 response
+
             return response.json().get("access_token")
-        else:
-            raise Exception(f"Failed to get access token for user '{username}'. Response: {response.text}")
+
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Connection error while obtaining access token for user '{username}'. Error: {e}\n{troubleshooting}")
+            raise e
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"Failed to get access token for user '{username}'. HTTP status: {response.status_code}\n"
+                f"Response: {response.text}\n{troubleshooting}"
+            )
+            raise e
+        except Exception as e:
+            logger.error(f"Unexpected error while obtaining access token for user '{username}'. Error: {e}\n{troubleshooting}")
+            raise e
 
     def read_current_required_actions(self, admin_access_token, user):
         """Read the required actions for the user. We need to revert them back after obtaining the token."""

@@ -152,7 +152,7 @@ class MultiHop_Evaluator(Evaluator):
                 continue  # Skip results that have already been evaluated and are valid
 
             logger.info(f"Processing query: '{query}'")
-            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data)}
+            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data, normalize=not arguments.skip_normalize)}
             logger.debug(f"Result for query {index} {query}: {result}")
             results.append(result)
             index += 1
@@ -351,6 +351,7 @@ def args_parser():
     parser.add_argument("--generation_metrics", action="store_true", help="Whether to compute text generation metrics (BLEU and ROUGE)")
     parser.add_argument("--retrieval_metrics", action="store_true", help="Whether to compute retrieval metrics (Hits, MAP, MRR)")
     parser.add_argument("--ragas_metrics", action="store_true", help="Whether to compute ragas metrics (answer correctness, relevancy, semantic similarity, context precision, context recall, faithfulness)")
+    parser.add_argument("--skip_normalize", action="store_true", help="Skip normalization of 'None' separators in retrieval metrics (default: normalization is enabled)")
     parser.add_argument("--limits", type=int, default=100, help="Number of queries to evaluate (0 means evaluate all; default: 100)")
     parser.add_argument("--resume_checkpoint", type=str, help="Path to a checkpoint file to resume evaluation from previously saved progress.")
     parser.add_argument("--keep_checkpoint", action="store_true", help="Keep the checkpoint file after successful evaluation instead of deleting it.")

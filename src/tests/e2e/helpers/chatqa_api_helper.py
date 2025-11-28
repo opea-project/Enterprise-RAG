@@ -6,8 +6,8 @@
 import concurrent
 import logging
 import time
-
 import requests
+
 from tests.e2e.validation.constants import ERAG_DOMAIN
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 

@@ -14,9 +14,10 @@ from typing import Any
 
 import aiohttp
 import requests
-from helpers.api_request_helper import ApiRequestHelper
-from validation.buildcfg import cfg
-from validation.constants import DATAPREP_UPLOAD_DIR, ERAG_DOMAIN
+
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper
+from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, ERAG_DOMAIN
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +32,23 @@ class EdpHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper, bucket_name=None):
         super().__init__(keycloak_helper=keycloak_helper)
-        if cfg.get("edp") is None or cfg.get("edp").get("enabled") is not True:
-            self.available_buckets = []
-            self.default_bucket = None
+        if bucket_name:
+            # Explicit bucket provided - used outside e2e tests (e.g., accuracy evaluator scripts)
+            # where cfg is not populated
+            self.default_bucket = bucket_name
         else:
-            if bucket_name:
-                self.default_bucket = bucket_name
+            # Auto-detect bucket from RAG deployment - used in e2e tests where cfg contains
+            # the actual deployment configuration loaded from config.yaml
+            if cfg.get("edp") is None or cfg.get("edp").get("enabled") is not True:
+                self.available_buckets = []
+                self.default_bucket = None
             else:
                 self.available_buckets = self.list_buckets().json().get("buckets")
                 # Use the first bucket that is not read-only as the default bucket
                 self.default_bucket = next((bucket for bucket in self.available_buckets if "read-only" not in bucket), None)
                 logger.debug(f"Setting {self.default_bucket} as a default bucket from the list of available buckets: "
-                             f"{self.available_buckets}")
+                                f"{self.available_buckets}")
+
 
     def list_buckets(self, as_user=False):
         """Call /api/list_buckets endpoint"""

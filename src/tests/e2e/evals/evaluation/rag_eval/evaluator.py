@@ -109,8 +109,8 @@ class Evaluator:
         document_path (str): The path to document
         """
 
-        presigned_url = self.edp_helper.generate_presigned_url(
-            document_path).json().get("url")
+        presigned_url = self.edp_helper.generate_presigned_url(document_path).json().get("url")
+
         response = self.edp_helper.upload_file(document_path, presigned_url)
 
         if response.status_code == 200:
@@ -171,8 +171,8 @@ class Evaluator:
             "valid": len(generated_text.strip()) != 0,
         }
 
-    def scoring_retrieval(self, data: dict) -> dict:
-        metric = RetrievalBaseMetric()
+    def scoring_retrieval(self, data: dict, normalize: bool = True) -> dict:
+        metric = RetrievalBaseMetric(normalize=normalize)
         query = self.get_query(data)
         golden_context = self.get_golden_context(data)
 
@@ -336,6 +336,8 @@ class Evaluator:
         """
         Check if EDP backend is reachable.
         """
+
+        logger.info("Checking connection to EDP service...")
         try:
             response = self.edp_helper.list_buckets()
             if response.status_code == 200:
@@ -350,6 +352,7 @@ class Evaluator:
         """
         Check if ChatQA backend is reachable.
         """
+        logger.info("Checking connection to ChatQA service...")
         try:
             response = self.chatqa_api_helper.call_chatqa("hello")
             if response.status_code == 200:

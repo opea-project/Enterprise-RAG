@@ -3,7 +3,7 @@
 
 services:
   llm-vllm-model-server:
-    image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.10.2
+    image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.11.2
     container_name: llm-vllm-model-server
     ports:
       - "${LLM_VLLM_PORT}:80"

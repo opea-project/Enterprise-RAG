@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import hashlib
+from pathlib import Path
 
 import allure
 from datetime import datetime, timezone
@@ -65,6 +67,40 @@ def pytest_configure(config):
     root = logging.getLogger()
     for h in root.handlers[:]:
         root.removeHandler(h)
+
+
+def pytest_runtest_call(item):
+    scenario_name = os.getenv("SCENARIO", "Install")
+    custom = f"{scenario_name}:{item.nodeid}"
+    custom_history_id = hashlib.sha256(custom.encode()).hexdigest()
+    allure.dynamic.parameter("historyId", custom_history_id)
+
+
+def pytest_collection_modifyitems(config, items):
+    root_dir = Path(config.rootdir)
+    scenario_name = os.getenv("SCENARIO", "Install")
+    for item in items:
+        test_path = Path(item.fspath)
+        test_directory = test_path.parent
+        try:
+            relative_dir = test_directory.relative_to(root_dir)
+            folder_parts = relative_dir.parts
+            final_suite_name = ".".join(folder_parts)
+        except ValueError:
+            final_suite_name = test_directory.name
+        scenario_tag = f"scenario:{scenario_name}"
+        pipeline_tag = f"pipeline:{ cfg.get('pipelines', [])[0]['type'] }"
+        llm_model_tag = f"llm_model:{ cfg.get('llm_model', []) }"
+
+        add_marker(item, "parentSuite", scenario_name)
+        add_marker(item, "suite", final_suite_name)
+        add_marker(item, "feature", scenario_tag)
+        add_marker(item, "feature", pipeline_tag)
+        add_marker(item, "feature", llm_model_tag)
+
+
+def add_marker(item, label_name, label_value):
+    item.add_marker(allure.label(label_name, label_value))
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -249,8 +249,8 @@ class ChatUIHelper:
         try:
             logger.info(f"Sending message: {message[:50]}...")
 
-            # Find and fill textarea
-            textarea = self.page.locator('.prompt-input')
+            # Find and fill textarea using data-testid
+            textarea = self.page.locator('[data-testid="prompt-input-textarea"]')
             if not await textarea.count():
                 logger.error("Textarea not found")
                 return False, None
@@ -258,8 +258,8 @@ class ChatUIHelper:
             await textarea.fill(message)
             await self.page.wait_for_timeout(500)
 
-            # Find and click send button
-            send_button = self.page.locator('button[type="submit"]')
+            # Find and click send button using data-testid
+            send_button = self.page.locator('[data-testid="prompt-send-button"]')
             if not await send_button.count():
                 logger.error("Send button not found")
                 return False, None
@@ -294,8 +294,8 @@ class ChatUIHelper:
         try:
             logger.info("Waiting for response...")
             
-            # Wait for bot message element to appear
-            bot_message = self.page.locator('.bot-message__text').last
+            # Wait for bot message element to appear using data-testid
+            bot_message = self.page.locator('[data-testid="bot-message__text"]').last
             await bot_message.wait_for(state="visible", timeout=timeout)
             
             # Wait for streaming to complete by monitoring text length stabilization
@@ -348,6 +348,7 @@ class ChatUIHelper:
             selector: str = None,
             aria_label: str = None,
             css_class: str = None,
+            data_testid: str = None,
             check_children: bool = False,
             timeout: int = 10000
         ) -> bool:
@@ -357,6 +358,7 @@ class ChatUIHelper:
                 selector: Direct CSS selector (e.g., '.my-class', '#my-id', 'button[type="submit"]')
                 aria_label: The aria-label attribute value to search for
                 css_class: CSS class name (without dot prefix)
+                data_testid: The data-testid attribute value (RECOMMENDED for tests)
                 check_children: Whether to verify element has child elements
                 timeout: Maximum time to wait in milliseconds
                 
@@ -364,8 +366,11 @@ class ChatUIHelper:
                 True if element is rendered (and has children if checked), False otherwise
             """
             try:
-                # Determine which selector to use
-                if selector:
+                # Determine which selector to use (prioritize data-testid)
+                if data_testid:
+                    locator_str = f'[data-testid="{data_testid}"]'
+                    selector_desc = f"data-testid='{data_testid}'"
+                elif selector:
                     locator_str = selector
                     selector_desc = f"selector '{selector}'"
                 elif aria_label:
@@ -375,7 +380,7 @@ class ChatUIHelper:
                     locator_str = f'.{css_class}'
                     selector_desc = f"class '{css_class}'"
                 else:
-                    logger.error("No selector provided (selector, aria_label, or css_class required)")
+                    logger.error("No selector provided (selector, aria_label, css_class, or data_testid required)")
                     return False
                 
                 logger.info(f"Checking if element with {selector_desc} is rendered...")
@@ -423,8 +428,8 @@ class ChatUIHelper:
         try:
             logger.info("Navigating to Control Plane...")
             
-            # Locate and click the Admin Panel button
-            admin_button = self.page.locator('button[aria-label="Switch to Admin Panel"]')
+            # Locate and click the Admin Panel button using data-testid
+            admin_button = self.page.locator('[data-testid="view-switch-btn--to-admin-panel"]')
             
             if not await admin_button.count():
                 logger.error("Admin Panel button not found")
@@ -440,6 +445,47 @@ class ChatUIHelper:
             
         except Exception as e:
             logger.error(f"Failed to navigate to Control Plane: {e}")
+            return False
+    
+    async def navigate_to_chat(self) -> bool:
+        """Navigate back to Chat from Control Plane.
+        
+        Returns:
+            True if navigation successful, False otherwise
+        """
+        try:
+            logger.info("Navigating to Chat...")
+            
+            # Locate the Chat button using data-testid
+            chat_button = self.page.locator('[data-testid="view-switch-btn--to-chat"]')
+            
+            try:
+                # Wait for the button to be visible
+                await chat_button.wait_for(state="visible", timeout=10000)
+            except Exception:
+                logger.error("Chat button not found or not visible")
+                # Debug: Print all data-testids on the page
+                elements = await self.page.locator('[data-testid]').all()
+                logger.info(f"Found {len(elements)} elements with data-testid:")
+                for i, element in enumerate(elements):
+                    try:
+                        testid = await element.get_attribute("data-testid")
+                        visible = await element.is_visible()
+                        logger.info(f"  {i}: {testid} (visible={visible})")
+                    except Exception as e:
+                        logger.warning(f"  {i}: Error getting attribute: {e}")
+                return False
+            
+            await chat_button.click()
+            
+            # Wait for navigation
+            await self.page.wait_for_load_state("networkidle")
+            
+            logger.info(f"Navigated to: {self.page.url}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to navigate to Chat: {e}")
             return False
     
     async def verify_control_plane_url(self, expected_path: str = "/admin-panel/control-plane") -> bool:

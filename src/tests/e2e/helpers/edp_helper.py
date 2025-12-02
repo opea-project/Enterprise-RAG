@@ -14,10 +14,9 @@ from typing import Any
 
 import aiohttp
 import requests
-
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper
 from tests.e2e.validation.buildcfg import cfg
-from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, ERAG_DOMAIN
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +24,13 @@ LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
 DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "late_chunking", "ingested"]
-EDP_API_PATH = f"{ERAG_DOMAIN}/api/v1/edp"
 
 
 class EdpHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper, bucket_name=None):
         super().__init__(keycloak_helper=keycloak_helper)
+        self.edp_api_path = f"https://{cfg.get('FQDN')}/api/v1/edp"
         if bucket_name:
             # Explicit bucket provided - used outside e2e tests (e.g., accuracy evaluator scripts)
             # where cfg is not populated
@@ -53,7 +52,7 @@ class EdpHelper(ApiRequestHelper):
     def list_buckets(self, as_user=False):
         """Call /api/list_buckets endpoint"""
         response = requests.get(
-            url=f"{EDP_API_PATH}/list_buckets",
+            url=f"{self.edp_api_path}/list_buckets",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -62,7 +61,7 @@ class EdpHelper(ApiRequestHelper):
     def list_links(self, as_user=False):
         """Call /api/links endpoint"""
         response = requests.get(
-            url=f"{EDP_API_PATH}/links",
+            url=f"{self.edp_api_path}/links",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -72,7 +71,7 @@ class EdpHelper(ApiRequestHelper):
         """Make post call to /api/links endpoint with the given payload"""
         logger.info(f"Attempting to upload links using the following payload: {payload}")
         response = requests.post(
-            url=f"{EDP_API_PATH}/links",
+            url=f"{self.edp_api_path}/links",
             headers=self.get_headers(as_user),
             json=payload,
             verify=False
@@ -83,7 +82,7 @@ class EdpHelper(ApiRequestHelper):
         """Delete a link by its id"""
         logger.info(f"Deleting link with id: {link_uuid}")
         response = requests.delete(
-            url=f"{EDP_API_PATH}/link/{link_uuid}",
+            url=f"{self.edp_api_path}/link/{link_uuid}",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -124,7 +123,7 @@ class EdpHelper(ApiRequestHelper):
     def list_files(self, as_user=False):
         """Call /api/files endpoint"""
         response = requests.get(
-            url=f"{EDP_API_PATH}/files",
+            url=f"{self.edp_api_path}/files",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -141,7 +140,7 @@ class EdpHelper(ApiRequestHelper):
             "method": method
         }
         response = requests.post(
-            url=f"{EDP_API_PATH}/presignedUrl",
+            url=f"{self.edp_api_path}/presignedUrl",
             headers=self.get_headers(as_user),
             json=payload,
             verify=False
@@ -157,7 +156,7 @@ class EdpHelper(ApiRequestHelper):
             "method": method
         }
         async with session.post(
-                f"{EDP_API_PATH}/presignedUrl",
+                f"{self.edp_api_path}/presignedUrl",
                 headers=self.get_headers(),
                 json=payload,
                 ssl=False
@@ -202,7 +201,7 @@ class EdpHelper(ApiRequestHelper):
         """Cancel the processing task for the given file UUID"""
         logger.info(f"Cancelling task for file with id: {file_uuid}")
         response = requests.delete(
-            url=f"{EDP_API_PATH}/file/{file_uuid}/task",
+            url=f"{self.edp_api_path}/file/{file_uuid}/task",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -212,7 +211,7 @@ class EdpHelper(ApiRequestHelper):
         """Extract text for the given file UUID"""
         logger.info(f"Extracting text for file with id: {file_uuid}")
         response = requests.post(
-            f"{EDP_API_PATH}/file/{file_uuid}/extract",
+            f"{self.edp_api_path}/file/{file_uuid}/extract",
             headers=self.get_headers(as_user),
             verify=False
         )
@@ -263,7 +262,7 @@ class EdpHelper(ApiRequestHelper):
         """Make post call to /api/v1/edp/retrieve endpoint with the given payload"""
         logger.debug(f"Attempting to retrieve documents using the following payload: {payload}")
         response = requests.post(
-            url=f"{EDP_API_PATH}/retrieve",
+            url=f"{self.edp_api_path}/retrieve",
             headers=self.get_headers(),
             json=payload,
             verify=False

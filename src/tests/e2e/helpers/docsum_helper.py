@@ -13,12 +13,11 @@ import time
 from rouge import Rouge
 from sentence_transformers import SentenceTransformer, util
 
-from tests.e2e.validation.constants import ERAG_DOMAIN, TEST_FILES_DIR
+from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.validation.constants import TEST_FILES_DIR
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 
 logger = logging.getLogger(__name__)
-
-DOCSUM_API_PATH = f"{ERAG_DOMAIN}/api/v1/docsum"
 
 
 class SummaryEvaluator:
@@ -59,6 +58,7 @@ class DocSumHelper(ApiRequestHelper):
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
         self.summary_evaluator = SummaryEvaluator()
+        self.docsum_api_path = f"https://{cfg.get('FQDN')}/api/v1/docsum"
 
     def call(self, texts=[], links=[], files=[], summary_type="map_reduce", as_user=False, stream=True):
         """Make DocSum API call with the provided texts, links, and files"""
@@ -105,7 +105,7 @@ class DocSumHelper(ApiRequestHelper):
         logger.info("Making DocSum API call")
         start_time = time.time()
         response = requests.post(
-            url=DOCSUM_API_PATH,
+            url=self.docsum_api_path,
             headers=self.get_headers(as_user),
             json=payload,
             stream=stream,

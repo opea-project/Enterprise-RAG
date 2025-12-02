@@ -7,7 +7,7 @@ import allure
 import logging
 import pytest
 
-from tests.e2e.validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +22,12 @@ async def test_admin_login(page, admin_credentials):
     """
     USERNAME = admin_credentials['username']
     PASSWORD = admin_credentials['password']
+    erag_domain = f"https://{cfg.get('FQDN')}"
     
     logger.info(f"Testing admin login with username: {USERNAME}")
     
     # Navigate to login page
-    await page.goto(ERAG_DOMAIN)
+    await page.goto(erag_domain)
     
     # Fill credentials
     await page.fill("#username", USERNAME)
@@ -40,7 +41,7 @@ async def test_admin_login(page, admin_credentials):
     
     # Verify success: should redirect to /chat
     current_url = page.url
-    expected_url = f"{ERAG_DOMAIN}/chat"
+    expected_url = f"{erag_domain}/chat"
     
     assert current_url == expected_url, \
         f"Login failed: expected redirect to {expected_url}, but got {current_url}"

@@ -21,8 +21,6 @@ import allure
 import logging
 import pytest
 
-from tests.e2e.validation.constants import ERAG_DOMAIN
-
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +55,7 @@ async def test_control_plane_navigation(chat_ui_helper):
     
     # Assert 2: URL is correct (admin-panel is the Control Plane landing page)
     url_verified = await chat_ui_helper.verify_control_plane_url("/admin-panel")
-    assert url_verified, f"URL verification failed, expected {ERAG_DOMAIN}/admin-panel"
+    assert url_verified, "URL verification failed, expected '/admin-panel'"
     logger.info("Assert 2: Control Plane URL verified")
     
     logger.info("Test completed: Control Plane navigation validated")

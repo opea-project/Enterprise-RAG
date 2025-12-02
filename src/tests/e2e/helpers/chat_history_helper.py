@@ -8,17 +8,16 @@ import time
 import requests
 
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
-from tests.e2e.validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
-
-HISTORY_API_PATH = f"{ERAG_DOMAIN}/v1/chat_history"
 
 
 class ChatHistoryHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper)
+        self.history_api_path = f"https://{cfg.get('FQDN')}/v1/chat_history"
 
     def save_history(self, history, history_id=""):
         """
@@ -31,7 +30,7 @@ class ChatHistoryHelper(ApiRequestHelper):
         if (history_id != ""):
             data.update({"id": history_id})
         response = requests.post(
-            f"{HISTORY_API_PATH}/save",
+            f"{self.history_api_path}/save",
             headers=self.get_headers(),
             json=data,
             verify=False
@@ -47,7 +46,7 @@ class ChatHistoryHelper(ApiRequestHelper):
 
         start_time = time.time()
         response = requests.get(
-            f"{HISTORY_API_PATH}/get",
+            f"{self.history_api_path}/get",
             headers=self.get_headers(),
             verify=False
         )
@@ -61,7 +60,7 @@ class ChatHistoryHelper(ApiRequestHelper):
         """
         start_time = time.time()
         response = requests.get(
-            f"{HISTORY_API_PATH}/get?history_id={history_id}",
+            f"{self.history_api_path}/get?history_id={history_id}",
             headers=self.get_headers(),
             verify=False
         )
@@ -79,7 +78,7 @@ class ChatHistoryHelper(ApiRequestHelper):
             "id": history_id
         }
         response = requests.post(
-            f"{HISTORY_API_PATH}/change_name",
+            f"{self.history_api_path}/change_name",
             headers=self.get_headers(),
             json=data,
             verify=False
@@ -94,7 +93,7 @@ class ChatHistoryHelper(ApiRequestHelper):
         """
         start_time = time.time()
         response = requests.delete(
-            f"{HISTORY_API_PATH}/delete?history_id={history_id}",
+            f"{self.history_api_path}/delete?history_id={history_id}",
             headers=self.get_headers(),
             verify=False
         )

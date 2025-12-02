@@ -51,7 +51,6 @@ def pytest_configure(config):
     # Manually configure logging here since pytest configures it only after this hook
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-
     build_config_filepath = config.getoption("--build-config-file")
     if os.path.exists(build_config_filepath):
         logger.debug(f"Loading build configuration from {build_config_filepath}")
@@ -61,7 +60,7 @@ def pytest_configure(config):
         # store into global cfg
         cfg.update(build_configuration)
     else:
-        logger.warning("Build configuration file not found. Proceeding with empty configuration.")
+        pytest.fail("Build configuration file not found. Please provide a valid path using --build-config-file option.")
 
     # Remove previously configured logger. If it was not removed, every log would be displayed twice.
     root = logging.getLogger()

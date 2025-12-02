@@ -19,7 +19,7 @@ import pytest_asyncio
 from playwright.async_api import async_playwright
 
 from tests.e2e.helpers.ui_helper import ChatUIHelper
-from tests.e2e.validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -326,7 +326,7 @@ async def chat_ui_helper(page, admin_credentials):
     password = admin_credentials['password']
 
     # Initialize and login
-    chat_ui_helper = ChatUIHelper(page, base_url=ERAG_DOMAIN)
+    chat_ui_helper = ChatUIHelper(page, base_url=cfg.get('FQDN'))
     await chat_ui_helper.login_as_admin(username, password)
 
     logger.info("Chat helper ready")

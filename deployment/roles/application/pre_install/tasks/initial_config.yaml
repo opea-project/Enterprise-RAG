@@ -1,0 +1,64 @@
+---
+- name: Load initial configuration
+  tags:
+    - install
+    - post-install
+    - display-configuration
+    - uninstall
+    - pre-upgrade
+    - backup
+    - restore
+    - velero-delete
+  block:
+    - name: Pre-fetch role defaults for early availability
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../roles/application/{{ item }}/defaults/main.yaml"
+      loop:
+        - istio
+        - ingress
+        - keycloak
+        - apisix
+        - telemetry
+        - ui
+        - vector_databases
+        - edp
+        - fingerprint
+        - chat_history
+        - nri_balloons
+        - pipeline
+        - tdx
+        - rag_utils
+        - backup
+
+    - name: Initialize configuration issues list
+      ansible.builtin.set_fact:
+        configuration_issues: []
+
+    - name: Load kubeconfig from KUBECONFIG environment variable if not set in config
+      ansible.builtin.set_fact:
+        kubeconfig: "{{ lookup('env', 'KUBECONFIG') }}"
+      when: kubeconfig is not defined or kubeconfig == "" or kubeconfig == "FILL_HERE"
+
+    - name: Create noProxy from additionalNoProxy when proxy is configured
+      ansible.builtin.set_fact:
+        noProxy: >-
+          {{
+            (['localhost', '.svc', '.monitoring'] +
+             (['.monitoring-traces'] if telemetry.traces.enabled | default(false) else []) +
+             ((additionalNoProxy | default('', true)) | string | split(',') | list)) |
+            reject('equalto', '') |
+            list |
+            unique |
+            join(',')
+          }}
+      when: (httpProxy is defined and httpProxy != "") or (httpsProxy is defined and httpsProxy != "")
+
+    - name: Set noProxy to empty when no proxy is configured
+      ansible.builtin.set_fact:
+        noProxy: ""
+      when: (httpProxy is not defined or httpProxy == "") and (httpsProxy is not defined or httpsProxy == "")
+
+    - name: Add kubeconfig configuration issue
+      ansible.builtin.set_fact:
+        configuration_issues: "{{ configuration_issues + ['KUBECONFIG is not set. Please set the KUBECONFIG environment variable or provide a value in the configuration file.'] }}"
+      when: kubeconfig is not defined or kubeconfig | length == 0

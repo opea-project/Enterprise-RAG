@@ -13,6 +13,15 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
 
+  pre_tasks:
+    - name: Load default settings
+      ansible.builtin.include_role:
+        name: pre_install
+        tasks_from: load_initial_settings.yaml
+      tags:
+        - backup
+        - restore
+
   tasks:
 
   - name: Verify velero is available for backup and restore

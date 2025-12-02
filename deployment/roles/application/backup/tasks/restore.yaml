@@ -83,7 +83,8 @@
     api_version: v1
     kind: Pod
     namespace: "{{ velero.namespace }}"
-    label_selectors: "{{ velero.velero_pod_labels.items() | map('join', '=') | join(',') }}"
+    label_selectors: >-
+      {{ velero.velero_pod_labels.keys() | zip(velero.velero_pod_labels.values()) | map('join', '=') | list }}
     field_selectors:
       - status.phase=Running
   register: velero_pods
@@ -221,9 +222,6 @@
 - name: Verify if all pods are in desired state until 120 minutes
   ansible.builtin.include_role:
     name: check_pods
-    apply:
-      tags:
-        - monitor_restore
   vars:
     check_pods_role_retries: 120
   tags:

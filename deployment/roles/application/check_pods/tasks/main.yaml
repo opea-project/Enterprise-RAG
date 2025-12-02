@@ -25,15 +25,6 @@
         - restore
         - uninstall
 
-    - name: Wait 60 seconds before verifying namespaces and pods
-      pause:
-        seconds: 60
-      tags:
-        - install
-        - restore
-        - uninstall
-      when: (execution_counter | int) > 1
-
     - name: Include tasks to get enabled namespaces
       ansible.builtin.include_role:
         name: utils
@@ -109,23 +100,36 @@
         - install
         - restore
 
+    - name: Filter out Job pods from verification
+      set_fact:
+        all_pods: >-
+          {{
+            pods_info.results | selectattr('resources', 'defined') |
+            rejectattr('resources', 'equalto', []) |
+            map(attribute='resources') | flatten | list
+          }}
+      tags:
+        - install
+        - restore
+        - uninstall
+
     - name: Verify pods based on operation_mode
       set_fact:
         undesirable_pods: >-
-          {{
-            (pods_info.results | selectattr('resources', 'defined') |
-            rejectattr('resources', 'equalto', []) |
-            map(attribute='resources') | flatten |
-            rejectattr('status.phase', 'in', ['Running', 'Succeeded']) |
-            map(attribute='metadata.name') |
-            list)
-            if operation_mode == 'install' else
-            (pods_info.results | selectattr('resources', 'defined') |
-            rejectattr('resources', 'equalto', []) |
-            map(attribute='resources') | flatten |
-            map(attribute='metadata.name') |
-            list)
-          }}
+          {%- set result = [] -%}
+          {%- for pod in all_pods -%}
+            {%- set is_job_pod = pod.metadata.ownerReferences | default([]) | selectattr('kind', 'equalto', 'Job') | list | length > 0 -%}
+            {%- if operation_mode == 'install' -%}
+              {%- if not is_job_pod and pod.status.phase not in ['Running', 'Succeeded'] -%}
+                {%- set _ = result.append(pod.metadata.name) -%}
+              {%- endif -%}
+            {%- else -%}
+              {%- if not is_job_pod -%}
+                {%- set _ = result.append(pod.metadata.name) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ result }}
       tags:
         - install
         - restore
@@ -174,19 +178,28 @@
         - uninstall
 
   rescue:
-    - name: Retry the role on failure
-      include_role:
-        name: check_pods
+    - name: Return failed status after maximum retries
+      fail:
+        msg: "Role execution failed after {{ check_pods_role_retries | default(5) }} attempts."
+      when: (execution_counter | int) >= (check_pods_role_retries | default(5))
+      tags:
+        - install
+        - restore
+        - uninstall
+
+    - name: Wait 60 seconds before retry
+      pause:
+        seconds: 60
       when: (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
         - restore
         - uninstall
 
-    - name: Return failed status after maximum retries
-      fail:
-        msg: "Role execution failed after (check_pods_role_retries | default(5)) attempts."
-      when: (execution_counter | int) >= (check_pods_role_retries | default(5))
+    - name: Retry the role on failure
+      include_role:
+        name: check_pods
+      when: (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
         - restore

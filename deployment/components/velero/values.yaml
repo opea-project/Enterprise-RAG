@@ -7,11 +7,6 @@ global:
   security:
     allowInsecureImages: true
 
-proxy:
-  httpProxy: ""
-  httpsProxy: ""
-  noProxy: ""
-
 veleroAccessKey: ""
 veleroSecretKey: ""
 minioAdminUser: "admin"

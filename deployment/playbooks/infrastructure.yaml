@@ -105,6 +105,7 @@
   hosts: localhost
   tags:
     - delete
+    - velero-delete
     - never
   tasks:
     - name: Warning about backup and restore resources deletion
@@ -134,6 +135,16 @@
   environment:
     KUBECONFIG: "{{ kubeconfig }}"
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+  pre_tasks:
+    - name: Load default settings
+      ansible.builtin.include_role:
+        name: pre_install
+        tasks_from: load_initial_settings.yaml
+      tags:
+        - install
+        - post-install
+        - velero-delete
+        - delete
   tasks:
     - name: Include post-installation tasks
       ansible.builtin.include_role:

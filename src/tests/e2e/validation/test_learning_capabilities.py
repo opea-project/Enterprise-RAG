@@ -452,6 +452,9 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
     With retriever's search type set to 'similarity', expect the answer to be incomplete.
     Change the retriever's search type to 'similarity_with_siblings' and expect the answer to be complete.
     """
+    # Skip the test if late chunking is enabled
+    if cfg.get("edp", {}).get("late_chunking", {}).get("enabled", False):
+        pytest.skip("Test is not applicable when late chunking is enabled")
 
     current_parameters = fingerprint_api_helper.append_arguments("").json().get("parameters", {})
     original_k = current_parameters.get("k")
@@ -479,6 +482,23 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
     finally:
         # Restore default parameters
         fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
+
+
+@allure.testcase("IEASG-T308")
+def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+    """
+    Upload a file with a list of 35 elements.
+    Ask a question that requires the entire list to be included in the answer.
+    With late chunking enabled, expect the full answer. Otherwise, just save the response for comparison.
+    """
+    file = "test_late_chunking.txt"
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
+    question = "List 35 cities in Europe to visit by Zaravinth"
+
+    response = ask_question(chatqa_api_helper, question)
+    if cfg.get("edp", {}).get("late_chunking", {}).get("enabled", False):
+        # With late chunking enabled, expect the full answer
+        assert chatqa_api_helper.words_in_response(["Rome", "Dublin", "Malmo", "Bruges", "Milan"], response)
 
 
 @pytest.mark.xfail(reason="Feature not implemented yet - requires graph structures support")

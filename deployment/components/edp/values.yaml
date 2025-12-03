@@ -702,24 +702,20 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
-    - name: OMP_THREAD_LIMIT
-      valueFrom:
-        resourceFieldRef:
-          resource: limits.cpu
     - name: PDF_MAX_WORKERS
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
   resources:
     requests:
-      cpu: "1"
-      memory: "2Gi"
+      cpu: "2"
+      memory: "8Gi"
     limits:
-      cpu: "6"
-      memory: "12Gi"
+      cpu: "12"
+      memory: "32Gi"
   hpa:
-    minReplicas: 2
-    maxReplicas: 4
+    minReplicas: 1
+    maxReplicas: 2
     targetValue: 4
     behavior:
       scaleDown:

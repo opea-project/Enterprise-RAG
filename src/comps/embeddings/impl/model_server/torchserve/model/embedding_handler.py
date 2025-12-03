@@ -35,6 +35,7 @@ import logging
 import os
 import sentence_transformers
 import torch
+import orjson
 
 from contextlib import nullcontext
 from ts.context import Context
@@ -134,7 +135,6 @@ class EmbeddingHandler(BaseHandler, ABC):
 
 
     def _run_embedding_model(self, input_batch, return_pooling=False):
-
         if return_pooling:
             # for late chunking use case
             logger.debug("The parameter return_pooling is set to True. Generating embeddings using model output's last_hidden_state.")
@@ -150,7 +150,6 @@ class EmbeddingHandler(BaseHandler, ABC):
             with torch.inference_mode(), torch.no_grad(), self.additional_context:
                 embeddings = self.model.encode(input_batch, batch_size=self.batch_size)
                 return embeddings.tolist()
-
 
 
     def inference(self, input_batch):
@@ -181,10 +180,12 @@ class EmbeddingHandler(BaseHandler, ABC):
                         num_texts_in_pooling_texts.append(len(text_pair))
                         texts.extend(text_pair)
             
+
                     embeddings_pooling = self._run_embedding_model(
                         texts,
                         return_pooling=True
                     )
+
 
             if non_pooling_texts:
                 # Flatten the list of text arrays into a single list
@@ -202,6 +203,7 @@ class EmbeddingHandler(BaseHandler, ABC):
             # Regroup embeddings based on the original structure
             # For pooling embeddings, regroup based on num_texts_in_pooling_texts
             regrouped_pooling = []
+
             if pooling_texts:
                 index = 0
                 for count in num_texts_in_pooling_texts:
@@ -210,10 +212,12 @@ class EmbeddingHandler(BaseHandler, ABC):
 
             # For non-pooling embeddings, regroup based on num_texts_in_non_pooling_texts
             regrouped_non_pooling = []
+
             if non_pooling_texts:
                 index = 0
                 for count in num_texts_in_non_pooling_texts:
                     regrouped_non_pooling.append(embeddings_non_pooling[index:index + count])
+
                     index += count
 
             # Merge the results for pooling and non-pooling texts in the original order
@@ -224,9 +228,11 @@ class EmbeddingHandler(BaseHandler, ABC):
             for flag in pooling_flags:
                 if flag:
                     embeddings.append(regrouped_pooling[pooling_index])
+
                     pooling_index += 1
                 else:
                     embeddings.append(regrouped_non_pooling[non_pooling_index])
+
                     non_pooling_index += 1
             
             return embeddings
@@ -240,4 +246,6 @@ class EmbeddingHandler(BaseHandler, ABC):
 
 
     def postprocess(self, inference_output):
-        return inference_output
+        # orjson is significantly faster and produces more compact JSON
+        serialized = [orjson.dumps(emb).decode('utf-8') for emb in inference_output]
+        return serialized

@@ -14,6 +14,7 @@ dependencies = [
     "torch-model-archiver==0.12.0",
     "torch==2.8.0",
     "intel-extension-for-pytorch==2.8.0",
+    "orjson==3.10.12",
     "hypothesis==6.82.0",
     "cmake>=3.13.0",
     "ninja==1.11.1",

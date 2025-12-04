@@ -123,7 +123,6 @@ const useInitialChat = () => {
               ? {
                   ...turn,
                   answer: (turn.answer || "") + errorData,
-                  isPending: false,
                 }
               : turn,
           ),

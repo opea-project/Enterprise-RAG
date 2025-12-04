@@ -6,3 +6,4 @@ export * from "@/components/PipelineGraph/PipelineGraph";
 export * from "@/components/ServiceNode/ServiceNode";
 export * from "@/components/ServiceStatusIndicator/ServiceStatusIndicator";
 export * from "@/types/index";
+export * from "@/utils/statusHelpers";

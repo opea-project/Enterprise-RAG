@@ -56,6 +56,9 @@ class LoginPageActions:
         Args:
             url: The URL to navigate to
         """
+        # Ensure URL has a protocol prefix (required by Playwright)
+        if url and not url.startswith(('http://', 'https://')):
+            url = f"https://{url}"
         logger.debug(f"Navigating to: {url}")
         await self.page.goto(url)
     

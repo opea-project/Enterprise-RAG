@@ -18,8 +18,16 @@ import asyncio
 import logging
 import pytest
 
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
+
+# Skip all tests if chatqa pipeline is not deployed
+for pipeline in cfg.get("pipelines", []):
+    if pipeline.get("type") == "chatqa":
+        break
+else:
+    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
 
 
 # Test prompts for basic functionality testing

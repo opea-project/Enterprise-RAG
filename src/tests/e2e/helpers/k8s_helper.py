@@ -22,3 +22,13 @@ class K8sHelper:
                 # Extract and decode the base64-encoded password
                 encoded_password = secret.data.get("admin-password")
                 return base64.b64decode(encoded_password).decode().strip()
+
+    def list_namespaces(self):
+        """List all namespaces in the Kubernetes cluster"""
+        namespaces = kr8s.get("namespaces")
+        return [ns.name for ns in namespaces]
+
+    def list_pods(self, namespace):
+        """List all pods in the specified namespace"""
+        pods = kr8s.get("pods", namespace=namespace)
+        return [pod.name for pod in pods]

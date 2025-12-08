@@ -39,6 +39,7 @@
       ansible.builtin.include_role:
         name: data_consistency_check
       tags:
+        - install
         - pre-upgrade
         - data-consistency
 
@@ -213,9 +214,6 @@
     - name: Load upgrade role defaults
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../roles/application/upgrade/defaults/main.yaml"
-      tags:
-        - pre-upgrade
-        - test-upgrade
 
     - name: Run metadata upgrade validation
       ansible.builtin.include_tasks:
@@ -240,7 +238,7 @@
         - pre-upgrade
         - test-upgrade
 
-    - name: Evaluate upgrade result
+    - name: Evaluate pre-upgrade result
       ansible.builtin.include_role:
         name: upgrade
         tasks_from: upgrade_result.yaml
@@ -253,6 +251,26 @@
         - test-upgrade
 
     # Post-tasks section (finalization and cleanup)
+
+    - name: Generate post-upgrade data consistency report
+      ansible.builtin.include_tasks:
+        file: "{{ playbook_dir }}/../roles/application/data_consistency_check/tasks/post_upgrade_check.yaml"
+        apply:
+          tags:
+            - install
+      when: is_upgrade_mode | default(false) | bool and run_data_consistency_verification | default(true) | bool
+      tags:
+        - install
+
+    - name: Verify data consistency between pre and post upgrade
+      ansible.builtin.include_tasks:
+        file: "{{ playbook_dir }}/../roles/application/data_consistency_check/tasks/verify_consistency.yaml"
+        apply:
+          tags:
+            - install
+      when: is_upgrade_mode | default(false) | bool and run_data_consistency_verification | default(true) | bool
+      tags:
+        - install
 
     - name: Remove log directory
       ansible.builtin.file:

@@ -1,0 +1,62 @@
+# Data Consistency Verification Report
+Generated: {{ ansible_date_time.iso8601 }}
+
+---
+
+## Summary
+
+**Overall Status: {{ 'PASSED ✓' if verification_passed else 'FAILED ✗' }}**
+
+Total components verified: {{ verification_results | length }}
+- Passed: {{ verification_results | selectattr('status', 'equalto', 'PASSED') | list | length }}
+- Failed: {{ verification_results | selectattr('status', 'equalto', 'FAILED') | list | length }}
+- Skipped: {{ verification_results | selectattr('status', 'equalto', 'SKIPPED') | list | length }}
+- Warnings: {{ verification_results | selectattr('status', 'equalto', 'WARNING') | list | length }}
+- Info: {{ verification_results | selectattr('status', 'equalto', 'INFO') | list | length }}
+
+---
+
+## Component Details
+
+{% for result in verification_results %}
+### {{ result.component }}{% if result.mapped_to is defined and result.mapped_to %} → {{ result.mapped_to }}{% endif %}
+
+**Status: {{ result.status }}**
+
+{% if result.reason is defined %}
+**Reason:** {{ result.reason }}
+
+{% elif result.details is defined %}
+| Metric | Pre-Upgrade | Post-Upgrade | Match |
+|--------|-------------|--------------|-------|
+{% for detail in result.details %}
+| {{ detail.metric }} | {{ detail.pre_value }} | {{ detail.post_value }} | {{ '✓' if detail.match else '✗' }} |
+{% endfor %}
+
+{% endif %}
+---
+
+{% endfor %}
+
+## Configuration
+
+{% if is_upgrade_mode %}
+**Upgrade Mode:** Enabled
+
+**Component Mappings:**
+{% if consistency_config.mappings is defined and consistency_config.mappings | length > 0 %}
+{% for mapping in consistency_config.mappings %}
+- {{ mapping.old_component }} → {{ mapping.new_component if mapping.new_component else '(removed)' }}
+{% endfor %}
+{% else %}
+- No custom mappings configured
+{% endif %}
+{% else %}
+**Upgrade Mode:** Disabled (standard comparison)
+{% endif %}
+
+---
+
+**Reports Used:**
+- Pre-upgrade: `consistency-report.pre.yaml`
+- Post-upgrade: `consistency-report.post.yaml`

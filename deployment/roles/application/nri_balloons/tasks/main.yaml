@@ -145,6 +145,54 @@
   tags:
     - install
 
+- name: Find pods with custom vLLM container name
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ item }}"
+  loop: "{{ query('kubernetes.core.k8s', kind='Namespace', kubeconfig=kubeconfig) | map(attribute='metadata.name') | list }}"
+  register: all_pods
+  when: balloons.vllm_custom_name is defined
+  tags:
+    - install
+
+- name: Filter pods containing custom vLLM container
+  ansible.builtin.set_fact:
+    vllm_custom_pods: |
+      {% set filtered_pods = [] %}
+      {% for result in all_pods.results | selectattr('resources', 'defined') %}
+        {% for pod in result.resources | selectattr('spec', 'defined') | selectattr('spec.containers', 'defined') %}
+          {% for container in pod.spec.containers %}
+            {% if balloons.vllm_custom_name in container.name %}
+              {% set _ = filtered_pods.append({'name': pod.metadata.name, 'namespace': pod.metadata.namespace}) %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endfor %}
+      {{ filtered_pods | unique | to_json }}
+  when: balloons.vllm_custom_name is defined and all_pods.results is defined
+  tags:
+    - install
+
+- name: Parse vllm_custom_pods JSON
+  ansible.builtin.set_fact:
+    vllm_custom_pods: "{{ vllm_custom_pods | from_json }}"
+  when: balloons.vllm_custom_name is defined and vllm_custom_pods is defined
+  tags:
+    - install
+
+- name: Restart pods with custom vLLM container to apply balloons policy
+  kubernetes.core.k8s:
+    kind: Pod
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace }}"
+    state: absent
+    wait: true
+    wait_timeout: 60
+  loop: "{{ vllm_custom_pods }}"
+  when: balloons.vllm_custom_name is defined and vllm_custom_pods is defined and vllm_custom_pods | length > 0
+  tags:
+    - install
+
 - name: Uninstall NRI balloons policy
   ansible.builtin.include_tasks:
     file: uninstall.yaml

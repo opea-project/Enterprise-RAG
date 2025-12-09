@@ -18,16 +18,26 @@ spec:
       values:
       - vllm
       - edp-vllm
+{% if balloons.vllm_custom_name is defined %}
+      - {{ balloons.vllm_custom_name }}
+{% endif %}
       - torchserve-reranking
       - torchserve-embedding
   balloonTypes:
   - name: reserved
     minCPUs: 1
   - name: vllm-balloon
+{% if balloons.vllm_custom_name is defined %}
+    minCPUs: 1
+    minBalloons: 1
+    maxBalloons: {{ cpus_per_numa_node }}
+    maxCPUs: {{ cpus_per_numa_node }}
+{% else %}
     minCPUs: {{ vllm_cpus if amx_supported and (vllm_cpus | int) > 0 and (maxBalloonsVLLM | int) != 0 and not gaudi else -1 }}
     maxCPUs: {{ vllm_cpus if amx_supported and (vllm_cpus | int) > 0 and (maxBalloonsVLLM | int) != 0 and not gaudi else -1 }}
     minBalloons: {{ maxBalloonsVLLM if not gaudi and (vllm_cpus | int) > 0 else 0 }}
     maxBalloons: {{ maxBalloonsVLLM if not gaudi and (vllm_cpus | int) > 0 else 0 }}
+{% endif %}
     allocatorTopologyBalancing: true
     preferNewBalloons: true
     loads:
@@ -38,10 +48,17 @@ spec:
       values:
       - vllm
       - edp-vllm
+{% if balloons.vllm_custom_name is defined %}
+      - {{ balloons.vllm_custom_name }}
+{% endif %}
   - name: torchserve-reranking-balloon
     minCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
     maxCPUs: {{ reranker_cpus if (amx_supported or gaudi) and (reranker_cpus | int) > 0 and (maxBalloonsReranker | int) != 0 else -1 }}
+{% if balloons.vllm_custom_name is defined %}
+    minBalloons: 0
+{% else %}
     minBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
+{% endif %}
     maxBalloons: {{ maxBalloonsReranker if (reranker_cpus | int) > 0 else 0 }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true
@@ -55,7 +72,11 @@ spec:
   - name: torchserve-embedding-balloon
     minCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
     maxCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
+{% if balloons.vllm_custom_name is defined %}
+    minBalloons: 0
+{% else %}
     minBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
+{% endif %}
     maxBalloons: {{ maxBalloonsEmbedding if (embedding_cpus | int) > 0 else 0 }}
     allocatorTopologyBalancing: true
     preferNewBalloons: true

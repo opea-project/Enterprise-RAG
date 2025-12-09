@@ -20,6 +20,7 @@
     reranker_cpus: "{{ RERANKER_CPUS }}"
     embedding_cpus: "{{ EMBEDDING_CPUS }}"
     maxReplicasGaudi_VLLM: "{{ maxReplicasGaudi_VLLM }}"
+    cpus_per_numa_node: "{{ item.value.cpus_per_numa_node }}"
   tags:
     - install
 

@@ -35,6 +35,25 @@
         - uninstall
         - pre-upgrade
   tasks:
+    - name: Pre-install health check
+      ansible.builtin.include_role:
+        name: check_pods
+      vars:
+        check_pods_no_wait: true
+        check_pods_no_fail: true
+        check_pods_store_result: true
+      tags:
+        - install
+        - pre-upgrade
+
+    - name: Store pre-install health check result
+      set_fact:
+        pre_install_health_check: "{{ check_pods_result }}"
+      when: check_pods_result is defined
+      tags:
+        - install
+        - pre-upgrade
+
     - name: Generate data consistency report
       ansible.builtin.include_role:
         name: data_consistency_check
@@ -210,10 +229,13 @@
         - install
         - uninstall
 
-    # Pre-upgrade validation and reporting
-    - name: Load upgrade role defaults
-      ansible.builtin.include_vars:
-        file: "{{ playbook_dir }}/../roles/application/upgrade/defaults/main.yaml"
+    - name: Detect upgrade mode from tags
+      set_fact:
+        is_upgrade_mode: true
+      when: "'pre-upgrade' in ansible_run_tags or 'test-upgrade' in ansible_run_tags"
+      tags:
+        - pre-upgrade
+        - test-upgrade
 
     - name: Run metadata upgrade validation
       ansible.builtin.include_tasks:
@@ -249,6 +271,53 @@
       tags:
         - pre-upgrade
         - test-upgrade
+
+    - name: Post-install health check
+      ansible.builtin.include_role:
+        name: check_pods
+      vars:
+        check_pods_no_fail: "{{ is_upgrade_mode | default(false) | bool }}"
+        check_pods_store_result: "{{ is_upgrade_mode | default(false) | bool }}"
+      tags:
+        - install
+        - uninstall
+
+    - name: Store post-install health check result
+      set_fact:
+        post_install_health_check: "{{ check_pods_result }}"
+      when: is_upgrade_mode | default(false) | bool and check_pods_result is defined
+      tags:
+        - install
+
+    - name: Evaluate upgrade health checks
+      block:
+        - name: Display post-upgrade health check status
+          debug:
+            msg: "Post-upgrade health check: {{ post_install_health_check.status }}"
+
+        - name: Report upgrade health assessment
+          debug:
+            msg: >
+              Upgrade health assessment: {{
+                'SUCCESS - All pods are healthy' if post_install_health_check.status == 'success'
+                else 'FAILED - Health check failed with ' ~ (post_install_health_check.undesirable_pods | length) ~ ' problematic pod(s)'
+              }}
+
+        - name: Fail if post-upgrade health check shows issues
+          fail:
+            msg: |
+              Upgrade health check failed: System has unhealthy pods after deployment.
+
+              Post-upgrade issues:
+                - Undesirable pods: {{ post_install_health_check.undesirable_pods | length }}
+                - Not ready containers: {{ post_install_health_check.not_ready_containers | length }}
+                - Problematic pods: {{ post_install_health_check.undesirable_pods }}
+
+              Please review and fix the deployment issues before proceeding.
+          when: post_install_health_check.status != 'success'
+      when: is_upgrade_mode | default(false) | bool and post_install_health_check is defined
+      tags:
+        - install
 
     # Post-tasks section (finalization and cleanup)
 
@@ -288,10 +357,3 @@
         - "{{ tmp_dir }}"
       tags:
         - install
-
-    - name: Verify if all pods are in desired state
-      ansible.builtin.include_role:
-        name: check_pods
-      tags:
-        - install
-        - uninstall

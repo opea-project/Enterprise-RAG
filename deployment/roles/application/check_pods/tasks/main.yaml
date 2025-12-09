@@ -135,6 +135,30 @@
         - restore
         - uninstall
 
+    - name: Store health check result
+      set_fact:
+        check_pods_result:
+          status: >-
+            {{
+              'failed' if (
+                (operation_mode == 'install' and not_ready_containers | length > 0) or
+                (operation_mode == 'install' and undesirable_pods | length > 0) or
+                (operation_mode == 'uninstall' and undesirable_pods | length > 0) or
+                (operation_mode == 'install' and missing_namespaces | length > 0) or
+                (empty_namespaces | length > 0)
+              ) else 'success'
+            }}
+          not_ready_containers: "{{ not_ready_containers | default([]) }}"
+          undesirable_pods: "{{ undesirable_pods | default([]) }}"
+          empty_namespaces: "{{ empty_namespaces | default([]) }}"
+          missing_namespaces: "{{ missing_namespaces | default([]) }}"
+      when: check_pods_store_result | bool
+      tags:
+        - install
+        - restore
+        - uninstall
+        - pre-upgrade
+
     - name: Failure summary message
       fail:
         msg: >-
@@ -152,11 +176,12 @@
               if operation_mode == 'install' and missing_namespaces | length > 0 else "")
             ) | trim
           }}
-      when: (operation_mode == 'install' and not_ready_containers | length > 0) or
+      when: (not check_pods_no_fail | bool) and (
+            (operation_mode == 'install' and not_ready_containers | length > 0) or
             (operation_mode == 'install' and undesirable_pods | length > 0) or
             (operation_mode == 'uninstall' and undesirable_pods | length > 0) or
             (operation_mode == 'install' and missing_namespaces | length > 0) or
-            (empty_namespaces | length > 0)
+            (empty_namespaces | length > 0))
       tags:
         - install
         - restore
@@ -178,10 +203,26 @@
         - uninstall
 
   rescue:
+    - name: Store health check result on rescue
+      set_fact:
+        check_pods_result:
+          status: 'failed'
+          error: "Role execution failed after {{ execution_counter | default(1) }} attempts."
+          not_ready_containers: "{{ not_ready_containers | default([]) }}"
+          undesirable_pods: "{{ undesirable_pods | default([]) }}"
+          empty_namespaces: "{{ empty_namespaces | default([]) }}"
+          missing_namespaces: "{{ missing_namespaces | default([]) }}"
+      when: check_pods_store_result | bool
+      tags:
+        - install
+        - restore
+        - uninstall
+        - pre-upgrade
+
     - name: Return failed status after maximum retries
       fail:
         msg: "Role execution failed after {{ check_pods_role_retries | default(5) }} attempts."
-      when: (execution_counter | int) >= (check_pods_role_retries | default(5))
+      when: (not check_pods_no_fail | bool) and (execution_counter | int) >= (check_pods_role_retries | default(5) if not check_pods_no_wait | bool else 1)
       tags:
         - install
         - restore
@@ -190,7 +231,7 @@
     - name: Wait 60 seconds before retry
       pause:
         seconds: 60
-      when: (execution_counter | int) < (check_pods_role_retries | default(5))
+      when: (not check_pods_no_wait | bool) and (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
         - restore
@@ -199,7 +240,7 @@
     - name: Retry the role on failure
       include_role:
         name: check_pods
-      when: (execution_counter | int) < (check_pods_role_retries | default(5))
+      when: (not check_pods_no_wait | bool) and (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
         - restore

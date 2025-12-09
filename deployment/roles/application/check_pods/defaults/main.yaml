@@ -3,3 +3,6 @@
 
 ---
 check_pods_role_retries: 10
+check_pods_no_wait: false
+check_pods_no_fail: false
+check_pods_store_result: false

@@ -11,4 +11,6 @@ description: >-
 type: application
 
 version: 0.1.4
-appVersion: "2.5.0"
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG

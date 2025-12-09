@@ -553,6 +553,13 @@ loki:
   ### ----------------------------
   loki:
 
+    ### Storage configuration
+    storage:
+      bucketNames:
+        chunks: loki-chunks
+        ruler: loki-ruler
+        admin: loki-admin
+
     ### HA/replication
     # Version for single node deployment (required for single node setups).
     # **Warning** this disables HA for write path.

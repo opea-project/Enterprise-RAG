@@ -4,3 +4,6 @@ apiVersion: v2
 name: traces-instr
 type: application
 version: 1.0.0
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG

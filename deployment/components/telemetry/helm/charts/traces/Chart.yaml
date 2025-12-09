@@ -4,6 +4,9 @@ apiVersion: v2
 name: traces
 type: application
 version: 1.0.0
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG
 
 dependencies:
 
@@ -15,7 +18,7 @@ dependencies:
   alias: tempo
   condition: tempo.enabled
   repository: https://grafana.github.io/helm-charts
-  version: "*"
+  version: 1.23.3
   tags:
   - traces
   - backend
@@ -24,11 +27,10 @@ dependencies:
 # OpenTelemetry operator
 #########################################################
 - name: opentelemetry-operator
-  version: "*"
+  version: 0.97.1
   alias: otel-operator
   condition: otel-operator.enabled
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts
   tags:
   - traces
   - collector
-

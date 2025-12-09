@@ -4,13 +4,13 @@
 apiVersion: v2
 name: chat-history
 description: Chat History Helm chart
-
 type: application
-
-version: 0.1.0
-appVersion: "1.16.0"
+version: 0.1.1
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG
 
 dependencies:
   - name: ferretdb
-    version: "0.1.4"
+    version: "*"
     repository: "file://../ferretdb"

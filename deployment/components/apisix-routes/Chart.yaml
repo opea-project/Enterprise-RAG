@@ -1,4 +1,7 @@
 apiVersion: v2
 name: auth-apisix-crds
 description: A Helm chart with APISIX CRDs for backend services with authentication
-version: 2.0.0
+version: 2.0.1
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG

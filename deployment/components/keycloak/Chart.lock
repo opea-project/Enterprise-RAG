@@ -4,6 +4,6 @@ dependencies:
   version: 7.1.4
 - name: postgresql
   repository: file://../postgresql
-  version: 0.1.0
-digest: sha256:55279da082e292a2f9ec0473c0a0f3a43c1d19c6f5534db91e7d57418a8b176b
-generated: "2025-11-04T04:57:45.19310039-08:00"
+  version: 0.1.1
+digest: sha256:b2d6a047d39f13da99ac6b5a7935719c53ebee872e19a64c4914f776b0ce890f
+generated: "2025-12-04T15:31:50.380502604+01:00"

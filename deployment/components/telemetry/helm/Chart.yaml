@@ -3,25 +3,28 @@
 apiVersion: v2
 name: telemetry
 type: application
-version: 1.0.0
+version: 1.0.1
+appVersion: "2.0.0"
+annotations:
+  app.kubernetes.io/part-of: ERAG
 
 dependencies:
   # built-in sub charts
   - name: logs
-    version: "1.0.0"
+    version: "*"
     condition: logs.enabled
   - name: traces
-    version: "1.0.0"
+    version: "*"
     condition: traces.enabled
   - name: traces-instr
-    version: "1.0.0"
+    version: "*"
     condition: traces-instr.enabled
   # external/3rd party subcharts
   - name: kube-prometheus-stack
     condition: kube-prometheus-stack.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: "*"
+    version: 77.12.0
   - name: prometheus-redis-exporter
     condition: prometheus-redis-exporter.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: "*"
+    version: 6.17.0

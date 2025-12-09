@@ -10,14 +10,18 @@ import { ChatTurn } from "@/types";
 export const createChatTurnsFromHistory = (
   history: ChatHistoryEntry[],
 ): ChatTurn[] =>
-  history.map(({ question, answer, metadata }) => ({
-    id: uuidv4(),
-    question,
-    answer,
-    error: null,
-    isPending: false,
-    sources: metadata?.reranked_docs ?? [],
-  }));
+  history.map(({ question, answer, metadata }) => {
+    const sources = metadata?.reranked_docs ?? [];
+    const parsedSources = parseSources(sources);
+    return {
+      id: uuidv4(),
+      question,
+      answer,
+      error: null,
+      isPending: false,
+      sources: parsedSources.length > 0 ? parsedSources : [],
+    };
+  });
 
 export const parseSources = (sources: SourceDocumentType[]) =>
   sources.reduce((parsedSources, source) => {

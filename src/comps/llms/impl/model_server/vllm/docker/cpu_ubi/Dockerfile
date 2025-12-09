@@ -1,24 +1,38 @@
-# Multi-stage vLLM Dockerfile for CPU-only UBI 10
+# Multi-stage vLLM Dockerfile for Intel Xeon CPUs on UBI9.
+# Stage 0: Toolchain setup for UBI9
 # Stage 1: Build environment with all development tools
 # Stage 2: Build vLLM wheel
 # Stage 3: Minimal runtime environment with vLLM installed
 #
 # Build arguments:
 #   PYTHON_VERSION=3.13|3.12 (default)|3.11|3.10
-#   VLLM_VERSION=v0.11.0 (default)|latest|main|<tag>|<branch>
+#   VLLM_VERSION=v0.12.0 (default)|<tag>|<branch>
 #   VLLM_CPU_DISABLE_AVX512=false (default)|true
 #   VLLM_CPU_AVX512BF16=true (default)|false
 #   VLLM_CPU_AVX512VNNI=true (default)|false
+#   VLLM_CPU_AMXBF16=true (default)|false
+
+# UBI9 ships an older GCC lacking full AVX512 BF16 / AMX support, so we enable gcc-toolset-13.
+###############################
+# Stage 0: Toolchain Setup
+###############################
+# UBI9:9.7-1764794285 - released on 04.12.2025 (dd/mm/yyyy)
+FROM redhat/ubi9:9.7-1764794285 AS toolchain-ubi9
+RUN dnf -y update && dnf install -y gcc gcc-c++ gcc-toolset-13 && dnf clean all
+ENV CC=/opt/rh/gcc-toolset-13/root/usr/bin/gcc
+ENV CXX=/opt/rh/gcc-toolset-13/root/usr/bin/g++
 
 ###############################
 # Stage 1: Base Image
 ###############################
-FROM registry.access.redhat.com/ubi10 AS base
+FROM toolchain-ubi9 AS base
 
 ARG PYTHON_VERSION=3.12
 ARG PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
-ARG VLLM_VERSION="v0.11.0"
+# Last commit of v0.12.0 release: 4fd9d6a85c00ac0186aa9abbeff73fc2ac6c721e, 03.12.2025 (dd/mm/yyyy)
+ARG VLLM_VERSION="releases/v0.12.0"
 ARG NUMACTL_VERSION=2.0.19
+ARG MARCH="sapphirerapids"
 
 USER 0
 
@@ -26,7 +40,7 @@ WORKDIR /workspace
 
 RUN --mount=type=cache,target=/var/cache/dnf,sharing=locked \
     dnf -y update && \
-    INSTALL_PKGS="python3 python3-devel git wget gcc gcc-c++ cmake make" && \
+    INSTALL_PKGS="python3 python3-devel git wget cmake make" && \
     dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     dnf clean all
@@ -36,8 +50,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     export PATH="/root/.local/bin:/root/.cargo/bin:$PATH"
 
 # Set build environment variables
-ENV CFLAGS="-O3 -mavx2 -mf16c -fopenmp"
+# Redundant for -march=sapphirerapids and onwards (https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html):
+# -mavx2 -mf16c -mavx512f -mavx512vnni -mavx512bf16 -mamx-tile -mamx-int8 -mamx-bf16
+ENV CFLAGS="-march=${MARCH} -O3 -fopenmp"
 ENV CXXFLAGS="${CFLAGS}"
+ENV CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
 ENV LD_LIBRARY_PATH="/usr/local/lib:"
 ENV PATH="/root/.local/bin:/root/.cargo/bin:$PATH"
 ENV VIRTUAL_ENV="/opt/venv"
@@ -85,10 +102,14 @@ ARG GIT_REPO_CHECK=0
 ARG VLLM_CPU_DISABLE_AVX512=false
 ARG VLLM_CPU_AVX512BF16=true
 ARG VLLM_CPU_AVX512VNNI=true
+# Support for building with AMXBF16 ISA
+ARG VLLM_CPU_AMXBF16=true
 
 ENV VLLM_CPU_DISABLE_AVX512=${VLLM_CPU_DISABLE_AVX512}
 ENV VLLM_CPU_AVX512BF16=${VLLM_CPU_AVX512BF16}
 ENV VLLM_CPU_AVX512VNNI=${VLLM_CPU_AVX512VNNI}
+ENV VLLM_CPU_AMXBF16=${VLLM_CPU_AMXBF16}
+ENV VLLM_TARGET_DEVICE=cpu
 
 WORKDIR /workspace/vllm
 
@@ -102,12 +123,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Build vLLM wheel
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/workspace/vllm/.deps,sharing=locked \
-    VLLM_TARGET_DEVICE=cpu python3 setup.py bdist_wheel
+    python3 setup.py bdist_wheel --dist-dir=dist
 
 ###############################
 # Stage 3: Runtime Environment
 ###############################
-FROM registry.access.redhat.com/ubi10 AS runtime
+FROM redhat/ubi9:9.7-1764794285 AS runtime
 
 ARG PYTHON_VERSION=3.12
 ARG GPERFTOOLS_VERSION=2.17.2
@@ -115,7 +136,7 @@ ARG GPERFTOOLS_VERSION=2.17.2
 # Runtime environment variables
 # https://docs.vllm.ai/en/stable/getting_started/installation/cpu.html#related-runtime-environment-variables
 # Larger space can support more concurrent requests, longer context length.
-ARG VLLM_CPU_KVCACHE_SPACE=64
+ARG VLLM_CPU_KVCACHE_SPACE=40
 ARG VLLM_CPU_OMP_THREADS_BIND=auto
 # - Note, it is recommended to manually reserve 1 CPU for vLLM front-end process when world_size == 1.
 #   - Unset VLLM_CPU_NUM_OF_RESERVED_CPU for world size > 1
@@ -173,10 +194,10 @@ cd /tmp/gperftools-build && \
 
 # Install vLLM wheel using Python 3.12 (no UV needed in runtime)
 ARG PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
-RUN --mount=type=bind,from=builder,src=/workspace/vllm/dist,target=/tmp \
+RUN --mount=type=bind,from=builder,src=/workspace/vllm/dist,target=dist \
     echo "Python version:" && python3 --version && \
     python3 -m pip install --upgrade pip && \
-    python3 -m pip install /tmp/*.whl && \
+    python3 -m pip install dist/*.whl && \
     ldconfig
 
 # Set up environment
@@ -192,8 +213,7 @@ RUN useradd -m -u 1001 -g root -s /bin/bash vllm
 
 # Verify installation with Python 3.12
 RUN python3 -c "import sys; print(f'Python version: {sys.version}')" && \
-    python3 -c "import vllm; print(f'vLLM {vllm.__version__} ready for runtime')" && \
-    numactl --version
+    python3 -c "import vllm; print(f'vLLM {vllm.__version__} ready for runtime')"
 
 USER 1001
 

@@ -1,6 +1,6 @@
 dependencies:
 - name: ferretdb
   repository: file://../ferretdb
-  version: 0.1.4
-digest: sha256:37c08c369f7daade04d9975375c7fde3a08ed7291c8e069d2f5fcf34180edb51
-generated: "2025-12-04T15:32:17.513313605+01:00"
+  version: 0.1.5
+digest: sha256:a51244a409b5e3ae2aae8181354acf88bb3f2aa8e46f593d2c10c95328673c01
+generated: "2025-12-09T13:50:37.372287973+01:00"

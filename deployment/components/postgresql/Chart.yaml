@@ -5,7 +5,7 @@ apiVersion: v2
 name: postgresql
 description: A simple PostgreSQL Helm chart for ERAG components
 type: application
-version: 0.1.1
-appVersion: "2.0.0"
+version: 0.1.2
+appVersion: "2.0.1"
 annotations:
   app.kubernetes.io/part-of: ERAG

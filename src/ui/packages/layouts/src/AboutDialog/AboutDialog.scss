@@ -1,0 +1,27 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.about-dialog {
+  @apply flex flex-col px-4 pb-4 pt-0 text-sm leading-relaxed;
+
+  h2 {
+    @apply text-light-accent dark:text-dark-accent text-lg font-semibold;
+  }
+
+  p {
+    @apply mb-2;
+
+    &.app-version {
+      @apply mb-4;
+    }
+  }
+
+  a {
+    @apply inline-flex items-center underline;
+    @apply text-light-primary dark:text-dark-accent;
+
+    &:not(:last-child) {
+      @apply mb-2;
+    }
+  }
+}

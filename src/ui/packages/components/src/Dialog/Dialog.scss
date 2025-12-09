@@ -34,16 +34,21 @@
       }
 
       & button {
-        @apply text-light-text-inverse dark:text-dark-text-primary;
+        @apply text-light-text-primary dark:text-dark-text-primary;
         @apply focus-visible:outline-light-focus-inverse dark:focus-visible:outline-dark-focus;
       }
 
       &.dialog__header--plain {
         @apply bg-transparent;
-        @apply text-light-text-primary dark:text-dark-text-primary;
 
         & h2 {
           @apply text-base;
+          @apply text-light-text-primary dark:text-dark-text-primary;
+        }
+
+        & button {
+          @apply text-light-text-primary dark:text-dark-text-primary;
+          @apply focus-visible:outline-light-focus-inverse dark:focus-visible:outline-dark-focus;
         }
       }
     }

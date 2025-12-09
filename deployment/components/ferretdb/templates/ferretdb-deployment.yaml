@@ -101,6 +101,10 @@ spec:
 
           chmod 0400 /ferretdb-config/postgresql-url
           echo "PostgreSQL is ready!"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "64Mi"
         volumeMounts:
         - name: ferretdb-pass
           mountPath: /secret

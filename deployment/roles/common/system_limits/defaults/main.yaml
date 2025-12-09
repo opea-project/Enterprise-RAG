@@ -1,0 +1,14 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Sysctl configuration values
+sysctl_inotify_max_instances: 8192
+sysctl_inotify_max_watches: 524288
+sysctl_file_max: 2097152
+
+# User limits configuration
+limits_nofile_soft: 1048576
+limits_nofile_hard: 1048576
+limits_nproc_soft: 1048576
+limits_nproc_hard: 1048576

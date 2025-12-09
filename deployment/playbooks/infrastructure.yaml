@@ -40,6 +40,17 @@
         - configure
         - never
 
+- name: Configure system limits
+  hosts: k8s_cluster
+  become: true
+  tags:
+    - install
+    - system-setup
+  tasks:
+    - name: Apply system limits for Enterprise RAG
+      ansible.builtin.include_role:
+        name: common/system_limits
+
 - name: Configure containerd registry mirrors
   hosts: k8s_cluster
   tags:
@@ -74,20 +85,12 @@
           }}
       when: insecure_registry is defined and local_registry | default(false) | bool and deploy_k8s
 
-- name: Install Kubernetes cluster
-  tags:
-    - install
-    - never
-  when:
-    - deploy_k8s
-  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
-
-- name: Install NFS utilities
+- name: Pre-installation tasks
   hosts: k8s_cluster
   become: true
   tags:
+    - pre-install
     - install
-    - post-install
   tasks:
     - name: Install NFS utilities on Ubuntu
       ansible.builtin.package:
@@ -99,6 +102,18 @@
       when:
         - ansible_distribution == "Ubuntu"
         - install_csi == "netapp-trident"
+
+    - name: Configure system limits
+      ansible.builtin.include_role:
+        name: common/system_limits
+
+- name: Install Kubernetes cluster
+  tags:
+    - install
+    - never
+  when:
+    - deploy_k8s
+  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
 
 - name: Pre-deletion warnings
   become: false
@@ -151,11 +166,7 @@
         name: cluster
         tasks_from: post_installation
       tags:
-        - install
-        - post-install
-        - velero-delete
-        - delete
-        - never
+        - all
 
 - name: Remove Kubernetes cluster
   tags:

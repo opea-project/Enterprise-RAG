@@ -24,6 +24,9 @@ To install additional infrastructure components to your cluster:
      - `velero`: `true` if you want to install the Velero backup tool.
 
 > [!NOTE]
+> The `pre-install` tag automatically configures system limits (file descriptors, process limits, inotify watches, and kernel parameters) on all cluster nodes. These configurations are essential for optimal Enterprise RAG performance and are applied before the main installation process.
+
+> [!NOTE]
 > The local registry option creates a Kubernetes pod with registry functionality and configures Docker and containerd settings to enable pushing and pulling images to the registry pod. This is particularly useful for multi-node clusters where a standard Docker registry would only be accessible from a single node.
 
 2. **Validate hardware resources and `config.yaml`:**
@@ -34,10 +37,17 @@ To install additional infrastructure components to your cluster:
 > [!NOTE]
 > If this is a Gaudi deployment, add the flag `-e is_gaudi_platform=true`.
 
-3. **Install infrastructure components (NFS, Gaudi operator, local registry, or others):**
+3. **Configure system limits (recommended before installation):**
 
    ```sh
-    ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ansible-playbook -K playbooks/infrastructure.yaml --tags pre-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+   ```
+   This will configure system limits on all cluster nodes including file descriptors, process limits, inotify watches, and kernel parameters required for Enterprise RAG.
+
+4. **Install infrastructure components (NFS, Gaudi operator, local registry, or others):**
+
+   ```sh
+   ansible-playbook -K playbooks/infrastructure.yaml --tags post-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
    ```
    This will install and configure the NFS server, Gaudi operator, local registry, or Velero as specified in your configuration.
    

@@ -32,3 +32,17 @@ class K8sHelper:
         """List all pods in the specified namespace"""
         pods = kr8s.get("pods", namespace=namespace)
         return [pod.name for pod in pods]
+
+    def get_pods_by_label(self, namespace, label_selector):
+        """Get a list of kr8s Pod objects matching a label selector in a namespace"""
+        logger.debug(f"Getting pods with label selector '{label_selector}' in namespace '{namespace}'")
+        return kr8s.get("pods", namespace=namespace, label_selector=label_selector)
+
+    def exec_in_pod(self, pod, command):
+        """Execute a command in a pod's container"""
+        logger.debug(f"Executing command '{command}' in pod '{pod.name}'")
+        try:
+            return pod.exec(command)
+        except Exception as e:
+            logger.error(f"Failed to execute command in pod '{pod.name}': {e}")
+            raise  # Re-raise the exception to fail the test

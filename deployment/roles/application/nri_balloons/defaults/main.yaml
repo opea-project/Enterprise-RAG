@@ -7,6 +7,7 @@ balloons:
   namespace: "kube-system"
   wait_timeout: 300
   throughput_mode: true
+  max_replicas_per_node: 10
   helm:
     repo_url: "https://containers.github.io/nri-plugins"
     repo_name: "nri-plugins"

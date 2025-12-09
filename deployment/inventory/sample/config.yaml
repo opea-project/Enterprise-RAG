@@ -96,6 +96,7 @@ balloons:
   wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
   throughput_mode: true # set to true to optimize for horizontal scaling
   memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested; valid range: 0.0 to 1.0
+  max_replicas_per_node: 10 # maximum number of each inference service replicas per node; helps to limit overloading nodes with too many pods
 
 pipelines:
   - namespace: chatqa

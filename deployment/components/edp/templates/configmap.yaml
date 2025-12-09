@@ -5,7 +5,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: edp-configmap
-  namespace: edp
+  namespace: {{ .Release.Namespace }}
 data:
   HIERARCHICAL_DATAPREP_ENDPOINT: {{ if .Values.hierarchicalDataprep.enabled }}{{ print "http://" .Values.hierarchicalDataprep.nameOverride ":9399/v1/hierarchical_dataprep" | quote }}{{ else }}""{{ end }}
   TEXT_EXTRACTOR_ENDPOINT: {{ if not .Values.hierarchicalDataprep.enabled }}{{ print "http://" .Values.textExtractor.nameOverride ":9398/v1/text_extractor" | quote }}{{ else }}""{{ end }}
@@ -22,3 +22,29 @@ data:
   DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}
   FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"
   PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK: {{ .Values.presignedUrlCredentialsSystemFallback | quote }}
+  {{- /* Query TorchServe configuration from chatqa namespace */ -}}
+  {{- $torchserveReplicas := 1 }}
+  {{- $torchserveBatchSize := 32 }}
+  {{- $torchserveMaxWorkers := 4 }}
+  {{- /* Lookup TorchServe deployment */ -}}
+  {{- $torchserveDeployments := lookup "apps/v1" "Deployment" "chatqa" "" }}
+  {{- if $torchserveDeployments }}
+    {{- range $torchserveDeployments.items }}
+      {{- if hasPrefix "torchserve-embedding-svc-" .metadata.name }}
+        {{- $torchserveReplicas = .spec.replicas }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- /* Lookup TorchServe ConfigMap for batch size and workers */ -}}
+  {{- $torchserveConfigMap := lookup "v1" "ConfigMap" "chatqa" "torchserve-embedding-config" }}
+  {{- if $torchserveConfigMap }}
+    {{- if $torchserveConfigMap.data.TORCHSERVE_BATCH_SIZE }}
+      {{- $torchserveBatchSize = $torchserveConfigMap.data.TORCHSERVE_BATCH_SIZE | int }}
+    {{- end }}
+    {{- if $torchserveConfigMap.data.TORCHSERVE_MAX_WORKERS }}
+      {{- $torchserveMaxWorkers = $torchserveConfigMap.data.TORCHSERVE_MAX_WORKERS | int }}
+    {{- end }}
+  {{- end }}
+  {{- /* Calculate CELERY_BATCH_SIZE = replicas × max_workers × batch_size */ -}}
+  {{- $celeryBatchSize := mul (mul $torchserveReplicas $torchserveMaxWorkers) $torchserveBatchSize }}
+  CELERY_BATCH_SIZE: {{ $celeryBatchSize | quote }}

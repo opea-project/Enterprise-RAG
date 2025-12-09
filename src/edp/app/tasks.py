@@ -317,7 +317,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
 
     if late_chunking_enabled == "true":
         # Step 5 - Call the late chunking service and ingestion service
-        batch_size = os.getenv('BATCH_SIZE', 1) # sending requests individually due to TorchServe serialization issues
+        batch_size = 1 # sending requests individually due to TorchServe serialization issues
         file_db.late_chunking_start = datetime.datetime.now()
         file_db.ingestion_start = file_db.late_chunking_start
         file_db.status = 'late_chunking'
@@ -375,7 +375,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         self.safe_commit()
     else:
         # Step 5 - Call the embedding service and ingestion service in batches
-        batch_size = os.getenv('BATCH_SIZE', 128)
+        batch_size = int(os.getenv('BATCH_SIZE', '128'))
         file_db.embedding_start = datetime.datetime.now()
         file_db.ingestion_start = file_db.embedding_start
         file_db.status = 'embedding'
@@ -639,7 +639,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         raise Exception(f"Error while executing dataprep guardrail. {e} {response.text}")
 
     # Step 5 - Call the embedding service and ingestion service in batches
-    batch_size = os.getenv('BATCH_SIZE', 128)
+    batch_size = int(os.getenv('BATCH_SIZE', '128'))
     link_db.embedding_start = datetime.datetime.now()
     link_db.ingestion_start = link_db.embedding_start
     link_db.status = 'embedding'

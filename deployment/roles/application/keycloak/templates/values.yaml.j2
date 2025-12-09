@@ -51,6 +51,10 @@ keycloakx:
         secretKeyRef:
           name: {{ keycloak.auth.admin.password_secret_name }}
           key: admin-password
+    - name: JAVA_OPTS_APPEND
+      value: >
+        -XX:InitialRAMPercentage=50
+        -XX:MaxRAMPercentage=50
     - name: KC_CACHE
       value: "local"
     - name: KC_PROXY_HEADERS

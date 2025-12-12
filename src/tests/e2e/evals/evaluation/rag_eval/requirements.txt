@@ -31,3 +31,4 @@ tokenizers==0.21.2
 langchain-huggingface==0.3.0
 
 kr8s==0.17.4 # BSD 3-Clause License
+

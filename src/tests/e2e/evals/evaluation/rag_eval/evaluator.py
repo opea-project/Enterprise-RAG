@@ -24,13 +24,11 @@ from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
 
 # Initialize the logger for the microservice
 logger = get_opea_logger("RAG Evaluator")
-change_opea_logger_level(
-    logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
-
+change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 class Evaluator:
     def __init__(
-            self, dataset: list[dict] = None, output_dir: str = None) -> None:
+            self, dataset: list[dict] = None, output_dir: str = None, auth_file: str = None) -> None:
         """Args:
         dataset (list[dict]): The dataset for evaluation.
         output_dir (str): The directory to save results.
@@ -49,12 +47,13 @@ class Evaluator:
         self.dataset = dataset
         self.system_args = None
 
-        self.keycloak_helper = KeycloakHelper(k8s_helper=K8sHelper(), credentials_file=None)
+        k8s_helper = K8sHelper()
+        self.keycloak_helper = KeycloakHelper(credentials_file=auth_file, k8s_helper=k8s_helper)
+        self.keycloak_helper.remove_required_actions(self.keycloak_helper.admin_access_token,
+                                                     self.keycloak_helper.erag_admin_username)
         self.chatqa_api_helper = ChatQaApiHelper(keycloak_helper=self.keycloak_helper)
-        self.edp_helper = EdpHelper(
-            keycloak_helper=self.keycloak_helper, bucket_name="default")
-        self.fingerprint_api_helper = FingerprintApiHelper(
-            self.keycloak_helper)
+        self.edp_helper = EdpHelper(keycloak_helper=self.keycloak_helper, bucket_name="default")
+        self.fingerprint_api_helper = FingerprintApiHelper(self.keycloak_helper)
 
         self.GENERATION_METRICS_LIST = [
             "bleu-avg",

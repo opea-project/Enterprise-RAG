@@ -64,7 +64,7 @@
     - delete
     - velero-delete
 
-- Name: Configure system limits
+- name: Configure system limits
   ansible.builtin.include_role:
     name: common/system_limits
   tags:

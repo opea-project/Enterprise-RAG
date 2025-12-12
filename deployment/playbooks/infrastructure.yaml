@@ -166,7 +166,7 @@
         name: cluster
         tasks_from: post_installation
       tags:
-        - all
+        - always
 
 - name: Remove Kubernetes cluster
   tags:

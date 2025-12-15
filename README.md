@@ -166,6 +166,7 @@ Submit questions, feature requests, and bug reports on the GitHub Issues page.
 # Publications
 
 Feel free to checkout articles about Intel® AI for Enterprise RAG:
+* [Securing Enterprise RAG Deployments](https://www.intel.com/content/www/us/en/content-details/870124/securing-enterprise-rag-deployments.html)
 * [Document Summarization: Transforming Enterprise Content with Intel® AI for Enterprise RAG](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Document-Summarization-Transforming-Enterprise-Content-with/post/1728252)
 * [Scaling Intel® AI for Enterprise RAG Performance: 64-Core vs 96-Core Intel® Xeon®](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Scaling-Intel-AI-for-Enterprise-RAG-Performance-64-Core-vs-96/post/1723234)
 * [Comprehensive Analysis: Intel® AI for Enterprise RAG Performance](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Comprehensive-Analysis-Intel-AI-for-Enterprise-RAG-Performance/post/1723226)

@@ -16,7 +16,7 @@
     maxBalloonsReranker: "{{ optimal_replicas[item.key].replicas }}"
     maxBalloonsEmbedding: "{{ optimal_replicas[item.key].replicas }}"
     gaudi: "{{ item.value.gaudi }}"
-    vllm_cpus: "{{ optimal_replicas[item.key].adjusted_vllm_size }}"
+    vllm_cpus: "{{ optimal_replicas[item.key].adjusted_vllm_size if vllm_custom_pods is not defined else vllm_custom_pods[0].cpu_limits }}"
     reranker_cpus: "{{ RERANKER_CPUS }}"
     embedding_cpus: "{{ EMBEDDING_CPUS }}"
     maxReplicasGaudi_VLLM: "{{ maxReplicasGaudi_VLLM }}"

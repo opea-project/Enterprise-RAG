@@ -353,7 +353,7 @@ External vLLM instances typically require more CPU resources than other containe
 
 1. **Preview available resources**: Before deploying external vLLM, run the topology preview to see available CPU resources on each node:
 
-bash```
+```
 ansible-playbook -u $USER -K playbooks/application.yaml \
   --tags topology-preview \
   -e @inventory/sample/config.yaml

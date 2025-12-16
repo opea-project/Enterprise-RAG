@@ -117,9 +117,10 @@ class Evaluator:
                 f"File {document_path} uploaded successfully. Waiting for ingestion...")
             # The file is 6.1 MB and splits into 17,508 chunks.
             # The full process (uploading, text extracting, embedding, ingesting) usually takes around 3 minutes and 46 seconds,
-            # so 4 minutes should be sufficient timeout only for being in status ingested.
+            # but can increase to more than 4 minutes on resource-constrained environments.
+            # Setting the timeout to 500 seconds should be a sufficient margin.
             file = self.edp_helper.wait_for_file_upload(
-                document_path, "ingested", timeout=240)
+                document_path, "ingested", timeout=500)
             logger.info(f"Successfully ingested {file['object_name']}.")
         else:
             logger.error(

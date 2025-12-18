@@ -1,1 +1,0 @@
-../../../../../../../../../../../src/comps/llms/impl/model_server/vllm/docker/assign_cores.sh

@@ -68,3 +68,14 @@ src/tests/e2e/evals/evaluation/rag_eval/examples/output/
 # UI test framework dependencies and results
 src/tests/node_modules
 test-results
+
+# Terraform 
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

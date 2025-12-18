@@ -45,21 +45,27 @@ Document Summarization's pipeline architecture is available [here](./docs/images
    <img alt="ChatQnA Architecture" src="./docs/images/architecture_chatqna.svg" width="900">
 </div>
 
-# Table of Contents
+# Table of Contents <!-- omit from toc -->
+
 
 1. [Intel® AI for Enterprise RAG](#intel-ai-for-enterprise-rag)
    - [Why use Intel® AI for Enterprise RAG?](#why-use-intel-ai-for-enterprise-rag)
    - [Core Features](#core-features)
-3. [Requirements](#requirements)
+     - [Pipeline Architecture](#pipeline-architecture)
+2. [Requirements](#requirements)
    - [System Requirements](#system-requirements)
    - [Software Prerequisites](#software-prerequisites)
    - [Hardware Requirements](#hardware-requirements)
-      - [Deployment on Xeon only](#deployment-on-xeon-only)
-      - [Deployment on Xeon + Gaudi Accelerator](#deployment-on-xeon--gaudi-accelerator)
-4. [Getting Started](#getting-started)
-   - [Install a Kubernetes cluster (optional - if you don't have one)](#install-a-kubernetes-cluster-optional---if-you-dont-have-one)
-   - [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
-   - [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
+     - [Deployment on Xeon only](#deployment-on-xeon-only)
+     - [Deployment on Xeon + Gaudi Accelerator](#deployment-on-xeon--gaudi-accelerator)
+3. [Getting Started](#getting-started)
+   - [Validate Hardware Requirements](#validate-hardware-requirements)
+   - [Intel Enterprise RAG Deployment - Standalone](#intel-enterprise-rag-deployment---standalone)
+     - [Install a Kubernetes cluster (optional - if you don't have one)](#install-a-kubernetes-cluster-optional---if-you-dont-have-one)
+     - [Install infrastructure components (storage, operators, backup tools)](#install-infrastructure-components-storage-operators-backup-tools)
+     - [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
+4. [Intel AI Enterprise RAG Deployment - Partner Solutions](#intel-ai-enterprise-rag-deployment---partner-solutions)
+   - [Nutanix AI & Intel® AI for Enterprise RAG](#nutanix-ai--intel-ai-for-enterprise-rag)
 5. [Documentation](#documentation)
 6. [Support](#support)
 7. [Publications](#publications)
@@ -138,11 +144,13 @@ ansible-playbook playbooks/validate.yaml --tags hardware -i inventory/test-clust
 > [!NOTE]
 > If this is a Gaudi deployment, add the additional flag `-e is_gaudi_platform=true`
 
-## Install a Kubernetes cluster (optional - if you don't have one)
+## Intel AI Enterprise RAG Deployment - Standalone
+
+### Install a Kubernetes cluster (optional - if you don't have one)
 
 Intel® AI for Enterprise RAG offers ansible automation for creating a K8s cluster. If you want to set up a K8s cluster, follow the [Cluster Deployment Guide](docs/cluster_deployment_guide.md).
 
-## Install infrastructure components (storage, operators, backup tools)
+### Install infrastructure components (storage, operators, backup tools)
 
 The Intel® AI for Enterprise RAG repository offers installation of additional infrastructure components on the deployed K8s cluster:
 - **Gaudi_operator** - dedicated for K8s clusters with nodes that use Gaudi AI accelerators
@@ -151,9 +159,15 @@ The Intel® AI for Enterprise RAG repository offers installation of additional i
 
 If your K8s cluster requires installing any of these tools, please follow the [Infrastructure Components Guide](docs/infrastructure_components_guide.md).
 
-## Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
+### Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
 
 Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Please follow the [Application Deployment Guide](docs/application_deployment_guide.md).
+
+# Intel AI Enterprise RAG Deployment - Partner Solutions
+
+## Nutanix AI & Intel® AI for Enterprise RAG
+
+Follow documentation to deploy Nutanix AI with Intel® AI for Enterprise RAG using the [Nutanix AI Deployment Guide](docs/nutanix/README.md).
 
 # Documentation
 

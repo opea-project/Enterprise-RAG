@@ -43,6 +43,12 @@ def test_retrieval_metrics():
     args = MagicMock(retrieval_metrics=True)
     main_run(args)
 
+@pytest.mark.usefixtures("allure_attach_output")
+def test_retrieval_metrics_with_skip_normalize():
+    # run retrieval metrics with skip_normalize
+    args = MagicMock(retrieval_metrics=True, skip_normalize=True)
+    main_run(args)
+
 
 @pytest.mark.skip("RAGAs metric requires additional components")
 def test_ragas_metrics():

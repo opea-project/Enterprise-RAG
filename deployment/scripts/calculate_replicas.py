@@ -70,7 +70,7 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
         memory_usage_percent = (verified_replicas_count * inference_memory_sum / node_memory_size) * 100
         return verified_replicas_count, memory_usage_percent
 
-def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent):
+def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, throughput_mode, edp_enabled, telemetry_enabled, vector_databases_enabled, memory_overcommit_buffer_percent, max_replicas_per_node):
     """
     Calculate optimal replica distribution for VLLM, reranking, and embedding services.
 
@@ -84,6 +84,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
         telemetry_enabled: Boolean flag indicating if telemetry is enabled
         vector_databases_enabled: Boolean flag indicating if vector databases are enabled
         memory_overcommit_buffer_percent: Memory buffer percentage for pod memory overcommit/burst
+        max_replicas_per_node: Maximum replicas per node to avoid exceeding pod limits
 
     Returns:
         Dict with node names as keys and calculations with metadata as values.
@@ -178,13 +179,14 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
 
         if use_fallback:
             # Fallback mode: allocate one replica set per 2 NUMA nodes
-            # Used when: (n == 0 and throughput_mode is False) OR (throughput mode cannot fit replicas)
             current_vllm_size = min(current_vllm_size, numa_node_size)
-            # Check if VLLM size meets minimum requirement (25% of original)
             if current_vllm_size < vllm_25_percent:
                 replicas = 0
             else:
                 replicas = numa_nodes_count // 2
+
+        # Apply maximum replica limit to prevent exceeding pod limits
+        replicas = min(replicas, max_replicas_per_node)
 
         # Verify memory requirements
         verified_replicas_count, memory_usage_percent = verify_memory_requirements(
@@ -251,6 +253,7 @@ if __name__ == "__main__":
     parser.add_argument('--telemetry-enabled', type=lambda x: x.lower() == 'true', required=True, help='Telemetry enabled flag')
     parser.add_argument('--vector-databases-enabled', type=lambda x: x.lower() == 'true', required=True, help='Vector databases enabled flag')
     parser.add_argument('--memory-overcommit-buffer-percent', type=float, default=0.1, help='Memory buffer percentage for pod memory overcommit/burst (default: 0.1)')
+    parser.add_argument('--max-replicas-per-node', type=int, default=10, help='Maximum replicas per node to avoid exceeding pod limits (default: 10)')
 
     args = parser.parse_args()
 
@@ -265,6 +268,7 @@ if __name__ == "__main__":
         args.edp_enabled,
         args.telemetry_enabled,
         args.vector_databases_enabled,
-        args.memory_overcommit_buffer_percent
+        args.memory_overcommit_buffer_percent,
+        args.max_replicas_per_node
     )
     sys.stdout.write(json.dumps(results))

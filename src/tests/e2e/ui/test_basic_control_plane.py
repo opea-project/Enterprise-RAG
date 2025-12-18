@@ -21,9 +21,16 @@ import allure
 import logging
 import pytest
 
-from validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
+
+# Skip all tests if chatqa pipeline is not deployed
+for pipeline in cfg.get("pipelines", []):
+    if pipeline.get("type") == "chatqa":
+        break
+else:
+    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
 
 
 # ============================================================================
@@ -35,32 +42,52 @@ logger = logging.getLogger(__name__)
 @pytest.mark.asyncio
 async def test_control_plane_navigation(chat_ui_helper):
     """
-    Test navigation to Control Plane via Admin Panel button.
+    Test navigation to Control Plane and back to Chat using data-testid.
     
     Steps:
     1. Login as admin (handled by fixture)
-    2. Click button with aria-label="Switch to Admin Panel"
-    3. Verify navigation to https://erag.com/admin-panel
+    2. Verify starting in Chat view
+    3. Click view switch button (data-testid="view-switch-btn--to-admin-panel")
+    4. Verify navigation to admin-panel
+    5. Click view switch button (data-testid="view-switch-btn--to-chat")
+    6. Verify navigation back to chat
     
     Success criteria:
-    - Admin Panel button is found and clickable
-    - URL changes to /admin-panel (Control Plane default page)
+    - Navigation to Control Plane succeeds with correct data-testid
+    - URL changes to /admin-panel
+    - Navigation back to Chat succeeds with correct data-testid
+    - URL changes back to /chat
     """
-    logger.info("Test 1: Control Plane Navigation")
+    logger.info("Test 1: Control Plane Navigation (round-trip)")
     
-    # Navigate to Control Plane
+    page = chat_ui_helper.page
+    
+    # Verify we're starting in Chat view
+    assert "/chat" in page.url, "Should start in Chat view"
+    logger.info("Assert 1: Starting in Chat view")
+    
+    # Navigate to Control Plane using data-testid
     navigation_success = await chat_ui_helper.navigate_to_control_plane()
     
-    # Assert 1: Navigation completed successfully
+    # Assert 2: Navigation completed successfully
     assert navigation_success, "Failed to navigate to Control Plane"
-    logger.info("Assert 1: Navigation to Control Plane successful")
+    logger.info("Assert 2: Navigation to Control Plane successful")
     
-    # Assert 2: URL is correct (admin-panel is the Control Plane landing page)
-    url_verified = await chat_ui_helper.verify_control_plane_url("/admin-panel")
-    assert url_verified, f"URL verification failed, expected {ERAG_DOMAIN}/admin-panel"
-    logger.info("Assert 2: Control Plane URL verified")
+    # Assert 3: URL is correct (admin-panel is the Control Plane landing page)
+    url_verified = await chat_ui_helper.verify_control_plane_url("/admin-panel/control-plane")
+    assert url_verified, "URL verification failed, expected /admin-panel/control-plane"
+    logger.info("Assert 3: Control Plane URL verified")
     
-    logger.info("Test completed: Control Plane navigation validated")
+    # Navigate back to Chat using data-testid
+    navigation_success = await chat_ui_helper.navigate_to_chat()
+    assert navigation_success, "Failed to navigate back to Chat"
+    logger.info("Assert 4: Successfully navigated back to Chat")
+    
+    # Verify URL changed back to chat
+    assert "/chat" in page.url, "Should be back in Chat view"
+    logger.info("Assert 5: URL updated back to chat")
+    
+    logger.info("Test completed: Control Plane round-trip navigation validated")
 
 
 @allure.testcase("IEASG-T284")
@@ -85,9 +112,9 @@ async def test_no_service_selected_card(chat_ui_helper):
     assert navigation_success, "Failed to navigate to Control Plane"
     logger.info("Navigated to Control Plane")
     
-    # Check if no-service-selected card is rendered using CSS class
+    # Check if no-service-selected card is rendered using data-testid
     card_rendered = await chat_ui_helper.check_element_rendered(
-        css_class="no-service-selected-card",
+        data_testid="no-service-selected-card",
         timeout=10000
     )
     
@@ -122,9 +149,9 @@ async def test_control_plane_panel_rendered(chat_ui_helper):
     assert navigation_success, "Failed to navigate to Control Plane"
     logger.info("Navigated to Control Plane")
     
-    # Check if control-plane-panel is rendered with children using CSS class
+    # Check if control-plane-panel is rendered with children using data-testid
     panel_rendered = await chat_ui_helper.check_element_rendered(
-        css_class="control-plane-panel",
+        data_testid="control-plane-panel",
         check_children=True,
         timeout=10000
     )
@@ -162,9 +189,9 @@ async def test_chatqa_graph_legend_rendered(chat_ui_helper):
     assert navigation_success, "Failed to navigate to Control Plane"
     logger.info("Navigated to Control Plane")
     
-    # Check if graph-legend is rendered with children using CSS class
+    # Check if graph-legend is rendered with children using data-testid
     legend_rendered = await chat_ui_helper.check_element_rendered(
-        css_class="graph-legend",
+        data_testid="graph-legend",
         check_children=True,
         timeout=10000
     )
@@ -252,3 +279,68 @@ async def test_control_plane_zoom_controls(chat_ui_helper):
     
     logger.info("Assert: All zoom controls are functional")
     logger.info("Test completed: Control Plane zoom controls validated")
+
+
+@allure.testcase("IEASG-T288")
+@pytest.mark.ui
+@pytest.mark.asyncio
+async def test_stop_button_during_streaming(chat_ui_helper):
+    """
+    Test that stop button appears and can interrupt streaming response.
+    
+    Steps:
+    1. Send a prompt that generates a long response
+    2. Verify stop button appears (data-testid="prompt-stop-button")
+    3. Click stop button
+    4. Verify response generation stops and send button reappears
+    
+    Success criteria:
+    - Stop button is rendered during streaming with correct data-testid
+    - Stop button is clickable
+    - Response stops when button is clicked
+    - Send button reappears after stopping
+    """
+    logger.info("Test 6: Stop Button During Streaming")
+    
+    # Send a prompt that will generate a long response
+    long_prompt = "Write a detailed 500-word essay about artificial intelligence and its impact on society."
+    
+    page = chat_ui_helper.page
+    
+    # Fill textarea using data-testid
+    textarea = page.locator('[data-testid="prompt-input-textarea"]')
+    await textarea.fill(long_prompt)
+    logger.info("Filled textarea with long prompt")
+    
+    # Click send button using data-testid
+    send_button = page.locator('[data-testid="prompt-send-button"]')
+    await send_button.click()
+    logger.info("Clicked send button")
+    
+    # Wait for stop button to appear using data-testid
+    stop_button = page.locator('[data-testid="prompt-stop-button"]')
+    try:
+        await stop_button.wait_for(state="visible", timeout=5000)
+        logger.info("Assert 1: Stop button appeared during streaming")
+    except Exception as e:
+        logger.error(f"Stop button did not appear: {e}")
+        pytest.fail("Stop button should appear during response streaming")
+    
+    # Assert 2: Stop button is enabled
+    is_enabled = await stop_button.is_enabled()
+    assert is_enabled, "Stop button should be enabled"
+    logger.info("Assert 2: Stop button is enabled")
+    
+    # Click stop button
+    await stop_button.click()
+    logger.info("Clicked stop button")
+    
+    # Wait a moment for the stop to take effect
+    await page.wait_for_timeout(1000)
+    
+    # Verify stop button is gone (replaced by send button)
+    send_button_visible = await send_button.is_visible()
+    assert send_button_visible, "Send button should reappear after stopping"
+    logger.info("Assert 3: Send button reappeared after stop")
+    
+    logger.info("Test completed: Stop button functionality validated")

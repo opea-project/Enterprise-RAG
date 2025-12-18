@@ -3,12 +3,22 @@
 
 ---
 # mitigation due to not being able to set multiple facts if they reference eachother in one task
+- name: Ensure pipelines and gmc variables are defined
+  ansible.builtin.set_fact:
+    pipelines: "{{ pipelines | default([]) }}"
+    gmc: "{{ gmc | default({}) | combine({'namespace': 'system'}, recursive=True) if gmc is defined else {'namespace': 'system'} }}"
+  tags:
+    - install
+    - uninstall
+    - restore
+
 - name: Get list of pipelines namespaces
   ansible.builtin.set_fact:
     pipeline_namespaces: "{{ pipelines | map(attribute='namespace') | list + [gmc.namespace] }}"
   tags:
     - install
     - uninstall
+    - restore
 
 - name: Get list of component namespaces
   ansible.builtin.set_fact:
@@ -33,3 +43,4 @@
   tags:
     - install
     - uninstall
+    - restore

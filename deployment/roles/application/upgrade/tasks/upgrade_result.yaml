@@ -4,7 +4,7 @@
 # Upgrade Result Task
 # This task evaluates the overall upgrade readiness based on all checks
 
-- name: Initialize upgrade result
+- name: Initialize pre-upgrade result
   ansible.builtin.set_fact:
     upgrade_result:
       ready: true
@@ -30,7 +30,7 @@
     - metadata_verification_result is defined
     - metadata_verification_result.rejected_count > 0
 
-- name: Display upgrade result summary
+- name: Display pre-upgrade result summary
   ansible.builtin.debug:
     msg:
       - "=========================================="

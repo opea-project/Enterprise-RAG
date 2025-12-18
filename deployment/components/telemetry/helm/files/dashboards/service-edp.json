@@ -67,7 +67,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -98,7 +98,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -129,7 +129,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -173,7 +173,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -204,7 +204,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               }
             ]
           }
@@ -236,7 +236,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -267,7 +267,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -310,7 +310,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -341,7 +341,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -384,7 +384,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -415,7 +415,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "#EAB839",
@@ -458,7 +458,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "editorMode": "code",
@@ -536,7 +536,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -565,11 +565,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -645,7 +646,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -674,11 +675,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -763,7 +765,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -792,11 +794,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -880,7 +883,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -909,11 +912,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -1001,7 +1005,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1061,11 +1065,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -1142,7 +1147,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1232,11 +1237,12 @@
           "width": 200
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "desc"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -1282,6 +1288,7 @@
       "id": 23,
       "options": {
         "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
         "enableLogDetails": true,
         "prettifyLogMessage": false,
         "showCommonLabels": false,
@@ -1290,13 +1297,14 @@
         "sortOrder": "Descending",
         "wrapLogMessage": false
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
             "type": "loki",
             "uid": "loki"
           },
+          "direction": "backward",
           "editorMode": "builder",
           "expr": "{k8s_container_name=\"edp-dataprep\"} |= ``",
           "queryType": "range",
@@ -1307,6 +1315,7 @@
             "type": "loki",
             "uid": "loki"
           },
+          "direction": "backward",
           "editorMode": "builder",
           "expr": "{k8s_container_name=\"edp-embedding\"} |= ``",
           "hide": false,
@@ -1318,6 +1327,7 @@
             "type": "loki",
             "uid": "loki"
           },
+          "direction": "backward",
           "editorMode": "builder",
           "expr": "{k8s_container_name=\"edp-ingestion\"} |= ``",
           "hide": false,
@@ -1329,6 +1339,7 @@
             "type": "loki",
             "uid": "loki"
           },
+          "direction": "backward",
           "editorMode": "builder",
           "expr": "{k8s_container_name=\"edp-backend\"} |= ``",
           "hide": false,
@@ -1340,11 +1351,24 @@
             "type": "loki",
             "uid": "loki"
           },
+          "direction": "backward",
           "editorMode": "builder",
           "expr": "{k8s_container_name=\"edp-dpguard\"} |= ``",
           "hide": false,
           "queryType": "range",
           "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{k8s_container_name=\"edp-late-chunking\"} |= ``",
+          "hide": false,
+          "queryType": "range",
+          "refId": "F"
         }
       ],
       "title": "Logs",
@@ -1414,7 +1438,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -1668,11 +1692,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -1726,9 +1751,21 @@
           },
           "editorMode": "code",
           "expr": "edp_files_embedding_total",
-          "legendFormat": "Links Embedding",
+          "legendFormat": "Files Embedding",
           "range": true,
           "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "edp_files_late_chunking_total",
+          "hide": false,
+          "legendFormat": "Files Late Chunking",
+          "range": true,
+          "refId": "F"
         },
         {
           "datasource": {
@@ -1739,7 +1776,7 @@
           "expr": "edp_files_ingested_total",
           "legendFormat": "Files Ingested",
           "range": true,
-          "refId": "F"
+          "refId": "G"
         },
         {
           "datasource": {
@@ -1750,7 +1787,7 @@
           "expr": "edp_files_deleting_total",
           "legendFormat": "Files Deleting",
           "range": true,
-          "refId": "G"
+          "refId": "H"
         },
         {
           "datasource": {
@@ -1761,7 +1798,7 @@
           "expr": "edp_files_canceled_total",
           "legendFormat": "Files Canceled",
           "range": true,
-          "refId": "H"
+          "refId": "I"
         },
         {
           "datasource": {
@@ -1774,7 +1811,7 @@
           "instant": false,
           "legendFormat": "Files Blocked",
           "range": true,
-          "refId": "I"
+          "refId": "J"
         },
         {
           "datasource": {
@@ -1787,7 +1824,7 @@
           "instant": false,
           "legendFormat": "Files Error",
           "range": true,
-          "refId": "J"
+          "refId": "K"
         }
       ],
       "title": "Files Stage Tracker",
@@ -1844,7 +1881,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": null
+                "value": 0
               },
               {
                 "color": "red",
@@ -2053,11 +2090,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "multi",
           "sort": "none"
         }
       },
-      "pluginVersion": "11.4.0",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -2121,10 +2159,22 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
+          "expr": "edp_links_late_chunking_total",
+          "hide": false,
+          "legendFormat": "Links Late Chunking",
+          "range": true,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
           "expr": "edp_links_ingested_total",
           "legendFormat": "Links Ingested",
           "range": true,
-          "refId": "F"
+          "refId": "G"
         },
         {
           "datasource": {
@@ -2135,7 +2185,7 @@
           "expr": "edp_links_deleting_total",
           "legendFormat": "Links Deleting",
           "range": true,
-          "refId": "G"
+          "refId": "H"
         },
         {
           "datasource": {
@@ -2146,7 +2196,7 @@
           "expr": "edp_links_canceled_total",
           "legendFormat": "Links Canceled",
           "range": true,
-          "refId": "H"
+          "refId": "I"
         },
         {
           "datasource": {
@@ -2159,7 +2209,7 @@
           "instant": false,
           "legendFormat": "Links Blocked",
           "range": true,
-          "refId": "I"
+          "refId": "J"
         },
         {
           "datasource": {
@@ -2172,7 +2222,7 @@
           "instant": false,
           "legendFormat": "Links Error",
           "range": true,
-          "refId": "J"
+          "refId": "K"
         }
       ],
       "title": "Links Stage Tracker",
@@ -2181,7 +2231,7 @@
   ],
   "preload": false,
   "refresh": "",
-  "schemaVersion": 40,
+  "schemaVersion": 41,
   "tags": [
     "entrag",
     "edp"

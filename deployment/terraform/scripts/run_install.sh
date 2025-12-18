@@ -14,7 +14,7 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 #==============================================================================
 
 SCRIPT_NAME="$(basename "$0")"
-SCRIPT_VERSION="1.5.0"
+SCRIPT_VERSION="2.0.1"
 LOG_FILE="/home/$USER/enterprise-rag-install.log"
 
 #==============================================================================
@@ -30,7 +30,7 @@ INSTALL_DEBUG_TOOLS=false      # Install debug tools (k9s, etc.)
 # Repository configuration
 REPO_URL="https://github.com/opea-project/Enterprise-RAG.git"
 REPO_DIR="$HOME/Enterprise-RAG"
-GIT_VERSION="release-2.0.0"       # Git version to checkout - can be tag or branch (default: 'release-2.0.0')
+GIT_VERSION="release-2.0.1"       # Git version to checkout - can be tag or branch (default: 'release-2.0.1')
 DEPLOYMENT_DIR="${REPO_DIR}/deployment"
 INVENTORY_DIR="${DEPLOYMENT_DIR}/inventory"
 CLUSTER_CONFIG_DIR="${INVENTORY_DIR}/cluster"

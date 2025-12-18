@@ -2,49 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
-import { ChangeEventHandler, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { ChangeEventHandler, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
 import { paths } from "@/config/paths";
 import {
   useGetAllChatsQuery,
   useLazyGetChatByIdQuery,
-  useSaveChatMutation,
 } from "@/features/chat/api/chatHistory";
 import { usePostPromptMutation } from "@/features/chat/api/chatQnA";
-import { ABORT_ERROR_MESSAGE, HTTP_ERRORS } from "@/features/chat/config/api";
+import { ABORT_ERROR_MESSAGE } from "@/features/chat/config/api";
+import { useChatStreaming } from "@/features/chat/hooks/useChatStreaming";
+import {
+  addChat,
+  addChatTurn,
+  setChatInputValue,
+  updateChatTurnAnswer,
+  updateChatTurnError,
+  updateChatTurnIsPending,
+  updateChatTurnSources,
+} from "@/features/chat/store/chatHistory.slice";
 import { selectIsChatHistorySideMenuOpen } from "@/features/chat/store/chatSideMenus.slice";
-import {
-  addNewChatTurn,
-  resetCurrentChatSlice,
-  selectCurrentChatId,
-  selectCurrentChatTurns,
-  selectIsChatResponsePending,
-  selectUserInput,
-  setCurrentChatId,
-  setCurrentChatTurns,
-  setIsChatResponsePending,
-  setUserInput,
-  updateAnswer,
-  updateError,
-  updateIsPending,
-  updateSources,
-} from "@/features/chat/store/currentChat.slice";
-import { SourceDocumentType } from "@/features/chat/types";
-import {
-  AnswerUpdateHandler,
-  SourcesUpdateHandler,
-} from "@/features/chat/types/api";
-import {
-  createChatTurnsFromHistory,
-  parseSources,
-} from "@/features/chat/utils";
-import {
-  isChatErrorResponse,
-  isChatErrorResponseDataString,
-} from "@/features/chat/utils/api";
+import { createChatTurnsFromHistory } from "@/features/chat/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setLastSelectedChatId } from "@/store/viewNavigation.slice";
 
 let abortController: AbortController | null = null;
 
@@ -56,63 +38,81 @@ const useChat = () => {
   // Chat History API hooks
   useGetAllChatsQuery();
   const [getChatById] = useLazyGetChatByIdQuery();
-  const [saveChat] = useSaveChatMutation();
 
   // React Router hooks
-  const location = useLocation();
   const navigate = useNavigate();
+  const { chatId: chatIdFromParams } = useParams<{ chatId?: string }>();
 
   // Redux hooks
   const dispatch = useAppDispatch();
-  const userInput = useAppSelector(selectUserInput);
-  const currentChatTurns = useAppSelector(selectCurrentChatTurns);
-  const currentChatId = useAppSelector(selectCurrentChatId);
-  const isChatResponsePending = useAppSelector(selectIsChatResponsePending);
   const isChatHistorySideMenuOpen = useAppSelector(
     selectIsChatHistorySideMenuOpen,
   );
 
-  // Refs to keep track of the current answer and sources to save them after the response is received
-  const currentAnswerRef = useRef("");
-  const currentSourcesRef = useRef<SourceDocumentType[]>([]);
+  // Streaming utilities
+  const {
+    resetStreamingRefs,
+    createStreamingCallbacks,
+    saveChatAndFetch,
+    handleStreamingError,
+  } = useChatStreaming();
 
+  // Current chat data derived from Redux store and URL params
+  const currentChatId = chatIdFromParams ?? null;
+  const currentChat = useAppSelector((state) =>
+    state.chatHistory.chats.find((chat) => chat.id === currentChatId),
+  );
+  const userInput = currentChat?.inputValue ?? "";
+  const currentChatTurns = currentChat?.turns ?? [];
+  const lastTurn = currentChatTurns[currentChatTurns.length - 1];
+  const isChatResponsePending = lastTurn?.isPending ?? false;
+
+  // Update last selected chat ID when it changes
   useEffect(() => {
-    if (location.pathname !== paths.chat) {
-      const chatIdFromPath = location.pathname.split("/")[2];
-      if (chatIdFromPath) {
-        getChatById({ id: chatIdFromPath })
-          .unwrap()
-          .then((getChatHistoryByIdData) => {
-            if (!getChatHistoryByIdData) {
-              dispatch(resetCurrentChatSlice());
-              navigate(paths.chat);
-              return;
-            }
-            dispatch(setCurrentChatId(chatIdFromPath));
-            const chatTurns = createChatTurnsFromHistory(
-              getChatHistoryByIdData.history || [],
-            );
-            dispatch(setCurrentChatTurns(chatTurns));
-          })
-          .catch((error) => {
-            console.error(
-              "Failed fetching chat history for ID:",
-              chatIdFromPath,
-            );
-            console.error("Error:", error);
-            dispatch(resetCurrentChatSlice());
-            navigate(paths.chat);
-          });
-      }
+    if (currentChatId) {
+      dispatch(setLastSelectedChatId(currentChatId));
     }
-  }, [dispatch, getChatById, location, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChatId]);
+
+  // Load chat data when navigating to a specific chat
+  useEffect(() => {
+    if (currentChatId && !currentChat) {
+      getChatById({ id: currentChatId })
+        .unwrap()
+        .then((getChatHistoryByIdData) => {
+          if (!getChatHistoryByIdData) {
+            navigate(paths.chat);
+            return;
+          }
+          const chatTurns = createChatTurnsFromHistory(
+            getChatHistoryByIdData.history ?? [],
+          );
+          // Add the chat to Redux if it doesn't exist
+          dispatch(
+            addChat({
+              id: currentChatId,
+              title: getChatHistoryByIdData.historyName ?? "New Chat",
+              turns: chatTurns,
+              inputValue: "",
+            }),
+          );
+        })
+        .catch((error) => {
+          console.error("Failed fetching chat history for ID:", currentChatId);
+          console.error("Error:", error);
+          navigate(paths.chat);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChatId, currentChat, getChatById, navigate]);
 
   const onRequestAbort = () => {
     if (!abortController) {
       return;
     }
     abortController.abort(ABORT_ERROR_MESSAGE);
-    dispatch(setIsChatResponsePending(false));
+    // isPending will be set to false by the finally block in onPromptSubmit
   };
 
   const onNewChat = () => {
@@ -120,96 +120,132 @@ const useChat = () => {
       onRequestAbort();
     }
 
+    dispatch(setLastSelectedChatId(null));
     navigate(paths.chat);
-    dispatch(resetCurrentChatSlice());
   };
 
   const onPromptChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
-    dispatch(setUserInput(event.target.value));
-  };
-
-  const onAnswerUpdate: AnswerUpdateHandler = (answer) => {
-    dispatch(updateAnswer(answer));
-    currentAnswerRef.current += answer;
-  };
-
-  const onSourcesUpdate: SourcesUpdateHandler = (sources) => {
-    dispatch(updateSources(sources));
-    currentSourcesRef.current = parseSources(sources);
-  };
-
-  const onResponseFinished = () => {
-    saveChat({
-      id: currentChatId,
-      history: [
-        {
-          question: sanitizeString(userInput),
-          answer: currentAnswerRef.current,
-          metadata: { reranked_docs: currentSourcesRef.current },
-        },
-      ],
-    }).then((response) => {
-      const isFirstSuccessfulTurn =
-        currentChatTurns.filter((turn) => !turn.error).length === 0;
-      const isIdReturned = response && "data" in response && response.data;
-
-      if (isFirstSuccessfulTurn && isIdReturned) {
-        const { id } = response.data;
-        if (currentChatId === null && currentChatId !== id) {
-          dispatch(setCurrentChatId(id));
-        } else {
-          navigate(`${paths.chat}/${id}`);
-        }
-      }
-    });
+    if (currentChatId) {
+      dispatch(
+        setChatInputValue({
+          id: currentChatId,
+          inputValue: event.target.value,
+        }),
+      );
+    }
   };
 
   const onPromptSubmit = async () => {
     const sanitizedUserInput = sanitizeString(userInput);
-    dispatch(setUserInput(""));
 
     const conversationTurnId = uuidv4();
+    let activeChatId = currentChatId;
+
+    // Defensive check: This should never be null since useChat is only used with /chat/:chatId route,
+    // but keeping as safety measure against edge cases (race conditions, future route changes, etc.)
+    if (!activeChatId) {
+      const newChatId = uuidv4();
+      dispatch(
+        addChat({
+          id: newChatId,
+          title: sanitizedUserInput.slice(0, 50),
+          turns: [],
+          inputValue: "",
+        }),
+      );
+      activeChatId = newChatId;
+    } else {
+      dispatch(
+        setChatInputValue({
+          id: activeChatId,
+          inputValue: "",
+        }),
+      );
+    }
+
     dispatch(
-      addNewChatTurn({ id: conversationTurnId, question: sanitizedUserInput }),
+      addChatTurn({
+        chatId: activeChatId,
+        turn: { id: conversationTurnId, question: sanitizedUserInput },
+      }),
     );
 
-    dispatch(setIsChatResponsePending(true));
-
     abortController = new AbortController();
-    currentAnswerRef.current = "";
-    currentSourcesRef.current = [];
+    resetStreamingRefs();
+
+    const { onAnswerUpdate, onSourcesUpdate } = createStreamingCallbacks(
+      // Update local state with answer chunk
+      (answer) => {
+        dispatch(
+          updateChatTurnAnswer({
+            chatId: activeChatId,
+            turnId: conversationTurnId,
+            answerChunk: answer,
+          }),
+        );
+      },
+      // Update local state with sources
+      (sources) => {
+        dispatch(
+          updateChatTurnSources({
+            chatId: activeChatId,
+            turnId: conversationTurnId,
+            sources,
+          }),
+        );
+      },
+    );
 
     const { error } = await postPrompt({
       prompt: sanitizedUserInput,
-      id: currentChatId,
+      id: activeChatId,
       signal: abortController.signal,
       onAnswerUpdate,
       onSourcesUpdate,
     }).finally(() => {
-      dispatch(updateIsPending(false));
-      dispatch(setIsChatResponsePending(false));
+      dispatch(
+        updateChatTurnIsPending({
+          chatId: activeChatId,
+          turnId: conversationTurnId,
+          isPending: false,
+        }),
+      );
     });
 
-    if (
-      error &&
-      isChatErrorResponse(error) &&
-      isChatErrorResponseDataString(error.data)
-    ) {
-      if (error.status === HTTP_ERRORS.GUARDRAILS_ERROR.statusCode) {
-        dispatch(updateAnswer(error.data));
-        currentAnswerRef.current += error.data;
-        onResponseFinished();
-      } else if (
-        error.status === HTTP_ERRORS.CLIENT_CLOSED_REQUEST.statusCode
-      ) {
-        dispatch(updateAnswer(""));
-        currentAnswerRef.current += "";
-        onResponseFinished();
-      } else {
-        dispatch(updateError(error.data));
+    const shouldSave = handleStreamingError(
+      error,
+      // Guardrails error - update Redux
+      (errorData) => {
+        dispatch(
+          updateChatTurnAnswer({
+            chatId: activeChatId,
+            turnId: conversationTurnId,
+            answerChunk: errorData,
+          }),
+        );
+      },
+      // Other error - update Redux with error
+      (errorData) => {
+        dispatch(
+          updateChatTurnError({
+            chatId: activeChatId,
+            turnId: conversationTurnId,
+            error: errorData,
+          }),
+        );
+      },
+    );
+
+    if (shouldSave) {
+      const savedChatId = await saveChatAndFetch(
+        sanitizedUserInput,
+        activeChatId,
+      );
+
+      // Navigate to the chat if it's a new chat
+      if (savedChatId && currentChatId === null) {
+        navigate(`${paths.chat}/${savedChatId}`);
       }
-    } else {
-      onResponseFinished();
     }
   };
 

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
+import concurrent.futures
 import logging
 import os
 import requests
@@ -12,14 +13,11 @@ import time
 from rouge import Rouge
 from sentence_transformers import SentenceTransformer, util
 
-from validation.constants import ERAG_DOMAIN, TEST_FILES_DIR
-from helpers.api_request_helper import ApiRequestHelper, ApiResponse
+from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.validation.constants import TEST_FILES_DIR
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 
 logger = logging.getLogger(__name__)
-
-DOCSUM_API_PATH = f"{ERAG_DOMAIN}/api/v1/docsum"
-BLUE = "\033[94m"
-RESET = "\033[0m"
 
 
 class SummaryEvaluator:
@@ -40,7 +38,7 @@ class SummaryEvaluator:
         embedding_text = self.model.encode(original_text, convert_to_tensor=True)
         embedding_summary = self.model.encode(summary, convert_to_tensor=True)
         similarity = util.cos_sim(embedding_text, embedding_summary).item()
-        logger.debug(f"Similarity score (sentence transformers): {BLUE}{round(similarity, 2)}{RESET}")
+        logger.debug(f"Sentence transformers score:\t{round(similarity, 2)}")
 
         # ROUGE scores
         scores = self.rouge.get_scores(summary, original_text)
@@ -50,9 +48,8 @@ class SummaryEvaluator:
                 for metric_name, value in metrics.items():
                     if value > max_rouge_score:
                         max_rouge_score = value
-        logger.debug(f"Similarity scores (rouge): {scores}")
-        logger.debug(f"Highest rouge score: {BLUE}{round(max_rouge_score, 2)}{RESET}")
-
+        logger.debug(f"Highest rouge score: \t{round(max_rouge_score, 2)}")
+        logger.debug(f"Similarity scores (rouge):{scores}")
         return similarity, max_rouge_score
 
 
@@ -61,6 +58,7 @@ class DocSumHelper(ApiRequestHelper):
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
         self.summary_evaluator = SummaryEvaluator()
+        self.docsum_api_path = f"https://{cfg.get('FQDN')}/api/v1/docsum"
 
     def call(self, texts=[], links=[], files=[], summary_type="map_reduce", as_user=False, stream=True):
         """Make DocSum API call with the provided texts, links, and files"""
@@ -76,12 +74,38 @@ class DocSumHelper(ApiRequestHelper):
         }
         return self.call_with_payload(payload, as_user=as_user, stream=stream)
 
+    def call_in_parallel(self, texts=[], stream=True):
+        """Make DocSum API calls in parallel for the provided texts"""
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(texts)) as executor:
+            futures_to_questions = {}
+            for text in texts:
+                payload = {
+                    "files": [],
+                    "links": [],
+                    "texts": [text],
+                    "parameters": {
+                        "stream": stream,
+                        "chunk_size": 2048
+                    }
+                }
+                future = executor.submit(self.call_with_payload, payload)
+                futures_to_questions[future] = payload
+
+            for future in concurrent.futures.as_completed(futures_to_questions):
+                try:
+                    results.append(future.result())
+                except Exception as e:
+                    results.append(ApiResponse(None, None,
+                                               exception=f"Request failed with exception: {e}"))
+        return results
+
     def call_with_payload(self, payload, as_user=False, stream=True):
         """Make DocSum API call with the provided payload"""
         logger.info("Making DocSum API call")
         start_time = time.time()
         response = requests.post(
-            url=DOCSUM_API_PATH,
+            url=self.docsum_api_path,
             headers=self.get_headers(as_user),
             json=payload,
             stream=stream,
@@ -103,6 +127,9 @@ class DocSumHelper(ApiRequestHelper):
         """Evaluate the summary in the DocSum API response"""
         summary = self.get_summary(response)
         failures = []
+        if "[ERROR]" in summary:
+            failures.append(f"DocSum API returned an error in the summary: {summary}")
+            return failures
         similarity, max_rouge_score = self.summary_evaluator.evaluate(text, summary)
         if similarity < 0.4:
             failures.append(self.failure_message_sentence_transformers(text_title, similarity, summary_type))

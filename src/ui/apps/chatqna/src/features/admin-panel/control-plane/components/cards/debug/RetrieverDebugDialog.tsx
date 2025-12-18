@@ -106,7 +106,6 @@ const RetrieverDebugDialog = () => {
 
   const {
     argumentsForm: retrieverArgumentsForm,
-    previousArgumentsValues: retrieverPreviousArgumentsValues,
     onArgumentValueChange: onRetrieverArgumentValueChange,
     onArgumentValidityChange: onRetrieverArgumentValidityChange,
   } = useServiceCard<RetrieverArgs>("retriever", retrieverArgs, {
@@ -120,7 +119,6 @@ const RetrieverDebugDialog = () => {
 
   const {
     argumentsForm: rerankerArgumentsForm,
-    previousArgumentsValues: rerankerPreviousArgumentsValues,
     onArgumentValueChange: onRerankerArgumentValueChange,
     onArgumentValidityChange: onRerankerArgumentValidityChange,
   } = useServiceCard<RerankerArgs>("reranker", rerankerArgs);
@@ -200,8 +198,7 @@ const RetrieverDebugDialog = () => {
         <div className="h-[calc(100vh_-_12rem)] overflow-y-auto pl-1 pr-3 [scrollbar-gutter:stable]">
           <RetrieverDebugParamsForm
             retrieverArgumentsForm={retrieverArgumentsForm}
-            retrieverPreviousArgumentsValues={retrieverPreviousArgumentsValues}
-            rerankerPreviousArgumentsValues={rerankerPreviousArgumentsValues}
+            rerankerArgumentsForm={rerankerArgumentsForm}
             isRerankerEnabled={isRerankerEnabled}
             onRetrieverArgumentValueChange={onRetrieverArgumentValueChange}
             onRetrieverArgumentValidityChange={
@@ -257,8 +254,7 @@ const RetrieverDebugDialog = () => {
 
 interface RetrieverDebugParamsFormProps {
   retrieverArgumentsForm: RetrieverArgs;
-  retrieverPreviousArgumentsValues: RetrieverArgs;
-  rerankerPreviousArgumentsValues: RerankerArgs;
+  rerankerArgumentsForm: RerankerArgs;
   isRerankerEnabled: boolean;
   onRetrieverArgumentValueChange: OnArgumentValueChangeHandler;
   onRetrieverArgumentValidityChange: OnArgumentValidityChangeHandler;
@@ -269,10 +265,9 @@ interface RetrieverDebugParamsFormProps {
 
 const RetrieverDebugParamsForm = ({
   retrieverArgumentsForm,
-  retrieverPreviousArgumentsValues,
+  rerankerArgumentsForm,
   onRetrieverArgumentValueChange,
   onRetrieverArgumentValidityChange,
-  rerankerPreviousArgumentsValues,
   onRerankerArgumentValueChange,
   onRerankerArgumentValidityChange,
   isRerankerEnabled,
@@ -288,13 +283,13 @@ const RetrieverDebugParamsForm = ({
       <p className="mb-2 mt-3">Retriever</p>
       <ServiceArgumentSelectInput
         {...retrieverFormConfig.search_type}
-        value={retrieverPreviousArgumentsValues.search_type}
+        value={retrieverArgumentsForm.search_type}
         onArgumentValueChange={onRetrieverArgumentValueChange}
       />
       {visibleRerankerArgumentInputs.includes(retrieverFormConfig.k.name) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.k}
-          value={retrieverPreviousArgumentsValues.k}
+          value={retrieverArgumentsForm.k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
@@ -304,7 +299,7 @@ const RetrieverDebugParamsForm = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.distance_threshold}
-          value={retrieverPreviousArgumentsValues.distance_threshold}
+          value={retrieverArgumentsForm.distance_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
@@ -314,7 +309,7 @@ const RetrieverDebugParamsForm = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.fetch_k}
-          value={retrieverPreviousArgumentsValues.fetch_k}
+          value={retrieverArgumentsForm.fetch_k}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
@@ -324,7 +319,7 @@ const RetrieverDebugParamsForm = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.lambda_mult}
-          value={retrieverPreviousArgumentsValues.lambda_mult}
+          value={retrieverArgumentsForm.lambda_mult}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
@@ -334,7 +329,7 @@ const RetrieverDebugParamsForm = ({
       ) && (
         <ServiceArgumentNumberInput
           {...retrieverFormConfig.score_threshold}
-          value={retrieverPreviousArgumentsValues.score_threshold}
+          value={retrieverArgumentsForm.score_threshold}
           onArgumentValueChange={onRetrieverArgumentValueChange}
           onArgumentValidityChange={onRetrieverArgumentValidityChange}
         />
@@ -349,13 +344,13 @@ const RetrieverDebugParamsForm = ({
       />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.top_n}
-        value={rerankerPreviousArgumentsValues.top_n}
+        value={rerankerArgumentsForm.top_n}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
       />
       <ServiceArgumentNumberInput
         {...rerankerFormConfig.rerank_score_threshold}
-        value={rerankerPreviousArgumentsValues.rerank_score_threshold}
+        value={rerankerArgumentsForm.rerank_score_threshold}
         onArgumentValueChange={onRerankerArgumentValueChange}
         onArgumentValidityChange={onRerankerArgumentValidityChange}
       />

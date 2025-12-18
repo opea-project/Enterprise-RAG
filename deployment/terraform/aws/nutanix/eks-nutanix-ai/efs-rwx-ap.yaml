@@ -1,0 +1,16 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-rwx-ap
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-xxx    # <-- replace with your EFS filesystem ID
+  accessPointId: fsap-xxx # <-- replace with your EFS access point ID
+  directoryPerms: "0777"
+mountOptions:
+  - tls
+reclaimPolicy: Retain
+volumeBindingMode: Immediate

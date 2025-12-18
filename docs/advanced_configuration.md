@@ -323,6 +323,7 @@ balloons:
   wait_timeout: 300 # timeout in seconds to wait for nri-plugin to be in ready state
   throughput_mode: true # set to true to optimize for horizontal scaling
   memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested
+  # vllm_custom_name: "kserve-container" # Optional: Custom container name for external vLLM
 ```
 
 **Benefits**:
@@ -330,6 +331,61 @@ balloons:
 - NUMA-aware scheduling
 - Reduced context switching
 - Better cache locality
+
+**External vLLM Support**:
+
+The `vllm_custom_name` option allows you to pin CPU cores to external vLLM instances running within the same Kubernetes cluster. This is particularly useful when integrating with third-party AI platforms that deploy their own vLLM containers.
+
+For example, Nutanix AI uses the container name `kserve-container`. To find the correct container name for your external vLLM deployment:
+
+```bash
+# Describe the pod running vLLM
+kubectl describe pod <vllm-pod-name> -n <namespace>
+
+# Look for the container name under spec.containers[].name
+```
+
+When configured, the NRI balloons policy will manage CPU resources for external vLLM instances specified by `vllm_custom_name`.
+
+**Important Deployment Considerations**:
+
+External vLLM instances typically require more CPU resources than other containers managed by the balloons policy. To ensure optimal performance and proper NUMA node isolation:
+
+1. **Preview available resources**: Before deploying external vLLM, run the topology preview to see available CPU resources on each node:
+
+```
+ansible-playbook -u $USER -K playbooks/application.yaml \
+  --tags topology-preview \
+  -e @inventory/sample/config.yaml
+```
+
+
+  Example output showing available resources per node:
+```
+Node: localhost
+  Inference Groups: 2
+  Adjusted VLLM Size: 16
+  Calculation Method: throughput_mode_adjustment
+  Gaudi: False
+  AMX Supported: True
+  Inference memory request: 14.3%
+  VLLM Replicas: 2
+  VLLM CPU Size: 16
+  Embedding Replicas: 2
+  Embedding CPU Size: 4
+  Reranking Replicas: 2
+  Reranking CPU Size: 4
+```
+  
+  Use this information to determine the optimal number of vLLM replicas and their CPU allocation. Your maximum pool avaliable for vLLM will be `VLLM Replicas` multiplied by  `VLLM CPU` Size. In this case it will be 32 vCPU.
+
+2. **Deploy external vLLM first**: Deploy your external vLLM instances with the proper number of replicas before deploying Intel® AI for Enterprise RAG
+3. **Configure replicas appropriately**: Ensure vLLM replicas are distributed to allow each instance to fit within a single NUMA node
+4. **Deploy Intel® AI for Enterprise RAG second**: After vLLM is running, deploy the RAG solution so the balloons policy can allocate remaining resources efficiently
+
+**Note**: During the Intel® AI for Enterprise RAG deployment, the external vLLM containers will be automatically restarted to apply the balloons policy and ensure proper CPU pinning. This is a necessary step to enable NUMA-aware resource allocation for the external vLLM instances.
+
+This deployment order ensures that the resource-intensive vLLM containers are properly isolated on NUMA nodes, and the balloons policy can then optimally allocate the remaining CPU resources to Intel® AI for Enterprise RAG components.
 
 For detailed information, refer to: [Balloons Policy Overview](../deployment/components/nri-plugin/README.md)
 

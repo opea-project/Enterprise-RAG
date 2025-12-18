@@ -1,0 +1,36 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Determine source component name for new component
+  ansible.builtin.set_fact:
+    source_component: "{{ reverse_mapping_lookup[post_component.component] | default(post_component.component) }}"
+  when: is_upgrade_mode | default(false) | bool
+
+- name: Use same component name for non-upgrade mode
+  ansible.builtin.set_fact:
+    source_component: "{{ post_component.component }}"
+  when: not (is_upgrade_mode | default(false) | bool)
+
+- name: Check if component is newly added in current version
+  ansible.builtin.set_fact:
+    component_newly_added_via_mapping: "{{ source_component == '' or source_component is none or source_component == None }}"
+
+- name: Check if component already verified from pre-upgrade side
+  ansible.builtin.set_fact:
+    already_verified: "{{ pre_components_map[source_component] is defined }}"
+  when: not (component_newly_added_via_mapping | bool)
+
+- name: Check if component is truly new (not in pre-upgrade at all)
+  ansible.builtin.set_fact:
+    component_newly_added: "{{ component_newly_added_via_mapping | bool or (not (already_verified | default(true) | bool)) }}"
+
+- name: Handle newly added component
+  ansible.builtin.set_fact:
+    verification_results: "{{ verification_results + [{'component': post_component.component, 'status': 'INFO', 'reason': 'Component newly added in current version (no pre-upgrade data to compare)'}] }}"
+  when: component_newly_added | bool
+
+- name: Skip if already verified
+  ansible.builtin.set_fact:
+    skip_verification: true
+  when: not (component_newly_added | bool) and (already_verified | default(false) | bool)

@@ -149,9 +149,12 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
               >
                 {({ close }) => {
                   closeRef.current = close;
+                  const headerClassName = classNames("dialog__header", {
+                    "dialog__header--plain": hasPlainHeader,
+                  });
                   return (
                     <>
-                      <header className="dialog__header">
+                      <header className={headerClassName}>
                         <AriaHeading slot="title" id={headingId}>
                           {title}
                         </AriaHeading>

@@ -24,13 +24,11 @@ from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
 
 # Initialize the logger for the microservice
 logger = get_opea_logger("RAG Evaluator")
-change_opea_logger_level(
-    logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
-
+change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
 class Evaluator:
     def __init__(
-            self, dataset: list[dict] = None, output_dir: str = None) -> None:
+            self, dataset: list[dict] = None, output_dir: str = None, auth_file: str = None) -> None:
         """Args:
         dataset (list[dict]): The dataset for evaluation.
         output_dir (str): The directory to save results.
@@ -49,12 +47,13 @@ class Evaluator:
         self.dataset = dataset
         self.system_args = None
 
-        self.keycloak_helper = KeycloakHelper(k8s_helper=K8sHelper(), credentials_file=None)
+        k8s_helper = K8sHelper()
+        self.keycloak_helper = KeycloakHelper(credentials_file=auth_file, k8s_helper=k8s_helper)
+        self.keycloak_helper.remove_required_actions(self.keycloak_helper.admin_access_token,
+                                                     self.keycloak_helper.erag_admin_username)
         self.chatqa_api_helper = ChatQaApiHelper(keycloak_helper=self.keycloak_helper)
-        self.edp_helper = EdpHelper(
-            keycloak_helper=self.keycloak_helper, bucket_name="default")
-        self.fingerprint_api_helper = FingerprintApiHelper(
-            self.keycloak_helper)
+        self.edp_helper = EdpHelper(keycloak_helper=self.keycloak_helper, bucket_name="default")
+        self.fingerprint_api_helper = FingerprintApiHelper(self.keycloak_helper)
 
         self.GENERATION_METRICS_LIST = [
             "bleu-avg",
@@ -109,8 +108,8 @@ class Evaluator:
         document_path (str): The path to document
         """
 
-        presigned_url = self.edp_helper.generate_presigned_url(
-            document_path).json().get("url")
+        presigned_url = self.edp_helper.generate_presigned_url(document_path).json().get("url")
+
         response = self.edp_helper.upload_file(document_path, presigned_url)
 
         if response.status_code == 200:
@@ -118,9 +117,10 @@ class Evaluator:
                 f"File {document_path} uploaded successfully. Waiting for ingestion...")
             # The file is 6.1 MB and splits into 17,508 chunks.
             # The full process (uploading, text extracting, embedding, ingesting) usually takes around 3 minutes and 46 seconds,
-            # so 4 minutes should be sufficient timeout only for being in status ingested.
+            # but can increase to more than 4 minutes on resource-constrained environments.
+            # Setting the timeout to 500 seconds should be a sufficient margin.
             file = self.edp_helper.wait_for_file_upload(
-                document_path, "ingested", timeout=240)
+                document_path, "ingested", timeout=500)
             logger.info(f"Successfully ingested {file['object_name']}.")
         else:
             logger.error(
@@ -171,8 +171,8 @@ class Evaluator:
             "valid": len(generated_text.strip()) != 0,
         }
 
-    def scoring_retrieval(self, data: dict) -> dict:
-        metric = RetrievalBaseMetric()
+    def scoring_retrieval(self, data: dict, normalize: bool = True) -> dict:
+        metric = RetrievalBaseMetric(normalize=normalize)
         query = self.get_query(data)
         golden_context = self.get_golden_context(data)
 
@@ -336,6 +336,8 @@ class Evaluator:
         """
         Check if EDP backend is reachable.
         """
+
+        logger.info("Checking connection to EDP service...")
         try:
             response = self.edp_helper.list_buckets()
             if response.status_code == 200:
@@ -350,6 +352,7 @@ class Evaluator:
         """
         Check if ChatQA backend is reachable.
         """
+        logger.info("Checking connection to ChatQA service...")
         try:
             response = self.chatqa_api_helper.call_chatqa("hello")
             if response.status_code == 200:

@@ -25,15 +25,6 @@
         - restore
         - uninstall
 
-    - name: Wait 60 seconds before verifying namespaces and pods
-      pause:
-        seconds: 60
-      tags:
-        - install
-        - restore
-        - uninstall
-      when: (execution_counter | int) > 1
-
     - name: Include tasks to get enabled namespaces
       ansible.builtin.include_role:
         name: utils
@@ -109,27 +100,64 @@
         - install
         - restore
 
-    - name: Verify pods based on operation_mode
+    - name: Filter out Job pods from verification
       set_fact:
-        undesirable_pods: >-
+        all_pods: >-
           {{
-            (pods_info.results | selectattr('resources', 'defined') |
+            pods_info.results | selectattr('resources', 'defined') |
             rejectattr('resources', 'equalto', []) |
-            map(attribute='resources') | flatten |
-            rejectattr('status.phase', 'in', ['Running', 'Succeeded']) |
-            map(attribute='metadata.name') |
-            list)
-            if operation_mode == 'install' else
-            (pods_info.results | selectattr('resources', 'defined') |
-            rejectattr('resources', 'equalto', []) |
-            map(attribute='resources') | flatten |
-            map(attribute='metadata.name') |
-            list)
+            map(attribute='resources') | flatten | list
           }}
       tags:
         - install
         - restore
         - uninstall
+
+    - name: Verify pods based on operation_mode
+      set_fact:
+        undesirable_pods: >-
+          {%- set result = [] -%}
+          {%- for pod in all_pods -%}
+            {%- set is_job_pod = pod.metadata.ownerReferences | default([]) | selectattr('kind', 'equalto', 'Job') | list | length > 0 -%}
+            {%- if operation_mode == 'install' -%}
+              {%- if not is_job_pod and pod.status.phase not in ['Running', 'Succeeded'] -%}
+                {%- set _ = result.append(pod.metadata.name) -%}
+              {%- endif -%}
+            {%- else -%}
+              {%- if not is_job_pod -%}
+                {%- set _ = result.append(pod.metadata.name) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ result }}
+      tags:
+        - install
+        - restore
+        - uninstall
+
+    - name: Store health check result
+      set_fact:
+        check_pods_result:
+          status: >-
+            {{
+              'failed' if (
+                (operation_mode == 'install' and not_ready_containers | length > 0) or
+                (operation_mode == 'install' and undesirable_pods | length > 0) or
+                (operation_mode == 'uninstall' and undesirable_pods | length > 0) or
+                (operation_mode == 'install' and missing_namespaces | length > 0) or
+                (empty_namespaces | length > 0)
+              ) else 'success'
+            }}
+          not_ready_containers: "{{ not_ready_containers | default([]) }}"
+          undesirable_pods: "{{ undesirable_pods | default([]) }}"
+          empty_namespaces: "{{ empty_namespaces | default([]) }}"
+          missing_namespaces: "{{ missing_namespaces | default([]) }}"
+      when: check_pods_store_result | bool
+      tags:
+        - install
+        - restore
+        - uninstall
+        - pre-upgrade
 
     - name: Failure summary message
       fail:
@@ -148,11 +176,12 @@
               if operation_mode == 'install' and missing_namespaces | length > 0 else "")
             ) | trim
           }}
-      when: (operation_mode == 'install' and not_ready_containers | length > 0) or
+      when: (not check_pods_no_fail | bool) and (
+            (operation_mode == 'install' and not_ready_containers | length > 0) or
             (operation_mode == 'install' and undesirable_pods | length > 0) or
             (operation_mode == 'uninstall' and undesirable_pods | length > 0) or
             (operation_mode == 'install' and missing_namespaces | length > 0) or
-            (empty_namespaces | length > 0)
+            (empty_namespaces | length > 0))
       tags:
         - install
         - restore
@@ -174,19 +203,44 @@
         - uninstall
 
   rescue:
-    - name: Retry the role on failure
-      include_role:
-        name: check_pods
-      when: (execution_counter | int) < (check_pods_role_retries | default(5))
+    - name: Store health check result on rescue
+      set_fact:
+        check_pods_result:
+          status: 'failed'
+          error: "Role execution failed after {{ execution_counter | default(1) }} attempts."
+          not_ready_containers: "{{ not_ready_containers | default([]) }}"
+          undesirable_pods: "{{ undesirable_pods | default([]) }}"
+          empty_namespaces: "{{ empty_namespaces | default([]) }}"
+          missing_namespaces: "{{ missing_namespaces | default([]) }}"
+      when: check_pods_store_result | bool
+      tags:
+        - install
+        - restore
+        - uninstall
+        - pre-upgrade
+
+    - name: Return failed status after maximum retries
+      fail:
+        msg: "Role execution failed after {{ check_pods_role_retries | default(5) }} attempts."
+      when: (not check_pods_no_fail | bool) and (execution_counter | int) >= (check_pods_role_retries | default(5) if not check_pods_no_wait | bool else 1)
       tags:
         - install
         - restore
         - uninstall
 
-    - name: Return failed status after maximum retries
-      fail:
-        msg: "Role execution failed after (check_pods_role_retries | default(5)) attempts."
-      when: (execution_counter | int) >= (check_pods_role_retries | default(5))
+    - name: Wait 60 seconds before retry
+      pause:
+        seconds: 60
+      when: (not check_pods_no_wait | bool) and (execution_counter | int) < (check_pods_role_retries | default(5))
+      tags:
+        - install
+        - restore
+        - uninstall
+
+    - name: Retry the role on failure
+      include_role:
+        name: check_pods
+      when: (not check_pods_no_wait | bool) and (execution_counter | int) < (check_pods_role_retries | default(5))
       tags:
         - install
         - restore

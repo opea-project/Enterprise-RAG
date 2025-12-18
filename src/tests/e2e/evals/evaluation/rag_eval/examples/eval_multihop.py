@@ -4,11 +4,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
+import logging
 from datetime import datetime
 import json
 import os
-import urllib3
 
+import urllib3
+import yaml
+
+from pathlib import Path
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -22,9 +26,11 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from tests.e2e.evals.evaluation.rag_eval import Evaluator
 from tests.e2e.evals.metrics.ragas import RagasMetric
+from tests.e2e.validation.buildcfg import cfg
 
 logger = get_opea_logger("RAG Evaluator Multihop")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
+logging.getLogger("httpcore").setLevel(logging.ERROR) #disabling mass loging for http requests
 
 
 class MultiHop_Evaluator(Evaluator):
@@ -40,7 +46,7 @@ class MultiHop_Evaluator(Evaluator):
 
     def get_golden_context(self, data):
         return [each["fact"] for each in data["evidence_list"]]
-    
+
     def evaluate(self, all_queries, arguments):
         if arguments.resume_checkpoint:
             logger.warning("Resuming evaluation is not supported for text generation metrics. Evaluation will proceed from the initial state.")
@@ -152,7 +158,7 @@ class MultiHop_Evaluator(Evaluator):
                 continue  # Skip results that have already been evaluated and are valid
 
             logger.info(f"Processing query: '{query}'")
-            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data)}
+            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data, normalize=not arguments.skip_normalize)}
             logger.debug(f"Result for query {index} {query}: {result}")
             results.append(result)
             index += 1
@@ -261,7 +267,7 @@ class MultiHop_Evaluator(Evaluator):
         except Exception as e:
             logger.error(f"Failed to initialize RagasMetric: {e}")
             raise e
-        
+
         ragas_inputs = {
             "question": [],
             "answer": [],
@@ -342,24 +348,64 @@ class MultiHop_Evaluator(Evaluator):
         return ragas_metrics
 
 
+""" Validate cluster configuration file if exists"""
+def validate_config_files_exists(args):
+    if args.auth_file:
+        auth_path = Path(args.auth_file)
+        if not auth_path.exists():
+            logger.error(f"Auth file does not exist: {args.auth_file}")
+            raise FileNotFoundError(f"Auth file not found: {args.auth_file}")
+
+    if args.cluster_config_file:
+        config_path = Path(args.cluster_config_file)
+        if not config_path.exists():
+            logger.error(f"Cluster config file does not exist: {args.cluster_config_file}")
+            raise FileNotFoundError(f"Cluster config not found: {args.cluster_config_file}")
+
+
+""" Load cluster configuration from file into singleton dict (cfg) - cluster information (FQDN, pipeline, proxies, etc.)"""
+def load_cluster_configuration_file(args):
+    build_config_filepath = args.cluster_config_file
+    if os.path.exists(build_config_filepath):
+        logger.debug(f"Loading build configuration from {build_config_filepath}")
+        with open(build_config_filepath, "r") as f:
+            build_configuration = yaml.safe_load(f)
+        cfg.update(build_configuration)
+    else:
+        logger.warning(f"Build configuration file {build_config_filepath} does not exist. Using default configuration.")
+    return cfg
+
+
+def get_project_root():
+    pythonpath = os.getenv("PYTHONPATH")
+    if not pythonpath:
+        logger.error("PYTHONPATH not set, please set PYTHONPATH")
+        raise EnvironmentError("PYTHONPATH not set")
+    project_root = pythonpath.split(os.pathsep)[0]
+    return project_root
+
+
 def args_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument("--dataset_path", default="multihop_dataset/MultiHopRAG.json", help="Path to the dataset")
     parser.add_argument("--docs_path", default="multihop_dataset/corpus.json", help="Path to the retrieval documents")
     parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save evaluation results")
     parser.add_argument("--ingest_docs", action="store_true", help="Whether to ingest documents to vector database")
-    parser.add_argument("--generation_metrics", action="store_true", help="Whether to compute text generation metrics (BLEU and ROUGE)")
-    parser.add_argument("--retrieval_metrics", action="store_true", help="Whether to compute retrieval metrics (Hits, MAP, MRR)")
-    parser.add_argument("--ragas_metrics", action="store_true", help="Whether to compute ragas metrics (answer correctness, relevancy, semantic similarity, context precision, context recall, faithfulness)")
-    parser.add_argument("--limits", type=int, default=100, help="Number of queries to evaluate (0 means evaluate all; default: 100)")
-    parser.add_argument("--resume_checkpoint", type=str, help="Path to a checkpoint file to resume evaluation from previously saved progress.")
-    parser.add_argument("--keep_checkpoint", action="store_true", help="Keep the checkpoint file after successful evaluation instead of deleting it.")
-    parser.add_argument("--llm_judge_endpoint", type=str, default="http://localhost:8008", help="URL of the LLM judge service (default: http://localhost:8008). Only used for RAGAS metrics.")
-    parser.add_argument("--embedding_endpoint", type=str, default="http://localhost:8090/embed", help="URL of the embedding service endpoint (default: http://localhost:8090/embed). Only used for RAGAS metrics.")
-    parser.add_argument("--temperature", type=float, help="Controls the randomness of the model's text generation. Defaults to RAG system setting if omitted.")
-    parser.add_argument("--max_new_tokens", type=int, help="Maximum number of new tokens to be generated by the model. Defaults to RAG system setting if omitted.")
-
-
+    parser.add_argument("--generation_metrics", action="store_true", help="Whether to compute text generation metrics such as BLEU and ROUGE")
+    parser.add_argument("--retrieval_metrics", action="store_true", help="Whether to compute retrieval metrics such as Hits, MAP and MRR")
+    parser.add_argument("--ragas_metrics", action="store_true", help="Whether to compute ragas metrics such as answer correctness, relevancy, semantic similarity, context precision, context recall , and faithfulness")
+    parser.add_argument("--skip_normalize", action="store_true", help="Skip normalization of 'None' separators in retrieval metrics. By default, normalization is enabled")
+    parser.add_argument("--limits", type=int, default=100, help="Number of queries to evaluate. Set to 0 to evaluate all provided queries")
+    parser.add_argument("--resume_checkpoint", type=str, help="Path to a checkpoint file to resume evaluation from previously saved progress")
+    parser.add_argument("--keep_checkpoint", action="store_true", help="Keep the checkpoint file after successful evaluation instead of deleting it")
+    parser.add_argument("--llm_judge_endpoint", type=str, default="http://localhost:8008", help="URL of the LLM judge service. Only used for RAGAS metrics")
+    parser.add_argument("--embedding_endpoint", type=str, default="http://localhost:8090/embed", help="URL of the embedding service endpoint. Only used for RAGAS metrics")
+    parser.add_argument("--temperature", type=float, help="Controls the randomness of the model's text generation. Defaults to RAG system setting if omitted")
+    parser.add_argument("--max_new_tokens", type=int, help="Maximum number of new tokens to be generated by the model. Defaults to RAG system setting if omitted")
+    parser.add_argument("--auth_file", type=str, default=os.path.abspath(os.path.join(get_project_root(), "..", "deployment/ansible-logs/default_credentials.txt")), help="Path to auth file")
+    parser.add_argument("--cluster_config_file", type=str, default=os.path.abspath(os.path.join(get_project_root(), "..", "deployment/inventory/sample/config.yaml")), help="Path to cluster configuration file")
     args = parser.parse_args()
     return args
 
@@ -379,7 +425,7 @@ def download_dataset(filepath: str) -> None:
     except Exception as e:
         logger.error(f"Failed to download dataset: {e}")
         raise e
-    
+
 
 def load_or_download(filepath):
     if not os.path.exists(filepath) or os.path.getsize(filepath) == 0:
@@ -434,9 +480,11 @@ def main():
     logger.info(f"Running Multihop evaluation with arguments: {args.__dict__}")
     os.makedirs(args.output_dir, exist_ok=True)
 
-
     # Initialize the evaluator
-    evaluator = MultiHop_Evaluator(output_dir=args.output_dir)
+    validate_config_files_exists(args)
+    load_cluster_configuration_file(args)
+    evaluator = MultiHop_Evaluator(output_dir=args.output_dir,
+                                   auth_file=args.auth_file)
 
     try:
         evaluator.validate_connections_to_rag_services()
@@ -446,11 +494,11 @@ def main():
         return
 
     documents = []
-    doc_data = load_or_download(args.docs_path)  
+    doc_data = load_or_download(args.docs_path)
     if doc_data is None:
         logger.error(f"Failed to load Multihop RAG documents corpus from {args.docs_path}.")
         return
-    
+
     for doc in doc_data:
         # NOTE: nothing happens with metadata, just body is used in the GenAIEval code
         # metadata = {"title": doc["title"], "published_at": doc["published_at"], "source": doc["source"]}
@@ -503,7 +551,7 @@ def main():
     if not (args.generation_metrics or args.ragas_metrics or args.retrieval_metrics):
         logger.warning("Skipping evaluation: no metrics selected. Use --generation_metrics, --ragas_metrics, or --retrieval_metrics to enable evaluation")
         return
-    
+
     # todo: optimize the code to process callculation BLUE, ROUGE metrics and RAGAS metrics in one pass
     if args.generation_metrics:
         logger.info("Starting evaluation of text generation metrics...")

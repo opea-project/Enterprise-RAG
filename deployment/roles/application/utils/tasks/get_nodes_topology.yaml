@@ -181,7 +181,8 @@
       --edp-enabled {{ edp.enabled | default(false) }} \
       --telemetry-enabled {{ telemetry.enabled | default(false) }} \
       --vector-databases-enabled {{ vector_databases.enabled | default(false) }} \
-      --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }}
+      --memory-overcommit-buffer-percent {{ balloons.memory_overcommit_buffer | default(0.1) }} \
+      --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }}
   register: replicas_calculation_result
   tags:
     - install

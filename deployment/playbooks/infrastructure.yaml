@@ -40,6 +40,17 @@
         - configure
         - never
 
+- name: Configure system limits
+  hosts: k8s_cluster
+  become: true
+  tags:
+    - install
+    - system-setup
+  tasks:
+    - name: Apply system limits for Enterprise RAG
+      ansible.builtin.include_role:
+        name: common/system_limits
+
 - name: Configure containerd registry mirrors
   hosts: k8s_cluster
   tags:
@@ -74,20 +85,12 @@
           }}
       when: insecure_registry is defined and local_registry | default(false) | bool and deploy_k8s
 
-- name: Install Kubernetes cluster
-  tags:
-    - install
-    - never
-  when:
-    - deploy_k8s
-  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
-
-- name: Install NFS utilities
+- name: Pre-installation tasks
   hosts: k8s_cluster
   become: true
   tags:
+    - pre-install
     - install
-    - post-install
   tasks:
     - name: Install NFS utilities on Ubuntu
       ansible.builtin.package:
@@ -100,11 +103,24 @@
         - ansible_distribution == "Ubuntu"
         - install_csi == "netapp-trident"
 
+    - name: Configure system limits
+      ansible.builtin.include_role:
+        name: common/system_limits
+
+- name: Install Kubernetes cluster
+  tags:
+    - install
+    - never
+  when:
+    - deploy_k8s
+  ansible.builtin.import_playbook: kubernetes_sigs.kubespray.cluster
+
 - name: Pre-deletion warnings
   become: false
   hosts: localhost
   tags:
     - delete
+    - velero-delete
     - never
   tasks:
     - name: Warning about backup and restore resources deletion
@@ -134,17 +150,23 @@
   environment:
     KUBECONFIG: "{{ kubeconfig }}"
     K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+  pre_tasks:
+    - name: Load default settings
+      ansible.builtin.include_role:
+        name: pre_install
+        tasks_from: load_initial_settings.yaml
+      tags:
+        - install
+        - post-install
+        - velero-delete
+        - delete
   tasks:
     - name: Include post-installation tasks
       ansible.builtin.include_role:
         name: cluster
         tasks_from: post_installation
       tags:
-        - install
-        - post-install
-        - velero-delete
-        - delete
-        - never
+        - always
 
 - name: Remove Kubernetes cluster
   tags:

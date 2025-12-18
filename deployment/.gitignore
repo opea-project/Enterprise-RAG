@@ -1,0 +1,3 @@
+upgrade/metadata/*
+upgrade/reports/*
+components/velero/charts/*

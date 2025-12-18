@@ -199,12 +199,14 @@ spec:
             port: metrics
           initialDelaySeconds: 10
           periodSeconds: 10
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: /metrics
             port: metrics
           initialDelaySeconds: 5
           periodSeconds: 5
+          timeoutSeconds: 5
       {{- end }}
       volumes:
       - name: secrets
@@ -226,4 +228,4 @@ spec:
       resources:
         requests:
           storage: {{ $redisCluster.persistence.size }}
-          
+

@@ -8,3 +8,4 @@ playwright==1.48.0
 pytest-playwright==0.5.2
 allure-pytest==2.13.5
 python-dotenv==1.0.0
+sniffio==1.3.1

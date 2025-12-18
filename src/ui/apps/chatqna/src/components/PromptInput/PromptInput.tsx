@@ -114,7 +114,11 @@ const PromptInput = ({
   const showSendButton = !showStopButton;
 
   return (
-    <form className="prompt-input__form" onSubmit={handleSubmit}>
+    <form
+      className="prompt-input__form"
+      onSubmit={handleSubmit}
+      data-testid="prompt-input-form"
+    >
       <AriaTextField className="pt-1.5" aria-label="Your message">
         <AriaTextArea
           ref={promptInputRef}
@@ -124,12 +128,14 @@ const PromptInput = ({
           maxLength={promptMaxLength}
           rows={1}
           className="prompt-input"
+          data-testid="prompt-input-textarea"
           onChange={onChange}
           onKeyDown={handleKeyDown}
         />
       </AriaTextField>
       {showStopButton && (
         <PromptInputButton
+          data-testid="prompt-stop-button"
           icon="prompt-stop"
           type="button"
           aria-label="Stop response"
@@ -139,6 +145,7 @@ const PromptInput = ({
       )}
       {showSendButton && (
         <PromptInputButton
+          data-testid="prompt-send-button"
           icon="prompt-send"
           type="submit"
           aria-label="Send prompt"

@@ -38,13 +38,39 @@ class VLLMConnector:
         self._headers = headers if headers is not None else {}
         self._insecure_endpoint = insecure_endpoint
         self._openai_format_streaming = openai_format_streaming
+        
+        # Configure for high concurrency with long-running requests
+        limits = httpx.Limits(
+            max_keepalive_connections=100,  # Keep 100 connections alive for reuse (up from 20)
+            max_connections=1000,           # Allow up to 1000 concurrent connections (up from 100)
+            keepalive_expiry=300.0          # Keep idle connections alive for 5 minutes (up from 30s)
+        )
+        
+        # Increase timeout for long VLLM responses
+        timeout = httpx.Timeout(
+            connect=10.0,    # 10s to establish connection
+            read=600.0,      # 10 minutes for reading response (was 180s)
+            write=10.0,      # 10s for sending request
+            pool=10.0        # 10s for getting connection from pool
+        )
+        
         self._client = openai.AsyncOpenAI(
             api_key="EMPTY",
             base_url=self._endpoint,
-            timeout=180,
+            timeout=timeout,
             default_headers=self._headers,
-            http_client=httpx.AsyncClient(headers={"Connection": "close"}, verify=not self._insecure_endpoint)
+            http_client=httpx.AsyncClient(
+                limits=limits,
+                timeout=timeout,
+                verify=not self._insecure_endpoint
+                # REMOVED: headers={"Connection": "close"}
+            )
         )
+
+    async def close(self):
+        """Close the HTTP client and cleanup connections"""
+        if hasattr(self, '_client') and self._client:
+            await self._client.close()
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
@@ -232,6 +258,11 @@ class GenericLLMConnector(LLMConnector):
 
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return await self._connector.generate(input)
+
+    async def close(self):
+        """Close underlying connector"""
+        if hasattr(self._connector, 'close'):
+            await self._connector.close()
 
     def change_configuration(self, **kwargs) -> None:
         logger.error("Change configuration not supported for GenericLLMConnector")

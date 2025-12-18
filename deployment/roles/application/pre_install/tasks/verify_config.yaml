@@ -1,0 +1,20 @@
+---
+- name: Fail with all configuration issues
+  ansible.builtin.fail:
+    msg: |
+      CONFIGURATION FAILED
+
+      {{ configuration_issues | length }} issue(s) must be resolved before continuing:
+
+      {% for issue in configuration_issues %}
+      {{ loop.index }}. {{ issue }}
+      {% endfor %}
+
+      Please resolve all issues above and run the deployment again.
+  when: configuration_issues | length > 0
+  tags:
+    - install
+    - display-configuration
+    - uninstall
+    - backup
+    - restore

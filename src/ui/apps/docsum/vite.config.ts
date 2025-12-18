@@ -8,12 +8,17 @@ import path from "path";
 import { defineConfig } from "vite";
 import viteTsconfigPaths from "vite-tsconfig-paths";
 
+import packageJson from "./package.json";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), viteTsconfigPaths()],
+  define: {
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(packageJson.version),
+  },
   resolve: {
     alias: {
       "@/": path.resolve(__dirname, "./src/"),

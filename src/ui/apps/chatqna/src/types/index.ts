@@ -3,6 +3,13 @@
 
 import { SourceDocumentType } from "@/features/chat/types";
 
+export interface Chat {
+  id: string;
+  title: string;
+  turns: ChatTurn[];
+  inputValue: string;
+}
+
 // interface defined for chat elements displayed in UI
 export interface ChatTurn {
   id: string;
@@ -22,4 +29,5 @@ export type AppEnvKey =
   | "GRAFANA_DASHBOARD_URL"
   | "KEYCLOAK_ADMIN_PANEL_URL"
   | "S3_URL"
-  | "CHAT_DISCLAIMER_TEXT";
+  | "CHAT_DISCLAIMER_TEXT"
+  | "ERAG_VERSION";

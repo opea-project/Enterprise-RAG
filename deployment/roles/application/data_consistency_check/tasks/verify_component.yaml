@@ -1,0 +1,75 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Determine target component name
+  ansible.builtin.set_fact:
+    target_component: "{{ mapping_lookup[pre_component.component] | default(pre_component.component) }}"
+  when: is_upgrade_mode | default(false) | bool
+
+- name: Use same component name for non-upgrade mode
+  ansible.builtin.set_fact:
+    target_component: "{{ pre_component.component }}"
+  when: not (is_upgrade_mode | default(false) | bool)
+
+- name: Check if component was removed in new version
+  ansible.builtin.set_fact:
+    component_removed: "{{ target_component == '' or target_component is none or target_component == None }}"
+
+- name: Handle removed component
+  ansible.builtin.set_fact:
+    verification_results: "{{ verification_results + [{'component': pre_component.component, 'status': 'SKIPPED', 'reason': 'Component removed in new version'}] }}"
+  when: component_removed | bool
+
+- name: Handle existing component
+  when: not (component_removed | bool)
+  block:
+    - name: Check if post-component exists
+      ansible.builtin.set_fact:
+        post_component: "{{ post_components_map[target_component] | default(None) }}"
+
+    - name: Handle component not found in post-upgrade
+      ansible.builtin.set_fact:
+        verification_results: "{{ verification_results + [{'component': pre_component.component, 'status': 'WARNING', 'reason': 'Component not found in post-upgrade report (may not be enabled)'}] }}"
+      when: post_component is none or post_component is not defined or post_component == None
+
+    - name: Compare component data
+      when: post_component is defined and post_component is not none and post_component != None
+      block:
+        - name: Initialize component result
+          ansible.builtin.set_fact:
+            component_result:
+              component: "{{ pre_component.component }}"
+              mapped_to: "{{ target_component if target_component != pre_component.component else None }}"
+              status: "PASSED"
+              details: []
+
+        - name: Compare each metric
+          ansible.builtin.set_fact:
+            component_result: "{{ component_result | combine({'details': component_result.details + [metric_detail]}) }}"
+          vars:
+            metric_detail:
+              metric: "{{ item.key }}"
+              pre_value: "{{ item.value }}"
+              post_value: "{{ post_component[item.key] | default('N/A') }}"
+              match: "{{ (post_component[item.key] | default(-1)) == item.value }}"
+          loop: "{{ pre_component | dict2items }}"
+          when: item.key != 'component'
+
+        - name: Check if all metrics matched
+          ansible.builtin.set_fact:
+            all_matched: "{{ component_result.details | selectattr('match', 'equalto', false) | list | length == 0 }}"
+
+        - name: Update component result status
+          ansible.builtin.set_fact:
+            component_result: "{{ component_result | combine({'status': 'FAILED'}) }}"
+          when: not (all_matched | bool)
+
+        - name: Update overall verification status
+          ansible.builtin.set_fact:
+            verification_passed: false
+          when: not (all_matched | bool)
+
+        - name: Add component result to verification results
+          ansible.builtin.set_fact:
+            verification_results: "{{ verification_results + [component_result] }}"

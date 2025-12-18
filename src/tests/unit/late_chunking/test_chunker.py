@@ -23,8 +23,6 @@ def mock_tokenizer():
     
     # Mock encode method
     mock_encoding = MagicMock()
-    # Example: "Hello world." tokenized
-    mock_encoding.ids = [101, 7592, 2088, 1012, 102]  # [CLS] Hello world . [SEP]
     mock_encoding.offsets = [(0, 0), (0, 5), (6, 11), (11, 12), (0, 0)]  # Character offsets
     mock.encode.return_value = mock_encoding
     
@@ -38,13 +36,6 @@ def mock_tokenizer():
         return token_map.get(token)
     
     mock.token_to_id.side_effect = token_to_id_side_effect
-    
-    # Mock decode method
-    def decode_side_effect(token_ids, skip_special_tokens=True):
-        # Simple mock that returns joined tokens
-        return " ".join([str(id) for id in token_ids])
-    
-    mock.decode.side_effect = decode_side_effect
     
     return mock
 
@@ -150,7 +141,7 @@ class TestChunkByTokens:
     def test_chunk_by_tokens_single_chunk(self, mock_tokenizer):
         """Test when text fits in a single chunk."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [1, 2, 3]  # Only 3 tokens
+        mock_encoding.offsets = [(0, 5), (6, 10), (10, 11)]  # Character offsets for each token
         mock_tokenizer.encode.return_value = mock_encoding
         
         with patch('tokenizers.Tokenizer.from_pretrained', return_value=mock_tokenizer):
@@ -162,6 +153,7 @@ class TestChunkByTokens:
             assert len(chunks) == 1
             assert len(span_annotations) == 1
             assert span_annotations[0] == (0, 3)
+            assert chunks[0] == "Short text."
 
 
 class TestChunkBySentences:
@@ -170,7 +162,6 @@ class TestChunkBySentences:
     def test_chunk_by_sentences_single_sentence(self, mock_tokenizer):
         """Test chunking with a single sentence."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [101, 7592, 2088, 1012, 102]  # [CLS] Hello world . [SEP]
         mock_encoding.offsets = [(0, 0), (0, 5), (6, 11), (11, 12), (0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         
@@ -186,8 +177,6 @@ class TestChunkBySentences:
     def test_chunk_by_sentences_multiple_sentences(self, mock_tokenizer):
         """Test chunking with multiple sentences."""
         mock_encoding = MagicMock()
-        # Simulate multiple sentences with periods
-        mock_encoding.ids = [101, 100, 200, 1012, 300, 400, 1012, 102]  # [CLS] ... . ... . [SEP]
         mock_encoding.offsets = [(0, 0), (0, 5), (6, 10), (10, 11), (12, 17), (18, 22), (22, 23), (0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         
@@ -204,7 +193,6 @@ class TestChunkBySentences:
     def test_chunk_by_sentences_no_punctuation(self, mock_tokenizer):
         """Test chunking when no sentence boundaries are found."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [101, 100, 200, 300, 102]  # No period token
         mock_encoding.offsets = [(0, 0), (0, 5), (6, 10), (11, 15), (0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         
@@ -222,7 +210,6 @@ class TestChunkBySentences:
     def test_chunk_by_sentences_with_overlap(self, mock_tokenizer):
         """Test sentence-based chunking with overlap."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [101] + [i for i in range(10)] + [1012] + [i+10 for i in range(10)] + [1012, 102]
         mock_encoding.offsets = [(0, 0)] + [(i, i+1) for i in range(23)] + [(0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         
@@ -266,7 +253,6 @@ class TestChunkMethod:
     def test_chunk_with_sentences_strategy(self, mock_tokenizer):
         """Test chunk method with 'sentences' strategy."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [101, 100, 200, 1012, 102]
         mock_encoding.offsets = [(0, 0), (0, 5), (6, 10), (10, 11), (0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         
@@ -282,7 +268,6 @@ class TestChunkMethod:
     def test_chunk_override_strategy(self, mock_tokenizer):
         """Test overriding the default chunking strategy."""
         mock_encoding = MagicMock()
-        mock_encoding.ids = [101, 100, 200, 1012, 102]
         mock_encoding.offsets = [(0, 0), (0, 5), (6, 10), (10, 11), (0, 0)]
         mock_tokenizer.encode.return_value = mock_encoding
         

@@ -70,6 +70,13 @@ If your system uses a proxy, ensure the no_proxy environment variable includes t
 export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com,auth.erag.com
 ```
 
+> [!IMPORTANT]
+> **Configure /etc/hosts**: Ensure that the RAG system domains are added to your `/etc/hosts` file to resolve to localhost.
+> For example, the updated file content should resemble the following:
+> ```
+> 127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+> ```
+
 ### Launch Service of LLM-as-a-Judge
 
 _This step is required only for computing RAGAS metrics._
@@ -190,23 +197,25 @@ To list all available arguments and their usage, run:
 python eval_multihop.py --help
 ```
 
-
-| **Argument**           | **Default Value**                   | **Description**                                                                             |
-| ---------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| `--output_dir`         | `./output`                          | Directory to save evaluation results                                                        |
-| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json` | Path to the evaluation dataset                                                              |
-| `--docs_path`          | `multihop_dataset/corpus.json`      | Path to the documents for retrieval                                                         |
-| `--limits`             | `100`                               | Number of queries to evaluate (0 means evaluate all; default: 100)                          |
-| `--ingest_docs`        | *(flag)*                            | Ingest documents into the vector database (use only on first run)                           |
-| `--generation_metrics` | *(flag)*                            | Compute text generation metrics (`BLEU`, `ROUGE`)                                           |
-| `--retrieval_metrics`  | *(flag)*                            | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                      |
-| `--ragas_metrics`      | *(flag)*                            | Compute RAGAS metrics (answer correctness, context precision, etc.)                         |
-| `--resume_checkpoint`  | *None*                              | Path to a checkpoint file to resume evaluation from previous state                          |
-| `--keep_checkpoint`    | *(flag)*                            | Keep the checkpoint file after evaluation (do not delete)                                   |
-| `--llm_judge_endpoint` | `http://localhost:8008`             | URL of the LLM judge service; only used for RAGAS evaluation                                |
-| `--embedding_endpoint` | `http://localhost:8090/embed`       | URL of the embedding service endpoint, only used for RAGAS                                  |
-| `--temperature`        |  Read from RAG system config        | Controls text generation randomness; defaults to RAG system setting if omitted.             |
-| `--max_new_tokens`     |  Read from RAG system config        | Maximum tokens generated; defaults to RAG system setting if omitted.                        |
+| **Argument**           | **Default Value**                                 | **Description**                                                                                 |
+| ---------------------- |---------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `--output_dir`         | `./output`                                        | Directory to save evaluation results                                                            |
+| `--auth_file`          | `deployment/ansible-logs/default_credentials.txt` | Path to credentials file with `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD` |
+| `--cluster_config_file`| `deployment/inventory/sample/config.yaml`         | Path to cluster configuration YAML file with deployment settings                                |
+| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json`               | Path to the evaluation dataset                                                                  |
+| `--docs_path`          | `multihop_dataset/corpus.json`                    | Path to the documents for retrieval                                                             |
+| `--limits`             | `100`                                             | Number of queries to evaluate (0 means evaluate all; default: 100)                              |
+| `--ingest_docs`        | *(flag)*                                          | Ingest documents into the vector database (use only on first run)                               |
+| `--generation_metrics` | *(flag)*                                          | Compute text generation metrics (`BLEU`, `ROUGE`)                                               |
+| `--retrieval_metrics`  | *(flag)*                                          | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                          |
+| `--skip_normalize`     | *(flag)*                                          | Skip 'None' separator normalization for exact 1:1 text matching                                 |
+| `--ragas_metrics`      | *(flag)*                                          | Compute RAGAS metrics (answer correctness, context precision, etc.)                             |
+| `--resume_checkpoint`  | *None*                                            | Path to a checkpoint file to resume evaluation from previous state                              |
+| `--keep_checkpoint`    | *(flag)*                                          | Keep the checkpoint file after evaluation (do not delete)                                       |
+| `--llm_judge_endpoint` | `http://localhost:8008`                           | URL of the LLM judge service; only used for RAGAS evaluation                                    |
+| `--embedding_endpoint` | `http://localhost:8090/embed`                     | URL of the embedding service endpoint, only used for RAGAS                                      |
+| `--temperature`        | Read from RAG system config                       | Controls text generation randomness; defaults to RAG system setting if omitted.                 |
+| `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted.                            |
 
 
 > Note: If `--dataset_path` and `--docs_path` are set to their default values and the corresponding files are not found locally, they will be automatically downloaded at runtime from [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixuantt/MultiHopRAG) and saved to the expected local paths.
@@ -216,13 +225,26 @@ python eval_multihop.py --help
 ### Usage Guide
 
 This section outlines how to run Multihop evaluation of the RAG pipeline using [examples/eval_multihop.py](examples/eval_multihop.py).
+  - **Ingest Documents**
 
- - **Ingest Documents**
- 
     To ingest the MultiHop dataset into the RAG system, use the flag `--ingest_docs`:
+
+     *Basic Usage:*
+
+     This command ingests the MultiHop dataset into the RAG system using the default config.yaml and credentials file from default location.
     ```bash
     python eval_multihop.py --ingest_docs
     ```
+
+    *Using custom configuration and credentials file location:*
+
+    If you modified your environment (e.g., changed the cluster FQDN or moved the credentials file), you can explicitly provide your own file paths:
+    ```bash
+    python eval_multihop.py --ingest_docs \ 
+                            --cluster_config_file /path/to/your/inventory/cluster/config.yaml \
+                            --auth_file /path/to/your/credentials.txt
+    ```
+
 
   - **Evaluate Generated Answers**
 
@@ -240,6 +262,10 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
     # For a quick test, limit the number of evaluated queries
     python eval_multihop.py --generation_metrics --limits 2
     ```
+
+    > NOTE:
+    > If you are using custom configuration (e.g., a modified cluster FQDN) or your credentials are in a different location,
+    > remember to provide --cluster_config_file and/or --auth_file as shown above in the Ingest Documents section.
 
   - **Evaluate Retrieval Quality**
 
@@ -263,6 +289,25 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
     # To resume a previous run (useful in case of failure or interruption)
     python eval_multihop.py --retrieval_metrics --limits 200 --resume_checkpoint ./output/multihop_YYYYMMDDHHMMSS.checkpoint.jsonl
     ```
+
+    > NOTE:
+    > If you are using custom configuration (e.g., a modified cluster FQDN) or your credentials are in a different location,
+    > remember to provide --cluster_config_file and/or --auth_file as shown above in the Ingest Documents section.
+
+
+    **Normalization of 'None' Separators:**
+
+    By default, retrieval metrics use text normalization that removes 'None' separators commonly found in table-extracted data. This improves evaluation accuracy when comparing golden context with retrieved documents containing additional separators.
+
+    ```bash
+    # Default behavior: normalization enabled (recommended for table data)
+    python eval_multihop.py --retrieval_metrics
+
+    # Exact 1:1 text matching without normalization
+    python eval_multihop.py --retrieval_metrics --skip_normalize
+    ```
+
+    Use `--skip_normalize` when you need strict, exact comparison between golden context and retrieved documents. Note that for content extracted from tables, evaluation scores may be lower due to additional separators like 'None' that appear in the retrieved text but not in the golden context.
 
 
   - **RAGAS Evaluation**
@@ -293,6 +338,10 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
     > export no_proxy=localhost,127.0.0.1,erag.com,s3.erag.com,auth.erag.com
     > ```
     > Then retry the evaluation.
+
+    > NOTE:
+    > If you are using custom configuration (e.g., a modified cluster FQDN) or your credentials are in a different location,
+    > remember to provide --cluster_config_file and/or --auth_file as shown above in the Ingest Documents section.
 
 
 #### Example Output

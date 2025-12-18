@@ -15,9 +15,9 @@ import statistics
 import string
 import time
 
-from constants import DATAPREP_UPLOAD_DIR
-from helpers.api_request_helper import InvalidChatqaResponseBody
-from validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.helpers.api_request_helper import InvalidChatqaResponseBody
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if chatqa pipeline is not deployed
 for pipeline in cfg.get("pipelines", []):
@@ -27,17 +27,6 @@ else:
     pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture(scope="function")
-def temporarily_remove_brute_force_detection(keycloak_helper):
-    """
-    Disable brute force detection in Keycloak for the duration of the test.
-    This is to avoid locking the user out in case of many concurrent requests.
-    """
-    keycloak_helper.set_brute_force_detection(False)
-    yield
-    keycloak_helper.set_brute_force_detection(True)
 
 
 @allure.testcase("IEASG-T32")

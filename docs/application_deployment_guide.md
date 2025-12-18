@@ -36,15 +36,25 @@ kubectl patch storageclass <your-storage-class-name> -p '{"metadata": {"annotati
 kubectl patch storageclass <other-storage-class> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 ```
 
-## Change number of iwatch open descriptors
+## System Limits Configuration
 
-If the application is deployed with telemetry enabled, it is required to increase number of inotify user instances on every machine from the cluster. To do so, check the current number of users, by running
+> [!NOTE]
+> System limits are automatically configured when using the `pre-install` or `install` tag during infrastructure. Manual configuration is only needed if you're not using the playbooks or want to verify the settings.
+
+If the application is deployed with telemetry enabled, it is required to increase number of inotify user instances on every machine from the cluster. These limits are automatically applied using:
+
+```sh
+# For infrastructure deployment
+ansible-playbook -K playbooks/infrastructure.yaml --tags pre-install -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+```
+
+To manually verify or configure the limits, check the current number:
 
 ```sh
 sudo sysctl -n fs.inotify.max_user_instances
 ```
 
-To modify it, run:
+To manually modify it, run:
 
 ```sh
 cat <<EOF | sudo tee /etc/sysctl.d/99-enterprise-rag.conf
@@ -52,7 +62,6 @@ cat <<EOF | sudo tee /etc/sysctl.d/99-enterprise-rag.conf
 fs.inotify.max_user_instances = 8192
 fs.inotify.max_user_watches = 524288
 fs.file-max = 2097152
-vm.max_map_count = 262144
 EOF
 
 # Apply sysctl changes

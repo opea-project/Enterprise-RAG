@@ -166,5 +166,5 @@ variable "vllm_size_vcpu" {
 variable "solution_version" {
   description = "Intel® AI for Enterprise RAG solution version to deploy - can be a tag (e.g., 'release-2.0.0') or branch name (e.g., 'main', 'develop')"
   type        = string
-  default     = "release-2.0.0"
+  default     = "release-2.0.1"
 }

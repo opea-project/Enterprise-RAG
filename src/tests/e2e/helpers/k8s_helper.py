@@ -11,6 +11,10 @@ import kr8s
 logger = logging.getLogger(__name__)
 
 
+class ResourceNotFound(Exception):
+    pass
+
+
 class K8sHelper:
 
     def retrieve_admin_password(self, secret_name, namespace):
@@ -33,16 +37,24 @@ class K8sHelper:
         pods = kr8s.get("pods", namespace=namespace)
         return [pod.name for pod in pods]
 
-    def get_pods_by_label(self, namespace, label_selector):
-        """Get a list of kr8s Pod objects matching a label selector in a namespace"""
+    def get_pod_by_label(self, namespace, label_selector):
+        """Returns first pod matching a label selector in a namespace"""
         logger.debug(f"Getting pods with label selector '{label_selector}' in namespace '{namespace}'")
-        return kr8s.get("pods", namespace=namespace, label_selector=label_selector)
+        pods = kr8s.get("pods", namespace=namespace, label_selector=label_selector)
+        if len(pods) == 0:
+            raise ResourceNotFound(f"No running pods found with label '{label_selector}' in namespace '{namespace}'.")
+        return pods[0]
 
     def exec_in_pod(self, pod, command):
         """Execute a command in a pod's container"""
         logger.debug(f"Executing command '{command}' in pod '{pod.name}'")
         try:
-            return pod.exec(command)
+            exec_result = pod.exec(command)
+            stdout = exec_result.stdout
+            if isinstance(stdout, bytes):
+                return stdout.decode().strip()
+            else:
+                return stdout.strip()
         except Exception as e:
             logger.error(f"Failed to execute command in pod '{pod.name}': {e}")
             raise  # Re-raise the exception to fail the test

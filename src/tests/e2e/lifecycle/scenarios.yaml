@@ -23,3 +23,8 @@ scenarios:
     lifecycle:
       - test_update_reranker_model.py
     markers: "smoke"
+
+  update_embedding_model:
+    lifecycle:
+      - test_update_embedding_model.py
+    markers: "smoke"

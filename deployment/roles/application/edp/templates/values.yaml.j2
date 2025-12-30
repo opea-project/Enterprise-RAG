@@ -12,6 +12,8 @@ proxy:
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+embedding_model_name: &embedding_model_name {{ embedding_model_name }}
+
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "minio" %}
 {% if storage == "minio" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
@@ -136,10 +138,10 @@ ingestion:
   tag: {{ tag }}
   repository: {{ registry }}
   config:
+    embedding_model_name: *embedding_model_name
 {% if edp.hierarchical_indices.enabled is true %}
     use_hierarchical_indices: "True"
 {% endif %}
-  config:
     vector_dims: {{ vector_databases.vector_dims }}
     vector_datatype: {{ vector_databases.vector_datatype }}
 {% if edp.late_chunking.enabled is true %}

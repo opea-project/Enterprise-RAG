@@ -79,7 +79,8 @@ class ConnectorRedis(VectorStoreConnector):
         return metadata_schema
 
     def _vector_schema(self, schema: dict, metadata_schema: Optional[dict]=None) -> IndexSchema:
-        index_name = f"{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_index"
+        model_name = sanitize_env(os.getenv("EMBEDDING_MODEL_NAME", "default")).replace("/", "_").replace("-", "_")
+        index_name = f"{model_name.lower()}_{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_{schema['dims']}_index"
 
         data = {
             "index": {

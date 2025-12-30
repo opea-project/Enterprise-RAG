@@ -26,6 +26,8 @@ edpOidcConfigUrl: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/.well-know
 edpOidcClientSecret: ""
 bucketNameRegexFilter: '.*'
 presignedUrlCredentialsSystemFallback: "false"
+embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
+
 
 minioApiDomain: &minioApiDomain "s3.erag.com"
 minioBrowserDomain: &minioBrowserDomain "minio.erag.com"
@@ -895,6 +897,7 @@ ingestion:
   tag: latest
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+    embedding_model_name: *embedding_model_name # e.g., "BAAI/bge-base-en-v1.5"
     # Vector Algorithm configuration
     vector_algorithm: "FLAT" # "FLAT", "HNSW"
     vector_dims: "768" # Depends on model used in embedding. For example bge-large-en-v1.5=768, bge-large-en-v1.5=1024

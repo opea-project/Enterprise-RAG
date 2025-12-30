@@ -148,6 +148,7 @@ images:
     vector_store: {{ vector_databases.vector_store }}
 {% endif %}
     envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}

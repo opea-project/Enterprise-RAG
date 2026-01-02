@@ -12,8 +12,8 @@
 - [MultiHop (English dataset)](#multihop-english-dataset)
   - [Evaluation](#evaluation)
   - [Usage Guide](#usage-guide)
+  - [Tips to Control the Evaluation Scope](#tips-to-control-the-evaluation-scope)
 - [Acknowledgements](#acknowledgements)
-
 
 <!-- /TOC -->
 
@@ -187,7 +187,7 @@ This evaluation uses [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixu
 
 ### Evaluation
 
-This section explains how to run the evaluation pipeline for Multihop dataset.
+This section explains how to run the evaluation pipeline for MultiHop dataset.
 
 The evaluation script is located at `examples/eval_multihop.py`. 
 
@@ -199,23 +199,42 @@ python eval_multihop.py --help
 
 | **Argument**           | **Default Value**                                 | **Description**                                                                                 |
 | ---------------------- |---------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `--output_dir`         | `./output`                                        | Directory to save evaluation results                                                            |
-| `--auth_file`          | `deployment/ansible-logs/default_credentials.txt` | Path to credentials file with `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD` |
-| `--cluster_config_file`| `deployment/inventory/sample/config.yaml`         | Path to cluster configuration YAML file with deployment settings                                |
-| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json`               | Path to the evaluation dataset                                                                  |
-| `--docs_path`          | `multihop_dataset/corpus.json`                    | Path to the documents for retrieval                                                             |
-| `--limits`             | `100`                                             | Number of queries to evaluate (0 means evaluate all; default: 100)                              |
-| `--ingest_docs`        | *(flag)*                                          | Ingest documents into the vector database (use only on first run)                               |
-| `--generation_metrics` | *(flag)*                                          | Compute text generation metrics (`BLEU`, `ROUGE`)                                               |
-| `--retrieval_metrics`  | *(flag)*                                          | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                          |
-| `--skip_normalize`     | *(flag)*                                          | Skip 'None' separator normalization for exact 1:1 text matching                                 |
-| `--ragas_metrics`      | *(flag)*                                          | Compute RAGAS metrics (answer correctness, context precision, etc.)                             |
-| `--resume_checkpoint`  | *None*                                            | Path to a checkpoint file to resume evaluation from previous state                              |
-| `--keep_checkpoint`    | *(flag)*                                          | Keep the checkpoint file after evaluation (do not delete)                                       |
-| `--llm_judge_endpoint` | `http://localhost:8008`                           | URL of the LLM judge service; only used for RAGAS evaluation                                    |
-| `--embedding_endpoint` | `http://localhost:8090/embed`                     | URL of the embedding service endpoint, only used for RAGAS                                      |
-| `--temperature`        | Read from RAG system config                       | Controls text generation randomness; defaults to RAG system setting if omitted.                 |
-| `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted.                            |
+| `--output_dir`         | `./output`                                        | Directory to save evaluation results
+|
+| `--auth_file`          | `deployment/ansible-logs/default_credentials.txt` | Path to credentials file with `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`
+|
+| `--cluster_config_file`| `deployment/inventory/sample/config.yaml`         | Path to cluster configuration YAML file with deployment settings
+|
+| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json`               | Path to the evaluation dataset
+|
+| `--docs_path`          | `multihop_dataset/corpus.json`                    | Path to the documents for retrieval
+|
+| `--limits`             | `100`                                             | Number of queries to evaluate (0 means evaluate all; default: 100)
+|
+| `--exclude_types`      | *None*                                            | Exclude queries by question type. Queries matching these question types will be skipped. Example: --exclude_types comparison_query
+|
+| `--ingest_docs`        | *(flag)*                                          | Ingest documents into the vector database (use only on first run)
+|
+| `--generation_metrics` | *(flag)*                                          | Compute text generation metrics (`BLEU`, `ROUGE`)
+|
+| `--retrieval_metrics`  | *(flag)*                                          | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)
+|
+| `--skip_normalize`     | *(flag)*                                          | Skip 'None' separator normalization for exact 1:1 text matching
+|
+| `--ragas_metrics`      | *(flag)*                                          | Compute RAGAS metrics (answer correctness, context precision, etc.)
+|
+| `--resume_checkpoint`  | *None*                                            | Path to a checkpoint file to resume evaluation from previous state
+|
+| `--keep_checkpoint`    | *(flag)*                                          | Keep the checkpoint file after evaluation (do not delete)
+|
+| `--llm_judge_endpoint` | `http://localhost:8008`                           | URL of the LLM judge service; only used for RAGAS evaluation
+|
+| `--embedding_endpoint` | `http://localhost:8090/embed`                     | URL of the embedding service endpoint, only used for RAGAS
+|
+| `--temperature`        | Read from RAG system config                       | Controls text generation randomness; defaults to RAG system setting if omitted
+|
+| `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted
+|
 
 
 > Note: If `--dataset_path` and `--docs_path` are set to their default values and the corresponding files are not found locally, they will be automatically downloaded at runtime from [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixuantt/MultiHopRAG) and saved to the expected local paths.
@@ -224,7 +243,7 @@ python eval_multihop.py --help
 
 ### Usage Guide
 
-This section outlines how to run Multihop evaluation of the RAG pipeline using [examples/eval_multihop.py](examples/eval_multihop.py).
+This section outlines how to run MultiHop evaluation of the RAG pipeline using [examples/eval_multihop.py](examples/eval_multihop.py).
   - **Ingest Documents**
 
     To ingest the MultiHop dataset into the RAG system, use the flag `--ingest_docs`:
@@ -250,7 +269,7 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
 
     _Metrics: BLEU, ROUGE, (LLM-score – not implemented yet)_
 
-    To evaluate the quality of RAG generated answers on Multihop queries, run:
+    To evaluate the quality of RAG generated answers on MultiHop queries, run:
 
     ```bash
     # First-time run (with document ingestion)
@@ -373,6 +392,29 @@ The evaluation results are stored in the output/ directory with detailed logs an
  - generated_text: the chat's answer.
 
 The query and its corresponding ground_truth_text originate from the yixuantt/MultiHopRAG dataset.
+
+### Tips to Control the Evaluation Scope
+
+**Controlling the Number of Queries with `--limits`:**
+
+The `--limits` parameter allows you to control how many queries from the dataset are evaluated. This is particularly useful for quick testing during development to verify that the pipeline works correctly.
+
+```bash
+# Evaluate only the first 2 queries (quick test)
+python eval_multihop.py --generation_metrics --limits 2
+```
+
+**Excluding Specific Query Types with `--exclude_types`:**
+
+The dataset specified by `--dataset_path` (default: multihop_dataset/MultiHopRAG.json) contains queries along with their `question_type`. You can selectively exclude specific query types from evaluation using the `--exclude_types` parameter. This is useful when you want to focus on particular aspects of your RAG system, for example, to compute accuracy metrics separately for each query type and identify which types your RAG handles better or worse.
+
+```bash
+# Exclude comparison queries from evaluation
+python eval_multihop.py --retrieval_metrics --exclude_types comparison_query
+
+# Exclude multiple query types (space-separated)
+python eval_multihop.py --retrieval_metrics --exclude_types comparison_query inference_query
+```
 
 
 ## Acknowledgements

@@ -140,6 +140,9 @@ class Evaluator:
     def get_query(self, data: dict):
         raise NotImplementedError("Depends on the specific dataset.")
 
+    def get_question_type(self, data: dict):
+        raise NotImplementedError("Depends on the specific dataset.")
+
     def get_document(self, data: dict):
         raise NotImplementedError("Depends on the specific dataset.")
 
@@ -164,6 +167,7 @@ class Evaluator:
             },
             "log": {
                 "query": self.get_query(data),
+                "query_type": self.get_question_type(data),
                 "generated_text": generated_text,
                 "ground_truth_text": ground_truth_text,
                 "evaluateDatetime": str(datetime.now()),
@@ -217,6 +221,7 @@ class Evaluator:
             },
             "log": {
                 "query": self.get_query(data),
+                "query_type": self.get_question_type(data),
                 "golden_context": golden_context,
                 "num_retrieved_documents": len(retrieved_documents),
                 "num_reranked_documents": len(reranked_documents),

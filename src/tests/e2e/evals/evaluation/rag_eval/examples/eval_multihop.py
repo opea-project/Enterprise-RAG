@@ -41,6 +41,9 @@ class MultiHop_Evaluator(Evaluator):
     def get_query(self, data: dict):
         return data["query"]
 
+    def get_question_type(self, data: dict):
+        return data.get("question_type") or "unknown"
+
     def get_template(self):
         return None
 
@@ -63,7 +66,7 @@ class MultiHop_Evaluator(Evaluator):
             generated_text = self.send_request(query, arguments)
             data["generated_text"] = generated_text
 
-            result = {"id": index, "uuid": self.get_uuid(query), **self.scoring(data)}
+            result = {"id": index, "uuid": self.get_uuid(query), "question_type": self.get_question_type(data), **self.scoring(data)}
             logger.debug(f"Result for query {index}: {result}")
             results.append(result)
             index += 1
@@ -194,6 +197,7 @@ class MultiHop_Evaluator(Evaluator):
 
     def prepare_ragas_record(self, data, arguments):
         query = self.get_query(data)
+        question_type = self.get_question_type(data)
         generated_text = self.send_request(query, arguments)
 
         try:
@@ -204,6 +208,7 @@ class MultiHop_Evaluator(Evaluator):
 
         return {
             "query": query,
+            "question_type": question_type,
             "generated_text": generated_text,
             "ground_truth": self.get_ground_truth_text(data),
             "golden_context": self.get_golden_context(data),
@@ -293,8 +298,9 @@ class MultiHop_Evaluator(Evaluator):
 
                 # Store metadata for each query
                 query_metadata.append({
-                    "query": result["query"],
                     "uuid": self.get_uuid(result["query"]),
+                    "query": result["query"],
+                    "question_type": result["question_type"],
                     "generated_text": result["generated_text"],
                     "ground_truth": result["ground_truth"],
                     "golden_context": result["golden_context"],
@@ -328,6 +334,7 @@ class MultiHop_Evaluator(Evaluator):
                         "ragas_metrics": score,
                         "log": {
                             "query": query_metadata[idx]["query"],
+                            "question_type": query_metadata[idx]["question_type"],
                             "generated_text": query_metadata[idx]["generated_text"],
                             "ground_truth": query_metadata[idx]["ground_truth"],
                             "golden_context": query_metadata[idx]["golden_context"],
@@ -398,6 +405,7 @@ def args_parser():
     parser.add_argument("--ragas_metrics", action="store_true", help="Whether to compute ragas metrics such as answer correctness, relevancy, semantic similarity, context precision, context recall , and faithfulness")
     parser.add_argument("--skip_normalize", action="store_true", help="Skip normalization of 'None' separators in retrieval metrics. By default, normalization is enabled")
     parser.add_argument("--limits", type=int, default=100, help="Number of queries to evaluate. Set to 0 to evaluate all provided queries")
+    parser.add_argument("--exclude_types", type=str, nargs='+', dest='exclude_types', help="Exclude queries by question type. Queries matching these question types will be skipped. Example: --exclude_types comparision_query")
     parser.add_argument("--resume_checkpoint", type=str, help="Path to a checkpoint file to resume evaluation from previously saved progress")
     parser.add_argument("--keep_checkpoint", action="store_true", help="Keep the checkpoint file after successful evaluation instead of deleting it")
     parser.add_argument("--llm_judge_endpoint", type=str, default="http://localhost:8008", help="URL of the LLM judge service. Only used for RAGAS metrics")
@@ -475,6 +483,29 @@ def filter_category_null_queries(queries):
 
     return [q for q in queries if q.get("question_type") != 'null_query']
 
+
+def filter_queries_by_type(queries, exclude_types=None):
+    """
+    Filter queries by excluding specific question types.
+
+    Args:
+        queries: List of query dictionaries
+        exclude_types: List of question types to exclude (if None, exclude none)
+
+    Returns:
+        Filtered list of queries
+    """
+    if not exclude_types:
+        return queries
+
+    logger.info(f"Excluding question types: {exclude_types}")
+    # Normalize exclude_types to lowercase and strip whitespace for case-insensitive comparison
+    normalized_exclude_types = {qt.lower().strip() for qt in exclude_types}
+    filtered = [q for q in queries if q.get("question_type", "").lower().strip() not in normalized_exclude_types]
+
+    return filtered
+
+
 def main():
     args = args_parser()
     logger.info(f"Running Multihop evaluation with arguments: {args.__dict__}")
@@ -536,8 +567,13 @@ def main():
         all_queries = filter_category_null_queries(all_queries)
         logger.info(f"Queries remaining: {len(all_queries)}")
 
+        # Filter by question type if specified
+        if args.exclude_types:
+            all_queries = filter_queries_by_type(all_queries, args.exclude_types)
+            logger.info(f"Queries after type filtering: {len(all_queries)}")
+
     except Exception as e:
-        logger.error(f"Error filtering queries categorized as 'null_query': {e}")
+        logger.error(f"Error filtering queries: {e}")
 
     if not all_queries:
         logger.error("No queries remain after filtering 'null_query' category. Please check the dataset.")

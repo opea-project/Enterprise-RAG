@@ -503,7 +503,9 @@ class ConnectorRedis(VectorStoreConnector):
                 if before_result.docs:
                     prev_chunk = max(before_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
                     logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
-                    sibling_docs.append(self._convert_to_text_doc(prev_chunk))
+                    prev_doc = self._convert_to_text_doc(prev_chunk)
+                    prev_doc.metadata["vector_distance"] = -1 # Siblings do not have a distance score
+                    sibling_docs.append(prev_doc)
 
                 after_filter = None
                 if filter_expression is None:
@@ -516,7 +518,9 @@ class ConnectorRedis(VectorStoreConnector):
                 if after_result.docs:
                     next_chunk = min(after_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
                     logger.debug(f"Retrieved next chunk: {next_chunk.id, next_chunk.start_index}")
-                    sibling_docs.append(self._convert_to_text_doc(next_chunk))
+                    next_doc = self._convert_to_text_doc(next_chunk)
+                    next_doc.metadata["vector_distance"] = -1 # Siblings do not have a distance score
+                    sibling_docs.append(next_doc)
 
             all_sibling_docs[doc.id] = sibling_docs
 

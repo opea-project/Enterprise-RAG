@@ -123,7 +123,7 @@ class OPEAReranker:
                     logger.debug(f"Received response from reranking service: {response_data}")
                     best_response_list = self._filter_top_n(input.top_n, response_data, score_threshold=input.rerank_score_threshold)
                     if len(best_response_list) != len(retrieved_texts):
-                        logger.warning(f"Limiting the number of best responses to {input.top_n} based on {len(retrieved_texts)} retrieved documents using max score of {input.rerank_score_threshold}.")
+                        logger.warning(f"Limiting the number of best responses to {len(best_response_list)} based on {len(retrieved_texts)} retrieved documents using max score of {input.rerank_score_threshold}.")
                     logger.debug(f"Best responses after filtering: {best_response_list}")
 
                 except TimeoutError as e:
@@ -202,13 +202,10 @@ class OPEAReranker:
                 if found:
                     continue
 
-                # Copy metadata from the first element
-                combined_metadata = combined_docs[0].metadata.copy()
-
                 # Final result
                 combined_element = TextDoc(
                     text=combined_text,
-                    metadata=combined_metadata
+                    metadata=doc.metadata.copy() # Copy metadata from the original document
                 )
                 all_combined_docs.append(combined_element)
             else:

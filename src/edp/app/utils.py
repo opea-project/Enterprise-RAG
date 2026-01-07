@@ -30,7 +30,8 @@ def get_local_minio_client_using_token_credentials(jwt_token, verify=False):
         raise ValueError("JWT token does not contain access_token")
     credentials = WebIdentityProvider(
         jwt_provider_func=lambda: jwt_token,
-        sts_endpoint=os.getenv('EDP_STS_ENDPOINT', endpoint)
+        sts_endpoint=os.getenv('EDP_STS_ENDPOINT', endpoint),
+	    http_client=get_http_client(endpoint, cert_check)
     )
     return get_minio_client(endpoint, region, cert_check, credentials)
 

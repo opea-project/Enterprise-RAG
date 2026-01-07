@@ -32,10 +32,22 @@ class K8sHelper:
         namespaces = kr8s.get("namespaces")
         return [ns.name for ns in namespaces]
 
+    def get_namespace(self, namespace_name):
+        """Get a namespace by name"""
+        namespaces = kr8s.get("namespaces")
+        for ns in namespaces:
+            if ns.name == namespace_name:
+                return ns
+        return None
+
+    def get_backups(self, namespace):
+        """Get a list of kr8s CustomResource objects representing backups in a namespace"""
+        logger.debug(f"Getting backups in namespace '{namespace}'")
+        return kr8s.get("backups", namespace=namespace)
+
     def list_pods(self, namespace):
         """List all pods in the specified namespace"""
-        pods = kr8s.get("pods", namespace=namespace)
-        return [pod.name for pod in pods]
+        return kr8s.get("pods", namespace=namespace)
 
     def get_pod_by_label(self, namespace, label_selector):
         """Returns first pod matching a label selector in a namespace"""

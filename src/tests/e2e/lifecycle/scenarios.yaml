@@ -28,3 +28,9 @@ scenarios:
     lifecycle:
       - test_update_embedding_model.py
     markers: "smoke"
+
+  backup-restore:
+    lifecycle:
+      - test_pre_backup.py
+      - test_post_backup.py
+      - test_post_restore.py

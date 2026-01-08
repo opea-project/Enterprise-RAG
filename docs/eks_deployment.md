@@ -19,8 +19,9 @@ This guide provides step-by-step instructions for deploying the Intel® AI for E
 Before deploying to EKS, ensure you have:
 
 - AWS CLI installed and configured
+- [Terraform installed](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform)
 - `kubectl` installed
-- Access to an existing EKS cluster or permissions to create one
+- Access to an existing EKS cluster or permissions to create one. See below for Terraform deployment instructions.
 - Appropriate AWS IAM permissions for EKS
 - Appropriate AWS IAM permissions for ECR (Optional)
 
@@ -38,6 +39,46 @@ You will be prompted to enter:
 - Default region (e.g., `us-east-1`)
 - Default output format (e.g., `json`)
 
+## Manual EKS Deployment
+
+Follow AWS instructions to create an EKS cluster manually if you prefer not to use Terraform automated deployment.
+
+## EKS Terraform Automated Deployment
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/opea-project/Enterprise-RAG.git
+cd Enterprise-RAG/deployment/terraform/aws/nutanix/eks-erag
+```
+
+### Configure Deployment Settings
+
+Modify the `locals` block in `Enterprise-RAG/deployment/terraform/aws/nutanix/eks-nutanix-ai/main.tf`:
+
+```hcl
+locals {
+  name   = "your-cluster-name"    # Update with your desired name
+  region = "us-east-1"           # Update with your preferred region
+  tags = {
+    Owner    = "your@email.com"
+    Project  = "Intel AI for Enterprise RAG"
+    Duration = "0"              
+  }
+}
+```
+
+### Deploy Infrastructure
+
+Run the following Terraform commands:
+
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+
 ## EKS Cluster Access
 
 ### Grant User Access
@@ -49,16 +90,19 @@ Ensure your IAM user or role has been granted access to the EKS cluster:
    - Add your development machine's public IP to the cluster's networking endpoint allowlist (if using private endpoint)
    - Or ensure the cluster has public endpoint access enabled
 
-### Update Kubeconfig
-
-Configure `kubectl` to access your EKS cluster:
+### Configure kubectl for EKS Cluster
 
 ```bash
-aws eks update-kubeconfig --name <your-cluster-name> --region <your-region>
-```
+# Verify AWS identity
+aws sts get-caller-identity
 
-Verify access:
-```bash
+# Configure kubectl for your EKS cluster
+aws eks update-kubeconfig --region us-east-1 --name $(terraform output -raw cluster_name)
+
+# Test the connection
+kubectl get svc
+
+# Verify Nodes
 kubectl get nodes
 ```
 
@@ -198,6 +242,54 @@ env:
 Replace the placeholder values with your actual LLM endpoint details.
 
 If your endpoint does not have properly configured TLS you can also add `LLM_TLS_SKIP_VERIFY: "True"`
+
+
+#### Partner Remote Endpoint Examples
+
+##### Nutanix AI LLM Endpoint
+
+> For complete Nutanix AI endpoint [configuration instructions, refer to the Nutanix AI documentation.](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-endpoints-page-c.html)
+
+High Level steps: Acquire the Nutanix AI vLLM endpoint details from your Nutanix AI deployment.
+
+1. Navigate to your Nutanix AI management Console
+2. Client on "Endpoints" to view the list of available LLM endpoints
+3. Select the desired vLLM endpoint to view its details, including the URL, API key, and Sample Request code(see screenshot).
+
+![Nutanix AI Endpoint](./images/nutanix-endpoint.png)
+
+Example Nutanix AI vLLM endpoint configuration:
+```bash
+curl -k -X 'POST' 'https://nutanix-ai-endpoint.example.com/api/v1/chat/completions' \
+ -H "Authorization: Bearer $API_KEY" \
+ -H 'accept: application/json' \
+ -H 'Content-Type: application/json' \
+ -d '{
+      "model": "llama-3-3b",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Explain Deep Neural Networks in simple terms"
+        }
+      ],
+      "max_tokens": 256,
+      "stream": false
+}'
+
+```
+
+Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` and configure the LLM settings:
+
+Example:
+```yaml
+env:
+  LLM_MODEL_SERVER: vllm
+  LLM_MODEL_SERVER_ENDPOINT: "https://nutanix-ai-endpoint.example.com/api/v1/chat/completions"
+  LLM_MODEL_NAME: "llama-3-3b"
+  LLM_VLLM_API_KEY: "your-api-key-here" 
+  LLM_TLS_SKIP_VERIFY: "True"
+```
+---
 
 ## Application Configuration
 

@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# Upgrade directory structure
+is_upgrade_mode: false
+
 upgrade_dir: "{{ playbook_dir }}/../upgrade"
 upgrade_metadata_dir: "{{ upgrade_dir }}/metadata"
 upgrade_reports_dir: "{{ upgrade_dir }}/reports"

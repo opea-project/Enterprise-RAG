@@ -3,7 +3,7 @@
 
 [project]
 name = "Intel_Enterprise_RAG-LLM_Guard_Input_Guardrail_Microservice"
-version = "2.0"
+version = "2.0.1"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
@@ -34,7 +34,7 @@ dependencies = [
     "setuptools == 80.9.0",     # security update
     "protobuf == 4.25.8",
     "requests == 2.32.4",
-    "urllib3 == 2.5.0",
+    "urllib3 == 2.6.0",
 ]
 
 [project.optional-dependencies]

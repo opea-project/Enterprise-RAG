@@ -11,8 +11,8 @@ import time
 import os
 from typing import Dict, Any, Union
 
-from helpers.guard_helper import GuardType
-from constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.helpers.guard_helper import GuardType
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 

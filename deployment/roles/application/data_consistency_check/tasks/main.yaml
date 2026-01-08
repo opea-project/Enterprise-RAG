@@ -3,48 +3,39 @@
 
 ---
 - name: Set up data consistency report directory and variables
+  tags:
+    - always
   ansible.builtin.set_fact:
     data_consistency_report_dir: "{{ deployment_dir }}/upgrade/reports"
     data_consistency_yaml_report_name: "{{ data_consistency_yaml_report_name | default('consistency-report.pre.yaml') }}"
     data_consistency_markdown_report_name: "consistency-report.md"
-  tags:
-    - pre-upgrade
 
 - name: Ensure reports directory exists
+  tags:
+    - always
   ansible.builtin.file:
     path: "{{ data_consistency_report_dir }}"
     state: directory
     mode: '0755'
-  tags:
-    - pre-upgrade
 
 - name: Data consistency check tasks
   tags:
-    - pre-upgrade
-    - data-consistency
+    - always
   block:
-    - name: Remove old Markdown reports
+    - name: Find old data consistency reports
       ansible.builtin.find:
         paths: "{{ data_consistency_report_dir }}"
-        patterns: "consistency-report-*.md"
+        patterns:
+          - "consistency-*report*.md"
+          - "consistency-*report*.yaml"
       register: old_markdown_reports
 
-    - name: Delete old Markdown reports
+    - name: Delete old data consistency reports
       ansible.builtin.file:
         path: "{{ item.path }}"
         state: absent
       loop: "{{ old_markdown_reports.files }}"
       when: old_markdown_reports.files | length > 0
-
-    - name: Remove old YAML report
-      ansible.builtin.file:
-        path: "{{ data_consistency_report_dir }}/{{ data_consistency_yaml_report_name }}"
-        state: absent
-
-    - name: Remove old Markdown report
-      ansible.builtin.file:
-        path: "{{ data_consistency_report_dir }}/{{ data_consistency_markdown_report_name }}"
-        state: absent
 
     - name: Check EDP data consistency
       ansible.builtin.include_tasks: check_edp.yaml

@@ -4,7 +4,7 @@ import allure
 import pytest
 import requests
 
-from src.tests.docker_setups.embeddings.langchain_mosec import (
+from tests.docker_setups.embeddings.langchain_mosec import (
     EmbeddingsLangchainMosecDockerSetup,
 )
 

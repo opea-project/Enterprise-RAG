@@ -24,6 +24,8 @@ export interface IconButtonProps extends AriaButtonProps {
   size?: IconButtonSizes;
   /** Variant of the button (outlined, contained) */
   variant?: IconButtonVariants;
+  /** Test identifier for automated testing */
+  "data-testid"?: string;
 }
 
 /**

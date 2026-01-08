@@ -8,7 +8,7 @@ import {
   AppHeaderRightSideContent,
 } from "@/components/AppHeaderContent/AppHeaderContent";
 import ChatSideMenu from "@/features/chat/components/ChatSideMenu/ChatSideMenu";
-import useChat from "@/features/chat/hooks/useChat";
+import useInitialChat from "@/features/chat/hooks/useInitialChat";
 import ChatConversationLayout from "@/features/chat/layouts/ChatConversationLayout/ChatConversationLayout";
 import InitialChatLayout from "@/features/chat/layouts/InitialChatLayout/InitialChatLayout";
 
@@ -21,7 +21,7 @@ const InitialChatRoute = () => {
     onPromptChange,
     onPromptSubmit,
     onRequestAbort,
-  } = useChat();
+  } = useInitialChat();
 
   const getChatLayout = () => {
     if (chatTurns.length === 0) {

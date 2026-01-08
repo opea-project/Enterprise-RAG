@@ -2,8 +2,8 @@ import logging
 from enum import Enum
 
 import pytest
-from src.tests.microservices.llms.base_tests import BaseLLMsTest
-from src.tests.docker_setups.llms.vllm_ip_cpu import LLMsVllmIP_CPU_DockerSetup
+from tests.microservices.llms.base_tests import BaseLLMsTest
+from tests.docker_setups.llms.vllm_ip_cpu import LLMsVllmIP_CPU_DockerSetup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

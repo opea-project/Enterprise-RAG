@@ -8,12 +8,11 @@ import json
 import logging
 import pytest
 
-from validation.buildcfg import cfg
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if fingerprint is not deployed
 if not cfg.get("fingerprint", {}).get("enabled"):
     pytestmark = pytest.mark.skip(reason="Fingerprint is not deployed")
-
 
 logger = logging.getLogger(__name__)
 

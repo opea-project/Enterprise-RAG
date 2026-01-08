@@ -3,11 +3,6 @@ Copyright (C) 2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
-proxy:
-  httpProxy: {{ httpProxy }}
-  httpsProxy: {{ httpsProxy }}
-  noProxy: {{ noProxy }}
-
 {% set storage = velero.storageType if velero.storageType is defined else "minio" %}
 {% if storage == "minio" %}
 veleroAccessKey: "{{ VELERO_MINIO_ACCESS_KEY }}"

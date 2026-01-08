@@ -3,7 +3,10 @@
 apiVersion: v2
 name: logs
 type: application
-version: 1.0.0
+version: 1.0.1
+appVersion: "2.0.1"
+annotations:
+  app.kubernetes.io/part-of: ERAG
 
 dependencies:
 
@@ -11,10 +14,10 @@ dependencies:
 - name: loki
   condition: loki.enabled
   repository: https://grafana.github.io/helm-charts
-  version: "*"
+  version: 6.41.1
 
 - name: opentelemetry-collector
-  version: "*"
+  version: 0.136.1
   alias: otelcol-logs
   condition: otelcol-logs.enabled
   repository: https://open-telemetry.github.io/opentelemetry-helm-charts

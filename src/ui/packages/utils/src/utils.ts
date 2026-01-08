@@ -216,7 +216,10 @@ export const sanitizeString = (value: string | undefined) => {
     return "";
   }
   const decodedValue = tryDecode(value);
-  return DOMPurify.sanitize(decodedValue);
+  return DOMPurify.sanitize(decodedValue, {
+    ALLOWED_TAGS: [],
+    KEEP_CONTENT: true,
+  });
 };
 
 /**

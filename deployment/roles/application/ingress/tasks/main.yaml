@@ -13,6 +13,19 @@
   kubernetes.core.helm_repository:
     name: "{{ ingress.helm.repo_name }}"
     repo_url: "{{ ingress.helm.repo_url }}"
+    state: present
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Build Helm chart dependencies
+  ansible.builtin.command:
+    cmd: helm dependency build
+    chdir: "{{ ingress.helm.chart_directory }}"
+  register: helm_dependency_build_result
+  until: helm_dependency_build_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
     - pre-upgrade
@@ -69,8 +82,7 @@
     release_namespace: "{{ ingress.namespace }}"
     release_name: "{{ ingress.helm.release_name }}"
     release_enabled: "{{ ingress.enabled }}"
-    chart_ref: "{{ ingress.helm.repo_name }}/{{ ingress.helm.chart_name }}"
-    chart_version: "{{ ingress.helm.chart_version }}"
+    chart_ref: "{{ ingress.helm.chart_directory }}"
     release_values_files: "{{ values_files }}"
   tags:
     - pre-upgrade
@@ -78,8 +90,7 @@
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ ingress.helm.release_name }}"
-    chart_ref: "{{ ingress.helm.repo_name }}/{{ ingress.helm.chart_name }}"
-    chart_version: "{{ ingress.helm.chart_version }}"
+    chart_ref: "{{ ingress.helm.chart_directory }}"
     namespace: "{{ ingress.namespace }}"
     values_files: "{{ values_files }}"
     state: present

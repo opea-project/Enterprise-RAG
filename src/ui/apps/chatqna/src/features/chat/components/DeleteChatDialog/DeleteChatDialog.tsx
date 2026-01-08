@@ -12,7 +12,6 @@ import {
   useDeleteChatMutation,
   useLazyGetAllChatsQuery,
 } from "@/features/chat/api/chatHistory";
-import { resetCurrentChatSlice } from "@/features/chat/store/currentChat.slice";
 import { ChatItemData } from "@/features/chat/types/api";
 import { useAppDispatch } from "@/store/hooks";
 
@@ -47,7 +46,6 @@ const DeleteChatDialog = ({
       .then(() => {
         getAllChats();
         if (location.pathname === `${paths.chat}/${id}`) {
-          dispatch(resetCurrentChatSlice());
           navigate(paths.chat);
         }
       });

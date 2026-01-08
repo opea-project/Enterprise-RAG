@@ -82,6 +82,9 @@ The Intel® AI for Enterprise RAG repository offers installation of additional i
 
 If your K8s cluster requires installing any of these tools, follow the [Infrastructure Components Guide](../docs/infrastructure_components_guide.md).
 
+> [!NOTE]
+> The `pre-install` tag automatically preconfigures system limits (such as file descriptors, process limits, and kernel parameters) on cluster nodes to ensure optimal performance for Enterprise RAG workloads. These configurations are applied before the main installation process.
+
 ## Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure
 
 Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Follow the [Application Deployment Guide](../docs/application_deployment_guide.md).

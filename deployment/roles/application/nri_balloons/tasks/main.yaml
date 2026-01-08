@@ -135,6 +135,13 @@
   tags:
     - install
 
+- name: Get limits from vLLM
+  ansible.builtin.include_tasks:
+    file: custom_vllm.yaml
+  when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
+  tags:
+    - install
+
 - name: Apply balloons/labels/taints for each node
   ansible.builtin.include_role:
     name: utils
@@ -142,6 +149,13 @@
   loop: "{{ cpu_topology_per_node | dict2items }}"
   loop_control:
     loop_var: item
+  tags:
+    - install
+
+- name: Process custom vLLM container
+  ansible.builtin.include_tasks:
+    file: custom_vllm.yaml
+  when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
   tags:
     - install
 

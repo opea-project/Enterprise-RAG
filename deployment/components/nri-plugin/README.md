@@ -42,12 +42,14 @@ balloons:
   namespace: kube-system
   throughput_mode: true
   wait_timeout: 300
+  # vllm_custom_name: "kserve-container" # Optional: Custom container name for external vLLM
 ```
 **Configuration Options:**
 - **`enabled`**: Set to `true` to activate topology-aware resource scheduling
 - **`namespace`**: Kubernetes namespace for the NRI balloons plugin (typically `kube-system`)
 - **`throughput_mode`**: Enable throughput optimization to maximize replica count (see [Calculation Algorithm](#calculation-algorithm))
 - **`wait_timeout`**: Maximum time in seconds NRI managed pods wait for plugin readiness
+- **`vllm_custom_name`**: (Optional) Custom container name to pin CPU cores to external vLLM instances running in the same Kubernetes cluster. To find the container name, describe the vLLM pod: `kubectl describe pod <vllm-pod-name>` and check `spec.containers[].name`
 
 ### Resource Requirements
 

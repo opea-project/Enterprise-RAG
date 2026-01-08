@@ -89,6 +89,33 @@ const (
 	LateChunking             = "LateChunking"
 )
 
+// sanitizeK8sName converts a string to a valid Kubernetes name by replacing
+// dots with dashes and truncating to fit within Kubernetes limits.
+// Kubernetes names must not contain dots, and labels are limited to 63 characters.
+// We truncate to 52 chars to leave room for StatefulSet suffixes like "-0" and hashes like "-5f568f9f79".
+func sanitizeK8sName(name string) string {
+	sanitized := strings.ReplaceAll(name, ".", "-")
+	// Truncate to 52 chars to leave room for pod suffixes (e.g., "-0" adds 2, hash adds up to 11)
+	if len(sanitized) > 52 {
+		sanitized = sanitized[:52]
+		// Ensure we don't end with a dash
+		sanitized = strings.TrimRight(sanitized, "-")
+	}
+	return sanitized
+}
+
+// truncateK8sName truncates a full resource name to fit Kubernetes limits.
+// Used for StatefulSet names where the full name (prefix + node) must be truncated.
+func truncateK8sName(name string) string {
+	// Truncate to 52 chars to leave room for pod ordinal and controller hash
+	if len(name) > 52 {
+		name = name[:52]
+		// Ensure we don't end with a dash
+		name = strings.TrimRight(name, "-")
+	}
+	return name
+}
+
 var yamlDict = map[string]string{
 	Fingerprint:         yaml_dir + "fingerprint-usvc.yaml",
 	TeiEmbedding:        yaml_dir + "tei.yaml",
@@ -275,9 +302,9 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 				rerankingNode, hasRerankingNode := deploymentObj.Spec.Template.Labels["reranking-node"]
 				
 				if hasEmbeddingNode && embeddingNode != "" {
-					deploymentObj.SetName(svc + "-" + embeddingNode)
+					deploymentObj.SetName(truncateK8sName(svc + "-" + sanitizeK8sName(embeddingNode)))
 				} else if hasRerankingNode && rerankingNode != "" {
-					deploymentObj.SetName(svc + "-" + rerankingNode)
+					deploymentObj.SetName(truncateK8sName(svc + "-" + sanitizeK8sName(rerankingNode)))
 				} else {
 					deploymentObj.SetName(svc + dplymtSubfix)
 				}
@@ -400,7 +427,7 @@ func (r *GMConnectorReconciler) reconcileResource(ctx context.Context, graphNs s
 		if svc != "" {
 			vllmNode, hasVllmNode := deploymentObj.Spec.Template.Labels["vllm-node"]
 			if hasVllmNode && vllmNode != "" {
-				deploymentObj.SetName(svc + "-" + vllmNode)
+				deploymentObj.SetName(truncateK8sName(svc + "-" + sanitizeK8sName(vllmNode)))
 		    } else {
 				deploymentObj.SetName(svc + dplymtSubfix)
 		}

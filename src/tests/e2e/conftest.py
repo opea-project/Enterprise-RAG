@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+import hashlib
+from pathlib import Path
 
 import allure
 from datetime import datetime, timezone
@@ -13,19 +15,19 @@ import tarfile
 import urllib3
 import yaml
 
-from validation.buildcfg import cfg
-from validation.constants import TEST_FILES_DIR
-from helpers.api_request_helper import ApiRequestHelper
-from helpers.chatqa_api_helper import ChatQaApiHelper
-from helpers.chat_history_helper import ChatHistoryHelper
-from helpers.docsum_helper import DocSumHelper
+from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.validation.constants import TEST_FILES_DIR
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper
+from tests.e2e.helpers.chatqa_api_helper import ChatQaApiHelper
+from tests.e2e.helpers.chat_history_helper import ChatHistoryHelper
+from tests.e2e.helpers.docsum_helper import DocSumHelper
 
-from helpers.edp_helper import EdpHelper
-from helpers.fingerprint_api_helper import FingerprintApiHelper
-from helpers.guard_helper import GuardHelper
-from helpers.istio_helper import IstioHelper
-from helpers.k8s_helper import K8sHelper
-from helpers.keycloak_helper import KeycloakHelper
+from tests.e2e.helpers.edp_helper import EdpHelper
+from tests.e2e.helpers.fingerprint_api_helper import FingerprintApiHelper
+from tests.e2e.helpers.guard_helper import GuardHelper
+from tests.e2e.helpers.istio_helper import IstioHelper
+from tests.e2e.helpers.k8s_helper import K8sHelper
+from tests.e2e.helpers.keycloak_helper import KeycloakHelper
 
 # List of namespaces to fetch logs from
 NAMESPACES = ["auth-apisix", "chatqa",  "docsum", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]
@@ -49,7 +51,6 @@ def pytest_configure(config):
     # Manually configure logging here since pytest configures it only after this hook
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-
     build_config_filepath = config.getoption("--build-config-file")
     if os.path.exists(build_config_filepath):
         logger.debug(f"Loading build configuration from {build_config_filepath}")
@@ -59,12 +60,46 @@ def pytest_configure(config):
         # store into global cfg
         cfg.update(build_configuration)
     else:
-        logger.warning("Build configuration file not found. Proceeding with empty configuration.")
+        pytest.fail("Build configuration file not found. Please provide a valid path using --build-config-file option.")
 
     # Remove previously configured logger. If it was not removed, every log would be displayed twice.
     root = logging.getLogger()
     for h in root.handlers[:]:
         root.removeHandler(h)
+
+
+def pytest_runtest_call(item):
+    scenario_name = os.getenv("SCENARIO", "Install")
+    custom = f"{scenario_name}:{item.nodeid}"
+    custom_history_id = hashlib.sha256(custom.encode()).hexdigest()
+    allure.dynamic.parameter("historyId", custom_history_id)
+
+
+def pytest_collection_modifyitems(config, items):
+    root_dir = Path(config.rootdir)
+    scenario_name = os.getenv("SCENARIO", "Install")
+    for item in items:
+        test_path = Path(item.fspath)
+        test_directory = test_path.parent
+        try:
+            relative_dir = test_directory.relative_to(root_dir)
+            folder_parts = relative_dir.parts
+            final_suite_name = ".".join(folder_parts)
+        except ValueError:
+            final_suite_name = test_directory.name
+        scenario_tag = f"scenario:{scenario_name}"
+        pipeline_tag = f"pipeline:{ cfg.get('pipelines', [])[0]['type'] }"
+        llm_model_tag = f"llm_model:{ cfg.get('llm_model', []) }"
+
+        add_marker(item, "parentSuite", scenario_name)
+        add_marker(item, "suite", final_suite_name)
+        add_marker(item, "feature", scenario_tag)
+        add_marker(item, "feature", pipeline_tag)
+        add_marker(item, "feature", llm_model_tag)
+
+
+def add_marker(item, label_name, label_value):
+    item.add_marker(allure.label(label_name, label_value))
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -220,6 +255,17 @@ def generic_api_helper():
 @pytest.fixture(scope="session")
 def guard_helper(chatqa_api_helper, fingerprint_api_helper):
     return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
+
+
+@pytest.fixture(scope="function")
+def temporarily_remove_brute_force_detection(keycloak_helper):
+    """
+    Disable brute force detection in Keycloak for the duration of the test.
+    This is to avoid locking the user out in case of many concurrent requests.
+    """
+    keycloak_helper.set_brute_force_detection(False)
+    yield
+    keycloak_helper.set_brute_force_detection(True)
 
 
 @pytest.fixture(scope="session")

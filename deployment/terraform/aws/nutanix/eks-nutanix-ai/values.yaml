@@ -1,0 +1,38 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+# Storage class name to be used by nai-db and prometheus db
+defaultStorageClassName: gp2
+
+# nai-monitoring stack values for nai-monitoring stack deployment in AWS environment
+naiMonitoring:
+  ## Component scraping node exporter
+  ##
+  nodeExporter:
+    serviceMonitor:
+      enabled: true
+      endpoint:
+        port: http-metrics
+        scheme: http
+        targetPort: 9100
+      namespaceSelector:
+        matchNames:
+        - prometheus
+      serviceSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus-node-exporter
+          app.kubernetes.io/component: metrics
+
+  ## Component scraping dcgm exporter
+  ##
+  dcgmExporter:
+    podLevelMetrics: true
+    serviceMonitor:
+      enabled: true
+      endpoint:
+        targetPort: 9400
+      namespaceSelector:
+        matchNames:
+        - gpu-operator
+      serviceSelector:
+        matchLabels:
+          app: nvidia-dcgm-exporter

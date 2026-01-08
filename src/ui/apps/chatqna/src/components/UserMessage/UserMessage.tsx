@@ -25,11 +25,12 @@ const UserMessage = ({ question }: UserMessageProps) => {
   return (
     <article
       className="user-message"
+      data-testid="user-message"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div className="flex w-full flex-col">
-        <div className="user-message__text">
+        <div className="user-message__text" data-testid="user-message__text">
           <MarkdownRenderer content={question} />
         </div>
         <div className="user-message__footer">

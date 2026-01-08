@@ -239,3 +239,15 @@ services:
           - type: Pods
             value: 1
             periodSeconds: 15
+  vllm:
+    replicas: 1
+    # NOTE:
+    # The resources block below is used for vllm ONLY if the balloons policy is NOT enabled.
+    # If balloons policy is enabled, vllm resources must be defined in the inventory config.yaml as balloons.services.vllm.resources
+    resources:
+      requests:
+        cpu: 32
+        memory: 64Gi
+      limits:
+        cpu: 32
+        memory: 100Gi

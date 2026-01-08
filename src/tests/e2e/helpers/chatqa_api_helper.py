@@ -6,20 +6,19 @@
 import concurrent
 import logging
 import time
-
 import requests
-from tests.e2e.validation.constants import ERAG_DOMAIN
-from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 
+from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
-CHATQA_API_PATH = f"{ERAG_DOMAIN}/api/v1/chatqna"
 
 
 class ChatQaApiHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
+        self.chatqa_api_path = f"https://{cfg.get('FQDN')}/api/v1/chatqna"
 
     def call_chatqa(self, question, as_user=False, **custom_params):
         """
@@ -71,7 +70,7 @@ class ChatQaApiHelper(ApiRequestHelper):
         logger.info(f"Asking the following question: {payload['text']}")
         start_time = time.time()
         response = requests.post(
-            url=CHATQA_API_PATH,
+            url=self.chatqa_api_path,
             headers=self.get_headers(as_user),
             json=payload,
             stream=stream,

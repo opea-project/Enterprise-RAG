@@ -64,6 +64,8 @@
           async: 180
           poll: 0
           register: keycloak_port_forward_job
+          environment:
+            KUBECONFIG: "{{ kubeconfig }}"
           when: keycloak_service.resources | length > 0
 
         - name: Wait for port forwarding to be established

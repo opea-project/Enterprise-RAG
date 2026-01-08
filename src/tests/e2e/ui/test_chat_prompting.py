@@ -18,8 +18,16 @@ import asyncio
 import logging
 import pytest
 
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
+
+# Skip all tests if chatqa pipeline is not deployed
+for pipeline in cfg.get("pipelines", []):
+    if pipeline.get("type") == "chatqa":
+        break
+else:
+    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
 
 
 # Test prompts for basic functionality testing
@@ -61,11 +69,14 @@ async def test_single_prompt_response(chat_ui_helper):
     - Response is received
     - Response is not empty
     - Response meets minimum length requirement
+    - Bot message elements have correct data-testid attributes
     """
     test_case = BASIC_TEST_PROMPTS[0]
     prompt = test_case["prompt"]
     
     logger.info(f"Testing single prompt: {prompt}")
+    
+    page = chat_ui_helper.page
     
     # Send message and get response
     success, response = await chat_ui_helper.send_message(prompt, wait_for_response=True)
@@ -90,6 +101,18 @@ async def test_single_prompt_response(chat_ui_helper):
     is_error = any(err in response_lower for err in generic_errors)
     assert not is_error, "Response appears to be an error message"
     logger.info("Assert 4: Response is not a generic error")
+    
+    # Assert 5: Bot message has correct data-testid attributes
+    bot_message = page.locator('[data-testid="bot-message"]').last
+    bot_message_visible = await bot_message.is_visible()
+    assert bot_message_visible, "Bot message should have data-testid='bot-message'"
+    logger.info("Assert 5: Bot message container has correct data-testid")
+    
+    # Assert 6: Bot message text has correct data-testid
+    bot_message_text = page.locator('[data-testid="bot-message__text"]').last
+    bot_message_text_visible = await bot_message_text.is_visible()
+    assert bot_message_text_visible, "Bot message text should have data-testid='bot-message__text'"
+    logger.info("Assert 6: Bot message text has correct data-testid")
     
     logger.info("Test completed: Single prompt validation passed")
 
@@ -299,3 +322,56 @@ async def test_chat_handles_various_question_types(chat_ui_helper):
     logger.info(f"Assert: All {len(question_types)} question types handled successfully")
     
     logger.info("Test completed: Various question types validated")
+
+@pytest.mark.ui
+@pytest.mark.asyncio
+@allure.testcase("IEASG-T289")
+async def test_user_message_display(chat_ui_helper):
+    """
+    Test that user messages are properly displayed with data-testid attributes.
+    
+    Steps:
+    1. Send a test message
+    2. Verify user message wrapper has data-testid="user-message"
+    3. Verify user message text has data-testid="user-message__text"
+    4. Verify message content matches what was sent
+    
+    Success criteria:
+    - User message container is rendered with correct data-testid
+    - User message text is rendered with correct data-testid
+    - Message content matches sent message
+    """
+    logger.info("Testing user message display with data-testid")
+    
+    test_message = "This is a test message for validation"
+    page = chat_ui_helper.page
+    
+    # Send message (without waiting for response to save time)
+    success, _ = await chat_ui_helper.send_message(test_message, wait_for_response=False)
+    assert success, "Failed to send message"
+    logger.info("Message sent successfully")
+    
+    # Assert 1: User message container has correct data-testid
+    user_message = page.locator('[data-testid="user-message"]').last
+    try:
+        await user_message.wait_for(state="visible", timeout=5000)
+        logger.info("Assert 1: User message container rendered with data-testid='user-message'")
+    except Exception as e:
+        logger.error(f"User message container not found: {e}")
+        pytest.fail("User message container should be rendered with data-testid")
+    
+    # Assert 2: User message text has correct data-testid
+    user_message_text = page.locator('[data-testid="user-message__text"]').last
+    try:
+        await user_message_text.wait_for(state="visible", timeout=5000)
+        logger.info("Assert 2: User message text rendered with data-testid='user-message__text'")
+    except Exception as e:
+        logger.error(f"User message text not found: {e}")
+        pytest.fail("User message text should be rendered with data-testid")
+    
+    # Assert 3: Message content matches what was sent
+    text_content = await user_message_text.text_content()
+    assert test_message in text_content, f"Expected '{test_message}' in user message, got '{text_content}'"
+    logger.info("Assert 3: User message content matches sent message")
+    
+    logger.info("Test completed: User message display validated")

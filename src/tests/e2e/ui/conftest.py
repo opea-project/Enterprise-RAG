@@ -18,8 +18,8 @@ import pytest
 import pytest_asyncio
 from playwright.async_api import async_playwright
 
-from helpers.ui_helper import ChatUIHelper
-from validation.constants import ERAG_DOMAIN
+from tests.e2e.helpers.ui_helper import ChatUIHelper, DocSumUIHelper
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -326,8 +326,39 @@ async def chat_ui_helper(page, admin_credentials):
     password = admin_credentials['password']
 
     # Initialize and login
-    chat_ui_helper = ChatUIHelper(page, base_url=ERAG_DOMAIN)
+    chat_ui_helper = ChatUIHelper(page, base_url=cfg.get('FQDN'))
     await chat_ui_helper.login_as_admin(username, password)
 
     logger.info("Chat helper ready")
     yield chat_ui_helper
+
+
+@pytest_asyncio.fixture
+async def docsum_ui_helper(page, admin_credentials):
+    """
+    Create DocSum UI helper with authenticated session.
+
+    The DocSum UI has a different entry point ({domain}/docsum) than Chat.
+    This fixture handles login and navigation to the DocSum paste-text page.
+
+    Args:
+        page: Playwright page fixture
+        admin_credentials: Admin credentials fixture
+
+    Yields:
+        DocSumUIHelper instance ready for DocSum UI testing
+    """
+    username = admin_credentials['username']
+    password = admin_credentials['password']
+
+    # Initialize DocSum helper
+    docsum_helper = DocSumUIHelper(page, base_url=cfg.get('FQDN'))
+
+    # Login and navigate to DocSum UI
+    login_success = await docsum_helper.login_and_navigate_to_docsum(username, password)
+
+    if not login_success:
+        pytest.fail("Failed to login and navigate to DocSum UI")
+
+    logger.info("DocSum UI helper ready")
+    yield docsum_helper

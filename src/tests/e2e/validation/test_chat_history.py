@@ -7,7 +7,7 @@ import allure
 import logging
 import pytest
 
-from validation.buildcfg import cfg
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if chat_history is not deployed
 if not cfg.get("chat_history", {}).get("enabled"):

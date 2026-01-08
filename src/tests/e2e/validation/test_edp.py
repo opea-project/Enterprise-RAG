@@ -12,8 +12,8 @@ import os
 import time
 import uuid
 
-from constants import DATAPREP_UPLOAD_DIR
-from validation.buildcfg import cfg
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if edp is not deployed
 if not cfg.get("edp", {}).get("enabled"):

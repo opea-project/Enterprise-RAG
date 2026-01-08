@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Build the router binary
-FROM golang:1.25.2 AS builder
+FROM golang:1.25.5 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 

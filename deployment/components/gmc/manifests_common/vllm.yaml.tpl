@@ -166,7 +166,7 @@ spec:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
           securityContext:
             {{- toYaml $.Values.securityContext | nindent 12 }}
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.9.2
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.11.2
           imagePullPolicy: {{ toYaml (index $.Values "images" $.filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict $.Values.modelConfigs) $modelName).extraCmdArgs | default ((index $.Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}
@@ -365,7 +365,7 @@ spec:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.10.2
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.11.2
           imagePullPolicy: {{ toYaml (index .Values "images" .filename "pullPolicy" | default "Always") }}
           {{- $modelArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default ((index .Values).defaultModelConfigs).extraCmdArgs }}
           {{- if $modelArgs }}

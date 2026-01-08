@@ -288,7 +288,7 @@ resource "null_resource" "run_install_system" {
     always_run = timestamp()
   }
 
-  depends_on = [null_resource.wait_for_ssh]
+  depends_on = [null_resource.transfer_files]
   provisioner "remote-exec" {
     connection {
       type        = "ssh"

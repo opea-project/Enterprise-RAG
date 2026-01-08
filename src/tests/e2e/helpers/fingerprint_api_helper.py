@@ -9,7 +9,7 @@ import time
 import requests
 
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
-from tests.e2e.validation.constants import ERAG_DOMAIN
+from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ class FingerprintApiHelper(ApiRequestHelper):
 
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
+        self.change_args_api_path = f"https://{cfg.get('FQDN')}/v1/system_fingerprint/change_arguments"
+        self.append_args_api_path = f"https://{cfg.get('FQDN')}/v1/system_fingerprint/append_arguments"
 
     def change_arguments(self, json_data, as_user=False):
         """
@@ -25,7 +27,7 @@ class FingerprintApiHelper(ApiRequestHelper):
         """
         start_time = time.time()
         response = requests.post(
-            f"{ERAG_DOMAIN}/v1/system_fingerprint/change_arguments",
+            self.change_args_api_path,
             headers=self.get_headers(as_user=as_user),
             json=json_data,
             verify=False
@@ -49,7 +51,7 @@ class FingerprintApiHelper(ApiRequestHelper):
     def _append_arguments(self, json_data, as_user=False):
         start_time = time.time()
         response = requests.post(
-            url=f"{ERAG_DOMAIN}/v1/system_fingerprint/append_arguments",
+            self.append_args_api_path,
             headers=self.get_headers(as_user=as_user),
             json=json_data,
             verify=False

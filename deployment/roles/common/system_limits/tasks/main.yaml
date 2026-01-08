@@ -1,0 +1,44 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Configure sysctl parameters for Enterprise RAG
+  ansible.builtin.template:
+    src: sysctl.conf.j2
+    dest: /etc/sysctl.d/99-enterprise-rag.conf
+    mode: '0644'
+    owner: root
+    group: root
+  become: yes
+  notify: reload sysctl
+
+- name: Configure user limits
+  ansible.builtin.template:
+    src: limits.conf.j2
+    dest: /etc/security/limits.d/99-enterprise-rag.conf
+    mode: '0644'
+    owner: root
+    group: root
+  become: yes
+
+- name: Check if pam_limits.so is configured in common-session
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/common-session
+    regexp: '^session\s+required\s+pam_limits\.so'
+    state: absent
+  check_mode: yes
+  register: pam_limits_check
+  changed_when: false
+  become: yes
+
+- name: Add pam_limits.so to PAM configuration
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/common-session
+    line: 'session required pam_limits.so'
+    state: present
+  when: pam_limits_check.found == 0
+  become: yes
+
+- name: Display system limits configuration status
+  ansible.builtin.debug:
+    msg: "System limits have been configured. Reboot or re-login may be required for all changes to take effect."

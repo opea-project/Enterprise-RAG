@@ -3,14 +3,19 @@
 
 import "./ConversationFeed.scss";
 
+import classNames from "classnames";
 import debounce from "lodash.debounce";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import BotMessage from "@/components/BotMessage/BotMessage";
 import ScrollToBottomButton from "@/components/ScrollToBottomButton/ScrollToBottomButton";
 import UserMessage from "@/components/UserMessage/UserMessage";
-import { paths } from "@/config/paths";
 import { ChatTurn } from "@/types";
 
 const bottomMargin = 80; // margin to handle bottom scroll detection
@@ -21,12 +26,11 @@ interface ConversationFeedProps {
 
 const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
   const conversationFeedRef = useRef<HTMLDivElement>(null);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
+  const prevConversationLengthRef = useRef<number>(0);
+  const pendingTurnRef = useRef<HTMLDivElement>(null);
 
-  const location = useLocation();
-
-  const debouncedScrollToBottom = useCallback(
+  const debouncedScrollToBottom = useRef(
     debounce((behavior: ScrollBehavior) => {
       if (conversationFeedRef.current) {
         conversationFeedRef.current.scroll({
@@ -35,74 +39,32 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
         });
       }
     }, 50),
-    [conversationFeedRef.current?.scrollHeight],
-  );
+  ).current;
 
-  const isAtBottom = useCallback(() => {
-    if (conversationFeedRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } =
-        conversationFeedRef.current;
-      return scrollHeight - scrollTop <= clientHeight + bottomMargin;
-    }
-    return false;
-  }, [
-    conversationFeedRef.current?.scrollHeight,
-    conversationFeedRef.current?.scrollTop,
-    conversationFeedRef.current?.clientHeight,
-  ]);
-
-  const debouncedScrollToBottomButtonUpdate = useCallback(
+  const debouncedScrollToBottomButtonUpdate = useRef(
     debounce(() => {
-      setShowScrollToBottomBtn(!isAtBottom());
+      if (conversationFeedRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          conversationFeedRef.current;
+        const atBottom =
+          scrollHeight - scrollTop <= clientHeight + bottomMargin;
+        setShowScrollToBottomBtn(!atBottom);
+      }
     }, 100),
-    [isAtBottom],
-  );
+  ).current;
 
+  // Only scroll when a new turn is added (conversation length increases)
   useEffect(() => {
-    debouncedScrollToBottom("instant");
-  }, []);
+    const currentLength = conversationTurns.length;
+    const prevLength = prevConversationLengthRef.current;
 
-  useEffect(() => {
-    if (location.pathname.startsWith(`${paths.chat}/`)) {
+    // Scroll only when a new turn is added, not on initial render or streaming updates
+    if (prevLength > 0 && currentLength > prevLength) {
       debouncedScrollToBottom("instant");
     }
-  }, [location.pathname, debouncedScrollToBottom]);
 
-  useEffect(() => {
-    debouncedScrollToBottom("instant");
-  }, [conversationTurns.length]);
-
-  useEffect(() => {
-    if (isAtBottom() && !isUserScrolling) {
-      debouncedScrollToBottom("smooth");
-    }
-  }, [conversationTurns, isUserScrolling]);
-
-  const handleWheel = useCallback(
-    (event: WheelEvent) => {
-      if (event.deltaY < 0) {
-        setIsUserScrolling(true);
-      } else if (event.deltaY > 0 && isAtBottom()) {
-        setIsUserScrolling(false);
-      }
-    },
-    [isAtBottom],
-  );
-
-  useEffect(() => {
-    const conversationFeedElement = conversationFeedRef.current;
-    if (conversationFeedElement) {
-      conversationFeedElement.addEventListener("wheel", handleWheel, {
-        passive: true,
-      });
-    }
-
-    return () => {
-      if (conversationFeedElement) {
-        conversationFeedElement.removeEventListener("wheel", handleWheel);
-      }
-    };
-  }, [handleWheel]);
+    prevConversationLengthRef.current = currentLength;
+  }, [conversationTurns.length, debouncedScrollToBottom]);
 
   useEffect(() => {
     if (conversationFeedRef.current) {
@@ -112,7 +74,69 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
     conversationFeedRef.current?.scrollHeight,
     conversationFeedRef.current?.scrollTop,
     conversationFeedRef.current?.clientHeight,
+    debouncedScrollToBottomButtonUpdate,
   ]);
+
+  // Set margin-bottom on pending turn programmatically to push user message to top
+  useLayoutEffect(() => {
+    const pendingTurn = conversationTurns.find((turn) => turn.isPending);
+    // Apply margin while turn is pending (includes waiting and streaming phases)
+    const shouldApplyMargin = !!pendingTurn;
+
+    const updatePendingTurnSpacing = () => {
+      if (
+        pendingTurnRef.current &&
+        conversationFeedRef.current &&
+        shouldApplyMargin
+      ) {
+        const feedClientHeight = conversationFeedRef.current.clientHeight;
+        const pendingTurnHeight =
+          pendingTurnRef.current.getBoundingClientRect().height;
+
+        // Calculate margin needed: visible height - actual content height
+        const BOT_MESSAGE_MARGIN_BOTTOM = 32;
+        const marginBottom = Math.max(
+          0,
+          feedClientHeight - pendingTurnHeight - BOT_MESSAGE_MARGIN_BOTTOM,
+        );
+        pendingTurnRef.current.style.marginBottom = `${marginBottom}px`;
+      }
+    };
+
+    // Update immediately
+    updatePendingTurnSpacing();
+
+    // If no pending turn, find and remove margin from all turns
+    if (!shouldApplyMargin && conversationFeedRef.current) {
+      const allTurns =
+        conversationFeedRef.current.querySelectorAll(".conversation-turn");
+      allTurns.forEach((turn) => {
+        (turn as HTMLElement).style.marginBottom = "";
+      });
+    }
+
+    // Only observe if we should apply margin
+    if (!shouldApplyMargin) {
+      return;
+    }
+
+    // Also update on resize
+    const resizeObserver = new ResizeObserver(updatePendingTurnSpacing);
+    if (conversationFeedRef.current) {
+      resizeObserver.observe(conversationFeedRef.current);
+    }
+
+    // Observe pending turn for content changes
+    if (pendingTurnRef.current) {
+      resizeObserver.observe(pendingTurnRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+      // Don't reset margin in cleanup - let the next effect handle it
+      // This prevents margin flicker during streaming updates
+    };
+  }, [conversationTurns]);
 
   useEffect(() => {
     return () => {
@@ -135,7 +159,13 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
         <div className="conversation-feed">
           {conversationTurns.map(
             ({ id, question, answer, error, isPending, sources }) => (
-              <Fragment key={id}>
+              <div
+                key={id}
+                ref={isPending ? pendingTurnRef : null}
+                className={classNames("conversation-turn", {
+                  "conversation-turn--pending": isPending,
+                })}
+              >
                 <UserMessage question={question} />
                 <BotMessage
                   answer={answer}
@@ -143,7 +173,7 @@ const ConversationFeed = ({ conversationTurns }: ConversationFeedProps) => {
                   error={error}
                   sources={sources}
                 />
-              </Fragment>
+              </div>
             ),
           )}
         </div>

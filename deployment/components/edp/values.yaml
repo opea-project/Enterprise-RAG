@@ -246,6 +246,17 @@ celery:
     concurrency: "6"
     logLevel: "info"
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
+    # ✅ CELERY_BATCH_SIZE is calculated automatically at install/upgrade time
+    # Formula: TorchServe_Replicas × MAX_WORKERS × BATCH_SIZE
+    #
+    # The ConfigMap template uses Helm's lookup() function to query:
+    # 1. torchserve-embedding-svc-* deployment in chatqa namespace (for replicas)
+    # 2. torchserve-embedding-config ConfigMap in chatqa namespace (for MAX_WORKERS and BATCH_SIZE)
+    #
+    # Example calculation:
+    # - 8 replicas × 4 workers × 32 batch_size = 1024
+    # - This means Celery sends 1024 chunks per batch to the embedding service
+    # - TorchServe will distribute these across all workers efficiently
     scheduledSync:
       enabled: false
       syncPeriodSeconds: "60"
@@ -380,6 +391,12 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: LATE_CHUNKING_ENABLED
+    - name: BATCH_SIZE
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: CELERY_BATCH_SIZE
+
   replicas: 1
   resources:
     requests:
@@ -702,24 +719,20 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
-    - name: OMP_THREAD_LIMIT
-      valueFrom:
-        resourceFieldRef:
-          resource: limits.cpu
     - name: PDF_MAX_WORKERS
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
   resources:
     requests:
-      cpu: "1"
-      memory: "2Gi"
+      cpu: "2"
+      memory: "8Gi"
     limits:
-      cpu: "6"
-      memory: "12Gi"
+      cpu: "12"
+      memory: "32Gi"
   hpa:
-    minReplicas: 2
-    maxReplicas: 4
+    minReplicas: 1
+    maxReplicas: 2
     targetValue: 4
     behavior:
       scaleDown:

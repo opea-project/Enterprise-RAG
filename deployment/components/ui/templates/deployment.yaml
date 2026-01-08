@@ -13,10 +13,11 @@ spec:
       {{- include "helm-ui.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        checksum/ui-env-config: {{ include (print $.Template.BasePath "/ui-env-config.yaml") . | sha256sum }}
       {{- include "manifest.podLabels" (list .Values.fullnameOverride .) | nindent 6 }}
       {{- include "manifest.tdx.annotations" (list .Values.fullnameOverride .) | nindent 6 }}
     spec:

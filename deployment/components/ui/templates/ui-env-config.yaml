@@ -15,7 +15,8 @@ data:
       "GRAFANA_DASHBOARD_URL": "https://{{ .Values.extraUiConfigVars.grafanaDomainName }}",
       "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}",
       "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}",
-      "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}"
+      "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}",
+      "ERAG_VERSION": {{ .Chart.AppVersion | quote }}
     }
 {{- else if eq .Values.type "docsum" }}
 apiVersion: v1
@@ -30,6 +31,7 @@ data:
       "KEYCLOAK_CLIENT_ID": "{{ .Values.extraUiConfigVars.keycloakClientId }}",
       "ADMIN_RESOURCE_ROLE": "{{ .Values.extraUiConfigVars.adminResourceRole }}",
       "GRAFANA_DASHBOARD_URL": "https://{{ .Values.extraUiConfigVars.grafanaDomainName }}",
-      "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}"
+      "KEYCLOAK_ADMIN_PANEL_URL": "https://{{ .Values.extraUiConfigVars.keycloakAdminPanelDomainName }}",
+      "ERAG_VERSION": {{ .Chart.AppVersion | quote }}
     }
 {{- end }}

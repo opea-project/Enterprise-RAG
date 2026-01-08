@@ -1,0 +1,17 @@
+---
+- name: Load initial configuration
+  ansible.builtin.include_tasks:
+    file: initial_config.yaml
+  tags:
+    - always
+
+- name: Verify configuration
+  ansible.builtin.include_tasks:
+    file: verify_config.yaml
+  tags:
+    - install
+    - post-install
+    - display-configuration
+    - backup
+    - restore
+    - pre-upgrade

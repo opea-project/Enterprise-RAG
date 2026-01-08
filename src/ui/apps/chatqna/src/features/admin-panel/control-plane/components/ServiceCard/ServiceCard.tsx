@@ -26,7 +26,10 @@ const ServiceCard = () => {
 };
 
 const NoServiceSelectedCard = () => (
-  <div className="no-service-selected-card">
+  <div
+    data-testid="no-service-selected-card"
+    className="no-service-selected-card"
+  >
     <p>Select service from the graph to see its details</p>
   </div>
 );

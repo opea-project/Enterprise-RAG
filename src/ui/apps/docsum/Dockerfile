@@ -60,7 +60,8 @@ FROM nginx:alpine
 
 # Upgrade packages to fix possible vulnerabilities
 USER root
-RUN apk update && apk upgrade --no-cache && \
+RUN apk update && apk upgrade --no-cache libpng && \
+    apk upgrade --no-cache && \
     rm -f /bin/dmesg \
           /usr/bin/nc \
           /bin/ping \

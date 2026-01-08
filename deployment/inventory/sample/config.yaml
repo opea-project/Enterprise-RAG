@@ -37,7 +37,6 @@ ontap_data_lif: ""                    # ONTAP data LIF IP address
 ontap_svm: ""                         # Storage Virtual Machine (SVM) name
 ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
-ontap_aggregate: ""                   # ONTAP aggregate name for volume creation
 
 huggingToken: "" # Huggingface token is required for gated/private models
 

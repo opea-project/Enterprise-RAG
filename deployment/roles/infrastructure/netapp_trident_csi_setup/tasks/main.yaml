@@ -27,6 +27,8 @@
     release_namespace: "{{ trident_namespace }}"
     create_namespace: true
     chart_version: "100.{{ trident_operator_version }}"
+    update_repo_cache: true
+    wait: true
   tags:
     - install
     - post-install

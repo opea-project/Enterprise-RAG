@@ -161,7 +161,6 @@ ontap_data_lif: ""
 ontap_svm: ""
 ontap_username: ""
 ontap_password: ""
-ontap_aggregate: ""
 ```
 
 ## New Ansible Role Created
@@ -216,7 +215,6 @@ spec:
   svm: {{ ontap_svm }}
   username: {{ ontap_username }}
   password: {{ ontap_password }}
-  aggregate: {{ ontap_aggregate }}
 ```
 
 [**trident-storageclass.yaml.j2**](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/templates/trident-storageclass.yaml.j2): Kubernetes StorageClass
@@ -263,7 +261,6 @@ ontap_data_lif: "192.168.1.101"          # ONTAP data interface IP
 ontap_svm: "svm_ai"                       # Storage Virtual Machine name
 ontap_username: "admin"                   # ONTAP admin username
 ontap_password: "password123"             # ONTAP admin password
-ontap_aggregate: "aggr1"                  # Target aggregate for volumes
 ```
 
 ## Deployment Process

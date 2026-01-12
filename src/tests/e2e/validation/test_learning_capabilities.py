@@ -5,11 +5,13 @@
 
 import allure
 import logging
+import os
 import pytest
 import time
-import os
+from types import SimpleNamespace
+import yaml
 
-from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, TEST_FILES_DIR
 from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if chatqa pipeline is not deployed
@@ -27,13 +29,25 @@ UNRELATED_RESPONSE_MSG = "Chatbot should return answer that is strictly related 
 # In each test case, a file is uploaded and a question related to the file content is asked.
 
 
+@pytest.fixture
+def test_data(request, test_language):
+    """Load scenarios and package them with language info"""
+    data_path = os.path.join(TEST_FILES_DIR, "localized_dataset.yaml")
+
+    with open(data_path, "r", encoding="utf-8") as f:
+        scenarios = yaml.load(f, Loader=yaml.SafeLoader)
+
+    current_scenario = scenarios.get(request.node.name, [])
+    stages = [step[test_language] for step in current_scenario if test_language in step]
+
+    return SimpleNamespace(stages=stages, language=test_language)
+
+
 @pytest.mark.smoke
 @allure.testcase("IEASG-T50")
-def test_txt(edp_helper, chatqa_api_helper):
+def test_txt(edp_helper, chatqa_api_helper, test_data):
     """*.txt file learning capabilities"""
-    question = "How many cars commonly called MALUCH are registered in Gdansk?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.txt", question)
-    assert "851" in response, UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @pytest.mark.smoke
@@ -355,20 +369,9 @@ def test_adoc_links(edp_helper, chatqa_api_helper):
 
 
 @allure.testcase("IEASG-T179")
-def test_adoc_tables(edp_helper, chatqa_api_helper):
+def test_adoc_tables(edp_helper, chatqa_api_helper, test_data):
     """Validate if tables are recognized in the adoc file"""
-    # 1. Test tables in a standard format
-    question = " What category does Flornax Quibit belong to?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_tables.adoc", question)
-    assert "homeware" in response.lower(), UNRELATED_RESPONSE_MSG
-    # 2. Test tables in csv format
-    question = "What is the price for Myzterna Flux?"
-    response = ask_question(chatqa_api_helper, question)
-    assert "42" in response, UNRELATED_RESPONSE_MSG
-    # 3. Test tables with merged cells
-    question = "Give me a description of the product called 'Luminoid Krux'"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["compact", "light", "cube"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T180")
@@ -629,7 +632,7 @@ def test_multi_doc_reasoning(edp_helper, chatqa_api_helper):
 
 
 @allure.testcase("IEASG-T247")
-def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper, test_data):
     """
     Upload 2 documents:
     A: Emanueleee has got 4 RC cars.
@@ -642,19 +645,25 @@ def test_top_n(edp_helper, chatqa_api_helper, fingerprint_api_helper):
     current_parameters = fingerprint_api_helper.append_arguments("").json().get("parameters", {})
     original_n = current_parameters.get("top_n")
 
-    file1 = "test_top_n_1.txt"
-    file2 = "test_top_n_2.txt"
-    question = "How many RC cars do Emanueleee and Raffaeleee have in total?"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file1))
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file2))
+    # Get the first (and only) stage for this test from the unified test_data object
+    stage = test_data.stages[0]
+    question_item = stage["questions"][0]
+    question = question_item["question"]
+    expected_value = question_item["expected_any"][0]
+
+    # 1. Ingest files using the language defined in test_data
+    for file_name in stage.get("files", []):
+        path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
+        edp_helper.upload_file_and_wait_for_ingestion(path)
 
     try:
         fingerprint_api_helper.set_component_parameters("reranker", top_n=1)
         response = ask_question(chatqa_api_helper, question)
-        assert "31" not in response.lower(), "only a single document should be used to answer the question"
+        assert expected_value not in response.lower(), "only a single document should be used to answer the question"
+
         fingerprint_api_helper.set_component_parameters("reranker", top_n=3)
         response = ask_question(chatqa_api_helper, question)
-        assert "31" in response.lower(), "3 documents should be used to answer the question"
+        assert expected_value in response.lower(), "3 documents should be used to answer the question"
     finally:
         # revert top_n back to original value
         fingerprint_api_helper.set_component_parameters("reranker", top_n=original_n)
@@ -677,3 +686,36 @@ def ask_question(chatqa_api_helper, question=""):
 def delete_file(edp_helper, file):
     response = edp_helper.generate_presigned_url(file, "DELETE")
     return edp_helper.delete_file(response.json().get("url"))
+
+
+def run_standard_validation(edp_helper, chatqa_api_helper, test_data):
+    """
+    For each stage in the test data:
+    1. Ingest files specified in the stage.
+    2. For each question in the stage, ask the question and validate the response against expected answers.
+    3. Support both 'expected_any' and 'expected_all' validation methods.
+    """
+    for stage in test_data.stages:
+        # 1. File ingestion
+        for file_name in stage.get("files", []):
+            path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
+            logger.info(f"Ingesting file: {file_name}")
+            edp_helper.upload_file_and_wait_for_ingestion(path)
+
+        # 2. Question validation
+        for item in stage.get("questions", []):
+            question = item.get("question")
+            response = ask_question(chatqa_api_helper, question)
+
+            # expected_any: success if at least one string is found
+            if "expected_any" in item:
+                expected_list = item["expected_any"]
+                assert chatqa_api_helper.words_in_response(expected_list, response), \
+                    f"Assertion failed! None of {expected_list} found in response: {response}"
+
+            # expected_all: success only if all strings are found
+            if "expected_all" in item:
+                expected_list = item["expected_all"]
+                missing_words = [word for word in expected_list if word.lower() not in response.lower()]
+                assert not missing_words, \
+                    f"Assertion failed! Missing words: {missing_words} in response: {response}"

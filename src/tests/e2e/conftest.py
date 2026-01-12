@@ -269,6 +269,12 @@ def temporarily_remove_brute_force_detection(keycloak_helper):
 
 
 @pytest.fixture(scope="session")
+def test_language():
+    """Get the test language from environment variable"""
+    return os.getenv("TEST_LANG", "en")
+
+
+@pytest.fixture(scope="session")
 def code_snippets():
     """
     Reads code snippet files from a specified directory and returns

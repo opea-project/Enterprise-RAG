@@ -1,0 +1,54 @@
+= Przykładowe Tabele Produktowe
+
+== Tabela 1: Standardowa Tabela AsciiDoc
+
+[options="header,footer"]
+|=======================
+|ID |Nazwa Produktu    |Kategoria
+
+|1  |Zentrophin Gelax |Kosmetyka
+|2  |Flornax Quibit   |Artykuły domowe
+|3  |Nebulor Vexid    |Outdoor
+|4  |Crysolune Kitra  |Technologia
+|5  |Dravexi Loomin   |Zabawki
+
+|=======================
+
+== Tabela 2: Tabela w formacie CSV
+
+[format="csv",cols="4"]
+|======
+ID,Produkt,Cena,Stan magazynowy
+101,Blurnix Droppa,19.99,128
+102,Vintago Plustik,7.45,432
+103,Myzterna Flux,42.00,5
+104,Keplaroon Zetta,99.90,0
+|======
+
+== Tabela 3: Tabela z łączonymi komórkami i wieloliniami
+
+[options="header"]
+|===
+|ID |Nazwa Produktu          |Opis                               |Status
+
+|201
+|Quarlix Supreme
+|Środek do wielu powierzchni +
+z modułem zapachu bioaktywnego
+|Dostępny
+
+|202
+|Luminoid Krux
+.2+|Kompaktowa lekka kostka
+|Wyprzedany
+
+|203
+|- (jak powyżej)
+|Wycofany
+
+|204
+|Snarkelbit HyperEdge
+|Interfejs gamingowy i audio 3-w-1
+|W produkcji
+
+|===

@@ -7,8 +7,8 @@ import requests
 import time
 
 from fastapi.responses import StreamingResponse
-from langchain.chains.summarize import load_summarize_chain
-from langchain.docstore.document import Document
+from langchain_classic.chains.summarize import load_summarize_chain
+from langchain_core.documents import Document
 from langchain_core.outputs import LLMResult
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI

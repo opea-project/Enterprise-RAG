@@ -22,8 +22,8 @@ dependencies = [
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "setuptools == 80.9.0",     # security update
-    "requests == 2.32.4",
-    "urllib3 == 2.6.0",
+    "requests == 2.32.5",
+    "urllib3 == 2.6.3",
 ]
 
 [tool.uv.sources]

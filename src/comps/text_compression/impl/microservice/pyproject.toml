@@ -17,11 +17,11 @@ dependencies = [
     "shortuuid == 1.0.13",
     "uvicorn == 0.30.1",
     "python-dotenv == 1.1.0",
-    "aiohttp == 3.12.14",
+    "aiohttp == 3.13.3",
     "pyyaml == 6.0.2",
     "nltk==3.9.1",
-    "requests == 2.32.4",
-    "urllib3 == 2.6.0",
+    "requests == 2.32.5",
+    "urllib3 == 2.6.3",
     "Pillow == 11.3.0",
 ]
 

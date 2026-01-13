@@ -22,12 +22,15 @@ dependencies = [
     "langchain-text-splitters==1.1.0",
     "langsmith==0.3.45",
     "markdown==3.0.0",
+    "olefile==0.47",
     "pandas==2.2.2",
     "Pillow==11.3.0",
-    "pymupdf==1.26.4",
+    "pymupdf==1.26.6",
+    "pymupdf4llm[ocr,layout]==0.2.7",
     "python-bidi==0.4.2",
     "python-docx==1.1.2",
     "python-pptx==1.0.1",
+    "pytesseract==0.3.13",
     "sentence_transformers==3.0.1",
     "shortuuid==1.0.13",
     "unstructured[all-docs]==0.17.2",
@@ -47,6 +50,7 @@ dependencies = [
     "setuptools == 80.9.0",     # security update
     "requests == 2.32.5",
     "urllib3 == 2.6.3",
+    "opencv-python==4.12.0.88",
 ]
 
 [project.optional-dependencies]

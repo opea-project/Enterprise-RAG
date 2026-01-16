@@ -247,12 +247,16 @@ configure_platform_defaults() {
             ;;
         ibm)
             log_info "Configuring IBM Cloud platform defaults"
-            STORAGE_DEVICE="/dev/nvme1n1"
-            STORAGE_MOUNT_POINT="/mnt/nvme1"
+            if [[ "$INSTALL_GAUDI_DRIVER" == "true" ]]; then
+                STORAGE_DEVICE="/dev/nvme1n1"
+                STORAGE_MOUNT_POINT="/mnt/nvme1"
+            else
+                STORAGE_DEVICE="/dev/vdb"
+                STORAGE_MOUNT_POINT="/mnt/vdb1"
+            fi
             CONTAINERD_STORAGE_DIR="${STORAGE_MOUNT_POINT}/containerd"
             LOCAL_PATH_STORAGE_DIR="${STORAGE_MOUNT_POINT}/local-path-provisioner"
             ETCD_DATA_DIR="${STORAGE_MOUNT_POINT}/etcd"
-            INSTALL_GAUDI_DRIVER=true
             ;;
     esac
 
@@ -535,7 +539,13 @@ create_partition_and_format_storage() {
         sudo parted -s $device mkpart primary ext4 0% 100%
         sudo partprobe $device
 
-        # Wait for partition to be available
+        # Wait for partition to be available (up to 10 seconds)
+        for i in {1..10}; do
+            if [[ -b "$partition_device" ]]; then
+                break
+            fi
+            sleep 1
+        done
         if [[ ! -b "$partition_device" ]]; then
             log_fatal "Partition device not found after creation: $partition_device"
         fi

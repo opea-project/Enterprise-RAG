@@ -27,46 +27,34 @@ tox -e e2e
 To run specific tests that match a name pattern (using a simple regex), use:
 
 ```
-tox -e e2e -- -k <regex>
+tox -e e2e -- --build-config-file=<build configuration file> --credentials-file=<credentials file> -k <regex>
 ```
-Replace <regex> with your search keyword or pattern.
-
+* `<build configuration file>` - full path to `config.yaml` file
+* `<credentials file>` - full path to `default_credentials.txt` file which contains credentials for admin and user
+* `<regex>` - desired test name you want to run
 
 ## Allure Integration
-We use Allure for test reporting. When tests are run via tox, results are automatically collected and stored in `allure-results` directory (as specified in tox.ini). These results can then be uploaded to Zephyr using the following script:
-
-https://github.com/intel-sandbox/rag-solution-infra/blob/main/tools/upload_test_results_to_zephyr.py
-
+We use Allure for test reporting. When tests are run via tox, results are automatically collected and stored in `allure-results` directory (as specified in tox.ini).
 
 ## Project Structure & Best Practices
 ### Test Location
-All E2E tests are stored in the src/tests/ directory. Each module should be named according to the component being tested. Example:
+All E2E tests are stored in the src/tests/e2e/validation directory. Each module should be named according to the component being tested. Example:
 
 ```
-test_chatqa.py
+test_chatqa_pipeline.py
 test_edp.py
 ```
 
-This naming convention helps with clarity and maintainability.
+This naming convention helps with clariyyty and maintainability.
+
+### Test Data
+Any data files required for the tests (such as input files for EDP, long code snippets, or other external assets) should be stored in the `src/tests/e2e/files` directory. This ensures that large or static data is kept separate from the test logic.
 
 ### Helpers and Fixtures
-Reusable test helpers and setup logic are implemented as Pytest fixtures. Shared fixtures are defined in `src/tests/conftest.py`, while additional utilities can be organized under `src/tests/helpers/`.
-
-Example fixture:
-
-```python
-# src/tests/conftest.py
-
-import pytest
-from .helpers.guard_helper import GuardHelper
-
-@pytest.fixture(scope="session")
-def guard_helper(chatqa_api_helper, fingerprint_api_helper):
-    return GuardHelper(chatqa_api_helper, fingerprint_api_helper)
-```
+Reusable test helpers and setup logic are implemented as Pytest fixtures. Shared fixtures are defined in `src/tests/e2e/conftest.py`, while additional utilities can be organized under `src/tests/e2e/helpers/`.
 
 ## Linking Tests to Zephyr
-Each test should be linked to its corresponding Zephyr test case using the @allure.testcase decorator:
+Each test should be linked to its corresponding Zephyr test case using the `@allure.testcase` decorator:
 
 ```python
 import allure

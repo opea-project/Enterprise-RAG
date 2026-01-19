@@ -243,6 +243,11 @@ Replace the placeholder values with your actual LLM endpoint details.
 
 If your endpoint does not have properly configured TLS you can also add `LLM_TLS_SKIP_VERIFY: "True"`
 
+The same can be accomplished on already running cluster by editing gmc the same variables in `gmcconnector` resource in Kubernetes
+```
+kubectl edit gmconnectors -n chatqa chatqa
+```
+
 
 #### Partner Remote Endpoint Examples
 

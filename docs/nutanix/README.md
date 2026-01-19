@@ -13,6 +13,9 @@
 | RAM memory    | `64GB` of RAM per VM or per Socket                                                   |
 | Disk Space    | `256GB` of disk space is generally recommended, though this is highly dependent on the model size |
 
+> [!NOTE]
+> In this case vCPUs means cores with HyperThreading enabled. In other VM environment than AWS, HyperThreading might be disabled.
+
 ## Architecture Diagram
 
 ### Logical architecture diagram

@@ -106,6 +106,11 @@ sudo sysctl --system
 > This model is publically available. However, if you choose to change the model to the gated/restricted one, remember to adjust `huggingToken` field.
 > Refer to the [official Hugging Face documentation](https://huggingface.co/docs/hub/models-gated) for instructions on accessing gated models.
 
+> [!Note]
+> If application will be deployed on Nutanix Kubernetes Platform (NKP), it is recommended to disable telemetry, as it 
+> might collide with existing telemetry on NKP. You can do that by changing `enabled` field in `telemetry` section in choosen pipeline config
+
+
 2. **Advanced Configuration:**
    
    For detailed configuration options and advanced settings, refer to the [Advanced Configuration Guide](./advanced_configuration.md).

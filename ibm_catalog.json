@@ -52,10 +52,9 @@
               "key": "instance_profile",
               "type": "string",
               "description": "IBM Cloud instance profile with Intel Gaudi HPU",
+              "default_value": "gx3d-160x1792x8gaudi3",
               "required": true,
-              "options": [
-                {"label": "gx3d-160x1792x8gaudi3", "value": "gx3d-160x1792x8gaudi3"}
-              ]
+              "hidden": true
             },
             {
               "key": "instance_name",
@@ -150,10 +149,7 @@
               "type": "string",
               "default_value": "hpu",
               "hidden": true,
-              "description": "Deployment type for AI acceleration",
-              "options": [
-                {"label": "Intel Gaudi HPU", "value": "hpu"}
-              ]
+              "description": "Deployment type for AI acceleration"
             },
             {
               "key": "vpc",
@@ -264,10 +260,9 @@
               "key": "instance_profile",
               "type": "string",
               "description": "IBM Cloud instance profile with Intel Xeon CPU",
+              "default_value": "bx3d-128x640",
               "required": true,
-              "options": [
-                {"label": "bx3d-128x640", "value": "bx3d-128x640"}
-              ]
+              "hidden": true
             },
             {
               "key": "instance_name",
@@ -362,10 +357,7 @@
               "type": "string",
               "default_value": "cpu",
               "hidden": true,
-              "description": "Deployment type for AI acceleration",
-              "options": [
-                {"label": "Xeon", "value": "cpu"}
-              ]
+              "description": "Deployment type for AI acceleration"
             },
             {
               "key": "vpc",

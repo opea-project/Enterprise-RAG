@@ -25,3 +25,5 @@ export const Popover = ({ ariaLabel, children, ...rest }: PopoverProps) => (
     <AriaDialog aria-label={ariaLabel}>{children}</AriaDialog>
   </AriaPopover>
 );
+
+export type { PopoverProps };

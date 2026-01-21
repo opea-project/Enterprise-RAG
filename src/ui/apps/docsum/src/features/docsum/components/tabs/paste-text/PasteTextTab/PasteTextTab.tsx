@@ -13,8 +13,9 @@ import { ChangeEventHandler, useCallback, useEffect, useRef } from "react";
 import { ValidationError } from "yup";
 
 import { useSummarizePlainTextMutation } from "@/features/docsum/api";
+import { SummaryType } from "@/features/docsum/api/types";
 import GeneratedSummary from "@/features/docsum/components/shared/GeneratedSummary/GeneratedSummary";
-import GenerateSummaryButton from "@/features/docsum/components/shared/GenerateSummaryButton/GenerateSummaryButton";
+import GenerateSummaryDropdownButton from "@/features/docsum/components/shared/GenerateSummaryDropdownButton/GenerateSummaryDropdownButton";
 import { addHistoryItem } from "@/features/docsum/store/history.slice";
 import {
   clearPasteTextTab,
@@ -24,6 +25,7 @@ import {
   setIsLoading,
   setStreamingText,
   setSummary,
+  setSummaryType,
   setText,
 } from "@/features/docsum/store/pasteTextTab.slice";
 import { validateTextAreaInput } from "@/features/docsum/validators/textAreaInput";
@@ -34,8 +36,15 @@ const PasteTextTab = () => {
   const [summarizePlainText, { data }] = useSummarizePlainTextMutation();
 
   const dispatch = useAppDispatch();
-  const { text, summary, streamingText, isLoading, errorMessage, isInvalid } =
-    useAppSelector(selectPasteTextTabState);
+  const {
+    text,
+    summary,
+    streamingText,
+    isLoading,
+    errorMessage,
+    isInvalid,
+    summaryType,
+  } = useAppSelector(selectPasteTextTabState);
 
   const summaryRef = useRef("");
 
@@ -90,6 +99,7 @@ const PasteTextTab = () => {
 
       const { data, error } = await summarizePlainText({
         text,
+        summaryType,
         onSummaryUpdate: handleUpdate,
       });
 
@@ -126,7 +136,11 @@ const PasteTextTab = () => {
       }
       dispatch(setStreamingText(""));
     }
-  }, [text, summarizePlainText, dispatch]);
+  }, [text, summaryType, summarizePlainText, dispatch]);
+
+  const handleSummaryTypeChange = (value: SummaryType) => {
+    dispatch(setSummaryType(value));
+  };
 
   const isGeneratingSummaryDisabled = !text.trim() || isLoading;
   const isClearBtnDisabled =
@@ -158,9 +172,12 @@ const PasteTextTab = () => {
           isInvalid={isInvalid}
         />
         <p className="paste-text-tab__error-message">{errorMessage}</p>
-        <GenerateSummaryButton
+        <GenerateSummaryDropdownButton
+          summaryType={summaryType}
+          onSummaryTypeChange={handleSummaryTypeChange}
+          onGenerateSummary={handleGenerateSummaryButtonPress}
           isDisabled={isGeneratingSummaryDisabled}
-          onPress={handleGenerateSummaryButtonPress}
+          className="mt-4"
         />
       </div>
       <div className="paste-text-tab__summary-col">

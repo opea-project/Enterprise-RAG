@@ -12,8 +12,9 @@ import { sanitizeFile } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, DragEvent, useCallback, useRef } from "react";
 
 import { useSummarizeFileMutation } from "@/features/docsum/api";
+import { SummaryType } from "@/features/docsum/api/types";
 import GeneratedSummary from "@/features/docsum/components/shared/GeneratedSummary/GeneratedSummary";
-import GenerateSummaryButton from "@/features/docsum/components/shared/GenerateSummaryButton/GenerateSummaryButton";
+import GenerateSummaryDropdownButton from "@/features/docsum/components/shared/GenerateSummaryDropdownButton/GenerateSummaryDropdownButton";
 import FileSelectedToSummarize from "@/features/docsum/components/tabs/upload-file/FileSelectedToSummarize/FileSelectedToSummarize";
 import { addHistoryItem } from "@/features/docsum/store/history.slice";
 import {
@@ -24,6 +25,7 @@ import {
   setIsLoading,
   setStreamingText,
   setSummary,
+  setSummaryType,
 } from "@/features/docsum/store/uploadFileTab.slice";
 import {
   convertToApiFileData,
@@ -40,8 +42,14 @@ const UploadFileTab = () => {
   const [summarizeFile, { data }] = useSummarizeFileMutation();
 
   const dispatch = useAppDispatch();
-  const { fileData, summary, streamingText, isLoading, errorMessage } =
-    useAppSelector(selectUploadFileTabState);
+  const {
+    fileData,
+    summary,
+    streamingText,
+    isLoading,
+    errorMessage,
+    summaryType,
+  } = useAppSelector(selectUploadFileTabState);
 
   const fileInputRef = useRef<FileInputHandle>(null);
   const summaryRef = useRef("");
@@ -113,6 +121,7 @@ const UploadFileTab = () => {
 
       const { data, error } = await summarizeFile({
         fileData: apiFileData,
+        summaryType,
         onSummaryUpdate: handleUpdate,
       });
 
@@ -149,7 +158,11 @@ const UploadFileTab = () => {
       }
       dispatch(setStreamingText(""));
     }
-  }, [fileData, summarizeFile, dispatch]);
+  }, [fileData, summaryType, summarizeFile, dispatch]);
+
+  const handleSummaryTypeChange = (value: SummaryType) => {
+    dispatch(setSummaryType(value));
+  };
 
   const handleChangeFileButtonPress = () => {
     fileInputRef.current!.click();
@@ -182,9 +195,12 @@ const UploadFileTab = () => {
           onDrop={handleFileInputDrop}
           onChange={handleFileInputChange}
         />
-        <GenerateSummaryButton
+        <GenerateSummaryDropdownButton
+          summaryType={summaryType}
+          onSummaryTypeChange={handleSummaryTypeChange}
+          onGenerateSummary={handleGenerateSummaryButtonPress}
           isDisabled={isGeneratingSummary}
-          onPress={handleGenerateSummaryButtonPress}
+          className="mt-4"
         />
       </div>
       <div className="upload-file-tab__summary-col">

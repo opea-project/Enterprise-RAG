@@ -3,6 +3,7 @@
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+import { SummaryType } from "@/features/docsum/api/types";
 import { RootState } from "@/store";
 
 export interface FileData {
@@ -18,6 +19,7 @@ interface UploadFileTabState {
   streamingText: string;
   isLoading: boolean;
   errorMessage: string;
+  summaryType: SummaryType;
 }
 
 const initialState: UploadFileTabState = {
@@ -26,6 +28,7 @@ const initialState: UploadFileTabState = {
   streamingText: "",
   isLoading: false,
   errorMessage: "",
+  summaryType: "map_reduce",
 };
 
 const uploadFileTabSlice = createSlice({
@@ -47,6 +50,9 @@ const uploadFileTabSlice = createSlice({
     setErrorMessage: (state, action: PayloadAction<string>) => {
       state.errorMessage = action.payload;
     },
+    setSummaryType: (state, action: PayloadAction<SummaryType>) => {
+      state.summaryType = action.payload;
+    },
     clearUploadFileTab: (state) => {
       state.fileData = null;
       state.summary = "";
@@ -63,6 +69,7 @@ export const {
   setStreamingText,
   setIsLoading,
   setErrorMessage,
+  setSummaryType,
   clearUploadFileTab,
   resetUploadFileTabSlice,
 } = uploadFileTabSlice.actions;

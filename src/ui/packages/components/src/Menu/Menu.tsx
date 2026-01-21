@@ -13,7 +13,7 @@ import {
   MenuTriggerProps as AriaMenuTriggerProps,
 } from "react-aria-components";
 
-import { Popover } from "@/Popover/Popover";
+import { Popover, PopoverProps } from "@/Popover/Popover";
 
 /**
  * Menu component for rendering a list of selectable actions or options.
@@ -38,6 +38,8 @@ interface MenuTriggerProps
   trigger: ReactNode;
   /** Accessible label for the menu */
   ariaLabel?: string;
+  /** Popover placement */
+  placement?: PopoverProps["placement"];
   /** Content to display inside the menu */
   children: ReactNode;
 }
@@ -48,12 +50,15 @@ interface MenuTriggerProps
 const MenuTrigger = ({
   trigger,
   ariaLabel = "Menu",
+  placement = "bottom start",
   children,
   ...rest
 }: MenuTriggerProps) => (
   <AriaMenuTrigger {...rest}>
     {trigger}
-    <Popover ariaLabel={ariaLabel}>{children}</Popover>
+    <Popover ariaLabel={ariaLabel} placement={placement}>
+      {children}
+    </Popover>
   </AriaMenuTrigger>
 );
 

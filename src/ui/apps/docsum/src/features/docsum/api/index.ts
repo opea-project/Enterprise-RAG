@@ -32,11 +32,12 @@ export const summarizationApi = createApi({
       SummarizeResponse,
       SummarizePlainTextRequest
     >({
-      query: ({ text, onSummaryUpdate }) => ({
+      query: ({ text, summaryType, onSummaryUpdate }) => ({
         url: "",
         method: "POST",
         body: {
           texts: [text],
+          ...(summaryType && { summary_type: summaryType }),
         },
         responseHandler: async (response) => {
           if (!response.ok) {
@@ -50,11 +51,12 @@ export const summarizationApi = createApi({
         getErrorMessage(error, ERROR_MESSAGES.SUMMARIZE_TEXT),
     }),
     summarizeFile: builder.mutation<SummarizeResponse, SummarizeFileRequest>({
-      query: ({ fileData, onSummaryUpdate }) => ({
+      query: ({ fileData, summaryType, onSummaryUpdate }) => ({
         url: "",
         method: "POST",
         body: {
           files: [fileData],
+          ...(summaryType && { summary_type: summaryType }),
         },
         responseHandler: async (response) => {
           if (!response.ok) {

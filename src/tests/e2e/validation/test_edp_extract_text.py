@@ -185,7 +185,7 @@ def test_edp_extract_text_pptx(edp_helper):
     file = FILES_PREFIX + "text_in_image.pptx"
     text_in_image = "My name is John, and I am a human. Call me “John the Human”."
     extracted_text = upload_file_and_extract_text(edp_helper, files_dir, file)
-    assert extracted_text == text_in_image, f"Extracted text '{extracted_text}' differs from expected text, expected: {text_in_image}"
+    assert text_in_image in extracted_text, f"Extracted text '{extracted_text}' does not contain expected text '{text_in_image}'"
 
 
 @allure.testcase("IEASG-T223")

@@ -31,6 +31,7 @@ dependencies = [
     "python-docx==1.1.2",
     "python-pptx==1.0.1",
     "pytesseract==0.3.13",
+    "regex==2025.11.3",
     "sentence_transformers==3.0.1",
     "shortuuid==1.0.13",
     "unstructured[all-docs]==0.17.2",

@@ -155,6 +155,39 @@ importers:
         specifier: ^5.0.1
         version: 5.1.4(typescript@5.9.2)(vite@5.4.21(@types/node@22.17.0)(sass@1.90.0))
 
+  apps/audioqna:
+    dependencies:
+      '@intel-enterprise-rag-ui/auth':
+        specifier: workspace:^
+        version: link:../../packages/auth
+      '@intel-enterprise-rag-ui/components':
+        specifier: workspace:^
+        version: link:../../packages/components
+      '@intel-enterprise-rag-ui/control-plane':
+        specifier: workspace:^
+        version: link:../../packages/control-plane
+      '@intel-enterprise-rag-ui/icons':
+        specifier: workspace:^
+        version: link:../../packages/icons
+      '@intel-enterprise-rag-ui/input-validation':
+        specifier: workspace:^
+        version: link:../../packages/input-validation
+      '@intel-enterprise-rag-ui/layouts':
+        specifier: workspace:^
+        version: link:../../packages/layouts
+      '@intel-enterprise-rag-ui/markdown':
+        specifier: workspace:^
+        version: link:../../packages/markdown
+      '@intel-enterprise-rag-ui/tailwind-theme':
+        specifier: workspace:^
+        version: link:../../packages/tailwind-theme
+      '@intel-enterprise-rag-ui/utils':
+        specifier: workspace:^
+        version: link:../../packages/utils
+      luxon:
+        specifier: ^3.6.1
+        version: 3.7.1
+
   apps/chatqna:
     dependencies:
       '@intel-enterprise-rag-ui/auth':

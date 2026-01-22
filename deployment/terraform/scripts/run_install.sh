@@ -62,9 +62,8 @@ LOCAL_PATH_STORAGE_DIR=""
 ETCD_DATA_DIR=""
 
 # Hardware configuration (Gaudi-specific)
-HABANA_DRIVER_VERSION="1.22.1"
-HABANA_RUNTIME_VERSION="1.22.1-6"
-
+HABANA_VERSION=""
+HABANA_VERSION_MINOR="" # version up to minor, e.g.1.22.3-32 --> 1.22.3
 #==============================================================================
 # USAGE AND HELP
 #==============================================================================
@@ -78,7 +77,8 @@ Unified installer for AWS and IBM Cloud deployments
 
 OPTIONAL FLAGS:
     -p, --platform PLATFORM       Target platform: aws, ibm
-    -g, --gaudi                    Install Intel Gaudi drivers and runtime
+    -g, --gaudi                   Install Intel Gaudi drivers and runtime
+    --habana-version VERSION      Habana driver/runtime version (required with --gaudi)
     -s, --skip-storage            Skip storage configuration
     -d, --debug                   Install debug tools (k9s, htop, etc.)
     --stage STAGE                 Run specific stage: system, cluster, application
@@ -95,7 +95,7 @@ STAGES:
 
 EXAMPLES:
     # Full installation
-    $SCRIPT_NAME --platform aws --gaudi
+    $SCRIPT_NAME --platform aws --gaudi --habana-version 1.22.2-32
 
     # Run only system preparation stage
     $SCRIPT_NAME --platform aws --stage system
@@ -128,6 +128,11 @@ parse_arguments() {
             -g|--gaudi)
                 INSTALL_GAUDI_DRIVER=true
                 shift
+                ;;
+            --habana-version)
+                HABANA_VERSION="$2"
+                HABANA_VERSION_MINOR=$(echo "$HABANA_VERSION" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')
+                shift 2
                 ;;
             -s|--skip-storage)
                 CONFIGURE_STORAGE=false
@@ -164,6 +169,13 @@ parse_arguments() {
     # Validate platform
     if [[ "$PLATFORM" != "aws" && "$PLATFORM" != "ibm" ]]; then
         echo "Error: Platform must be 'aws' or 'ibm'"
+        show_usage
+        exit 1
+    fi
+
+    # Require --habana-version if --gaudi is set
+    if [[ "$INSTALL_GAUDI_DRIVER" == "true" && -z "$HABANA_VERSION" ]]; then
+        echo "Error: --habana-version is required when using --gaudi"
         show_usage
         exit 1
     fi
@@ -668,8 +680,8 @@ install_habana_driver() {
     log_info "Installing Habana AI driver and container runtime..."
 
     # Download Habana driver installer
-    log_info "Downloading Habana driver installer version: $HABANA_DRIVER_VERSION"
-    wget -nv https://vault.habana.ai/artifactory/gaudi-installer/$HABANA_DRIVER_VERSION/habanalabs-installer.sh
+    log_info "Downloading Habana driver installer version: $HABANA_VERSION_MINOR"
+    wget -nv https://vault.habana.ai/artifactory/gaudi-installer/$HABANA_VERSION_MINOR/habanalabs-installer.sh
 
     # Install driver
     chmod +x habanalabs-installer.sh
@@ -677,8 +689,8 @@ install_habana_driver() {
     ./habanalabs-installer.sh install --type base -y
 
     # Install container runtime
-    log_info "Installing Habana container runtime version: $HABANA_RUNTIME_VERSION"
-    sudo apt install habanalabs-container-runtime=$HABANA_RUNTIME_VERSION -y
+    log_info "Installing Habana container runtime version: $HABANA_VERSION"
+    sudo apt install habanalabs-container-runtime=$HABANA_VERSION -y
 
     # Configure containerd
     configure_containerd_for_habana
@@ -686,7 +698,7 @@ install_habana_driver() {
     # Deploy Kubernetes device plugin
     if command -v kubectl >/dev/null 2>&1; then
         log_info "Deploying Habana Kubernetes device plugin..."
-        kubectl create -f https://vault.habana.ai/artifactory/docker-k8s-device-plugin/habana-k8s-device-plugin.yaml
+        kubectl apply -f /tmp/habana-k8s-device-plugin.yaml
     fi
 
     # Cleanup

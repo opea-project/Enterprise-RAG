@@ -168,3 +168,9 @@ variable "solution_version" {
   type        = string
   default     = "release-2.0.0"
 }
+
+variable "habana_version" {
+  description = "(Gaudi only) Version of the Habana device plugin, driver and runtime to deploy"
+  type        = string
+  default     = "1.22.2-32"
+}

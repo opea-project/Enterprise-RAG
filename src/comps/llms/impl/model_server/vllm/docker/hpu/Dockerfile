@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 FROM vault.habana.ai/gaudi-docker/1.22.1/ubuntu22.04/habanalabs/pytorch-installer-2.7.1:latest

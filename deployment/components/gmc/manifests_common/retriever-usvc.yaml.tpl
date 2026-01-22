@@ -1,6 +1,6 @@
 ---
 # Source: retriever-usvc/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -13,7 +13,7 @@ data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
 ---
 # Source: retriever-usvc/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -41,7 +41,7 @@ metadata:
   name: retriever-usvc
 ---
 # Source: retriever-usvc/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

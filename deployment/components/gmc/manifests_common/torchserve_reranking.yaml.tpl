@@ -1,6 +1,6 @@
 ---
 # Source: torchserve/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -48,7 +48,7 @@ spec:
 {{- end }}
 ---
 # Source: torchserve/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -78,7 +78,7 @@ spec:
 {{- if and .Values.vllmNodes .Values.balloons.enabled }}
 {{- range .Values.vllmNodes }}
 # Source: torchserve/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 apiVersion: apps/v1
@@ -211,7 +211,7 @@ spec:
 {{- end }}
 {{- else }}
 # Source: torchserve/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

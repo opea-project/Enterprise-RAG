@@ -1,6 +1,6 @@
 ---
 # Source: reranking-usvc/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -17,7 +17,7 @@ data:
   no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
 # Source: reranking-usvc/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -45,7 +45,7 @@ metadata:
   name: reranking-usvc
 ---
 # Source: reranking-usvc/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

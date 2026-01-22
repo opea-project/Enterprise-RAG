@@ -26,13 +26,6 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
         },
-        manualChunks: {
-          "react-syntax-highlighter": [
-            "react-syntax-highlighter",
-            "react-syntax-highlighter/dist/esm/prism",
-            "react-syntax-highlighter/dist/esm/styles/prism",
-          ],
-        },
       },
     },
   },

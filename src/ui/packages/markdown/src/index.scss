@@ -1,4 +1,11 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+@use "sass:meta";
+
 @import "@intel-enterprise-rag-ui/tailwind-theme/index.scss";
+
+@import "highlight.js/styles/github.css";
+.dark {
+  @include meta.load-css("highlight.js/styles/github-dark");
+}

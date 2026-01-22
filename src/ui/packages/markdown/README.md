@@ -1,6 +1,6 @@
 # @intel-enterprise-rag-ui/markdown
 
-This package provides a React component for markdown parsing and rendering in the Intel® AI for Enterprise RAG UI. It is based on `react-markdown` and `react-syntax-highlighter` packages along with components and styles that are a part of `@intel-enterprise-rag-ui` pnpm workspace. GitHub Flavored Markdown is supported by using `remark-gfm` plugin.
+This package provides a React component for markdown parsing and rendering in the Intel® AI for Enterprise RAG UI. It is based on `marked` and `highlight.js` packages along with components and styles that are a part of `@intel-enterprise-rag-ui` pnpm workspace.
 
 ## Table of Contents
 
@@ -33,14 +33,14 @@ Import `style.scss` from this package into your main SCSS file:
 @import "@intel-enterprise-rag-ui/markdown/style.scss";
 ```
 
-Import `MarkdownRenderer` component into your code:
+Import `Markdown` component into your code:
 
 ```js
-import { MarkdownRenderer } from "@intel-enterprise-rag-ui/markdown";
+import { Markdown } from "@intel-enterprise-rag-ui/markdown";
 
 // Usage in a React component
 function MyMarkdown() {
-  return <MarkdownRenderer markdown={"# Hello World"} />;
+  return <Markdown text={"# Hello World"} />;
 }
 ```
 

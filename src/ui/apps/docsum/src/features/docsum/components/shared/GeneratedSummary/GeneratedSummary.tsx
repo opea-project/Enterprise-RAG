@@ -7,7 +7,7 @@ import {
   CopyButton,
   LoadingFallback,
 } from "@intel-enterprise-rag-ui/components";
-import { MarkdownRenderer } from "@intel-enterprise-rag-ui/markdown";
+import { Markdown } from "@intel-enterprise-rag-ui/markdown";
 import { useState } from "react";
 
 import ExportActionDialog from "@/features/docsum/components/shared/ExportActionDialog/ExportActionDialog";
@@ -64,7 +64,7 @@ const GeneratedSummary = ({
     return (
       <div className="generated-summary__result">
         <div className="generated-summary__content">
-          <MarkdownRenderer content={displaySummary ?? ""} />
+          <Markdown text={displaySummary ?? ""} />
         </div>
         {showCopyButton && (
           <span className="copy-btn-wrapper">

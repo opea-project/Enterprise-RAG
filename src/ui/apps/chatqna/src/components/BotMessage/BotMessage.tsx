@@ -5,7 +5,7 @@ import "./BotMessage.scss";
 
 import { CopyButton } from "@intel-enterprise-rag-ui/components";
 import { ChatBotIcon, ErrorIcon } from "@intel-enterprise-rag-ui/icons";
-import { MarkdownRenderer } from "@intel-enterprise-rag-ui/markdown";
+import { Markdown } from "@intel-enterprise-rag-ui/markdown";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import classNames from "classnames";
 import { memo } from "react";
@@ -33,7 +33,7 @@ const BotMessage = ({ answer, error, isPending, sources }: BotMessageProps) => {
       </div>
     ) : (
       <div className="bot-message__text" data-testid="bot-message__text">
-        <MarkdownRenderer content={sanitizedAnswer} />
+        <Markdown text={sanitizedAnswer} />
         {showActions && (
           <footer className="bot-message__footer">
             <CopyButton textToCopy={sanitizedAnswer} />

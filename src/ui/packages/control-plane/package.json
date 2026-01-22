@@ -12,8 +12,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/intel-enterprise-rag-ui-control-plane.js",
-      "require": "./dist/intel-enterprise-rag-ui-control-plane.umd.cjs"
+      "import": "./dist/intel-enterprise-rag-ui-control-plane.js"
     },
     "./style.css": "./dist/style.css",
     "./style": "./src/style.ts"
@@ -22,7 +21,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "vite build"
   },
   "dependencies": {
     "@intel-enterprise-rag-ui/components": "workspace:^",

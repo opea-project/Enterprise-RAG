@@ -27,13 +27,6 @@ export default defineConfig({
           "react-dom": "ReactDOM",
           "react-redux": "ReactRedux",
         },
-        manualChunks: {
-          "xyflow-react": ["@xyflow/react"],
-          "intel-enterprise-rag-ui-components": [
-            "@intel-enterprise-rag-ui/components",
-          ],
-          "intel-enterprise-rag-ui-icons": ["@intel-enterprise-rag-ui/icons"],
-        },
       },
     },
   },

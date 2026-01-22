@@ -4,7 +4,7 @@
 import "./UserMessage.scss";
 
 import { CopyButton } from "@intel-enterprise-rag-ui/components";
-import { MarkdownRenderer } from "@intel-enterprise-rag-ui/markdown";
+import { Markdown } from "@intel-enterprise-rag-ui/markdown";
 import { memo, useState } from "react";
 
 import { ChatTurn } from "@/types";
@@ -31,7 +31,7 @@ const UserMessage = ({ question }: UserMessageProps) => {
     >
       <div className="flex w-full flex-col">
         <div className="user-message__text" data-testid="user-message__text">
-          <MarkdownRenderer content={question} />
+          <Markdown text={question} />
         </div>
         <div className="user-message__footer">
           <CopyButton textToCopy={question} show={showCopyBtn} />

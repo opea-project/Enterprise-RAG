@@ -12,10 +12,13 @@ import { useMemo, useState } from "react";
 
 import { useGetAllChatsQuery } from "@/features/chat/api/chatHistory";
 import ChatHistoryItem from "@/features/chat/components/ChatHistoryItem/ChatHistoryItem";
+import { ChatItemData } from "@/features/chat/types/api";
+import { usePinnedChats } from "@/features/chat/utils/pinnedChats";
 
 const ChatHistoryList = () => {
   const { data, isLoading } = useGetAllChatsQuery();
   const [searchFilter, setSearchFilter] = useState("");
+  const { pinnedIds, isPinned, togglePinChat } = usePinnedChats();
 
   const filteredData = useMemo(() => {
     if (!data || !Array.isArray(data)) return [];
@@ -37,9 +40,35 @@ const ChatHistoryList = () => {
     "chat-history-list--empty": isChatHistoryEmpty,
   });
 
+  const { pinnedChats, unpinnedChats } = useMemo(() => {
+    const pinned: ChatItemData[] = [];
+    const unpinned: ChatItemData[] = [];
+
+    if (!isLoading && filteredData) {
+      const dataMap = new Map(filteredData.map((item) => [item.id, item]));
+
+      pinnedIds.forEach((id) => {
+        const item = dataMap.get(id);
+        if (item) {
+          pinned.push(item);
+        }
+      });
+
+      filteredData.forEach((item) => {
+        if (!pinnedIds.includes(item.id)) {
+          unpinned.push(item);
+        }
+      });
+    }
+
+    return { pinnedChats: pinned, unpinnedChats: unpinned };
+  }, [isLoading, filteredData, pinnedIds]);
+
+  const hasPinnedChats = pinnedChats.length > 0;
+
   return (
     <aside aria-label="Chat History List">
-      <div className="mx-2 px-2 pb-2 pt-1">
+      <div className="chat-history-list__search-bar">
         <SearchBar
           value={searchFilter}
           placeholder="Search chat history..."
@@ -49,13 +78,44 @@ const ChatHistoryList = () => {
       <div className={chatHistoryListClass}>
         {isLoading && <LoadingFallback />}
         {!isLoading && isChatHistoryEmpty && (
-          <p className="text-xs text-gray-500">{emptyStateMessage}</p>
+          <p className="chat-history-list__empty-message">
+            {emptyStateMessage}
+          </p>
         )}
-        {!isLoading &&
-          !isChatHistoryEmpty &&
-          filteredData.map((item) => (
-            <ChatHistoryItem key={item.id} itemData={item} />
-          ))}
+        {!isLoading && !isChatHistoryEmpty && (
+          <>
+            {hasPinnedChats && (
+              <div className="chat-history-list__section">
+                <p className="chat-history-list__section-title">Pinned</p>
+                <div className="chat-history-list__items">
+                  {pinnedChats.map((item) => (
+                    <ChatHistoryItem
+                      key={item.id}
+                      itemData={item}
+                      pinned={isPinned(item.id)}
+                      onPinChange={() => togglePinChat(item.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {unpinnedChats.length > 0 && (
+              <div className="chat-history-list__section">
+                <p className="chat-history-list__section-title">Chats</p>
+                <div className="chat-history-list__items">
+                  {unpinnedChats.map((item) => (
+                    <ChatHistoryItem
+                      key={item.id}
+                      itemData={item}
+                      pinned={isPinned(item.id)}
+                      onPinChange={() => togglePinChat(item.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </aside>
   );

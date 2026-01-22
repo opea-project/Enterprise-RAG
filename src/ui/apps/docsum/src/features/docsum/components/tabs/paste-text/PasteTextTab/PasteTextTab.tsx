@@ -9,8 +9,8 @@ import {
   Label,
   TextAreaInput,
 } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { ChangeEventHandler, useCallback, useEffect, useRef } from "react";
-import { ValidationError } from "yup";
 
 import { useSummarizePlainTextMutation } from "@/features/docsum/api";
 import { SummaryType } from "@/features/docsum/api/types";
@@ -56,7 +56,7 @@ const PasteTextTab = () => {
         dispatch(setErrorMessage(""));
       } catch (error) {
         dispatch(setIsInvalid(true));
-        dispatch(setErrorMessage((error as ValidationError).message));
+        dispatch(setErrorMessage(getValidationErrorMessage(error)));
       }
     };
 

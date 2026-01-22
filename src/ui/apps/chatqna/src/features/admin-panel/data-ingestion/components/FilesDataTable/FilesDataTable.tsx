@@ -3,7 +3,11 @@
 
 import "./FilesDataTable.scss";
 
-import { DataTable, SearchBar } from "@intel-enterprise-rag-ui/components";
+import {
+  DataTable,
+  RowSelectionState,
+  SearchBar,
+} from "@intel-enterprise-rag-ui/components";
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -15,7 +19,10 @@ import {
   useRetryFileActionMutation,
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { useDeleteFileMutation } from "@/features/admin-panel/data-ingestion/api/s3Api";
+import BatchActionsDropdown from "@/features/admin-panel/data-ingestion/components/BatchActionsDropdown/BatchActionsDropdown";
+import BatchDeleteDialog from "@/features/admin-panel/data-ingestion/components/BatchDeleteDialog/BatchDeleteDialog";
 import useConditionalPolling from "@/features/admin-panel/data-ingestion/hooks/useConditionalPolling";
+import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { getFilesTableColumns } from "@/features/admin-panel/data-ingestion/utils/data-tables/files";
 
 const FilesDataTable = () => {
@@ -27,6 +34,8 @@ const FilesDataTable = () => {
   const [deleteFile] = useDeleteFileMutation();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
   const [filter, setFilter] = useState("");
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const downloadHandler = useCallback(
     async (fileName: string, bucketName: string) => {
@@ -75,21 +84,70 @@ const FilesDataTable = () => {
     [deleteHandler, downloadHandler, retryHandler],
   );
 
-  const defaultData = files || [];
+  const defaultData = useMemo(() => files ?? [], [files]);
+
+  const selectedFiles = useMemo(() => {
+    return Object.keys(rowSelection)
+      .map((id) => defaultData.find((file) => file.id === id))
+      .filter((file): file is FileDataItem => file !== undefined);
+  }, [rowSelection, defaultData]);
+
+  const retryableFiles = useMemo(() => {
+    return selectedFiles.filter((file) => file.status === "error");
+  }, [selectedFiles]);
+
+  const handleBatchRetry = useCallback(async () => {
+    await Promise.all(retryableFiles.map((file) => retryFileAction(file.id)));
+    setRowSelection({});
+  }, [retryableFiles, retryFileAction]);
+
+  const handleBatchDelete = useCallback(async () => {
+    await Promise.all(
+      selectedFiles.map((file) =>
+        deleteHandler(file.object_name, file.bucket_name),
+      ),
+    );
+    setRowSelection({});
+  }, [selectedFiles, deleteHandler]);
+
+  const selectedFileNames = useMemo(() => {
+    return selectedFiles.map((file) => file.object_name);
+  }, [selectedFiles]);
+
+  const getRowId = useCallback((row: FileDataItem) => row.id, []);
 
   return (
-    <div className="flex flex-col gap-2">
-      <SearchBar
-        value={filter}
-        placeholder="Filter files by status, bucket, or name"
-        onChange={setFilter}
-      />
+    <div className="files-data-table-wrapper">
+      <div className="files-data-table-wrapper__header">
+        <SearchBar
+          value={filter}
+          placeholder="Filter files by status, bucket, or name"
+          onChange={setFilter}
+        />
+        <BatchActionsDropdown
+          selectedCount={selectedFiles.length}
+          retryableCount={retryableFiles.length}
+          onRetry={handleBatchRetry}
+          onDelete={() => setIsDeleteDialogOpen(true)}
+        />
+      </div>
       <DataTable
         defaultData={defaultData}
         columns={filesTableColumns}
         isDataLoading={isLoading}
         globalFilter={filter}
         className="files-data-table"
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={getRowId}
+        enableRowSelection
+      />
+      <BatchDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        itemType="files"
+        itemNames={selectedFileNames}
+        onConfirm={handleBatchDelete}
+        onClose={() => setIsDeleteDialogOpen(false)}
       />
     </div>
   );

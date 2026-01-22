@@ -38,7 +38,7 @@ interface MenuTriggerProps
   trigger: ReactNode;
   /** Accessible label for the menu */
   ariaLabel?: string;
-  /** Popover placement */
+  /** Placement of the menu popover */
   placement?: PopoverProps["placement"];
   /** Content to display inside the menu */
   children: ReactNode;

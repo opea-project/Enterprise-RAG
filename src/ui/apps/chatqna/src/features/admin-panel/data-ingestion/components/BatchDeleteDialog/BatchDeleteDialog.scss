@@ -1,0 +1,25 @@
+// Copyright (C) 2024-2025 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.batch-delete-dialog {
+  @apply flex flex-col gap-4 px-4 py-2;
+
+  &__question {
+    @apply text-light-text-primary dark:text-dark-text-primary text-sm;
+  }
+
+  &__list {
+    @apply mb-4 max-h-52 overflow-y-auto;
+    @apply pl-5;
+  }
+
+  &__item {
+    @apply break-all py-0.5 text-xs;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+    @apply list-disc;
+  }
+
+  &__actions {
+    @apply flex gap-2;
+  }
+}

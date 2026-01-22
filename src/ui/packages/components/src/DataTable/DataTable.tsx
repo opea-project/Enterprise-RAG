@@ -15,12 +15,15 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  RowSelectionState,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import classNames from "classnames";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { CheckboxInput } from "@/CheckboxInput/CheckboxInput";
 
 interface DataTableProps<T extends object> {
   /** Default data for the table */
@@ -37,6 +40,14 @@ interface DataTableProps<T extends object> {
   onGlobalFilterChange?: (value: string) => void;
   /** Additional class names for the table */
   className?: string;
+  /** Enable row selection with checkboxes */
+  enableRowSelection?: boolean;
+  /** Controlled row selection state */
+  rowSelection?: RowSelectionState;
+  /** Callback when row selection changes */
+  onRowSelectionChange?: (rowSelection: RowSelectionState) => void;
+  /** Function to get the row id */
+  getRowId?: (row: T) => string;
 }
 
 export const DataTable = <T extends object>({
@@ -47,10 +58,20 @@ export const DataTable = <T extends object>({
   globalFilter,
   onGlobalFilterChange,
   className = "",
+  enableRowSelection = false,
+  rowSelection: controlledRowSelection,
+  onRowSelectionChange,
+  getRowId,
 }: DataTableProps<T>) => {
   const [data, setData] = useState(() => defaultData);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalGlobalFilter, setInternalGlobalFilter] = useState("");
+  const [internalRowSelection, setInternalRowSelection] =
+    useState<RowSelectionState>({});
+
+  const rowSelection = controlledRowSelection ?? internalRowSelection;
+  const handleRowSelectionChange =
+    onRowSelectionChange ?? setInternalRowSelection;
 
   // Compute estimated row height based on dense prop
   // Dense mode: h-8 = 32px, Normal mode: h-12 = 48px
@@ -60,18 +81,61 @@ export const DataTable = <T extends object>({
     setData(defaultData);
   }, [defaultData]);
 
+  useEffect(() => {
+    if (enableRowSelection && controlledRowSelection === undefined) {
+      setInternalRowSelection({});
+    }
+  }, [defaultData, enableRowSelection, controlledRowSelection]);
+
   const effectiveGlobalFilter = useMemo(
     () => globalFilter ?? internalGlobalFilter,
     [globalFilter, internalGlobalFilter],
   );
 
+  const columnsWithSelection = useMemo(() => {
+    if (!enableRowSelection) return columns;
+
+    const selectionColumn: ColumnDef<T> = {
+      id: "select",
+      header: ({ table }) => (
+        <CheckboxInput
+          isSelected={table.getIsAllRowsSelected()}
+          isIndeterminate={table.getIsSomeRowsSelected()}
+          onChange={() => table.toggleAllRowsSelected()}
+          aria-label="Select all rows"
+          dense
+        />
+      ),
+      cell: ({ row }) => (
+        <CheckboxInput
+          isSelected={row.getIsSelected()}
+          onChange={() => row.toggleSelected()}
+          aria-label="Select row"
+          dense
+        />
+      ),
+      enableSorting: false,
+      enableGlobalFilter: false,
+    };
+
+    return [selectionColumn, ...columns];
+  }, [columns, enableRowSelection]);
+
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelection,
     state: {
       sorting,
       globalFilter: effectiveGlobalFilter,
+      ...(enableRowSelection && { rowSelection }),
     },
+    enableRowSelection,
+    onRowSelectionChange: (updater) => {
+      const newSelection =
+        typeof updater === "function" ? updater(rowSelection) : updater;
+      handleRowSelectionChange(newSelection);
+    },
+    getRowId,
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
@@ -220,3 +284,5 @@ export const DataTable = <T extends object>({
     </div>
   );
 };
+
+export type { RowSelectionState } from "@tanstack/react-table";

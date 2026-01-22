@@ -1,9 +1,9 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { string } from "yup";
+import { z } from "zod";
 
-const validationSchema = string().required();
+const validationSchema = z.string().min(1);
 
 export const validateTextAreaInput = async (value: string) =>
-  await validationSchema.validate(value);
+  await validationSchema.parseAsync(value);

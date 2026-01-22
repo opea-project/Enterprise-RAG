@@ -11,7 +11,7 @@ import {
   isMIMETypeSupported,
   noInvalidCharactersInFileName,
 } from "@intel-enterprise-rag-ui/input-validation";
-import { mixed, ValidationError } from "yup";
+import { z } from "zod";
 
 import { CLIENT_MAX_BODY_SIZE } from "@/config/api";
 import {
@@ -19,33 +19,21 @@ import {
   SUPPORTED_FILES_MIME_TYPES,
 } from "@/features/docsum/utils/fileInput";
 
-const validationSchema = mixed<File>()
-  .test(
-    "supported-file-extension",
-    getUnsupportedFileExtensionMsg,
-    isFileExtensionSupported(SUPPORTED_FILE_EXTENSIONS),
-  )
-  .test(
-    "supported-file-mime-type",
-    getUnsupportedFileMIMETypeMsg,
-    isMIMETypeSupported(SUPPORTED_FILES_MIME_TYPES),
-  )
-  .test(
-    "no-invalid-characters-in-file-name",
-    getFilenameInvalidCharactersMsg,
-    noInvalidCharactersInFileName,
-  )
-  .test(
-    "file-size-within-limit",
-    getFileSizeWithinLimitMsg(CLIENT_MAX_BODY_SIZE),
-    individualFileSizeWithinLimit(CLIENT_MAX_BODY_SIZE),
-  );
+const validationSchema = z
+  .instanceof(File)
+  .refine(isFileExtensionSupported(SUPPORTED_FILE_EXTENSIONS), (file) => ({
+    message: getUnsupportedFileExtensionMsg({ value: file }),
+  }))
+  .refine(isMIMETypeSupported(SUPPORTED_FILES_MIME_TYPES), (file) => ({
+    message: getUnsupportedFileMIMETypeMsg({ value: file }),
+  }))
+  .refine(noInvalidCharactersInFileName, (file) => ({
+    message: getFilenameInvalidCharactersMsg({ value: file }),
+  }))
+  .refine(individualFileSizeWithinLimit(CLIENT_MAX_BODY_SIZE), (file) => ({
+    message: getFileSizeWithinLimitMsg(CLIENT_MAX_BODY_SIZE)({ value: file }),
+  }));
 
 export const validateFileInput = async (file: File) => {
-  try {
-    await validationSchema.validate(file);
-    return "";
-  } catch (error) {
-    return (error as ValidationError).message;
-  }
+  await validationSchema.parseAsync(file);
 };

@@ -2,19 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { noInvalidCharacters } from "@intel-enterprise-rag-ui/input-validation";
-import { string } from "yup";
+import { z } from "zod";
 
 import { LINK_ERROR_MESSAGE } from "@/features/admin-panel/data-ingestion/utils/constants";
 
-const validationSchema = string()
-  .required(LINK_ERROR_MESSAGE)
+const validationSchema = z
+  .string({ required_error: LINK_ERROR_MESSAGE })
+  .min(1, LINK_ERROR_MESSAGE)
   .url(LINK_ERROR_MESSAGE)
-  .matches(new RegExp("^https?://"), LINK_ERROR_MESSAGE)
-  .test(
-    "no-invalid-characters",
-    "URL contains invalid characters. Please try again.",
-    noInvalidCharacters(),
-  );
+  .regex(new RegExp("^https?://"), LINK_ERROR_MESSAGE)
+  .refine(noInvalidCharacters(), {
+    message: "URL contains invalid characters. Please try again.",
+  });
 
 export const validateLinkInput = async (value: string) =>
-  await validationSchema.validate(value);
+  await validationSchema.parseAsync(value);

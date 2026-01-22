@@ -38,7 +38,11 @@ import { MdFileIcon } from "@/icons/MdFileIcon";
 import { MoreOptionsIcon } from "@/icons/MoreOptionsIcon";
 import { NewChatIcon } from "@/icons/NewChatIcon";
 import { OptionsIcon } from "@/icons/OptionsIcon";
+import { PanelHideIcon } from "@/icons/PanelHideIcon";
+import { PanelShowIcon } from "@/icons/PanelShowIcon";
 import { PdfFileIcon } from "@/icons/PdfFileIcon";
+import { PinFilledIcon } from "@/icons/PinFilledIcon";
+import { PinIcon } from "@/icons/PinIcon";
 import { PlainTextIcon } from "@/icons/PlainTextIcon";
 import { PlusIcon } from "@/icons/PlusIcon";
 import { PromptSendIcon } from "@/icons/PromptSendIcon";
@@ -83,6 +87,8 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "doc-file": DocFileIcon,
   "docx-file": DocxFileIcon,
   "pdf-file": PdfFileIcon,
+  pin: PinIcon,
+  "pin-filled": PinFilledIcon,
   "hide-side-menu": HideSideMenuIcon,
   "identity-provider": IdentityProviderIcon,
   info: InfoIcon,
@@ -93,6 +99,8 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "more-options": MoreOptionsIcon,
   options: OptionsIcon,
   "new-chat": NewChatIcon,
+  "panel-hide": PanelHideIcon,
+  "panel-show": PanelShowIcon,
   "plain-text": PlainTextIcon,
   plus: PlusIcon,
   "prompt-send": PromptSendIcon,

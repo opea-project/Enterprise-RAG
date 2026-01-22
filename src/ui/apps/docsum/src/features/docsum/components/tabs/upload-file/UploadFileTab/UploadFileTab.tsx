@@ -8,6 +8,7 @@ import {
   FileInput,
   FileInputHandle,
 } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeFile } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, DragEvent, useCallback, useRef } from "react";
 
@@ -57,9 +58,9 @@ const UploadFileTab = () => {
   const processFile = useCallback(
     async (file: File) => {
       const sanitizedFile = sanitizeFile(file);
-      const validationMessage = await validateFileInput(sanitizedFile);
-      dispatch(setErrorMessage(validationMessage));
-      if (validationMessage === "") {
+      try {
+        await validateFileInput(sanitizedFile);
+        dispatch(setErrorMessage(""));
         // Convert file to base64 and store in Redux
         const base64 = await documentToBase64(sanitizedFile);
         dispatch(
@@ -70,6 +71,8 @@ const UploadFileTab = () => {
             base64,
           }),
         );
+      } catch (error) {
+        dispatch(setErrorMessage(getValidationErrorMessage(error)));
       }
 
       fileInputRef.current?.clear();

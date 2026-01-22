@@ -14,6 +14,8 @@ import {
   DeleteIcon,
   EditIcon,
   ExportIcon,
+  PinFilledIcon,
+  PinIcon,
 } from "@intel-enterprise-rag-ui/icons";
 import { useState } from "react";
 import { Key as AriaKey } from "react-aria-components";
@@ -23,22 +25,34 @@ import ExportChatDialog from "@/features/chat/components/ExportChatDialog/Export
 import RenameChatDialog from "@/features/chat/components/RenameChatDialog/RenameChatDialog";
 import { ChatItemData } from "@/features/chat/types/api";
 
-export type ChatItemAction = "rename" | "export" | "delete" | AriaKey;
+export type ChatItemAction = "rename" | "export" | "pin" | "delete" | AriaKey;
 
 interface ChatHistoryItemMenuProps {
   itemData: ChatItemData;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  pinned: boolean;
+  onPinChange: () => void;
 }
 
 const ChatHistoryItemMenu = ({
   itemData,
   isOpen,
   onOpenChange,
+  pinned,
+  onPinChange,
 }: ChatHistoryItemMenuProps) => {
   const [selectedOption, setSelectedOption] = useState<ChatItemAction | null>(
     null,
   );
+
+  const handleMenuAction = (key: ChatItemAction) => {
+    if (key === "pin") {
+      onPinChange();
+    } else {
+      setSelectedOption(key);
+    }
+  };
 
   return (
     <>
@@ -60,7 +74,7 @@ const ChatHistoryItemMenu = ({
         ariaLabel="Chat History Item Menu"
         onOpenChange={onOpenChange}
       >
-        <Menu onAction={setSelectedOption}>
+        <Menu onAction={handleMenuAction}>
           <MenuItem id="rename">
             <EditIcon />
             <span>Rename</span>
@@ -68,6 +82,10 @@ const ChatHistoryItemMenu = ({
           <MenuItem id="export">
             <ExportIcon />
             <span>Export</span>
+          </MenuItem>
+          <MenuItem id="pin">
+            {pinned ? <PinFilledIcon /> : <PinIcon />}
+            <span>{pinned ? "Unpin" : "Pin"}</span>
           </MenuItem>
           <MenuItem id="delete">
             <DeleteIcon />

@@ -53,4 +53,8 @@
   &--dense {
     @apply my-0;
   }
+
+  &--standalone {
+    @apply my-0 gap-0;
+  }
 }

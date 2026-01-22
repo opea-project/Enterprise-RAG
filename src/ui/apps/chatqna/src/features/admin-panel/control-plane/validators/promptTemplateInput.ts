@@ -5,11 +5,11 @@ import {
   containsRequiredValues,
   noEmpty,
 } from "@intel-enterprise-rag-ui/input-validation";
-import { AnyObject, object, string, TestFunction } from "yup";
+import { z } from "zod";
 
 import { PromptTemplateArgs } from "@/features/admin-panel/control-plane/config/chat-qna-graph/promptTemplate";
 
-type PromptTemplateTestFunction = TestFunction<string | undefined, AnyObject>;
+type PromptTemplateTestFunction = (value: string | undefined) => boolean;
 
 const requiredPlaceholders = [
   "{user_prompt}",
@@ -71,46 +71,37 @@ const containsDuplicatePlaceholders: PromptTemplateTestFunction = (value) => {
   }
 };
 
-const validationSchema = object().shape({
-  user: string().test(
-    "not-empty",
-    "User Prompt Template cannot be empty",
-    noEmpty(false),
-  ),
-  system: string().test(
-    "not-empty",
-    "System Prompt Template cannot be empty",
-    noEmpty(false),
-  ),
-  joined: string()
-    .test("not-empty", "Prompt Templates cannot be empty", noEmpty(false))
-    .test(
-      "contains-any-placeholders",
-      "Prompt Templates do not contain any placeholders",
-      containsAnyPlaceholders,
-    )
-    .test(
-      "contains-unexpected-placeholders",
-      "Prompt Templates contain unexpected placeholders",
-      containsUnexpectedPlaceholders,
-    )
-    .test(
-      "contains-required-placeholders",
-      getContainsRequiredPlaceholdersErrorMessage,
-      containsRequiredPlaceholders,
-    )
-    .test(
-      "contains-duplicated-placeholders",
-      "Prompt Templates contain duplicated placeholders",
-      containsDuplicatePlaceholders,
-    ),
+const validationSchema = z.object({
+  user: z.string().refine(noEmpty(false), {
+    message: "User Prompt Template cannot be empty",
+  }),
+  system: z.string().refine(noEmpty(false), {
+    message: "System Prompt Template cannot be empty",
+  }),
+  joined: z
+    .string()
+    .refine(noEmpty(false), {
+      message: "Prompt Templates cannot be empty",
+    })
+    .refine(containsAnyPlaceholders, {
+      message: "Prompt Templates do not contain any placeholders",
+    })
+    .refine(containsUnexpectedPlaceholders, {
+      message: "Prompt Templates contain unexpected placeholders",
+    })
+    .refine(containsRequiredPlaceholders, (joined) => ({
+      message: getContainsRequiredPlaceholdersErrorMessage({ value: joined }),
+    }))
+    .refine(containsDuplicatePlaceholders, {
+      message: "Prompt Templates contain duplicated placeholders",
+    }),
 });
 
 export const validatePromptTemplateForm = async (
   templates: PromptTemplateArgs,
 ) => {
   const joinedTemplates = Object.values(templates).join("");
-  await validationSchema.validate({
+  await validationSchema.parseAsync({
     user: templates.user_prompt_template,
     system: templates.system_prompt_template,
     joined: joinedTemplates,

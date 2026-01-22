@@ -19,6 +19,8 @@ interface SideMenuProps extends PropsWithChildren {
   headerContent?: ReactNode;
   /** Direction of the side menu (left or right) */
   direction?: SideMenuDirection;
+  /** Whether the side menu has a header */
+  hasHeader?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export const SideMenu = ({
   ariaLabel,
   headerContent,
   direction = "right",
+  hasHeader = false,
   children,
 }: SideMenuProps) => (
   <nav
@@ -45,13 +48,14 @@ export const SideMenu = ({
   >
     {isOpen && (
       <>
-        <header className="side-menu__header">{headerContent}</header>
+        {hasHeader && (
+          <header className="side-menu__header">{headerContent}</header>
+        )}
         <div className="side-menu__content">{children}</div>
       </>
     )}
   </nav>
 );
-
 interface SideMenuIconButtonProps {
   isSideMenuOpen: boolean;
   sideMenuTitle?: string;

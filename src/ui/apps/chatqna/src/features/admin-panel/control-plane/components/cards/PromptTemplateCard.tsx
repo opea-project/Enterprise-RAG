@@ -1,9 +1,9 @@
 // Copyright (C) 2024-2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEventHandler, useEffect, useState } from "react";
-import { ValidationError } from "yup";
 
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
@@ -57,7 +57,7 @@ const PromptTemplateCard = ({
         setError("");
       } catch (validationError) {
         setIsInvalid(true);
-        setError((validationError as ValidationError).message);
+        setError(getValidationErrorMessage(validationError));
       }
     };
 

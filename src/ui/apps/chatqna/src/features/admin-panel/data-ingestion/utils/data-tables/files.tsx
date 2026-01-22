@@ -11,6 +11,8 @@ import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/comp
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 
+import { formatStatusForFilter } from "./utils";
+
 interface FileActionsHandlers {
   downloadHandler: (name: string, bucketName: string) => void;
   retryHandler: (id: string) => void;
@@ -25,6 +27,7 @@ export const getFilesTableColumns = ({
   {
     accessorKey: "status",
     header: "Status",
+    accessorFn: (row) => formatStatusForFilter(row.status),
     cell: ({
       row: {
         original: { status, job_message: statusMessage },
@@ -107,7 +110,7 @@ export const getFilesTableColumns = ({
   },
   {
     id: "actions",
-    header: () => <p className="text-center">Actions</p>,
+    header: () => <p className="w-full text-center">Actions</p>,
     cell: ({
       row: {
         original: { object_name, status, id, bucket_name },

@@ -3,10 +3,12 @@
 
 .selected-service-card {
   @apply relative;
+  @apply h-full;
   @apply bg-light-bg-2 dark:bg-dark-bg-2;
   @apply border-l-light-border dark:border-l-dark-border border-l;
 
   & .selected-service-card__wrapper {
+    @apply h-full;
     @apply [scrollbar-gutter:stable];
 
     & .selected-service-card__header {

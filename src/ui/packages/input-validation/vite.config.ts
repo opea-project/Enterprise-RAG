@@ -17,6 +17,9 @@ export default defineConfig({
       name: "intel-enterprise-rag-ui-input-validation",
       fileName: "intel-enterprise-rag-ui-input-validation",
     },
+    rollupOptions: {
+      external: ["zod"],
+    },
   },
   plugins: [dts(), viteTsconfigPaths()],
   resolve: {

@@ -5,37 +5,41 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Union
 
 from fastapi.responses import StreamingResponse
-from requests.exceptions import ConnectionError, ReadTimeout
 
 from comps import GeneratedDoc, LLMParamsDoc, get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
-class LLMConnector(ABC):
-    def __init__(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, openai_format_streaming: bool = False, headers: Optional[Dict[str, str]] = None):
+class AbstractConnector(ABC):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, headers: Optional[Dict[str, str]] = None):
         """
-        Initializes a Connector object.
+        Initializes a AbstractConnector object.
 
         Args:
             model_name (str): The name of the model.
-            model_server (str): The server hosting the model.
             endpoint (str): The endpoint for the model.
+            disable_streaming (bool): Whether to disable streaming.
+            llm_output_guard_exists (bool): Whether LLM output guard exists.
+            insecure_endpoint (bool): Whether the endpoint is insecure.
+            headers (Optional[Dict[str, str]]): Optional headers for requests.
 
         Returns:
             None
         """
         self._model_name = model_name
-        self._model_server = model_server
         self._endpoint = endpoint
         self._disable_streaming = disable_streaming
         self._headers = headers if headers is not None else {}
         self._llm_output_guard_exists = llm_output_guard_exists
         self._insecure_endpoint = insecure_endpoint
-        self._openai_format_streaming = openai_format_streaming
 
     @abstractmethod
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        logger.error("generate method in LLMConnector is abstract.")
+        logger.error("generate method in AbstractConnector is abstract.")
+        raise NotImplementedError
+    
+    @abstractmethod
+    async def close(self) -> None:
         raise NotImplementedError
 
     async def _validate(self) -> None:
@@ -44,25 +48,7 @@ class LLMConnector(ABC):
             test_input = LLMParamsDoc(**tested_params, stream=False)
             await self.generate(test_input)
             logger.info("Connection with LLM model server validated successfully.")
-        except ReadTimeout as e:
-            error_message = f"Error initializing the LLM: {e}"
-            logger.exception(error_message)
-            raise ReadTimeout(error_message)
-        except ConnectionError as e:
-            error_message = f"Error initializing the LLM: {e}"
-            logger.exception(error_message)
-            raise ConnectionError(error_message)
         except Exception as e:
             error_message = f"Error initializing the LLM: {e}"
             logger.exception(error_message)
-            raise Exception(error_message)
-
-    @abstractmethod
-    def change_configuration(self, **kwargs) -> None:
-        """
-        Changes the configuration of the embedder.
-        Args:
-            **kwargs: The new configuration parameters.
-        """
-        logger.error("change_configuration method in LLMConnector is abstract.")
-        raise NotImplementedError
+            raise

@@ -8,7 +8,7 @@ import openai
 from fastapi.responses import StreamingResponse
 
 from comps import LLMParamsDoc, GeneratedDoc
-from comps.llms.utils.connectors.generic_connector import GenericLLMConnector, VLLMConnector
+from comps.llms.utils.connectors.vllm_connector import VLLMConnector
 
 """
 To execute these tests with coverage report, navigate to the `src` folder and run the following command:
@@ -17,22 +17,6 @@ To execute these tests with coverage report, navigate to the `src` folder and ru
 Alternatively, to run all tests for the 'llms' module, execute the following command:
    pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms
 """
-
-
-@pytest.fixture
-def reset_singleton():
-    """Reset singleton instance before each test"""
-    GenericLLMConnector._instance = None
-    yield
-    GenericLLMConnector._instance = None
-
-
-@pytest.fixture
-def mock_validate():
-    """Mock the _validate method to avoid actual validation"""
-    with patch('comps.llms.utils.connectors.generic_connector.GenericLLMConnector._validate', new_callable=AsyncMock) as mock:
-        yield mock
-
 
 @pytest.fixture
 def sample_llm_params():
@@ -299,155 +283,3 @@ async def test_vllm_connector_generate_no_user_prompt(sample_llm_params):
             await connector.generate(sample_llm_params)
 
         assert "No user prompt found in messages" in str(exc_info.value)
-
-
-# GenericLLMConnector Tests
-
-def test_generic_connector_singleton(reset_singleton):
-    """Test GenericLLMConnector singleton behavior"""
-    # Mock _validate to avoid async run issues
-    with patch.object(GenericLLMConnector, '_validate', new_callable=AsyncMock):
-        with patch('comps.llms.utils.connectors.generic_connector.asyncio.run', side_effect=lambda coro: None):
-            connector1 = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers={}
-            )
-
-            connector2 = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers={}
-            )
-
-            assert connector1 is connector2
-
-
-def test_generic_connector_singleton_different_params(reset_singleton):
-    """Test GenericLLMConnector warns when singleton has different params"""
-    # Mock _validate to avoid async run issues
-    with patch.object(GenericLLMConnector, '_validate', new_callable=AsyncMock):
-        with patch('comps.llms.utils.connectors.generic_connector.asyncio.run', side_effect=lambda coro: None):
-            connector1 = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers={}
-            )
-
-            with patch('comps.llms.utils.connectors.generic_connector.logger') as mock_logger:
-                connector2 = GenericLLMConnector(
-                    model_name="different-model",
-                    model_server="vllm",
-                    endpoint="http://different:8000",
-                    disable_streaming=True,
-                    llm_output_guard_exists=False,
-                    insecure_endpoint=False,
-                    openai_format_streaming=True,
-                    headers={}
-                )
-
-                # Should return same instance and log warning
-                assert connector1 is connector2
-                mock_logger.warning.assert_called_once()
-
-
-def test_generic_connector_invalid_model_server(reset_singleton):
-    """Test GenericLLMConnector raises error for invalid model server"""
-    with pytest.raises(ValueError) as exc_info:
-        GenericLLMConnector(
-            model_name="test-model",
-            model_server="invalid_server",
-            endpoint="http://localhost:8000",
-            disable_streaming=False,
-            llm_output_guard_exists=True,
-            insecure_endpoint=False,
-            openai_format_streaming=False,
-            headers={}
-        )
-
-    assert "Invalid model server" in str(exc_info.value)
-    assert "invalid_server" in str(exc_info.value)
-
-
-@pytest.mark.asyncio
-async def test_generic_connector_generate(reset_singleton, sample_llm_params):
-    """Test GenericLLMConnector generate method delegates to VLLMConnector"""
-    # Mock _validate to avoid async run issues
-    with patch.object(GenericLLMConnector, '_validate', new_callable=AsyncMock):
-        with patch('comps.llms.utils.connectors.generic_connector.asyncio.run', side_effect=lambda coro: None):
-            connector = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers={}
-            )
-
-            mock_result = GeneratedDoc(text="test response", prompt="test prompt", stream=False)
-
-            with patch.object(connector._connector, 'generate', new_callable=AsyncMock) as mock_gen:
-                mock_gen.return_value = mock_result
-
-                result = await connector.generate(sample_llm_params)
-
-                assert result == mock_result
-                mock_gen.assert_called_once_with(sample_llm_params)
-
-
-def test_generic_connector_change_configuration_not_implemented(reset_singleton):
-    """Test GenericLLMConnector change_configuration raises NotImplementedError"""
-    # Mock _validate to avoid async run issues
-    with patch.object(GenericLLMConnector, '_validate', new_callable=AsyncMock):
-        with patch('comps.llms.utils.connectors.generic_connector.asyncio.run', side_effect=lambda coro: None):
-            connector = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers={}
-            )
-
-            with pytest.raises(NotImplementedError):
-                connector.change_configuration(some_param="value")
-
-
-def test_generic_connector_with_headers(reset_singleton):
-    """Test GenericLLMConnector initialization with headers"""
-    headers = {"Authorization": "Bearer token123"}
-
-    # Mock _validate to avoid async run issues
-    with patch.object(GenericLLMConnector, '_validate', new_callable=AsyncMock):
-        with patch('comps.llms.utils.connectors.generic_connector.asyncio.run', side_effect=lambda coro: None):
-            connector = GenericLLMConnector(
-                model_name="test-model",
-                model_server="vllm",
-                endpoint="http://localhost:8000",
-                disable_streaming=False,
-                llm_output_guard_exists=True,
-                insecure_endpoint=False,
-                openai_format_streaming=False,
-                headers=headers
-            )
-
-            assert connector._headers == headers

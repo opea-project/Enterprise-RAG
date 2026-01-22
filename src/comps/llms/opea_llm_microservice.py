@@ -52,11 +52,9 @@ opea_llm = OPEALlm(
     model_server=sanitize_env(os.getenv('LLM_MODEL_SERVER')),
     model_server_endpoint=sanitize_env(os.getenv('LLM_MODEL_SERVER_ENDPOINT')),
     insecure_endpoint=(sanitize_env(os.getenv('LLM_TLS_SKIP_VERIFY')) == "True"),
-    connector_name=sanitize_env(os.getenv('LLM_CONNECTOR')),
     disable_streaming=(sanitize_env(os.getenv('LLM_DISABLE_STREAMING')) == "True"),
     llm_output_guard_exists=(sanitize_env(os.getenv('LLM_OUTPUT_GUARD_EXISTS')) == "True"),
     headers=headers,
-    openai_format_streaming=(sanitize_env(os.getenv('LLM_OPENAI_FORMAT_STREAMING', 'False')) == "True"),
 )
 
 # Register the microservice with the specified configuration.

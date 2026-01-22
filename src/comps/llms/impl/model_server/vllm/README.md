@@ -219,8 +219,6 @@ In order to work with a fp8 quantized model, you need to do the following:
     ## VLLM Model Server Settings ##
     LLM_VLLM_MODEL_NAME="Intel/neural-chat-7b-v3-3"
 
-    #LLM_CONNECTOR="langchain" # Defaults to "generic" if not set. Options: "langchain", "generic".
-
     ## FP8 Quantization settings
     FP8_DATASET_PATH=<path to calibration dataset in pkl format>
     ```

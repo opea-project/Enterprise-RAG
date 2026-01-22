@@ -139,12 +139,31 @@ class ApiRequestHelper:
                     reranked_docs = line[5:]
                     reranked_docs = json.loads(reranked_docs)
                     reranked_docs = reranked_docs.get("reranked_docs", [])
-                # Sometimes (depending on the pipeline) the response is wrapped in single quotes
-                elif line.startswith("data: '"):
-                    line = line.removeprefix("data: '")
-                    response_text += line.removesuffix("'")
                 elif line.startswith("data: "):
-                    response_text += line.removeprefix("data: ")
+                    data_content = line.removeprefix("data: ")
+
+                    if data_content.strip() in ["[DONE]"]:
+                        continue
+
+                    try:
+                        chunk_data = json.loads(data_content)
+                        # Extract content from OpenAI format: choices[0].delta.content
+                        if "choices" in chunk_data and len(chunk_data["choices"]) > 0:
+                            delta = chunk_data["choices"][0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                response_text += content
+                            # Skip if it's just a finish_reason marker
+                            elif chunk_data["choices"][0].get("finish_reason"):
+                                continue
+                        else:
+                            logger.warning(f"OpenAI format chunk missing choices: {chunk_data}")
+                    except json.JSONDecodeError:
+                        # Fallback: treat as plain text (old format)
+                        # Sometimes (depending on the pipeline) the response is wrapped in single quotes
+                        if data_content.startswith("'"):
+                            data_content = data_content.removeprefix("'").removesuffix("'")
+                        response_text += data_content
                 else:
                     logger.warning(f"Unexpected line in the response: {line}")
                     raise InvalidChatqaResponseBody(

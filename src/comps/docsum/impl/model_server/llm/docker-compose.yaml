@@ -42,9 +42,7 @@ services:
     environment:
       HTTPS_PROXY: ${HTTPS_PROXY}
       HTTP_PROXY: ${HTTP_PROXY}
-      LLM_CONNECTOR: "generic"
       LLM_MODEL_NAME: ${LLM_VLLM_MODEL_NAME}
-      LLM_OPENAI_FORMAT_STREAMING: "True"
       LLM_MODEL_SERVER: "vllm"
       LLM_MODEL_SERVER_ENDPOINT: http://localhost:${LLM_VLLM_PORT}
       NO_PROXY: ${NO_PROXY}

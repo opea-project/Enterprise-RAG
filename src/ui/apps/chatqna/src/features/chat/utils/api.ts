@@ -55,17 +55,29 @@ export const handleChatStreamResponse = async (
         }
 
         // extract chunk of text from event data message
-        let newTextChunk = event.slice(5).trim();
-        let quoteRegex = /(?<!\\)'/g;
-        if (newTextChunk.startsWith('"')) {
-          quoteRegex = /"/g;
-        }
-        newTextChunk = newTextChunk
-          .replace(quoteRegex, "")
-          .replace(/\\t/g, "  \t")
-          .replace(/\\n/g, "  \n");
+        const dataContent = event.slice(5).trim();
+        try {
+          // Parse OpenAI-style streaming JSON format
+          const chunkData = JSON.parse(dataContent);
 
-        onAnswerUpdate(newTextChunk);
+          if (chunkData.choices && chunkData.choices[0]?.delta?.content) {
+            const newTextChunk = chunkData.choices[0].delta.content;
+            onAnswerUpdate(newTextChunk);
+          }
+        } catch (error) {
+          // Fallback: treat as plain text if JSON parsing fails
+          let newTextChunk = dataContent;
+          let quoteRegex = /(?<!\\)'/g;
+          if (newTextChunk.startsWith('"')) {
+            quoteRegex = /"/g;
+          }
+          newTextChunk = newTextChunk
+            .replace(quoteRegex, "")
+            .replace(/\\t/g, "  \t")
+            .replace(/\\n/g, "  \n");
+
+          onAnswerUpdate(newTextChunk);
+        }
       }
 
       // handling JSON data event for reranked documents aka sources

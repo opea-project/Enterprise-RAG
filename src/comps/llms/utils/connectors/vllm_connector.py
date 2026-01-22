@@ -1,7 +1,6 @@
 # Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import httpx
 import json
 import time
@@ -24,20 +23,19 @@ from comps.cores.proto.api_protocol import (
     ChatCompletionStreamResponse,
     DeltaMessage
 )
-from comps.llms.utils.connectors.connector import LLMConnector
+from comps.llms.utils.connectors.abstract_connector import AbstractConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
-class VLLMConnector:
-    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, openai_format_streaming: bool = False, headers: Optional[Dict[str, str]] = None):
+class VLLMConnector(AbstractConnector):
+    def __init__(self, model_name: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool = False, headers: Optional[Dict[str, str]] = None):
         self._model_name = model_name
         self._endpoint = endpoint+"/v1"
         self._disable_streaming = disable_streaming
         self._llm_output_guard_exists = llm_output_guard_exists
         self._headers = headers if headers is not None else {}
         self._insecure_endpoint = insecure_endpoint
-        self._openai_format_streaming = openai_format_streaming
         
         # Configure for high concurrency with long-running requests
         limits = httpx.Limits(
@@ -140,40 +138,34 @@ class VLLMConnector:
                             break
                         stream_gen_time.append(time.time() - start_local)
                         chat_response += text
-
-                        if self._openai_format_streaming:
-                            stream_chunk = ChatCompletionStreamResponse(
-                                model=self._model_name,
-                                choices=[
-                                    ChatCompletionResponseStreamChoice(
-                                        index=0,
-                                        delta=DeltaMessage(content=text),
-                                        finish_reason=None
-                                    )
-                                ]
-                            )
-                            chunk_json = stream_chunk.model_dump_json()
-                            logger.debug(f"[llm - chat_stream] OpenAI format chunk: {chunk_json}")
-                            yield f"data: {chunk_json}\n\n"
-                        else:
-                            chunk_repr = repr(text)
-                            logger.debug(f"[llm - chat_stream] chunk:{chunk_repr}")
-                            yield f"data: {chunk_repr}\n\n"
-
-                    logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
-
-                    if self._openai_format_streaming:
-                        final_chunk = ChatCompletionStreamResponse(
+                        
+                        stream_chunk = ChatCompletionStreamResponse(
                             model=self._model_name,
                             choices=[
                                 ChatCompletionResponseStreamChoice(
                                     index=0,
-                                    delta=DeltaMessage(content=""),
-                                    finish_reason="stop"
+                                    delta=DeltaMessage(content=text),
+                                    finish_reason=None
                                 )
                             ]
                         )
-                        yield f"data: {final_chunk.model_dump_json()}\n\n"
+                        chunk_json = stream_chunk.model_dump_json()
+                        logger.debug(f"[llm - chat_stream] OpenAI format chunk: {chunk_json}")
+                        yield f"data: {chunk_json}\n\n"
+
+                    logger.debug(f"[llm - chat_stream] stream response: {chat_response}")
+
+                    final_chunk = ChatCompletionStreamResponse(
+                        model=self._model_name,
+                        choices=[
+                            ChatCompletionResponseStreamChoice(
+                                index=0,
+                                delta=DeltaMessage(content=""),
+                                finish_reason="stop"
+                            )
+                        ]
+                    )
+                    yield f"data: {final_chunk.model_dump_json()}\n\n"
 
                     yield "data: [DONE]\n\n"
 
@@ -206,64 +198,3 @@ class VLLMConnector:
             choices = [ChatCompletionResponseChoice(**c.dict()) for c in generator.choices if c.message and c.message.content]
             return GeneratedDoc(choices=choices, text=generator.choices[0].message.content, prompt=user_prompt, stream=input.stream,
                                 output_guardrail_params=input.output_guardrail_params, data={"reranked_docs": reranked_docs_output})
-
-SUPPORTED_INTEGRATIONS = {
-    "vllm": VLLMConnector
-}
-
-class GenericLLMConnector(LLMConnector):
-    _instance = None
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool, openai_format_streaming: bool, headers: object):
-        if cls._instance is None:
-            cls._instance = super(GenericLLMConnector, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, insecure_endpoint, openai_format_streaming, headers)
-        else:
-            if (cls._instance._endpoint != endpoint or
-                cls._instance._model_server != model_server or
-                cls._instance._disable_streaming != disable_streaming or
-                cls._instance._llm_output_guard_exists != llm_output_guard_exists or
-                cls._instance._openai_format_streaming != openai_format_streaming):
-                logger.warning(f"Existing GenericLLMConnector instance has different parameters: "
-                              f"{cls._instance._endpoint} != {endpoint}, "
-                              f"{cls._instance._model_server} != {model_server}, "
-                              f"{cls._instance._disable_streaming} != {disable_streaming}, "
-                              f"{cls._instance._llm_output_guard_exists} != {llm_output_guard_exists}, "
-                              f"{cls._instance._openai_format_streaming} != {openai_format_streaming}, "
-                              "Proceeding with the existing instance.")
-        return cls._instance
-
-
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, disable_streaming: bool, llm_output_guard_exists: bool, insecure_endpoint: bool, openai_format_streaming: bool, headers: object):
-        super().__init__(model_name, model_server, endpoint, disable_streaming, llm_output_guard_exists, insecure_endpoint, openai_format_streaming, headers)
-        self._connector = self._get_connector()
-        asyncio.run(self._validate())
-
-    def _get_connector(self):
-        if self._model_server not in SUPPORTED_INTEGRATIONS:
-            error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
-
-            logger.error(error_message)
-            raise ValueError(error_message)
-        kwargs = {
-            "model_name": self._model_name,
-            "endpoint": self._endpoint,
-            "disable_streaming": self._disable_streaming,
-            "llm_output_guard_exists": self._llm_output_guard_exists,
-            "insecure_endpoint": self._insecure_endpoint,
-            "openai_format_streaming": self._openai_format_streaming
-        }
-        if self._model_server == "vllm":
-            kwargs["headers"] = self._headers
-        return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
-
-    async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
-        return await self._connector.generate(input)
-
-    async def close(self):
-        """Close underlying connector"""
-        if hasattr(self._connector, 'close'):
-            await self._connector.close()
-
-    def change_configuration(self, **kwargs) -> None:
-        logger.error("Change configuration not supported for GenericLLMConnector")
-        raise NotImplementedError

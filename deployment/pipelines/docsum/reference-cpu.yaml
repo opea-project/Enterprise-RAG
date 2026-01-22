@@ -54,7 +54,6 @@ spec:
           config:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
-            LLM_OPENAI_FORMAT_STREAMING: "True"
             LLM_MODEL_SERVER_ENDPOINT: vllm-service-m
           isDownstreamService: true
       - name: DocSum

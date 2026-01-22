@@ -172,6 +172,47 @@ def test_edp_extract_text_pdf(edp_helper):
         assert subject_number == subjects[subject]
 
 
+@allure.testcase("IEASG-T318")
+def test_edp_extract_text_pdf_complex(edp_helper):
+    """Test case for complex pdf extract text scenario"""
+    files_dir = FILES_DIR + "/" + "pdf"
+    file = FILES_PREFIX + "complex.pdf"
+    extracted_text = upload_file_and_extract_text(edp_helper, files_dir, file)
+    extracted_text = extracted_text.lower()
+
+    # Expect footer data to be excluded from extracted text
+    assert "pppaaagggeee" not in extracted_text, "Extracted text contains data from a footer"
+
+    # Expect document title to be present before data from the table
+    document_title_str = "the description of the"
+    table_string = "document author"
+    assert extracted_text.index(document_title_str) < extracted_text.index(table_string), "Extracted text has unexpected order of contents"
+
+    # Retrieve text from image
+    image_text = "Lumic-Pelt: UV-Reflective Double Coat"
+    assert image_text.lower() in extracted_text, "Extracted text does not contain text from an image"
+
+    # Check made up words are present and not changed by OCR
+    made_up_words = ["wwwooorrrdddsss", "cccaaattt", "dddoooggg"]
+    for word in made_up_words:
+        assert word in extracted_text, f"Extracted text does not contain made up word: {word}"
+
+    # Check for space between the chunks of texts divided by image
+    expected_text = "visitors. early"
+    assert expected_text in extracted_text, f"Extracted text does not contain expected phrase with space: {expected_text}"
+
+    # Check is these chunks (extracted from various parts of the document) are present in the extracted text
+    expected_phrases = [
+        "early inhabitants",
+        "typically dark amber or hazel",
+        "profound loyalty",
+        "responsible breeding practices",
+        "remarkable companion for active individuals"
+    ]
+    for phrase in expected_phrases:
+        assert phrase in extracted_text, f"Extracted text does not contain expected phrase: {phrase}"
+
+
 @allure.testcase("IEASG-T222")
 def test_edp_extract_text_pptx(edp_helper):
     """Test case containing all pptx extract text test scenarios"""
@@ -411,5 +452,5 @@ def _get_extracted_text(response):
     extracted_text = ""
     logger.info(f"Number of extracted text positions: {len(response.json()["docs"]["docs"])}")
     for doc in response.json()["docs"]["docs"]:
-        extracted_text += doc["text"]
+        extracted_text = f"{extracted_text} {doc['text']}"
     return extracted_text

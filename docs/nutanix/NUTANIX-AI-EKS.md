@@ -1,4 +1,4 @@
-# Nutanix AI on AWS EKS 🚀
+# Nutanix Enterprise AI on AWS EKS 🚀
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Terraform](https://img.shields.io/badge/Terraform-≥1.0-blue.svg)](https://www.terraform.io/)
@@ -9,14 +9,12 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 
 ## 📖 Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Installation & Setup](#installation--setup)
-3. [Post EKS Deployment Configuration](#post-eks-deployment-configuration)
-4. [Nutanix AI Installation](#nutanix-ai-installation)
-5. [Dashboard Access](#dashboard-access)
-6. [Creating Inference Endpoints](#creating-inference-endpoints)
-7. [Monitoring & Troubleshooting](#monitoring--troubleshooting)
-8. [Additional Resources](#additional-resources)
+1. [Installation & Setup](#installation--setup)
+2. [Post EKS NAI Deployment Configuration](#post-eks-nai-deployment-configuration)
+3. [Nutanix Enterprise AI Installation](#nutanix-enterprise-ai-installation)
+4. [Dashboard Access](#dashboard-access)
+5. [Creating Inference Endpoints](#creating-inference-endpoints)
+6. [(OPTIONAL) Additional Monitoring & Troubleshooting](#optional-additional-monitoring--troubleshooting)
 
 ## Overview
 
@@ -213,7 +211,7 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
 
 ---
 
-## Nutanix AI Installation
+## Nutanix Enterprise AI Installation
 
 ### System Requirements
 
@@ -221,7 +219,7 @@ helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
 - **AWS CLI, kubectl, and Helm** installed and configured
 - **Nutanix AI Portal Account** for Nutanix AI Docker Tokens
 
-### Acquire Nutanix AI Docker Access Token
+### Acquire Nutanix Enterprise AI Docker Access Token
 
 [See instructions here on how to acquire the Nutanix AI Docker Access Token](https://portal.nutanix.com/page/documents/details?targetId=Portal-Help:sup-generating-docker-hub-access-tokens-sp-t.html)
 
@@ -240,7 +238,7 @@ helm search repo ntnx-charts/nai-core --versions
 helm pull ntnx-charts/nai-core --version=2.4.0 --untar=true
 ```
 
-### Install Nutanix AI Core
+### Install Nutanix Enterprise AI Core
 
 Install or upgrade the `nai-core` helm chart in the `nai-system` namespace:
 
@@ -275,7 +273,7 @@ kubectl get pods -n nai-system
 
 ### Configure TLS and Gateway
 
-Refer to the [Nutanix AI Dashboard Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-login-t.html) for complete setup instructions.
+Refer to the [Nutanix Enterprise AI Dashboard Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-login-t.html) for complete setup instructions.
 
 ### Setup HTTPS Access
 
@@ -338,7 +336,7 @@ Refer to the [Nutanix AI Dashboard Documentation](https://portal.nutanix.com/pag
 
 ### Get Access URL
 
-Retrieve the Nutanix AI portal URL:
+Retrieve the Nutanix Enterprise AI portal URL:
 
 ```bash
 kubectl get svc -n envoy-gateway-system
@@ -354,7 +352,7 @@ https://nutanix-example-url.us-east-1.elb.amazonaws.com
 
 ### Login Credentials
 
-Default credentials for Nutanix AI portal:
+Default credentials for Nutanix Enterprise AI portal:
 
 - **Username**: `admin`
 - **Password**: `Nutanix.123`
@@ -370,12 +368,12 @@ Default credentials for Nutanix AI portal:
 **Obtain Hugging Face Token:**
 
 1. Sign up at [Hugging Face](https://huggingface.co/) and create an API token
-2. Navigate to **Settings** in the Nutanix AI portal (click your username in the top-right corner)
+2. Navigate to **Settings** in the Nutanix Enterprise AI portal (click your username in the top-right corner)
 3. Add your Hugging Face token
 
 **Configure Model Access:**
 
-1. Go to **Settings** in the Nutanix AI portal
+1. Go to **Settings** in the Nutanix Enterprise AI portal
 2. Click **Allow All** for model access control
 
 ![Allow All Model Access](./images/image-model-access.png)

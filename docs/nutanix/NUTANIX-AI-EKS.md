@@ -9,13 +9,13 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 
 ## 📖 Table of Contents
 
-1. [Prerequisites](#prerequisites)
+1. [Overview](#overview)
 2. [Installation & Setup](#installation--setup)
-3. [Post EKS Deployment Configuration](#post-eks-deployment-configuration)
+3. [Post EKS NAI Deployment Configuration](#post-eks-nai-deployment-configuration)
 4. [Nutanix AI Installation](#nutanix-ai-installation)
 5. [Dashboard Access](#dashboard-access)
 6. [Creating Inference Endpoints](#creating-inference-endpoints)
-7. [Monitoring & Troubleshooting](#monitoring--troubleshooting)
+7. [Monitoring & Troubleshooting](#optional-monitoring--troubleshooting)
 8. [Additional Resources](#additional-resources)
 
 ## Overview
@@ -125,8 +125,8 @@ kubectl apply -f efs-example.yaml
 # Verify EFS CSI driver is running
 kubectl get pods -n kube-system | grep efs-csi
 
-# Check CSI driver addon
-kubectl get addon -A
+# Check CSI drivers
+kubectl get csidrivers
 ```
 
 #### Validate Storage Configuration
@@ -300,6 +300,12 @@ Refer to the [Nutanix AI Dashboard Documentation](https://portal.nutanix.com/pag
      targetPort: 8443
    ```
 
+   Or run the command below to add the HTTPS port configuration:
+
+   ```bash
+   kubectl apply --server-side -f envoy-service-https.yaml
+   ```
+
 3. **Create TLS certificates**
 
    ```bash
@@ -464,7 +470,7 @@ At this point, you have successfully deployed Nutanix Enterprise AI on AWS EKS a
 ---
 
 
-## (OPTIONAL) Additional Monitoring & Troubleshooting
+## (OPTIONAL) Monitoring & Troubleshooting
 
 #### Common Kubernetes Commands
 
@@ -536,9 +542,50 @@ For Intel AMX-enabled workloads, monitor tile usage during inference operations 
    sudo processwatch -f AMX_TILE
    ```
 
+### Terraform Destroy Issue
+
+`terraform destroy` may sometimes fail with errors like this when AWS resources have active dependencies:
+
+```
+Error: deleting EC2 Subnet (subnet-01c6c5c08ea973bf6) ...
+       DependencyViolation: The subnet 'subnet-01c6c5c08ea973bf6' has dependencies and cannot be deleted.
+
+Error: deleting EC2 Internet Gateway (igw-01874ebb29c30139c) ...
+       DependencyViolation: Network vpc-0650d0bcbe00812d2 has some mapped public address(es).
+       Please unmap those public address(es) before detaching the gateway.
+```
+
+For example, subnets cannot be deleted if they are still associated with network interfaces, route tables, or load balancers. Similarly, internet gateways cannot be detached from a VPC if there are mapped public IP addresses. These dependency violations occur because AWS enforces resource relationships to prevent accidental disruption.
+
+To resolve this issue, manually identify and remove any dependent resources before retrying `terraform destroy`. These dependencies most commonly include load balancers and non-default security groups. Ensure all associated resources are deleted or detached to prevent AWS dependency violations.
+
+```bash
+# Identify and remove load balancers
+aws elb describe-load-balancers --query 'LoadBalancerDescriptions[*].LoadBalancerName'
+[
+    "load_balancer_name"
+]
+aws elb delete-load-balancer --load-balancer-name <load_balancer_name>
+
+# Identify and remove non-default security groups
+aws ec2 describe-security-groups --filters Name=vpc-id,Values=<vpc_id> \
+    --query "SecurityGroups[?GroupName!='default'].GroupId"
+[
+    "security_group_id"
+]
+aws ec2 delete-security-group --group-id <security_group_id>
+{
+    "Return": true,
+    "GroupId": "security_group_id"
+}
+
+# Re-run terraform destroy
+terraform destroy
+```
+
 ---
 
-### Related Documentation
+### Additional Resources
 
 - [Nutanix Enterprise AI Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_4:top-nai-cluster-setup-eks-t.html)
 - [AWS EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)

@@ -43,6 +43,10 @@ You will be prompted to enter:
 
 Follow AWS instructions to create an EKS cluster manually if you prefer not to use Terraform automated deployment.
 
+## Installation on an existing EKS cluster
+
+You can deploy the Intel® AI for Enterprise RAG solution on an existing EKS cluster, including one that may have been created during the installation of [Nutanix Enterprise AI](nutanix/NUTANIX-AI-EKS.md) on AWS EKS. In that case, skip the cluster setup and proceed to [EKS Cluster Access](#eks-cluster-access).
+
 ## EKS Terraform Automated Deployment
 
 ### Clone the Repository
@@ -54,7 +58,7 @@ cd Enterprise-RAG/deployment/terraform/aws/nutanix/eks-erag
 
 ### Configure Deployment Settings
 
-Modify the `locals` block in `Enterprise-RAG/deployment/terraform/aws/nutanix/eks-nutanix-ai/main.tf`:
+Modify the `locals` block in `Enterprise-RAG/deployment/terraform/aws/nutanix/eks-erag/main.tf`:
 
 ```hcl
 locals {
@@ -152,7 +156,7 @@ setup_registry: false
 Create a service account for administrative access:
 
 ```bash
-kubectl -n default create serviceaccount <your-username>-sa
+kubectl -n default create serviceaccount $USER-sa
 ```
 
 ### Create Cluster Role Binding
@@ -162,28 +166,16 @@ Bind the service account to the `cluster-admin` role:
 ```bash
 kubectl create clusterrolebinding kubeconfig-cluster-admin-token \
   --clusterrole=cluster-admin \
-  --serviceaccount=default:<your-username>-sa
+  --serviceaccount=default:$USER-sa
 ```
 
 ### Create Service Account Token Secret
 
-Create a file named `token-admin.yaml`:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: kubeconfig-cluster-admin-token
-  namespace: default
-  annotations:
-    kubernetes.io/service-account.name: <your-username>-sa
-type: kubernetes.io/service-account-token
-```
-
-Apply the secret:
+Apply the secret (relies on USER environment variable):
 
 ```bash
-kubectl apply -f token-admin.yaml
+cd deployment/terraform/aws/nutanix/eks-erag
+envsubst < token-admin.yaml | kubectl apply -f -
 ```
 
 ### Retrieve Service Account Token
@@ -232,9 +224,10 @@ This section is only applicable if you are using external OpenAI compatible API 
 Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` and configure the LLM settings:
 
 ```yaml
-env:
+config:
+  endpoint: <endpoint path>
   LLM_MODEL_SERVER: vllm
-  LLM_MODEL_SERVER_ENDPOINT: "https://your-vllm-endpoint.com"
+  LLM_MODEL_SERVER_ENDPOINT: "https://your-vllm-endpoint.com/api"
   LLM_MODEL_NAME: <model_name>
   LLM_VLLM_API_KEY: "your-api-key-here"
 ```
@@ -287,9 +280,10 @@ Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` and
 
 Example:
 ```yaml
-env:
+config:
+  endpoint: /v1/chat/completions
   LLM_MODEL_SERVER: vllm
-  LLM_MODEL_SERVER_ENDPOINT: "https://nutanix-ai-endpoint.example.com/api/v1/chat/completions"
+  LLM_MODEL_SERVER_ENDPOINT: "https://nutanix-ai-endpoint.example.com/api"
   LLM_MODEL_NAME: "llama-3-3b"
   LLM_VLLM_API_KEY: "your-api-key-here" 
   LLM_TLS_SKIP_VERIFY: "True"

@@ -1,0 +1,13 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# USER=<your-username> envsubst < token-admin.yaml | kubectl apply -f -
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubeconfig-cluster-admin-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: ${USER}-sa
+type: kubernetes.io/service-account-token

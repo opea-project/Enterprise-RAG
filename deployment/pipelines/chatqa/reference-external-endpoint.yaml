@@ -82,5 +82,5 @@ spec:
           config:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
-            LLM_MODEL_SERVER_ENDPOINT: <fiil your endpoint here>
-            LLM_MODEL_NAME: <fiil your model here>
+            LLM_MODEL_SERVER_ENDPOINT: <fill your endpoint here>
+            LLM_MODEL_NAME: <fill your model here>

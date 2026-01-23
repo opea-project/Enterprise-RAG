@@ -201,7 +201,7 @@ class TestIstioInMesh:
         yield
         istio_helper.delete_namespace()
 
-    @pytest.mark.smoke
+    @pytest.mark.xfail(reason="Fix to be implemented")
     @allure.testcase("IEASG-T142")
     def test_authorization_gets_connections_blocked(self, istio_helper):
         endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}

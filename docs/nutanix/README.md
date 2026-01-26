@@ -1,17 +1,74 @@
 # Enterprise RAG Chatbot - Deployment Guide
 <p align="center">
-    <img src="./images/nutanix-intel.png" alt="Allow All Model Access" width="500" />
+    <img src="./images/nutanix-intel-logo.png" alt="Nutanix Intel Logo" width="800" />
 </p>
 
-### Capacity Requirements for NAI + eRAG Deployment
+<!-- omit in toc -->
+## Table of Contents
 
+- [Enterprise RAG Chatbot - Deployment Guide](#enterprise-rag-chatbot---deployment-guide)
+  - [Requirements for Nutanix Enterprise AI + Intel® AI for Enterprise RAG Deployment](#requirements-for-nutanix-enterprise-ai--intel-ai-for-enterprise-rag-deployment)
+      - [On-prem Deployments](#on-prem-deployments)
+      - [Cloud Deployment](#cloud-deployment)
+  - [Nutanix Enterprise AI Endpoint Configuration](#nutanix-enterprise-ai-endpoint-configuration)
+  - [Tested SLAs](#tested-slas)
+  - [Architecture Diagram](#architecture-diagram)
+    - [Logical architecture diagram](#logical-architecture-diagram)
+  - [Deployment Steps](#deployment-steps)
+  - [1.Tools Installation](#1tools-installation)
+    - [Install Terraform](#install-terraform)
+    - [Install AWS CLI](#install-aws-cli)
+    - [Install kubectl](#install-kubectl)
+    - [Install Helm](#install-helm)
+  - [2.Deploy Nutanix Enterprise AI](#2deploy-nutanix-enterprise-ai)
+  - [3.Deploy Intel® AI for Enterprise RAG](#3deploy-intel-ai-for-enterprise-rag)
 
-| Resource Type | Guidance                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------- |
-| Nodes         | `4` K8 worker nodes                                                                  |
-| Logical cores | `64` vCPUs per VM or per Socket                                                      |
-| RAM memory    | `64GB` of RAM per VM or per Socket                                                   |
-| Disk Space    | `256GB` of disk space is generally recommended, though this is highly dependent on the model size |
+## Requirements for Nutanix Enterprise AI + Intel® AI for Enterprise RAG Deployment
+
+Below are initial deployment guidance to help you get started. What follows are some tested SLAs based on the provided system requirements for on-prem or cloud deployments. Note that these are provided as a starting point. These configurations can easily be scaled in Nutanix Enterprise AI and Intel® AI for Enterprise RAG to support customer environment needs.
+
+These requirements support both Nutanix Enterprise AI and Intel® AI for Enterprise RAG.
+
+#### On-prem Deployments
+| Resource Type | Specs |
+| ------------- | ----- |
+| Compute | 4x 32cores Intel Xeon 6 processors (generally 2x Dual Socket servers) |
+| Memory | 256GB per server (512GB Total) |
+| Storage | 512GB Total of disk space is generally recommended, though this is highly dependent on the model size and quantity |
+
+#### Cloud Deployment
+| Resource Type                      | Specs                            |
+| ---------------------------------- | -------------------------------- |
+| Number of Instances                | 4 VM Instances                   |
+| AWS EC2 Instance Type              | 4x c8i.16xlarge                  |
+| GCP Compute Engine Instance Type   | 4x c4-standard-48-lssd           |
+| Azure VM Instance Type             | 4x Standard_D64s_v6              |
+| Remote File Storage (NFS equivalent) | 512GB Total                    
+
+> [!NOTE]
+> For VMs, a Virtual core may actually represent a hyperthread. We suggest using VM instances with 64 vCPUs each(or 48 vCPUs if 64 does not exist). 
+
+## Nutanix Enterprise AI Endpoint Configuration
+
+We have tested the following Nutanix Enterprise AI NAI Endpoint configuration to support Intel® AI for Enterprise RAG workloads on Intel® Xeon processors.
+
+| Resource Type                      | Specs        | Comments           |
+| ---------------------------------- | ------------ | ------------------ |
+| Nutanix Enterprise AI NAI Endpoint | 2x 32vCPUs   | Per Model Endpoint |
+
+## Tested SLAs
+
+Below are our initial tested SLAs based on the provided system requirements for on-prem or cloud deployments. Note that these are provided as a starting points. SLAs can vary based on model size, concurrency, and vector DB size requirements.
+
+| Metric Measured | Value |
+| --------------- | ----- |
+| Time-to-First-Token (TTFT) | <3s  |
+| Time Per Output Token (TPOT) | <150ms  |
+| Concurrency | 32 concurrent users |
+| SLM/LLM Model Size | <15B |
+| VectorDB Vectors      | `100 Million`|
+
+**Note: Users can introduce other model sizes, but that could impact compatibility and performance. Carefully evaluate your requirements and test thoroughly.**
 
 > [!NOTE]
 > In this case vCPUs means cores with HyperThreading enabled. In other VM environment than AWS, HyperThreading might be disabled.
@@ -23,18 +80,11 @@
     <img src="./images/nutanix-erag.png" alt="Logical architecture diagram" width="800" />
 </p>
 
-## AI Sizing Guide
-| Resource Type         | Guidance                | Comments/Examples       |
-| --------------------- | ----------------------- | ----------------------- |
-| SLM/LLM Model Size    | Up to `13B` parameters  | Llama-3-7B, Llama-3-13B. Only guidance, bigger models |
-| VectorDB Vectors      | `100 Million`             | Dependent on additional CPU/RAM capacity |
-| Concurrent Users      |  `160 users`             | Dependent on additional CPU/RAM capacity |
 
-
-## Steps
+## Deployment Steps
 
 1. Tools Installation
-2. Deploy/Configure Nutanix AI on EKS or on-premises
+2. Deploy/Configure Nutanix Enterprise AI on EKS or on-premises
 3. Deploy/Configure Intel® AI for Enterprise RAG on EKS or on-premises
 4. Validate Demo by navigating to the Intel® AI for Enterprise RAG Web Application
 
@@ -94,13 +144,19 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 ```
 ---
-## 2.Deploy Nutanix AI on EKS or on-premises
+## 2.Deploy Nutanix Enterprise AI
 
-Follow the instructions in [NUTANIX-AI-EKS.md](NUTANIX-AI-EKS.md)
+1. For Nutanix Kubernetes Platform (NKP) or on-premises deployments, follow [Nutanix documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_4:top-nai-install-t.html)
+
+2. For AWS EKS follow [EKS Deployment](NUTANIX-AI-EKS.md)
 
 ---
 ## 3.Deploy Intel® AI for Enterprise RAG
 
-Follow Intel® AI for Enterprise RAG instructions at [eks_deployment.md](../eks_deployment.md)
+1. For Nutanix Kubernetes Platform (NKP) or on-premises deployments, follow [Intel® AI for Enterprise RAG deployment on Kubernetes](../application_deployment_guide.md). 
+> [!NOTE] 
+> If application will be deployed on Nutanix Kubernetes Platform (NKP), it is recommended to disable telemetry. The instructions are provided in the link.
+
+2. For AWS EKS follow [EKS Deployment](../eks_deployment.md)
 
 ---

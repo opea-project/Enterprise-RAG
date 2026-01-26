@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@intel-enterprise-rag-ui/auth": "workspace:^",
+    "@intel-enterprise-rag-ui/chat": "workspace:^",
     "@intel-enterprise-rag-ui/components": "workspace:^",
     "@intel-enterprise-rag-ui/control-plane": "workspace:^",
     "@intel-enterprise-rag-ui/icons": "workspace:^",

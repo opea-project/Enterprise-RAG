@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -6,9 +6,9 @@ import {
   IconButton,
   TextInput,
 } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
-import { ValidationError } from "yup";
 
 import { validateLinkInput } from "@/features/admin-panel/data-ingestion/validators/linkInput";
 
@@ -32,7 +32,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
         setErrorMessage("");
       } catch (error) {
         setIsInvalid(true);
-        setErrorMessage((error as ValidationError).message);
+        setErrorMessage(getValidationErrorMessage(error));
       }
     };
 

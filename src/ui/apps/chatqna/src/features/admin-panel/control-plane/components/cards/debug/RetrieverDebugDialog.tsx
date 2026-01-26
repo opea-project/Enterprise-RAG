@@ -1,6 +1,7 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { ConversationFeed, PromptInput } from "@intel-enterprise-rag-ui/chat";
 import {
   Button,
   CheckboxInput,
@@ -10,8 +11,6 @@ import {
 import { ChangeEventHandler, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import ConversationFeed from "@/components/ConversationFeed/ConversationFeed";
-import PromptInput from "@/components/PromptInput/PromptInput";
 import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";

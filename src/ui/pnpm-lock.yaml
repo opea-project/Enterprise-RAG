@@ -160,6 +160,9 @@ importers:
       '@intel-enterprise-rag-ui/auth':
         specifier: workspace:^
         version: link:../../packages/auth
+      '@intel-enterprise-rag-ui/chat':
+        specifier: workspace:^
+        version: link:../../packages/chat
       '@intel-enterprise-rag-ui/components':
         specifier: workspace:^
         version: link:../../packages/components
@@ -193,6 +196,9 @@ importers:
       '@intel-enterprise-rag-ui/auth':
         specifier: workspace:^
         version: link:../../packages/auth
+      '@intel-enterprise-rag-ui/chat':
+        specifier: workspace:^
+        version: link:../../packages/chat
       '@intel-enterprise-rag-ui/components':
         specifier: workspace:^
         version: link:../../packages/components
@@ -271,6 +277,42 @@ importers:
       react-router-dom:
         specifier: '>=6.30.2'
         version: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
+  packages/chat:
+    dependencies:
+      '@intel-enterprise-rag-ui/auth':
+        specifier: workspace:^
+        version: link:../auth
+      '@intel-enterprise-rag-ui/components':
+        specifier: workspace:^
+        version: link:../components
+      '@intel-enterprise-rag-ui/icons':
+        specifier: workspace:^
+        version: link:../icons
+      '@intel-enterprise-rag-ui/layouts':
+        specifier: workspace:^
+        version: link:../layouts
+      '@intel-enterprise-rag-ui/markdown':
+        specifier: workspace:^
+        version: link:../markdown
+      '@intel-enterprise-rag-ui/tailwind-theme':
+        specifier: workspace:^
+        version: link:../tailwind-theme
+      '@intel-enterprise-rag-ui/utils':
+        specifier: workspace:^
+        version: link:../utils
+      '@reduxjs/toolkit':
+        specifier: '>=2.0.0'
+        version: 2.8.2(react-redux@9.2.0(@types/react@18.3.23)(react@18.3.1)(redux@5.0.1))(react@18.3.1)
+      react:
+        specifier: '>=18.0.0'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 18.3.1(react@18.3.1)
+      react-redux:
+        specifier: '>=9.0.0'
+        version: 9.2.0(@types/react@18.3.23)(react@18.3.1)(redux@5.0.1)
 
   packages/components:
     dependencies:

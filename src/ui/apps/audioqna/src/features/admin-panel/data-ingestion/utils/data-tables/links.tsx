@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@intel-enterprise-rag-ui/components";
@@ -9,6 +9,8 @@ import DataItemStatus from "@/features/admin-panel/data-ingestion/components/Dat
 import LinkTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/LinkTextExtractionDialog/LinkTextExtractionDialog";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
+
+import { formatStatusForFilter } from "./utils";
 
 interface LinkActionsHandlers {
   retryHandler: (id: string) => void;
@@ -22,6 +24,7 @@ export const getLinksTableColumns = ({
   {
     accessorKey: "status",
     header: "Status",
+    accessorFn: (row) => formatStatusForFilter(row.status),
     cell: ({
       row: {
         original: { status, job_message: statusMessage },
@@ -94,7 +97,7 @@ export const getLinksTableColumns = ({
   },
   {
     id: "actions",
-    header: () => <p className="text-center">Actions</p>,
+    header: () => <p className="w-full text-center">Actions</p>,
     cell: ({
       row: {
         original: { id, uri, status },

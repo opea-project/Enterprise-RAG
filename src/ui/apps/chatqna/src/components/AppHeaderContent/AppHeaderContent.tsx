@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { LogoutButton } from "@intel-enterprise-rag-ui/auth";
+import {
+  ChatSideMenuIconButton,
+  NewChatButton,
+  selectIsChatSideMenuOpen,
+  toggleChatSideMenu,
+} from "@intel-enterprise-rag-ui/chat";
 import { ColorSchemeSwitch } from "@intel-enterprise-rag-ui/components";
 import {
   AboutDialog,
@@ -12,8 +18,7 @@ import { useLocation } from "react-router-dom";
 
 import ViewSwitchButton from "@/components/ViewSwitchButton/ViewSwitchButton";
 import { paths } from "@/config/paths";
-import ChatSideMenuIconButton from "@/features/chat/components/ChatSideMenuIconButton/ChatSideMenuIconButton";
-import NewChatButton from "@/features/chat/components/NewChatButton/NewChatButton";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetStore } from "@/store/utils";
 import { getChatQnAAppEnv } from "@/utils";
 import { keycloakService } from "@/utils/auth";
@@ -27,16 +32,31 @@ const USER_GUIDE_URL =
 export const AppHeaderLeftSideContent = () => {
   const location = useLocation();
   const isChatRoute = location.pathname.startsWith(paths.chat);
+  const isChatSideMenuOpen = useAppSelector(selectIsChatSideMenuOpen);
+  const dispatch = useAppDispatch();
+
+  const handleToggleSideMenu = () => {
+    dispatch(toggleChatSideMenu());
+  };
 
   return (
     <>
-      {isChatRoute && <ChatSideMenuIconButton />}
+      {isChatRoute && (
+        <ChatSideMenuIconButton
+          isOpen={isChatSideMenuOpen}
+          onPress={handleToggleSideMenu}
+        />
+      )}
       <AppNameText appName="Intel AI&reg; for Enterprise RAG" />
     </>
   );
 };
 
-export const AppHeaderRightSideContent = () => {
+export const AppHeaderRightSideContent = ({
+  onNewChat,
+}: {
+  onNewChat?: () => void;
+}) => {
   const location = useLocation();
   const isSpecificChatRoute =
     location.pathname.startsWith(paths.chat) &&
@@ -44,7 +64,9 @@ export const AppHeaderRightSideContent = () => {
 
   return (
     <>
-      {isSpecificChatRoute && <NewChatButton />}
+      {isSpecificChatRoute && onNewChat && (
+        <NewChatButton onPress={onNewChat} />
+      )}
       {keycloakService.isAdminUser() && <ViewSwitchButton />}
       <ColorSchemeSwitch />
       <AboutDialog

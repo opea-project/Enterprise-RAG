@@ -1,0 +1,29 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+import { LinkIcon } from "@intel-enterprise-rag-ui/icons";
+
+import { SourceDialog } from "@/components/sources/SourceDialog/SourceDialog";
+import { LinkSource } from "@/types";
+
+interface LinkSourceDialogProps {
+  source: LinkSource;
+}
+
+export const LinkSourceDialog = ({
+  source: { url, citations },
+}: LinkSourceDialogProps) => {
+  const handleOpenLink = () => {
+    window.open(url, "_blank");
+  };
+
+  return (
+    <SourceDialog
+      name={url}
+      triggerIcon={<LinkIcon />}
+      actionLabel="Open Link"
+      citations={citations}
+      onAction={handleOpenLink}
+    />
+  );
+};

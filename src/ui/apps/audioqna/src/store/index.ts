@@ -1,6 +1,10 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import {
+  chatHistoryReducer,
+  chatSideMenuReducer,
+} from "@intel-enterprise-rag-ui/chat";
 import {
   colorSchemeReducer,
   notificationsReducer,
@@ -13,22 +17,20 @@ import { edpApi } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { dataIngestionApiMiddleware } from "@/features/admin-panel/data-ingestion/api/middleware";
 import { s3Api } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import dataIngestionSettingsReducer from "@/features/admin-panel/data-ingestion/store/dataIngestionSettings.slice";
-import { chatHistoryApi } from "@/features/chat/api/chatHistory";
-import { chatQnAApi } from "@/features/chat/api/chatQnA";
-import chatHistoryReducer from "@/features/chat/store/chatHistory.slice";
-import chatSideMenusReducer from "@/features/chat/store/chatSideMenus.slice";
+import { audioQnAApi } from "@/features/chat/api/audioQnA.api";
+import { chatHistoryApi } from "@/features/chat/api/chatHistory.api";
 import viewNavigationReducer from "@/store/viewNavigation.slice";
 
 export const store = configureStore({
   reducer: {
-    chatSideMenus: chatSideMenusReducer,
+    chatSideMenu: chatSideMenuReducer,
     chatHistory: chatHistoryReducer,
     colorScheme: colorSchemeReducer,
     notifications: notificationsReducer,
     dataIngestionSettings: dataIngestionSettingsReducer,
     viewNavigation: viewNavigationReducer,
     [appApi.reducerPath]: appApi.reducer,
-    [chatQnAApi.reducerPath]: chatQnAApi.reducer,
+    [audioQnAApi.reducerPath]: audioQnAApi.reducer,
     [chatHistoryApi.reducerPath]: chatHistoryApi.reducer,
     // [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,
     [edpApi.reducerPath]: edpApi.reducer,
@@ -37,7 +39,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       appApi.middleware,
-      chatQnAApi.middleware,
+      audioQnAApi.middleware,
       chatHistoryApi.middleware,
       // controlPlaneApi.middleware,
       edpApi.middleware,

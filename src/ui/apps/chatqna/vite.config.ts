@@ -37,6 +37,7 @@ export default defineConfig({
         manualChunks: {
           react: ["react", "react-dom"],
           "intel-enterprise-rag-ui-auth": ["@intel-enterprise-rag-ui/auth"],
+          "intel-enterprise-rag-ui-chat": ["@intel-enterprise-rag-ui/chat"],
           "intel-enterprise-rag-ui-components": [
             "@intel-enterprise-rag-ui/components",
           ],

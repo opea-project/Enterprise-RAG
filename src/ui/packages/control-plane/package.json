@@ -5,7 +5,6 @@
   "type": "module",
   "license": "Apache-2.0",
   "description": "Pipeline graph component for Intel Enterprise RAG UI",
-  "main": "./dist/intel-enterprise-rag-ui-control-plane.umd.cjs",
   "module": "./dist/intel-enterprise-rag-ui-control-plane.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",

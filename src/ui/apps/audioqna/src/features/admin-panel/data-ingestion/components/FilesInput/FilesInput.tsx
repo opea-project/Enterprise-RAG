@@ -1,7 +1,8 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { FileInput } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeFiles } from "@intel-enterprise-rag-ui/utils";
 import {
   ChangeEvent,
@@ -28,13 +29,12 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
   const processNewFiles = async (newFiles: FileList) => {
     const fileArray = [...newFiles];
     const sanitizedFiles = sanitizeFiles(fileArray);
-    const validationMessage = await validateFileInput([
-      ...files,
-      ...sanitizedFiles,
-    ]);
-    setErrorMessage(validationMessage);
-    if (validationMessage === "") {
+    try {
+      await validateFileInput([...files, ...sanitizedFiles]);
+      setErrorMessage("");
       setFiles((prevFiles) => [...prevFiles, ...sanitizedFiles]);
+    } catch (error) {
+      setErrorMessage(getValidationErrorMessage(error));
     }
 
     // Clear file input value

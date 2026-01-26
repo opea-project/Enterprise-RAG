@@ -1,25 +1,6 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { SourceDocumentType } from "@/features/chat/types";
-
-export interface Chat {
-  id: string;
-  title: string;
-  turns: ChatTurn[];
-  inputValue: string;
-}
-
-// interface defined for chat elements displayed in UI
-export interface ChatTurn {
-  id: string;
-  question: string;
-  answer?: string;
-  error: string | null;
-  isPending: boolean;
-  sources?: SourceDocumentType[];
-}
-
 export type AppEnvKey =
   | "API_URL"
   | "KEYCLOAK_URL"

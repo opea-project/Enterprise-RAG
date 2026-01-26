@@ -1,14 +1,25 @@
-// LinksDataTable.scss
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+.links-data-table-wrapper {
+  @apply flex flex-col justify-center gap-2;
+
+  &__header {
+    @apply flex items-center justify-between gap-2;
+  }
+}
+
 .links-data-table {
+  th:nth-child(1),
+  td:nth-child(1) {
+    @apply w-10;
+  }
+  th:nth-child(4),
+  td:nth-child(4) {
+    @apply w-1/5;
+  }
   th:nth-child(3),
   td:nth-child(3) {
-    @apply w-[20%];
-  }
-  th:nth-child(2),
-  td:nth-child(2) {
-    @apply w-[40%];
+    @apply w-2/5;
   }
 }

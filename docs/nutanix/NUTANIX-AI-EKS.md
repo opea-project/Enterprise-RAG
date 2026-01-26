@@ -9,14 +9,12 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 
 ## 📖 Table of Contents
 
-1. [Overview](#overview)
-2. [Installation & Setup](#installation--setup)
-3. [Post EKS NAI Deployment Configuration](#post-eks-nai-deployment-configuration)
-4. [Nutanix AI Installation](#nutanix-ai-installation)
-5. [Dashboard Access](#dashboard-access)
-6. [Creating Inference Endpoints](#creating-inference-endpoints)
-7. [Monitoring & Troubleshooting](#optional-monitoring--troubleshooting)
-8. [Additional Resources](#additional-resources)
+1. [Installation & Setup](#installation--setup)
+2. [Post EKS NAI Deployment Configuration](#post-eks-nai-deployment-configuration)
+3. [Nutanix Enterprise AI Installation](#nutanix-enterprise-ai-installation)
+4. [Dashboard Access](#dashboard-access)
+5. [Creating Inference Endpoints](#creating-inference-endpoints)
+6. [(OPTIONAL) Additional Monitoring & Troubleshooting](#optional-additional-monitoring--troubleshooting)
 
 ## Overview
 

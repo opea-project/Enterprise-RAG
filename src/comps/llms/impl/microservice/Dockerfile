@@ -10,6 +10,7 @@ ARG python_image_version=${python_version}-slim-bookworm
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
     libgl1-mesa-glx \

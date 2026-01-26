@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
@@ -10,6 +10,7 @@ dependencies = [
     "shortuuid==1.0.13",
     "redis===6.2.0",
     "redisvl @ git+https://github.com/redis/redis-vl-python.git@defa62a3f291fd8093baf0c652c7d71e6528bfcb",
+    "urllib3 == 2.6.3",
 ]
 
 [project.optional-dependencies]

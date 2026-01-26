@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
@@ -11,7 +11,8 @@ dependencies = [
     "docarray[full]==0.40.0",
     "fastapi==0.120.2",
     "h11==0.16.0",
-    "huggingface-hub==0.30.0",
+    "huggingface-hub==0.36.0",
+    "filelock == 3.20.3", # dependency of huggingface_hub
     "jinja2==3.1.6",
     "numpy==2.2.1",
     "opentelemetry-api==1.25.0",

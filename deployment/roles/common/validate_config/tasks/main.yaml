@@ -108,6 +108,24 @@
       ansible.builtin.set_fact:
         config_valid: "{{ config_valid and (late_chunking_issues is not defined or late_chunking_issues | length == 0) }}"
 
+# Check balloons and vLLM embedding compatibility
+- name: Check balloons and vLLM embedding compatibility
+  when: balloons is defined and balloons.enabled is defined and balloons.enabled
+  tags:
+    - config
+  block:
+    - name: Check each pipeline for vLLM embedding usage
+      ansible.builtin.set_fact:
+        vllm_embedding_issues: "{{ vllm_embedding_issues | default([]) + ['Pipeline \"' + item.namespace + '\" uses vLLM for embeddings (VLLMEmbedding service) which is not supported with balloons policy. Please use TorchServe for embeddings when balloons are enabled, or disable balloons to use vLLM embeddings.'] }}"
+      when:
+        - item.samplePath is defined
+        - lookup('file', pipelines_dir + '/' + item.samplePath) is search('VLLMEmbedding')
+      loop: "{{ pipelines }}"
+
+    - name: Update config validity based on balloons and vLLM embedding compatibility check
+      ansible.builtin.set_fact:
+        config_valid: "{{ config_valid and (vllm_embedding_issues is not defined or vllm_embedding_issues | length == 0) }}"
+
 # Display validation results
 - name: Display validation results
   ansible.builtin.debug:
@@ -130,6 +148,12 @@
       {% if late_chunking_issues is defined and late_chunking_issues|length > 0 %}
       - Late chunking configuration issues:
         {% for issue in late_chunking_issues %}
+        * {{ issue }}
+        {% endfor %}
+      {% endif %}
+      {% if vllm_embedding_issues is defined and vllm_embedding_issues|length > 0 %}
+      - vLLM embedding with balloons configuration issues:
+        {% for issue in vllm_embedding_issues %}
         * {{ issue }}
         {% endfor %}
       {% endif %}

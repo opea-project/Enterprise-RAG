@@ -1,4 +1,4 @@
-FROM openvino/model_server:2025.0
+FROM openvino/model_server:2025.4.1
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
@@ -25,6 +25,7 @@ WORKDIR /home/user/
 COPY ./docker/pyproject.toml pyproject.toml
 COPY ./docker/uv.lock uv.lock
 RUN uv sync --locked --no-cache
+RUN rm -rf /home/ubuntu/.local/share/uv/python/cpython-3.11.13-linux-x86_64-gnu/lib/python3.11/site-packages/*
 
 # Copy OpenVINO Tokenizers library to the correct location
 RUN cp /ovms/lib/libopenvino_tokenizers.so /home/user/.venv/lib/python3.11/site-packages/openvino_tokenizers/lib/libopenvino_tokenizers.so

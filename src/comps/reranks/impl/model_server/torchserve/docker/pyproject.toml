@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
@@ -10,6 +10,7 @@ dependencies = [
     "sentence_transformers==3.2.1",
     "transformers==4.55.4",
     "accelerate==0.34.2",
+    "filelock == 3.20.3", # dependency of huggingface_hub
     "torchserve==0.12.0",
     "torch-model-archiver==0.12.0",
     "torch==2.8.0",
@@ -17,11 +18,12 @@ dependencies = [
     "hypothesis==6.82.0",
     "cmake>=3.13.0",
     "ninja==1.11.1",
-    "wheel>=0.36",
+    "wheel>=0.46.2",
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "packaging==24.2",
-    "setuptools == 80.9.0",     # security update
+    "setuptools == 80.10.2",     # security update,
+    "urllib3 == 2.6.3",
 ]
 
 [tool.uv.sources]

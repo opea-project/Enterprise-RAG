@@ -50,6 +50,7 @@ var (
 		"Ingestion",
 		"TorchserveEmbedding",
 		"TorchserveEmbeddingGaudi",
+		"VLLMEmbedding",
 		"TorchserveReranking",
 		"LLMGuardInput",
 		"LLMGuardOutput",

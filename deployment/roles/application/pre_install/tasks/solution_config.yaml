@@ -70,6 +70,22 @@
     - install
     - display-configuration
 
+- name: Add vLLM embedding with balloons compatibility issue
+  when:
+    - balloons is defined and balloons.enabled is defined and balloons.enabled
+  block:
+    - name: Check each pipeline for vLLM embedding usage
+      ansible.builtin.set_fact:
+        configuration_issues: "{{ configuration_issues + ['Pipeline \"' + item.namespace + '\" uses vLLM for embeddings (VLLMEmbedding service) which is incompatible with balloons policy. Please use TorchServe for embeddings when balloons are enabled, or disable balloons to use vLLM embeddings.'] }}"
+      when:
+        - item.samplePath is defined
+        - lookup('file', pipelines_dir + '/' + item.samplePath) is search('VLLMEmbedding')
+      loop: "{{ pipelines }}"
+  tags:
+    - install
+    - display-configuration
+
+
 - name: Display HF_TOKEN warning if not set
   ansible.builtin.debug:
     msg: |

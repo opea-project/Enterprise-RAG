@@ -131,6 +131,9 @@ images:
     tag: *tag
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
+  vllm_embedding:
+    envs:
+      EMBEDDING_VLLM_MODEL_NAME: *embedding_model_name
   tei:
     envs:
       MODEL_ID: *embedding_model_name

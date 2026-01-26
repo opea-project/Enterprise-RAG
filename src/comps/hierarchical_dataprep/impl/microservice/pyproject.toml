@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
@@ -18,7 +18,8 @@ dependencies = [
     "httpx==0.28.1",
     "h11==0.16.0",
     "uvicorn==0.30.1",
-    "huggingface_hub==0.24.5",
+    "huggingface_hub==0.36.0",
+    "filelock == 3.20.3", # dependency of huggingface_hub
     "langchain==1.2.2",
     "langchain-community==0.4.1",
     "langchain-text-splitters==1.1.0",
@@ -29,7 +30,7 @@ dependencies = [
     "pathvalidate==3.2.2",
     "torch==2.8.0",
     "torchvision==0.23.0",
-    "setuptools == 80.9.0",     # security update
+    "setuptools == 80.10.2",     # security update
     "starlette==0.49.1",
     "protobuf == 4.25.8",
     "requests == 2.32.5",

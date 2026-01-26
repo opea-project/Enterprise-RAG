@@ -8,6 +8,7 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 ENV TEMP=/home/user/tmp
 ENV MKL_THREADING_LAYER=GNU
@@ -51,6 +52,6 @@ COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yam
 RUN chmod +x /home/user/entrypoint.sh
 
 # jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so"
 
 ENTRYPOINT ["/home/user/entrypoint.sh"]

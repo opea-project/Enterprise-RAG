@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
@@ -27,12 +27,13 @@ dependencies = [
     "h11==0.16.0",
     "tornado==6.5.1",
     "pyjwt==2.10.1",
-    "alembic==1.16.4"
+    "alembic==1.16.4",
+    "urllib3 == 2.6.3",
 ]
 
 [project.optional-dependencies]
 test = [
-    "aiohttp==3.12.14",
+    "aiohttp==3.13.3",
     "shortuuid==1.0.13",
     "pytest==8.3.4",
     "pytest-asyncio==0.24.0",

@@ -8,6 +8,7 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 ENV TEMP=/home/user/tmp
 ENV MKL_THREADING_LAYER=GNU
@@ -26,7 +27,7 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libtcmalloc.so.4 /usr/lib/x86_64-linux-gnu/l
 RUN rm -rf /home/user/.local/lib/python${python_version}/site-packages/*
 RUN rm -rf /usr/local/lib/python${python_version}/site-packages/*
 
-ENV GLIBC_TUNABLES glibc.cpu.x86_shstk=permissive
+ENV GLIBC_TUNABLES=glibc.cpu.x86_shstk=permissive
 
 # Create user and folders
 RUN useradd -u 1000 -m -s /bin/bash user        \
@@ -54,6 +55,6 @@ ENV KMP_SETTINGS=1
 ENV KMP_AFFINITY=granularity=fine,compact,1,0
 ENV KMP_BLOCKTIME=1
 # jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so"
 
 CMD ["ipexrun", "cpu", "--nodes-list", "0", "--memory-allocator", "tcmalloc", "server-ipex.py"]

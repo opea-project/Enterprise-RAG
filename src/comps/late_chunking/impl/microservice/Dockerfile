@@ -7,6 +7,7 @@
 FROM python:3.11-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \

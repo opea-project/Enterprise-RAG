@@ -1,0 +1,92 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: chatqa
+  namespace: chatqa
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Fingerprint
+        dependency: Hard
+        internalService:
+          serviceName: fgp-svc
+          config:
+            endpoint: /v1/system_fingerprint/append_arguments
+      - name: Embedding
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
+            EMBEDDING_MODEL_SERVER: "vllm"
+            EMBEDDING_CONNECTOR: "generic"
+      - name: VLLMEmbedding
+        dependency: Hard
+        internalService:
+          serviceName: vllm-embedding-svc
+          isDownstreamService: true
+      - name: Retriever
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: retriever-svc
+          config:
+            endpoint: /v1/retrieval
+      - name: Reranking
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: reranking-svc
+          config:
+            endpoint: /v1/reranking
+            RERANKING_SERVICE_ENDPOINT: torchserve-reranking-svc
+            RERANKING_MODEL_SERVER: "torchserve"
+      - name: TorchserveReranking
+        dependency: Hard
+        internalService:
+          serviceName: torchserve-reranking-svc
+          isDownstreamService: true
+      - name: PromptTemplate
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: prompt-template-svc
+          config:
+            endpoint: /v1/prompt_template
+      - name: LLMGuardInput
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: input-scan-svc
+          config:
+            endpoint: /v1/llmguardinput
+      - name: VLLM
+        dependency: Hard
+        internalService:
+          serviceName: vllm-service-m
+          config:
+            endpoint: /v1/completions
+          isDownstreamService: true
+      - name: Llm
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: llm-svc
+          config:
+            endpoint: /v1/chat/completions
+            LLM_MODEL_SERVER: vllm
+            LLM_MODEL_SERVER_ENDPOINT: vllm-service-m

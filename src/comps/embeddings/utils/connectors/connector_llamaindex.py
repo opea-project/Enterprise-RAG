@@ -45,6 +45,7 @@ class LlamaIndexEmbedding(EmbeddingConnector):
     _instance = None
 
     def __new__(cls, model_name: str, model_server: str, endpoint: str, api_config: Optional[dict] = None):
+
         if cls._instance is None:
             cls._instance = super(LlamaIndexEmbedding, cls).__new__(cls)
             cls._instance._initialize(model_name, model_server, endpoint, api_config)

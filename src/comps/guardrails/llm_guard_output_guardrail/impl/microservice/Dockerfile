@@ -9,6 +9,8 @@ ARG python_image_version=${python_version}-slim-bookworm
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
+ARG python_version
+
 RUN apt-get update -y && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

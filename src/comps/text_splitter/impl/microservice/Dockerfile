@@ -8,6 +8,7 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y asciidoctor nano libreoffice libgl1-mesa-glx tesseract-ocr libmagic1 && \

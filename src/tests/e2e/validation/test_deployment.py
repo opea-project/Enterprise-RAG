@@ -94,9 +94,12 @@ def test_hpa(edp_helper, chatqa_api_helper, guard_helper):
     HPAS_WITH_INITIALLY_UNKNOWN_STATES = ["istio", "tei-reranking", "in-guard"]
     VLLM_HPA = "vllm"
     TORCHSERVE_R_HPA = "torchserve-reranking"
+
+    # Embedding HPA identifiers - only one will be present
+    VLLM_E_HPA = "vllm-embedding"
     TORCHSERVE_E_HPA = "torchserve-embedding"
-    TORCHSERVE_HPA_IDENTIFIERS = {TORCHSERVE_R_HPA, TORCHSERVE_E_HPA}
-    TRACKED_HPA_IDENTIFIERS = TORCHSERVE_HPA_IDENTIFIERS.union({VLLM_HPA})
+    EMBEDDING_HPA_IDENTIFIERS = {TORCHSERVE_E_HPA, VLLM_E_HPA}
+
     PROMETHEUS_POD = "prometheus-adapter"
 
     def get_hpas():
@@ -111,6 +114,23 @@ def test_hpa(edp_helper, chatqa_api_helper, guard_helper):
     # Fetch HPAs
     hpas = get_hpas()
     assert len(hpas) > 0, "No HPAs were found"
+
+    # Determine which embedding HPA is present
+    active_embedding_hpa = None
+    for hpa in hpas:
+        if hpa.metadata.name in EMBEDDING_HPA_IDENTIFIERS:
+            active_embedding_hpa = hpa.metadata.name
+            logger.info(f"Found active embedding HPA: {active_embedding_hpa}")
+            break
+
+    # Ensure at least one embedding HPA is present
+    assert active_embedding_hpa is not None, (
+        f"No embedding HPA found. Expected one of: {EMBEDDING_HPA_IDENTIFIERS}")
+
+    # Build tracked HPA identifiers with the active embedding HPA
+    TRACKED_HPA_IDENTIFIERS = {VLLM_HPA, TORCHSERVE_R_HPA, active_embedding_hpa}
+
+    logger.info(f"Tracking HPAs: {TRACKED_HPA_IDENTIFIERS}")
 
     # Initialize HPA objects dictionary to track them
     tracked_hpas = {}
@@ -174,8 +194,15 @@ def test_hpa(edp_helper, chatqa_api_helper, guard_helper):
         hpa_object_metrics = HPA.get_hpa_current_metrics(hpa.name, hpa.namespace)
         logger.info(f"Metrics: {hpa_object_metrics}")
 
-        # Check for HPA values changes on torchserve
-        if hpa.metadata.name in TORCHSERVE_HPA_IDENTIFIERS:
+        # Check for HPA values changes on torchserve or vllm embedding
+        if hpa.metadata.name in EMBEDDING_HPA_IDENTIFIERS:
+            assert hpa.metadata.name in tracked_hpas and tracked_hpas[hpa.metadata.name].check_initialization(), (
+                f"{tracked_hpas[hpa.metadata.name].name}: missing initial data")
+            if not tracked_hpas[hpa.metadata.name].check_metrics_not_zero():
+                tracked_hpas[hpa.metadata.name].check_updated_hpa_values()
+        
+        # Check for HPA values changes on torchserve reranking
+        if hpa.metadata.name == TORCHSERVE_R_HPA:
             assert hpa.metadata.name in tracked_hpas and tracked_hpas[hpa.metadata.name].check_initialization(), (
                 f"{tracked_hpas[hpa.metadata.name].name}: missing initial data")
             if not tracked_hpas[hpa.metadata.name].check_metrics_not_zero():

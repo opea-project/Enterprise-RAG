@@ -3,6 +3,12 @@
 
 # uses kubespray to deploy Kubernetes cluster and install required components
 deploy_k8s: false
+k8s_version: "1.33.5"
+
+# versions installed via infrastructure playbook:
+# 1.32.9, 1.33.5
+# 1.32.11,1.33.7,1.34.2 installation is not being supported by infrastructure.yaml
+
 # local path provisioner works only with kubespray deployment, so deploy_k8s needs to be true to install it.
 install_csi: "local-path-provisioner" # available options: "local-path-provisioner"
 

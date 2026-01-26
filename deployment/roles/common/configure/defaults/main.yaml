@@ -7,5 +7,5 @@ httpsProxy: ""
 noProxy: ""
 helm_version: "v3.16.1"
 docker_version: "26.1.4"
-kubectl_version: "v1.30.12" # since we support 1.29-1.31
+kubectl_version: "v1.33.0" # since we support 1.29-1.33
 insecure_registry: ""

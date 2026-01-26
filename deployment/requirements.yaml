@@ -5,6 +5,6 @@ collections:
     version: 5.2.0
   - name: https://github.com/kubernetes-sigs/kubespray
     type: git
-    version: v2.28.0
+    version: v2.29.0
   - name: ansible.utils
     version: 6.0.0

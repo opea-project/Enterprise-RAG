@@ -19,6 +19,7 @@ from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import DataPrepInput, TextSplitterInput
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
 from comps.cores.mega.base_statistics import register_statistics, statistics_dict
+from requests.exceptions import HTTPError, ConnectionError, ProxyError
 
 # Define the unique service name for the microservice
 USVC_NAME='opea_service@opea_text_extractor'
@@ -106,6 +107,12 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
     loop = asyncio.get_event_loop()
     try:
         loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list, texts)
+    except HTTPError as e:
+        logger.exception(e)
+        raise HTTPException(status_code=400, detail=f"A HTTP Error occurred while processing links: {str(e)}")
+    except (ConnectionError, ProxyError) as e:
+        logger.exception(e)
+        raise HTTPException(status_code=400, detail=f"Could not connect to remote server: {str(e)}")
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"A Value Error occurred while processing: {str(e)}")

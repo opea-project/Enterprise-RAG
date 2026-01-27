@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from typing import List
 from fastapi import UploadFile
+from requests.exceptions import HTTPError, ConnectionError, ProxyError
 
 from comps.cores.proto.docarray import TextDoc
 from comps.text_extractor.utils.crawler import Crawler
@@ -56,6 +57,9 @@ class OPEATextExtractor:
             try:
                 textdocs = self._load_links(links=link_list)
                 loaded_docs.extend(textdocs)
+            except (HTTPError, ConnectionError, ProxyError) as e:
+                logger.error(e)
+                raise
             except Exception as e:
                 logger.error(e)
                 raise ValueError(f"Failed to load link. Exception: {e}")

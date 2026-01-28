@@ -129,6 +129,33 @@
     - install
     - topology-preview
 
+- name: Detect embedding service type from pipeline
+  set_fact:
+    embedding_service_type: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | map(attribute='samplePath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          ).get('spec', {}).get('nodes', {}).get('root', {}).get('steps', [])
+          | selectattr('internalService.isDownstreamService', 'defined')
+          | selectattr('internalService.serviceName', 'search', '-embedding-svc$')
+          | map(attribute='internalService.serviceName')
+          | first
+          | default('vllm-embedding-svc')
+          | regex_replace('-embedding-svc$', '')
+          | regex_replace('-', '_')
+        ) + '_embedding'
+      }}
+  tags:
+    - install
+    - topology-preview
+
 - name: Set EMBEDDING_CPUS from resources reference file
   set_fact:
     EMBEDDING_CPUS: >-
@@ -144,7 +171,7 @@
             | from_yaml
           )
           | default({})
-        ).get('services', {}).get('torchserve_embedding', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
+        ).get('services', {}).get(embedding_service_type, {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
   tags:
@@ -251,8 +278,8 @@
         Inference memory request: {{ info.memory_usage_percent }}%
         VLLM Replicas: {{ info.vllm.replicas }}
         VLLM CPU Size: {{ info.vllm.adjusted_cpu_size }}
-        Embedding Replicas: {{ info.torchserve_embedding.replicas }}
-        Embedding CPU Size: {{ info.torchserve_embedding.cpu_size }}
+        Embedding Replicas: {{ info.embedding.replicas }}
+        Embedding CPU Size: {{ info.embedding.cpu_size }}
         Reranking Replicas: {{ info.torchserve_reranking.replicas }}
         Reranking CPU Size: {{ info.torchserve_reranking.cpu_size }}
       ------------------------------------------

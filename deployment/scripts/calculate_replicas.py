@@ -212,7 +212,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
                 'replicas': verified_replicas_count,
                 'adjusted_cpu_size': current_vllm_size // 2
             },
-            'torchserve_embedding': {
+            'embedding': {
                 'replicas': verified_replicas_count,
                 'cpu_size': embedding_size // 2
             },

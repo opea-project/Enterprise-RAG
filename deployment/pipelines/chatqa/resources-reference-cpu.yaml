@@ -210,11 +210,32 @@ services:
     replicas: 4
     resources:
       requests:
-        cpu: 8
-        memory: 8Gi
+        cpu: 4
+        memory: 4Gi
       limits:
-        cpu: 16
+        cpu: 4
         memory: 16Gi
+    hpa:
+      minReplicas: 4
+      maxReplicas: 10
+      targetValue: 50
+      # average request queue waiting time in seconds
+      # high queue time indicates service is overloaded and needs more replicas
+      # metric used: 'avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-embedding-svc"}[2m])) by (<<.GroupBy>>)'
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 180
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 90
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          selectPolicy: Max
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 90
   torchserve_reranking:
     replicas: 2
     resources:

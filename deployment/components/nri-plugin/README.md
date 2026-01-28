@@ -64,7 +64,6 @@ To adjust these values, modify the resource configuration in your pipeline's `re
 
 > **Note:** If `edp.vllm.enabled` is set to `true`, ensure that vLLM resources are also properly configured in the [`edp values file`](../edp/values.yaml) under the `vllm.resources` section.
 
-> **Note:** vLLM Embedding is NOT supported with balloons. When balloons policy is enabled, you must use TorchServe for embeddings. Pipelines using `VLLMEmbedding` service will fail validation. Use pipelines with `TorchserveEmbedding` instead (e.g., `reference-cpu.yaml` instead of `examples/cpu-embedding-vllm.yaml`).
 
 ## Node Topology Discovery and Scheduling
 

@@ -4,7 +4,7 @@
 ---
 - name: Define dynamic resource naming patterns
   ansible.builtin.set_fact:
-    workload_pattern: 'vllm-service-m|torchserve-reranking|torchserve-embedding'
+    workload_pattern: 'vllm-service-m|torchserve-reranking|vllm-embedding|torchserve-embedding'
     pvc_pattern: 'model-volume-llm|model-volume-reranker|model-volume-embedding'
   tags:
     - install

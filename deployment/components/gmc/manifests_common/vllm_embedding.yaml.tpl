@@ -17,6 +17,24 @@ data:
   https_proxy: {{ .Values.proxy.httpsProxy | quote }}
   no_proxy: {{ .Values.proxy.noProxy | quote }}
 ---
+{{- if and .Values.vllmNodes .Values.balloons.enabled }}
+{{- range .Values.vllmNodes }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $.Values.pvc.modelEmbedding.name }}-{{ .name }}
+  labels:
+    {{- include "manifest.labels" (list $.filename $) | nindent 4 }}
+spec:
+  accessModes:
+    - {{ $.Values.pvc.modelEmbedding.accessMode }}
+  resources:
+    requests:
+      storage: {{ $.Values.pvc.modelEmbedding.storage }}
+{{- end }}
+{{- else }}
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -29,6 +47,7 @@ spec:
   resources:
     requests:
       storage: {{ .Values.pvc.modelEmbedding.storage }}
+{{- end }}
 ---
 # Source: vllm/templates/service.yaml
 # Copyright (C) 2024-2026 Intel Corporation
@@ -50,6 +69,146 @@ spec:
   selector:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
+{{- if and .Values.vllmNodes .Values.balloons.enabled }}
+{{- range .Values.vllmNodes }}
+# Source: vllm/templates/deployment.yaml
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-embedding-svc-{{ .name }}
+  labels:
+    {{- include "manifest.labels" (list $.filename $) | nindent 4 }}
+    embedding-node: {{ .name }}
+spec:
+  replicas: {{ .VLLM_INSTANCES | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "manifest.selectorLabels" (list $.filename $) | nindent 6 }}
+      embedding-node: {{ .name }}
+  template:
+    metadata:
+      labels:
+        {{- include "manifest.selectorLabels" (list $.filename $) | nindent 8 }}
+        embedding-node: {{ .name }}
+      {{- include "manifest.tdx.annotations" (list $.filename $) | nindent 6 }}
+    spec:
+      {{- include "manifest.tdx.runtimeClassName" (list $.filename $) | nindent 6 }}
+      nodeSelector:
+        {{- toYaml .nodeSelector | nindent 8 }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - {{ .name }}
+      tolerations:
+        - key: "inference_eligible"
+          operator: "Equal"
+          value: "true"
+          effect: "PreferNoSchedule"
+      initContainers:
+        {{- include "manifest.balloons.initContainer" $ | nindent 8 }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- include "gmc.imagePullSecrets" $ }}
+      containers:
+        - name: vllm-embedding
+          envFrom:
+            - configMapRef:
+                name: vllm-embedding-config
+            - configMapRef:
+                name: extra-env-config
+                optional: true
+          env:
+            - name: HF_HOME
+              value: /home/user/.cache
+            - name: USER
+              value: user
+          {{- if $.Values.tokens.hugToken }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-token-secret
+                  key: HF_TOKEN
+          {{- end }}
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+
+          image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - |
+                {{- if $.Values.balloons.enabled }}
+                export VLLM_CPU_OMP_THREADS_BIND=$(tr ' ' ',' < /sys/fs/cgroup/cpuset.cpus.effective)
+                {{- end }}
+                python3 -m vllm.entrypoints.openai.api_server --model {{ $modelName }} --dtype $VLLM_DTYPE --enforce_eager --download-dir /data --host 0.0.0.0 --port {{ $port }}
+          resources:
+            {{- $defaultValues := "{requests: {cpu: '4', memory: '4Gi'}, limits: {cpu: '4', memory: '16Gi'}}" -}}
+            {{- include "manifest.getResource" (list $.filename $defaultValues $.Values) | nindent 12 }}
+          volumeMounts:
+            - mountPath: /data
+              name: model-volume
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /dev/shm
+              name: shm
+            - mountPath: /home/user/.cache
+              name: cache
+            - mountPath: /home/user/.config
+              name: config
+          ports:
+            - name: http
+              containerPort: {{ $port }}
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          startupProbe:
+            failureThreshold: 120
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 60
+      volumes:
+        - name: model-volume
+          persistentVolumeClaim:
+            claimName: {{ $.Values.pvc.modelEmbedding.name }}-{{ .name }}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+---
+{{- end }}
+{{- else }}
 # Source: vllm/templates/deployment.yaml
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -196,14 +355,17 @@ spec:
   - type: Object
     object:
       metric:
-        name: vllm:request_total
+        # vLLM time metrics are in seconds
+        name: vllm_embedding_request_queue_time
       describedObject:
         apiVersion: v1
         kind: Service
-        name: vllm-embedding
+        name: vllm-embedding-svc
       target:
         type: Value
-        value: {{ ( ((index .Values "services" .filename).hpa).targetValue | default "150m") }}
+        # vllm_embedding_request_queue_time is average request queue waiting time across all vLLM-embedding pods
+        # Metric: avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-embedding-svc"}[2m]))
+        value: {{ ( ((index .Values "services" .filename).hpa).targetValue | default "10000ms") }}
   {{- $hpaBehavior := ( ((index .Values "services" .filename).hpa).behavior) }}
   {{- if $hpaBehavior }}
   behavior:
@@ -227,4 +389,5 @@ spec:
         value: 1
         periodSeconds: 120
   {{- end }}
+{{- end }}
 {{- end }}

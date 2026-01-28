@@ -76,7 +76,14 @@
   when: vector_databases.vector_store == 'pgvector'
   tags:
     - install
+    - pre-upgrade
   block:
+    - name: Generate user connection details for vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_username: "edp"
+        vector_database_connection_port: "5432"
+        vector_database_name: "vdb"
+
     - name: Generate password
       ansible.builtin.include_role:
         name: generate_password
@@ -85,19 +92,7 @@
           tags:
             - pre-upgrade
       loop:
-        - { name: 'POSTGRES', user: "default" }
-      tags:
-        - install
-        - pre-upgrade
-
-    - name: Generate user connection details for vector store
-      ansible.builtin.set_fact:
-        vector_database_connection_username: "edp"
-        vector_database_connection_port: "5432"
-        vector_database_name: "vdb"
-      tags:
-        - install
-        - pre-upgrade
+        - { name: 'POSTGRES', user: "{{ vector_database_connection_username }}" }
 
     - name: Generate host connection details for vector store
       ansible.builtin.set_fact:
@@ -105,9 +100,6 @@
           {{
             'pgvector.' + vector_databases.namespace + '.svc'
           }}
-      tags:
-        - install
-        - pre-upgrade
 
     - name: Generate uri connection details for vector store
       ansible.builtin.set_fact:
@@ -115,9 +107,6 @@
           {{
             "postgresql://" + vector_database_connection_username + ':' + POSTGRES_PASSWORD + '@' + vector_database_connection_host  + ':' + vector_database_connection_port + '/' + vector_database_name
           }}
-      tags:
-        - install
-        - pre-upgrade
 
 - name: Get pipelines namespaces
   ansible.builtin.include_role:
@@ -264,8 +253,24 @@
     - namespace: "{{ vector_databases.namespace }}"
     - secret_name: "redis-cluster-secret"
     - password_mappings:
-      - { key: password, variable: REDIS_PASSWORD, user: "default" }
+      - { key: REDIS_PASSWORD, variable: REDIS_PASSWORD, user: "default" }
   when: vector_databases.vector_store in ['redis-cluster']
+  tags:
+    - install
+
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ vector_databases.namespace }}"
+    - secret_name: "pgvector-secret"
+    - password_mappings:
+      - { key: POSTGRES_PASSWORD, variable: POSTGRES_PASSWORD, user: "{{ vector_database_connection_username }}" }
+  when: vector_databases.vector_store == 'pgvector'
   tags:
     - install
 

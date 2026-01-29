@@ -6,7 +6,6 @@ from typing import List, Literal, Dict, Optional, Tuple, Any, Union
 import numpy as np
 from docarray import BaseDoc, DocList
 from docarray.documents import AudioDoc
-from docarray.typing import AudioUrl
 from pydantic import BaseModel, Field, conint, conlist, PositiveInt, NonNegativeFloat, NonNegativeInt
 
 from .api_protocol import ChatCompletionResponseChoice
@@ -104,19 +103,10 @@ class EmbedDocList(BaseDoc):
     history_id: Optional[str] = None
 
 class Audio2TextDoc(AudioDoc):
-    url: Optional[AudioUrl] = Field(
-        description="The path to the audio.",
-        default=None,
-    )
-    model_name_or_path: Optional[str] = Field(
-        description="The Whisper model name or path.",
-        default="openai/whisper-small",
-    )
-    language: Optional[str] = Field(
-        description="The language that Whisper prefer to detect.",
-        default="auto",
-    )
-
+    file: bytes
+    model: Optional[str] = None
+    language: Optional[str] = "auto"
+    response_format: Optional[str] = "json"
 
 class DataPrepFile(BaseDoc):
     data64: str

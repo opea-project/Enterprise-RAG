@@ -1,4 +1,8 @@
 images:
+  asrUsvc:
+    image_name: asr
+    dockerfile_path: src/comps/asr/impl/microservice/Dockerfile
+    docker_context: src
   docsumUsvc:
     image_name: docsum
     dockerfile_path: src/comps/docsum/impl/microservice/Dockerfile
@@ -111,6 +115,10 @@ images:
     image_name: docsum-ui
     dockerfile_path: src/ui/apps/docsum/Dockerfile
     docker_context: src
+  vllmAudio:
+    image_name: vllm-audio
+    dockerfile_path: src/comps/asr/impl/model_server/vllm/docker/Dockerfile
+    docker_context: src/comps/asr/impl/model_server/vllm
   vllmGaudi:
     image_name: vllm-gaudi
     dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/hpu/Dockerfile

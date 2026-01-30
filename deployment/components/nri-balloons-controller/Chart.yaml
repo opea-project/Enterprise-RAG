@@ -1,0 +1,17 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v2
+name: nri-balloons-controller
+description: >-
+  A Kubernetes controller for managing NRI balloons integration with pods
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - nri
+  - balloons
+  - kubernetes
+  - controller
+maintainers:
+  - name: Intel Corporation

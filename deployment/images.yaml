@@ -127,3 +127,7 @@ images:
     image_name: init-container
     dockerfile_path: deployment/components/utils/init-container/Dockerfile
     docker_context: deployment/components/utils/init-container
+  nriBallonsController:
+    image_name: nri-balloons-controller
+    dockerfile_path: src/nri_balloons_controller/Dockerfile
+    docker_context: src/nri_balloons_controller

@@ -99,7 +99,7 @@
   register: driver_pods
   until: >
     driver_pods.resources | selectattr('metadata.name', 'search', 'habana-ai-driver') | list | length > 0
-  retries: 60
+  retries: 120
   delay: 15
   tags:
     - install
@@ -122,7 +122,7 @@
       | list
       | length
     ) > 0
-  retries: 35
+  retries: 50
   delay: 15
   tags:
     - install
@@ -135,7 +135,7 @@
   register: plugin_pods
   until: >
     plugin_pods.resources | selectattr('metadata.name', 'search', 'habana-ai-device-plugin') | list | length > 0
-  retries: 10
+  retries: 20
   delay: 5
   tags:
     - install
@@ -157,7 +157,7 @@
     all_pods_running_check.resources | length > 0 and
     all_pods_running_check.resources | selectattr('status.phase', 'equalto', 'Running') | list | length == all_pods_running_check.resources | length
   retries: "{{ wait_retries }}"
-  delay: 15
+  delay: 30
   tags:
     - install
     - post-install

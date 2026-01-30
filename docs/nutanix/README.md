@@ -238,6 +238,6 @@ Look for log entries indicating successful connection to the Nutanix Enterprise 
 [INFO] - [llms_microservice] - Connection with LLM model server validated successfully.
 ```
 
-3. Test the through the Chat UI to confirm.
+3. Test through the Chat UI to confirm.
 
 ---

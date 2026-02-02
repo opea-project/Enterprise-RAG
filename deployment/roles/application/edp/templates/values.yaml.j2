@@ -37,6 +37,8 @@ hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 {% if edp.rbac.enabled %}
 useBearerTokenAuth: true
+{% else %}
+presignedUrlCredentialsSystemFallback: true
 {% endif %}
 edpExternalCertVerify: false
 edpInternalCertVerify: false

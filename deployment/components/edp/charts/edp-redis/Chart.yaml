@@ -2,7 +2,9 @@ apiVersion: v2
 name: edp-redis
 description: Standalone Redis 8.2.2 for EDP
 type: application
-version: 1.0.1
+version: 1.0.2
 appVersion: "2.0.1"
 annotations:
   app.kubernetes.io/part-of: ERAG
+  dependency-only: "true"
+

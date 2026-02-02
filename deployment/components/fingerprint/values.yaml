@@ -75,3 +75,6 @@ containerSecurityContext:
 
 podAnnotations: {}
 imagePullSecrets: []
+
+global:
+  parentChartDefined: true

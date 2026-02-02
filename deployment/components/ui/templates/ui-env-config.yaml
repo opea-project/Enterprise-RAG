@@ -1,5 +1,7 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+# NOTE: ERAG_VERSION uses Chart.AppVersion which matches solution version from version.yaml
+# Future: Consider reading from deployment manifest (requires namespace resolution)
 {{- if eq .Values.type "chatqa" }}
 apiVersion: v1
 kind: ConfigMap

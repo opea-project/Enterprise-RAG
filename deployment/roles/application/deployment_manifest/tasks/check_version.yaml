@@ -1,0 +1,195 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Deployment version check
+  tags:
+    - install
+    - pre-upgrade
+  block:
+    - name: Check for existing deployment manifest
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        namespace: "{{ manifest_namespace }}"
+        label_selectors:
+          - "{{ manifest_label_selector }}"
+      register: existing_manifests
+      failed_when: false
+
+    - name: Parse existing deployment manifest
+      set_fact:
+        existing_deployment: "{{ (existing_manifests.resources[0].data['manifest.yaml'] | from_yaml) if existing_manifests.resources | length > 0 else {} }}"
+        manifest_exists: "{{ existing_manifests.resources | length > 0 }}"
+
+    - name: Display force install mode if active
+      debug:
+        msg: "Force install mode active - bypassing deployment version checks (target: {{ solution_version }})"
+      when: force_install_mode | default(false) | bool
+
+    - name: Warn about missing manifest
+      debug:
+        msg: "No manifest found - treating as fresh install (target: {{ solution_version }})"
+      when: not manifest_exists
+
+    # Skip remaining version checks if no existing manifest
+    - name: Skip version comparison checks
+      meta: noop
+      when: not manifest_exists
+
+    - name: Check if previous deployment is incomplete
+      set_fact:
+        is_in_progress: "{{ existing_deployment.deployment.status | default('complete') == manifest_status_in_progress }}"
+      when: manifest_exists
+
+    - name: Check if deployment is being deleted
+      set_fact:
+        is_deleting: "{{ existing_deployment.deployment.status | default('') == manifest_status_deleting }}"
+      when: manifest_exists
+
+    - name: Fail on deleting deployment (force mode disabled)
+      fail:
+        msg: |
+          Deployment is currently being uninstalled (status: deleting):
+            Version: {{ existing_deployment.deployment.version }}
+            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
+
+          Cannot install while uninstall is in progress.
+          Wait for uninstall to complete or use force_install_mode=true to override.
+      when:
+        - is_deleting | default(false) | bool
+        - not (force_install_mode | default(false) | bool)
+
+    - name: Warn about installing over deleting deployment with force mode
+      debug:
+        msg: |
+          WARNING: Deployment is being uninstalled (force mode active):
+            Version: {{ existing_deployment.deployment.version }}
+            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
+          Proceeding with installation despite incomplete uninstall.
+      when:
+        - is_deleting | default(false) | bool
+        - force_install_mode | default(false) | bool
+
+    - name: Check in-progress installation target version
+      set_fact:
+        target_version_match: "{{ existing_deployment.deployment.targetVersion | default('') == solution_version }}"
+        has_target_version: "{{ existing_deployment.deployment.targetVersion is not none and existing_deployment.deployment.targetVersion != '' }}"
+      when: is_in_progress | default(false) | bool
+
+    - name: Warn about resuming incomplete deployment
+      debug:
+        msg: |
+          WARNING: Resuming incomplete deployment:
+            Deployed version: {{ existing_deployment.deployment.version | default('unknown') }}
+            Target version: {{ existing_deployment.deployment.targetVersion | default('unknown') }}
+            Started: {{ existing_deployment.deployment.startedAt | default('unknown') }}
+      when:
+        - is_in_progress | default(false) | bool
+        - target_version_match | default(false) | bool
+
+    - name: Fail on incomplete deployment with target version mismatch (force mode disabled)
+      fail:
+        msg: |
+          Incomplete deployment detected with target version mismatch:
+            Deployed version: {{ existing_deployment.deployment.version | default('unknown') }}
+            Target version in manifest: {{ existing_deployment.deployment.targetVersion | default('unknown') }}
+            Solution version attempting to install: {{ solution_version }}
+
+          This indicates an incomplete deployment of a different version.
+          Use force_install_mode=true to override and restart with new version.
+      when:
+        - is_in_progress | default(false) | bool
+        - has_target_version | default(false) | bool
+        - not (target_version_match | default(false) | bool)
+        - not (force_install_mode | default(false) | bool)
+
+    - name: Warn about incomplete deployment version mismatch with force mode
+      debug:
+        msg: |
+          WARNING: Incomplete deployment version mismatch (force mode active):
+            In-progress: {{ existing_deployment.deployment.version }}
+            Installing: {{ solution_version }}
+          Proceeding with installation.
+      when:
+        - is_in_progress | default(false) | bool
+        - not (in_progress_version_match | default(false) | bool)
+        - force_install_mode | default(false) | bool
+
+    # Version comparison using packaging library
+    - name: Compare versions using packaging
+      ansible.builtin.script:
+        cmd: "{{ role_path }}/files/compare_versions.py"
+      environment:
+        DEPLOYED_VERSION: "{{ existing_deployment.deployment.version }}"
+        INSTALLING_VERSION: "{{ solution_version }}"
+      register: version_comparison
+      changed_when: false
+      when:
+        - manifest_exists
+        - not (is_in_progress | default(false) | bool)
+
+    - name: Parse version comparison result
+      set_fact:
+        install_mode: "{{ (version_comparison.stdout | from_json).mode }}"
+        deployed_ver: "{{ (version_comparison.stdout | from_json).deployed_version }}"
+        installing_ver: "{{ (version_comparison.stdout | from_json).installing_version }}"
+      when: manifest_exists and not (is_in_progress | default(false) | bool)
+
+    - name: Handle refresh (same version)
+      debug:
+        msg: "Refresh: redeploying version {{ installing_ver }}"
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "refresh"
+
+    - name: Handle patch upgrade
+      debug:
+        msg: "Patch upgrade: {{ deployed_ver }} -> {{ installing_ver }}"
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "patch_upgrade"
+
+    - name: Handle minor upgrade with warning
+      debug:
+        msg: |
+          WARNING: Minor upgrade detected: {{ deployed_ver }} -> {{ installing_ver }}
+          This will be validated by Mode Detection feature in future.
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "minor_upgrade"
+
+    - name: Handle major upgrade with warning
+      debug:
+        msg: |
+          WARNING: Major upgrade detected: {{ deployed_ver }} -> {{ installing_ver }}
+          This will be validated by Mode Detection feature in future.
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "major_upgrade"
+
+    - name: Block downgrade without force mode
+      fail:
+        msg: |
+          Downgrade blocked: {{ deployed_ver }} -> {{ installing_ver }}.
+          Options:
+            1. Use force_install_mode=true to bypass (at your own risk)
+            2. Clean install {{ installing_ver }} version + restore data from backup
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "downgrade"
+        - not (force_install_mode | default(false) | bool)
+
+    - name: Warn about downgrade with force mode
+      debug:
+        msg: |
+          WARNING: Downgrade with force mode: {{ deployed_ver }} -> {{ installing_ver }}
+          This may cause data loss or compatibility issues!
+      when:
+        - manifest_exists
+        - install_mode is defined
+        - install_mode == "downgrade"
+        - force_install_mode | default(false) | bool

@@ -2,6 +2,15 @@
 
 This document describes how to install Intel® AI for Enterprise RAG application on K8s cluster.
 
+## Version Management and Upgrades
+
+Intel® AI for Enterprise RAG includes version tracking and upgrade validation:
+- The solution tracks deployed versions via a deployment manifest stored in the cluster.
+- Upgrades to newer versions are supported and validated before execution.
+- Downgrades are blocked by default to prevent data loss and compatibility issues.
+   - In cases when downgrade is a necessity, it's possible to force installation mode by enabling the *forced installation mode* with parameter: `-e force_install_mode=true`.
+- Version checks occur automatically during deployment to ensure compatibility.
+
 ## Checking all pods are in running state
 
 **Verify System Status**

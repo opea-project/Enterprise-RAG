@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """
@@ -17,6 +17,12 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import yaml
+
+
+VERSION_FILE = "version.yaml"
+APP_VERSION_KEY = "solution_version"
+
+script_dir = Path(__file__).parent.resolve()
 
 
 def grep_pattern(pattern: str, root_dir: str ="deployment/components", file_mask: str ="Chart.yaml") -> list[str]:
@@ -38,6 +44,18 @@ def grep_pattern(pattern: str, root_dir: str ="deployment/components", file_mask
     except FileNotFoundError:
         print("ERROR: grep command not found", file=sys.stderr)
         sys.exit(1)
+
+
+@cache
+def default_app_version() -> str|None:
+    version_path = script_dir.parent / VERSION_FILE
+    if version_path.exists():
+        with version_path.open('r', encoding='utf-8') as f:
+            version_data = yaml.safe_load(f)
+            if isinstance(version_data, dict):
+                return version_data.get(APP_VERSION_KEY, None)
+            return None
+    return None
 
 
 @cache
@@ -64,7 +82,9 @@ def increment_version(version: str) -> str:
     return version
 
 
-def helm_dependency_update(chart_path: Path, dry_run: bool) -> Tuple[bool, str, str]:
+def helm_dependency_update(
+    chart_path: Path, dry_run: bool, skip_refresh: bool
+) -> Tuple[bool, str, str]:
     """Run helm dependency update for a chart. Returns (success, message, stderr)."""
     chart_dir = chart_path.parent
 
@@ -74,10 +94,13 @@ def helm_dependency_update(chart_path: Path, dry_run: bool) -> Tuple[bool, str, 
     try:
         # no user input allowed here
         subprocess.run(
-            ['helm', 'dependency', 'update', str(chart_dir)],
+            (
+                ["helm", "dependency", "update", str(chart_dir)]
+                + (["--skip-refresh"] if skip_refresh else [])
+            ),
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
         return True, "Success", ""
     except subprocess.CalledProcessError as e:
@@ -89,14 +112,15 @@ def helm_dependency_update(chart_path: Path, dry_run: bool) -> Tuple[bool, str, 
 def value_list(arg: str) -> list[str]:
     return [n.strip() for n in arg.split(",") if n.strip()]
 
-def update_chart(
+
+def update_chart_versions(
     chart_path: Path,
     chart_rel_path: str,
     app_version: str,
     increment_chart_version: bool,
-    dry_run: bool,
-    dep_update: bool
+    dry_run: bool
 ) -> Dict[str, Any]:
+    """Phase 1: Update appVersion and chart version in Chart.yaml"""
     print(f"\nProcessing: {chart_rel_path}")
 
     chart_contents, chart_data = load_chart(chart_path)
@@ -119,41 +143,56 @@ def update_chart(
     print(f"    Chart version: {old_chart_version} -> {new_chart_version}")
     print(f"    App version: {old_app_version} -> {app_version}")
 
-    dep_update_success = True
-    dep_update_msg = "Not requested"
-    dep_update_stderr = ""
-    if dep_update and chart_data.get('dependencies'):
-        print("  Running helm dependency update...")
-        dep_update_success, dep_update_msg, dep_update_stderr = helm_dependency_update(chart_path, dry_run)
-        if not dep_update_success:
-            print(f"\nERROR: Helm dependency update failed for {chart_path}", file=sys.stderr)
-            print(f"Message: {dep_update_msg}", file=sys.stderr)
-            if dep_update_stderr:
-                print(f"Output:\n{dep_update_stderr}", file=sys.stderr)
-            sys.exit(1)
-        print(f"    Dependency update: {dep_update_msg}")
-
     return {
         'path': str(chart_path),
+        'rel_path': chart_rel_path,
         'old_app_version': old_app_version,
         'new_app_version': app_version,
         'old_chart_version': old_chart_version,
         'new_chart_version': new_chart_version,
         'chart_version_changed': increment_chart_version and old_chart_version != new_chart_version,
-        'dep_update_success': dep_update_success,
-        'dep_update_msg': dep_update_msg
+        'has_dependencies': bool(chart_data.get('dependencies'))
     }
+
+
+def update_chart_dependencies(
+    chart_path: Path,
+    chart_rel_path: str,
+    dry_run: bool,
+    skip_refresh: bool
+) -> Tuple[bool, str]:
+    """Phase 2: Update dependencies after all chart versions are incremented"""
+    print(f"\nUpdating dependencies: {chart_rel_path}")
+
+    success, msg, stderr = helm_dependency_update(chart_path, dry_run, skip_refresh)
+    if not success:
+        print(f"\nERROR: Helm dependency update failed for {chart_path}", file=sys.stderr)
+        print(f"Message: {msg}", file=sys.stderr)
+        if stderr:
+            print(f"Output:\n{stderr}", file=sys.stderr)
+        return False, msg
+
+    print(f"  Dependency update: {msg}")
+    return True, msg
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='Update appVersion and chart version for ERAG components'
     )
-    parser.add_argument(
-        '--app-version',
-        required=True,
-        help='New appVersion to set for all components'
-    )
+    if (default_version := default_app_version()) is not None:
+        parser.add_argument(
+            '--app-version',
+            required=False,
+            default=default_version,
+            help=f'New appVersion to for all components, default: {default_version}'
+        )
+    else:
+        parser.add_argument(
+            '--app-version',
+            required=True,
+            help='New appVersion to set for all components, no default available'
+        )
     parser.add_argument(
         '--increment-chart-version', '--inc',
         action='store_true',
@@ -191,6 +230,11 @@ def main():
     )
     parser.add_argument("--dirs", nargs="?", type=value_list, default=[], help="Optional list of chart dirs (dirname of Chart.yaml) to update")
     parser.add_argument("--charts", nargs="?", type=value_list, default=[], help="Optional list of chart names (top-level name in Chart.yaml) to update")
+    parser.add_argument(
+        '--skip-refresh',
+        action='store_true',
+        help='Skip refreshing helm repositories (helm option: --skip-refresh)'
+    )
 
     args = parser.parse_args()
 
@@ -228,6 +272,11 @@ def main():
     else:
         chart_files = sorted(all_chart_files[:])
 
+    # Phase 1: Update all Chart.yaml files (versions)
+    print("\n" + "=" * 60)
+    print("PHASE 1: Updating chart versions")
+    print("=" * 60)
+
     for chart_rel_path in chart_files:
         chart_path = chart_dir / chart_rel_path
 
@@ -238,13 +287,12 @@ def main():
             continue
 
         try:
-            result = update_chart(
+            result = update_chart_versions(
                 chart_path,
                 chart_rel_path,
                 args.app_version,
                 args.increment_chart_version,
-                args.dry_run,
-                args.dep_update
+                args.dry_run
             )
             results.append(result)
 
@@ -252,6 +300,45 @@ def main():
             error_msg = f"Error updating {chart_rel_path}: {e}"
             errors.append(error_msg)
             print(f"ERROR: {error_msg}", file=sys.stderr)
+
+    # Phase 2: Update dependencies (after all versions are incremented)
+    if args.dep_update:
+        print("\n" + "=" * 60)
+        print("PHASE 2: Updating chart dependencies")
+        print("=" * 60)
+
+        charts_with_deps = [r for r in results if r['has_dependencies']]
+
+        if charts_with_deps:
+            for result in charts_with_deps:
+                chart_path = Path(result['path'])
+                chart_rel_path = result['rel_path']
+
+                try:
+                    success, msg = update_chart_dependencies(
+                        chart_path,
+                        chart_rel_path,
+                        args.dry_run,
+                        args.skip_refresh
+                    )
+                    result['dep_update_success'] = success
+                    result['dep_update_msg'] = msg
+
+                    if not success:
+                        errors.append(f"Dependency update failed for {chart_rel_path}: {msg}")
+
+                except Exception as e:
+                    error_msg = f"Error updating dependencies for {chart_rel_path}: {e}"
+                    errors.append(error_msg)
+                    print(f"ERROR: {error_msg}", file=sys.stderr)
+                    result['dep_update_success'] = False
+                    result['dep_update_msg'] = str(e)
+        else:
+            print("\nNo charts with dependencies found.")
+    else:
+        for result in results:
+            result['dep_update_success'] = True
+            result['dep_update_msg'] = "Skipped (not requested)"
 
     print(f"\n{'=' * 60}")
     print(f"Summary: {len(results)} charts {'would be ' if args.dry_run else ''}updated")

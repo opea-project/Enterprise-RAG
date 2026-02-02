@@ -345,7 +345,11 @@
   ansible.builtin.command:
     cmd: kubectl patch otelcols otelcol-traces -n {{ telemetry.traces.namespace }} --type='merge' -p '{"metadata":{"finalizers":[]}}'
   environment:
-    KUBECONFIG: "{{ kubeconfig }}"
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
   when: telemetry.traces.enabled
   ignore_errors: true
   tags:

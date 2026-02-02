@@ -10,6 +10,8 @@
         else lookup('env', 'KUBECONFIG')
       }}
     KUSTOMIZE_HOME: "{{ playbook_dir }}/../renderer"
+  vars_files:
+    - "../version.yaml"
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     components_dir: "{{ deployment_dir }}/components"
@@ -19,7 +21,6 @@
     secure_logs: true
     tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
   pre_tasks:
-    # Pre-tasks section (initialization and configuration)
     - name: Pre-configure environment role
       ansible.builtin.include_role:
         name: configure
@@ -34,6 +35,25 @@
         - display-configuration
         - uninstall
         - pre-upgrade
+
+    - name: Check deployment version and validate upgrade
+      ansible.builtin.include_role:
+        name: deployment_manifest
+        tasks_from: check_version.yaml
+      tags:
+        - install
+        - pre-upgrade
+      when: not ansible_check_mode
+
+    - name: Initial deployment manifest configuration
+      ansible.builtin.include_role:
+        name: deployment_manifest
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+      when: not ansible_check_mode
+
   tasks:
     - name: Pre-install health check
       ansible.builtin.include_role:
@@ -228,6 +248,16 @@
       tags:
         - install
         - uninstall
+
+    - name: Finalize deployment manifest
+      ansible.builtin.include_role:
+        name: deployment_manifest
+        tasks_from: finalize_manifest.yaml
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+      when: not ansible_check_mode
 
     - name: Detect upgrade mode from tags
       set_fact:

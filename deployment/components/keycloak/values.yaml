@@ -87,3 +87,6 @@ postgresql:
     limits:
       cpu: "1000m"
       memory: "1Gi"
+
+global:
+  parentChartDefined: true

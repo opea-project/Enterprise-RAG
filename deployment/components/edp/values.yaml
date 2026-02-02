@@ -6,6 +6,7 @@
 global:
   security:
     allowInsecureImages: true
+  parentChartDefined: true
 
 proxy:
   httpProxy: ""

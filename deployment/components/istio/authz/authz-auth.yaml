@@ -18,6 +18,8 @@ spec:
         - cluster.local/ns/ingress-nginx/sa/ingress-nginx
         - cluster.local/ns/auth-apisix/sa/auth-apisix
         - cluster.local/ns/edp/sa/edp-minio
+        - cluster.local/ns/seaweedfs/sa/default
+
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

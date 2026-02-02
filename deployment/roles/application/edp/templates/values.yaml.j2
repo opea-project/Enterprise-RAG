@@ -14,13 +14,29 @@ alternateTagging: {{ use_alternate_tagging }}
 
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 
-{% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "minio" %}
+{% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "seaweedfs" %}
 {% if storage == "minio" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
 edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
 edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+edpExternalCertVerify: false
+edpInternalCertVerify: false
+edpOidcClientSecret: {{ edp_client_secret_id }}
+minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
+minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
+bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
+{% elif storage == "seaweedfs" %}
+edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
+edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
+edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
+{% if hpaEnabled is defined %}
+hpaEnabled: {{ hpaEnabled }}
+{% endif %}
+{% if edp.rbac.enabled %}
+useBearerTokenAuth: true
 {% endif %}
 edpExternalCertVerify: false
 edpInternalCertVerify: false

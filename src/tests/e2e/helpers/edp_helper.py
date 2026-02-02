@@ -217,20 +217,24 @@ class EdpHelper(ApiRequestHelper):
         )
         return response
 
-    def _open_and_send_file(self, file_path, presigned_url):
+    def _open_and_send_file(self, file_path, presigned_url, as_user=False):
         logger.debug(f"Attempting to upload file {file_path} using presigned URL")
         try:
+            headers = {}
+            if "authorization" in self.get_headers(as_user):
+                headers["authorization"] = self.get_headers(as_user)["authorization"]
+
             with open(file_path, 'rb') as f:
-                response = requests.put(presigned_url, data=f, verify=False)
+                response = requests.put(presigned_url, data=f, verify=False, headers=headers)
             logger.info(f"Upload {file_path} completed")
             return response
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
             raise
 
-    def upload_file(self, file_path, presigned_url):
+    def upload_file(self, file_path, presigned_url, as_user=False):
         """Upload a file using the presigned URL"""
-        return self._open_and_send_file(file_path, presigned_url)
+        return self._open_and_send_file(file_path, presigned_url, as_user=as_user)
 
     def upload_files_in_parallel(self, files_dir, file_names):
         files_info = []
@@ -354,7 +358,8 @@ class EdpHelper(ApiRequestHelper):
 
     def upload_file_and_wait_for_ingestion(self, file_path, bucket=None):
         response = self.generate_presigned_url(file_path, bucket=bucket)
-        response = self.upload_file(file_path, response.json().get("url"))
+        presigned_url = response.json().get("url")
+        response = self.upload_file(file_path, presigned_url)
         assert response.status_code == 200
         return self.wait_for_file_upload(file_path, "ingested", timeout=180)
 
@@ -401,13 +406,23 @@ class EdpHelper(ApiRequestHelper):
     def delete_file(self, presigned_url):
         """Delete a file using the presigned URL"""
         logger.info("Attempting to delete file using presigned URL")
-        return requests.delete(presigned_url, verify=False)
+
+        headers = {}
+        if "authorization" in self.get_headers():
+            headers["authorization"] = self.get_headers()["authorization"]
+
+        return requests.delete(presigned_url, verify=False, headers=headers)
 
     async def delete_many_files(self, presigned_urls: list[str]) -> None:
         """Delete files asynchronously."""
+
+        headers = {}
+        if "authorization" in self.get_headers():
+            headers["authorization"] = self.get_headers()["authorization"]
+
         async with aiohttp.ClientSession() as session:
             for presigned_url in presigned_urls:
-                async with session.delete(presigned_url, ssl=False) as response:
+                async with session.delete(presigned_url, ssl=False, headers=headers) as response:
                     response.raise_for_status()
 
     def _status_reached(self, status, desired_status):
@@ -433,7 +448,8 @@ class EdpHelper(ApiRequestHelper):
         with self.temp_txt_file(size=size, prefix=prefix) as temp_file:
             file_basename = os.path.basename(temp_file.name)
             response = self.generate_presigned_url(file_basename)
-            self.upload_file(temp_file.name, response.json().get("url"))
+            presigned_url = response.json().get("url")
+            self.upload_file(temp_file.name, presigned_url)
         return self.wait_for_file_upload(file_basename, status, timeout=timeout)
 
     def fill_in_file(self, temp_file, size):

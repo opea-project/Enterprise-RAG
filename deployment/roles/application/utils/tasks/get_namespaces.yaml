@@ -34,7 +34,8 @@
           edp.namespace if edp.enabled else None,
           fingerprint.namespace if fingerprint.enabled else None,
           chat_history.namespace if chat_history.enabled else None,
-          vector_databases.namespace if vector_databases.enabled else None
+          vector_databases.namespace if vector_databases.enabled else None,
+          edp.seaweedfs.namespace if (edp.enabled and edp.storageType == 'seaweedfs') else None
         ]
         | select('defined') | select('truthy') | list
         +

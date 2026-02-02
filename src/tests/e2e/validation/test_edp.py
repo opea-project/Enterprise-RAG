@@ -393,7 +393,9 @@ def test_edp_upload_to_nonexistent_bucket(edp_helper):
         response = edp_helper.generate_presigned_url(file_basename, bucket="nonexistent")
         assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
         response = edp_helper.upload_file(temp_file.name, response.json().get("url"))
-        assert response.status_code in [404, 301], (f"Unexpected status code returned while trying to upload file "
+        # 404/301 expected by MinIO
+        # but some s3 like seaweedfs attempt to autocreate the nonexistent bucket
+        assert response.status_code in [404, 301, 403], (f"Unexpected status code returned while trying to upload file "
                                                     f"to nonexistent bucket. Response: {response.text}")
 
 
@@ -440,7 +442,7 @@ def test_edp_regular_user_has_no_access_to_api(edp_helper, temporarily_remove_re
     file = "dataset_en/test_txt.txt"
     file_path = os.path.join(TEST_FILES_DIR, file)
     response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
-    response = edp_helper.upload_file(file_path, response.json().get("url"))
+    response = edp_helper.upload_file(file_path, response.json().get("url"), as_user=True)
     assert response.status_code == 403, fail_msg
 
 

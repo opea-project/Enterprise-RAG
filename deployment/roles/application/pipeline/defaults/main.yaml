@@ -6,7 +6,7 @@ gmc:
   enabled: true
   namespace: "system"
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     chart_name: "gmc"
     chart_directory: "{{ playbook_dir }}/../components/gmc/"
     release_name: "gmc"

@@ -6,7 +6,7 @@ edp:
   enabled: false
   namespace: "edp"
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     repo_name: "bitnami"
     repo_url: "https://charts.bitnami.com/bitnami"
     chart_name: "edp"
@@ -17,6 +17,9 @@ edp:
     chart_directory: "{{ playbook_dir }}/../components/edp"
 
   client_id: "EnterpriseRAG-oidc-minio"
+
+  seaweedfs:
+    namespace: "seaweedfs"
 
   vector_db:
     auth:

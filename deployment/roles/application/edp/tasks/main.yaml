@@ -165,6 +165,15 @@
   tags:
     - pre-upgrade
 
+- name: Include SeaweedFS tasks
+  ansible.builtin.include_tasks:
+    file: seaweedfs.yaml
+  when: edp.storageType == 'seaweedfs'
+  tags:
+    - install
+    - pre-upgrade
+    - uninstall
+
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
     name: "{{ edp.helm.release_name }}"

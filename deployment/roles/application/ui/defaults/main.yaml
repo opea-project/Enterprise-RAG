@@ -7,7 +7,7 @@ ui:
   namespace: "rag-ui"
   domainName: erag.com
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     chart_name: "chatqa-app"
     chart_version: "1.1.0"
     release_name: "chatqa-app"

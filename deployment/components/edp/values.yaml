@@ -16,9 +16,9 @@ proxy:
 alternateTagging: false
 
 edpExternalUrl: "https://s3.erag.com"
-edpExternalCertVerify: "true"
-edpInternalUrl: "http://edp-minio:9000"
-edpInternalCertVerify: "true"
+edpExternalCertVerify: "false"
+edpInternalUrl: "http://seaweedfs-s3.seaweedfs.svc:8333"
+edpInternalCertVerify: "false"
 edpBaseRegion: 'us-east-1'
 edpSqsEventQueueUrl: ""
 edpAccessKey: ""
@@ -30,8 +30,8 @@ presignedUrlCredentialsSystemFallback: "false"
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
 
 
-minioApiDomain: &minioApiDomain "s3.erag.com"
-minioBrowserDomain: &minioBrowserDomain "minio.erag.com"
+s3ApiDomain: &s3ApiDomain "s3.erag.com"
+uiBrowserDomain: &uiBrowserDomain "seaweedfs.erag.com"
 
 redisUrl: "edp-redis:6379"
 redisUsername: "default"
@@ -42,10 +42,97 @@ postgresAdminPassword: ""
 
 hfToken: ""
 
+seaweedfs:
+  namespace: "seaweedfs"
+  version: "4.0.407"
+  repo: "https://seaweedfs.github.io/seaweedfs/helm"
+  persistence:
+    enabled: true
+    master:
+      size: "2Gi"
+      volumeSizeLimitMB: 1024
+    filer:
+      size: "10Gi"
+    volume:
+      size: "50Gi"
+  s3:
+    port: 8333
+  webhook_endpoint: "http://edp-backend.edp.svc:5000/seaweedfs_event"
+  createBuckets:
+  - name: default
+    anonymousRead: true
+  - name: secondary
+    anonymousRead: true
+  - name: only-admin
+    anonymousRead: false
+  iamKeycloak: # used when rbac is enables in the main config yaml
+    claim: "minio_roles"
+    sts:
+      tokenDuration: 1h
+      maxSessionLength: 12h
+      issuer: seaweedfs-sts
+    audiences:
+      - "EnterpriseRAG-oidc-minio"
+      - "EnterpriseRAG-oidc-backend"
+      - "account"
+    scopes:
+      - "openid"
+      - "profile"
+      - "email"
+      - "roles"
+    roleMapping:
+      - value: "consoleAdmin"
+        role: "arn:aws:iam::role/S3AdminRole"
+      - value: "erag-admin-group"
+        role: "arn:aws:iam::role/S3UserRole"
+      - value: "erag-user-group"
+        role: "arn:aws:iam::role/S3ReadOnlyRole"
+    defaultRole: "arn:aws:iam::role/S3ReadOnlyRole"
+    policies:
+      - name: "S3AdminPolicy"
+        actions:
+          - "s3:*"
+        resources:
+          - "*"
+      - name: "S3UserPolicy"
+        actions:
+          - "s3:ListBucket"
+          - "s3:GetObject"
+          - "s3:PutObject"
+          - "s3:DeleteObject"
+          - "s3:ListAllMyBuckets"
+        resources:
+          - "arn:aws:s3:::default/*"
+          - "arn:aws:s3:::default"
+          - "arn:aws:s3:::secondary/*"
+          - "arn:aws:s3:::secondary"
+      - name: "S3ReadOnlyPolicy"
+        actions:
+          - "s3:ListBucket"
+          - "s3:GetObject"
+        resources:
+          - "arn:aws:s3:::default/*"
+          - "arn:aws:s3:::default"
+          - "arn:aws:s3:::secondary/*"
+          - "arn:aws:s3:::secondary"
+    roles:
+      - name: "S3AdminRole"
+        arn: "arn:aws:iam::role/S3AdminRole"
+        policies:
+          - "S3AdminPolicy"
+      - name: "S3UserRole"
+        arn: "arn:aws:iam::role/S3UserRole"
+        policies:
+          - "S3UserPolicy"
+      - name: "S3ReadOnlyRole"
+        arn: "arn:aws:iam::role/S3ReadOnlyRole"
+        policies:
+          - "S3ReadOnlyPolicy"
+
 minio:
-  enabled: true
+  enabled: false
   image:
-    repository: bitnamilegacy/minio
+    repository: "" # explicitely set to empty
   persistence:
     enabled: true
     size: 10Gi
@@ -65,22 +152,22 @@ minio:
   ingress:
     enabled: true
     ingressClassName: "nginx"
-    hostname: *minioBrowserDomain
+    hostname: *uiBrowserDomain
     path: /
     tls: true
     extraTls:
     - hosts:
-        - *minioBrowserDomain
+        - *uiBrowserDomain
       secretName: tls-secret
   apiIngress:
     enabled: true
     ingressClassName: "nginx"
-    hostname: *minioApiDomain
+    hostname: *s3ApiDomain
     path: /
     tls: true
     extraTls:
     - hosts:
-        - *minioApiDomain
+        - *s3ApiDomain
     annotations:
       nginx.ingress.kubernetes.io/enable-cors: "true"
       nginx.ingress.kubernetes.io/cors-allow-origin: "*"
@@ -89,7 +176,7 @@ minio:
   # reference: https://min.io/docs/minio/linux/reference/minio-server/settings/iam/openid.html
   extraEnvVars:
     - name: "MINIO_DOMAIN"
-      value: *minioApiDomain
+      value: *s3ApiDomain
     - name: "MINIO_BROWSER_REDIRECT_URL"
       valueFrom:
         secretKeyRef:
@@ -591,6 +678,11 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK
+    - name: "USE_BEARER_TOKEN_AUTH"
+      valueFrom:
+        configMapKeyRef:
+          name: edp-configmap
+          key: USE_BEARER_TOKEN_AUTH
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     rbac:

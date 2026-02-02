@@ -22,6 +22,7 @@ data:
   DPGUARD_ENABLED: {{ .Values.dpguard.enabled | quote }}
   FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"
   PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK: {{ .Values.presignedUrlCredentialsSystemFallback | quote }}
+  USE_BEARER_TOKEN_AUTH: {{ .Values.useBearerTokenAuth | default "false" | quote }}
   {{- /* Query TorchServe configuration from chatqa namespace */ -}}
   {{- $torchserveReplicas := 1 }}
   {{- $torchserveBatchSize := 32 }}

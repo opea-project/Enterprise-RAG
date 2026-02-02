@@ -9,7 +9,7 @@ import { DownloadFileRequest, GetFilePresignedUrlRequest } from "@/types/api";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
 
-const AUTHORIZED_ENDPOINTS = ["getFilePresignedUrl"];
+const AUTHORIZED_ENDPOINTS = ["getFilePresignedUrl", "downloadFile"];
 
 const appBaseQuery = fetchBaseQuery({
   prepareHeaders: async (headers, api) => {

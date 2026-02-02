@@ -6,7 +6,7 @@ rag_utils:
   enabled: false
   namespace: "default"  # Currently must be "default" - do not change
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     chart_version: "2.0.0"
     release_name: "rag-utils"
     chart_directory: "{{ playbook_dir }}/../components/utils/rag-utils"

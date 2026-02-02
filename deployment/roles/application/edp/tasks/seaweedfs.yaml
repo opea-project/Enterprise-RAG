@@ -1,0 +1,299 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set edp_helm_values
+  ansible.builtin.set_fact:
+    edp_helm_values: {}
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Load each Helm values file
+  ansible.builtin.include_vars:
+    file: "{{ item }}"
+    name: __tmp_values
+  loop: "{{ values_files }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Merge values (Helm-style, later files override earlier ones)
+  ansible.builtin.set_fact:
+    edp_helm_values: "{{ edp_helm_values | combine(__tmp_values, recursive=True) }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Set SeaweedFS facts
+  ansible.builtin.set_fact:
+    useBearerTokenAuth: "{{ edp_helm_values.useBearerTokenAuth | default(false) }}"
+    kcDomainName: "{{ keycloak.domainName | default('auth.erag.com') }}"
+    keycloakRealm: "{{ ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG') }}"
+    clientId: "{{ client_id | default('EnterpriseRAG-oidc-minio') }}"
+    s3_host: "{{ edp_helm_values.s3ApiDomain | default('s3.erag.com') }}"
+    admin_host: "{{ edp_helm_values.uiBrowserDomain | default('filer.erag.com') }}"
+    seaweedfs: "{{ edp_helm_values.seaweedfs | default('{}') }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Define SeaweedFS S3 config
+  ansible.builtin.set_fact:
+    s3_auth_config:
+      identities:
+        - name: "admin"
+          credentials:
+            - accessKey: "{{ EDP_MINIO_ACCESS_KEY }}"
+              secretKey: "{{ EDP_MINIO_SECRET_KEY }}"
+          actions:
+            - "Read"
+            - "Write"
+            - "List"
+            - "Tagging"
+            - "Admin"
+  tags:
+    - install
+    - pre-upgrade
+
+# TODO: remove regexes when keycloak/get_secret_id runs on k8s level.
+# When using port-forward, keycloak returns localhost URLs in openid configuration.
+# In-cluster execution will return correct URLs
+- name: Extract issuer from OIDC config
+  vars:
+    keycloak_base_url: "http://keycloak-http.{{ keycloak.namespace }}.svc:80"
+  ansible.builtin.set_fact:
+    oidc_issuer: "{{ oidc_config.issuer }}"
+    oidc_jwksUri: "{{ oidc_config.jwks_uri | regex_replace('^https?://[^/]+', keycloak_base_url) }}"
+    oidc_userInfoUri: "{{ oidc_config.userinfo_endpoint | regex_replace('^https?://[^/]+', keycloak_base_url) }}"
+    sts: "{{ seaweedfs.iamKeycloak.sts | default('{}') }}"
+    claim: "{{ seaweedfs.iamKeycloak.claim | default('minio_roles') }}"
+    audiences: "{{ seaweedfs.iamKeycloak.audiences | default('{}') | to_json }}"
+    scopes: "{{ seaweedfs.iamKeycloak.scopes | default('{}') | to_json }}"
+    roles: "{{ seaweedfs.iamKeycloak.roles | default([]) }}"
+    default_role: "{{ seaweedfs.iamKeycloak.defaultRole | default('arn:aws:iam::role/S3ReadOnlyRole') }}"
+    role_mapping: "{{ seaweedfs.iamKeycloak.roleMapping | default([]) }}"
+    policies: "{{ seaweedfs.iamKeycloak.policies | default([]) }}"
+  when: useBearerTokenAuth and oidc_config is defined
+  tags:
+    - install
+    - pre-upgrade
+
+- name: print sts
+  ansible.builtin.debug:
+    msg: "hello from seaweedfs {{ audiences }}"
+  tags:
+    - install
+    - pre-upgrade
+
+
+- name: Generate STS signing key
+  ansible.builtin.command: openssl rand -hex 32
+  register: sts_signing_key_cmd
+  no_log: true
+  when: useBearerTokenAuth
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Set STS signing key fact
+  ansible.builtin.set_fact:
+    sts_signing_key: "{{ sts_signing_key_cmd.stdout }}"
+  no_log: true
+  when: useBearerTokenAuth
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Hello from SeaweedFS
+  ansible.builtin.debug:
+    msg: "hello from seaweedfs"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Generate IAM Keycloak configuration from template
+  ansible.builtin.template:
+    src: "iam_keycloak.json.j2"
+    dest: "{{ tmp_dir }}/iam_keycloak.json"
+    mode: '0644'
+  when: useBearerTokenAuth
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Generate SeaweedFS values from template
+  ansible.builtin.template:
+    src: "seaweedfs-values.yaml.j2"
+    dest: "{{ tmp_dir }}/seaweedfs-values.yaml"
+    mode: '0644'
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Create SeaweedFS namespace with privileged PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ edp_helm_values.seaweedfs.namespace | default('seaweedfs') }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "privileged"
+          pod-security.kubernetes.io/audit: "privileged"
+          pod-security.kubernetes.io/warn: "privileged"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Create SeaweedFS IAM config secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: seaweedfs-iam-config
+        namespace: "{{ edp_helm_values.seaweedfs.namespace | default('seaweedfs') }}"
+      type: Opaque
+      data:
+        seaweedfs_s3_config: "{{ lookup('file', tmp_dir + '/iam_keycloak.json') | b64encode }}"
+  when: useBearerTokenAuth
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Generate SeaweedFS admin password
+  ansible.builtin.set_fact:
+    seaweedfs_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+    seaweedfs_admin_user: "admin"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Create SeaweedFS admin secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: seaweedfs-admin-secret
+        namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+      type: Opaque
+      data:
+        adminUser: "{{ seaweedfs_admin_user | b64encode }}"
+        adminPassword: "{{ seaweedfs_admin_password | b64encode }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Create SeaweedFS S3 secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: seaweedfs-s3-secret
+        namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+      type: Opaque
+      data:
+        admin_access_key_id: "{{ EDP_MINIO_ACCESS_KEY | b64encode }}"
+        admin_secret_access_key: "{{ EDP_MINIO_SECRET_KEY | b64encode }}"
+        seaweedfs_s3_config: "{{ s3_auth_config | to_json | b64encode }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Ensure SeaweedFS Helm repository
+  kubernetes.core.helm_repository:
+    name: seaweedfs
+    repo_url: "{{ seaweedfs.repo | default('https://seaweedfs.github.io/seaweedfs/helm') }}"
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Install SeaweedFS Helm release
+  kubernetes.core.helm:
+    name: seaweedfs
+    chart_ref: seaweedfs/seaweedfs
+    chart_version: "{{ seaweedfs.version }}"
+    namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+    create_namespace: true
+    state: present
+    wait: true
+    timeout: "{{ helm_timeout }}"
+    values_files:
+      - "{{ tmp_dir }}/seaweedfs-values.yaml"
+    values:
+      s3:
+        extraEnvironmentVars:
+          TIME: "{{ lookup('pipe', 'date +%Y-%m-%dT%H:%M:%S%z') }}"
+  register: helm_repo_install_result
+  until: helm_repo_install_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - install
+
+- name: Mark SeaweedFS secrets for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+    secret_name: "seaweedfs-s3-secret"
+    password_mappings:
+      - { key: admin_access_key_id, variable: EDP_SEAWEEDFS_ACCESS_KEY, user: "" }
+      - { key: admin_secret_access_key, variable: EDP_SEAWEEDFS_SECRET_KEY, user: "" }
+  tags:
+    - install
+
+- name: Mark SeaweedFS admin secrets for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+    secret_name: "seaweedfs-admin-secret"
+    password_mappings:
+      - { key: adminUser, variable: SEAWEEDFS_ADMIN_USER, user: "" }
+      - { key: adminPassword, variable: SEAWEEDFS_ADMIN_PASSWORD, user: "" }
+  tags:
+    - install
+
+- name: Update credentials file from password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: lookup.yaml
+    apply:
+      tags:
+        - install
+  tags:
+    - install
+
+# UNINSTALL TASKS
+- name: Uninstall SeaweedFS Helm release
+  kubernetes.core.helm:
+    name: "seaweedfs"
+    namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+    state: absent
+  tags:
+    - uninstall
+
+- name: Delete SeaweedFS namespace
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Namespace
+    name: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+  tags:
+    - uninstall

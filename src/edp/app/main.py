@@ -17,7 +17,7 @@ from minio.error import S3Error
 from urllib.parse import unquote_plus
 from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket, get_local_minio_client_using_token_credentials
 from app.database import get_db
-from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
+from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse, SeaweedFSEventData
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
 from app.rbac import RBACFactory
 from celery.result import AsyncResult
@@ -189,6 +189,25 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
         credentials = None
         access_token = request.headers.get('Authorization')
         token_fallback = str(os.getenv('PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK')).lower() in ['true', '1', 't', 'y', 'yes']
+        bearer_token_auth = str(os.getenv('USE_BEARER_TOKEN_AUTH')).lower() in ['true', '1', 't', 'y', 'yes']
+
+        if bearer_token_auth:
+            logger.info("presigned_url: advanced IAM mode enabled")
+
+            if not access_token:
+                raise ValueError("Authorization header is required for the OIDC Bearer auth mode.")
+
+            # Get the external S3 endpoint URL
+            external_url = os.getenv('EDP_EXTERNAL_URL', 'https://s3.erag.com')
+            # Ensure no trailing slash
+            external_url = external_url.rstrip('/')
+
+            # Build simple direct URL, SeaweedFS validates the Bearer token at request time
+            url = f"{external_url}/{bucket_name}/{object_name}"
+
+            logger.debug(f"presigned_url: URL: {url}")
+            return PresignedResponse(url=url)
+
         if access_token:
             access_token = access_token.replace('Bearer ', '')
             token = { "access_token": access_token }
@@ -541,6 +560,62 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
         return JSONResponse(content={'message': 'File(s) deleted successfully'})
 
     raise HTTPException(status_code=501, detail="Event not implemented")
+
+
+@app.post('/seaweedfs_event')
+def process_seaweedfs_event(event: SeaweedFSEventData):
+    """
+    Processes events from SeaweedFS.
+    Handles 'create', 'update' and 'delete' events
+
+    SeaweedFS sends events with this structure:
+    {
+        "key": "/path/to/file",
+        "event_type": "...",
+        "message": {
+            "old_entry": {...},
+            "new_entry": {...},
+            "delete_chunks": ...,
+            "signatures": ...
+    }
+    """
+    logger.info(f"Received SeaweedFS event: {event}")
+
+    key_parts = event.key.strip('/').split('/', 2)
+
+    bucket_name = unquote_plus(key_parts[1])
+    object_name = unquote_plus(key_parts[2])
+
+    if event.event_type in ['create', 'update', 'rename']:
+        if not event.message or not event.message.new_entry:
+            logger.warning(f"{event.event_type} event missing new_entry")
+            raise HTTPException(status_code=400, detail="Missing new_entry")
+
+        # Example new_entry: {'name': 'text.txt', 'attributes': {'file_size': 186, 'mime': 'text/plain', 'md5': '...'}}
+        # For simplicity, we use available md5 provided by seaweedfs as a tag
+        new_entry = event.message.new_entry
+        attributes = new_entry.get('attributes', {})
+        logger.info(f"Extracted attributes: {attributes}")
+        size = attributes.get('file_size', 0)
+        content_type = attributes.get('mime', 'application/octet-stream')
+        etag = attributes.get('md5', '')
+
+        try:
+            add_new_file(bucket_name, object_name, str(etag), content_type, size)
+            return JSONResponse(content={'message': 'File uploaded successfully'})
+        except Exception as e:
+            logger.error(f"Error adding file to database: {e}")
+            raise HTTPException(status_code=500, detail="Error adding file")
+
+    elif event.event_type == 'delete':
+        try:
+            delete_existing_file(bucket_name, object_name)
+            return JSONResponse(content={'message': 'File deleted successfully'})
+        except Exception as e:
+            logger.error(f"Error deleting existing file: {e}")
+            raise HTTPException(status_code=500, detail="Error deleting file")
+
+    return JSONResponse(content={'message': f'Event {event.event_type} ignored'})
 
 
 # ------------- API link management ------------

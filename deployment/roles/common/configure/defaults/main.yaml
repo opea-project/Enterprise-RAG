@@ -5,7 +5,7 @@
 httpProxy: ""
 httpsProxy: ""
 noProxy: ""
-helm_version: "v3.16.1"
 docker_version: "26.1.4"
+helm_version: "v3.17.1"
 kubectl_version: "v1.33.0" # since we support 1.29-1.33
 insecure_registry: ""

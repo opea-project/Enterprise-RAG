@@ -6,7 +6,7 @@ istio:
   enabled: false
   namespace: "istio-system"
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     repo_name: "istio"
     repo_url: "https://istio-release.storage.googleapis.com/charts"
     chart_name: "istio"

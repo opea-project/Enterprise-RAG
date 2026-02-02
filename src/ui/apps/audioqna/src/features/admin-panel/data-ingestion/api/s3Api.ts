@@ -7,10 +7,21 @@ import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api
 import { PostFileRequest } from "@/features/admin-panel/data-ingestion/types/api";
 import { RootState } from "@/store";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
+import { keycloakService } from "@/utils/auth";
+
+const s3ApiBaseQuery = fetchBaseQuery({
+  prepareHeaders: (headers) => {
+    const token = keycloakService.getToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
 
 export const s3Api = createApi({
   reducerPath: "s3Api",
-  baseQuery: fetchBaseQuery(),
+  baseQuery: s3ApiBaseQuery,
   endpoints: (builder) => ({
     postFile: builder.mutation<void, PostFileRequest>({
       query: ({ url, file }) => ({

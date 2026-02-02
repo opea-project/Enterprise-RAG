@@ -4,13 +4,35 @@ import urllib3
 from urllib3 import Retry
 from urllib3.util import Timeout
 from minio import Minio
-from minio.credentials import EnvMinioProvider, WebIdentityProvider
+from minio.credentials import EnvMinioProvider, WebIdentityProvider, StaticProvider
 from minio.signer import presign_v4
 from datetime import datetime, timedelta
 from urllib.parse import urlunsplit
 from urllib3.util.url import parse_url
 
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
+
+class BearerTokenHttpClient(urllib3.PoolManager):
+    """
+    Custom HTTP client that injects Bearer token into all requests.
+    """
+
+    def __init__(self, bearer_token: str, base_client: urllib3.PoolManager):
+        self._bearer_token = bearer_token # The OIDC access token to use for authentication
+        self._base_client = base_client
+
+        super().__init__()
+
+    def urlopen(self, method, url, body=None, headers=None, **kwargs):
+        if headers is None:
+            headers = {}
+        headers['Authorization'] = f'Bearer {self._bearer_token}'
+        response = self._base_client.urlopen(method, url, body=body, headers=headers, **kwargs)
+        return response
+
+    def clear(self):
+        if hasattr(self._base_client, 'clear'):
+            self._base_client.clear()
 
 # Initialize the logger for the microservice
 logger = get_opea_logger("edp_microservice")
@@ -34,6 +56,46 @@ def get_local_minio_client_using_token_credentials(jwt_token, verify=False):
 	    http_client=get_http_client(endpoint, cert_check)
     )
     return get_minio_client(endpoint, region, cert_check, credentials)
+
+
+def get_seaweedfs_client_using_bearer_token(jwt_token):
+    """
+    Create a MinIO-compatible client for SeaweedFS using Bearer token auth.
+    SeaweedFS Advanced IAM validates OIDC tokens directly without requiring
+    STS AssumeRoleWithWebIdentity calls. This function creates a client that
+    injects the Bearer token into all requests.
+    """
+
+    endpoint = os.getenv('EDP_INTERNAL_URL', 'seaweedfs-s3:8333')
+    cert_check = str(os.getenv('EDP_INTERNAL_CERT_VERIFY', True))
+    region = os.getenv('EDP_BASE_REGION', 'us-east-1')
+
+    access_token = jwt_token.get('access_token')
+    if access_token is None:
+        raise ValueError("JWT token does not contain access_token")
+
+    # use dummy keys (required for minio), real auth done via Bearer header
+    credentials = StaticProvider("access-key-dummy", "secret-key-dummy")
+
+    # Parse endpoint and create Bearer-injecting HTTP client
+    cert_check_bool = str(cert_check).lower() not in ['false', '0', 'f', 'n', 'no']
+    parsed_endpoint = parse_url(endpoint)
+
+    http_client = BearerTokenHttpClient(access_token, get_http_client(parsed_endpoint, cert_check_bool))
+
+    # Create MinIO client with custom HTTP client
+    minio_endpoint = parsed_endpoint._replace(scheme=None, path=None, query=None, fragment=None).url
+
+    minio = Minio(
+        minio_endpoint,
+        credentials=credentials,
+        secure=True if parsed_endpoint.scheme == 'https' else False,
+        region=region,
+        http_client=http_client,
+        cert_check=cert_check_bool
+    )
+
+    return minio
 
 def get_remote_minio_client():
     endpoint = os.getenv('EDP_EXTERNAL_URL', 'http://edp-minio:9000')
@@ -124,7 +186,7 @@ def generate_presigned_url(client, method, bucket_name, object_name, expires = t
     # session token has to be added to query params.
     # Otherwise, MinIO will return InvalidTokenId error due to validation in following:
     # https://github.com/minio/minio/blob/7ced9663e6a791fef9dc6be798ff24cda9c730ac/cmd/auth-handler.go#L278
-    if credentials:
+    if credentials and credentials._session_token:
         query_params['X-Amz-Security-Token'] = credentials._session_token
 
     # This retrieves credentials from client if not passed

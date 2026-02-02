@@ -41,3 +41,20 @@
     no_log: "{{ secure_logs }}"
     tags:
       - install
+
+- name: Get existing key from file if it exists
+  ansible.builtin.shell: "grep '^{{ item.name }}:' {{ password_file }} | cut -d ':' -f 2 | sed 's/ //g'"
+  register: existing_key_content
+  changed_when: false
+  when: key_exists_check.rc == 0
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install
+
+- name: Set fact for existing key
+  ansible.builtin.set_fact:
+    "{{ item.name }}": "{{ existing_key_content.stdout }}"
+  when: key_exists_check.rc == 0
+  no_log: "{{ secure_logs }}"
+  tags:
+    - install

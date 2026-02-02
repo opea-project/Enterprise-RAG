@@ -6,7 +6,7 @@ chat_history:
   enabled: false
   namespace: "chat-history"
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     release_name: "chat-history"
     chart_directory: "{{ playbook_dir }}/../components/chat_history"
     default_values_file: >-

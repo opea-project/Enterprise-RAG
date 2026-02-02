@@ -32,7 +32,9 @@ def test_api_health_checks(generic_api_helper):
             path = lp.get("httpGet", {}).get("path")
             port_name = lp.get("httpGet", {}).get("port")
             if path in ["v1/health_check", "/v1/health_check", "/health", "/healthz"]:
-                selector = pod.metadata.labels.get("app.kubernetes.io/name")
+                selector = {"app.kubernetes.io/name": pod.metadata.labels.get("app.kubernetes.io/name")}
+                if pod.metadata.labels.get("app.kubernetes.io/component"):
+                    selector["app.kubernetes.io/component"] = pod.metadata.labels.get("app.kubernetes.io/component")
                 container_port = None
                 if isinstance(port_name, int):
                     # Port may be specified as a number or as a name
@@ -42,7 +44,7 @@ def test_api_health_checks(generic_api_helper):
                         if port.name == port_name:
                             container_port = port.containerPort
                             break
-                svcs.append({"selector": {"app.kubernetes.io/name": selector},
+                svcs.append({"selector": selector,
                              "namespace": ns,
                              "port": container_port,
                              "health_path": path})

@@ -96,6 +96,17 @@ class MinioEventData(BaseModel):
   Key: Optional[str] = None
   Records: List[Record]
 
+class SeaweedFSEventMessage(BaseModel):
+    old_entry: Optional[dict] = None
+    new_entry: Optional[dict] = None
+    delete_chunks: Optional[bool] = None
+    signatures: Optional[List[int]] = None
+
+class SeaweedFSEventData(BaseModel):
+    key: str
+    event_type: str
+    message: Optional[SeaweedFSEventMessage] = None
+
 class PresignedRequest(BaseModel):
     bucket_name: str
     object_name: str

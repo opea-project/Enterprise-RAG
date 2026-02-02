@@ -453,4 +453,4 @@ def _get_extracted_text(response):
     logger.info(f"Number of extracted text positions: {len(response.json()["docs"]["docs"])}")
     for doc in response.json()["docs"]["docs"]:
         extracted_text = f"{extracted_text} {doc['text']}"
-    return extracted_text
+    return extracted_text.strip()

@@ -22,6 +22,12 @@
     - [Install Helm](#install-helm)
   - [2.Deploy Nutanix Enterprise AI](#2deploy-nutanix-enterprise-ai)
   - [3.Deploy Intel® AI for Enterprise RAG](#3deploy-intel-ai-for-enterprise-rag)
+  - [4. (Optional) Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint](#4-optional-update-existing-intel-ai-for-enterprise-rag-deployment-to-use-nutanix-enterprise-ai-endpoint)
+    - [Prerequisites](#prerequisites)
+    - [Obtain Nutanix Enterprise AI Endpoint Details](#obtain-nutanix-enterprise-ai-endpoint-details)
+    - [Update the ChatQA GMConnector Configuration](#update-the-chatqa-gmconnector-configuration)
+    - [Update the vLLM API Key Secret](#update-the-vllm-api-key-secret)
+    - [Verify the Configuration](#verify-the-configuration)
 
 ## Requirements for Nutanix Enterprise AI + Intel® AI for Enterprise RAG Deployment
 
@@ -158,5 +164,80 @@ chmod 700 get_helm.sh
 > If application will be deployed on Nutanix Kubernetes Platform (NKP), it is recommended to disable telemetry. The instructions are provided in the link.
 
 2. For AWS EKS follow [EKS Deployment](../eks_deployment.md)
+
+---
+## 4. (Optional) Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint 
+
+If you have an existing Intel® AI for Enterprise RAG deployment and want to switch the vLLM endpoint to point to a Nutanix Enterprise AI endpoint, follow the steps below. For more details on external LLM endpoint configuration, refer to the [Pipeline Configuration section in the EKS Deployment Guide](../eks_deployment.md#pipeline-configuration-optional).
+
+### Prerequisites
+
+- An existing Intel® AI for Enterprise RAG deployment with the `chatqa` pipeline running
+- Access to a Nutanix Enterprise AI endpoint (URL, model name, and API key)
+- `kubectl` configured to access your Kubernetes cluster
+
+### Obtain Nutanix Enterprise AI Endpoint Details
+
+1. Navigate to your Nutanix Enterprise AI management console
+2. Click on **Endpoints** to view the list of available LLM endpoints
+3. Select the desired vLLM endpoint to view its details, including:
+   - Endpoint URL (e.g., `https://nutanix-ai-endpoint.example.com/api/v1/chat/completions`)
+   - Model name (e.g., `llama-3-3b`)
+   - API key
+
+### Update the ChatQA GMConnector Configuration
+
+Patch the `chatqa` GMConnector to use the new Nutanix Enterprise AI endpoint:
+
+```bash
+kubectl edit gmconnectors -n chatqa chatqa
+```
+
+Update the following variables. 
+
+Example:
+
+```yaml
+env:
+  LLM_MODEL_SERVER: vllm
+  LLM_MODEL_SERVER_ENDPOINT: "https://nutanix-ai-endpoint.example.com/api/v1/chat/completions"
+  LLM_MODEL_NAME: "llama-3-3b"
+  LLM_TLS_SKIP_VERIFY: "false"  
+```
+
+Save and exit the editor to apply the changes.
+
+### Update the vLLM API Key Secret
+
+Update the secret containing the vLLM API key with your new Nutanix Enterprise AI API key:
+
+```bash
+kubectl patch secret vllm-api-key-secret \
+  -n chatqa \
+  --type merge \
+  -p '{"stringData":{"LLM_VLLM_API_KEY":"YOUR_NUTANIX_AI_API_KEY_HERE"}}'
+```
+
+Replace `YOUR_NUTANIX_AI_API_KEY_HERE` with the actual API key from your Nutanix Enterprise AI endpoint.
+
+### Verify the Configuration
+
+1. Restart the LLM pods to pick up the new configuration:
+
+```bash
+kubectl rollout restart deployment llm-svc-deployment -n chatqa
+```
+
+2. Check the pod logs to verify the connection to the new endpoint:
+
+```bash
+kubectl logs -n chatqa deployment/llm-svc-deployment --tail=50
+```
+Look for log entries indicating successful connection to the Nutanix Enterprise AI endpoint.
+```bash
+[INFO] - [llms_microservice] - Connection with LLM model server validated successfully.
+```
+
+3. Test through the Chat UI to confirm.
 
 ---

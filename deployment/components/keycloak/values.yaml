@@ -35,13 +35,10 @@ keycloakx:
       cpu: "2"
       memory: "6Gi"
 
-  http:
-    relativePath: "/"
-
-  database:
-    vendor: postgres
-    hostname: keycloak-postgresql
-    port: 5432
+  # NOTE: database, http, proxy, health, metrics sections are set at TOP LEVEL
+  # from the Ansible template (roles/application/keycloak/templates/values.yaml.j2)
+  # to ensure the keycloakx chart generates the correct KC_* env vars.
+  # DO NOT add them here under keycloakx: as that would override the top-level config.
 
   podSecurityContext:
     fsGroup: 1000

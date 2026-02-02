@@ -34,11 +34,37 @@ keycloakx:
 {%- endfor %}
 {% endif %}
 
+  # Database configuration - chart generates KC_DB* env vars from these values
   database:
-    database: {{ keycloak.postgresql.database }}
-    username: {{ keycloak.postgresql.username }}
+    vendor: postgres  # Generates KC_DB=postgres
+    hostname: keycloak-postgresql  # Generates KC_DB_URL_HOST
+    port: 5432  # Generates KC_DB_URL_PORT
+    database: {{ keycloak.postgresql.database }}  # Generates KC_DB_URL_DATABASE
+    username: {{ keycloak.postgresql.username }}  # Generates KC_DB_USERNAME
     existingSecret: {{ keycloak.postgresql.password_secret_name }}
     existingSecretKey: password
+
+  # Set http.relativePath - chart generates KC_HTTP_RELATIVE_PATH from this
+  http:
+    relativePath: /
+
+  # Override chart defaults - chart generates ispn/jdbc-ping which doesn't work in restricted environments
+  cache:
+    stack: custom  # Disable automatic cache configuration
+
+  # Override proxy.mode - chart generates KC_PROXY_HEADERS from this
+  proxy:
+    enabled: true
+    mode: xforwarded  # Generates KC_PROXY_HEADERS=xforwarded (chart default is "forwarded")
+    http:
+      enabled: true  # Generates KC_HTTP_ENABLED=true
+
+  # Enable metrics and health - chart generates env vars from these
+  metrics:
+    enabled: true  # Generates KC_METRICS_ENABLED=true
+
+  health:
+    enabled: true  # Generates KC_HEALTH_ENABLED=true
 
   extraEnv: |
     - name: KC_BOOTSTRAP_ADMIN_USERNAME
@@ -57,32 +83,14 @@ keycloakx:
         -XX:MaxRAMPercentage=50
     - name: KC_CACHE
       value: "local"
-    - name: KC_PROXY_HEADERS
-      value: "xforwarded"
     - name: KC_HOSTNAME
       value: "https://{{ keycloak.domainName }}"
     - name: KC_HOSTNAME_STRICT
       value: "false"
     - name: KC_HOSTNAME_BACKCHANNEL_DYNAMIC
       value: "true"
-    - name: KC_HTTP_ENABLED
-      value: "true"
-    - name: KC_HEALTH_ENABLED
-      value: "true"
-    - name: KC_METRICS_ENABLED
-      value: "true"
     - name: KC_PROXY
       value: "edge"
-    - name: KC_DB
-      value: "postgres"
-    - name: KC_DB_URL_HOST
-      value: "keycloak-postgresql"
-    - name: KC_DB_URL_PORT
-      value: "5432"
-    - name: KC_DB_URL_DATABASE
-      value: "{{ keycloak.postgresql.database }}"
-    - name: KC_DB_USERNAME
-      value: "{{ keycloak.postgresql.username }}"
     - name: KC_DB_PASSWORD
       valueFrom:
         secretKeyRef:

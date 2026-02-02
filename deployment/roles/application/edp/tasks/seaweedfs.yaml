@@ -79,14 +79,6 @@
     - install
     - pre-upgrade
 
-- name: print sts
-  ansible.builtin.debug:
-    msg: "hello from seaweedfs {{ audiences }}"
-  tags:
-    - install
-    - pre-upgrade
-
-
 - name: Generate STS signing key
   ansible.builtin.command: openssl rand -hex 32
   register: sts_signing_key_cmd
@@ -101,13 +93,6 @@
     sts_signing_key: "{{ sts_signing_key_cmd.stdout }}"
   no_log: true
   when: useBearerTokenAuth
-  tags:
-    - install
-    - pre-upgrade
-
-- name: Hello from SeaweedFS
-  ansible.builtin.debug:
-    msg: "hello from seaweedfs"
   tags:
     - install
     - pre-upgrade

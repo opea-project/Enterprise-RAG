@@ -30,7 +30,7 @@ The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document
 
 - Python >=3.11 is required to run EDP.
 - A stand alone `redis` server for task management is required.
-- A stand alone `redis search` server or Redis >= 8.0 for VectorDB data is required.
+- A stand alone vector database deployed is required. List of supported databases can be found in [deployment/components/vector_databases/README.md](../../deployment/components/vector_databases/README.md)
 - A stand alone `postgresql` server for storing file and link entries is required.
 - A S3 compatible storage (one of the following)
     - A stand alone `MinIO` server for storing files. This is included and optional.
@@ -96,6 +96,9 @@ edp:
     externalUrl: "https://s3.example.com"
     bucketNameRegexFilter: ".*"
 ```
+
+> [!IMPORTANT]
+> When using NetApp ONTAP as the S3-compatible storage endpoint, ensure that the NetApp appliance software is upgraded to version 9.16.1P4 or above.
 
 Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_compatible_endpoint`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
 

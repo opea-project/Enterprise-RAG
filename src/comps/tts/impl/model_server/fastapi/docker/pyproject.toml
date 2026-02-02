@@ -1,0 +1,44 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "Intel_Enterprise_RAG-TTS_FastAPI_Modelserver"
+version = "2.0.1"
+requires-python = ">=3.11,<3.12"
+
+dependencies = [
+    "aiohttp==3.12.14",
+    "docarray[full]==0.40.0",
+    "python-dotenv==1.1.0",
+    "fastapi==0.120.2",
+    "uvicorn==0.30.1",
+    "shortuuid==1.0.13",
+    "starlette==0.49.1",
+    "qwen_tts==0.0.5",
+    "torch==2.10.0",
+    "torchaudio==2.10.0",
+    "soundfile==0.13.1",
+    "pydub==0.25.1",
+    "datasets==3.6.0",
+    "sentencepiece==0.2.1", # dependency of SpeechT5
+    "numba==0.63.1", # dependency of qwen_tts
+    "llvmlite==0.46.0", # dependency of qwen_tts
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+torchaudio = [
+    { index = "torchaudio-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "torchaudio-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

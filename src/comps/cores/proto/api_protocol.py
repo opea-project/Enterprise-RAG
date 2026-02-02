@@ -460,7 +460,8 @@ class AudioSpeechRequest(BaseModel):
     model: Optional[str] = "microsoft/speecht5_tts"
     voice: Optional[str] = "default"
     response_format: Optional[str] = "mp3"
-    speed: Optional[NonNegativeFloat] = 1.0
+    streaming: Optional[bool] = False
+    instructions: Optional[str] = None
 
 
 class ChatMessage(BaseModel):

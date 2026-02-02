@@ -107,6 +107,14 @@ images:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
     docker_context: src/comps/reranks/impl/model_server/torchserve
+  ttsUsvc:
+    image_name: tts
+    dockerfile_path: src/comps/tts/impl/microservice/Dockerfile
+    docker_context: src
+  ttsFastapiModelServer:
+    image_name: tts-fastapi-model-server
+    dockerfile_path: src/comps/tts/impl/model_server/fastapi/docker/Dockerfile
+    docker_context: src
   chatQnAUiUsvc:
     image_name: chatqna-conversation-ui
     dockerfile_path: src/ui/apps/chatqna/Dockerfile

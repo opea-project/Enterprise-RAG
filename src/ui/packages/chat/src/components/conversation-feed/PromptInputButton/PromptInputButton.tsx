@@ -8,6 +8,7 @@ import {
   IconButtonProps,
 } from "@intel-enterprise-rag-ui/components";
 import { IconName } from "@intel-enterprise-rag-ui/icons";
+import classNames from "classnames";
 
 interface PromptInputButtonProps extends Omit<IconButtonProps, "color"> {
   icon: IconName;
@@ -21,6 +22,6 @@ export const PromptInputButton = ({
   <IconButton
     {...rest}
     icon={icon}
-    className={`prompt-input__button ${className}`}
+    className={classNames("prompt-input__button", className)}
   />
 );

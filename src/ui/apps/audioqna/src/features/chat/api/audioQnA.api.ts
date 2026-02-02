@@ -6,7 +6,7 @@ import { createQnAApi, QnAApiConfig } from "@intel-enterprise-rag-ui/chat";
 import { keycloakService } from "@/utils/auth";
 
 const AUDIO_QNA_API_CONFIG: QnAApiConfig = {
-  postPromptEndpoint: "/api/v1/audioqna",
+  postPromptEndpoint: "/api/v1/chatqna",
   reducerPath: "audioQnAApi",
 };
 

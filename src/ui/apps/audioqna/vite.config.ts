@@ -63,6 +63,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "^/v1/audio/transcriptions": {
+        target: "https://erag.com",
+        changeOrigin: true,
+        secure: false,
+      },
       "^/v1/chat_history": {
         target: "https://erag.com",
         changeOrigin: true,

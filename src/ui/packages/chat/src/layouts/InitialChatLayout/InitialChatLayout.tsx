@@ -12,23 +12,32 @@ import { PromptInput } from "@/components/conversation-feed/PromptInput/PromptIn
 interface InitialChatLayoutProps {
   userInput: string;
   disclaimer: string;
+  enableMicrophone?: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
   onPromptSubmit: () => void;
+  onSpeechToText?: (audioBlob: Blob) => Promise<string>;
+  onSpeechToTextError?: (error: Error) => void;
 }
 
 export const InitialChatLayout = ({
   userInput,
   disclaimer,
+  enableMicrophone = false,
   onPromptChange,
   onPromptSubmit,
+  onSpeechToText,
+  onSpeechToTextError,
 }: InitialChatLayoutProps) => (
   <div className="initial-chat-layout">
     <ChatBotIcon className="initial-chat-layout__chat-bot-icon" />
     <p className="initial-chat-layout__greeting">What do you want to know?</p>
     <PromptInput
       prompt={userInput}
+      enableMicrophone={enableMicrophone}
       onChange={onPromptChange}
       onSubmit={onPromptSubmit}
+      onSpeechToText={onSpeechToText}
+      onSpeechToTextError={onSpeechToTextError}
     />
     <ChatDisclaimer message={disclaimer} />
   </div>

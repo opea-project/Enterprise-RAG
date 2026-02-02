@@ -31,6 +31,7 @@ import {
   useLazyGetChatByIdQuery,
   useSaveChatMutation,
 } from "@/features/chat/api/chatHistory.api";
+import { useSpeechToTextHandlers } from "@/hooks/useSpeechToTextHandlers";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLastSelectedChatId } from "@/store/viewNavigation.slice";
 import { getChatQnAAppEnv } from "@/utils";
@@ -46,6 +47,10 @@ const ChatConversationRoute = () => {
     useGetAllChatsQuery();
   const [downloadFile] = useLazyDownloadFileQuery();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
+
+  // Custom hook for ASR handlers
+  const { handleSpeechToText, handleSpeechToTextError } =
+    useSpeechToTextHandlers();
 
   // Custom hooks from chat package
   const {
@@ -155,6 +160,9 @@ const ChatConversationRoute = () => {
         onPromptSubmit={onPromptSubmit}
         onRequestAbort={onRequestAbort}
         onFileDownload={handleFileDownload}
+        onSpeechToText={handleSpeechToText}
+        onSpeechToTextError={handleSpeechToTextError}
+        enableMicrophone
       />
     </PageLayout>
   );

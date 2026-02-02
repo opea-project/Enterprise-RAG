@@ -17,6 +17,7 @@ import { edpApi } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { dataIngestionApiMiddleware } from "@/features/admin-panel/data-ingestion/api/middleware";
 import { s3Api } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import dataIngestionSettingsReducer from "@/features/admin-panel/data-ingestion/store/dataIngestionSettings.slice";
+import { asrApi } from "@/features/chat/api/asr.api";
 import { audioQnAApi } from "@/features/chat/api/audioQnA.api";
 import { chatHistoryApi } from "@/features/chat/api/chatHistory.api";
 import viewNavigationReducer from "@/store/viewNavigation.slice";
@@ -30,6 +31,7 @@ export const store = configureStore({
     dataIngestionSettings: dataIngestionSettingsReducer,
     viewNavigation: viewNavigationReducer,
     [appApi.reducerPath]: appApi.reducer,
+    [asrApi.reducerPath]: asrApi.reducer,
     [audioQnAApi.reducerPath]: audioQnAApi.reducer,
     [chatHistoryApi.reducerPath]: chatHistoryApi.reducer,
     // [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,
@@ -39,6 +41,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       appApi.middleware,
+      asrApi.middleware,
       audioQnAApi.middleware,
       chatHistoryApi.middleware,
       // controlPlaneApi.middleware,

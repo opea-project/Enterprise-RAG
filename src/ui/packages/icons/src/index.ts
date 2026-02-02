@@ -37,6 +37,8 @@ export { LinkIcon } from "@/icons/LinkIcon";
 export { LoadingIcon } from "@/icons/LoadingIcon";
 export { LogoutIcon } from "@/icons/LogoutIcon";
 export { MdFileIcon } from "@/icons/MdFileIcon";
+export { MicrophoneIcon } from "@/icons/MicrophoneIcon";
+export { MicrophoneRecordingIcon } from "@/icons/MicrophoneRecordingIcon";
 export { MoreOptionsIcon } from "@/icons/MoreOptionsIcon";
 export { NewChatIcon } from "@/icons/NewChatIcon";
 export { OptionsIcon } from "@/icons/OptionsIcon";

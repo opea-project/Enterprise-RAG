@@ -81,11 +81,16 @@ module.exports = {
       },
       animation: {
         "pulsing-dot": "pulsing-dot 600ms ease-out infinite",
+        "recording-pulse": "recording-pulse 1.5s ease-in-out infinite",
       },
       keyframes: {
         "pulsing-dot": {
           "0%, 100%": { transform: "scale(1)" },
           "50%": { transform: "scale(1.5)" },
+        },
+        "recording-pulse": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.6", transform: "scale(1.1)" },
         },
       },
     },

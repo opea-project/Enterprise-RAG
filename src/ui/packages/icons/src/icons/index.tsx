@@ -35,6 +35,8 @@ import { LinkIcon } from "@/icons/LinkIcon";
 import { LoadingIcon } from "@/icons/LoadingIcon";
 import { LogoutIcon } from "@/icons/LogoutIcon";
 import { MdFileIcon } from "@/icons/MdFileIcon";
+import { MicrophoneIcon } from "@/icons/MicrophoneIcon";
+import { MicrophoneRecordingIcon } from "@/icons/MicrophoneRecordingIcon";
 import { MoreOptionsIcon } from "@/icons/MoreOptionsIcon";
 import { NewChatIcon } from "@/icons/NewChatIcon";
 import { OptionsIcon } from "@/icons/OptionsIcon";
@@ -96,6 +98,8 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   link: LinkIcon,
   loading: LoadingIcon,
   logout: LogoutIcon,
+  microphone: MicrophoneIcon,
+  "microphone-recording": MicrophoneRecordingIcon,
   "more-options": MoreOptionsIcon,
   options: OptionsIcon,
   "new-chat": NewChatIcon,

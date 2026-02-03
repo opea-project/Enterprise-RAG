@@ -6,7 +6,7 @@ import time
 
 from aiohttp.client_exceptions import ClientResponseError
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from requests.exceptions import ConnectionError, ReadTimeout
 
@@ -53,7 +53,7 @@ opea_tts = OPEATTS(
     validate_methods=[opea_tts._validate_model_server],
 )
 @register_statistics(names=[USVC_NAME])
-async def process(request: AudioSpeechRequest) -> Response:
+async def process(request: AudioSpeechRequest, raw_request: Request) -> Response:
     """
     Processes text-to-speech conversion using the OPEA TTS microservice.
 
@@ -64,6 +64,7 @@ async def process(request: AudioSpeechRequest) -> Response:
             - response_format: Audio format (mp3, wav)
             - model: Model name (optional)
             - streaming: Whether to stream the response (optional, default: False)
+        raw_request: FastAPI Request object for monitoring client disconnections
 
     Returns:
         Response or StreamingResponse: Complete audio when streaming=False, streamed audio when streaming=True.
@@ -71,8 +72,7 @@ async def process(request: AudioSpeechRequest) -> Response:
     start = time.time()
 
     try:
-
-        res = await opea_tts.run(request)
+        res = await opea_tts.run(request, raw_request)
 
     except ValueError as e:
         error_message = f"A ValueError occurred while processing: {str(e)}"

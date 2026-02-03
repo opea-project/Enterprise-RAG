@@ -6,11 +6,13 @@ import asyncio
 import json
 import requests
 
-from typing import AsyncIterator, List, Union
+from typing import AsyncIterator, List, Union, Optional
+from fastapi import Request
 from fastapi.responses import Response, StreamingResponse
 
 from comps import get_opea_logger
 from comps.cores.proto.api_protocol import AudioSpeechRequest
+from comps.cores.mega.cancellation_wrapper import maybe_cancel_on_disconnect
 from comps.tts.utils.sentence_splitter import SentenceAwareTextSplitter
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
@@ -275,13 +277,14 @@ class OPEATTS:
                 logger.debug(f"Yielding audio for chunk {chunk_idx+1}/{len(text_chunks)} (size={len(audio_bytes)} bytes)")
                 yield audio_bytes
 
-    async def run(self, request: AudioSpeechRequest) -> Union[Response, StreamingResponse]:
+    async def run(self, request: AudioSpeechRequest, raw_request: Optional[Request] = None) -> Union[Response, StreamingResponse]:
         """
         Main entry point for TTS processing. Handles the complete TTS workflow including
         text splitting, audio generation, and streaming.
 
         Args:
             request: AudioSpeechRequest
+            raw_request: Optional FastAPI Request for cancellation monitoring
 
         Returns:
             Response or StreamingResponse: Complete audio when streaming=False, streamed audio when streaming=True.
@@ -331,16 +334,15 @@ class OPEATTS:
             logger.info(f"Chunks: {text_chunks}")
 
             if not streaming:
-                audio_chunks = []
-                chunk_count = 0
-                async for audio_bytes in self.generate_speech_for_chunks(
-                    text_chunks=text_chunks,
-                    voice=voice,
-                    instructions=instructions,
-                    response_format=response_format
-                ):
-                    chunk_count += 1
-                    audio_chunks.append(audio_bytes)
+                async with maybe_cancel_on_disconnect(raw_request):
+                    audio_chunks = []
+                    async for audio_bytes in self.generate_speech_for_chunks(
+                        text_chunks=text_chunks,
+                        voice=voice,
+                        instructions=instructions,
+                        response_format=response_format
+                    ):
+                        audio_chunks.append(audio_bytes)
 
                 # For WAV files, we need to properly merge them to avoid header issues
                 if response_format == "wav":
@@ -357,17 +359,15 @@ class OPEATTS:
                 )
             else:
                 async def audio_stream():
-                    chunk_count = 0
-                    async for audio_bytes in self.generate_speech_for_chunks(
-                        text_chunks=text_chunks,
-                        voice=voice,
-                        instructions=instructions,
-                        response_format=response_format
-                    ):
-                        chunk_count += 1
-                        yield audio_bytes
-
-                    yield b''
+                    async with maybe_cancel_on_disconnect(raw_request):
+                        async for audio_bytes in self.generate_speech_for_chunks(
+                            text_chunks=text_chunks,
+                            voice=voice,
+                            instructions=instructions,
+                            response_format=response_format
+                        ):
+                            yield audio_bytes
+                        yield b''
 
                 return StreamingResponse(
                     audio_stream(),

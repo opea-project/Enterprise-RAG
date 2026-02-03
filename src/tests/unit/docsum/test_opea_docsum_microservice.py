@@ -146,9 +146,9 @@ def test_microservice_process_succeeds_non_streaming(mock_run):
 
     # Call the process function (async)
     loop = asyncio.get_event_loop()
-    response = loop.run_until_complete(test_module.process(mock_input))
+    response = loop.run_until_complete(test_module.process(mock_input, None))
 
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)
     assert response == mock_response
 
     # Check if statistics_dict has an entry for the microservice
@@ -176,9 +176,9 @@ def test_microservice_process_succeeds_streaming(mock_run):
 
     # Call the process function (async)
     loop = asyncio.get_event_loop()
-    response = loop.run_until_complete(test_module.process(mock_input))
+    response = loop.run_until_complete(test_module.process(mock_input, None))
 
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)
     assert isinstance(response, StreamingResponse)
 
 
@@ -197,13 +197,13 @@ def test_microservice_process_handles_value_error(mock_run):
     # Call the process function and assert exception
     loop = asyncio.get_event_loop()
     with pytest.raises(HTTPException) as context:
-        loop.run_until_complete(test_module.process(mock_input))
+        loop.run_until_complete(test_module.process(mock_input, None))
 
     # Assertions
     assert context.value.status_code == 400
     assert "ValueError occurred" in context.value.detail
     assert "Invalid summary type" in context.value.detail
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)
 
 
 @patch('comps.docsum.opea_docsum_microservice.OPEADocsum.run')
@@ -221,13 +221,13 @@ def test_microservice_process_handles_connection_error(mock_run):
     # Call the process function and assert exception
     loop = asyncio.get_event_loop()
     with pytest.raises(HTTPException) as context:
-        loop.run_until_complete(test_module.process(mock_input))
+        loop.run_until_complete(test_module.process(mock_input, None))
 
     # Assertions
     assert context.value.status_code == 404
     assert "Connection error occurred" in context.value.detail
     assert "Cannot connect to LLM service" in context.value.detail
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)
 
 
 @patch('comps.docsum.opea_docsum_microservice.OPEADocsum.run')
@@ -249,12 +249,12 @@ def test_microservice_process_handles_request_exception(mock_run):
     # Call the process function and assert exception
     loop = asyncio.get_event_loop()
     with pytest.raises(HTTPException) as context:
-        loop.run_until_complete(test_module.process(mock_input))
+        loop.run_until_complete(test_module.process(mock_input, None))
 
     # Assertions
     assert context.value.status_code == 503
     assert "RequestException occurred" in context.value.detail
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)
 
 
 @patch('comps.docsum.opea_docsum_microservice.OPEADocsum.run')
@@ -272,10 +272,10 @@ def test_microservice_process_handles_generic_exception(mock_run):
     # Call the process function and assert exception
     loop = asyncio.get_event_loop()
     with pytest.raises(HTTPException) as context:
-        loop.run_until_complete(test_module.process(mock_input))
+        loop.run_until_complete(test_module.process(mock_input, None))
 
     # Assertions
     assert context.value.status_code == 500
     assert "An error occurred while processing" in context.value.detail
     assert "Unexpected error" in context.value.detail
-    mock_run.assert_called_once_with(mock_input)
+    mock_run.assert_called_once_with(mock_input, None)

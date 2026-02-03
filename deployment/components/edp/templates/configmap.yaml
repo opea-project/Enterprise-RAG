@@ -23,29 +23,23 @@ data:
   FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"
   PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK: {{ .Values.presignedUrlCredentialsSystemFallback | quote }}
   USE_BEARER_TOKEN_AUTH: {{ .Values.useBearerTokenAuth | default "false" | quote }}
-  {{- /* Query TorchServe configuration from chatqa namespace */ -}}
-  {{- $torchserveReplicas := 1 }}
-  {{- $torchserveBatchSize := 32 }}
-  {{- $torchserveMaxWorkers := 4 }}
-  {{- /* Lookup TorchServe deployment */ -}}
-  {{- $torchserveDeployments := lookup "apps/v1" "Deployment" "chatqa" "" }}
-  {{- if $torchserveDeployments }}
-    {{- range $torchserveDeployments.items }}
-      {{- if hasPrefix "torchserve-embedding-svc-" .metadata.name }}
-        {{- $torchserveReplicas = .spec.replicas }}
+  {{- /* Query embedding service configuration from chatqa namespace */ -}}
+  {{- $embeddingReplicas := 1 }}
+  {{- $maxNewWorkers := 8 }}
+  {{- $celeryBatchSize := 128 }}
+  {{- /* Lookup deployments in chatqa namespace */ -}}
+  {{- $deployments := lookup "apps/v1" "Deployment" "chatqa" "" }}
+  {{- if $deployments }}
+    {{- range $deployments.items }}
+      {{- /* Check for vLLM or TorchServe embedding service */ -}}
+      {{- if or (hasPrefix "vllm-embedding-svc-" .metadata.name) (hasPrefix "torchserve-embedding-svc-" .metadata.name) }}
+        {{- $embeddingReplicas = .spec.replicas }}
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- /* Lookup TorchServe ConfigMap for batch size and workers */ -}}
-  {{- $torchserveConfigMap := lookup "v1" "ConfigMap" "chatqa" "torchserve-embedding-config" }}
-  {{- if $torchserveConfigMap }}
-    {{- if $torchserveConfigMap.data.TORCHSERVE_BATCH_SIZE }}
-      {{- $torchserveBatchSize = $torchserveConfigMap.data.TORCHSERVE_BATCH_SIZE | int }}
-    {{- end }}
-    {{- if $torchserveConfigMap.data.TORCHSERVE_MAX_WORKERS }}
-      {{- $torchserveMaxWorkers = $torchserveConfigMap.data.TORCHSERVE_MAX_WORKERS | int }}
-    {{- end }}
-  {{- end }}
-  {{- /* Calculate CELERY_BATCH_SIZE = replicas × max_workers × batch_size */ -}}
-  {{- $celeryBatchSize := mul (mul $torchserveReplicas $torchserveMaxWorkers) $torchserveBatchSize }}
+  {{- /* Calculate MAX_NEW_WORKERS = replicas × 8 */ -}}
+  {{- $maxNewWorkers = mul $embeddingReplicas 8 }}
+  {{- /* Calculate CELERY_BATCH_SIZE = replicas × 128 */ -}}
+  {{- $celeryBatchSize = mul $embeddingReplicas 128 }}
+  MAX_NEW_WORKERS: {{ $maxNewWorkers | quote }}
   CELERY_BATCH_SIZE: {{ $celeryBatchSize | quote }}

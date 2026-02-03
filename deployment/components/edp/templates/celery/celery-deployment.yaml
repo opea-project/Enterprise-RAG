@@ -133,6 +133,11 @@ spec:
           {{- end }}
             - name: OPEA_LOGGER_LEVEL
               value: {{ .Values.celery.config.opeaLoggerLevel | quote }}
+            - name: MAX_NEW_WORKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: edp-configmap
+                  key: MAX_NEW_WORKERS
           {{- toYaml .Values.celery.environment | nindent 12 }}
           ports:
             - name: http

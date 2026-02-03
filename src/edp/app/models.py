@@ -214,7 +214,7 @@ class ObjectStatus(Base):
             late_chunking_duration=late_chunking_duration,
             embedding_duration=embedding_duration,
             ingestion_duration=ingestion_duration,
-            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration+ingestion_duration,
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration,
             **kwargs
         )
 

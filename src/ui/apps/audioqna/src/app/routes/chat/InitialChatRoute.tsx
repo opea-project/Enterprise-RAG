@@ -32,6 +32,7 @@ import {
   useLazyGetChatByIdQuery,
   useSaveChatMutation,
 } from "@/features/chat/api/chatHistory.api";
+import { useTextToSpeech } from "@/features/chat/hooks/useTextToSpeech";
 import { useSpeechToTextHandlers } from "@/hooks/useSpeechToTextHandlers";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getChatQnAAppEnv } from "@/utils";
@@ -107,6 +108,8 @@ const InitialChatRoute = () => {
     },
   });
 
+  const { playingTurnId, playingState, onPlayMessage } = useTextToSpeech();
+
   const chatDisclaimer = getChatQnAAppEnv("CHAT_DISCLAIMER_TEXT") ?? "";
 
   const handleFileDownload = async (fileName: string, bucketName: string) => {
@@ -142,10 +145,13 @@ const InitialChatRoute = () => {
         conversationTurns={chatTurns}
         isChatResponsePending={isChatResponsePending}
         disclaimer={chatDisclaimer}
+        playingTurnId={playingTurnId}
+        playingState={playingState}
         onPromptChange={onPromptChange}
         onPromptSubmit={onPromptSubmit}
         onRequestAbort={onRequestAbort}
         onFileDownload={handleFileDownload}
+        onPlayMessage={onPlayMessage}
         onSpeechToText={handleSpeechToText}
         onSpeechToTextError={handleSpeechToTextError}
         enableMicrophone

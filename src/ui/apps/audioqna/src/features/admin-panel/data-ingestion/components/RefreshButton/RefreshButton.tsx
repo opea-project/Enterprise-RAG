@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { IconButton, Tooltip } from "@intel-enterprise-rag-ui/components";
+import classNames from "classnames";
 
 import {
   useLazyGetFilesQuery,
@@ -39,6 +40,10 @@ const RefreshButton = () => {
     }
   };
 
+  const iconClassName = classNames({
+    "animate-spin": isFetchingData,
+  });
+
   return (
     <Tooltip
       title={tooltipTitle}
@@ -46,6 +51,7 @@ const RefreshButton = () => {
         <IconButton
           isDisabled={isFetchingData}
           icon={icon}
+          iconClassName={iconClassName}
           onPress={handlePress}
         />
       }

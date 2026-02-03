@@ -59,7 +59,6 @@ const handleSummaryStreamResponse = async (
 
     if (result?.value) {
       const decodedValue = decoder.decode(result.value, { stream: true });
-      console.log("Raw decoded value:", JSON.stringify(decodedValue));
 
       const events = decodedValue.split("\n\n");
 

@@ -12,14 +12,14 @@ import { ChatTurn } from "@/types";
 type UserMessageProps = Pick<ChatTurn, "question">;
 
 const UserMessage = ({ question }: UserMessageProps) => {
-  const [showCopyBtn, setShowCopyBtn] = useState(false);
+  const [showActionButtons, setShowActionButtons] = useState(false);
 
   const handleMouseEnter = () => {
-    setShowCopyBtn(true);
+    setShowActionButtons(true);
   };
 
   const handleMouseLeave = () => {
-    setShowCopyBtn(false);
+    setShowActionButtons(false);
   };
 
   return (
@@ -34,7 +34,7 @@ const UserMessage = ({ question }: UserMessageProps) => {
           <Markdown text={question} />
         </div>
         <div className="user-message__footer">
-          <CopyButton textToCopy={question} show={showCopyBtn} />
+          <CopyButton textToCopy={question} show={showActionButtons} />
         </div>
       </div>
     </article>

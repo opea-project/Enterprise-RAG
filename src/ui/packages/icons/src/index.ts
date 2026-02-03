@@ -61,6 +61,7 @@ export { SideMenuIcon } from "@/icons/SideMenuIcon";
 export { SortDownIcon } from "@/icons/SortDownIcon";
 export { SortUpDownIcon } from "@/icons/SortUpDownIcon";
 export { SortUpIcon } from "@/icons/SortUpIcon";
+export { SpeakerIcon } from "@/icons/SpeakerIcon";
 export { SuccessIcon } from "@/icons/SuccessIcon";
 export { TelemetryIcon } from "@/icons/TelemetryIcon";
 export { TextFileIcon } from "@/icons/TextFileIcon";

@@ -83,6 +83,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      "^/v1/audio/speech$": {
+        target: "https://erag.com",
+        changeOrigin: true,
+        secure: false,
+      },
       "^/api/v1/edp": {
         target: "https://erag.com",
         changeOrigin: true,

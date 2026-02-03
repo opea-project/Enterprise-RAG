@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-name = "Intel_Enterprise_RAG-Prompt_Registry_Microservice"
+name = "Intel-Enterprise-RAG-Prompt_Registry_Microservice"
 version = "2.0.1"
 requires-python = ">=3.11,<3.12"
 

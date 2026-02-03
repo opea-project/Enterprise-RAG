@@ -18,6 +18,7 @@
   }
 
   & .user-message__footer {
+    @apply flex items-center justify-end gap-2 pt-3;
     @apply h-11 self-end pt-2;
     @apply mr-9 md:mr-0;
   }

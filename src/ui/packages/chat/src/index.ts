@@ -6,6 +6,7 @@ export { ChatSideMenu } from "@/components/chat-history/ChatSideMenu/ChatSideMen
 export { ChatSideMenuIconButton } from "@/components/chat-history/ChatSideMenuIconButton/ChatSideMenuIconButton";
 export { ConversationFeed } from "@/components/conversation-feed/ConversationFeed/ConversationFeed";
 export { NewChatButton } from "@/components/conversation-feed/NewChatButton/NewChatButton";
+export { type PlaySpeechButtonState } from "@/components/conversation-feed/PlaySpeechButton/PlaySpeechButton";
 export { PromptInput } from "@/components/conversation-feed/PromptInput/PromptInput";
 
 // Layouts
@@ -23,6 +24,7 @@ export { createQnAApi, type QnAApiConfig } from "@/api/qna.api";
 export {
   chatHistoryReducer,
   resetChatHistorySlice,
+  selectChatById,
   setChatTurns,
 } from "@/store/chatHistory.slice";
 export {

@@ -7,6 +7,7 @@ import { ChangeEventHandler } from "react";
 
 import { ChatDisclaimer } from "@/components/conversation-feed/ChatDisclaimer/ChatDisclaimer";
 import { ConversationFeed } from "@/components/conversation-feed/ConversationFeed/ConversationFeed";
+import { PlaySpeechButtonState } from "@/components/conversation-feed/PlaySpeechButton/PlaySpeechButton";
 import { PromptInput } from "@/components/conversation-feed/PromptInput/PromptInput";
 import { ChatTurn } from "@/types";
 
@@ -15,11 +16,14 @@ interface ChatConversationLayoutProps {
   conversationTurns: ChatTurn[];
   isChatResponsePending: boolean;
   disclaimer: string;
+  playingState?: PlaySpeechButtonState;
+  playingTurnId?: string | null;
   enableMicrophone?: boolean;
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
   onPromptSubmit: () => void;
   onRequestAbort: () => void;
   onFileDownload: (fileName: string, bucketName: string) => void;
+  onPlayMessage?: (turnId: string) => Promise<void>;
   onSpeechToText?: (audioBlob: Blob) => Promise<string>;
   onSpeechToTextError?: (error: Error) => void;
 }
@@ -29,18 +33,24 @@ export const ChatConversationLayout = ({
   conversationTurns,
   isChatResponsePending,
   disclaimer,
+  playingState,
+  playingTurnId,
   enableMicrophone = false,
   onPromptChange,
   onPromptSubmit,
   onRequestAbort,
   onFileDownload,
+  onPlayMessage,
   onSpeechToText,
   onSpeechToTextError,
 }: ChatConversationLayoutProps) => (
   <div className="chat-conversation-layout">
     <ConversationFeed
       conversationTurns={conversationTurns}
+      playingState={playingState}
+      playingTurnId={playingTurnId}
       onFileDownload={onFileDownload}
+      onPlayMessage={onPlayMessage}
     />
     <PromptInput
       prompt={userInput}

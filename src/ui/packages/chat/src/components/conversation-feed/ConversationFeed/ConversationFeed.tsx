@@ -14,6 +14,7 @@ import {
 } from "react";
 
 import { MemoizedBotMessage as BotMessage } from "@/components/conversation-feed/BotMessage/BotMessage";
+import { PlaySpeechButtonState } from "@/components/conversation-feed/PlaySpeechButton/PlaySpeechButton";
 import { ScrollToBottomButton } from "@/components/conversation-feed/ScrollToBottomButton/ScrollToBottomButton";
 import { MemoizedUserMessage as UserMessage } from "@/components/conversation-feed/UserMessage/UserMessage";
 import { ChatTurn } from "@/types";
@@ -22,12 +23,18 @@ const bottomMargin = 80; // margin to handle bottom scroll detection
 
 interface ConversationFeedProps {
   conversationTurns: ChatTurn[];
+  playingTurnId?: string | null;
+  playingState?: PlaySpeechButtonState;
   onFileDownload: (fileName: string, bucketName: string) => void;
+  onPlayMessage?: (turnId: string) => Promise<void>;
 }
 
 export const ConversationFeed = ({
   conversationTurns,
+  playingTurnId,
+  playingState,
   onFileDownload,
+  onPlayMessage,
 }: ConversationFeedProps) => {
   const conversationFeedRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottomBtn, setShowScrollToBottomBtn] = useState(false);
@@ -162,24 +169,33 @@ export const ConversationFeed = ({
       >
         <div className="conversation-feed">
           {conversationTurns.map(
-            ({ id, question, answer, error, isPending, sources }) => (
-              <div
-                key={id}
-                ref={isPending ? pendingTurnRef : null}
-                className={classNames("conversation-turn", {
-                  "conversation-turn--pending": isPending,
-                })}
-              >
-                <UserMessage question={question} />
-                <BotMessage
-                  answer={answer}
-                  isPending={isPending}
-                  error={error}
-                  sources={sources}
-                  onFileDownload={onFileDownload}
-                />
-              </div>
-            ),
+            ({ id, question, answer, error, isPending, sources }) => {
+              // Only pass active state if this turn matches the current playing turn
+              const messagePlayingState: PlaySpeechButtonState =
+                playingTurnId === id ? (playingState ?? "idle") : "idle";
+
+              return (
+                <div
+                  key={id}
+                  ref={isPending ? pendingTurnRef : null}
+                  className={classNames("conversation-turn", {
+                    "conversation-turn--pending": isPending,
+                  })}
+                >
+                  <UserMessage question={question} />
+                  <BotMessage
+                    id={id}
+                    answer={answer}
+                    isPending={isPending}
+                    error={error}
+                    sources={sources}
+                    onFileDownload={onFileDownload}
+                    onPlayMessage={onPlayMessage}
+                    playingState={messagePlayingState}
+                  />
+                </div>
+              );
+            },
           )}
         </div>
       </div>

@@ -11,6 +11,7 @@ import { edpApi } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { s3Api } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import { audioQnAApi } from "@/features/chat/api/audioQnA.api";
 import { chatHistoryApi } from "@/features/chat/api/chatHistory.api";
+import { ttsApi } from "@/features/chat/api/tts.api";
 import { store } from "@/store";
 import { resetViewNavigationSlice } from "@/store/viewNavigation.slice";
 
@@ -26,4 +27,5 @@ export const resetStore = () => {
   // controlPlaneApi.util.resetApiState();
   edpApi.util.resetApiState();
   s3Api.util.resetApiState();
+  ttsApi.util.resetApiState();
 };

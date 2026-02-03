@@ -23,6 +23,10 @@ export interface PostPromptRequest {
   onSourcesUpdate: SourcesUpdateHandler;
 }
 
+export interface TextToSpeechRequest {
+  text: string;
+}
+
 export type AnswerUpdateHandler = (answer: ChatTurn["answer"]) => void;
 
 export type SourcesUpdateHandler = (sources: SourceDocumentType[]) => void;

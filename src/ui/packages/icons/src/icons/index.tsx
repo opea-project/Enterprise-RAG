@@ -59,6 +59,7 @@ import { SideMenuIcon } from "@/icons/SideMenuIcon";
 import { SortDownIcon } from "@/icons/SortDownIcon";
 import { SortUpDownIcon } from "@/icons/SortUpDownIcon";
 import { SortUpIcon } from "@/icons/SortUpIcon";
+import { SpeakerIcon } from "@/icons/SpeakerIcon";
 import { SuccessIcon } from "@/icons/SuccessIcon";
 import { TelemetryIcon } from "@/icons/TelemetryIcon";
 import { TextFileIcon } from "@/icons/TextFileIcon";
@@ -123,6 +124,7 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   telemetry: TelemetryIcon,
   "text-file": TextFileIcon,
   upload: UploadIcon,
+  speaker: SpeakerIcon,
   "external-link": ExternalLinkIcon,
 };
 

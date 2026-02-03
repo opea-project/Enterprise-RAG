@@ -22,6 +22,7 @@ export const PromptInputButton = ({
   <IconButton
     {...rest}
     icon={icon}
+    variant="contained"
     className={classNames("prompt-input__button", className)}
   />
 );

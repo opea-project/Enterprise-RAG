@@ -46,6 +46,7 @@ const NotificationToast = ({ id, text, severity }: NotificationToastProps) => {
       <span>{text}</span>
       <IconButton
         size="sm"
+        color={severity}
         icon="close-notification"
         aria-label="Dismiss notification"
         className="notification-toast__dismiss-btn"

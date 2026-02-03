@@ -27,6 +27,7 @@ const GenerateSummaryDropdownButton = ({
   className,
 }: GenerateSummaryDropdownButtonProps) => (
   <DropdownButton
+    data-testid="generate-summary-dropdown-button"
     label="Generate Summary"
     selectedValue={summaryType}
     options={SUMMARY_TYPE_OPTIONS}

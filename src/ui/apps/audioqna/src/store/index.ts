@@ -20,6 +20,7 @@ import dataIngestionSettingsReducer from "@/features/admin-panel/data-ingestion/
 import { asrApi } from "@/features/chat/api/asr.api";
 import { audioQnAApi } from "@/features/chat/api/audioQnA.api";
 import { chatHistoryApi } from "@/features/chat/api/chatHistory.api";
+import { ttsApi } from "@/features/chat/api/tts.api";
 import viewNavigationReducer from "@/store/viewNavigation.slice";
 
 export const store = configureStore({
@@ -37,6 +38,7 @@ export const store = configureStore({
     // [controlPlaneApi.reducerPath]: controlPlaneApi.reducer,
     [edpApi.reducerPath]: edpApi.reducer,
     [s3Api.reducerPath]: s3Api.reducer,
+    [ttsApi.reducerPath]: ttsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -47,6 +49,7 @@ export const store = configureStore({
       // controlPlaneApi.middleware,
       edpApi.middleware,
       s3Api.middleware,
+      ttsApi.middleware,
       dataIngestionApiMiddleware,
     ),
 });

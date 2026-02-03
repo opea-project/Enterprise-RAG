@@ -5,6 +5,7 @@
   @apply flex h-9 items-center justify-center gap-2 rounded;
   @apply cursor-pointer select-none whitespace-nowrap text-nowrap px-4 py-1.5 text-sm;
   @apply bg-light-primary dark:bg-dark-primary;
+  @apply hover:bg-light-primary/80 dark:hover:bg-dark-primary/80;
   @apply text-white dark:text-white;
 
   &:disabled {
@@ -27,10 +28,12 @@
 
   &.button--success {
     @apply bg-light-status-success dark:bg-dark-status-success;
+    @apply hover:bg-light-status-success/80 dark:hover:bg-dark-status-success/80;
   }
 
   &.button--error {
     @apply bg-light-status-error dark:bg-dark-status-error;
+    @apply hover:bg-light-status-error/50 dark:hover:bg-dark-status-error/50;
   }
 
   &.button--outlined {
@@ -46,11 +49,13 @@
     &.button--outlined-primary {
       @apply border-light-accent dark:border-dark-accent;
       @apply text-light-text-accent dark:text-dark-text-accent;
+      @apply hover:bg-light-accent/20 dark:hover:bg-dark-accent/20;
     }
 
     &.button--outlined-error {
       @apply border-light-status-error dark:border-dark-status-error;
       @apply text-light-text-error dark:text-dark-text-error;
+      @apply hover:bg-light-status-error/20 dark:hover:bg-dark-status-error/20;
     }
   }
 

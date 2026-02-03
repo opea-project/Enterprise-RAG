@@ -10,23 +10,32 @@ import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import classNames from "classnames";
 import { memo } from "react";
 
+import {
+  PlaySpeechButton,
+  PlaySpeechButtonState,
+} from "@/components/conversation-feed/PlaySpeechButton/PlaySpeechButton";
 import { PulsingDot } from "@/components/conversation-feed/PulsingDot/PulsingDot";
 import { SourcesGrid } from "@/components/sources/SourcesGrid/SourcesGrid";
 import { ChatTurn } from "@/types";
 
 type BotMessageProps = Pick<
   ChatTurn,
-  "answer" | "error" | "isPending" | "sources"
+  "id" | "answer" | "error" | "isPending" | "sources"
 > & {
+  playingState?: PlaySpeechButtonState;
   onFileDownload: (fileName: string, bucketName: string) => void;
+  onPlayMessage?: (turnId: string) => Promise<void>;
 };
 
 const BotMessage = ({
+  id,
   answer,
   error,
   isPending,
   sources,
+  playingState = "idle",
   onFileDownload,
+  onPlayMessage,
 }: BotMessageProps) => {
   const isWaitingForAnswer = isPending && (answer === "" || error !== null);
   const sanitizedAnswer = sanitizeString(answer);
@@ -45,6 +54,13 @@ const BotMessage = ({
         {showActions && (
           <footer className="bot-message__footer">
             <CopyButton textToCopy={sanitizedAnswer} />
+            {onPlayMessage && (
+              <PlaySpeechButton
+                turnId={id}
+                playingState={playingState}
+                onPlayMessage={onPlayMessage}
+              />
+            )}
           </footer>
         )}
         {showSources && (

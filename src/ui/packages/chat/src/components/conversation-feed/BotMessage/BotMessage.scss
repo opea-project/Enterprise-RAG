@@ -25,7 +25,7 @@
     @apply text-light-text-accent dark:text-dark-text-accent;
 
     & .bot-message__footer {
-      @apply flex items-center justify-end gap-4 pt-2;
+      @apply flex items-center justify-start gap-2 pt-3;
     }
   }
 

@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-name = "Intel_Enterprise_RAG-Retriever_Microservice"
+name = "Intel-Enterprise-RAG-Retriever_Microservice"
 version = "2.0.1"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
-    "Intel_Enterprise_RAG-VectorStores",
+    "Intel-Enterprise-RAG-VectorStores",
     "fastapi==0.120.2",
     "aiohttp==3.13.3",
     "opentelemetry-api==1.25.0",
@@ -39,4 +39,4 @@ test = [
 ]
 
 [tool.uv.sources]
-Intel_Enterprise_RAG-VectorStores = { path = "../../../vectorstores/impl/requirements" }
+Intel-Enterprise-RAG-VectorStores = { path = "../../../vectorstores/impl/requirements" }

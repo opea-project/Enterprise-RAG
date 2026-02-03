@@ -63,6 +63,10 @@ images:
     image_name: mosec_embedding
     dockerfile_path: src/comps/embeddings/impl/model_server/mosec/docker/Dockerfile
     docker_context: src/comps/embeddings/impl/model_server/mosec
+  namespaceStatusWatcherUsvc:
+    image_name: namespace-status-watcher
+    dockerfile_path: src/comps/namespace_status_watcher/impl/microservice/Dockerfile
+    docker_context: src
   otelcolContribJournalctl:
     image_name: otelcol-contrib-journalctl
     dockerfile_path: deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl

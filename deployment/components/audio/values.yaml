@@ -137,11 +137,11 @@ ttsFastapiModelServer:
       memory: "8Gi"
       cpu: "16"
 
-# Namespace Status Monitor configuration
-namespaceStatus:
+# Namespace Status Watcher Monitor configuration
+namespaceStatusWatcher:
   enabled: true
   image:
-    name: "erag-namespace-status"
+    name: "erag-namespace-status-watcher"
     repository: "docker.io/opea"
     tag: "latest"
     pullPolicy: Always

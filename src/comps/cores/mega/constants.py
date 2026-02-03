@@ -53,6 +53,7 @@ class ServiceType(Enum):
     # End GenAIComps exclusive
     DOC_SUMMARY = 35
     LATE_CHUNKING = 36
+    NAMESPACE_STATUS_WATCHER = 37
 
 
 class MegaServiceEndpoint(Enum):

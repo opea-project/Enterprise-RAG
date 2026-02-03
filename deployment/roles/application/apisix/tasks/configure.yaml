@@ -155,17 +155,40 @@
   tags:
     - install
 
+- name: Generate audio status endpoint when audio is enabled
+  ansible.builtin.set_fact:
+    audio_status_endpoint: >-
+      {{
+        [{
+          'name': 'audio-status',
+          'enabled': true,
+          'namespace': audio.namespace,
+          'path': '/api/v1/audio/status',
+          'backend_service': 'namespace-status-watcher-svc',
+          'service_port': 9010,
+          'service_path': '/v1/audio/status',
+          'rate_limit_count': 30,
+          'permissions': ['admin#admin-access']
+        }]
+      }}
+  when:
+    - apisix.enabled
+    - audio is defined
+    - audio.enabled | default(false)
+  tags:
+    - install
+
 - name: Merge audio endpoint with default endpoints
   ansible.builtin.set_fact:
     apisix_routes_raw_config: >-
       {{
         apisix_routes_raw_config | combine({
-          'endpoints': apisix_routes_raw_config.endpoints + (audio_endpoint | default([])) + (audio_tts_endpoint | default([]))
+          'endpoints': apisix_routes_raw_config.endpoints + (audio_endpoint | default([])) + (audio_tts_endpoint | default([])) + (audio_status_endpoint | default([]))
         }, recursive=True)
       }}
   when:
     - apisix.enabled
-    - audio_endpoint is defined or audio_tts_endpoint is defined
+    - audio_endpoint is defined or audio_tts_endpoint is defined or audio_status_endpoint is defined
   tags:
     - install
 

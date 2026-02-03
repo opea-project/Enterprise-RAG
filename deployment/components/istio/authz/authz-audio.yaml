@@ -70,4 +70,21 @@ spec:
         notPrincipals:
         - cluster.local/ns/audio/sa/tts
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: namespace-status-watcher-svc
+  namespace: audio
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: namespace-status-watcher
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 

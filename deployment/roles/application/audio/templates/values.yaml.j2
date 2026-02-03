@@ -38,3 +38,8 @@ ttsFastapiModelServer:
   config:
     modelName: {{ audio.tts_model | quote }}
 
+namespaceStatusWatcher:
+  image:
+    repository: {{ registry }}
+    tag: {{ tag }}
+

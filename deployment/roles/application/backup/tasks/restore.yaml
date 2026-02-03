@@ -75,6 +75,12 @@
 - name: Get backup details using velero client
   ansible.builtin.command:
     cmd: velero backup describe {{ selected_backup }} --details -o json
+  environment:
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
   register: backup_details_client
   when: velero.backup_details_from == "client"
 
@@ -182,6 +188,12 @@
 - name: Restore from backup
   ansible.builtin.command:
     cmd: velero restore create "{{ restore_name }}" --exclude-resources "instrumentations.opentelemetry.io" --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
+  environment:
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
 
 - name: Monitor restore completion
   kubernetes.core.k8s_info:

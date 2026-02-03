@@ -158,6 +158,7 @@
       tags:
         - install
         - post-install
+        - post-delete
         - velero-delete
         - delete
   tasks:

@@ -3,72 +3,63 @@ Copyright (C) 2025 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
-{% set storage = velero.storageType if velero.storageType is defined else "minio" %}
-{% if storage == "minio" %}
-veleroAccessKey: "{{ VELERO_MINIO_ACCESS_KEY }}"
-veleroSecretKey: "{{ VELERO_MINIO_SECRET_KEY }}"
-minioAdminUser: "{{ velero.minio.auth.admin_username }}"
-minioAdminPassword: "{{ MINIO_ADMIN_PASSWORD }}"
+veleroAccessKey: "{{ VELERO_SEAWEEDFS_ACCESS_KEY }}"
+veleroSecretKey: "{{ VELERO_SEAWEEDFS_SECRET_KEY }}"
 
-snapshotSupport:
-  installSnapshotClass: {{ velero.install_snapshot_class }}
-{% if velero.install_snapshot_class %}
-  snapshotClassName: "{{ velero.snapshot_class_name }}"
-  snapshotClassDriver: "{{ velero_snapshot_class_driver }}"
+seaweedfs:
+  enabled: true
+  master:
+    enabled: true
+    replicas: 1
+    data:
+      type: "persistentVolumeClaim"
+      size: "{{ velero.seaweedfs.persistence.master.size | default('2Gi') }}"
+{% if velero_storage_class_name != "" %}
+      storageClass: "{{ velero_storage_class_name }}"
 {% endif %}
+    volumeSizeLimitMB: {{ velero.seaweedfs.persistence.master.volumeSizeLimitMB | default(1024) }}
+  volume:
+    enabled: true
+    replicas: 1
+    dataDirs:
+      - name: data1
+        type: "persistentVolumeClaim"
+        size: "{{ velero.seaweedfs.persistence.volume.size | default('500Gi') }}"
+{% if velero_storage_class_name != "" %}
+        storageClass: "{{ velero_storage_class_name }}"
+{% endif %}
+        maxVolumes: 0
+  filer:
+    enabled: true
+    replicas: 1
+    data:
+      type: "persistentVolumeClaim"
+      size: "{{ velero.seaweedfs.persistence.filer.size | default('2Gi') }}"
+{% if velero_storage_class_name != "" %}
+      storageClass: "{{ velero_storage_class_name }}"
+{% endif %}
+    s3:
+      enabled: true
+      enableAuth: false
+      createBuckets:
+        - name: velero
+          anonymousRead: false
+  s3:
+    enabled: true
+    port: 8333
+    enableAuth: false
+    createSecret: false
+    existingConfigSecret: "seaweedfs-s3-secret"
+    credentials:
+      enabled: true
+    ingress:
+      enabled: false
+  admin:
+    enabled: false
 
-minioApiDomain: &minioApiDomain "{{ velero.minio.apiDomainName }}"
-minioBrowserDomain: &minioBrowserDomain "{{ velero.minio.domainName }}"
-{% endif %}
-
-minio:
-  enabled: {{ storage == "minio" }}
-{% if storage == "minio" %}
-  persistence:
-    enabled: true
-    # consider using dedicated storageClass for backup storage
-    # storageClass: ""
-    size: 500Gi
-  resources: {}
-  ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *minioBrowserDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *minioBrowserDomain
-      secretName: tls-secret
-  apiIngress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *minioApiDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *minioApiDomain
-    annotations:
-      nginx.ingress.kubernetes.io/enable-cors: "true"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-      nginx.ingress.kubernetes.io/cors-allow-headers: "Access-Control-Allow-Origin,DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
-  extraEnvVars:
-    - name: "MINIO_DOMAIN"
-      value: *minioApiDomain
-  extraVolumes:
-    - name: tls-secret-volume
-      secret:
-        secretName: {{ velero.tls.secret_name }}
-{% endif %}
 velero:
   resources: {}
-  # requests:
-  #   cpu: 500m
-  #   memory: 128Mi
-  # limits:
-  #   cpu: 1000m
-  #   memory: 512Mi
+
   initContainers:
     - name: velero-plugin-for-aws
       image: velero/velero-plugin-for-aws:v1.12.1
@@ -78,12 +69,14 @@ velero:
           name: plugins
   credentials:
     useSecret: true
-    existingSecret: velero-minio-access-secrets
+    existingSecret: velero-seaweedfs-access-secrets
   configuration:
     features: EnableCSI
     snapshotsEnabled: false
     uploaderType: kopia
-    defaultItemOperationTimeout: 30m
+    defaultItemOperationTimeout: 120m
+    extraArgs:
+      - "--resource-timeout=120m"
     backupStorageLocation:
       - name: default
         provider: aws
@@ -92,11 +85,11 @@ velero:
         config:
           region:
           s3ForcePathStyle: "true"
-          s3Url: http://velero-minio.velero.svc:9000
+          s3Url: http://seaweedfs-s3.velero.svc:8333
     volumeSnapshotLocation: []
     extraEnvVars:
       - name: "NO_PROXY"
-        value: "velero-minio.velero.svc"
+        value: "seaweedfs-s3.velero.svc"
   kubectl:
     image:
 {% if use_alternate_tagging is defined and use_alternate_tagging %}

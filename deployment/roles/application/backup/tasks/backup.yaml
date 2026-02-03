@@ -8,6 +8,12 @@
 - name: Create backup
   ansible.builtin.command:
     cmd: velero backup create "{{ backup_name }}" --namespace {{ velero.namespace }} --include-namespaces {{ velero.backup.backupConfig.namespaceOrder | join(",") }} --labels "{{ velero.backup.labels.items() | map('join', '=') | join(',') }}" --selector "{{ velero.backup.backupConfig.resourceSelectors | join(',') }}" --csi-snapshot-timeout {{ velero.backup.csiSnapshotTimeout }}  --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --ttl {{ velero.backup.ttl }}
+  environment:
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
 
 - name: Monitor backup completion
   kubernetes.core.k8s_info:

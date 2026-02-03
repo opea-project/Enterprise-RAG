@@ -153,8 +153,6 @@ velero:
   install_server: true
   install_client: true
 
-  # name of a velero Backup resource, created in result of backup in velero namespace;
-  # if not specified, most recent backup resource will be looked up.
   restore_from: ""
 
   backup:
@@ -244,4 +242,3 @@ vector_databases:
   vector_store: redis-cluster
   vector_datatype: FLOAT32
   vector_dims: 768
-

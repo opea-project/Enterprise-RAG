@@ -85,6 +85,74 @@
     - install
     - topology-preview
 
+- name: Validate pipelines configuration
+  block:
+
+    - name: Ensure pipelines list is defined and not empty
+      fail:
+        msg: |
+          ERROR: 'pipelines' is empty or not defined in config.yaml.
+
+          At least one pipeline must be configured.
+      when: pipelines | default([]) | length == 0
+
+    - name: Ensure at least one chatqa or docsum pipeline exists
+      fail:
+        msg: |
+          ERROR: No pipeline of type 'chatqa' or 'docsum' found in config.yaml.
+
+          At least one pipeline with type 'chatqa' or 'docsum' must be defined.
+          Configured pipeline types: {{ pipelines | map(attribute='type') | list | join(', ') }}
+      when: pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | length == 0
+
+    - name: Check existence of samplePath files
+      stat:
+        path: "{{ pipelines_dir }}/{{ item.samplePath }}"
+      register: sample_path_checks
+      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop_control:
+        label: "{{ item.samplePath }}"
+
+    - name: Fail if any samplePath file is missing
+      fail:
+        msg: |
+          ERROR: Pipeline samplePath file not found.
+
+          Namespace: {{ item.item.namespace }}
+          samplePath (config.yaml): {{ item.item.samplePath }}
+
+          Please verify that 'samplePath' points to an existing file.
+      when: not item.stat.exists
+      loop: "{{ sample_path_checks.results }}"
+      loop_control:
+        label: "{{ item.item.samplePath }}"
+
+    - name: Check existence of resourcesPath files
+      stat:
+        path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
+      register: resources_path_checks
+      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop_control:
+        label: "{{ item.resourcesPath }}"
+
+    - name: Fail if any resourcesPath file is missing
+      fail:
+        msg: |
+          ERROR: Pipeline resourcesPath file not found.
+
+          Namespace: {{ item.item.namespace }}
+          resourcesPath (config.yaml): {{ item.item.resourcesPath }}
+
+          Please verify that 'resourcesPath' points to an existing file.
+      when: not item.stat.exists
+      loop: "{{ resources_path_checks.results }}"
+      loop_control:
+        label: "{{ item.item.resourcesPath }}"
+
+  tags:
+    - install
+    - topology-preview
+
 - name: Set default VLLM_CPUS from resources reference file
   set_fact:
     VLLM_CPUS: >-

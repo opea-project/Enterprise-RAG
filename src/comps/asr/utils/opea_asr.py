@@ -150,7 +150,7 @@ class OPEAAsr:
             client = AsyncOpenAI(
                 api_key="dummy",
                 base_url=self._model_server_endpoint,
-                timeout=60,
+                timeout=180,
                 max_retries=1
             )
 

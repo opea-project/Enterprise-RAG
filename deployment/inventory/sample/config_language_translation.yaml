@@ -50,6 +50,9 @@ tdx: # enables Intel® Trust Domain Extensions
 llm_model: "haoranxu/ALMA-7B-R"
 llm_model_gaudi: "haoranxu/ALMA-13B-R"
 
+audio:
+  enabled: false
+
 # CPUs pinning for vllm (for Xeon platforms with NUMA node size >= 64 CPUs)
 balloons:
   enabled: false

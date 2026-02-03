@@ -92,6 +92,12 @@ llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 embedding_model_name: "BAAI/bge-base-en-v1.5"
 reranking_model_name: "BAAI/bge-reranker-base"
 
+audio:
+  enabled: false
+  namespace: audio
+  asr_model: "openai/whisper-small"
+  tts_model: "microsoft/speecht5_tts"
+
 # Topology-aware resource scheduling and CPU pinning for vLLM
 # For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:

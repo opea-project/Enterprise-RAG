@@ -7,7 +7,7 @@ Intel® AI for Enterprise RAG simplifies transforming your enterprise data into 
 Enable intelligent AI experiences that understand your business context:
 
 * **Domain-Specific Intelligence** - Enrich conversations and document processing with your organizational knowledge without training or fine-tuning models
-* **Multiple Use Cases** - Support for ChatQ&A for conversational AI and Document Summarization for extracting key insights from documents
+* **Multiple Use Cases** - Support for ChatQ&A for conversational AI, Document Summarization for extracting key insights from documents, and AudioQnA for voice-based question answering
 * **Rapid Deployment** - Transform enterprise documents into AI-powered experiences in minutes, not months
 * **Enterprise-Ready Scale** - Deploy secure, compliant AI solutions that grow with your business needs
 

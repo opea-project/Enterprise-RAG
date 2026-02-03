@@ -141,6 +141,10 @@ lateChunking:
 textExtractor:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if audio.enabled is defined and audio.enabled %}
+  config:
+    asr_model_server_endpoint: "http://asr-svc.{{ audio.namespace }}.svc:9009"
+{% endif %}
 textCompression:
   tag: {{ tag }}
   repository: {{ registry }}

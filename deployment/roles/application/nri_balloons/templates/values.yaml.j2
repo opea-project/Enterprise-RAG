@@ -23,6 +23,10 @@ spec:
 {% endif %}
       - torchserve-reranking
       - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
+{% if audio is defined and audio.enabled %}
+      - vllm-audio-cpu
+      - tts-fastapi-model-server
+{% endif %}
   balloonTypes:
   - name: reserved
     minCPUs: 1

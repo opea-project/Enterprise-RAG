@@ -91,6 +91,9 @@ tdx:
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
+audio:
+  enabled: false
+
 # Topology-aware resource scheduling and CPU pinning for vLLM
 # For detailed documentation, refer to: deployment/components/nri-plugin/README.md
 balloons:

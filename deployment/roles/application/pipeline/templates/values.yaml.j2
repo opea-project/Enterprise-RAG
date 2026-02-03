@@ -82,6 +82,10 @@ images:
     image: "erag-text-extractor"
     repository: *repo
     tag: *tag
+{% if audio.enabled is defined and audio.enabled %}
+    envs:
+      ASR_MODEL_SERVER_ENDPOINT: "http://asr-svc.{{ audio.namespace }}.svc:9009"
+{% endif %}
   text-compression-usvc:
     image: "erag-text-compression"
     repository: *repo

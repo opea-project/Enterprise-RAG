@@ -178,6 +178,15 @@
         - uninstall
         - pre-upgrade
 
+    - name: Audio role
+      ansible.builtin.include_role:
+        name: audio
+      when: audio.enabled or "pre-upgrade" in ansible_run_tags
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+
     - name: Pipeline role
       ansible.builtin.include_role:
         name: pipeline

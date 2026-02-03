@@ -17,6 +17,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/text-extractor-config: {{ include (print $.Template.BasePath "/textExtractor/text-extractor-configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -60,6 +61,8 @@ spec:
           envFrom:
             - secretRef:
                 name: vector-database-config
+            - configMapRef:
+                name: edp-text-extractor-configmap
           ports:
             - name: http
               containerPort: 9398

@@ -1,0 +1,14 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+audio:
+  enabled: false
+  namespace: "audio"
+  asr_model: "openai/whisper-small"
+  tts_model: "microsoft/speecht5_tts"
+  helm:
+    release_name: "audio"
+    chart_directory: "{{ playbook_dir }}/../components/audio"
+    default_values_file: >-
+      {{ playbook_dir }}/../components/audio/values.yaml

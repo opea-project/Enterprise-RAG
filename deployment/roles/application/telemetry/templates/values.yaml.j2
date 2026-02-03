@@ -82,3 +82,8 @@ kube-prometheus-stack:
           name: redis-vector-db
   {% endif %}
 {% endif %}
+
+{% if audio is defined %}
+audio:
+  enabled: {{ audio.enabled }}
+{% endif %}

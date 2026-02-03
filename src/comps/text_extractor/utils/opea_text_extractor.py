@@ -26,14 +26,16 @@ class OPEATextExtractor:
 
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, asr_endpoint=None):
         if cls._instance is None:
             cls._instance = super(OPEATextExtractor, cls).__new__(cls)
-            
+            cls._instance.asr_endpoint = asr_endpoint
+
             # Download NLTK data once at instance creation to avoid slower performance on first call
             nltk.download('punkt_tab', quiet=True)
             nltk.download('averaged_perceptron_tagger', quiet=True)
             nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+
         return cls._instance
 
     def load_data(self, files: any, link_list: list, texts: list) -> List[TextDoc]:
@@ -181,7 +183,7 @@ class OPEATextExtractor:
 
 
     def _load_text(self, file_path: str):
-        return FileParser(file_path).parse() # raises Value Error if file is not supported
+        return FileParser(file_path, self.asr_endpoint).parse() # raises Value Error if file is not supported
 
     def _load_html_data(self, file):
         content = ""

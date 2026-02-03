@@ -109,6 +109,66 @@
   tags:
     - install
 
+- name: Generate audio ASR endpoint when audio is enabled
+  ansible.builtin.set_fact:
+    audio_endpoint: >-
+      {{
+        [{
+          'name': 'asr',
+          'enabled': true,
+          'namespace': audio.namespace,
+          'path': '/v1/audio/transcriptions',
+          'backend_service': 'asr-svc',
+          'service_port': 9009,
+          'service_path': '/v1/audio/transcriptions',
+          'rate_limit_count': 30,
+          'permissions': ['admin#admin-access', 'user#user-access']
+        }]
+      }}
+  when:
+    - apisix.enabled
+    - audio is defined
+    - audio.enabled | default(false)
+  tags:
+    - install
+
+- name: Generate audio TTS endpoint when audio is enabled
+  ansible.builtin.set_fact:
+    audio_tts_endpoint: >-
+      {{
+        [{
+          'name': 'tts',
+          'enabled': true,
+          'namespace': audio.namespace,
+          'path': '/v1/audio/speech',
+          'backend_service': 'tts-svc',
+          'service_port': 9009,
+          'service_path': '/v1/audio/speech',
+          'rate_limit_count': 30,
+          'permissions': ['admin#admin-access', 'user#user-access']
+        }]
+      }}
+  when:
+    - apisix.enabled
+    - audio is defined
+    - audio.enabled | default(false)
+  tags:
+    - install
+
+- name: Merge audio endpoint with default endpoints
+  ansible.builtin.set_fact:
+    apisix_routes_raw_config: >-
+      {{
+        apisix_routes_raw_config | combine({
+          'endpoints': apisix_routes_raw_config.endpoints + (audio_endpoint | default([])) + (audio_tts_endpoint | default([]))
+        }, recursive=True)
+      }}
+  when:
+    - apisix.enabled
+    - audio_endpoint is defined or audio_tts_endpoint is defined
+  tags:
+    - install
+
 - name: Filter endpoints with existing namespaces
   ansible.builtin.set_fact:
     filtered_endpoints: >-

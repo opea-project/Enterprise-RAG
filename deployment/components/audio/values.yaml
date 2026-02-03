@@ -1,0 +1,176 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+hfToken: ""
+
+alternateTagging: false
+
+proxy:
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ""
+
+# ASR (Automatic Speech Recognition) service configuration
+asr:
+  enabled: true
+  config:
+    modelName: "openai/whisper-small"
+  replicaCount: 1
+  nameOverride: "asr"
+  fullnameOverride: "asr-svc"
+
+  image:
+    name: "erag-asr"
+    repository: "docker.io/opea"
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    targetPort: http
+    port: 9009
+    name: http
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: 2
+
+# vLLM ASR CPU Model Server configuration
+vllmAudioCpu:
+  enabled: true
+  config:
+    modelName: "openai/whisper-small"
+    cpuKvcacheSpace: "40"
+    dtype: "bfloat16"
+    maxNumSeqs: "256"
+    skipWarmup: "false"
+    tpSize: "1"
+    ppSize: "1"
+    maxModelLen: "448"
+  replicaCount: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  nameOverride: "vllm-audio-cpu"
+  fullnameOverride: "vllm-audio-cpu"
+
+  image:
+    name: "erag-vllm-audio"
+    repository: "docker.io/opea"
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8008
+    targetPort: 8008
+
+  resources:
+    requests:
+      memory: "32Gi"
+      cpu: "8"
+    limits:
+      memory: "64Gi"
+      cpu: "16"
+
+# TTS (Text-to-Speech) service configuration
+tts:
+  enabled: true
+  replicaCount: 1
+  nameOverride: "tts"
+  fullnameOverride: "tts-svc"
+
+  image:
+    name: "erag-tts"
+    repository: "docker.io/opea"
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    targetPort: http
+    port: 9009
+    name: http
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: 2
+
+# FastAPI TTS Model Server configuration
+ttsFastapiModelServer:
+  enabled: true
+  config:
+    modelName: "microsoft/speecht5_tts"
+  replicaCount: 1
+  environment:
+    - name: OMP_NUM_THREADS
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+  nameOverride: "tts-fastapi-model-server"
+  fullnameOverride: "tts-fastapi-model-server"
+
+  image:
+    name: "erag-tts-fastapi-model-server"
+    repository: "docker.io/opea"
+    tag: "latest"
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 8008
+    targetPort: 8008
+
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "8"
+    limits:
+      memory: "8Gi"
+      cpu: "16"
+
+# Namespace Status Monitor configuration
+namespaceStatus:
+  enabled: true
+  image:
+    name: "erag-namespace-status"
+    repository: "docker.io/opea"
+    tag: "latest"
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+podAnnotations: {}
+imagePullSecrets: []

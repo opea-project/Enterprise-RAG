@@ -50,6 +50,11 @@ Supported files that Text Extractor can extract data from:
 | jpeg           | [LoadImage](./utils/file_loaders/load_image.py)                              |
 | png            | [LoadImage](./utils/file_loaders/load_image.py)                              |
 | svg            | [LoadImage](./utils/file_loaders/load_image.py)                              |
+| mp3*           | [LoadAudio](./utils/file_loaders/load_audio.py)                              |
+| wav*           | [LoadAudio](./utils/file_loaders/load_audio.py)                              |
+
+> [!NOTE]
+> *Audio files (MP3, WAV) are only supported when `ASR_MODEL_SERVER_ENDPOINT` is configured. The audio files are transcribed using the ASR (Automatic Speech Recognition) microservice. Feel free to utilize [ASR microservice](../asr/) to extract data from audio files.
 
 If you consider adding additional file support, implement it based on `AbstractLoader` class
 and include that class into the `FileParser`'s `default_mappings` map.
@@ -68,6 +73,7 @@ Configuration is currently done via environment variables.
 | `OPEA_LOGGER_LEVEL`              | `INFO`                    | Microservice logging output level                                                                |
 | `TEXT_EXTRACTOR_USVC_PORT`             | `9398`              | (Optional) Text Extractor microservice port                                                            |
 | `UPLOAD_PATH`                    | `/tmp/opea_upload`        | Path to where the data is saved                                                                  |
+| `ASR_MODEL_SERVER_ENDPOINT`      | Not set                   | (Optional) URL of the ASR microservice endpoint for MP3/WAV support (e.g., `http://localhost:9009`) |
 | `CRAWLER_HTTP_TIMEOUT`           | `60`                      | Timeout in seconds for HTTP requests made by the crawler                                         |
 | `CRAWLER_MAX_RETRIES`            | `1`                       | Maximum number of request retries for downloading links                                          |
 | `CRAWLER_HEADERS`                | `{}`                      | JSON encoded headers for requests. If not defined default headers are used                       |
@@ -119,6 +125,9 @@ docker build -t opea/text_extractor:latest -f comps/text_extractor/impl/microser
 
 Remember, you can pass configuration variables by passing them via `-e` option into docker run command.
 
+> [!IMPORTANT]
+> Add `--net=host` if you're using ASR_MODEL_SERVER_ENDPOINT.
+
 ```bash
 docker run -d --name="text_extractor" --env-file comps/text_extractor/impl/microservice/.env -p 9398:9398 opea/text_extractor:latest
 ```
@@ -137,8 +146,8 @@ curl -X POST -H "Content-Type: application/json" -d @- http://localhost:9398/v1/
 {
   "files": [
     {
-      "filename": "ia_spec.pdf",
-      "data64": "$(base64 -w 0 ia_spec.pdf)"
+      "filename": "output.mp3",
+      "data64": "$(base64 -w 0 output.mp3)"
     }
   ]
 }

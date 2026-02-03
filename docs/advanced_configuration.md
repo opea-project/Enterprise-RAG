@@ -448,6 +448,38 @@ Once deployed, run the provided shell script:
 ./scripts/test_translation.sh
 ```
 
+#### AudioQnA Solution
+
+AudioQnA is a solution that enables voice-based question answering, combining automatic speech recognition (ASR) and text-to-speech (TTS) capabilities with the ChatQnA pipeline. This allows users to ask questions using voice input and receive audio responses.
+
+**Enabling AudioQnA:**
+
+To enable AudioQnA functionality for testing with ChatQnA solutions, you need to set `audio.enabled` to `true` in your configuration file:
+
+```yaml
+audio:
+  enabled: true                                  # Default: false
+  namespace: audio                               # Default: audio
+  asr_model: "openai/whisper-small"             # Automatic Speech Recognition model
+  tts_model: "microsoft/speecht5_tts"           # Text-to-Speech model
+```
+
+**Configuration Options:**
+
+- `enabled`: Set to `true` to deploy AudioQnA components alongside ChatQnA
+- `namespace`: Kubernetes namespace where audio services will be deployed
+- `asr_model`: Model used for converting speech to text (Automatic Speech Recognition). Checkout the [microservice page](../src/comps/asr/) for more information.
+- `tts_model`: Model used for converting text to speech (Text-to-Speech). Checkout the [microservice page](../src/comps/tts/impl/model_server/fastapi/) for more information.
+
+**Requirements:**
+
+- AudioQnA works with ChatQnA pipelines (type: `chatqa`)
+- Audio services are deployed in a separate namespace but integrate with your ChatQnA solution
+- Both ASR and TTS models are downloaded and deployed when audio is enabled
+
+> [!NOTE]
+> AudioQnA adds additional resource requirements to your deployment. Ensure your cluster has sufficient resources for both the ChatQnA pipeline and the audio processing services.
+
 ### Vector Store Database Storage Settings
 
 > [!NOTE]

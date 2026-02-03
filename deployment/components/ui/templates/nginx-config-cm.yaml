@@ -129,6 +129,27 @@ data:
                 proxy_set_header Host $host;
             }
 
+            # Generic location for audio endpoints
+            location /v1/audio/transcriptions {
+                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
+                proxy_set_header Host $host;
+                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
+                proxy_send_timeout 10m;
+                proxy_read_timeout 10m;
+                proxy_buffering off;
+                proxy_cache off;
+            }
+
+            location /v1/audio/speech {
+                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
+                proxy_set_header Host $host;
+                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
+                proxy_send_timeout 10m;
+                proxy_read_timeout 10m;
+                proxy_buffering off;
+                proxy_cache off;
+            }
+
             error_page   500 502 503 504  /50x.html;
             location = /50x.html {
                 root   /usr/share/nginx/html;

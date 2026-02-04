@@ -45,17 +45,17 @@ spec:
             endpoint: /v1/retrieval
       - name: Reranking
         data: $response
+        dependency: Hard
         internalService:
           serviceName: reranking-svc
           config:
             endpoint: /v1/reranking
-            RERANKING_SERVICE_ENDPOINT: tei-reranking-svc
-            RERANKING_MODEL_SERVER: "tei"
-      - name: TeiReranking
+            RERANKING_SERVICE_ENDPOINT: torchserve-reranking-svc
+            RERANKING_MODEL_SERVER: "torchserve"
+      - name: TorchserveReranking
+        dependency: Hard
         internalService:
-          serviceName: tei-reranking-svc
-          config:
-            endpoint: /rerank
+          serviceName: torchserve-reranking-svc
           isDownstreamService: true
       - name: PromptTemplate
         dependency: Hard
@@ -64,6 +64,13 @@ spec:
           serviceName: prompt-template-svc
           config:
             endpoint: /v1/prompt_template
+      - name: LLMGuardInput
+        dependency: Hard
+        data: $response
+        internalService:
+          serviceName: input-scan-svc
+          config:
+            endpoint: /v1/llmguardinput
       - name: VLLM
         internalService:
           serviceName: vllm-service-m

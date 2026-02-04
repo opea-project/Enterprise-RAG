@@ -12,6 +12,9 @@ ARG python_version
 
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano git && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ARG ACCEPT_MSSQL_EULA=Y

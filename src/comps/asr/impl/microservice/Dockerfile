@@ -9,8 +9,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.1 /uv /uvx /bin/
 ENV LANG=C.UTF-8
 
 RUN apt-get update -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk/* && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk/* && \
     rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl && \
     rm -rf /home/user/.local/lib/python${python_version}/site-packages/* && \
     rm -rf /usr/local/lib/python${python_version}/site-packages/*

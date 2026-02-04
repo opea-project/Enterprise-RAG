@@ -19,6 +19,9 @@ RUN apt-get -y update                           \
     numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \
+ && apt-get install -y --only-upgrade           \
+      openssl=3.5.4-1~deb13u2                   \
+      libssl3=3.5.4-1~deb13u2                   \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean

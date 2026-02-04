@@ -20,7 +20,7 @@ WORKDIR /home/user/vllm-fork
 RUN pip install --upgrade pip && \
     pip install -v -r requirements-hpu.txt
 
-
+RUN pip install huggingface-hub==0.35.3
 RUN VLLM_TARGET_DEVICE=hpu python3 setup.py install
 
 USER user

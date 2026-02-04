@@ -5,15 +5,27 @@
   ansible.builtin.set_fact:
     backup_name: "{{ velero.backup.prefix }}-{{ ansible_date_time.iso8601_basic_short | lower }}"
 
+- name: Build backup command
+  ansible.builtin.set_fact:
+    backup_cmd: >-
+      velero backup create "{{ backup_name }}"
+      --namespace {{ velero.namespace }}
+      --include-namespaces {{ velero.backup.backupConfig.namespaceOrder | join(",") }}
+      --labels "{{ (velero.backup.labels | combine({'meta.erag/solution-version': solution_version})).items() | map('join', '=') | join(',') }}"
+      {% set or_sels = velero.backup.backupConfig.orSelectors | default([]) %}
+      {% set res_sels = velero.backup.backupConfig.resourceSelectors | default([]) %}
+      {% if or_sels | length > 0 %}
+      --or-selector "{{ or_sels | join(' or ') }}"
+      {% elif res_sels | length > 0 %}
+      --selector "{{ res_sels | join(',') }}"
+      {% endif %}
+      --csi-snapshot-timeout {{ velero.backup.csiSnapshotTimeout }}
+      --item-operation-timeout {{ velero.backup.itemOperationTimeout }}
+      --ttl {{ velero.backup.ttl }}
+
 - name: Create backup
   ansible.builtin.command:
-    cmd: velero backup create "{{ backup_name }}" --namespace {{ velero.namespace }} --include-namespaces {{ velero.backup.backupConfig.namespaceOrder | join(",") }} --labels "{{ velero.backup.labels.items() | map('join', '=') | join(',') }}" --selector "{{ velero.backup.backupConfig.resourceSelectors | join(',') }}" --csi-snapshot-timeout {{ velero.backup.csiSnapshotTimeout }}  --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --ttl {{ velero.backup.ttl }}
-  environment:
-    KUBECONFIG: >-
-      {{
-        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-        else lookup('env', 'KUBECONFIG')
-      }}
+    cmd: "{{ backup_cmd }}"
 
 - name: Monitor backup completion
   kubernetes.core.k8s_info:

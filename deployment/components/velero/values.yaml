@@ -64,7 +64,6 @@ velero:
   configuration:
     features: EnableCSI
     snapshotsEnabled: false
-    uploaderType: kopia
     defaultItemOperationTimeout: 120m
     extraArgs:
       - "--resource-timeout=120m"

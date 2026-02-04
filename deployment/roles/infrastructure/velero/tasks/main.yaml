@@ -342,12 +342,6 @@
 
 - name: Discover local velero client version
   ansible.builtin.command: velero version
-  environment:
-    KUBECONFIG: >-
-      {{
-        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-        else lookup('env', 'KUBECONFIG')
-      }}
   register: velero_local_client_check
   ignore_errors: true
   when:
@@ -414,12 +408,6 @@
 
 - name: Discover velero client version
   ansible.builtin.command: velero version
-  environment:
-    KUBECONFIG: >-
-      {{
-        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-        else lookup('env', 'KUBECONFIG')
-      }}
   register: velero_client_version_check
   ignore_errors: true
   tags:
@@ -496,12 +484,6 @@
 - name: Delete all Restore objects using velero CLI
   ansible.builtin.command:
     cmd: velero restore delete {{ item.metadata.name }} --confirm --namespace {{ velero.namespace }}
-  environment:
-    KUBECONFIG: >-
-      {{
-        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-        else lookup('env', 'KUBECONFIG')
-      }}
   loop: "{{ restore_objects.resources }}"
   loop_control:
     label: "{{ item.metadata.name }}"
@@ -532,12 +514,6 @@
 - name: Delete all Backup objects using velero CLI
   ansible.builtin.command:
     cmd: velero backup delete {{ item.metadata.name }} --confirm --namespace {{ velero.namespace }}
-  environment:
-    KUBECONFIG: >-
-      {{
-        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-        else lookup('env', 'KUBECONFIG')
-      }}
   loop: "{{ backup_objects.resources }}"
   loop_control:
     label: "{{ item.metadata.name }}"

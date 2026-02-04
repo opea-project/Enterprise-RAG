@@ -160,7 +160,6 @@
       {%- if nfs_sc_info.resources | length > 0 and nfs_sc_info.resources[0].metadata.annotations is defined -%}
         {{ nfs_sc_info.resources[0].metadata.annotations.get('meta.erag/previous-default-sc', '') }}
       {%- else -%}
-
       {%- endif -%}
   when:
     - install_csi == "nfs"

@@ -148,8 +148,16 @@
     helm_timeout: 15m0s
     secure_logs: true
   environment:
-    KUBECONFIG: "{{ kubeconfig }}"
-    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+    K8S_AUTH_KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
   pre_tasks:
     - name: Load default settings
       ansible.builtin.include_role:

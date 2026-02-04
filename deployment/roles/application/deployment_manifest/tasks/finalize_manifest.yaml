@@ -50,12 +50,6 @@
     - name: List all Helm releases across all namespaces
       ansible.builtin.command:
         cmd: helm list -A --output json
-      environment:
-        KUBECONFIG: >-
-          {{
-            kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
-            else lookup('env', 'KUBECONFIG')
-          }}
       register: helm_list_output
       changed_when: false
       failed_when: false

@@ -32,21 +32,23 @@ chat_history:
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 
-{% if tdx.coco.enabled %}
+{% if tdx is defined and tdx.coco is defined and tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
-{% if balloons.enabled is defined and balloons.enabled %}
+{% if balloons is defined and balloons.enabled %}
 balloons:
   enabled: {{ balloons.enabled }}
   namespace: {{ balloons.namespace }}
   wait_timeout: {{ balloons.wait_timeout }}
+{% if balloons_chart_name is defined %}
   chart_name: {{ balloons_chart_name }}
 {% endif %}
+{% endif %}
 
-{% if optimal_replicas is defined %}
+{% if optimal_replicas is defined and (optimal_replicas | length) > 0 %}
 vllmNodes:
 {% for node_name, node_info in optimal_replicas.items() %}
 {% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and (node_info.amx_supported == true or node_info.gaudi == true) %}

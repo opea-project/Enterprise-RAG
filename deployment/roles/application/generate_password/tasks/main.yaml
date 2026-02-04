@@ -8,6 +8,7 @@
   register: password_file_stat
   tags:
     - install
+    - update-configuration
 
 - name: Create password file
   ansible.builtin.file:
@@ -24,3 +25,4 @@
   when: password_file_stat.stat.exists
   tags:
     - install
+    - update-configuration

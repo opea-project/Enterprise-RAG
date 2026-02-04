@@ -11,4 +11,5 @@ export type AppEnvKey =
   | "KEYCLOAK_ADMIN_PANEL_URL"
   | "S3_URL"
   | "CHAT_DISCLAIMER_TEXT"
-  | "ERAG_VERSION";
+  | "ERAG_VERSION"
+  | "MAINTENANCE_MODE";

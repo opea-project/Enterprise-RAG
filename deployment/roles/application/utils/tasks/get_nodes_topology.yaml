@@ -1,7 +1,6 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
----
 - name: Ensure topology-discovery namespace exists
   kubernetes.core.k8s:
     state: present
@@ -11,8 +10,9 @@
       metadata:
         name: topology-discovery
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: label topology-discovery namespace
   kubernetes.core.k8s:
@@ -26,8 +26,9 @@
           pod-security.kubernetes.io/enforce: "privileged"
   when: enforcePSS
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Create a topology discovery daemonset
   kubernetes.core.k8s:
@@ -58,32 +59,48 @@
             containers:
             - name: ubuntu
               image: ubuntu
-              command: [ "sleep", "infinity" ]
+              command: ["sleep", "infinity"]
             restartPolicy: Always
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Wait for node-topology-debugger pods to be ready
   kubernetes.core.k8s_info:
     kind: Pod
     namespace: topology-discovery
     label_selectors:
-      - app=node-topology-debugger
+    - app=node-topology-debugger
   register: pods_info
   until: pods_info.resources | length > 0 and (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length)
   retries: 30
   delay: 10
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Initialize cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: {}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Determine effective resource path based on upload mode
+  set_fact:
+    effective_resources_path: >-
+      {{
+        (upload_pipelines_config | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+        if (upload_pipelines | default(false) | bool)
+        else (pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Validate pipelines configuration
   block:
@@ -159,12 +176,7 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
@@ -172,8 +184,9 @@
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Set RERANKER_CPUS from resources reference file
   set_fact:
@@ -181,12 +194,7 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
@@ -194,8 +202,9 @@
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Detect embedding service type from pipeline
   set_fact:
@@ -221,8 +230,9 @@
         ) + '_embedding'
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Set EMBEDDING_CPUS from resources reference file
   set_fact:
@@ -230,12 +240,7 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
@@ -243,8 +248,9 @@
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Gather CPU/NUMA/AMX info for each node
   include_tasks: get_single_node_topology.yaml
@@ -255,15 +261,17 @@
   loop_control:
     label: "{{ item.spec.nodeName }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Check if any node is Gaudi
   set_fact:
     gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Calculate optimal replicas using Python script
   ansible.builtin.shell: |
@@ -280,8 +288,9 @@
       --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }}
   register: replicas_calculation_result
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Delete node-topology-debugger daemonset
   kubernetes.core.k8s:
@@ -290,9 +299,10 @@
     name: node-topology-debugger
     namespace: topology-discovery
   tags:
-    - install
-    - uninstall
-    - topology-preview
+  - install
+  - uninstall
+  - topology-preview
+  - update-configuration
 
 - name: Delete topology-discovery namespace
   kubernetes.core.k8s:
@@ -300,9 +310,10 @@
     kind: Namespace
     name: topology-discovery
   tags:
-    - install
-    - uninstall
-    - topology-preview
+  - install
+  - uninstall
+  - topology-preview
+  - update-configuration
 
 - name: Create log directory if it does not exist
   ansible.builtin.file:
@@ -310,11 +321,12 @@
     state: directory
     mode: '755'
   loop:
-    - "{{ log_dir }}"
-    - "{{ tmp_dir }}"
+  - "{{ log_dir }}"
+  - "{{ tmp_dir }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Save replicas calculation output to file
   copy:
@@ -322,8 +334,9 @@
     dest: "{{ tmp_dir }}/inference_pods_distribution.yaml"
     mode: '0644'
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Display topology calculation results
   ansible.builtin.pause:
@@ -356,26 +369,42 @@
       Gaudi Nodes Count: {{ (replicas_calculation_result.stdout | from_json).gaudi_nodes_count }}
       ==========================================
   tags:
-    - topology-preview
+  - topology-preview
   when: '"topology-preview" in ansible_run_tags'
 
 - name: Parse replicas calculation output
   set_fact:
     optimal_replicas: "{{ replicas_calculation_result.stdout | trim | from_json }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Fail if no possible working setup (no replicas and no Gaudi nodes)
   fail:
     msg: >-
-      No possible working setup: total_replicas and gaudi_nodes_count are both zero.
-      The current hardware topology does not allow any service replicas to be scheduled.
-      Please check your cluster configuration and available resources.
+      No possible working setup: total_replicas and gaudi_nodes_count are both zero. The current hardware topology does not allow any service replicas to be scheduled. Please check your cluster configuration and available resources.
   when:
-    - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
-    - optimal_replicas.total_replicas == 0
-    - optimal_replicas.gaudi_nodes_count == 0
+  - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
+  - optimal_replicas.total_replicas == 0
+  - optimal_replicas.gaudi_nodes_count == 0
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+- name: Warn if topology detection resulted in empty nodes during update
+  debug:
+    msg: |
+      WARNING: Node topology detection returned empty results during {{ 'pipeline update' if 'update-configuration' in ansible_run_tags else 'installation' }}.
+      This may indicate topology discovery DaemonSet pods failed to schedule.
+      Ensure nodes are available and not fully tainted during topology discovery.
+      cpu_topology_per_node: {{ cpu_topology_per_node | default({}) }}
+      optimal_replicas: {{ optimal_replicas | default({}) }}
+  when:
+  - cpu_topology_per_node is defined
+  - (cpu_topology_per_node | length) == 0
+  - optimal_replicas is defined
+  - optimal_replicas.total_replicas == 0
+  tags:
+  - install
+  - update-configuration
+  - topology-preview

@@ -23,6 +23,7 @@ extraUiConfigVars:
   keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
   s3DomainName: "{{ edp.minio.apiDomainName }}"
   chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
+  chatMaintenanceMode: "{{ upload_pipelines | default(false) | string | lower }}"
   audioEnabled: "{{ audio.enabled | default(false) }}"
   asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
 

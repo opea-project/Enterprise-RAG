@@ -10,6 +10,7 @@
   no_log: "{{ secure_logs }}"
   tags:
       - install
+      - update-configuration
 
 - name: Generate key
   tags:
@@ -50,6 +51,7 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
+    - update-configuration
 
 - name: Set fact for existing key
   ansible.builtin.set_fact:
@@ -58,3 +60,5 @@
   no_log: "{{ secure_logs }}"
   tags:
     - install
+    - update-configuration
+

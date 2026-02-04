@@ -20,6 +20,16 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
     tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
+
+    # Upload-optimized pipeline configuration (used when upload_pipelines=true)
+    # This is the default configuration for upload mode, applied when upload_pipelines flag is set
+    upload_pipelines_config:
+      - namespace: chatqa
+        samplePath: chatqa/reference-cpu-upload.yaml
+        resourcesPath: chatqa/resources-reference-cpu-upload.yaml
+        modelConfigPath: chatqa/resources-model-cpu.yaml
+        type: chatqa
+
   pre_tasks:
     - name: Pre-configure environment role
       ansible.builtin.include_role:
@@ -34,7 +44,16 @@
         - install
         - display-configuration
         - uninstall
+        - update-configuration
         - pre-upgrade
+
+    - name: Override pipeline configuration for upload mode
+      ansible.builtin.set_fact:
+        pipelines: "{{ upload_pipelines_config }}"
+      when: upload_pipelines | default(false) | bool
+      tags:
+        - always
+        - update-configuration
 
     - name: Check deployment version and validate upgrade
       ansible.builtin.include_role:
@@ -111,14 +130,15 @@
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons
-      when: balloons.enabled or "pre-upgrade" in ansible_run_tags
+      when: (balloons.enabled ) or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
         - topology-preview
 
-    - name: Clean-up NRI plugin resources if balloons disabled
+    - name: Clean-up NRI plugin resources if balloons disabled or upload mode
       include_role:
         name: nri_balloons
         tasks_from: uninstall.yaml
@@ -195,6 +215,7 @@
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: Ingress role
       ansible.builtin.include_role:
@@ -226,20 +247,22 @@
     - name: UI role
       ansible.builtin.include_role:
         name: ui
-      when: ui.enabled or "pre-upgrade" in ansible_run_tags
+      when: ui.enabled or "pre-upgrade" in ansible_run_tags or "update-configuration" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: EDP role
       ansible.builtin.include_role:
         name: edp
-      when: edp.enabled or "pre-upgrade" in ansible_run_tags
+      when: edp.enabled or "pre-upgrade" in ansible_run_tags or "update-configuration" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: Telemetry role
       ansible.builtin.include_role:
@@ -320,6 +343,7 @@
       tags:
         - install
         - uninstall
+        - update-configuration
 
     - name: Store post-install health check result
       set_fact:

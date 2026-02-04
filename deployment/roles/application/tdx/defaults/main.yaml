@@ -5,5 +5,7 @@
 tdx:
   enabled: false
   td_type: "one-td" # allowed options: one-td, coco
+  coco:
+    enabled: false
   attestation:
     enabled: false

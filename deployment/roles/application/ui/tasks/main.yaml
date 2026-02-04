@@ -8,6 +8,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -17,6 +18,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -29,6 +31,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -98,6 +101,18 @@
   delay: 15
   tags:
     - install
+    - update-configuration
+
+- name: Restart UI pods to pick up new configuration
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Pod
+    namespace: "{{ ui.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/instance={{ ui.helm.release_name }}"
+  tags:
+    - update-configuration
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

@@ -108,6 +108,15 @@ balloons:
   memory_overcommit_buffer: 0.1 # buffer (% of total memory) for pods using more memory than initially requested; valid range: 0.0 to 1.0
   max_replicas_per_node: 10 # maximum number of each inference service replicas per node; helps to limit overloading nodes with too many pods
   vllm_custom_name: "" # Optional: Custom container name reference for vLLM balloon
+
+# Pipeline configuration mode
+# Set to true to use upload-optimized pipeline (embedding + model server only)
+# Set to false to use default full pipeline (embedding, retrieval, reranking, LLM)
+# Can be overridden via CLI: -e upload_pipelines=true
+# Note: The upload pipeline configuration (upload_pipelines_config) is defined in application.yaml
+upload_pipelines: false
+
+# Default pipeline configuration for full mode
 pipelines:
   - namespace: chatqa
     samplePath: chatqa/reference-cpu.yaml

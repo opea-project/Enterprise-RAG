@@ -8,6 +8,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Ensure Helm repositories
   kubernetes.core.helm_repository:
@@ -78,6 +79,7 @@
     tasks_from: get_chatqa_namespace.yaml
   tags:
     - install
+    - update-configuration
 
 # Creates client_secret_id
 - name: Get client_secret_id keycloak
@@ -89,9 +91,11 @@
     apply:
       tags:
         - pre-upgrade
+        - update-configuration
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Set secret client_secret_id
   ansible.builtin.set_fact:
@@ -100,6 +104,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate random string for keys
   ansible.builtin.include_role:
@@ -108,6 +113,7 @@
     apply:
       tags:
         - pre-upgrade
+        - update-configuration
   loop:
     - { name: EDP_MINIO_ACCESS_KEY }
     - { name: EDP_MINIO_SECRET_KEY }
@@ -115,6 +121,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate password
   ansible.builtin.include_role:
@@ -123,6 +130,7 @@
     apply:
       tags:
         - pre-upgrade
+        - update-configuration
   loop:
     - { name: EDP_REDIS, user: "{{ edp.redis.auth.user.db_username }}" }
     - { name: EDP_POSTGRESQL, user: "{{ edp.postgresql.auth.user.db_username }}" }
@@ -131,6 +139,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -140,6 +149,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -152,6 +162,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Run pre-upgrade checks
   ansible.builtin.include_role:
@@ -191,6 +202,7 @@
   delay: 15
   tags:
     - install
+    - update-configuration
 
 - name: Mark secrets for password management
   ansible.builtin.include_role:
@@ -199,6 +211,7 @@
     apply:
       tags:
         - install
+        - update-configuration
   vars:
     namespace: "{{ edp.namespace }}"
     secret_name: "{{ item.secret_name }}"
@@ -217,6 +230,7 @@
         - { key: DATABASE_ADMIN_PASSWORD, variable: EDP_POSTGRESQL_ADMIN_PASSWORD, user: "{{ edp.postgresql.auth.admin.db_username }}" }
   tags:
     - install
+    - update-configuration
 
 # UNINSTALL TASKS
 - name: Uninstall EDP Helm release

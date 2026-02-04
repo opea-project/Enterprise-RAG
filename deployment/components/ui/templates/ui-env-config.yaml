@@ -19,5 +19,6 @@ data:
       "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}",
       "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}",
       {{- end }}
-      "ERAG_VERSION": {{ .Chart.AppVersion | quote }}
+      "ERAG_VERSION": {{ .Chart.AppVersion | quote }},
+      "MAINTENANCE_MODE": {{ (.Values.extraUiConfigVars.chatMaintenanceMode | lower) | quote }}
     }

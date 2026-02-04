@@ -1,0 +1,40 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# resources-reference-cpu-upload.yaml - Resource configuration for upload-optimized pipeline
+# This file defines right-sized resource requests and limits for the upload-optimized
+# ChatQA pipeline, focusing on embedding throughput and model inference.
+#
+# Key differences from default (reference-cpu) resources:
+#   - Embedding service: Increased resources for high throughput
+#   - TorchServe embedding: Increased replicas and resource al#   - Removed: LLM, retriever, reranking, guardrails, prompt-template resources
+#
+
+services:
+  embedding-usvc:
+    replicas: 5
+    resources:
+      requests:
+        cpu: 2
+        memory: 4Gi
+      limits:
+        cpu: 10
+        memory: 10Gi
+  fingerprint-usvc:
+    replicas: 1
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 0.25
+      limits:
+        memory: 1Gi
+        cpu: 0.5
+  vllm_embedding:
+    replicas: 4
+    resources:
+      requests:
+        cpu: 16
+        memory: 4Gi
+      limits:
+        cpu: 16
+        memory: 16Gi

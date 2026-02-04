@@ -11,6 +11,7 @@
     - install
     - uninstall
     - restore
+    - update-configuration
 
 - name: Get list of pipelines namespaces
   ansible.builtin.set_fact:
@@ -19,6 +20,7 @@
     - install
     - uninstall
     - restore
+    - update-configuration
 
 - name: Get list of component namespaces
   ansible.builtin.set_fact:
@@ -46,3 +48,4 @@
     - install
     - uninstall
     - restore
+    - update-configuration

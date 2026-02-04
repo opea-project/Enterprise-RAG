@@ -1,16 +1,16 @@
-# Intel® AI for Enterprise RAG ChatQnA UI
+# Intel® AI for Enterprise RAG AudioQnA UI
 
 ## Table of Contents
 
 - [Requirements](#requirements)
 - [Setup](#setup)
+  - [Build all packages within the workspace](#build-all-packages-within-the-workspace)
 - [Start UI Development Server](#start-ui-development-server)
 - [Production Build](#production-build)
   - [Testing production build locally](#testing-production-build-locally)
-- [Deploying production build using Dockerfile](#deploying-production-build-using-dockerfile)
-  - [Docker image](#docker-image)
-    - [Image configuration](#image-configuration)
-    - [Configuring ChatQnA UI for deployment](#configuring-chatqna-ui-for-deployment)
+  - [Deploying production build using Dockerfile](#deploying-production-build-using-dockerfile)
+  - [Image configuration](#image-configuration)
+  - [Configuring AudioQnA UI for deployment](#configuring-audioqna-ui-for-deployment)
 
 ## Requirements
 
@@ -114,15 +114,15 @@ Create and run a new container from an image:
 docker run -dp 127.0.0.1:4173:4173 rag-ui
 ```
 
-Now you should be able to access **Intel® AI for Enterprise RAG ChatQnA UI** from your browser via `127.0.0.1:4173`
+Now you should be able to access **Intel® AI for Enterprise RAG AudioQnA UI** from your browser via `127.0.0.1:4173`
 
 ### Image configuration
 
 Frontend files are served by nginx web server which uses `default.conf` for configuration. Traffic is proxied to different pipelines which are independently configured. Some settings may lead to request errors that exceed configuration settings, such as `client_max_body_size` which by default allows files up to `64MB` to be uploaded into the dataprep pipeline. `proxy_*_timeout` may close the request prematurely if the timeout is exceeded, for example when big documents are ingested into the pipeline and processing takes time. Changing `default.conf` requires rebuilding and redeploying of the UI docker image for changes to apply.
 
-### Configuring ChatQnA UI for deployment
+### Configuring AudioQnA UI for deployment
 
-Configuration values required to run and access **Intel® AI for Enterprise RAG ChatQnA UI** are set during the deployment process.
+Configuration values required to run and access **Intel® AI for Enterprise RAG AudioQnA UI** are set during the deployment process.
 
 If you would like to setup custom domain, please change value for `FQDN` in your inventory `config.yaml` file.
 

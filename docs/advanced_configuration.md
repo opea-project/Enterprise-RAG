@@ -26,13 +26,14 @@ This document describes configuration options available when deploying Intel® A
 8. [Horizontal Pod Autoscaling (HPA)](#horizontal-pod-autoscaling-hpa)
 9. [Additional Configuration Options](#additional-configuration-options)
    1. [Additional Pipelines](#additional-pipelines)
-   2. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
-   3. [EDP Storage Types](#edp-storage-types)
-   4. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
-   5. [Security Settings](#security-settings)
-   6. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
-   7. [Registry Configuration](#registry-configuration)
-   8. [Local Image Building](#local-image-building)
+   2. [Vector Database Selection](#vector-database-selection)
+   3. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
+   4. [EDP Storage Types](#edp-storage-types)
+   5. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
+   6. [Security Settings](#security-settings)
+   7. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
+   8. [Registry Configuration](#registry-configuration)
+   9. [Local Image Building](#local-image-building)
 
 ---
 
@@ -479,6 +480,53 @@ audio:
 
 > [!NOTE]
 > AudioQnA adds additional resource requirements to your deployment. Ensure your cluster has sufficient resources for both the ChatQnA pipeline and the audio processing services.
+
+### Vector Database Selection
+
+Intel® AI for Enterprise RAG supports multiple vector database backends for storing and retrieving embeddings. You can select the appropriate database based on your deployment scale and requirements.
+
+**Available Options:**
+
+1. **redis-cluster** - Multi-node Redis cluster with distributed vector search
+   - Best for: Production deployments with large-scale data (1M+ vectors)
+   - Features: High availability, horizontal scalability, distributed hash slots
+
+2. **mssql** - Microsoft SQL Server 2025 Express Edition with vector support
+  - Best for: Organizations already using Microsoft SQL Server ecosystem
+  - Features: SQL-based vector operations, familiar SQL interface
+  - **Important**: Requires accepting Microsoft SQL Server EULA during deployment
+  - **Limitations**: Role-based access control (RBAC) for vector databases is not supported with `mssql`, so be sure to set `edp.rbac.enabled` to false in config.yaml
+
+**Configuration:**
+
+Modify the `vector_store` parameter in your inventory configuration file ([config.yaml](../deployment/inventory/sample/config.yaml)):
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis-cluster  # Options: redis, redis-cluster, mssql
+  vector_datatype: FLOAT32
+  vector_dims: 768  # Must match your embedding model dimensions
+```
+
+**Microsoft SQL Server EULA Acceptance:**
+
+If you select `mssql` as your vector store, the deployment will pause and prompt you to accept the Microsoft SQL Server terms:
+
+```bash
+[vector_databases : Ask the operator to accept the EULA]
+Do you accept the Microsoft SQL Server 2025 Express Edition EULA? [Y/N]
+Type Y to accept, N to decline. Press ENTER to confirm.
+```
+
+Press `Y` and then `ENTER` to accept and continue. The deployment will not proceed without EULA acceptance.
+
+**Additional Resources:**
+
+For detailed information about each vector database implementation, storage configuration, monitoring, and operational guidance, refer to:
+- [Vector Databases Component Documentation](../deployment/components/vector_databases/README.md)
+- [Performance tuning for vector databases](performance_tuning_tips.md#vector-database-selection)
 
 ### Vector Store Database Storage Settings
 

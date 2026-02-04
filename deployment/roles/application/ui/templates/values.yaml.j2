@@ -6,6 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 {% for pipeline in pipelines %}
 {% if pipeline.type == "docsum" %}
 type: docsum
+{% elif pipeline.type == "chatqa" and audio.enabled is defined and audio.enabled %}
+type: audioqna
 {% endif %}
 {% endfor %}
 
@@ -43,6 +45,8 @@ image:
 {% for pipeline in pipelines %}
 {% if pipeline.type == "docsum" %}
     name: erag-docsum-ui
+{% elif pipeline.type == "chatqa" and audio.enabled is defined and audio.enabled %}
+    name: erag-audioqna-ui
 {% endif %}
 {% endfor %}
     tag: {{ tag }}

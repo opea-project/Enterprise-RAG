@@ -22,6 +22,31 @@ pgvector:
       cpu: 16
       memory: 16Gi
 
+mssql:
+  enabled: false
+  metrics:
+    enabled: true
+  image:
+    repository: "mcr.microsoft.com/mssql/server" # https://mcr.microsoft.com/en-us/artifact/mar/mssql/server
+    tag: "2025-RTM-ubuntu-22.04"
+  serviceAccount:
+    name: mssql
+  config:
+    accept_eula: "N"
+    mssql_pid: "Express"
+  persistence:
+    enabled: true
+    dataSize: "10Gi"
+    logSize: "2Gi"
+    secretsSize: "1Gi"
+  resources:
+    requests:
+      cpu: 2
+      memory: 4Gi
+    limits:
+      cpu: 16
+      memory: 16Gi
+
 redis-cluster:
   enabled: true
   image:

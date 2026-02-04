@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: pgvector
   namespace: {{ .Release.Namespace }}
@@ -11,6 +11,7 @@ metadata:
     app.kubernetes.io/name: pgvector
     app.kubernetes.io/instance: pgvector
 spec:
+  serviceName: pgvector
   replicas: 1
   selector:
     matchLabels:
@@ -29,7 +30,7 @@ spec:
       {{- end }}
       containers:
         - name: pgvector
-          {{- if .Values.podSecurityContext }}
+          {{- if .Values.securityContextWithTemp }}
           securityContext:
             {{- toYaml .Values.securityContextWithTemp | nindent 12 }}
           {{- end }}
@@ -68,9 +69,17 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-        {{- if index .Values "pgvector" "persistence" "enabled" }}
-        - name: pgdata
-          persistentVolumeClaim:
-            claimName: pgvector-data
+  {{- if index .Values "pgvector" "persistence" "enabled" }}
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        {{- if .Values.pgvector.persistence.storageClass }}
+        storageClassName: {{ .Values.pgvector.persistence.storageClass }}
         {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.pgvector.persistence.size | default "10Gi" }}
+  {{- end }}
 {{- end }}

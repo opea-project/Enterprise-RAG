@@ -24,6 +24,8 @@ extraNginxVars:
   dataprepClientMaxBodySize: "64m"
   # Docsum endpoints
   docsumEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  # AudioQnA endpoints
+  audioqnaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   # Status endpoint
   statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
 

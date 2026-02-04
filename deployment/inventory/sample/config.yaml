@@ -244,6 +244,6 @@ chat_history:
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster
+  vector_store: redis-cluster  # Supported options: redis-cluster, mssql (RBAC not supported with mssql)
   vector_datatype: FLOAT32
   vector_dims: 768

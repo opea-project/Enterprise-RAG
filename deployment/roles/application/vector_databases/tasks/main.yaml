@@ -108,6 +108,80 @@
             "postgresql://" + vector_database_connection_username + ':' + POSTGRES_PASSWORD + '@' + vector_database_connection_host  + ':' + vector_database_connection_port + '/' + vector_database_name
           }}
 
+- name: Configure Mssql-like vector store
+  when: vector_databases.vector_store == 'mssql'
+  tags:
+    - install
+  block:
+    - name: Read EULA env var
+      ansible.builtin.set_fact:
+        mssql_eula_env: "{{ lookup('env', 'MSSQL_ACCEPT_EULA') | default('', true) }}"
+
+    - name: Decide whether to prompt for EULA
+      ansible.builtin.set_fact:
+        mssql_eula_need_prompt: "{{ mssql_eula_env == '' }}"
+
+    - name: Set EULA accepted from env
+      ansible.builtin.set_fact:
+        mssql_eula_accept: 'Y'
+      when: not mssql_eula_need_prompt
+
+    - name: Ask the operator to accept the EULA
+      ansible.builtin.pause:
+        prompt: |
+          Do you accept the Microsoft SQL Server 2025 {{ vector_databases.mssql.mssql_pid }} Edition EULA? [Y/N]
+          Type Y to accept, N to decline. Press ENTER to confirm.
+      register: mssql_eula_prompt_result
+      until: mssql_eula_prompt_result.user_input is match('^[YyNn]$')
+      when: mssql_eula_need_prompt
+      retries: 5
+      delay: 0
+
+    - name: Normalize input to uppercase
+      ansible.builtin.set_fact:
+        mssql_eula_accept: "{{ mssql_eula_prompt_result.user_input | upper }}"
+      when: mssql_eula_need_prompt
+
+    - name: Abort if EULA not accepted
+      ansible.builtin.fail:
+        msg: "Microsoft SQL Server 2025 EULA not accepted. Aborting installation."
+      when: mssql_eula_accept != 'Y'
+
+    - name: Generate password
+      ansible.builtin.include_role:
+        name: generate_password
+        tasks_from: generate_password.yaml
+      loop:
+        - { name: 'MSSQL', user: "default" }
+      tags:
+        - install
+
+    - name: Generate user connection details for vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_username: "edp"
+        vector_database_connection_port: "1433"
+        vector_database_name: "vdb"
+      tags:
+        - install
+
+    - name: Generate host connection details for vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_host: >-
+          {{
+            'mssql.' + vector_databases.namespace + '.svc'
+          }}
+      tags:
+        - install
+
+    - name: Generate uri connection details for vector store
+      ansible.builtin.set_fact:
+        vector_database_connection_host_with_auth: >-
+          {{
+            "SERVER=" + vector_database_connection_host + ';DATABASE=' + vector_database_name + ';UID=' + vector_database_connection_username + ';PWD=' + MSSQL_PASSWORD + ';'
+          }}
+      tags:
+        - install
+
 - name: Get pipelines namespaces
   ansible.builtin.include_role:
     name: utils
@@ -186,6 +260,29 @@
         POSTGRES_PASSWORD: '{{ POSTGRES_PASSWORD | b64encode }}'
         POSTGRES_DB: '{{ vector_database_name | b64encode }}'
   when: vector_databases.vector_store == 'pgvector'
+  no_log: "{{ secure_logs }}"
+  loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
+  tags:
+    - install
+
+- name: Create mssql compatible vector store configs for services in namespaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "vector-database-config"
+        namespace: "{{ item }}"
+      data:
+        VECTOR_STORE: "{{ vector_databases.vector_store | b64encode }}"
+        MSSQL_URL: "{{ vector_database_connection_host_with_auth | b64encode }}"
+        MSSQL_HOST: "{{ vector_database_connection_host | b64encode }}"
+        MSSQL_PORT: "{{ vector_database_connection_port | b64encode }}"
+        MSSQL_USER: "{{ vector_database_connection_username | b64encode }}"
+        MSSQL_PASSWORD: '{{ MSSQL_PASSWORD | b64encode }}'
+        MSSQL_DB: '{{ vector_database_name | b64encode }}'
+  when: vector_databases.vector_store == 'mssql'
   no_log: "{{ secure_logs }}"
   loop: "{{ vector_db_connection_detail_namespaces | flatten }}"
   tags:
@@ -271,6 +368,22 @@
     - password_mappings:
       - { key: POSTGRES_PASSWORD, variable: POSTGRES_PASSWORD, user: "{{ vector_database_connection_username }}" }
   when: vector_databases.vector_store == 'pgvector'
+  tags:
+    - install
+
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ vector_databases.namespace }}"
+    - secret_name: "mssql-secret"
+    - password_mappings:
+      - { key: MSSQL_PASSWORD, variable: MSSQL_PASSWORD, user: "{{ vector_database_connection_username }}" }
+  when: vector_databases.vector_store == 'mssql'
   tags:
     - install
 

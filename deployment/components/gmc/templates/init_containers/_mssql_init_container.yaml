@@ -1,0 +1,52 @@
+{{- define "mssql_init_container" -}}
+- name: wait-for-mssql
+  image: mcr.microsoft.com/mssql/server:2025-RC1-ubuntu-24.04
+  imagePullPolicy: IfNotPresent
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+  env:
+    - name: VECTOR_STORE
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: VECTOR_STORE
+    - name: MSSQL_HOST
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: MSSQL_HOST
+    - name: MSSQL_USER
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: MSSQL_USER
+    - name: MSSQL_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: MSSQL_PASSWORD
+    - name: MSSQL_DB
+      valueFrom:
+        secretKeyRef:
+          name: vector-database-config
+          key: MSSQL_DB
+  command:
+    - sh
+    - -c
+    - |
+        if [ -z "$MSSQL_HOST" ]; then
+          echo "Environment variable MSSQL_HOST is not set. Skipping wait-for-mssql init container.";
+          exit 1
+        else
+          until /opt/mssql-tools18/bin/sqlcmd -C -S "$MSSQL_HOST" -U "$MSSQL_USER" -P "$MSSQL_PASSWORD" -d "$MSSQL_DB" -Q "SELECT 1"; do
+            echo "waiting for mssql server $MSSQL_HOST to be ready...";
+            sleep 2;
+          done;
+        fi;
+{{- end -}}

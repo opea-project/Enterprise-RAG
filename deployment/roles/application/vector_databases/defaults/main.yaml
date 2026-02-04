@@ -40,3 +40,6 @@ vector_databases:
       enabled: true
       size: "8Gi"
       storageClass: ""  # Empty means use default storage class
+
+  mssql:
+    mssql_pid: "Express"

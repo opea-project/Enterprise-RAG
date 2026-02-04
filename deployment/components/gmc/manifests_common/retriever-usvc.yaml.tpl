@@ -71,6 +71,8 @@ spec:
           {{- include "redis_init_container" . | nindent 8 }}
         {{- else if eq (index .Values "images" .filename "vector_store") "pgvector" }}
           {{- include "postgresql_init_container" . | nindent 8 }}
+        {{- else if eq (index .Values "images" .filename "vector_store") "mssql" }}
+          {{- include "mssql_init_container" . | nindent 8 }}
         {{- end }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:

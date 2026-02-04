@@ -127,6 +127,10 @@ images:
     image_name: docsum-ui
     dockerfile_path: src/ui/apps/docsum/Dockerfile
     docker_context: src
+  audioQnAUiUsvc:
+    image_name: audioqna-ui
+    dockerfile_path: src/ui/apps/audioqna/Dockerfile
+    docker_context: src
   vllmAudio:
     image_name: vllm-audio
     dockerfile_path: src/comps/asr/impl/model_server/vllm/docker/Dockerfile

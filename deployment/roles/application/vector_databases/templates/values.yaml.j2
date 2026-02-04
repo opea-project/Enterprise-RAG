@@ -10,7 +10,18 @@ vector_database_name: {{ vector_database_name | default("vdb") }}
 
 pgvector:
   enabled: true
+{% endif %}
 
+{% if vector_databases.vector_store == "mssql" %}
+vector_database_password: {{ MSSQL_PASSWORD }}
+vector_database_username: {{ vector_database_connection_username | default("edp") }}
+vector_database_name: {{ vector_database_name | default("vdb") }}
+
+mssql:
+  enabled: true
+  config:
+    accept_eula: {{ mssql_eula_accept | quote }}
+    mssql_pid: {{ vector_databases.mssql.mssql_pid | quote }}
 {% endif %}
 
 {% if vector_databases.vector_store == "redis" %}
@@ -21,7 +32,6 @@ redis:
   replicaCount: {{ vector_databases.redis.replicaCount | default(0) }}
   auth:
     password: {{ REDIS_PASSWORD }}
-
 {% endif %}
 
 {% if vector_databases.vector_store == "redis-cluster" %}

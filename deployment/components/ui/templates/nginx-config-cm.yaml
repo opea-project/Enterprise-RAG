@@ -101,9 +101,7 @@ data:
                 proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
                 proxy_set_header Host $host;
             }
-            {{- end }}
 
-            {{- if eq .Values.type "chatqa" }}
             location /v1/system_fingerprint/append_arguments {
                 proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
                 proxy_set_header Host $host;

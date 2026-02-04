@@ -210,7 +210,22 @@ def generate_presigned_url(client, method, bucket_name, object_name, expires = t
         int(expires.total_seconds())
     )
 
-    return urlunsplit(presigned_url)
+    url = urlunsplit(presigned_url)
+
+    # Inject path prefix from EDP_EXTERNAL_URL for path-based routing
+    # The client strips the path from the endpoint URL, so we need to
+    # add it back to presigned URLs for path-based ingress routing to work
+    external_url = os.getenv('EDP_EXTERNAL_URL', '')
+    if external_url:
+        external_parsed = parse_url(external_url)
+        if external_parsed.path and external_parsed.path != '/':
+            # Insert the path prefix after the host
+            url_parsed = parse_url(url)
+            # Combine the base path with the original path
+            new_path = external_parsed.path.rstrip('/') + url_parsed.path
+            url = url_parsed._replace(path=new_path).url
+
+    return url
 
 def filtered_list_bucket(client):
     buckets = client.list_buckets()

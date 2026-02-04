@@ -4,6 +4,7 @@
 import { addNotification } from "@intel-enterprise-rag-ui/components";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 
+import { NamespaceStatus } from "@/features/admin-panel/control-plane/types/api/namespaceStatus";
 import { AppDispatch } from "@/store";
 import { resetStore } from "@/store/utils";
 import { keycloakService } from "@/utils/auth";
@@ -82,4 +83,41 @@ export {
   handleOnQueryStarted,
   onRefreshTokenFailed,
   transformErrorMessage,
+};
+
+export const mergeNamespaceStatuses = (
+  primaryStatus: NamespaceStatus,
+  secondaryStatus: NamespaceStatus,
+): NamespaceStatus => {
+  // Handle audio status format (only has status.annotations)
+  const primaryHasSpec = primaryStatus.spec?.nodes?.root?.steps;
+  const secondaryHasSpec = secondaryStatus.spec?.nodes?.root?.steps;
+
+  return {
+    ...primaryStatus,
+    spec:
+      primaryHasSpec && secondaryHasSpec
+        ? {
+            ...primaryStatus.spec,
+            nodes: {
+              ...primaryStatus.spec.nodes,
+              root: {
+                ...primaryStatus.spec.nodes.root,
+                steps: [
+                  ...primaryStatus.spec.nodes.root.steps,
+                  ...secondaryStatus.spec.nodes.root.steps,
+                ],
+              },
+            },
+          }
+        : primaryStatus.spec || secondaryStatus.spec,
+    status: {
+      ...primaryStatus.status,
+      ...secondaryStatus.status,
+      annotations: {
+        ...primaryStatus.status?.annotations,
+        ...secondaryStatus.status?.annotations,
+      },
+    },
+  };
 };

@@ -63,17 +63,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "^/v1/audio/transcriptions": {
-        target: "https://erag.com",
-        changeOrigin: true,
-        secure: false,
-      },
       "^/v1/chat_history": {
         target: "https://erag.com",
         changeOrigin: true,
         secure: false,
       },
-      "^/v1/system_fingerprint": {
+      "^/v1/audio/transcriptions": {
+        target: "https://erag.com",
+        changeOrigin: true,
+        secure: false,
+      },
+      "^/v1/audio/speech$": {
         target: "https://erag.com",
         changeOrigin: true,
         secure: false,
@@ -83,7 +83,7 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      "^/v1/audio/speech$": {
+      "^/api/v1/audio/status$": {
         target: "https://erag.com",
         changeOrigin: true,
         secure: false,

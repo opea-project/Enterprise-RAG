@@ -235,8 +235,6 @@ python eval_multihop.py --help
 |
 | `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted
 |
-| `--bucket_names`       | *None*                                            | Filter retrieval and generation by specific bucket names. If not provided, all buckets are used. Example: --bucket_names secondary
-|
 
 
 > Note: If `--dataset_path` and `--docs_path` are set to their default values and the corresponding files are not found locally, they will be automatically downloaded at runtime from [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixuantt/MultiHopRAG) and saved to the expected local paths.
@@ -287,7 +285,6 @@ This section outlines how to run MultiHop evaluation of the RAG pipeline using [
     > NOTE:
     > If you are using custom configuration (e.g., a modified cluster FQDN) or your credentials are in a different location,
     > remember to provide --cluster_config_file and/or --auth_file as shown above in the Ingest Documents section.
-
 
   - **Evaluate Retrieval Quality**
 
@@ -419,21 +416,6 @@ python eval_multihop.py --retrieval_metrics --exclude_types comparison_query
 python eval_multihop.py --retrieval_metrics --exclude_types comparison_query inference_query
 ```
 
-**Filtering Evaluation by Buckets with `--bucket_names`:**
-
-The `--bucket_names` parameter restricts the evaluation to a specified set of buckets. This is useful for analyzing RAG accuracy on targeted document collections.
-
-Behavior:
-- without `--bucket_names`: All buckets are searched.
-- with `--bucket_names`: Only documents from the specified buckets are retrieved and used for answer generation.
-
-```bash
-# Evaluate using only documents from the "secondary" bucket
-python eval_multihop.py --retrieval_metrics --bucket_names secondary
-
-# Evaluate using documents from both "secondary" and "third" buckets
-python eval_multihop.py --retrieval_metrics --bucket_names secondary third
-```
 
 ## Acknowledgements
 This example is mostly adapted from [MultiHop-RAG](https://github.com/yixuantt/MultiHop-RAG) repo, we thank the authors for their great work!

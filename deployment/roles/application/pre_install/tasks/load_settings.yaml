@@ -38,7 +38,7 @@
       All configuration checks passed successfully!
 
       Upload Mode:
-        • Upload mode: {{ upload_pipelines | default(false) }}
+        • Upload mode: {{ upload_pipelines }}
 
       Environment Configuration:
         • huggingToken: {{ 'SET' if huggingToken is defined and huggingToken != '' else 'NOT SET (ensure models are publicly available)' }}

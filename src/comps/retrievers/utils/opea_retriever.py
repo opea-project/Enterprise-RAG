@@ -149,16 +149,7 @@ class OPEARetriever:
         return SearchedDoc(retrieved_docs=retrieved_docs, user_prompt=input.text)
 
     def generate_search_by(self, request_json: dict = {}) -> dict:
-        """
-        Extract the search_by parameter from the request JSON.
-        """
-        # Check root level first (EDP direct call), then metadata (ChatQA pipeline)
-        if 'search_by' in request_json:
-            return request_json['search_by']
-        elif 'metadata' in request_json and 'search_by' in request_json['metadata']:
-            return request_json['metadata']['search_by']
-        else:
-            return {}
+        return request_json['search_by'] if 'search_by' in request_json else {}
 
     def generate_rbac(self, auth_header: str = "") -> dict:
         try:

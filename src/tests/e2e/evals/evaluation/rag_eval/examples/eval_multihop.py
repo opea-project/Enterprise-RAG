@@ -63,7 +63,7 @@ class MultiHop_Evaluator(Evaluator):
         for data in tqdm(all_queries):
             query = self.get_query(data)
 
-            generated_text = self.send_request(query, arguments, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
+            generated_text = self.send_request(query, arguments)
             data["generated_text"] = generated_text
 
             result = {"id": index, "uuid": self.get_uuid(query), "question_type": self.get_question_type(data), **self.scoring(data)}
@@ -79,11 +79,7 @@ class MultiHop_Evaluator(Evaluator):
             print(repr(e))
             overall = dict()
 
-        output = {
-            "run_cmd": self.dump_command_line(arguments),
-            "overall": overall,
-            "results": results
-        }
+        output = {"overall": overall, "results": results}
 
         try:
             self.save_output(output)
@@ -165,7 +161,7 @@ class MultiHop_Evaluator(Evaluator):
                 continue  # Skip results that have already been evaluated and are valid
 
             logger.info(f"Processing query: '{query}'")
-            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data, normalize=not arguments.skip_normalize, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)}
+            result = {"id": index, "uuid": uuid, **self.scoring_retrieval(data, normalize=not arguments.skip_normalize)}
             logger.debug(f"Result for query {index} {query}: {result}")
             results.append(result)
             index += 1
@@ -185,11 +181,7 @@ class MultiHop_Evaluator(Evaluator):
             logger.error(f"Error computing overall retrieval metrics: {e}")
             overall = dict()
 
-        output = {
-            "run_cmd": self.dump_command_line(arguments),
-            "overall": overall,
-            "results": results
-        }
+        output = {"overall": overall, "results": results}
         logger.info(f"Evaluation completed. Total queries processed: {len(results)}")
         try:
             self.save_output(output)
@@ -206,16 +198,13 @@ class MultiHop_Evaluator(Evaluator):
     def prepare_ragas_record(self, data, arguments):
         query = self.get_query(data)
         question_type = self.get_question_type(data)
-        generated_text = self.send_request(query, arguments, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
+        generated_text = self.send_request(query, arguments)
 
         try:
-            retrieved_documents = self.get_reranked_documents(query, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
+            retrieved_documents = self.get_reranked_documents(query)
         except (ConnectionError, ValueError) as e:
             logger.error(f"Failed to retrieve documents for RAGAS evaluation on query '{query}': {e}")
             raise
-
-        # Extract just text for RAGAS metrics
-        retrieved_texts = [doc["text"] for doc in retrieved_documents]
 
         return {
             "query": query,
@@ -223,8 +212,7 @@ class MultiHop_Evaluator(Evaluator):
             "generated_text": generated_text,
             "ground_truth": self.get_ground_truth_text(data),
             "golden_context": self.get_golden_context(data),
-            "retrieved_documents_texts": retrieved_texts,  # for RAGAS metrics
-            "retrieved_documents_full": retrieved_documents  # for logging with metadata
+            "retrieved_documents": retrieved_documents
         }
 
     def _convert_ragas_result_to_dict(self, ragas_metrics):
@@ -306,9 +294,9 @@ class MultiHop_Evaluator(Evaluator):
                 ragas_inputs["question"].append(result["query"])
                 ragas_inputs["answer"].append(result["generated_text"])
                 ragas_inputs["ground_truth"].append(result["ground_truth"])
-                ragas_inputs["contexts"].append(result["retrieved_documents_texts"])  # Use texts for RAGAS
+                ragas_inputs["contexts"].append(result["retrieved_documents"])
 
-                # Store metadata for each query with full document information
+                # Store metadata for each query
                 query_metadata.append({
                     "uuid": self.get_uuid(result["query"]),
                     "query": result["query"],
@@ -316,8 +304,8 @@ class MultiHop_Evaluator(Evaluator):
                     "generated_text": result["generated_text"],
                     "ground_truth": result["ground_truth"],
                     "golden_context": result["golden_context"],
-                    "num_reranked_documents": len(result["retrieved_documents_full"]),
-                    "reranked_documents": result["retrieved_documents_full"]  # Store full metadata
+                    "num_reranked_documents": len(result["retrieved_documents"]),
+                    "reranked_documents": result["retrieved_documents"]
                 })
 
 
@@ -358,11 +346,7 @@ class MultiHop_Evaluator(Evaluator):
                     }
                     per_query_results.append(enriched_result)
 
-            output = {
-                "run_cmd": self.dump_command_line(arguments),
-                "overall": ragas_metrics_dict,
-                "results": per_query_results
-            }
+            output = {"overall": ragas_metrics_dict, "results": per_query_results}
             self.save_output(output)
 
         except Exception as e:
@@ -428,7 +412,6 @@ def args_parser():
     parser.add_argument("--embedding_endpoint", type=str, default="http://localhost:8090/embed", help="URL of the embedding service endpoint. Only used for RAGAS metrics")
     parser.add_argument("--temperature", type=float, help="Controls the randomness of the model's text generation. Defaults to RAG system setting if omitted")
     parser.add_argument("--max_new_tokens", type=int, help="Maximum number of new tokens to be generated by the model. Defaults to RAG system setting if omitted")
-    parser.add_argument("--bucket_names", type=str, nargs='+', dest='bucket_names', help="Filter retrieval and generation by specific bucket names. Example: --bucket_names bucket1 bucket2")
     parser.add_argument("--auth_file", type=str, default=os.path.abspath(os.path.join(get_project_root(), "..", "deployment/ansible-logs/default_credentials.txt")), help="Path to auth file")
     parser.add_argument("--cluster_config_file", type=str, default=os.path.abspath(os.path.join(get_project_root(), "..", "deployment/inventory/sample/config.yaml")), help="Path to cluster configuration file")
     args = parser.parse_args()

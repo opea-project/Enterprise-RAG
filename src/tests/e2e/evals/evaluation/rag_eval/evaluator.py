@@ -28,10 +28,12 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 class Evaluator:
     def __init__(
-            self, dataset: list[dict] = None, output_dir: str = None, auth_file: str = None) -> None:
+            self, dataset: list[dict] = None, output_dir: str = None, auth_file: str = None, ingestion_bucket_name: str = "default") -> None:
         """Args:
         dataset (list[dict]): The dataset for evaluation.
         output_dir (str): The directory to save results.
+        auth_file (str): Path to the authentication file.
+        ingestion_bucket_name (str): Name of the bucket to use for document ingestion (default: "default").
         """
 
         current_time = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -52,7 +54,7 @@ class Evaluator:
         self.keycloak_helper.remove_required_actions(self.keycloak_helper.admin_access_token,
                                                      self.keycloak_helper.erag_admin_username)
         self.chatqa_api_helper = ChatQaApiHelper(keycloak_helper=self.keycloak_helper)
-        self.edp_helper = EdpHelper(keycloak_helper=self.keycloak_helper, bucket_name="default")
+        self.edp_helper = EdpHelper(keycloak_helper=self.keycloak_helper, bucket_name=ingestion_bucket_name)
         self.fingerprint_api_helper = FingerprintApiHelper(self.keycloak_helper)
 
         self.GENERATION_METRICS_LIST = [
@@ -175,24 +177,28 @@ class Evaluator:
             "valid": len(generated_text.strip()) != 0,
         }
 
-    def scoring_retrieval(self, data: dict, normalize: bool = True) -> dict:
+    def scoring_retrieval(self, data: dict, normalize: bool = True, bucket_names: list = None) -> dict:
         metric = RetrievalBaseMetric(normalize=normalize)
         query = self.get_query(data)
         golden_context = self.get_golden_context(data)
 
         try:
-            retrieved_documents = self.get_retrieved_documents(query)
-            reranked_documents = self.get_reranked_documents(query)
+            retrieved_documents = self.get_retrieved_documents(query, bucket_names=bucket_names)
+            reranked_documents = self.get_reranked_documents(query, bucket_names=bucket_names)
         except (ConnectionError, ValueError) as e:
             # Log the error and re-raise to stop evaluation
             logger.error(f"Failed to retrieve documents for query '{query}': {e}")
             raise
 
+        # Extract just the text for metrics calculation
+        retrieved_texts = [doc["text"] for doc in retrieved_documents]
+        reranked_texts = [doc["text"] for doc in reranked_documents]
+
         # Measure metrics using documents after reranking
         results = metric.measure({
             "input": query,
             "golden_context": golden_context,
-            "retrieval_context": reranked_documents,
+            "retrieval_context": reranked_texts,
         })
         logger.info(f"Results after reranking for query '{query}': {results}")
 
@@ -200,7 +206,7 @@ class Evaluator:
         results_retrieved = metric.measure({
             "input": query,
             "golden_context": golden_context,
-            "retrieval_context": retrieved_documents,
+            "retrieval_context": retrieved_texts,
         })
         logger.info(f"Results for query '{query}': {results_retrieved}")
 
@@ -254,6 +260,30 @@ class Evaluator:
             logger.error(f"Failed to save output to {self.output_file}: {e}")
             raise e
 
+    def dump_command_line(self, arguments=None) -> str:
+        """Return the full command-line invocation as a single string."""
+
+        import sys
+        command_parts = [sys.argv[0]]
+
+        if arguments:
+            args_dict = vars(arguments)
+            for key, value in args_dict.items():
+                arg_name = f"--{key}"
+
+                if isinstance(value, bool):
+                    if value:
+                        command_parts.append(arg_name)
+                elif isinstance(value, list):
+                    if value:
+                        command_parts.append(arg_name)
+                        command_parts.extend(str(v) for v in value)
+                elif value is not None:
+                    command_parts.append(arg_name)
+                    command_parts.append(str(value))
+
+        return ' '.join(command_parts)
+
     def append_jsonl(self, result: dict):
         """Append partial evaluation results to a JSONL file."""
         try:
@@ -274,7 +304,7 @@ class Evaluator:
     def get_template(self):
         raise NotImplementedError("Depends on the specific dataset.")
 
-    def send_request(self, query, arguments, max_retries=3, wait_seconds=5):
+    def send_request(self, query, arguments, max_retries=3, wait_seconds=5, bucket_names: list = None):
         parameters = {
             "stream": False,
             "temperature": arguments.temperature if arguments.temperature is not None else self.system_args["temperature"],
@@ -285,12 +315,23 @@ class Evaluator:
             "repetition_penalty": self.system_args["repetition_penalty"],
         }
 
+        # Prepare metadata with search_by if bucket filtering is applied.
+        # It needs to be a part of TextDoc.metadata for request to chatQA API
+        metadata = {}
+        if bucket_names is not None and len(bucket_names) > 0:
+            metadata["search_by"] = {"bucket_names": bucket_names}
+
+        call_params = {"parameters": parameters}
+        if metadata:
+            call_params["metadata"] = metadata
+
         logger.info(
-            f"Sending request to ChatQA with query: '{query}' and parameters: {parameters}")
+            f"Sending request to ChatQA with query: '{query}' and with call_params: {call_params}")
 
         for attempt in range(max_retries):
+
             response = self.chatqa_api_helper.call_chatqa(
-                question=query, parameters=parameters)
+                question=query, **call_params)
 
             if response.status_code == 200:
                 response_text = self.post_process(response)
@@ -306,17 +347,25 @@ class Evaluator:
         logger.error("All retry attempts failed.")
         return None
 
-    def get_reranked_documents(self, query):
+    def get_reranked_documents(self, query, bucket_names: list = None):
         """
         Connects to the RAG API at /v1/retrieve and returns reranked documents retrieved for the given query.
-        """
-        return self._get_documents(query, rerank=True)
 
-    def get_retrieved_documents(self, query):
+        Args:
+            query: The query string
+            bucket_names: Optional list of bucket names to filter the search
+        """
+        return self._get_documents(query, rerank=True, bucket_names=bucket_names)
+
+    def get_retrieved_documents(self, query, bucket_names: list = None):
         """
         Connects to the RAG API at /v1/retrieve and returns all documents retrieved by the retriever (without reranking) for the given query
+
+        Args:
+            query: The query string
+            bucket_names: Optional list of bucket names to filter the search
         """
-        return self._get_documents(query, rerank=False)
+        return self._get_documents(query, rerank=False, bucket_names=bucket_names)
 
     def post_process(self, result):
         return self.chatqa_api_helper.get_text(result)
@@ -369,7 +418,7 @@ class Evaluator:
         return False
 
     # TODO: Track parameters used for retrieving documents as a part of the evaluation result
-    def _get_documents(self, query: str, rerank: bool = True, max_retries: int = 3, wait_seconds: int = 5) -> list[str]:
+    def _get_documents(self, query: str, rerank: bool = True, max_retries: int = 3, wait_seconds: int = 5, bucket_names: list = None) -> list[dict]:
         """
         Internal helper method to retrieve reranked documents, optionally all retrieved documents when rerank set to False.
 
@@ -378,15 +427,16 @@ class Evaluator:
             rerank: Whether to apply reranking (default: True)
             max_retries: Maximum number of retry attempts (default: 3)
             wait_seconds: Wait time between retries in seconds (default: 5)
+            bucket_names: Optional list of bucket names to filter the search (default: None)
 
         Returns:
-            List of document texts
+            List of document dictionaries with keys: text, bucket_name, object_name
 
         Raises:
             ConnectionError: If all retry attempts fail or HTTP error occurs
             ValueError: If response format is invalid
         """
-        texts = []
+        documents = []
 
         payload = {
             "query": query,
@@ -398,6 +448,10 @@ class Evaluator:
             "score_threshold": self.system_args["score_threshold"],
             "search_type": self.system_args["search_type"],
         }
+
+        # Add bucket filter if provided
+        if bucket_names is not None and len(bucket_names) > 0:
+            payload["search_by"] = {"bucket_names": bucket_names}
 
         if rerank:
             # set to 10 to support MAP@10 calculation and others
@@ -450,13 +504,28 @@ class Evaluator:
 
             if rerank:
                 # Note: in reranker responses, texts are nested under 'data', and then 'reranked_docs'
-                texts = [doc["text"] for doc in docs["data"]["reranked_docs"]]
+                for idx, doc in enumerate(docs["data"]["reranked_docs"]):
+                    documents.append({
+                        "rid": idx,
+                        "bucket_name": doc.get("metadata", {}).get("bucket_name", "unknown"),
+                        "object_name": doc.get("metadata", {}).get("object_name", "unknown"),
+                        "vector_distance": doc.get("metadata", {}).get("vector_distance", None),
+                        "reranker_score": doc.get("metadata", {}).get("reranker_score", None),
+                        "text": doc["text"]
+                    })
             else:
                 # If rerank is False, the response follows the retriever's format
-                texts = [doc["text"] for doc in docs["retrieved_docs"]]
+                for idx, doc in enumerate(docs["retrieved_docs"]):
+                    documents.append({
+                        "rid": idx,
+                        "bucket_name": doc.get("metadata", {}).get("bucket_name", "unknown"),
+                        "object_name": doc.get("metadata", {}).get("object_name", "unknown"),
+                        "vector_distance": doc.get("metadata", {}).get("vector_distance", None),
+                        "text": doc["text"]
+                    })
 
             # Log a warning if no documents were found
-            if not texts:
+            if not documents:
                 logger.warning(
                     f"No documents returned from {'reranking' if rerank else 'retriever'} for query '{query}'")
 
@@ -473,4 +542,4 @@ class Evaluator:
             logger.error(error_msg)
             raise
 
-        return texts
+        return documents

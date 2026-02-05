@@ -37,9 +37,16 @@ data:
       {{- end }}
     {{- end }}
   {{- end }}
-  {{- /* Calculate MAX_NEW_WORKERS = replicas × 8 */ -}}
-  {{- $maxNewWorkers = mul $embeddingReplicas 8 }}
-  {{- /* Calculate CELERY_BATCH_SIZE = replicas × 128 */ -}}
-  {{- $celeryBatchSize = mul $embeddingReplicas 128 }}
+  {{- /* Calculate MAX_NEW_WORKERS and CELERY_BATCH_SIZE based on balloons state */ -}}
+  {{- /* When balloons enabled: MAX_NEW_WORKERS = replicas × 8, CELERY_BATCH_SIZE = replicas × 128 */ -}}
+  {{- /* When balloons disabled: MAX_NEW_WORKERS = replicas × 4, CELERY_BATCH_SIZE = replicas × 32 */ -}}
+  {{- $balloonsEnabled := .Values.balloonsEnabled | default false }}
+  {{- if $balloonsEnabled }}
+    {{- $maxNewWorkers = mul $embeddingReplicas 8 }}
+    {{- $celeryBatchSize = mul $embeddingReplicas 128 }}
+  {{- else }}
+    {{- $maxNewWorkers = mul $embeddingReplicas 4 }}
+    {{- $celeryBatchSize = mul $embeddingReplicas 32 }}
+  {{- end }}
   MAX_NEW_WORKERS: {{ $maxNewWorkers | quote }}
   CELERY_BATCH_SIZE: {{ $celeryBatchSize | quote }}

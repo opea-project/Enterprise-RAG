@@ -12,6 +12,8 @@ proxy:
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+balloonsEnabled: {{ balloons.enabled | default(false) }}
+
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "seaweedfs" %}

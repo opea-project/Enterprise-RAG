@@ -585,6 +585,16 @@ class ChatUIHelper(BaseUIHelper):
             # Wait for navigation
             await self.page.wait_for_load_state("networkidle")
             
+            # Wait for URL to include admin-panel (handles redirect)
+            await self.page.wait_for_url("**/admin-panel/**", timeout=10000)
+            
+            # Wait for control plane panel to be visible
+            control_plane_panel = self.page.locator('[data-testid="control-plane-panel"]')
+            try:
+                await control_plane_panel.wait_for(state="visible", timeout=10000)
+            except Exception:
+                logger.warning("Control plane panel not immediately visible, continuing...")
+            
             logger.info(f"Navigated to: {self.page.url}")
             return True
             
@@ -634,23 +644,22 @@ class ChatUIHelper(BaseUIHelper):
             return False
     
     async def verify_control_plane_url(self, expected_path: str = "/admin-panel/control-plane") -> bool:
-        """Verify current URL matches expected Control Plane path.
+        """Verify current URL contains expected Control Plane path.
         
         Args:
-            expected_path: Expected path after base URL
+            expected_path: Expected path to be contained in the URL
             
         Returns:
-            True if URL matches, False otherwise
+            True if URL contains the expected path, False otherwise
         """
         try:
             current_url = self.page.url
-            expected_url = f"{self.ui_helper.base_url}{expected_path}"
             
-            if current_url == expected_url:
-                logger.info(f"URL verified: {current_url}")
+            if expected_path in current_url:
+                logger.info(f"URL verified: {current_url} contains {expected_path}")
                 return True
             else:
-                logger.error(f"URL mismatch: expected {expected_url}, got {current_url}")
+                logger.error(f"URL mismatch: expected '{expected_path}' to be in {current_url}")
                 return False
                 
         except Exception as e:

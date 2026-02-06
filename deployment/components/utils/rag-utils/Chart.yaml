@@ -7,7 +7,7 @@ description: RAG Utilities - Collection of utilities for RAG support
 
 type: application
 
-version: 2.0.3
-appVersion: "2.0.1"
+version: 2.0.4
+appVersion: "2.1.0"
 annotations:
   app.kubernetes.io/part-of: ERAG

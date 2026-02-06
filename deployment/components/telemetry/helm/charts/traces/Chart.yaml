@@ -3,8 +3,8 @@
 apiVersion: v2
 name: traces
 type: application
-version: 1.0.2
-appVersion: "2.0.1"
+version: 1.0.3
+appVersion: "2.1.0"
 annotations:
   app.kubernetes.io/part-of: ERAG
 

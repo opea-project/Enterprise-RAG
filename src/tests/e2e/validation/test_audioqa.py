@@ -132,6 +132,33 @@ def test_asr_payload_limit_stress(audioqa_api_helper):
         assert len(transcription.split()) > 0, f"ASR returned empty result for {word_count} words"
 
 
+@pytest.mark.smoke
+@allure.testcase("IEASG-326")
+def test_asr_upload_wav(audioqa_api_helper, edp_helper, chatqa_api_helper):
+    """Check whether user can upload *.wav audio. Ask a question related to audio content and verify the answer"""
+    audio_text = "There are 2568 words in a book called 'My puppet and I' by author John Doe"
+    question = "How many words are in the book 'My puppet and I' by John Doe?"
+    audio_data = audioqa_api_helper.generate_audio(audio_text)
+    edp_helper.upload_file_and_wait_for_ingestion(audio_data.filepath)
+    response = chatqa_api_helper.call_chatqa(question)
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response: {response_text}")
+    assert chatqa_api_helper.words_in_response(["2568", "2,568"], response_text)
+
+
+@allure.testcase("IEASG-327")
+def test_asr_upload_mp3(audioqa_api_helper, edp_helper, chatqa_api_helper):
+    """Check whether user can upload *.mp3 audio. Ask a question related to audio content and verify the answer"""
+    audio_text = "There are 11689 words in a book called 'Wooden Dreams' by author Anna Black"
+    question = "How many words are in the book 'Wooden Dreams' by Anna Black?"
+    audio_data = audioqa_api_helper.generate_audio(audio_text, format="mp3")
+    edp_helper.upload_file_and_wait_for_ingestion(audio_data.filepath)
+    response = chatqa_api_helper.call_chatqa(question)
+    response_text = chatqa_api_helper.get_text(response)
+    logger.info(f"ChatQA response: {response_text}")
+    assert chatqa_api_helper.words_in_response(["11689", "11,689"], response_text)
+
+
 def _run_speed_test_cases(helper, test_cases):
     """Run ASR tests for various speech speeds and validate transcriptions"""
     for case in test_cases:

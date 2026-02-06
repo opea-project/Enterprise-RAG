@@ -11,3 +11,4 @@ pytest-timeout==2.3.1 # MIT
 sentence-transformers==5.1.2 # Apache 2.0
 rouge==1.0.1 # Apache 2.0
 sherpa-onnx==1.12.23 # Apache 2.0
+pydub==0.25.1 # MIT

@@ -6,6 +6,8 @@
 from datetime import datetime
 import io
 import logging
+import os
+from pydub import AudioSegment
 import requests
 import secrets
 import sherpa_onnx
@@ -46,12 +48,19 @@ class AudioData:
     text: str
     voice: str
     sample_rate: int = 22050
+    format: str = "wav"
+    _filename: str = None
 
     @property
-    def filename(self) -> str:
-        # Format: sherpa_en_male_joe_20260127_093056_123.wav
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-        return f"sherpa_{self.voice}_{timestamp}.wav"
+    def filename(self):
+        if self._filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+            self._filename = f"sherpa_{self.voice}_{timestamp}.{self.format}"
+        return self._filename
+
+    @property
+    def filepath(self):
+        return os.path.join(AUDIO_FILES_DIR, self.filename)
 
 
 VOICES: dict[str, VoiceModel] = {
@@ -70,18 +79,24 @@ class SherpaTTS:
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self._engines = {}
 
-    def generate(self, text: str, voice_key: str = "en_male_joe", speed: float = 1.0) -> AudioData:
+    def generate(self, text: str, voice_key: str = "en_male_joe", speed: float = 1.0, format="wav") -> AudioData:
         """Generate audio from text."""
         engine = self._get_engine(voice_key)
 
         audio = engine.generate(text, speed=speed)
-        wav_bytes = self._to_wav(audio.samples, audio.sample_rate)
+        if format == "wav":
+            audio_bytes = self._to_wav(audio.samples, audio.sample_rate)
+        elif format == "mp3":
+            audio_bytes = self._to_mp3(audio.samples, audio.sample_rate)
+        else:
+            raise ValueError(f"Unsupported audio format: {format}")
 
         return AudioData(
-            audio_bytes=wav_bytes,
+            audio_bytes=audio_bytes,
             text=text,
             voice=voice_key,
             sample_rate=audio.sample_rate,
+            format=format
         )
 
     def save(self, audio_data: AudioData) -> Path:
@@ -173,6 +188,30 @@ class SherpaTTS:
 
         return buffer.getvalue()
 
+    @staticmethod
+    def _to_mp3(samples: list, sample_rate: int) -> bytes:
+        """Convert samples to MP3 bytes"""
+        int_samples = [max(-32768, min(32767, int(s * 32767))) for s in samples]
+        pcm_data = struct.pack(f'{len(int_samples)}h', *int_samples)
+
+        audio = AudioSegment(
+            data=pcm_data,
+            sample_width=2,
+            frame_rate=sample_rate,
+            channels=1
+        )
+
+        buffer = io.BytesIO()
+
+        # Temporarily disable pydub logging to avoid cluttering test output with ffmpeg logs
+        logging.disable(logging.INFO)
+        try:
+            audio.export(buffer, format="mp3", bitrate="128k")
+        finally:
+            logging.disable(logging.NOTSET)
+
+        return buffer.getvalue()
+
 
 class AudioApiHelper(ApiRequestHelper):
 
@@ -181,9 +220,9 @@ class AudioApiHelper(ApiRequestHelper):
         self.asr_api_path = f"https://{cfg.get('FQDN')}/v1/audio/transcriptions"
         self.tts = SherpaTTS()
 
-    def generate_audio(self, text: str,  speed: float = 1.0) -> AudioData:
+    def generate_audio(self, text: str,  speed: float = 1.0, format="wav") -> AudioData:
         """Generate audio bytes from text using SherpaTTS."""
-        audio_data = self.tts.generate(text, speed=speed)
+        audio_data = self.tts.generate(text, speed=speed, format=format)
         self.tts.save(audio_data)
         return audio_data
 

@@ -54,7 +54,7 @@ super-linter-output/
 **/allure-results
 **/junitxml_report.xml
 **/test_logs
-
+src/tests/e2e/files/audio/
 
 # credentials
 deployment/default_credentials.txt

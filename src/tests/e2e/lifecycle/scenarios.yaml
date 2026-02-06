@@ -4,12 +4,10 @@ scenarios:
     lifecycle:
       - test_uninstall.py
 
-  reinstall:
-    lifecycle:
-      - test_reinstall.py
+  install:
     markers: "smoke"
 
-  update_llm_model:
+  update-llm-model:
     lifecycle:
       - test_update_llm_model.py
     validation:
@@ -19,18 +17,21 @@ scenarios:
         - test_chatqa.py::test_follow_up_questions_simple_case
         - test_learning_capabilities.py
 
-  update_reranker_model:
+  update-reranker-model:
     lifecycle:
       - test_update_reranker_model.py
     markers: "smoke"
 
-  update_embedding_model:
+  update-embedding-model:
     lifecycle:
       - test_update_embedding_model.py
     markers: "smoke"
 
   backup-restore:
     lifecycle:
-      - test_pre_backup.py
-      - test_post_backup.py
-      - test_post_restore.py
+      before-backup:
+        - test_pre_backup.py
+      after-backup:
+        - test_post_backup.py
+      after-restore:
+        - test_post_restore.py

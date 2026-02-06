@@ -49,7 +49,7 @@ processing, and robotic automation.
 """
 
 
-@allure.testcase("IEASG-T300")
+@allure.testcase("IEASG-T328")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_paste_text_tab_rendered(docsum_ui_helper):
@@ -69,7 +69,7 @@ async def test_paste_text_tab_rendered(docsum_ui_helper):
     logger.info("Paste Text tab is rendered")
 
 
-@allure.testcase("IEASG-T301")
+@allure.testcase("IEASG-T329")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_user_can_fill_textarea(docsum_ui_helper):
@@ -102,7 +102,7 @@ async def test_user_can_fill_textarea(docsum_ui_helper):
     logger.info("User can fill textarea successfully")
 
 
-@allure.testcase("IEASG-T302")
+@allure.testcase("IEASG-T330")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_user_can_generate_summary(docsum_ui_helper):

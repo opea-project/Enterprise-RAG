@@ -105,7 +105,7 @@ ssh_user = "ubuntu"
 hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
 
 # Solution Version (optional)
-solution_version = "release-2.1.0"  # Options: "release-2.1.0", "release-1.5.0", "main"
+solution_version = "release-2.0.1"  # Options: "release-2.0.1", "release-1.5.0", "main"
 ```
 
 ## Optional Variables
@@ -119,8 +119,8 @@ instance_profile = ""  # Intel instance
 boot_volume_size = 250                       # GB
 
 # Version Control
-solution_version = "release-2.1.0"         # Git tag or branch (default: "release-2.1.0")
-                                            # Examples: "release-2.1.0", "release-1.5.0", "main"
+solution_version = "release-2.0.1"         # Git tag or branch (default: "release-2.0.1")
+                                            # Examples: "release-2.0.1", "release-1.5.0", "main"
 
 # Model Configuration (Intel Gaudi optimized)
 deployment_type       = "hpu"

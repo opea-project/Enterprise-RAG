@@ -5,8 +5,8 @@ apiVersion: v2
 name: erag-ingress-nginx
 description: Enterprise RAG ingress-nginx umbrella chart
 type: application
-version: 1.0.4
-appVersion: "2.1.0"
+version: 1.0.3
+appVersion: "2.0.1"
 annotations:
   app.kubernetes.io/part-of: ERAG
 

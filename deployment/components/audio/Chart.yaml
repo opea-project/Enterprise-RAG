@@ -5,7 +5,7 @@ apiVersion: v2
 name: audio
 description: Audio processing services (ASR, TTS, etc.) Helm chart
 type: application
-version: 0.1.1
+version: 0.1.0
 appVersion: "2.1.0"
 annotations:
   app.kubernetes.io/part-of: ERAG

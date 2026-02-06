@@ -1,12 +1,12 @@
 {
   "name": "@intel-enterprise-rag-ui/docsum",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.1.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

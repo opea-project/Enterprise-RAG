@@ -238,6 +238,7 @@ reclaimPolicy: Delete
 
 ### Prerequisites
 1. **NetApp ONTAP System**: Configured ONTAP cluster with:
+   - ONTAP software version 9.16.1P4 or above
    - Storage Virtual Machine (SVM) configured
    - NFS protocol enabled
    - Data and management LIFs configured
@@ -372,7 +373,7 @@ kubectl get pvc --all-namespaces
 
 - **Trident Version**: 25.06 (Helm chart version 100.2506.0)
 - **Kubernetes**: 1.31+ (as supported by Enterprise RAG)
-- **ONTAP**: 9.8+ (recommended for full feature support)
+- **ONTAP**: 9.16.1P4+ (recommended for full feature support)
 - **Ubuntu**: 22.04/24.04 (for NFS utilities)
 
 ## Future Enhancements

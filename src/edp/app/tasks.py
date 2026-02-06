@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -375,53 +375,149 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
         self.safe_commit()
     else:
         # Step 5 - Call the embedding service and ingestion service in batches
-        batch_size = int(os.getenv('BATCH_SIZE', '128'))
+        # Optimized: Pipeline embedding and ingestion to maximize throughput
+        # Strategy: 
+        #   - Use smaller batches to reduce serialization/network overhead
+        #   - Send multiple embedding requests in parallel to saturate vLLM
+        #   - Ingest results in parallel as they complete
+        import concurrent.futures
+        from threading import Lock
+
+        # Smaller batch size for faster HTTP transfers, parallel requests saturate vLLM
+        batch_size = int(os.getenv('BATCH_SIZE', '32'))  # Smaller batches transfer faster
+        max_workers = int(os.getenv('MAX_NEW_WORKERS', '8'))  # Maximum parallel workers for embedding and ingestion
+
         file_db.embedding_start = datetime.datetime.now()
         file_db.ingestion_start = file_db.embedding_start
         file_db.status = 'embedding'
-        file_db.job_message = 'Data embedding in progress.'
+        file_db.job_message = 'Data embedding and ingestion in progress.'
         self.safe_commit()
-        total_embedding_duration = datetime.timedelta()
-        total_ingestion_duration = datetime.timedelta()
 
+        # Track actual wall-clock time, not cumulative
+        pipeline_start = datetime.datetime.now()
+        error_occurred = None
+        error_lock = Lock()
+        chunks_processed = 0
+        chunks_lock = Lock()
+        total_ingestion_time = datetime.timedelta()  # Sum of all ingestion times
 
-        for i in range(0, len(dataprep_docs), batch_size):
-            # Step 5.1 - send each chunk of text from dataprep to the embedding service
+        total_batches = (len(dataprep_docs) + batch_size - 1) // batch_size
+        total_docs = len(dataprep_docs)
+
+        logger.info(f"[{file_db.id}] Starting parallel pipeline: {total_batches} batches, "
+                   f"batch_size={batch_size}, max_workers={max_workers}")
+
+        def process_batch(batch_info):
+            """Process a single batch: embed then ingest"""
+            nonlocal chunks_processed, error_occurred, total_ingestion_time
+
+            batch_idx, docs_batch = batch_info
+            batch_num = batch_idx + 1
+
+            # Check if error occurred in another thread (fail-fast mechanism)
+            # If any parallel worker fails, all others should stop immediately
+            # looking for errors in embedding and ingestion steps
+            with error_lock:
+                if error_occurred:
+                    logger.warning(f"[{file_db.id}] Batch {batch_num} skipped - another thread failed: {error_occurred}")
+                    return None
+
+            try:
+                # Step 1: Embedding
+                start_embedding = datetime.datetime.now()
+                embed_response = requests.post(EMBEDDING_ENDPOINT, json={"docs": docs_batch})
+                embedding_time = datetime.datetime.now() - start_embedding
+
+                if embed_response.status_code != 200:
+                    raise Exception(f"Embedding failed for batch {batch_num}: {response_err(embed_response)}")
+
+                logger.info(f"[{file_db.id}] Batch {batch_num}/{total_batches} embedded in {embedding_time.total_seconds():.2f}s")
+
+                # Step 2: Ingestion (immediately after embedding)
+                start_ingestion = datetime.datetime.now()
+                ingest_response = requests.post(INGESTION_ENDPOINT, json=embed_response.json())
+                ingestion_time = datetime.datetime.now() - start_ingestion
+
+                if ingest_response.status_code != 200:
+                    raise Exception(f"Ingestion failed for batch {batch_num}: {response_err(ingest_response)}")
+
+                logger.info(f"[{file_db.id}] Batch {batch_num}/{total_batches} ingested in {ingestion_time.total_seconds():.2f}s")
+
+                # Update counters (thread-safe)
+                with chunks_lock:
+                    chunks_processed += len(docs_batch)
+                    total_ingestion_time += ingestion_time
+
+                return (batch_num, len(docs_batch))
+
+            except Exception as e:
+                with error_lock:
+                    if error_occurred is None:
+                        error_occurred = str(e)
+                logger.error(f"[{file_db.id}] Batch {batch_num} failed: {str(e)}")
+                raise Exception(f"Error encountered while processing, error={str(e)}")
+
+        # Prepare all batches
+        batches = []
+        for batch_idx, i in enumerate(range(0, len(dataprep_docs), batch_size)):
             docs_batch = dataprep_docs[i:i+batch_size]
-            
-            start_embedding_time = datetime.datetime.now()
-            response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
-            
-            end_embedding_time = datetime.datetime.now()
-            total_embedding_duration += (end_embedding_time - start_embedding_time)
-            logger.debug(f"[{file_db.id}] Chunk {i} embedding completed.")
-            
-            if response.status_code == 200:
-                # Step 5.2 - save each chunk of text and embedding to the vector database
-                start_ingestion_time = datetime.datetime.now()
-                response = requests.post(INGESTION_ENDPOINT, json=response.json()) # pass the whole response from embedding to ingestion
-                end_ingestion_time = datetime.datetime.now()
-                total_ingestion_duration += (end_ingestion_time - start_ingestion_time)
-                logger.debug(f"[{file_db.id}] Chunk {i} ingestion completed.")
-                if response.status_code != 200:
+            batches.append((batch_idx, docs_batch))
+
+        # Process batches with parallel workers
+        # Each worker handles embed+ingest for its batch
+        # This keeps both embedding service and ingestion service saturated
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(process_batch, batch): batch[0] for batch in batches}
+
+            completed = 0
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    if result is not None:
+                        completed += 1
+                        batch_num, batch_len = result
+
+                        # Update database with progress after each batch completes
+                        current_time = datetime.datetime.now()
+                        file_db.chunks_processed = chunks_processed
+                        file_db.embedding_end = current_time
+                        file_db.ingestion_end = file_db.ingestion_start + total_ingestion_time
+                        file_db.job_message = f'Processing: {chunks_processed}/{total_docs} chunks ({completed}/{total_batches} batches)'
+                        self.safe_commit()
+
+                        if completed % 10 == 0 or completed == total_batches:
+                            logger.info(f"[{file_db.id}] Progress: {completed}/{total_batches} batches, "
+                                       f"{chunks_processed}/{total_docs} chunks")
+                except Exception as e:
+                    # Cancel remaining futures
+                    for f in futures:
+                        f.cancel()
+
                     file_db.status = 'error'
-                    file_db.job_message = f"Error encountered while ingestion. {response_err(response)}"
+                    file_db.job_message = f"Error during processing: {str(e)}"
                     file_db.embedding_end = datetime.datetime.now()
                     self.safe_commit()
-                    raise Exception(f"Error encountered while ingestion. {response_err(response)}")
-            else:
-                file_db.status = 'error'
-                file_db.job_message = f"Error encountered while embedding. {response_err(response)}"
-                file_db.embedding_end = datetime.datetime.now()
-                self.safe_commit()
-                raise Exception(f"Error encountered while embedding. {response_err(response)}")
-            
-            # Update the pipeline progress
-            file_db.chunks_processed = i + len(docs_batch)
-            file_db.embedding_end = file_db.embedding_start + total_embedding_duration
-            file_db.ingestion_start = file_db.embedding_end
-            file_db.ingestion_end = file_db.embedding_end + total_ingestion_duration
-            self.safe_commit()
+                    raise Exception(f"Error encountered while processing, error={str(e)}")
+
+        # Calculate actual wall-clock time (not cumulative)
+        pipeline_end = datetime.datetime.now()
+        total_wall_time = pipeline_end - pipeline_start
+
+        # Update final stats
+        # - embedding_end: wall-clock end time
+        # - ingestion uses summed duration (since ingestions run in parallel)
+        file_db.chunks_processed = chunks_processed
+        file_db.embedding_end = pipeline_end
+        file_db.ingestion_start = file_db.embedding_start  # They overlap in parallel execution
+        file_db.ingestion_end = file_db.ingestion_start + total_ingestion_time  # Sum of all ingestion times
+        self.safe_commit()
+
+        logger.info(f"[{file_db.id}] Pipeline complete! "
+                   f"Wall time: {total_wall_time.total_seconds():.2f}s, "
+                   f"Total ingestion time: {total_ingestion_time.total_seconds():.2f}s, "
+                   f"Batches: {total_batches}, "
+                   f"Throughput: {chunks_processed / total_wall_time.total_seconds():.1f} docs/s")
 
     # Update the processing time
     file_db.status = 'ingested'

@@ -24,6 +24,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[configure_pipeline.md](configure_pipeline.md)**
   Guide for configuring Intel® AI for Enterprise RAG processing pipelines and workflow customization.
 
+- **[switching_pipelines.md](switching_pipelines.md)**
+  Guide for switching between the ChatQA and upload-optimized pipeline configurations.
+
 - **[building_images.md](building_images.md)**
   Guide for building Docker images locally for Intel® AI for Enterprise RAG components and pushing them to registries.
 

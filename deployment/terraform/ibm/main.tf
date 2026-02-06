@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 resource "random_id" "suffix" {
@@ -199,6 +199,13 @@ data "template_file" "erag_config" {
   }
 }
 
+data "template_file" "habana_plugin" {
+  template = file("${path.module}/habana-k8s-device-plugin.yaml.tpl")
+  vars = {
+    habana_plugin_version = var.habana_version
+  }
+}
+
 resource "null_resource" "wait_for_ssh" {
   provisioner "remote-exec" {
     inline = ["echo 'SSH is ready'"]
@@ -236,6 +243,22 @@ resource "null_resource" "transfer_files" {
   provisioner "file" {
     source      = "${path.module}/../scripts/run_install.sh"
     destination = "/tmp/run_install.sh"
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh_user
+      private_key = can(file(var.ssh_key)) ? file(var.ssh_key) : var.ssh_key
+      host        = ibm_is_floating_ip.instance.address
+
+      proxy_scheme = var.use_proxy ? var.proxy_scheme : null
+      proxy_host   = var.use_proxy ? var.proxy_host : null
+      proxy_port   = var.use_proxy ? var.proxy_port : null
+    }
+  }
+
+  provisioner "file" {
+    content     = data.template_file.habana_plugin.rendered
+    destination = "/tmp/habana-k8s-device-plugin.yaml"
 
     connection {
       type        = "ssh"
@@ -302,7 +325,7 @@ resource "null_resource" "run_install_system" {
     }
     inline = [
       "chmod +x /tmp/run_install.sh",
-      "/tmp/run_install.sh --platform ibm --gaudi --stage system --tag ${var.solution_version}"
+      "/tmp/run_install.sh --platform ibm --stage system --tag ${var.solution_version} --habana-version ${var.habana_version}${var.deployment_type == "hpu" ? " --gaudi" : ""}"
     ]
   }
 }
@@ -326,7 +349,7 @@ resource "null_resource" "run_install_cluster" {
       proxy_port   = var.use_proxy ? var.proxy_port : null
     }
     inline = [
-      "/tmp/run_install.sh --platform ibm --gaudi --stage cluster --tag ${var.solution_version}"
+      "/tmp/run_install.sh --platform ibm --stage cluster --tag ${var.solution_version} --habana-version ${var.habana_version}${var.deployment_type == "hpu" ? " --gaudi" : ""}"
     ]
   }
 }
@@ -350,7 +373,7 @@ resource "null_resource" "run_install_application" {
       proxy_port   = var.use_proxy ? var.proxy_port : null
     }
     inline = [
-      "/tmp/run_install.sh --platform ibm --gaudi --stage application --tag ${var.solution_version}"
+      "/tmp/run_install.sh --platform ibm --stage application --tag ${var.solution_version} --habana-version ${var.habana_version}${var.deployment_type == "hpu" ? " --gaudi" : ""}"
     ]
   }
 }

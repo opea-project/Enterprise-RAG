@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -7,12 +7,16 @@
     file: load_settings.yaml
     apply:
       tags:
+        - always
         - pre-upgrade
+        - update-configuration
   tags:
+    - always
     - install
     - display-configuration
     - uninstall
     - pre-upgrade
+    - update-configuration
 
 - name: Validate tools
   ansible.builtin.include_tasks:
@@ -25,6 +29,7 @@
     - validate-tools
     - uninstall
     - pre-upgrade
+    - update-configuration
 
 - name: Validate configuration
   ansible.builtin.include_role:
@@ -44,6 +49,7 @@
     - install
     - uninstall
     - pre-upgrade
+    - update-configuration
 
 - name: Handle certificates
   vars:

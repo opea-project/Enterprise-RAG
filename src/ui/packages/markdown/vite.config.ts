@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { fileURLToPath } from "node:url";
@@ -25,13 +25,6 @@ export default defineConfig({
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
-        },
-        manualChunks: {
-          "react-syntax-highlighter": [
-            "react-syntax-highlighter",
-            "react-syntax-highlighter/dist/esm/prism",
-            "react-syntax-highlighter/dist/esm/styles/prism",
-          ],
         },
       },
     },

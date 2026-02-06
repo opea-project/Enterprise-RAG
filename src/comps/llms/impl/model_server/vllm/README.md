@@ -20,6 +20,7 @@ vLLM is a fast and easy-to-use library for LLM inference and serving, it deliver
    - 2.5. [Run FP8 Quantization with vLLM on HPU device](#run-fp8-quantization-with-vllm-on-hpu-device)
      - 2.5.1. [Perform model quantization](#perform-model-quantization)
      - 2.5.2. [Run vLLM with quantized model](#run-vllm-with-quantized-model)
+   - 2.6. [vLLM for Xeon based on Red Hat® Universal Base Image](#vllm-for-xeon-based-on-red-hat-universal-base-image)
 
 ## Getting Started
 
@@ -219,8 +220,6 @@ In order to work with a fp8 quantized model, you need to do the following:
     ## VLLM Model Server Settings ##
     LLM_VLLM_MODEL_NAME="Intel/neural-chat-7b-v3-3"
 
-    #LLM_CONNECTOR="langchain" # Defaults to "generic" if not set. Options: "langchain", "generic".
-
     ## FP8 Quantization settings
     FP8_DATASET_PATH=<path to calibration dataset in pkl format>
     ```
@@ -248,3 +247,46 @@ In order to work with a fp8 quantized model, you need to do the following:
    cd model_server/vllm
    IF_FP8_QUANTIZATION=true ./run_vllm.sh
    ```
+
+### vLLM for Xeon based on Red Hat® Universal Base Image
+This image is based on Universal Base Image 9 (UBI) maintained by Red Hat®. The image leverages `AMX` and `AVX-512` instruction extensions for improved inference. It runs vLLM in an unprivileged mode installed on top of UBI9 which makes it a perfect choice for OpenShift deployments on Xeon® as it works out-of-the-box. The image is publicly available on OPEA Docker Hub. It is compatible with all Xeon® CPUs since generation 4, codenamed *Sapphire Rapids*. The image is a different version of the vLLM image for CPU build and published by the vLLM project, so for deeper insights you can take a look at the [official documentation](https://docs.vllm.ai/en/stable/getting_started/installation/cpu).
+
+If you want, you can use it as a standalone vLLM in your project.
+
+- Leverages `AMX` and `AVX-512` for optimized inference
+- Compatible with *Sapphire Rapids* and newer generation of Intel® Xeon® CPUs
+- By default, `VLLM_CPU_KVCACHE_SPACE` is set to `40GiB`, however you can change it using an environment variable during runtime
+- Docker Hub -> [docker.io/opea/vllm-cpu-ubi](https://hub.docker.com/r/opea/vllm-cpu-ubi)
+- [Dockerfile](./docker/cpu_ubi/Dockerfile)
+
+
+#### Building the Docker image
+You can customize and build the image yourself if needed.
+- Default build with Xeon optimizations enabled. Just run the `docker build` with default values.
+```bash
+docker build -f Dockerfile -t vllm-cpu-ubi:latest .
+```
+-  For machines without `avx512f`, `avx512_bf16`, `avx512_vnni` or `amx`, disable build optimizations using `--build-arg`.
+```bash
+docker build -f docker/Dockerfile.xeon-ubi\
+        --build-arg VLLM_CPU_AVX512BF16=false \
+        --build-arg VLLM_CPU_AVX512VNNI=false \
+        --build-arg VLLM_CPU_DISABLE_AVX512=true \
+        --build-arg VLLM_CPU_AMXBF16=false
+        --tag vllm-xeon-ubi
+```
+- More details in [Build image from source](https://docs.vllm.ai/en/stable/getting_started/installation/cpu.html#build-image-from-source)
+
+#### Running the Docker container as a standalone server
+- Specify `VLLM_CPU_KVCACHE_SPACE`; it must be lower than your system memory (default is 40GB). A larger KV Cache can support more concurrent requests and longer context lengths.
+```bash
+docker run -d \
+  -p 8000:8000 \
+  -e VLLM_CPU_KVCACHE_SPACE=20 \
+  -e HF_TOKEN=<YOUR_HF_TOKEN> \
+  docker.io/opea/vllm-cpu-ubi:v0.12.0-ubi9 \
+    --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --dtype bfloat16
+```

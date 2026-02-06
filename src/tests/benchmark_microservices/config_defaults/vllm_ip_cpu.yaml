@@ -2,9 +2,6 @@
 setup_configurations:
   config_override:
     VLLM_TP_SIZE: 1
-  config_microservice_extra:
-    LLM_CONNECTOR:
-      - langchain
   config_model_server_extra:
     VLLM_CPU_OMP_THREADS_BIND:
       - 0-31

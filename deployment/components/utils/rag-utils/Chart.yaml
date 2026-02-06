@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v2
@@ -7,7 +7,7 @@ description: RAG Utilities - Collection of utilities for RAG support
 
 type: application
 
-version: 2.0.2
-appVersion: "2.0.1"
+version: 2.0.4
+appVersion: "2.1.0"
 annotations:
   app.kubernetes.io/part-of: ERAG

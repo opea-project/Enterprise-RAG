@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
@@ -7,6 +7,7 @@ import os
 import time
 import base64
 import io
+import requests
 
 from urllib3.exceptions import MaxRetryError
 from dotenv import load_dotenv
@@ -19,6 +20,7 @@ from comps.cores.mega.constants import MegaServiceEndpoint, ServiceType
 from comps.cores.proto.docarray import DataPrepInput, TextSplitterInput
 from comps.cores.mega.micro_service import opea_microservices, register_microservice
 from comps.cores.mega.base_statistics import register_statistics, statistics_dict
+from requests.exceptions import HTTPError, ConnectionError, ProxyError
 
 # Define the unique service name for the microservice
 USVC_NAME='opea_service@opea_text_extractor'
@@ -30,11 +32,28 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
+# Load ASR endpoint configuration
+ASR_MODEL_SERVER_ENDPOINT = os.getenv('ASR_MODEL_SERVER_ENDPOINT')
+def validate_asr_endpoint(asr_endpoint):
+    """Validate that the ASR endpoint is responsive."""
+    if not asr_endpoint or asr_endpoint.strip() == "":
+        logger.info("ASR_MODEL_SERVER_ENDPOINT is not configured. Audio file support will be disabled.")
+        return
+
+    try:
+        url = f"{asr_endpoint.rstrip('/')}/v1/health_check"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        logger.info(f"ASR endpoint validation successful: {asr_endpoint}")
+    except Exception as e:
+        logger.error(f"Unexpected error validating ASR endpoint: {asr_endpoint}. Error: {str(e)}")
+        raise
+
 # Initialize an instance of the OPEADataprep class with environment variables.
 # OPEADataprep is a singleton so we initialize it with the environment variables.
 # Next, text_extractor calls can be overriden with the input parameters if passed.
-def run_text_extractor(files, links, texts):
-    text_extractor = OPEATextExtractor()
+def run_text_extractor(files, links, texts, asr_endpoint):
+    text_extractor = OPEATextExtractor(asr_endpoint=asr_endpoint)
     textdocs = text_extractor.load_data(
         files=files,
         link_list=links,
@@ -105,7 +124,13 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
     loaded_docs = None
     loop = asyncio.get_event_loop()
     try:
-        loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list, texts)
+        loaded_docs = await loop.run_in_executor(pool, run_text_extractor, decoded_files, link_list, texts, ASR_MODEL_SERVER_ENDPOINT)
+    except HTTPError as e:
+        logger.exception(e)
+        raise HTTPException(status_code=400, detail=f"A HTTP Error occurred while processing links: {str(e)}")
+    except (ConnectionError, ProxyError) as e:
+        logger.exception(e)
+        raise HTTPException(status_code=400, detail=f"Could not connect to remote server: {str(e)}")
     except ValueError as e:
         logger.exception(e)
         raise HTTPException(status_code=400, detail=f"A Value Error occurred while processing: {str(e)}")
@@ -122,5 +147,6 @@ async def process(input: DataPrepInput) -> TextSplitterInput:
 
 if __name__ == "__main__":
     # Start the microservice
+    validate_asr_endpoint(ASR_MODEL_SERVER_ENDPOINT)
     opea_microservices[USVC_NAME].start()
     logger.info(f"Started OPEA Microservice: {USVC_NAME}")

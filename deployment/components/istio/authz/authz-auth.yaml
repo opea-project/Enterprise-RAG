@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: security.istio.io/v1
@@ -18,6 +18,8 @@ spec:
         - cluster.local/ns/ingress-nginx/sa/ingress-nginx
         - cluster.local/ns/auth-apisix/sa/auth-apisix
         - cluster.local/ns/edp/sa/edp-minio
+        - cluster.local/ns/seaweedfs/sa/default
+
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

@@ -1,17 +1,10 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Button } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
-import {
-  ChangeEventHandler,
-  FormEventHandler,
-  useEffect,
-  useState,
-} from "react";
-import { ValidationError } from "yup";
+import { ChangeEventHandler, useEffect, useState } from "react";
 
-import { useChangeArgumentsMutation } from "@/features/admin-panel/control-plane/api";
 import { ControlPlaneCardProps } from "@/features/admin-panel/control-plane/components/cards";
 import SelectedServiceCard from "@/features/admin-panel/control-plane/components/SelectedServiceCard/SelectedServiceCard";
 import ServiceArgumentTextArea from "@/features/admin-panel/control-plane/components/ServiceArgumentTextArea/ServiceArgumentTextArea";
@@ -19,23 +12,22 @@ import {
   PromptTemplateArgs,
   promptTemplateFormConfig,
 } from "@/features/admin-panel/control-plane/config/chat-qna-graph/promptTemplate";
-import { ChangeArgumentsRequest } from "@/features/admin-panel/control-plane/types/api";
+import useServiceCard from "@/features/admin-panel/control-plane/hooks/useServiceCard";
 import { validatePromptTemplateForm } from "@/features/admin-panel/control-plane/validators/promptTemplateInput";
 
 const PromptTemplateCard = ({
   data: {
+    id,
     status,
     displayName,
     promptTemplateArgs: prevPromptTemplateArguments,
   },
 }: ControlPlaneCardProps) => {
-  const [changeArguments] = useChangeArgumentsMutation();
-
-  const [promptTemplateForm, setPromptTemplateForm] =
-    useState<PromptTemplateArgs>(
-      (prevPromptTemplateArguments ??
-        ({} as PromptTemplateArgs)) as PromptTemplateArgs,
-    );
+  const {
+    argumentsForm: promptTemplateForm,
+    onArgumentValueChange,
+    footerProps,
+  } = useServiceCard<PromptTemplateArgs>(id, prevPromptTemplateArguments);
 
   const [isHydrated, setIsHydrated] = useState<boolean>(
     !!prevPromptTemplateArguments,
@@ -46,7 +38,6 @@ const PromptTemplateCard = ({
 
   useEffect(() => {
     if (prevPromptTemplateArguments !== undefined) {
-      setPromptTemplateForm(prevPromptTemplateArguments);
       setIsHydrated(true);
     } else {
       setIsHydrated(false);
@@ -66,7 +57,7 @@ const PromptTemplateCard = ({
         setError("");
       } catch (validationError) {
         setIsInvalid(true);
-        setError((validationError as ValidationError).message);
+        setError(getValidationErrorMessage(validationError));
       }
     };
 
@@ -75,40 +66,20 @@ const PromptTemplateCard = ({
 
   const handleChange: ChangeEventHandler<HTMLTextAreaElement> = (event) => {
     const { value, name } = event.target;
-    setPromptTemplateForm((prevForm) => ({
-      ...prevForm,
-      [name]: sanitizeString(value),
-    }));
+    onArgumentValueChange(name, sanitizeString(value));
   };
-
-  const handlePromptTemplateArgsSubmit: FormEventHandler<HTMLFormElement> = (
-    event,
-  ) => {
-    event.preventDefault();
-    const changeArgumentsRequest: ChangeArgumentsRequest = [
-      {
-        name: "prompt_template",
-        data: promptTemplateForm,
-      },
-    ];
-
-    changeArguments(changeArgumentsRequest);
-  };
-
-  const changePromptTemplateBtnDisabled =
-    !isHydrated ||
-    isInvalid ||
-    (promptTemplateForm.user_prompt_template ===
-      prevPromptTemplateArguments?.user_prompt_template &&
-      promptTemplateForm.system_prompt_template ===
-        prevPromptTemplateArguments?.system_prompt_template);
 
   return (
-    <SelectedServiceCard serviceStatus={status} serviceName={displayName}>
-      <form
-        className="grid h-full grid-rows-[1fr_1fr_auto] gap-4 pt-4 text-xs"
-        onSubmit={handlePromptTemplateArgsSubmit}
-      >
+    <SelectedServiceCard
+      serviceStatus={status}
+      serviceName={displayName}
+      footerProps={{
+        ...footerProps,
+        isConfirmChangesButtonDisabled:
+          footerProps.isConfirmChangesButtonDisabled || isInvalid,
+      }}
+    >
+      <div className="grid h-full grid-rows-[1fr_1fr_auto] gap-4 pt-4 text-xs">
         <ServiceArgumentTextArea
           value={promptTemplateForm.system_prompt_template ?? ""}
           placeholder="Enter system prompt template..."
@@ -125,16 +96,8 @@ const PromptTemplateCard = ({
         />
         <div>
           <p className="error mb-3 min-h-14 text-xs italic">{error}</p>
-          <Button
-            size="sm"
-            type="submit"
-            isDisabled={changePromptTemplateBtnDisabled}
-            fullWidth
-          >
-            Change Prompt Template
-          </Button>
         </div>
-      </form>
+      </div>
     </SelectedServiceCard>
   );
 };

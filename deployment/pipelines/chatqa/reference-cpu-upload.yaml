@@ -1,0 +1,58 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# reference-cpu-upload.yaml - Upload-optimized ChatQA pipeline configuration
+# This configuration contains ONLY embedding service and model server components
+# optimized for document upload workloads with high embedding throughput.
+#
+# Components included:
+#   - Fingerprint: Request metadata tracking
+#   - Embedding: Vector embedding service (primary focus)
+#   - TorchserveEmbedding: Model server for embedding inference
+#
+# Components excluded (not needed for upload):
+#   - Retriever: Vector search
+#   - Reranking: Result reranking
+#   - Prompt template: Not primary focus
+#   - Guardrails: Input/output scanning
+#   - LLM: Chat completion service (disabled for upload_pipelines=true)
+#   - VLLM: Model server for LLM inference (disabled for upload_pipelines=true)
+#
+apiVersion: gmc.opea.io/v1alpha3
+kind: GMConnector
+metadata:
+  labels:
+    app.kubernetes.io/name: gmconnector
+    app.kubernetes.io/managed-by: kustomize
+    gmc/platform: xeon
+  name: chatqa
+  namespace: chatqa
+spec:
+  routerConfig:
+    name: router
+    serviceName: router-service
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+      - name: Fingerprint
+        dependency: Hard
+        internalService:
+          serviceName: fgp-svc
+          config:
+            endpoint: /v1/system_fingerprint/append_arguments
+      - name: Embedding
+        data: $response
+        dependency: Hard
+        internalService:
+          serviceName: embedding-svc
+          config:
+            endpoint: /v1/embeddings
+            EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
+            EMBEDDING_MODEL_SERVER: "vllm"
+            EMBEDDING_CONNECTOR: "generic"
+      - name: VLLMEmbedding
+        dependency: Hard
+        internalService:
+          serviceName: vllm-embedding-svc
+          isDownstreamService: true

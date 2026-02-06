@@ -1,0 +1,10 @@
+FROM nri-balloons-controller-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+
+# CMD from base Dockerfile
+WORKDIR /
+ENTRYPOINT ["/manager"]

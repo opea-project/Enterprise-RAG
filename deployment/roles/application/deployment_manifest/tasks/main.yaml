@@ -1,0 +1,142 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+- name: Mark deployment manifest as deleting
+  tags:
+    - uninstall
+  when: "'uninstall' in ansible_run_tags"
+  block:
+    - name: Ensure manifest namespace exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ manifest_namespace }}"
+            labels: "{{ manifest_namespace_labels }}"
+
+    - name: Check for existing deployment manifest
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        namespace: "{{ manifest_namespace }}"
+        label_selectors:
+          - "{{ manifest_label_selector }}"
+      register: existing_manifests
+      failed_when: false
+
+    - name: Parse existing manifest
+      set_fact:
+        manifest_exists: "{{ existing_manifests.resources | length > 0 }}"
+        existing_manifest: "{{ (existing_manifests.resources[0].data['manifest.yaml'] | from_yaml) if existing_manifests.resources | length > 0 else {} }}"
+
+    - name: Check if manifest is in-progress
+      set_fact:
+        is_in_progress: "{{ existing_manifest.deployment.status | default('') == manifest_status_in_progress }}"
+      when: manifest_exists
+
+    - name: Warn about uninstalling in-progress deployment
+      debug:
+        msg: "WARNING: Uninstalling a deployment that is in-progress (started: {{ existing_manifest.deployment.startedAt | default('unknown') }})."
+      when:
+        - manifest_exists
+        - is_in_progress | default(false) | bool
+
+    - name: Mark manifest as deleting
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "{{ manifest_name }}"
+            namespace: "{{ manifest_namespace }}"
+            labels: "{{ manifest_labels | combine({'app.kubernetes.io/version': solution_version}) }}"
+          data:
+            manifest.yaml: |
+              deployment:
+                version: "{{ existing_manifest.deployment.version | default(solution_version) }}"
+                targetVersion: null
+                status: "{{ manifest_status_deleting }}"
+                startedAt: "{{ existing_manifest.deployment.startedAt | default(ansible_date_time.iso8601) }}"
+                installedBy: "ansible"
+                kubernetesVersion: "unknown"
+              components:
+              {{ existing_manifest.components | default({}) | to_nice_yaml | indent(2, first=True) }}
+      when: manifest_exists
+
+- name: Configure deployment manifest
+  tags:
+    - install
+    - pre-upgrade
+  when: "'uninstall' not in ansible_run_tags"
+  block:
+    - name: Ensure manifest namespace exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ manifest_namespace }}"
+            labels: "{{ manifest_namespace_labels }}"
+
+    - name: Check for existing deployment manifest
+      kubernetes.core.k8s_info:
+        kind: ConfigMap
+        namespace: "{{ manifest_namespace }}"
+        label_selectors:
+          - "{{ manifest_label_selector }}"
+      register: existing_manifests
+      failed_when: false
+
+    - name: Parse existing deployment manifest
+      set_fact:
+        existing_deployment: "{{ (existing_manifests.resources[0].data['manifest.yaml'] | from_yaml) if existing_manifests.resources | length > 0 else {} }}"
+        manifest_exists: "{{ existing_manifests.resources | length > 0 }}"
+
+    - name: Determine stub version and targetVersion based on operation
+      set_fact:
+        # Fresh install (no manifest): version=null
+        # Upgrade (manifest exists): version=<current deployed version>
+        # Resume in-progress: version=<current>, targetVersion=<existing target>
+        stub_version: >-
+          {{
+            manifest_unset_version if not manifest_exists
+            else existing_deployment.deployment.version | default(manifest_unset_version)
+          }}
+        stub_target_version: >-
+          {{
+            solution_version if (not manifest_exists or existing_deployment.deployment.status | default('') != manifest_status_in_progress)
+            else existing_deployment.deployment.targetVersion | default(solution_version)
+          }}
+        is_fresh_install: "{{ not manifest_exists }}"
+
+    - name: Build stub manifest data structure
+      set_fact:
+        stub_manifest_data:
+          deployment:
+            version: "{{ stub_version if stub_version != '' else None }}"
+            targetVersion: "{{ stub_target_version }}"
+            status: "{{ manifest_status_in_progress }}"
+            startedAt: "{{ ansible_date_time.iso8601 }}"
+            installedBy: "ansible"
+            kubernetesVersion: "{{ kubernetes_version | default('unknown') }}"
+          components: {}
+
+    - name: Create stub ConfigMap
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "{{ manifest_name }}"
+            namespace: "{{ manifest_namespace }}"
+            labels: "{{ manifest_labels | combine({'app.kubernetes.io/version': solution_version}) }}"
+          data:
+            manifest.yaml: "{{ stub_manifest_data | to_nice_yaml }}"
+
+    - name: Display stub manifest creation
+      debug:
+        msg: "Manifest configured: version={{ stub_version if stub_version != '' else 'null' }}, targetVersion={{ stub_target_version }}, status={{ manifest_status_in_progress }}"

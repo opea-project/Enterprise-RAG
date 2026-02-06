@@ -1,0 +1,19 @@
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: seaweedfs-s3
+  namespace: seaweedfs
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: s3
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/edp/sa/edp-chart
+        - cluster.local/ns/ingress-nginx/sa/ingress-nginx

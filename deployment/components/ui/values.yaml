@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 replicaCount: 1
@@ -24,6 +24,8 @@ extraNginxVars:
   dataprepClientMaxBodySize: "64m"
   # Docsum endpoints
   docsumEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
+  # AudioQnA endpoints
+  audioqnaEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
   # Status endpoint
   statusEndpoint: "http://auth-apisix-gateway.auth-apisix.svc"
 
@@ -36,6 +38,7 @@ extraUiConfigVars:
   keycloakAdminPanelDomainName: "auth.erag.com"
   s3DomainName: "s3.erag.com"
   chatDisclaimerText: "Responses from this solution may require further verification. You are solely responsible for verifying the accuracy of the information provided and how you choose to use it."
+  chatMaintenanceMode: false
 
 image:
   ui:

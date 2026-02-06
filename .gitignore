@@ -13,8 +13,12 @@ upgrade/reports
 !deployment/inventory/sample
 !deployment/inventory/localhost
 
+# Model data
+src/comps/**/model_server/**/data/
+
 # Telemetry
 /deployment/components/telemetry/helm/example/pcm/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -50,7 +54,7 @@ super-linter-output/
 **/allure-results
 **/junitxml_report.xml
 **/test_logs
-
+src/tests/e2e/files/audio/
 
 # credentials
 deployment/default_credentials.txt

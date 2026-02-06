@@ -4,7 +4,18 @@
 - name: Backup and restore execution playbook
   hosts: localhost
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+    K8S_AUTH_KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
+  vars_files:
+    - "../version.yaml"
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     components_dir: "{{ deployment_dir }}/components"

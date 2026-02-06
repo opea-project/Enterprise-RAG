@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./UploadFileTab.scss";
@@ -8,12 +8,14 @@ import {
   FileInput,
   FileInputHandle,
 } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeFile } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, DragEvent, useCallback, useRef } from "react";
 
 import { useSummarizeFileMutation } from "@/features/docsum/api";
+import { SummaryType } from "@/features/docsum/api/types";
 import GeneratedSummary from "@/features/docsum/components/shared/GeneratedSummary/GeneratedSummary";
-import GenerateSummaryButton from "@/features/docsum/components/shared/GenerateSummaryButton/GenerateSummaryButton";
+import GenerateSummaryDropdownButton from "@/features/docsum/components/shared/GenerateSummaryDropdownButton/GenerateSummaryDropdownButton";
 import FileSelectedToSummarize from "@/features/docsum/components/tabs/upload-file/FileSelectedToSummarize/FileSelectedToSummarize";
 import { addHistoryItem } from "@/features/docsum/store/history.slice";
 import {
@@ -24,6 +26,7 @@ import {
   setIsLoading,
   setStreamingText,
   setSummary,
+  setSummaryType,
 } from "@/features/docsum/store/uploadFileTab.slice";
 import {
   convertToApiFileData,
@@ -40,8 +43,14 @@ const UploadFileTab = () => {
   const [summarizeFile, { data }] = useSummarizeFileMutation();
 
   const dispatch = useAppDispatch();
-  const { fileData, summary, streamingText, isLoading, errorMessage } =
-    useAppSelector(selectUploadFileTabState);
+  const {
+    fileData,
+    summary,
+    streamingText,
+    isLoading,
+    errorMessage,
+    summaryType,
+  } = useAppSelector(selectUploadFileTabState);
 
   const fileInputRef = useRef<FileInputHandle>(null);
   const summaryRef = useRef("");
@@ -49,9 +58,9 @@ const UploadFileTab = () => {
   const processFile = useCallback(
     async (file: File) => {
       const sanitizedFile = sanitizeFile(file);
-      const validationMessage = await validateFileInput(sanitizedFile);
-      dispatch(setErrorMessage(validationMessage));
-      if (validationMessage === "") {
+      try {
+        await validateFileInput(sanitizedFile);
+        dispatch(setErrorMessage(""));
         // Convert file to base64 and store in Redux
         const base64 = await documentToBase64(sanitizedFile);
         dispatch(
@@ -62,6 +71,8 @@ const UploadFileTab = () => {
             base64,
           }),
         );
+      } catch (error) {
+        dispatch(setErrorMessage(getValidationErrorMessage(error)));
       }
 
       fileInputRef.current?.clear();
@@ -113,6 +124,7 @@ const UploadFileTab = () => {
 
       const { data, error } = await summarizeFile({
         fileData: apiFileData,
+        summaryType,
         onSummaryUpdate: handleUpdate,
       });
 
@@ -149,7 +161,11 @@ const UploadFileTab = () => {
       }
       dispatch(setStreamingText(""));
     }
-  }, [fileData, summarizeFile, dispatch]);
+  }, [fileData, summaryType, summarizeFile, dispatch]);
+
+  const handleSummaryTypeChange = (value: SummaryType) => {
+    dispatch(setSummaryType(value));
+  };
 
   const handleChangeFileButtonPress = () => {
     fileInputRef.current!.click();
@@ -182,9 +198,12 @@ const UploadFileTab = () => {
           onDrop={handleFileInputDrop}
           onChange={handleFileInputChange}
         />
-        <GenerateSummaryButton
+        <GenerateSummaryDropdownButton
+          summaryType={summaryType}
+          onSummaryTypeChange={handleSummaryTypeChange}
+          onGenerateSummary={handleGenerateSummaryButtonPress}
           isDisabled={isGeneratingSummary}
-          onPress={handleGenerateSummaryButtonPress}
+          className="mt-4"
         />
       </div>
       <div className="upload-file-tab__summary-col">

@@ -1,9 +1,9 @@
 dependencies:
-- name: minio
-  repository: https://charts.bitnami.com/bitnami
-  version: 14.10.3
+- name: seaweedfs
+  repository: https://seaweedfs.github.io/seaweedfs/helm
+  version: 4.0.407
 - name: velero
   repository: https://vmware-tanzu.github.io/helm-charts/
   version: 10.0.5
-digest: sha256:ece58339f7c90d4408bfc9b3d8645b4b8207e5ede62c4c130e483dfe60e0af9e
-generated: "2025-06-16T02:59:49.449408435+02:00"
+digest: sha256:7b86e2fe5203438fe1cab4c2aa24fc124d11eae43e6736d7bb6daa441322750b
+generated: "2026-01-29T10:31:38.908199446+01:00"

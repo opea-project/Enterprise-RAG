@@ -5,8 +5,8 @@
   ansible.builtin.set_fact:
     cleanup_list: >-
       {% set result = [] %}
-      {% for ns in velero.backup.backupConfig.namespaceOrder %}
-        {% for dp in velero.backup.backupConfig.deployments[ns] %}
+      {% for ns in velero.backup.backupConfig.namespaceOrder | default([]) %}
+        {% for dp in velero.backup.backupConfig.deployments[ns] | default([]) %}
           {% set _ = result.append({'ns': ns, 'dp': dp}) %}
         {% endfor %}
       {% endfor %}

@@ -1,6 +1,6 @@
 ---
 # Source: fgp-usvc/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -20,7 +20,7 @@ data:
 
 ---
 # Source: fgp-usvc/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -48,7 +48,7 @@ metadata:
   name: fgp-usvc
 ---
 # Source: fgp-usvc/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

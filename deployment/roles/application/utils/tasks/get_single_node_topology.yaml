@@ -8,6 +8,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Count CPUs per NUMA node
   ansible.builtin.shell: |
@@ -16,6 +17,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Extract CPU counts
   ansible.builtin.shell: |
@@ -24,6 +26,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Set CPU counts list
   set_fact:
@@ -31,6 +34,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Check if NUMA nodes are balanced
   set_fact:
@@ -38,6 +42,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Display warning if NUMA nodes are imbalanced
   ansible.builtin.debug:
@@ -49,6 +54,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Get number of NUMA nodes
   ansible.builtin.shell: |
@@ -57,6 +63,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Check for AMX support
   kubernetes.core.k8s_exec:
@@ -69,6 +76,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Get all pods scheduled on this node
   kubernetes.core.k8s_info:
@@ -79,6 +87,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Check if any pod name contains "habanalabs-device-plugin"
   set_fact:
@@ -92,6 +101,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Get total memory in GiB
   kubernetes.core.k8s_exec:
@@ -103,6 +113,7 @@
   tags:
     - install
     - topology-preview
+    - update-configuration
 
 - name: Update cpu_topology_per_node dict
   set_fact:
@@ -122,3 +133,4 @@
   tags:
     - install
     - topology-preview
+    - update-configuration

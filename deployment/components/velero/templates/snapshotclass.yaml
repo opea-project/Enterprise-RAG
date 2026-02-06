@@ -5,6 +5,7 @@ metadata:
   name: {{ .Values.snapshotSupport.snapshotClassName }}
   labels:
     velero.io/csi-volumesnapshot-class: "true"
+    meta.erag/sc-managed-by: "velero-role"
 driver: {{ .Values.snapshotSupport.snapshotClassDriver }}
 deletionPolicy: Delete
 {{- end }}

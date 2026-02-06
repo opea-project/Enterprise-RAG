@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 export * from "@/icons";
@@ -37,10 +37,16 @@ export { LinkIcon } from "@/icons/LinkIcon";
 export { LoadingIcon } from "@/icons/LoadingIcon";
 export { LogoutIcon } from "@/icons/LogoutIcon";
 export { MdFileIcon } from "@/icons/MdFileIcon";
+export { MicrophoneIcon } from "@/icons/MicrophoneIcon";
+export { MicrophoneRecordingIcon } from "@/icons/MicrophoneRecordingIcon";
 export { MoreOptionsIcon } from "@/icons/MoreOptionsIcon";
 export { NewChatIcon } from "@/icons/NewChatIcon";
 export { OptionsIcon } from "@/icons/OptionsIcon";
+export { PanelHideIcon } from "@/icons/PanelHideIcon";
+export { PanelShowIcon } from "@/icons/PanelShowIcon";
 export { PdfFileIcon } from "@/icons/PdfFileIcon";
+export { PinFilledIcon } from "@/icons/PinFilledIcon";
+export { PinIcon } from "@/icons/PinIcon";
 export { PlainTextIcon } from "@/icons/PlainTextIcon";
 export { PlusIcon } from "@/icons/PlusIcon";
 export { PromptSendIcon } from "@/icons/PromptSendIcon";
@@ -55,6 +61,7 @@ export { SideMenuIcon } from "@/icons/SideMenuIcon";
 export { SortDownIcon } from "@/icons/SortDownIcon";
 export { SortUpDownIcon } from "@/icons/SortUpDownIcon";
 export { SortUpIcon } from "@/icons/SortUpIcon";
+export { SpeakerIcon } from "@/icons/SpeakerIcon";
 export { SuccessIcon } from "@/icons/SuccessIcon";
 export { TelemetryIcon } from "@/icons/TelemetryIcon";
 export { TextFileIcon } from "@/icons/TextFileIcon";

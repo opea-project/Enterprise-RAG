@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { SummaryUpdateHandler } from "@/features/docsum/api/types";
@@ -59,7 +59,6 @@ const handleSummaryStreamResponse = async (
 
     if (result?.value) {
       const decodedValue = decoder.decode(result.value, { stream: true });
-      console.log("Raw decoded value:", JSON.stringify(decodedValue));
 
       const events = decodedValue.split("\n\n");
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,7 @@ export default defineConfig({
         manualChunks: {
           react: ["react", "react-dom"],
           "intel-enterprise-rag-ui-auth": ["@intel-enterprise-rag-ui/auth"],
+          "intel-enterprise-rag-ui-chat": ["@intel-enterprise-rag-ui/chat"],
           "intel-enterprise-rag-ui-components": [
             "@intel-enterprise-rag-ui/components",
           ],

@@ -1,0 +1,86 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "./../../"
+dependencies:
+  - apt
+  - pip-manual
+base-image:
+  override:
+    - python:3.11-slim-bookworm
+apt:
+  base-image-override: python:3.11-slim-bookworm
+pip-manual:
+  packages:
+# git/vllm-project/vllm/requirements/common.txt
+    - regex
+    - cachetools
+    - psutil
+    - sentencepiece
+    - numpy
+    - requests
+    - tqdm
+    - blake3
+    - py-cpuinfo
+    - transformers
+    - tokenizers
+    - protobuf
+    - fastapi[standard]
+    - aiohttp
+    - openai
+    - pydantic
+    - prometheus_client
+    - pillow
+    - prometheus-fastapi-instrumentator
+    - tiktoken
+    - lm-format-enforcer
+    - llguidance
+    - outlines_core
+    - diskcache
+    - lark
+    - xgrammar
+    - typing_extensions
+    - filelock
+    - partial-json-parser
+    - pyzmq
+    - msgspec
+    - gguf
+    - mistral_common[image]
+    - opencv-python-headless
+    - pyyaml
+    - six
+    - setuptools
+    - einops
+    - compressed-tensors
+    - depyf
+    - cloudpickle
+    - watchfiles
+    - python-json-logger
+    - ninja
+    - pybase64
+    - cbor2
+    - ijson
+    - setproctitle
+    - openai-harmony
+    - anthropic
+    - model-hosting-container-standards
+    - mcp
+    - grpcio
+    - grpcio-reflection
+# git/vllm-project/vllm/requirements/cpu.txt
+    - setuptools
+    - numba
+    - torch
+    - torchaudio
+    - torchvision
+    - intel-openmp
+    - py-cpuinfo
+# git/vllm-project/vllm/requirements/cpu-build.txt
+    - cmake
+    - ninja
+    - packaging
+    - setuptools
+    - setuptools-scm
+    - torch
+    - wheel
+    - jinja2
+    - regex

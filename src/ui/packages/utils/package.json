@@ -1,28 +1,25 @@
 {
   "name": "@intel-enterprise-rag-ui/utils",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.1.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Utility functions for Intel Enterprise RAG UI",
-  "main": "./dist/intel-enterprise-rag-ui-utils.umd.cjs",
   "module": "./dist/intel-enterprise-rag-ui-utils.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/intel-enterprise-rag-ui-utils.js",
-      "require": "./dist/intel-enterprise-rag-ui-utils.umd.cjs"
+      "import": "./dist/intel-enterprise-rag-ui-utils.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "vite build"
   },
   "dependencies": {
-    "dompurify": "^3.2.3",
     "punycode": "^2.3.1"
   }
 }

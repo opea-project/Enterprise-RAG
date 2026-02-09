@@ -18,6 +18,11 @@ from typing import Union, Optional
 from comps.cores.proto.docarray import TextDocList, GeneratedDoc
 from comps.cores.mega.logger import get_opea_logger
 from comps.cores.mega.cancellation_wrapper import maybe_cancel_on_disconnect
+from comps.cores.proto.api_protocol import (
+    ChatCompletionResponseStreamChoice,
+    ChatCompletionStreamResponse,
+    DeltaMessage,
+)
 from comps.docsum.utils.templates import templ_en, templ_refine_en
 
 
@@ -187,6 +192,19 @@ class OPEADocsum:
                         chat_model_to_step = {}  # Map chat model run_id to step number
                         is_final_output = False  # Track if we're in the final output phase
 
+                        def build_stream_chunk(content: str, finish_reason: Optional[str] = None) -> str:
+                            stream_chunk = ChatCompletionStreamResponse(
+                                model="docsum",
+                                choices=[
+                                    ChatCompletionResponseStreamChoice(
+                                        index=0,
+                                        delta=DeltaMessage(content=content),
+                                        finish_reason=finish_reason,
+                                    )
+                                ],
+                            )
+                            return f"data: {stream_chunk.model_dump_json()}\n\n"
+
                         async for event in chain.astream_events(docs, version="v2"):
                             kind = event["event"]
 
@@ -265,42 +283,42 @@ class OPEADocsum:
 
                                     if summary_type == "stuff":
                                         # Stuff has no intermediate steps, all output is final
-                                        yield f"data: {content}\n\n"
+                                        yield build_stream_chunk(content)
                                     elif summary_type == "map_reduce":
                                         step = chat_model_to_step.get(run_id, "unknown")
 
                                         if isinstance(step, int):
                                             if show_intermediate:
-                                                yield f"data: [INTERMEDIATE_MAP_{step}] {content}\n\n"
+                                                yield build_stream_chunk(f"[INTERMEDIATE_MAP_{step}] {content}")
                                         elif isinstance(step, str) and step.startswith("reduce_"):
                                             if is_final_output or reduce_counter == 1:
-                                                yield f"data: {content}\n\n"
+                                                yield build_stream_chunk(content)
                                             else:
                                                 if show_intermediate:
                                                     reduce_num = step.split("_")[1]
-                                                    yield f"data: [INTERMEDIATE_REDUCE_{reduce_num}] {content}\n\n"
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_REDUCE_{reduce_num}] {content}")
                                         else:
                                             if show_intermediate:
-                                                yield f"data: {content}\n\n"
+                                                yield build_stream_chunk(content)
                                     elif summary_type == "refine":
                                         step = chat_model_to_step.get(run_id, 1)
 
                                         if step == "initial":
                                             if len(input.docs) == 1:
-                                                yield f"data: {content}\n\n"
+                                                yield build_stream_chunk(content)
                                             else:
                                                 if show_intermediate:
-                                                    yield f"data: [INTERMEDIATE_INITIAL] {content}\n\n"
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_INITIAL] {content}")
                                         elif isinstance(step, int):
                                             is_final_refine = step >= len(input.docs)
                                             if is_final_refine:
-                                                yield f"data: {content}\n\n"
+                                                yield build_stream_chunk(content)
                                             else:
                                                 if show_intermediate:
-                                                    yield f"data: [INTERMEDIATE_REFINE_{step}] {content}\n\n"
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_REFINE_{step}] {content}")
                                         else:
                                             if show_intermediate:
-                                                yield f"data: {content}\n\n"
+                                                yield build_stream_chunk(content)
 
                             elif kind == "on_chain_end" and "output_text" in event["data"].get("output", {}):
                                 output_text = event["data"]["output"]["output_text"]
@@ -308,8 +326,9 @@ class OPEADocsum:
 
                     except Exception as e:
                         logger.error(f"Streaming error: {e}")
-                        yield f"data: [ERROR] {str(e)}\n\n"
+                        yield build_stream_chunk(f"[ERROR] {str(e)}")
                     finally:
+                        yield build_stream_chunk("", finish_reason="stop")
                         yield "data: [DONE]\n\n"
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")

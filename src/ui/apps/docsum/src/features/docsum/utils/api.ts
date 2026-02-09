@@ -43,6 +43,16 @@ const documentToBase64 = (document: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
+const parseOpenAIChunk = (chunk: string) => {
+  try {
+    const parsed = JSON.parse(chunk);
+    const content = parsed?.choices?.[0]?.delta?.content;
+    return typeof content === "string" ? content : null;
+  } catch {
+    return null;
+  }
+};
+
 const handleSummaryStreamResponse = async (
   response: Response,
   onSummaryUpdate: SummaryUpdateHandler,
@@ -70,8 +80,15 @@ const handleSummaryStreamResponse = async (
           }
 
           // extract chunk of text from event data message
-          let newTextChunk = event.slice(6);
-          newTextChunk = newTextChunk
+          const dataChunk = event.slice(6).trimStart();
+          const openAiChunk = parseOpenAIChunk(dataChunk);
+
+          if (openAiChunk !== null) {
+            onSummaryUpdate(openAiChunk);
+            continue;
+          }
+
+          const newTextChunk = dataChunk
             .replace(/\\t/g, "  \t")
             .replace(/\\n\\n/g, "  \n\n")
             .replace(/\\n/g, "  \n");

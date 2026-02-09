@@ -5,7 +5,6 @@
 **/.git
 **/.gitignore
 **/README.md
-**/Dockerfile
 **/docker-compose.yml
 **/.pytest_cache
 **/.coverage

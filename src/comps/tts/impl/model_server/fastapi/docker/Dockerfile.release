@@ -1,4 +1,4 @@
-FROM tts_fastapi-base:latest
+FROM tts-fastapi-model-server-base:latest
 
 COPY compliance /compliance
 

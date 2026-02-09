@@ -817,3 +817,484 @@ class DocSumUIHelper(BaseUIHelper):
         except Exception as e:
             logger.error(f"Failed to get summary: {e}")
             return None
+
+
+# =============================================================================
+# Audio UI Helper - Voice Input and TTS Playback
+# =============================================================================
+
+class AudioUIHelper:
+    """
+    Helper class for audio-related UI interactions.
+    
+    Handles:
+    - Microphone button interactions (start/stop recording)
+    - TTS play button interactions
+    - Audio state tracking via browser interception
+    - Recording animation visibility
+    
+    Strategy: PulseAudio Primary + Browser-Based Fallback
+    - Primary: PulseAudio for actual audio capture/playback
+    - Fallback: Browser Audio API interception for validation
+    """
+    
+    # Selectors for audio UI elements
+    MIC_BUTTON_SELECTOR = '[data-testid="prompt-microphone-button"]'
+    MIC_BUTTON_RECORDING_CLASS = "prompt-input__button--recording"
+    PLAY_SPEECH_BUTTON_SELECTOR = '[data-testid^="play-speech-button"]'
+    PLAY_SPEECH_BUTTON_BY_ID = '[data-testid="play-speech-button-{turn_id}"]'
+    TEXTAREA_SELECTOR = '[data-testid="prompt-input-textarea"]'
+    SEND_BUTTON_SELECTOR = '[data-testid="prompt-send-button"]'
+    BOT_MESSAGE_SELECTOR = '[data-testid="bot-message__text"]'
+    
+    def __init__(self, page: Page):
+        """Initialize with Playwright Page object."""
+        self.page = page
+        self._tts_interception_active = False
+        self._tts_api_interception_active = False
+    
+    # =========================================================================
+    # Microphone Button Methods
+    # =========================================================================
+    
+    async def is_mic_button_visible(self, timeout: int = 5000) -> bool:
+        """Check if microphone button is visible."""
+        try:
+            mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+            await mic_button.wait_for(state="visible", timeout=timeout)
+            return True
+        except Exception:
+            return False
+    
+    async def get_mic_button_aria_label(self) -> str:
+        """Get the aria-label of the microphone button."""
+        mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+        return await mic_button.get_attribute("aria-label") or ""
+    
+    async def is_recording(self) -> bool:
+        """Check if currently recording (mic button shows 'Stop recording')."""
+        try:
+            aria_label = await self.get_mic_button_aria_label()
+            return aria_label == "Stop recording"
+        except Exception:
+            return False
+    
+    async def click_mic_button(self) -> bool:
+        """Click the microphone button (regardless of state).
+        
+        Uses force=True to handle CSS animations that make the button appear unstable.
+        """
+        try:
+            mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+            await mic_button.click(force=True)
+            logger.info("Clicked microphone button")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to click mic button: {e}")
+            return False
+
+    async def start_recording(self) -> bool:
+        """Click mic button to start recording."""
+        try:
+            mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+            aria_label = await mic_button.get_attribute("aria-label")
+            
+            if aria_label == "Start recording":
+                await mic_button.click(force=True)
+                logger.info("Started recording")
+                return True
+            else:
+                logger.warning(f"Mic button not in start state: {aria_label}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to start recording: {e}")
+            return False
+    
+    async def stop_recording(self) -> bool:
+        """Click mic button to stop recording.
+        
+        Uses force=True because the recording button has a CSS pulse animation
+        that makes Playwright consider it 'unstable'.
+        """
+        try:
+            mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+            aria_label = await mic_button.get_attribute("aria-label")
+            
+            if aria_label == "Stop recording":
+                await mic_button.click(force=True)
+                logger.info("Stopped recording")
+                return True
+            else:
+                logger.warning(f"Mic button not in recording state: {aria_label}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to stop recording: {e}")
+            return False
+    
+    async def is_recording_animation_visible(self) -> bool:
+        """Check if recording animation (CSS pulse) is visible on mic button."""
+        try:
+            mic_button = self.page.locator(self.MIC_BUTTON_SELECTOR)
+            class_attr = await mic_button.get_attribute("class") or ""
+            return self.MIC_BUTTON_RECORDING_CLASS in class_attr
+        except Exception:
+            return False
+
+    async def wait_for_recording_state(self, recording: bool, timeout: int = 5000) -> bool:
+        """
+        Wait for recording state to change.
+        
+        Args:
+            recording: True to wait for recording to start, False for stop
+            timeout: Maximum wait time in ms
+            
+        Returns:
+            True if desired state was reached
+        """
+        try:
+            expected_label = "Stop recording" if recording else "Start recording"
+            start_time = await self.page.evaluate("Date.now()")
+            
+            while True:
+                current_label = await self.get_mic_button_aria_label()
+                if current_label == expected_label:
+                    return True
+                
+                elapsed = await self.page.evaluate("Date.now()") - start_time
+                if elapsed > timeout:
+                    logger.warning(f"Timeout waiting for recording={recording}, current: {current_label}")
+                    return False
+                await self.page.wait_for_timeout(100)
+        except Exception as e:
+            logger.error(f"Error waiting for recording state: {e}")
+            return False
+
+    async def wait_for_transcription(self, timeout: int = 30000) -> str:
+        """
+        Wait for transcription to appear in textarea.
+        
+        Alias for get_transcribed_text for better semantics.
+        """
+        return await self.get_transcribed_text(timeout=timeout)
+
+    async def get_transcribed_text(self, timeout: int = 30000) -> str:
+        """Wait for and get the transcribed text from textarea."""
+        try:
+            textarea = self.page.locator(self.TEXTAREA_SELECTOR)
+            
+            # Wait for text to appear
+            start_time = await self.page.evaluate("Date.now()")
+            while True:
+                text = await textarea.input_value()
+                if text and text.strip():
+                    return text.strip()
+                
+                elapsed = await self.page.evaluate("Date.now()") - start_time
+                if elapsed > timeout:
+                    break
+                await self.page.wait_for_timeout(500)
+            
+            return ""
+        except Exception as e:
+            logger.error(f"Failed to get transcribed text: {e}")
+            return ""
+    
+    # =========================================================================
+    # TTS Play Button Methods
+    # =========================================================================
+    
+    async def is_play_speech_button_visible(self, timeout: int = 5000) -> bool:
+        """Check if any play speech button is visible."""
+        try:
+            play_button = self.page.locator(self.PLAY_SPEECH_BUTTON_SELECTOR).first
+            await play_button.wait_for(state="visible", timeout=timeout)
+            return True
+        except Exception:
+            return False
+    
+    async def get_play_speech_buttons(self):
+        """Get all play speech buttons."""
+        return await self.page.locator(self.PLAY_SPEECH_BUTTON_SELECTOR).all()
+    
+    async def click_first_play_speech_button(self) -> Optional[str]:
+        """Click the first play speech button and return its turn_id."""
+        try:
+            play_button = self.page.locator(self.PLAY_SPEECH_BUTTON_SELECTOR).first
+            await play_button.wait_for(state="visible", timeout=5000)
+            
+            # Extract turn_id from data-testid
+            testid = await play_button.get_attribute("data-testid")
+            turn_id = testid.replace("play-speech-button-", "") if testid else None
+            
+            await play_button.click()
+            logger.info(f"Clicked play speech button: {turn_id}")
+            return turn_id
+        except Exception as e:
+            logger.error(f"Failed to click play speech button: {e}")
+            return None
+    
+    async def get_play_speech_button_state(self, turn_id: str) -> str:
+        """Get the state of a play speech button: 'idle', 'waiting', or 'playing'."""
+        try:
+            selector = self.PLAY_SPEECH_BUTTON_BY_ID.format(turn_id=turn_id)
+            button = self.page.locator(selector)
+            
+            # Check data-state attribute or class for state
+            state = await button.get_attribute("data-state")
+            if state:
+                return state
+            
+            class_attr = await button.get_attribute("class") or ""
+            if "playing" in class_attr:
+                return "playing"
+            elif "waiting" in class_attr or "loading" in class_attr:
+                return "waiting"
+            return "idle"
+        except Exception:
+            return "idle"
+    
+    async def wait_for_tts_state(self, turn_id: str, state: str, timeout: int = 60000) -> bool:
+        """Wait for TTS button to reach a specific state (default 60s for slow TTS)."""
+        try:
+            start = await self.page.evaluate("Date.now()")
+            while True:
+                current_state = await self.get_play_speech_button_state(turn_id)
+                if current_state == state:
+                    return True
+                
+                elapsed = await self.page.evaluate("Date.now()") - start
+                if elapsed > timeout:
+                    return False
+                await self.page.wait_for_timeout(200)
+        except Exception:
+            return False
+    
+    # =========================================================================
+    # TTS Browser Interception (Fallback Strategy)
+    # =========================================================================
+    
+    async def setup_tts_interception(self) -> None:
+        """
+        Inject JavaScript to intercept browser Audio element for TTS tracking.
+        
+        This provides high-confidence testing without requiring PulseAudio:
+        - Tracks Audio element creation
+        - Monitors play, pause, ended, error events
+        - Records playback duration
+        """
+        if self._tts_interception_active:
+            return
+        
+        await self.page.evaluate("""
+            () => {
+                window.__ttsMetrics = {
+                    played: false,
+                    completed: false,
+                    error: false,
+                    duration: 0,
+                    events: []
+                };
+                
+                // Store original Audio constructor
+                const OriginalAudio = window.Audio;
+                
+                // Override Audio constructor
+                window.Audio = function(src) {
+                    const audio = new OriginalAudio(src);
+                    
+                    audio.addEventListener('play', () => {
+                        window.__ttsMetrics.played = true;
+                        window.__ttsMetrics.events.push({type: 'play', time: Date.now()});
+                    });
+                    
+                    audio.addEventListener('ended', () => {
+                        window.__ttsMetrics.completed = true;
+                        window.__ttsMetrics.duration = audio.duration || 0;
+                        window.__ttsMetrics.events.push({type: 'ended', time: Date.now()});
+                    });
+                    
+                    audio.addEventListener('error', (e) => {
+                        window.__ttsMetrics.error = true;
+                        window.__ttsMetrics.events.push({type: 'error', time: Date.now(), error: e.message});
+                    });
+                    
+                    audio.addEventListener('pause', () => {
+                        window.__ttsMetrics.events.push({type: 'pause', time: Date.now()});
+                    });
+                    
+                    audio.addEventListener('abort', () => {
+                        window.__ttsMetrics.events.push({type: 'abort', time: Date.now()});
+                    });
+                    
+                    return audio;
+                };
+                
+                // Preserve prototype chain
+                window.Audio.prototype = OriginalAudio.prototype;
+            }
+        """)
+        self._tts_interception_active = True
+        logger.info("TTS browser interception set up")
+    
+    async def setup_tts_api_interception(self) -> None:
+        """
+        Set up route interception to validate TTS API responses.
+        
+        Intercepts /v1/audio/speech requests and validates:
+        - Response status
+        - Content type (audio/*)
+        - Audio format validation (WAV/MP3/OGG headers)
+        """
+        if self._tts_api_interception_active:
+            return
+        
+        async def handle_tts_route(route):
+            response = await route.fetch()
+            body = await response.body()
+            
+            # Check audio format by magic bytes
+            is_valid_audio = False
+            if body:
+                # WAV: RIFF header
+                if body[:4] == b'RIFF' and body[8:12] == b'WAVE':
+                    is_valid_audio = True
+                # MP3: ID3 or sync bits
+                elif body[:3] == b'ID3' or (body[0] == 0xFF and (body[1] & 0xE0) == 0xE0):
+                    is_valid_audio = True
+                # OGG: OggS header
+                elif body[:4] == b'OggS':
+                    is_valid_audio = True
+            
+            # Store validation result
+            await self.page.evaluate(f"""
+                () => {{
+                    window.__ttsApiResponse = {{
+                        status: {response.status},
+                        contentType: '{response.headers.get("content-type", "")}',
+                        size: {len(body)},
+                        isValidAudio: {str(is_valid_audio).lower()}
+                    }};
+                }}
+            """)
+            
+            await route.fulfill(response=response)
+        
+        await self.page.route("**/v1/audio/speech**", handle_tts_route)
+        self._tts_api_interception_active = True
+        logger.info("TTS API interception set up")
+    
+    async def get_tts_metrics(self) -> dict:
+        """Get TTS playback metrics from browser interception."""
+        try:
+            return await self.page.evaluate("() => window.__ttsMetrics || {}")
+        except Exception:
+            return {}
+    
+    async def get_tts_api_response(self) -> Optional[dict]:
+        """Get TTS API response validation data."""
+        try:
+            return await self.page.evaluate("() => window.__ttsApiResponse || null")
+        except Exception:
+            return None
+    
+    async def wait_for_tts_playback_complete(self, timeout: int = 120000) -> dict:
+        """Wait for TTS audio playback to complete (default 120s for slow TTS)."""
+        try:
+            start = await self.page.evaluate("Date.now()")
+            while True:
+                metrics = await self.get_tts_metrics()
+                if metrics.get('completed') or metrics.get('error'):
+                    return metrics
+                
+                elapsed = await self.page.evaluate("Date.now()") - start
+                if elapsed > timeout:
+                    logger.warning("TTS playback timeout")
+                    return metrics
+                
+                await self.page.wait_for_timeout(500)
+        except Exception as e:
+            logger.error(f"Error waiting for TTS playback: {e}")
+            return {}
+    
+    async def verify_tts_audio_played(self, min_duration: float = 0.5) -> dict:
+        """
+        Verify TTS audio was played with minimum duration.
+        
+        Args:
+            min_duration: Minimum expected duration in seconds
+            
+        Returns:
+            Dict with validation results
+        """
+        metrics = await self.get_tts_metrics()
+        api_response = await self.get_tts_api_response()
+        
+        result = {
+            'valid': False,
+            'played': metrics.get('played', False),
+            'completed': metrics.get('completed', False),
+            'duration': metrics.get('duration', 0),
+            'duration_ok': metrics.get('duration', 0) >= min_duration,
+            'api_ok': api_response.get('isValidAudio', False) if api_response else False,
+            'error': metrics.get('error', False)
+        }
+        
+        result['valid'] = (
+            result['played'] and
+            result['completed'] and
+            result['duration_ok'] and
+            not result['error']
+        )
+        
+        return result
+    
+    async def cleanup_tts_interception(self) -> None:
+        """Clean up TTS interception."""
+        try:
+            if self._tts_api_interception_active:
+                await self.page.unroute("**/v1/audio/speech**")
+                self._tts_api_interception_active = False
+            
+            if self._tts_interception_active:
+                await self.page.evaluate("""
+                    () => {
+                        delete window.__ttsMetrics;
+                        delete window.__ttsApiResponse;
+                    }
+                """)
+                self._tts_interception_active = False
+        except Exception as e:
+            logger.warning(f"Error cleaning up TTS interception: {e}")
+
+
+class AudioChatUIHelper(ChatUIHelper):
+    """
+    Combined helper for audio-enabled chat UI testing.
+    
+    Extends ChatUIHelper with audio capabilities via composition.
+    Provides unified interface for chat + audio interactions.
+    """
+    
+    def __init__(self, page: Page, base_url: str, credentials: dict = None):
+        """Initialize with Page, base URL, and optional credentials."""
+        super().__init__(page, base_url)
+        self.credentials = credentials or {}
+        self.audio = AudioUIHelper(page)
+    
+    async def send_text_and_wait_response(self, text: str, timeout: int = 60000) -> Optional[str]:
+        """Send text message and wait for bot response."""
+        try:
+            textarea = self.page.locator(self.audio.TEXTAREA_SELECTOR)
+            await textarea.fill(text)
+            
+            send_button = self.page.locator(self.audio.SEND_BUTTON_SELECTOR)
+            await send_button.click()
+            
+            bot_message = self.page.locator(self.audio.BOT_MESSAGE_SELECTOR).last
+            await bot_message.wait_for(state="visible", timeout=timeout)
+            await self.page.wait_for_timeout(3000)  # Wait for streaming
+            
+            return await bot_message.inner_text()
+        except Exception as e:
+            logger.error(f"Failed to send text and get response: {e}")
+            return None

@@ -156,7 +156,7 @@ To access the UI, follow these steps:
     For example, the updated file content should resemble the following:
 
     ```
-    127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com minio.erag.com
+    127.0.0.1 erag.com grafana.erag.com auth.erag.com s3.erag.com seaweedfs.erag.com
     ```
 
 > [!NOTE]
@@ -171,8 +171,8 @@ Keycloak can be accessed via:
 Grafana can be accessed via:
 `https://grafana.erag.com`
 
-MinIO Console can be accessed via:
-`https://minio.erag.com`
+SeaweedFS Filer (Web UI) can be accessed via:
+`https://seaweedfs.erag.com`
 
 S3 API is exposed at:
 `https://s3.erag.com`
@@ -204,8 +204,14 @@ Default credentials for the selected Vector Store are stored in `ansible-logs/de
 
 Default credentials for Enhanced Dataprep services:
 
-MinIO:
-- For accessing MinIO either by API or Web UI (MinIO Console), use the user credentials for `erag-admin`.
+SeaweedFS:
+- **S3 API Access** (via `s3.erag.com`):
+  - **Access Key:** value of `EDP_SEAWEEDFS_ACCESS_KEY` in `ansible-logs/default_credentials.yaml`
+  - **Secret Key:** value of `EDP_SEAWEEDFS_SECRET_KEY` in `ansible-logs/default_credentials.yaml`
+
+- **Admin Web UI** (via `seaweedfs.erag.com`):
+  - **Username:** value of `SEAWEEDFS_ADMIN_USER` in `ansible-logs/default_credentials.yaml`
+  - **Password:** value of `SEAWEEDFS_ADMIN_PASSWORD` in `ansible-logs/default_credentials.yaml`
 
 Internal EDP services credentials:
 

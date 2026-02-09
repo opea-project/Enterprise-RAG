@@ -533,7 +533,7 @@ For detailed information about each vector database implementation, storage conf
 > [!NOTE]
 > The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
 
-You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
+You can expand the storage configuration for both the Vector Store and SeaweedFS deployments by modifying their respective configurations:
 
 If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100GB of storage.
 
@@ -544,7 +544,7 @@ Similarly, for the selected Vector Store, you can increase the persistent storag
 
 ### EDP Storage Types
 
-By default, the EDP storage type is set to MinIO, which deploys MinIO and S3 in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
+By default, the EDP storage type is set to SeaweedFS, which deploys SeaweedFS in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
 
 ### Additional Settings for Running Telemetry
 

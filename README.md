@@ -85,6 +85,7 @@ Document Summarization's pipeline architecture is available [here](./docs/images
 | Operating System    | Ubuntu 22.04/24.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
 | Kubernetes Version  | 1.32.9 <br> 1.33.5                                                                  |
+| Helm Version        | 3.17.0: required for SeaweedFS (default) <br> 3.16.1: supported for other S3-compatible backends <br> **Note:** Helm v4 is not supported |
 | Python              | 3.11                                                                                                              |
 
 ## Software Prerequisites

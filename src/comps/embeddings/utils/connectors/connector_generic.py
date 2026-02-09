@@ -13,7 +13,6 @@ from typing import Any, List, Optional
 from comps import get_opea_logger
 from comps.embeddings.utils.connectors.connector import EmbeddingConnector
 
-
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
@@ -73,7 +72,12 @@ class VLLMEmbeddings:
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
-                        raise RuntimeError(f"vLLM returned status {response.status}: {error_text}")
+                        raise aiohttp.ClientResponseError(
+                            request_info=response.request_info,
+                            history=None,
+                            status=response.status,
+                            message=str(error_text),
+                        )
 
                     result = await response.json()
                     embeddings = [item["embedding"] for item in result.get("data", [])]
@@ -81,6 +85,9 @@ class VLLMEmbeddings:
                     logger.debug(f"vLLM returned {len(embeddings)} embeddings")
                     return embeddings
 
+        except aiohttp.ClientResponseError as e:
+            logger.exception(f"Client response error calling vLLM: {e}")
+            raise ValueError(f"vLLM returned an error response: {e.status} - {e.message}")
         except aiohttp.ClientError as e:
             logger.exception(f"Network error calling vLLM: {e}")
             raise ConnectionError(f"Failed to connect to vLLM at {self.endpoint}: {e}")

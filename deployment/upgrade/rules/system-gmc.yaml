@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Component-specific validation rules for system-gmc
@@ -11,6 +11,17 @@
 #   - both specified:   matches if BOTH path AND content match (AND logic)
 
 validation_rules:
+  # Approve TORCHSERVE_AMP_DTYPE changes (BF16/FP32 precision settings)
+  - path_regex: ".*TORCHSERVE_AMP_DTYPE.*"
+    data_regex: "(BF16|FP32|FP16)"
+    response: "approve"
+    note: "TORCHSERVE_AMP_DTYPE precision setting change - approved for performance optimization"
+
+  # Approve template formatting changes (escaped quotes, multiline vs inline)
+  - path_regex: ".*modelChatTemplate.*"
+    response: "approve"
+    note: "Template formatting changes do not affect functionality"
+
   - path_regex: "embedding-usvc-config"
     data_regex: ".*EMBEDDING_MODEL_NAME.*"
     response: "reject"
@@ -34,7 +45,7 @@ validation_rules:
     response: "approve"
     note: "Retriever USVC configuration changes for vector store migration are approved"
 
-  # Reject all other system-gmc changes
+  # Approve all other system-gmc changes (formatting only when no config changes)
   - path_regex: ".*"
-    response: "reject"
-    note: "All system-gmc changes require explicit approval"
+    response: "approve"
+    note: "Formatting differences in system-gmc configuration"

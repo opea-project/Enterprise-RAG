@@ -2,6 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+# Upgrade workflow settings
+upgrade_backup_max_age_hours: 6
+allow_upgrade_without_backup: false
+
 velero:
   enabled: false
   namespace: "velero"

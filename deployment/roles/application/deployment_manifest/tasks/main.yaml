@@ -68,8 +68,7 @@
 - name: Configure deployment manifest
   tags:
     - install
-    - pre-upgrade
-  when: "'uninstall' not in ansible_run_tags"
+  when: "'uninstall' not in ansible_run_tags and ('install' in ansible_run_tags or 'pre-upgrade' not in ansible_run_tags)"
   block:
     - name: Ensure manifest namespace exists
       kubernetes.core.k8s:

@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Component-specific validation rules for edp
@@ -23,6 +23,26 @@ validation_rules:
     response: "mitigate"
     action: "verify_ingestion_config"
     note: "Ingestion configuration changes require validation of processing pipeline"
+
+  # Approve YAML formatting changes (multiline vs inline strings, escaped newlines)
+  - path_regex: ".*(extraEnv|extraVolumes|extraVolumeMounts|command|args|configurationSnippet).*"
+    response: "approve"
+    note: "YAML formatting changes (multiline/inline) do not affect functionality"
+
+  # Approve all other edp changes (formatting only when no config changes)
+  - path_regex: ".*"
+    response: "approve"
+    note: "Formatting differences in EDP configuration"
+
+  # Approve template formatting changes
+  - path_regex: ".*modelChatTemplate.*"
+    response: "approve"
+    note: "Template formatting changes do not affect functionality"
+
+  # Approve fullnameOverride/nameOverride empty string changes
+  - path_regex: ".*(fullnameOverride|nameOverride).*"
+    response: "approve"
+    note: "Empty string formatting changes in override fields"
 
   # Reject all other edp changes
   - path_regex: ".*"

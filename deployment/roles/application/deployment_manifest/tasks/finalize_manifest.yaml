@@ -5,7 +5,6 @@
   tags:
     - install
     - uninstall
-    - pre-upgrade
   block:
     - name: Ensure manifest namespace exists
       kubernetes.core.k8s:

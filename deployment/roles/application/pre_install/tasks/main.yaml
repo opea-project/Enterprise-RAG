@@ -10,6 +10,7 @@
         - always
         - pre-upgrade
         - update-configuration
+        - display-configuration
   tags:
     - always
     - install
@@ -50,6 +51,14 @@
     - uninstall
     - pre-upgrade
     - update-configuration
+
+- name: Clean up old metadata files from previous run
+  ansible.builtin.include_role:
+    name: manifest-compare
+    tasks_from: cleanup.yaml
+  tags:
+    - install
+    - pre-upgrade
 
 - name: Handle certificates
   vars:

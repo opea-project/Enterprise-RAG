@@ -299,7 +299,7 @@
         - pre-upgrade
         - test-upgrade
 
-    - name: Run metadata upgrade validation
+    - name: Run metadata upgrade validation (pre-upgrade tag)
       ansible.builtin.include_tasks:
         file: "{{ playbook_dir }}/../roles/application/upgrade/tasks/metadata_upgrade.yaml"
         apply:
@@ -338,7 +338,7 @@
       ansible.builtin.include_role:
         name: check_pods
       vars:
-        check_pods_no_fail: "{{ is_upgrade_mode | default(false) | bool }}"
+        check_pods_no_fail: false
         check_pods_store_result: "{{ is_upgrade_mode | default(false) | bool }}"
       tags:
         - install
@@ -401,6 +401,16 @@
           tags:
             - install
       when: is_upgrade_mode | default(false) | bool and run_data_consistency_verification | default(true) | bool
+      tags:
+        - install
+
+    - name: Generate upgrade summary report
+      ansible.builtin.include_tasks:
+        file: "{{ playbook_dir }}/../roles/application/upgrade/tasks/upgrade_summary.yaml"
+        apply:
+          tags:
+            - install
+      when: is_upgrade_mode | default(false) | bool
       tags:
         - install
 

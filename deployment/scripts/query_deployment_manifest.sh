@@ -4,20 +4,40 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-set -e
-
 NAMESPACE="${1:-default}"
 LABEL_SELECTOR="app.kubernetes.io/name=erag-deployment,app.kubernetes.io/component=deployment-manifest"
 
 echo "=== ERAG Deployment Manifest ==="
 echo
 
-MANIFEST_COUNT=$(kubectl get cm -n "$NAMESPACE" -l "$LABEL_SELECTOR" --no-headers 2>/dev/null | wc -l)
+# Check if kubectl can connect to cluster
+if ! kubectl cluster-info &>/dev/null; then
+    echo "ERROR: Cannot connect to Kubernetes cluster"
+    if [ -z "$KUBECONFIG" ]; then
+        echo "KUBECONFIG is not set. Set it to your cluster config file."
+    else
+        echo "KUBECONFIG is set to: $KUBECONFIG"
+        if [ ! -f "$KUBECONFIG" ]; then
+            echo "File does not exist: $KUBECONFIG"
+        fi
+    fi
+    exit 2
+fi
 
-if [ "$MANIFEST_COUNT" -eq 0 ]; then
-    echo "ERROR: Deployment manifest not found in namespace '$NAMESPACE'"
-    echo "The manifest is created after successful deployment."
+MANIFEST_OUTPUT=$(kubectl get cm -n "$NAMESPACE" -l "$LABEL_SELECTOR" --no-headers 2>&1)
+MANIFEST_RC=$?
+
+if [ $MANIFEST_RC -ne 0 ]; then
+    echo "ERROR: Failed to query manifests: $MANIFEST_OUTPUT"
     exit 1
+fi
+
+MANIFEST_COUNT=$(echo "$MANIFEST_OUTPUT" | grep -c . 2>/dev/null || echo 0)
+
+if [ "$MANIFEST_COUNT" -eq 0 ] || [ -z "$MANIFEST_OUTPUT" ]; then
+    echo "No deployment manifest found in namespace '$NAMESPACE'"
+    echo "The manifest is created after successful deployment."
+    exit 0
 fi
 
 if [ "$MANIFEST_COUNT" -gt 1 ]; then

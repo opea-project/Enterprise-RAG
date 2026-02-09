@@ -430,7 +430,7 @@ def update_uv_locks(
         print(f"  Projects with changed locks: {changed_count}")
         if changed_count > 0:
             for proj in changed_after:
-                print(f"    - {Path(proj).relative_to(Path.cwd())}")
+                print(f"    - {Path(proj).relative_to(source_dir)}")
 
         for proj in changed_after:
             project_locks[proj]['hash'] = new_hashes[proj]

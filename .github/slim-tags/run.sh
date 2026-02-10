@@ -51,11 +51,23 @@ if git rev-parse --verify "refs/tags/$SLIM_TAG_NAME" >/dev/null 2>&1; then
     exit 1
 fi
 
+# --- LFS safety: make sure the tag has its LFS content available locally ---
+if command -v git-lfs >/dev/null 2>&1; then
+    git lfs install --local >/dev/null 2>&1 || true
+    git lfs fetch --include="*" --exclude="" origin "$TAG_NAME" >/dev/null 2>&1 || true
+fi
+# --------------------------------------------------------------------------
+
 echo "Creating slim tag '$SLIM_TAG_NAME' from '$TAG_NAME'..."
 echo "Keeping only directory: $KEEP_DIR and file: $KEEP_FILE"
 
 TEMP_BRANCH="temp-slim-$$"
 git checkout -b "$TEMP_BRANCH" "$TAG_NAME"
+
+# If LFS is available, materialize files in the working tree (keeps pointers consistent)
+if command -v git-lfs >/dev/null 2>&1; then
+    git lfs checkout >/dev/null 2>&1 || true
+fi
 
 echo ""
 echo "Debug: Analyzing top-level directory structure in $TAG_NAME..."
@@ -107,6 +119,12 @@ For complete sources, use the original tag: $TAG_NAME"
 else
     echo "No files to remove (only $KEEP_DIR and $KEEP_FILE found)"
 fi
+
+# --- LFS cleanup: prune unreferenced LFS objects (optional but recommended) ---
+if command -v git-lfs >/dev/null 2>&1; then
+    git lfs prune || true
+fi
+# ------------------------------------------------------------------------------
 
 # Create the slim tag
 git tag -a "$SLIM_TAG_NAME" -m "Slim release based on $TAG_NAME

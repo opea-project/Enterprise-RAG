@@ -1,0 +1,1 @@
+Kubernetes webhook adds init container to target pods, waiting for NRI balloons readiness.

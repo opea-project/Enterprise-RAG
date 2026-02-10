@@ -33,7 +33,7 @@ import allure
 import logging
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 - subprocess used for audio system tools (pactl, parec)
 from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple, Optional, Callable

@@ -30,7 +30,7 @@ SOLID/DRY Principles:
 import allure
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404 - subprocess used for PulseAudio capture (parec, pactl)
 import tempfile
 import wave
 from typing import Optional

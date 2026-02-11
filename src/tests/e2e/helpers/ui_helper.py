@@ -817,6 +817,103 @@ class DocSumUIHelper(BaseUIHelper):
         except Exception as e:
             logger.error(f"Failed to get summary: {e}")
             return None
+    
+    async def select_summary_strategy(
+        self,
+        strategy: str,
+        timeout: int = 5000
+    ) -> bool:
+        """Select a summarization strategy from the dropdown.
+        
+        Args:
+            strategy: Strategy value - one of 'map_reduce', 'stuff', 'refine'
+            timeout: Maximum time to wait in milliseconds
+            
+        Returns:
+            True if strategy was selected successfully, False otherwise
+        """
+        try:
+            # Map strategy values to display labels
+            strategy_labels = {
+                "map_reduce": "Map Reduce",
+                "stuff": "Stuff",
+                "refine": "Refine"
+            }
+            
+            strategy_label = strategy_labels.get(strategy)
+            if not strategy_label:
+                logger.error(f"Unknown strategy: {strategy}")
+                return False
+            
+            logger.info(f"Selecting summarization strategy: {strategy_label}")
+            
+            # Click the dropdown trigger button
+            dropdown_trigger = self.page.locator('button[aria-label="Change summarization strategy"]')
+            await dropdown_trigger.wait_for(state="visible", timeout=timeout)
+            await dropdown_trigger.click()
+            
+            # Wait for menu to appear and click the strategy option by its text
+            # React Aria renders menuitemradio when selectionMode="single"
+            menu_item = self.page.get_by_role("menuitemradio", name=strategy_label)
+            await menu_item.wait_for(state="visible", timeout=timeout)
+            await menu_item.click()
+            
+            logger.info(f"Selected strategy: {strategy_label}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to select summary strategy: {e}")
+            return False
+    
+    async def click_generate_summary_button(self, timeout: int = 5000) -> bool:
+        """Click the Generate Summary main button.
+        
+        The button may have text like 'Generate Summary (Map Reduce)' depending
+        on the selected strategy.
+        
+        Args:
+            timeout: Maximum time to wait in milliseconds
+            
+        Returns:
+            True if click successful, False otherwise
+        """
+        try:
+            # The main button has class 'dropdown-button__main'
+            button = self.page.locator('.dropdown-button__main')
+            await button.wait_for(state="visible", timeout=timeout)
+            
+            if not await button.is_enabled():
+                logger.error("Generate Summary button is disabled")
+                return False
+            
+            await button.click()
+            logger.info("Clicked Generate Summary button")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to click Generate Summary button: {e}")
+            return False
+    
+    async def is_generate_summary_button_enabled(self, timeout: int = 5000) -> bool:
+        """Check if the Generate Summary main button is enabled.
+        
+        Args:
+            timeout: Maximum time to wait in milliseconds
+            
+        Returns:
+            True if button is enabled, False otherwise
+        """
+        try:
+            button = self.page.locator('.dropdown-button__main')
+            await button.wait_for(state="visible", timeout=timeout)
+            
+            is_enabled = await button.is_enabled()
+            logger.info(f"Generate Summary button enabled: {is_enabled}")
+            return is_enabled
+            
+        except Exception as e:
+            logger.error(f"Failed to check Generate Summary button state: {e}")
+            return False
 
 
 # =============================================================================

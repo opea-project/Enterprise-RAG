@@ -1,5 +1,0 @@
-# Copyright (C) 2024-2025 Intel Corporation
-# SPDX-License-Identifier: Apache-2.0
-
----
-helm_version: "v3.17.0"

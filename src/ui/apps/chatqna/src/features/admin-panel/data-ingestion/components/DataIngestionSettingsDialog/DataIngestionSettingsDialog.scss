@@ -1,8 +1,0 @@
-// Copyright (C) 2024-2026 Intel Corporation
-// SPDX-License-Identifier: Apache-2.0
-
-.data-ingestion-settings {
-  @apply p-4;
-  @apply grid grid-cols-[1fr_1fr_3fr] items-center justify-start;
-  @apply [column-gap:2rem] [row-gap:1rem];
-}

@@ -1,7 +1,0 @@
-# Retrieve top 10 memory-consuming processes
-$topProcesses = Get-Process |
-    Sort-Object -Property WorkingSet -Descending |
-    Select-Object -First 10 -Property Name, @{Name="Memory (MB)"; Expression={[math]::round($_.WorkingSet/1MB, 2)}}
-
-# Display the processes in a formatted table
-$topProcesses | Format-Table -AutoSize

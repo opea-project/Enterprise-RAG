@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG Output Guardrail Service

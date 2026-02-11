@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG Embedding Model Server powered by TorchServe

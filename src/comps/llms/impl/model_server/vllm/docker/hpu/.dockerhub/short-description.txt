@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG LLM Model Server powered by vLLM for Intel® Gaudi® AI Accelerators

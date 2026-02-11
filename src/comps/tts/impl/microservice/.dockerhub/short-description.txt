@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG TTS Microservice for converting text to audio

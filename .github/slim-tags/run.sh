@@ -65,9 +65,10 @@ TEMP_BRANCH="temp-slim-$$"
 git checkout -b "$TEMP_BRANCH" "$TAG_NAME"
 
 # If LFS is available, materialize files in the working tree (keeps pointers consistent)
-if command -v git-lfs >/dev/null 2>&1; then
-    git lfs checkout >/dev/null 2>&1 || true
-fi
+# (LFS checkout removed to avoid local changes error)
+# if command -v git-lfs >/dev/null 2>&1; then
+#     git lfs checkout >/dev/null 2>&1 || true
+# fi
 
 echo ""
 echo "Debug: Analyzing top-level directory structure in $TAG_NAME..."
@@ -121,9 +122,10 @@ else
 fi
 
 # --- LFS cleanup: prune unreferenced LFS objects (optional but recommended) ---
-if command -v git-lfs >/dev/null 2>&1; then
-    git lfs prune || true
-fi
+# (LFS prune removed to avoid local changes error)
+# if command -v git-lfs >/dev/null 2>&1; then
+#     git lfs prune || true
+# fi
 # ------------------------------------------------------------------------------
 
 # Create the slim tag

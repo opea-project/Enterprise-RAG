@@ -162,6 +162,17 @@ To access the UI, follow these steps:
 > [!NOTE]
 > This is the IPv4 address of the local machine.
 
+> [!IMPORTANT]
+> **Hostname Requirements:**
+> - Each hostname entry must match the fully qualified domain name (FQDN) configured in your `config.yaml` file. The base domain is set via the `FQDN` parameter (default: `erag.com`).
+> - The `/etc/hosts` file requires each subdomain to be listed explicitly (wildcards are not supported).
+> - **Alternative for DNS servers:** If you're configuring a DNS server instead of using `/etc/hosts`, you can use a wildcard record:
+>   ```
+>   erag.com      A    <IP-ADDRESS>
+>   *.erag.com    A    <IP-ADDRESS>
+>   ```
+>   This wildcard approach only works with DNS servers, not with `/etc/hosts`.
+
 Once the update is complete, you can access the Intel® AI for Enterprise RAG UI by typing the following URL in your web browser:
 `https://erag.com`
 

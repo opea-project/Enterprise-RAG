@@ -40,6 +40,39 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 minio_external = get_remote_minio_client()
 minio_internal = get_local_minio_client()
 
+def is_directory_marker(object_name: str, size: int = None, content_type: str = None) -> bool:
+    """
+    Check if an object is a directory marker rather than an actual file.
+
+    Directory markers can be:
+    1. Objects ending with '/'
+    2. Zero-byte objects with directory-related content types
+    3. Zero-byte objects without file extensions (likely implicit directories)
+
+    Args:
+        object_name: The name/path of the object
+        size: The size of the object in bytes (optional)
+        content_type: The MIME type of the object (optional)
+
+    Returns:
+        True if the object appears to be a directory marker, False otherwise
+    """
+    if object_name.endswith('/'):
+        return True
+
+    if content_type is not None and content_type.lower() in [
+            'application/x-directory',
+            'inode/directory',
+            'application/directory',
+            'httpd/unix-directory'
+        ]:
+        return True
+
+    if size is not None and size == 0:
+        return True
+
+    return False
+
 @app.get('/health')
 def health_check():
     """
@@ -497,6 +530,9 @@ def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_f
             for bucket_name in bucket_names:
                 files = client.list_objects(bucket_name)
                 for obj in files:
+                    if is_directory_marker(obj.object_name, obj.size, getattr(obj, 'content_type', None)):
+                        logger.debug(f"Skipping directory marker: {obj.object_name} in bucket {bucket_name}")
+                        continue
                     file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == obj.object_name).first()
                     if file_status:
                         if file_status.etag != obj.etag or file_status.size != obj.size:
@@ -522,7 +558,8 @@ def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_f
         try:
             for bucket_name in bucket_names:
                 files = client.list_objects(bucket_name)
-                objects = [obj.object_name for obj in files]
+                # Filter out directory markers when building object list
+                objects = [obj.object_name for obj in files if not is_directory_marker(obj.object_name, obj.size, getattr(obj, 'content_type', None))]
                 files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name.notin_(objects)).all()
 
                 for obj in files_in_db_but_not_in_minio:
@@ -565,6 +602,10 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
             etag = record.s3.object.eTag
             content_type = record.s3.object.contentType
             size = record.s3.object.size or 0
+
+            if is_directory_marker(object_name, size, content_type):
+                logger.debug(f"Skipping directory marker: {object_name} in bucket {bucket_name}")
+                return JSONResponse(content={'message': 'Directory marker ignored'})
             try:
                 add_new_file(bucket_name, object_name, etag, content_type, size)
             except Exception as e:
@@ -628,6 +669,10 @@ def process_seaweedfs_event(event: SeaweedFSEventData):
         size = attributes.get('file_size', 0)
         content_type = attributes.get('mime', 'application/octet-stream')
         etag = attributes.get('md5', '')
+
+        if is_directory_marker(object_name, size, content_type):
+            logger.debug(f"Skipping directory marker: {object_name} in bucket {bucket_name}")
+            return JSONResponse(content={'message': 'Directory marker ignored'})
 
         try:
             add_new_file(bucket_name, object_name, str(etag), content_type, size)

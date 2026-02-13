@@ -55,6 +55,10 @@ spec:
             - name: no_proxy
               value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
           {{- end }}
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
           {{- if .Values.textExtractor.environment }}
             {{- toYaml .Values.textExtractor.environment | nindent 12 }}
           {{- end }}

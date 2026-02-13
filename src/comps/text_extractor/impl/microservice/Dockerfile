@@ -11,7 +11,7 @@ ENV LANG=C.UTF-8
 ARG python_version
 
 RUN apt-get -y update && \
-    apt-get install --no-install-recommends --fix-missing -y asciidoctor nano libreoffice libgl1-mesa-glx tesseract-ocr tesseract-ocr-pol libmagic1 && \
+    apt-get install --no-install-recommends --fix-missing -y asciidoctor nano libreoffice libgl1-mesa-glx tesseract-ocr tesseract-ocr-pol libmagic1 ca-certificates curl && \
     apt-get install -y --only-upgrade \
       openssl=3.0.18-1~deb12u2 \
       libssl3=3.0.18-1~deb12u2 && \

@@ -19,7 +19,7 @@ from app.utils import generate_presigned_url, get_local_minio_client, get_remote
 from app.database import get_db
 from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse, SeaweedFSEventData
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
-from app.rbac import RBACFactory
+from app.rbac import RBACFactory, get_seaweedfs_client_using_bearer_token
 from celery.result import AsyncResult
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -145,6 +145,25 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
 # -------------- Minio operations ------------
 
 
+def ensure_bucket_exists(client, bucket_name: str):
+    try:
+        if not client.bucket_exists(bucket_name):
+            raise HTTPException(status_code=404, detail="Bucket not found")
+    except S3Error as e:
+        error_code = getattr(e, "code", "")
+        if error_code == "NoSuchBucket":
+            raise HTTPException(status_code=404, detail="Bucket not found")
+        if error_code == "AccessDenied":
+            raise HTTPException(status_code=403, detail="Access denied")
+        logger.error(f"Error checking bucket existence for {bucket_name}: {e}")
+        raise HTTPException(status_code=503, detail="Error checking bucket existence")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error checking bucket existence for {bucket_name}: {e}")
+        raise HTTPException(status_code=503, detail="Error checking bucket existence")
+
+
 @app.post('/api/presignedUrl')
 def presigned_url(input: PresignedRequest, request: Request) -> PresignedResponse:
     """
@@ -197,6 +216,11 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
             if not access_token:
                 raise ValueError("Authorization header is required for the OIDC Bearer auth mode.")
 
+            access_token = access_token.replace('Bearer ', '')
+            token = { "access_token": access_token }
+            token_client = get_seaweedfs_client_using_bearer_token(token)
+            ensure_bucket_exists(token_client, bucket_name)
+
             # Get the external S3 endpoint URL
             external_url = os.getenv('EDP_EXTERNAL_URL', 'https://s3.erag.com')
             # Ensure no trailing slash
@@ -208,6 +232,7 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
             logger.debug(f"presigned_url: URL: {url}")
             return PresignedResponse(url=url)
 
+        bucket_check_client = minio_internal
         if access_token:
             access_token = access_token.replace('Bearer ', '')
             token = { "access_token": access_token }
@@ -215,6 +240,7 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
             try:
                 local_client._provider.retrieve() # throws ValueError
                 credentials = local_client._provider._credentials
+                bucket_check_client = local_client
             except (ValueError, urllib3.exceptions.MaxRetryError) as e:
                 if token_fallback:
                     logger.warning(f"Falling back to system credentials for presignedUrl due to a problem with retrieving token credentials. {e}")
@@ -227,6 +253,9 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
                 credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
             else:
                 raise ValueError("Authorization header is required for token credentials and system fallback is disabled.")
+
+        ensure_bucket_exists(bucket_check_client, bucket_name)
+
         url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
         logger.debug(f"Generated presignedUrl for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)

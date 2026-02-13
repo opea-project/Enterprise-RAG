@@ -1,6 +1,6 @@
 # IBM Cloud Terraform Configuration for Enterprise RAG (Intel Gaudi)
 
-This directory contains Terraform configuration files for deploying the Enterprise RAG solution on IBM Cloud using Intel Gaudi accelerators.
+This directory contains Terraform configuration files for deploying the Enterprise RAG solution on IBM Cloud using Intel hardware.
 
 ## Complete Deployment Guide
 
@@ -20,13 +20,15 @@ The comprehensive deployment guide covers:
 This deployment creates a complete Enterprise RAG infrastructure:
 
 **Infrastructure Components:**
-- Intel Gaudi3-powered VPC instance (`gx3d-160x1792x8gaudi3`)
+- Intel-powered VPC instance:
+  - Gaudi - `gx3d-160x1792x8gaudi3`
+  - Xeon - `bx3d-128x640`
 - VPC networking with subnet and security groups
 - Optimized storage configuration for AI workloads
 - Automated software installation and configuration
 
 **AI Software Stack:**
-- Intel Gaudi drivers and optimization libraries
+- Intel Gaudi drivers (if necessary) and optimization libraries
 - Large Language Model service (Intel optimized)
 - Text embedding service for semantic search
 - Document reranking for improved relevance
@@ -90,7 +92,7 @@ api_key = "YOUR_IBM_CLOUD_API_KEY"
 
 # Basic Configuration
 region         = "us-south"
-instance_name  = "erag-gaudi"
+instance_name  = "YOUR_IBM_CLOUD_INSTANCE_NAME"
 instance_zone  = "us-south-2"
 ssh_key_name   = "your-ssh-key-name"
 resource_group = "default"
@@ -103,19 +105,22 @@ ssh_user = "ubuntu"
 hugging_face_token = "YOUR_HUGGING_FACE_TOKEN"
 
 # Solution Version (optional)
-solution_version = "release-2.0.0"  # Options: "release-2.0.0", "release-1.5.0", "main"
+solution_version = "release-2.1.0"  # Options: "release-2.1.0", "release-1.5.0", "main"
 ```
 
 ## Optional Variables
 
 ```hcl
 # Instance Configuration
-instance_profile = "gx3d-160x1792x8gaudi3"  # Intel Gaudi instance
+instance_profile = ""  # Intel instance
+# Example gaudi instance: gx3d-160x1792x8gaudi3
+# Example xeon instance: bx3d-128x640
+
 boot_volume_size = 250                       # GB
 
 # Version Control
-solution_version = "release-2.0.0"         # Git tag or branch (default: "release-2.0.0")
-                                            # Examples: "release-2.0.0", "release-1.5.0", "main"
+solution_version = "release-2.1.0"         # Git tag or branch (default: "release-2.1.0")
+                                            # Examples: "release-2.1.0", "release-1.5.0", "main"
 
 # Model Configuration (Intel Gaudi optimized)
 deployment_type       = "hpu"

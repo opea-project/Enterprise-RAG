@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
@@ -19,7 +19,6 @@ def texts_to_single_line(texts: List[str]) -> List[str]:
 
 class MosecEmbeddings(HuggingFaceEndpointEmbeddings):
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
-
         input_data = texts_to_single_line(texts)
         try:
             responses = await self.async_client.post(
@@ -190,7 +189,7 @@ class LangchainEmbedding(EmbeddingConnector):
                 kwargs["model"] = self._endpoint
 
         if self._model_server == "ovms":
-            kwargs["model_name"] = self._model_name
+            kwargs["model_name"] = self._model_name.split('/')[-1]
 
         return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
 

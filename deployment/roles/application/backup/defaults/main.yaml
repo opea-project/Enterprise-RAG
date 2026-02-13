@@ -1,7 +1,11 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+# Upgrade workflow settings
+upgrade_backup_max_age_hours: 6
+allow_upgrade_without_backup: false
+
 velero:
   enabled: false
   namespace: "velero"
@@ -33,15 +37,21 @@ velero:
     prefix: backup
     restore_prefix: restore
     backupConfig:
-      namespaceOrder: [auth, fingerprint, chatqa, chat-history, edp, vdb, system]
-      # selectors for resources to backup (or to exclude); multiple selectors will be ANDed
-      resourceSelectors:
+      namespaceOrder: [auth, fingerprint, chatqa, chat-history, edp, seaweedfs, vdb, system, default]
+      # NOTE: resourceSelectors and orSelectors are MUTUALLY EXCLUSIVE
+      # When using orSelectors, resourceSelectors are ignored (set to empty list)
+      resourceSelectors: []
+      # OR selectors - resources matching ANY of these will be included
+      # This approach backs up everything EXCEPT the excluded instances
+      orSelectors:
+        - app.kubernetes.io/component=deployment-manifest
         - app.kubernetes.io/instance notin (torchserve_embedding,torchserve_reranking,vllm,vllm-gaudi)
       # list of deployments to be cleared in preparation for restore
       deployments:
         auth: [Helm/keycloak,Secret/keycloak,Secret/tls-secret]
         chatqa: [Deployment/embedding-svc-deployment, Deployment/fgp-svc-deployment, Deployment/input-scan-svc-deployment, Deployment/llm-svc-deployment, Deployment/prompt-template-svc-deployment, Deployment/reranking-svc-deployment, Deployment/retriever-svc-deployment, Deployment/router-service-deployment, Secret/mongo-database-secret,Secret/vector-database-config]
         chat-history: [Helm/chat-history,Secret/mongo-database-secret]
+        seaweedfs: [Helm/seaweedfs]
         edp: [Helm/edp,Secret/vector-database-config,Secret/tls-secret,Secret/vector-database-config]
         fingerprint: [Helm/fingerprint,Secret/mongo-database-secret]
         vdb: [Helm/vdb,Secret/vector-database-config]
@@ -56,4 +66,3 @@ velero:
     itemOperationTimeout: 2h0m0s
     csiSnapshotTimeout: 2h0m0s
     ttl: 720h
-

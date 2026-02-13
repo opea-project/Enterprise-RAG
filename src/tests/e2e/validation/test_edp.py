@@ -12,7 +12,7 @@ import os
 import time
 import uuid
 
-from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
+from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR, TEST_FILES_DIR
 from tests.e2e.validation.buildcfg import cfg
 
 # Skip all tests if edp is not deployed
@@ -391,10 +391,7 @@ def test_edp_upload_to_nonexistent_bucket(edp_helper):
     with edp_helper.temp_txt_file(size=0.001, prefix=method_name()) as temp_file:
         file_basename = os.path.basename(temp_file.name)
         response = edp_helper.generate_presigned_url(file_basename, bucket="nonexistent")
-        assert response.status_code == 200, f"Failed to generate presigned URL. Response: {response.text}"
-        response = edp_helper.upload_file(temp_file.name, response.json().get("url"))
-        assert response.status_code in [404, 301], (f"Unexpected status code returned while trying to upload file "
-                                                    f"to nonexistent bucket. Response: {response.text}")
+        assert response.status_code == 404, f"Failed to generate presigned URL. Response: {response.text}"
 
 
 @pytest.mark.smoke
@@ -407,7 +404,7 @@ def test_edp_list_buckets(edp_helper):
 
 
 @allure.testcase("IEASG-T239")
-def test_edp_regular_user_has_no_access_to_api(edp_helper, chatqa_api_helper, temporarily_remove_regular_user_required_actions):
+def test_edp_regular_user_has_no_access_to_api(edp_helper, temporarily_remove_regular_user_required_actions):
     """Check that regular user has no access to EDP APIs"""
     fail_msg = "Regular user should not have access to EDP APIs"
 
@@ -436,12 +433,13 @@ def test_edp_regular_user_has_no_access_to_api(edp_helper, chatqa_api_helper, te
     response = edp_helper.extract_text("some id", as_user=True)
     assert response.status_code == 403, fail_msg
 
-    # Test upload file API
-    file = "story.txt"
-    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
-    response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
-    response = edp_helper.upload_file(file_path, response.json().get("url"))
-    assert response.status_code == 403, fail_msg
+    # Test upload file API (only if RBAC is enabled)
+    rbac_enabled = cfg.get("edp", {}).get("rbac", {}).get("enabled")
+    if rbac_enabled:
+        file = "dataset_en/test_txt.txt"
+        file_path = os.path.join(TEST_FILES_DIR, file)
+        response = edp_helper.generate_presigned_url(file_path, bucket="only-admin", as_user=True)
+        assert response.status_code == 403, fail_msg
 
 
 @allure.testcase("IEASG-T217")

@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -79,7 +79,8 @@ class ConnectorRedis(VectorStoreConnector):
         return metadata_schema
 
     def _vector_schema(self, schema: dict, metadata_schema: Optional[dict]=None) -> IndexSchema:
-        index_name = f"{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_index"
+        model_name = sanitize_env(os.getenv("EMBEDDING_MODEL_NAME", "default")).replace("/", "_").replace("-", "_")
+        index_name = f"{model_name.lower()}_{schema['algorithm'].lower()}_{schema['datatype'].lower()}_{schema['distance_metric'].lower()}_{schema['dims']}_index"
 
         data = {
             "index": {
@@ -502,7 +503,9 @@ class ConnectorRedis(VectorStoreConnector):
                 if before_result.docs:
                     prev_chunk = max(before_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
                     logger.debug(f"Retrieved previous chunk: {prev_chunk.id, prev_chunk.start_index}")
-                    sibling_docs.append(self._convert_to_text_doc(prev_chunk))
+                    prev_doc = self._convert_to_text_doc(prev_chunk)
+                    prev_doc.metadata["vector_distance"] = -1 # Siblings do not have a distance score
+                    sibling_docs.append(prev_doc)
 
                 after_filter = None
                 if filter_expression is None:
@@ -515,7 +518,9 @@ class ConnectorRedis(VectorStoreConnector):
                 if after_result.docs:
                     next_chunk = min(after_result.docs, key=lambda x: int(x.start_index) if hasattr(x, 'start_index') else 0)
                     logger.debug(f"Retrieved next chunk: {next_chunk.id, next_chunk.start_index}")
-                    sibling_docs.append(self._convert_to_text_doc(next_chunk))
+                    next_doc = self._convert_to_text_doc(next_chunk)
+                    next_doc.metadata["vector_distance"] = -1 # Siblings do not have a distance score
+                    sibling_docs.append(next_doc)
 
             all_sibling_docs[doc.id] = sibling_docs
 

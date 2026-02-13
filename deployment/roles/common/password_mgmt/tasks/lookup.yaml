@@ -75,7 +75,7 @@
 
     - name: Parse existing credentials
       set_fact:
-        existing_credentials: "{{ (existing_credentials_raw.content | b64decode | from_yaml) if credentials_file_stat.stat.exists and (existing_credentials_raw.content | b64decode | trim) != '' else {} }}"
+        existing_credentials: "{{ (existing_credentials_raw.content | b64decode | from_yaml) if credentials_file_stat.stat.exists and (existing_credentials_raw.content | b64decode | from_yaml) is mapping else {} }}"
 
     - name: Merge discovered passwords with existing credentials
       set_fact:

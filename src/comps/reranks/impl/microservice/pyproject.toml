@@ -1,13 +1,13 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-name = "Intel_Enterprise_RAG-Reranks_Microservice"
-version = "2.0.1"
+name = "Intel-Enterprise-RAG-Reranks_Microservice"
+version = "2.1.0"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
-    "aiohttp==3.12.14",
+    "aiohttp==3.13.3",
     "docarray[full]==0.40.0",
     "fastapi==0.120.2",
     "httpx==0.27.0",
@@ -23,7 +23,8 @@ dependencies = [
     "python-dotenv==1.1.0",
     "pyyaml==6.0.2",
     "h11==0.16.0",
-    "setuptools == 80.9.0",     # security update
+    "setuptools == 80.10.2",     # security update,
+    "urllib3 == 2.6.3",
 ]
 
 [project.optional-dependencies]

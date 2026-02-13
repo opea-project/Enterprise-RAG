@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -41,6 +41,7 @@
   tags:
     - install
     - post-install
+    - post-delete
 
 - name: NetApp Trident CSI role
   ansible.builtin.include_role:
@@ -49,6 +50,7 @@
   tags:
     - install
     - post-install
+    - delete
 
 - name: Velero role
   ansible.builtin.include_role:
@@ -62,6 +64,7 @@
     - install
     - post-install
     - delete
+    - post-delete
     - velero-delete
 
 - name: Configure system limits

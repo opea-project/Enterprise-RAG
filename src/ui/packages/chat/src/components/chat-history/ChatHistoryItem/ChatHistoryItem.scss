@@ -1,0 +1,55 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-history-item {
+  @apply grid items-center gap-1;
+  @apply max-h-10 min-h-10 rounded text-sm;
+  @apply hover:bg-light-bg-1/80 dark:hover:bg-dark-bg-1/80;
+  @apply cursor-pointer;
+  @apply border border-transparent pr-1;
+
+  &.chat-history-item--active {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+  }
+
+  &.chat-history-item--has-menu-open {
+    @apply bg-light-bg-1/80 dark:bg-dark-bg-1/80;
+    @apply border-light-border dark:border-dark-border border;
+  }
+
+  & .chat-history-item__title {
+    @apply overflow-hidden;
+    @apply text-ellipsis whitespace-nowrap text-left;
+    @apply mr-auto;
+  }
+
+  &.chat-history-item--pinned {
+    @apply grid-cols-[24px_auto_32px];
+    @apply pl-2;
+
+    & .chat-history-item__title {
+      @apply max-w-[8rem];
+    }
+  }
+
+  &.chat-history-item--unpinned {
+    @apply grid-cols-[auto_32px];
+    @apply pl-3;
+
+    & .chat-history-item__title {
+      @apply max-w-[9rem];
+    }
+  }
+
+  & .chat-history-item__pin-icon {
+    @apply flex flex-shrink-0 items-center justify-center;
+    @apply h-5 w-5 p-0;
+    @apply text-light-text-accent dark:text-dark-text-accent;
+    @apply cursor-pointer transition-colors;
+    @apply border-none bg-transparent;
+
+    &:hover {
+      @apply text-light-text-primary dark:text-dark-text-accent-2;
+    }
+  }
+}

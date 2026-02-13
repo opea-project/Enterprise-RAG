@@ -1,6 +1,6 @@
 ---
 # Source: vllm/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 {{- $modelName := required "Please specify a valid llm_model name in your Helm chart values" .Values.llm_model }}
 {{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default .Values.defaultModelConfigs.modelChatTemplate }}
@@ -68,7 +68,7 @@ spec:
 {{- end }}
 ---
 # Source: vllm/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -90,7 +90,7 @@ spec:
 {{- if and $.Values.vllmNodes $.Values.balloons.enabled }}
 {{- range .Values.vllmNodes }}
 # Source: vllm/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 apiVersion: apps/v1

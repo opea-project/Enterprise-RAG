@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -14,6 +14,14 @@ balloons:
     chart_name: "nri-resource-policy-balloons"
     release_name: "nri-balloons"
     chart_version: "v0.10.1"
-    default_values_file: "{{ playbook_dir }}/../components/nri-plugin/values.yaml"
-    reset_values_file: "{{ playbook_dir }}/../components/nri-plugin/reset-values.yaml"
-    reset_balloon_file: "{{ playbook_dir }}/../components/nri-plugin/reset-balloon.yaml"
+    default_values_file: >-
+      {{ playbook_dir }}/../components/nri-plugin/values.yaml
+    reset_values_file: >-
+      {{ playbook_dir }}/../components/nri-plugin/reset-values.yaml
+    reset_balloon_file: >-
+      {{ playbook_dir }}/../components/nri-plugin/reset-balloon.yaml
+
+  controller:
+    initContainer:
+      name: "wait-for-balloons"
+    namespace: "nri-balloons-controller"

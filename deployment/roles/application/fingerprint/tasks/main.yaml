@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -145,6 +145,21 @@
   until: helm_repo_install_result is succeeded
   retries: 5
   delay: 15
+  tags:
+    - install
+
+- name: Mark secret for password management
+  ansible.builtin.include_role:
+    name: password_mgmt
+    tasks_from: markup.yaml
+    apply:
+      tags:
+        - install
+  vars:
+    - namespace: "{{ fingerprint.namespace }}"
+    - secret_name: "{{ fingerprint.database.auth.password_secret_name }}"
+    - password_mappings:
+      - { key: POSTGRES_PASSWORD, variable: FINGERPRINT_POSTGRES_PASSWORD, user: "{{ fingerprint.database.auth.user.db_user }}" }
   tags:
     - install
 

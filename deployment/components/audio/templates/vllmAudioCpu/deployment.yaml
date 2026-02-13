@@ -1,0 +1,127 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.vllmAudioCpu.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "audio.vllmAudioCpu.fullname" . }}
+  labels:
+    {{- include "audio.vllmAudioCpu.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vllmAudioCpu.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "audio.vllmAudioCpu.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "audio.vllmAudioCpu.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      serviceAccountName: {{ include "audio.vllmAudioCpu.name" . }}
+      containers:
+        - name: {{ include "audio.vllmAudioCpu.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.vllmAudioCpu.image.repository }}:{{ .Values.vllmAudioCpu.image.name }}_{{ .Values.vllmAudioCpu.image.tag }}
+          {{ else }}
+          image: {{ .Values.vllmAudioCpu.image.repository }}/{{ .Values.vllmAudioCpu.image.name }}:{{ .Values.vllmAudioCpu.image.tag }}
+          {{ end }}
+          imagePullPolicy: {{ .Values.vllmAudioCpu.image.pullPolicy }}
+          env:
+          {{- if .Values.hfToken }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: audio-hf-token-secret
+                  key: HF_TOKEN
+          {{- end }}
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy }}
+          {{- end }}
+            - name: OMP_NUM_THREADS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+          envFrom:
+            - configMapRef:
+                name: audio-vllm-configmap
+          args:
+            - --model
+            - "$(ASR_VLLM_MODEL_NAME)"
+            - --port
+            - "8008"
+            - --tensor-parallel-size
+            - "$(VLLM_TP_SIZE)"
+            - --pipeline-parallel-size
+            - "$(VLLM_PP_SIZE)"
+            - --dtype
+            - "$(VLLM_DTYPE)"
+            - --max_model_len
+            - "$(VLLM_MAX_MODEL_LEN)"
+            - --max-num-seqs
+            - "$(VLLM_MAX_NUM_SEQS)"
+            - --disable-log-requests
+          ports:
+            - name: http
+              containerPort: 8008
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 24
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          startupProbe:
+            failureThreshold: 180
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.vllmAudioCpu.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

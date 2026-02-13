@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 - name: Additional gather facts for Kubespray
@@ -26,7 +26,7 @@
       ansible.builtin.set_fact:
         local_path_provisioner_enabled: "{{ install_csi == 'local-path-provisioner' }}"
         kubeconfig_localhost: true
-        kube_version: "{{ k8s_version | default('1.31.9') }}"
+        kube_version: "{{ k8s_version | default('1.33.5') }}"
         supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + (groups['kube_control_plane'] | default([]) | map('extract', hostvars, ['ansible_host']) | select('defined') | list) }}"
 
 - name: Pre-setup tasks
@@ -148,8 +148,16 @@
     helm_timeout: 15m0s
     secure_logs: true
   environment:
-    KUBECONFIG: "{{ kubeconfig }}"
-    K8S_AUTH_KUBECONFIG: "{{ kubeconfig }}"
+    K8S_AUTH_KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
+    KUBECONFIG: >-
+      {{
+        kubeconfig if (kubeconfig is defined and kubeconfig != '' and kubeconfig != 'FILL_HERE')
+        else lookup('env', 'KUBECONFIG')
+      }}
   pre_tasks:
     - name: Load default settings
       ansible.builtin.include_role:
@@ -158,6 +166,7 @@
       tags:
         - install
         - post-install
+        - post-delete
         - velero-delete
         - delete
   tasks:

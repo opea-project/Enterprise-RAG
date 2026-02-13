@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 - name: Install application
@@ -10,6 +10,8 @@
         else lookup('env', 'KUBECONFIG')
       }}
     KUSTOMIZE_HOME: "{{ playbook_dir }}/../renderer"
+  vars_files:
+    - "../version.yaml"
   vars:
     deployment_dir: "{{ playbook_dir }}/.."
     components_dir: "{{ deployment_dir }}/components"
@@ -18,8 +20,17 @@
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
     tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
+
+    # Upload-optimized pipeline configuration (used when upload_pipelines=true)
+    # This is the default configuration for upload mode, applied when upload_pipelines flag is set
+    upload_pipelines_config:
+      - namespace: chatqa
+        samplePath: chatqa/reference-cpu-upload.yaml
+        resourcesPath: chatqa/resources-reference-cpu-upload.yaml
+        modelConfigPath: chatqa/resources-model-cpu.yaml
+        type: chatqa
+
   pre_tasks:
-    # Pre-tasks section (initialization and configuration)
     - name: Pre-configure environment role
       ansible.builtin.include_role:
         name: configure
@@ -33,7 +44,35 @@
         - install
         - display-configuration
         - uninstall
+        - update-configuration
         - pre-upgrade
+
+    - name: Override pipeline configuration for upload mode
+      ansible.builtin.set_fact:
+        pipelines: "{{ upload_pipelines_config }}"
+      when: upload_pipelines | default(false) | bool
+      tags:
+        - always
+        - update-configuration
+
+    - name: Check deployment version and validate upgrade
+      ansible.builtin.include_role:
+        name: deployment_manifest
+        tasks_from: check_version.yaml
+      tags:
+        - install
+        - pre-upgrade
+      when: not ansible_check_mode
+
+    - name: Initial deployment manifest configuration
+      ansible.builtin.include_role:
+        name: deployment_manifest
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+      when: not ansible_check_mode
+
   tasks:
     - name: Pre-install health check
       ansible.builtin.include_role:
@@ -91,14 +130,15 @@
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons
-      when: balloons.enabled or "pre-upgrade" in ansible_run_tags
+      when: (balloons.enabled ) or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
         - topology-preview
 
-    - name: Clean-up NRI plugin resources if balloons disabled
+    - name: Clean-up NRI plugin resources if balloons disabled or upload mode
       include_role:
         name: nri_balloons
         tasks_from: uninstall.yaml
@@ -158,6 +198,15 @@
         - uninstall
         - pre-upgrade
 
+    - name: Audio role
+      ansible.builtin.include_role:
+        name: audio
+      when: audio.enabled or "pre-upgrade" in ansible_run_tags
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+
     - name: Pipeline role
       ansible.builtin.include_role:
         name: pipeline
@@ -166,6 +215,7 @@
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: Ingress role
       ansible.builtin.include_role:
@@ -197,20 +247,22 @@
     - name: UI role
       ansible.builtin.include_role:
         name: ui
-      when: ui.enabled or "pre-upgrade" in ansible_run_tags
+      when: ui.enabled or "pre-upgrade" in ansible_run_tags or "update-configuration" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: EDP role
       ansible.builtin.include_role:
         name: edp
-      when: edp.enabled or "pre-upgrade" in ansible_run_tags
+      when: edp.enabled or "pre-upgrade" in ansible_run_tags or "update-configuration" in ansible_run_tags
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: Telemetry role
       ansible.builtin.include_role:
@@ -229,6 +281,16 @@
         - install
         - uninstall
 
+    - name: Finalize deployment manifest
+      ansible.builtin.include_role:
+        name: deployment_manifest
+        tasks_from: finalize_manifest.yaml
+      tags:
+        - install
+        - uninstall
+        - pre-upgrade
+      when: not ansible_check_mode
+
     - name: Detect upgrade mode from tags
       set_fact:
         is_upgrade_mode: true
@@ -237,7 +299,7 @@
         - pre-upgrade
         - test-upgrade
 
-    - name: Run metadata upgrade validation
+    - name: Run metadata upgrade validation (pre-upgrade tag)
       ansible.builtin.include_tasks:
         file: "{{ playbook_dir }}/../roles/application/upgrade/tasks/metadata_upgrade.yaml"
         apply:
@@ -276,11 +338,12 @@
       ansible.builtin.include_role:
         name: check_pods
       vars:
-        check_pods_no_fail: "{{ is_upgrade_mode | default(false) | bool }}"
+        check_pods_no_fail: false
         check_pods_store_result: "{{ is_upgrade_mode | default(false) | bool }}"
       tags:
         - install
         - uninstall
+        - update-configuration
 
     - name: Store post-install health check result
       set_fact:
@@ -338,6 +401,16 @@
           tags:
             - install
       when: is_upgrade_mode | default(false) | bool and run_data_consistency_verification | default(true) | bool
+      tags:
+        - install
+
+    - name: Generate upgrade summary report
+      ansible.builtin.include_tasks:
+        file: "{{ playbook_dir }}/../roles/application/upgrade/tasks/upgrade_summary.yaml"
+        apply:
+          tags:
+            - install
+      when: is_upgrade_mode | default(false) | bool
       tags:
         - install
 

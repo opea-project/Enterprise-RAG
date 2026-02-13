@@ -83,6 +83,21 @@
     - install
     - post-install
 
+- name: Find current default StorageClass
+  ansible.builtin.set_fact:
+    previous_default_sc: >-
+      {%- for item in sc_list.resources -%}
+        {%- if item.metadata.annotations is defined and item.metadata.annotations.get('storageclass.kubernetes.io/is-default-class', 'false') == 'true' and item.metadata.name != nfs_csi_storage_class -%}
+          {{ item.metadata.name }}
+        {%- endif -%}
+      {%- endfor -%}
+  when:
+    - install_csi == "nfs"
+    - restore_default_sc_on_cleanup | bool
+  tags:
+    - install
+    - post-install
+
 - name: Remove default annotation from non-nfs-csi StorageClasses
   kubernetes.core.k8s_json_patch:
     api_version: storage.k8s.io/v1
@@ -93,6 +108,7 @@
         path: /metadata/annotations/storageclass.kubernetes.io~1is-default-class
   loop: "{{ sc_list.resources }}"
   when:
+    - install_csi == "nfs"
     - item.metadata.name != nfs_csi_storage_class
     - item.metadata.annotations is defined
     - item.metadata.annotations['storageclass.kubernetes.io/is-default-class'] is defined
@@ -100,14 +116,87 @@
     - install
     - post-install
 
+- name: Set default annotation and track previous default on nfs-csi StorageClass
+  kubernetes.core.k8s:
+    state: patched
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: "{{ nfs_csi_storage_class }}"
+    definition:
+      metadata:
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+          meta.erag/previous-default-sc: "{{ previous_default_sc if previous_default_sc != '' else 'none' }}"
+  when:
+    - install_csi == "nfs"
+    - restore_default_sc_on_cleanup | bool
+  tags:
+    - install
+    - post-install
+
 # DELETE TASKS
+- name: Get nfs-csi StorageClass before deletion
+  kubernetes.core.k8s_info:
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: "{{ nfs_csi_storage_class }}"
+  register: nfs_sc_info
+  when:
+    - install_csi == "nfs"
+    - restore_default_sc_on_cleanup | bool
+  tags:
+    - delete
+    - post-delete
+
+- name: Check if nfs-csi is current default
+  ansible.builtin.set_fact:
+    nfs_is_default: >-
+      {%- if nfs_sc_info.resources | length > 0 -%}
+        {{ nfs_sc_info.resources[0].metadata.annotations.get('storageclass.kubernetes.io/is-default-class', 'false') == 'true' }}
+      {%- else -%}
+        false
+      {%- endif -%}
+    previous_default_from_nfs: >-
+      {%- if nfs_sc_info.resources | length > 0 and nfs_sc_info.resources[0].metadata.annotations is defined -%}
+        {{ nfs_sc_info.resources[0].metadata.annotations.get('meta.erag/previous-default-sc', '') }}
+      {%- else -%}
+      {%- endif -%}
+  when:
+    - install_csi == "nfs"
+    - restore_default_sc_on_cleanup | bool
+  tags:
+    - delete
+    - post-delete
+
+- name: Restore previous default StorageClass if nfs-csi was default
+  kubernetes.core.k8s:
+    state: patched
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: "{{ previous_default_from_nfs }}"
+    definition:
+      metadata:
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+  when:
+    - install_csi == "nfs"
+    - restore_default_sc_on_cleanup | bool
+    - nfs_is_default | bool
+    - previous_default_from_nfs != ""
+    - previous_default_from_nfs != "none"
+  tags:
+    - delete
+    - post-delete
+
 - name: Uninstall CSI NFS driver
   kubernetes.core.helm:
     name: csi-driver-nfs
     release_namespace: kube-system
     state: absent
+  when: install_csi == "nfs"
   tags:
     - delete
+    - post-delete
 
 - name: Check if the NFS namespace exists
   kubernetes.core.k8s_info:
@@ -117,6 +206,7 @@
   register: nfs_namespace_info
   tags:
     - delete
+    - post-delete
 
 - name: Remove NFS export directory on the labeled node using a Kubernetes Job
   kubernetes.core.k8s:
@@ -125,6 +215,7 @@
   when: nfs_namespace_info.resources | length > 0
   tags:
     - delete
+    - post-delete
 
 - name: Delete NFS server deployment and service
   kubernetes.core.k8s:
@@ -132,6 +223,7 @@
     definition: "{{ lookup('template', 'nfs-server.yaml.j2') }}"
   tags:
     - delete
+    - post-delete
 
 - name: Remove the NFS node label
   kubernetes.core.k8s:
@@ -145,3 +237,4 @@
     state: patched
   tags:
     - delete
+    - post-delete

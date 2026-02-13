@@ -56,9 +56,6 @@ There're 2 ways to run this microservice:
 
 The Document Summarization Microservice interacts with a LLM microservice endpoint, which must be operational and accessible at the URL specified by the `DOCSUM_LLM_USVC_ENDPOINT` env. Feel free to use docker compose available in [impl/model_server/llm](impl/model_server/llm/) or set up the llm microservice yourself by using instructions in [LLM README](../llms/README.md).
 
-> [!IMPORTANT]
-> Docsum microservice uses OpenAI Client to connect to the LLM. Therefore, OpenAI API is required to run the pipeline correctly. To enable LLM with OpenAI API for streaming, run LLM with `LLM_OPENAI_FORMAT_STREAMING` set to `True`.
-
 ### 🚀 Start Document Summarization Microservice with Python (Option 1)
 
 To start the Document Summarization microservice, you need to install python packages first.

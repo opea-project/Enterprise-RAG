@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ARG python_version=3.11
@@ -7,11 +7,15 @@ ARG python_image_version=${python_version}-slim-bookworm
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.9.1 /uv /uvx /bin/
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     libgl1-mesa-glx \
     libjemalloc-dev && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk/* && \
     rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl && \

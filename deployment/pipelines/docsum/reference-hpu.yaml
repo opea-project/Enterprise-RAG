@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: gmc.opea.io/v1alpha3
@@ -55,7 +55,6 @@ spec:
             endpoint: /v1/chat/completions
             LLM_MODEL_SERVER: vllm
             LLM_MODEL_SERVER_ENDPOINT: vllm-gaudi-svc
-            LLM_OPENAI_FORMAT_STREAMING: "True"
           isDownstreamService: true
       - name: DocSum
         data: $response

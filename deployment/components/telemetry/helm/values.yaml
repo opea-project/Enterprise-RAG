@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ### ============================================================================
@@ -98,6 +98,12 @@ prometheus-redis-exporter:
     secret:
       name: vector-database-config
       key: REDIS_PASSWORD
+
+### ============================================================================
+# Custom connector for MSSQL Prometehus monitor
+### ============================================================================
+prometheus-mssql-exporter:
+  enabled: true
 
 ### ============================================================================
 # LOGS subchart (logs backends and collectors)

@@ -5,7 +5,7 @@ import jwt
 import json
 from redis import Redis
 from minio.error import S3Error
-from app.utils import get_local_minio_client, get_local_minio_client_using_token_credentials, filtered_list_bucket
+from app.utils import get_local_minio_client, get_local_minio_client_using_token_credentials, filtered_list_bucket, get_seaweedfs_client_using_bearer_token
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 
 # Initialize the logger for the microservice
@@ -113,7 +113,14 @@ class AlwaysRBAC(AbstractRBAC):
     def __init__(self, jwt_token: str):
         super().__init__('CURRENT')
         self.jwt_token = jwt_token
-        self.token_client = get_local_minio_client_using_token_credentials(self.jwt_token)
+
+        bearer_token_auth = str(os.getenv('USE_BEARER_TOKEN_AUTH')).lower() in ['true', '1', 't', 'y', 'yes']
+        if bearer_token_auth:
+            logger.debug("AlwaysRBAC: Using OIDC Bearer token client")
+            self.token_client = get_seaweedfs_client_using_bearer_token(self.jwt_token)
+        else:
+            logger.debug("AlwaysRBAC: Using MinIO STS token client")
+            self.token_client = get_local_minio_client_using_token_credentials(self.jwt_token)
 
     def get_buckets(self):
         bucket_list = filtered_list_bucket(self.client)
@@ -141,7 +148,14 @@ class CachedRBAC(AbstractRBAC):
         super().__init__('CACHED')
         self.cache = self.get_cache_client()
         self.jwt_token = jwt_token
-        self.token_client = get_local_minio_client_using_token_credentials(self.jwt_token)
+
+        bearer_token_auth = str(os.getenv('USE_BEARER_TOKEN_AUTH')).lower() in ['true', '1', 't', 'y', 'yes']
+        if bearer_token_auth:
+            logger.debug("CachedRBAC: Using OIDC Bearer token client")
+            self.token_client = get_seaweedfs_client_using_bearer_token(self.jwt_token)
+        else:
+            logger.debug("CachedRBAC: Using MinIO STS token client")
+            self.token_client = get_local_minio_client_using_token_credentials(self.jwt_token)
 
     def get_cache_client(self):
         return Redis.from_url(os.getenv('CELERY_BROKER_URL'))

@@ -1,0 +1,38 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.chat-history-list {
+  @apply max-h-[calc(100vh_-_10rem)] overflow-y-auto;
+  @apply flex flex-col;
+  @apply [scrollbar-gutter:stable];
+  @apply mx-1;
+}
+
+.chat-history-list--empty {
+  @apply flex h-32 items-center justify-center;
+}
+
+.chat-history-list__search-bar {
+  @apply flex h-16 items-center;
+  @apply mx-1 mb-4;
+}
+
+.chat-history-list__empty-message {
+  @apply text-xs text-gray-500;
+}
+
+.chat-history-list__section {
+  @apply flex flex-col;
+
+  &:not(:last-child) {
+    @apply mb-4;
+  }
+}
+
+.chat-history-list__section-title {
+  @apply mb-2 text-xs font-medium;
+}
+
+.chat-history-list__items {
+  @apply flex flex-col gap-1;
+}

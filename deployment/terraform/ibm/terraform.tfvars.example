@@ -18,6 +18,7 @@ hugging_face_token = ""
 # Solution Version (default: "release-2.0.0")
 # Specify a git tag (e.g., "release-2.0.0", "release-1.5.0") or branch name ("main")
 #solution_version = "release-2.0.0"
+#habana_version = "1.22.2-32"
 
 # Model Configuration (Intel Gaudi optimized)
 #deployment_type       = "hpu"

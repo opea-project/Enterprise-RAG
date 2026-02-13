@@ -1,9 +1,9 @@
 #!/bin/bash
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 
-GAUDI_DRIVER_VERSION=${1:"1.22.1"}
+GAUDI_DRIVER_VERSION=${1:"1.22.2"}
 CSI_MNT_DIR=/mnt
 DESIRED_INOTIFY_INSTANCES=8192
 CSI_MNT_DIR_PERMISSION=755

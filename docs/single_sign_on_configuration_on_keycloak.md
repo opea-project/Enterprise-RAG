@@ -53,11 +53,11 @@ To configure Enterprise RAG SSO using Azure Single Sign-On, follow these steps:
      1. `erag-admin-group` should consist of the following groups from Keycloak:
           - `(EnterpriseRAG-oidc) ERAG-admin`
           - `(EnterpriseRAG-oidc-backend) ERAG-admin`
-          - `(EnterpriseRAG-oidc-minio) consoleAdmin` # if using internal MinIO
+          - `(EnterpriseRAG-oidc-minio) consoleAdmin` # if using internal SeaweedFS
      2. `erag-user-group` should consist of the following groups from Keycloak:
           - `(EnterpriseRAG-oidc) ERAG-user`
           - `(EnterpriseRAG-oidc-backend) ERAG-user`
-          - `(EnterpriseRAG-oidc-minio) readonly` # if using internal MinIO
+          - `(EnterpriseRAG-oidc-minio) readonly` # if using internal SeaweedFS
 5. Configure two `Identity mappers` in `Mappers` under the created `Identity provider`:
      1. Add Identity Provider Mapper - for group `erag-admin-group`:
           - Field `Name` - this is the `Object ID` from `erag-admins` from Microsoft Entra ID

@@ -7,3 +7,7 @@ nfs_server_image: "docker.io/adnanhodzic/nfs-server-k8s"
 nfs_server_ip: "nfs-server.nfs-server.svc"
 nfs_csi_driver_version: "4.11.0"
 nfs_csi_storage_class: "nfs-csi"
+
+# When true, tracks the previous default StorageClass during installation
+# and restores it during cleanup if nfs-csi was the default
+restore_default_sc_on_cleanup: true

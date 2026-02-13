@@ -108,6 +108,7 @@
       ansible.builtin.set_fact:
         config_valid: "{{ config_valid and (late_chunking_issues is not defined or late_chunking_issues | length == 0) }}"
 
+
 # Display validation results
 - name: Display validation results
   ansible.builtin.debug:
@@ -130,6 +131,12 @@
       {% if late_chunking_issues is defined and late_chunking_issues|length > 0 %}
       - Late chunking configuration issues:
         {% for issue in late_chunking_issues %}
+        * {{ issue }}
+        {% endfor %}
+      {% endif %}
+      {% if vllm_embedding_issues is defined and vllm_embedding_issues|length > 0 %}
+      - vLLM embedding with balloons configuration issues:
+        {% for issue in vllm_embedding_issues %}
         * {{ issue }}
         {% endfor %}
       {% endif %}

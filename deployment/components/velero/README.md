@@ -78,8 +78,7 @@ To have a working backup and restore functionality, the following items need to 
      ```
 
 1. Ensuring suitable object storage for backups.<br>
-   Backup functionality is installed with a basic instance of the MinIO object storage solution.<br>
-   It might be necessary to adjust the MinIO settings to make sure it meets specific requirements.
+   Backup functionality uses SeaweedFS as the S3-compatible object storage backend.
 
 ## Backup and Restore Configuration Variants
 
@@ -200,19 +199,7 @@ As a result, a `restore` object will be created in the specified backup namespac
   velero restore describe restore-20250917t052410
   ```
 
-* To gather further details, you need to expose MinIO service locally.<br>
-  Forward MinIO port 9000:
-  ```sh
-  # it's probably better to start this in a separate terminal
-  kubectl port-forward --namespace velero svc/velero-minio 9000:9000
-  ```
-  Then add an alias for `velero-minio.velero.svc` to `/etc/hosts`:
-  ```bash
-  # /etc/hosts
-  127.0.0.1 localhost velero-minio.velero.svc
-  ```
-
-  Finally call `velero` to review details:
+* To gather further details:
   ```bash
   velero restore describe restore-20250917t052410 --details
   ```

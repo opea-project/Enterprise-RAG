@@ -1,5 +1,5 @@
 {#
-Copyright (C) 2024-2025 Intel Corporation
+Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
@@ -32,21 +32,23 @@ chat_history:
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 
-{% if tdx.coco.enabled %}
+{% if tdx is defined and tdx.coco is defined and tdx.coco.enabled %}
 tdx:
   common:
     kbsAddress: {{ KBS_ADDRESS }}
 {% endif %}
 
-{% if balloons.enabled is defined and balloons.enabled %}
+{% if balloons is defined and balloons.enabled %}
 balloons:
   enabled: {{ balloons.enabled }}
   namespace: {{ balloons.namespace }}
   wait_timeout: {{ balloons.wait_timeout }}
+{% if balloons_chart_name is defined %}
   chart_name: {{ balloons_chart_name }}
 {% endif %}
+{% endif %}
 
-{% if optimal_replicas is defined %}
+{% if optimal_replicas is defined and (optimal_replicas | length) > 0 %}
 vllmNodes:
 {% for node_name, node_info in optimal_replicas.items() %}
 {% if node_info is mapping and node_info.replicas is defined and node_info.adjusted_vllm_size is defined and (node_info.amx_supported == true or node_info.gaudi == true) %}
@@ -82,6 +84,10 @@ images:
     image: "erag-text-extractor"
     repository: *repo
     tag: *tag
+{% if audio.enabled is defined and audio.enabled %}
+    envs:
+      ASR_MODEL_SERVER_ENDPOINT: "http://asr-svc.{{ audio.namespace }}.svc:9009"
+{% endif %}
   text-compression-usvc:
     image: "erag-text-compression"
     repository: *repo
@@ -131,6 +137,9 @@ images:
     tag: *tag
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
+  vllm_embedding:
+    envs:
+      EMBEDDING_VLLM_MODEL_NAME: *embedding_model_name
   tei:
     envs:
       MODEL_ID: *embedding_model_name
@@ -148,6 +157,7 @@ images:
     vector_store: {{ vector_databases.vector_store }}
 {% endif %}
     envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}

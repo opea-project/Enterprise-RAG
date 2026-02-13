@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 KEYCLOAK_URL=${KEYCLOAK_URL:-http://localhost:${KEYCLOAK_FPORT}}

@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { parseServiceDetailsResponseData as parseServiceDetailsShared } from "@intel-enterprise-rag-ui/control-plane";
@@ -35,6 +35,7 @@ const SERVICE_NAME_NODE_ID_MAP: Record<
 > = {
   "v1:tei-embedding-svc": "embedding_model_server",
   "v1:torchserve-embedding-svc": "embedding_model_server",
+  "v1:vllm-embedding-svc": "embedding_model_server",
   "v1:embedding-svc": "embedding",
   "v1:retriever-svc": "retriever",
   "v1:redis-vector-db": "vectordb",

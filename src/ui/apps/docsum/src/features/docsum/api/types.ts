@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 export interface SummarizeResponse {
@@ -17,6 +17,7 @@ export interface SummarizeRequest {
 
 export interface SummarizePlainTextRequest extends SummarizeRequest {
   text: string;
+  summaryType?: SummaryType;
 }
 
 export interface FileData {
@@ -27,4 +28,5 @@ export interface FileData {
 
 export interface SummarizeFileRequest extends SummarizeRequest {
   fileData: FileData;
+  summaryType?: SummaryType;
 }

@@ -1,6 +1,6 @@
 ---
 # Source: tei/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -35,7 +35,7 @@ spec:
       storage: {{ .Values.pvc.modelEmbedding.storage }}
 ---
 # Source: tei/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -55,7 +55,7 @@ spec:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 4 }}
 ---
 # Source: tei/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1

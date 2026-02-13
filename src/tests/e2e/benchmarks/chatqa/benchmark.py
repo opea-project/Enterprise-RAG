@@ -1,5 +1,5 @@
 #!/bin/python3
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
@@ -152,7 +152,8 @@ def call_chatqa(url, question, wid, tokenizer, bearer):
                 if line == b"data: [DONE]":
                     break
                 if line.startswith(b"data: "):
-                    line = line[7:-1].decode("unicode_escape")
+                    line = line[6:].decode("utf-8")
+                    line = json.loads(line)['choices'][0]['delta']['content']
                     answer = answer + line
                     if res.first_chunk == 0:
                         res.first_chunk = time.time() - start

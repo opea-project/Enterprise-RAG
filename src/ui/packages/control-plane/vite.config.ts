@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { fileURLToPath } from "node:url";
@@ -26,13 +26,6 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
           "react-redux": "ReactRedux",
-        },
-        manualChunks: {
-          "xyflow-react": ["@xyflow/react"],
-          "intel-enterprise-rag-ui-components": [
-            "@intel-enterprise-rag-ui/components",
-          ],
-          "intel-enterprise-rag-ui-icons": ["@intel-enterprise-rag-ui/icons"],
         },
       },
     },

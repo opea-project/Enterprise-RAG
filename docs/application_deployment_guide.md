@@ -2,6 +2,15 @@
 
 This document describes how to install Intel® AI for Enterprise RAG application on K8s cluster.
 
+## Version Management and Upgrades
+
+Intel® AI for Enterprise RAG includes version tracking and upgrade validation:
+- The solution tracks deployed versions via a deployment manifest stored in the cluster.
+- Upgrades to newer versions are supported and validated before execution.
+- Downgrades are blocked by default to prevent data loss and compatibility issues.
+   - In cases when downgrade is a necessity, it's possible to force installation mode by enabling the *forced installation mode* with parameter: `-e force_install_mode=true`.
+- Version checks occur automatically during deployment to ensure compatibility.
+
 ## Checking all pods are in running state
 
 **Verify System Status**
@@ -80,7 +89,7 @@ sudo sysctl --system
       - `FQDN`: Provide the FQDN for the deployment, for example "erag.com"
 
    - If you have K8s cluster containing nodes with `Gaudi AI accelerator`, please change pipelines section as default pipeline is utilizing CPU:
-     
+
      **For ChatQA pipeline:**
      ```yaml
      pipelines:
@@ -90,7 +99,7 @@ sudo sysctl --system
         modelConfigPath: chatqa/resources-model-hpu.yaml
         type: chatqa
      ```
-     
+
      **For Docsum pipeline:**
      ```yaml
      pipelines:
@@ -100,6 +109,17 @@ sudo sysctl --system
         modelConfigPath: chatqa/resources-model-hpu.yaml
         type: docsum
      ```
+
+     **To enable AudioQnA solution for ChatQnA pipelines**, set the `audio.enabled` field to `true`:
+     ```yaml
+     audio:
+       enabled: true
+       namespace: audio
+       asr_model: "openai/whisper-small"
+       tts_model: "microsoft/speecht5_tts"
+     ```
+
+     For more details about AudioQnA configuration, see the [Advanced Configuration Guide](./advanced_configuration.md#audioqna-solution).
 
 > [!Note]
 > The default LLM for Xeon execution is `casperhansen/llama-3-8b-instruct-awq`.

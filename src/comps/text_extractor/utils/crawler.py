@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import multiprocessing
@@ -62,9 +62,22 @@ class Crawler:
                     stream=True,
                     timeout=(10, self.timeout) # Tuple timeout: (connect, read)
                 )
+                logger.debug("--------------------------------")
+                logger.debug(f"Request Headers for {urlunparse(url)}:")
+                for key, value in response.request.headers.items():
+                    logger.debug(f"{key}: {value}")
+                logger.debug("--------------------------------")
+                logger.debug(f"Response Headers for {urlunparse(url)}:")
+                for key, value in response.headers.items():
+                    logger.debug(f"{key}: {value}")
+                logger.debug("--------------------------------")
+                logger.debug(f"Response Status Code for {urlunparse(url)}: {response.status_code}")
+                logger.debug("--------------------------------")
+                logger.debug(f"Response Content for {urlunparse(url)}: {response.text}")
 
                 if response.status_code != 200:
                     logger.error("fail to fetch %s, response status code: %s", urlunparse(url), response.status_code)
+                    response.raise_for_status()
                 else:  # Save file
                     filename = ""
                     if "Content-Disposition" in response.headers.keys():
@@ -110,7 +123,9 @@ class Crawler:
                         "file_path": str(file_path.resolve()),
                         "content_type": content_type
                     }
-
+            except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.ProxyError) as e:
+                logger.error(f"HTTP error while fetching {urlunparse(url)}: {e}")
+                raise
             except Exception as e:
                 logger.exception(f"Failed to fetch {urlunparse(url)}, caused by {e}")
                 raise Exception(e)

@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 
@@ -106,11 +106,3 @@
       vars:
         manifest_file_path: "{{ upgrade_metadata_dir }}/{{ release_namespace }}-{{ release_name }}-manifest.yaml"
         upgrade_file_path: "{{ upgrade_metadata_dir }}/{{ release_namespace }}-{{ release_name }}-upgrade.yaml"
-
-    - name: Clean up collected manifests
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - "{{ upgrade_metadata_dir }}/{{ release_namespace }}-{{ release_name }}-manifest.yaml"
-        - "{{ upgrade_metadata_dir }}/{{ release_namespace }}-{{ release_name }}-upgrade.yaml"

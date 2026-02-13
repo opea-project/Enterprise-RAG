@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ARG python_version=3.11
@@ -8,6 +8,7 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 ENV TEMP=/home/user/tmp
 ENV MKL_THREADING_LAYER=GNU
@@ -18,6 +19,9 @@ RUN apt-get -y update                           \
     numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \
+ && apt-get install -y --only-upgrade           \
+    openssl=3.5.4-1~deb13u2                     \
+    libssl3=3.5.4-1~deb13u2                     \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean
@@ -51,6 +55,6 @@ COPY --chown=user:user model/model-config.yaml /home/user/utils/model-config.yam
 RUN chmod +x /home/user/entrypoint.sh
 
 # jemalloc: ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so:${LD_PRELOAD}"
-ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so:${LD_PRELOAD}"
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libtcmalloc.so"
 
 ENTRYPOINT ["/home/user/entrypoint.sh"]

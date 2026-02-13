@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -30,11 +30,17 @@
         name: gmc-config
         namespace: "{{ gmc.namespace }}"
       register: gmc_config_result
+      tags:
+        - install
+        - update-configuration
 
     - name: Extract gmc-config YAML content as text
       ansible.builtin.set_fact:
         gmc_config_text: "{{ (gmc_config_result.resources[0].data | default({})).values() | list | join('\n') }}"
       when: gmc_config_result.resources | length > 0
+      tags:
+        - install
+        - update-configuration
 
     - name: Initialize lists for resources to remove (not declared in gmc-config)
       ansible.builtin.set_fact:
@@ -42,6 +48,9 @@
         resources_to_remove_deployments: []
         resources_to_remove_pvcs: []
       when: gmc_config_text is defined
+      tags:
+        - install
+        - update-configuration
 
     - name: Identify StatefulSets not declared in gmc-config
       ansible.builtin.set_fact:
@@ -52,6 +61,9 @@
       when:
         - gmc_config_text is defined
         - gmc_config_text is not search('\\bname:\\s*' ~ statefulset_name ~ '\\b', multiline=True)
+      tags:
+        - install
+        - update-configuration
 
     - name: Identify Deployments not declared in gmc-config
       ansible.builtin.set_fact:
@@ -62,6 +74,9 @@
       when:
         - gmc_config_text is defined
         - gmc_config_text is not search('\\bname:\\s*' ~ deployment_name ~ '\\b', multiline=True)
+      tags:
+        - install
+        - update-configuration
 
     - name: Identify PVCs not declared in gmc-config
       ansible.builtin.set_fact:
@@ -72,6 +87,9 @@
       when:
         - gmc_config_text is defined
         - gmc_config_text is not search('\\bname:\\s*' ~ pvc_name ~ '\\b', multiline=True)
+      tags:
+        - install
+        - update-configuration
 
     - name: Display resources not declared in gmc-config
       ansible.builtin.debug:
@@ -81,6 +99,9 @@
           - "  Deployments: {{ resources_to_remove_deployments }}"
           - "  PVCs: {{ resources_to_remove_pvcs }}"
       when: gmc_config_text is defined
+      tags:
+        - install
+        - update-configuration
 
     - name: Determine if any resources need to be removed
       ansible.builtin.set_fact:
@@ -90,6 +111,9 @@
             (resources_to_remove_deployments | length > 0) or
             (resources_to_remove_pvcs | length > 0)
           }}
+      tags:
+        - install
+        - update-configuration
 
     - name: Display cleanup decision
       ansible.builtin.debug:
@@ -98,11 +122,17 @@
           - "Deployments to remove: {{ resources_to_remove_deployments }}"
           - "PVCs to remove: {{ resources_to_remove_pvcs }}"
           - "Any resources need removal: {{ resources_need_removal }}"
+      tags:
+        - install
+        - update-configuration
 
     - name: No action needed - all resources match gmc-config desired state
       ansible.builtin.debug:
         msg: "All dynamically-generated resources match gmc-config desired state. No removal needed."
       when: not resources_need_removal
+      tags:
+        - install
+        - update-configuration
 
     - name: Remove resources not declared in gmc-config to match desired state
       block:
@@ -118,6 +148,9 @@
             loop_var: statefulset_name
             label: "{{ statefulset_name }}"
           when: resources_to_remove_statefulsets | length > 0
+          tags:
+            - install
+            - update-configuration
 
         - name: Remove Deployments not in gmc-config
           kubernetes.core.k8s:
@@ -131,6 +164,9 @@
             loop_var: deployment_name
             label: "{{ deployment_name }}"
           when: resources_to_remove_deployments | length > 0
+          tags:
+            - install
+            - update-configuration
 
         - name: Remove PVCs not in gmc-config
           kubernetes.core.k8s:
@@ -144,12 +180,21 @@
             loop_var: pvc_name
             label: "{{ pvc_name }}"
           when: resources_to_remove_pvcs | length > 0
+          tags:
+            - install
+            - update-configuration
 
         - name: Resources successfully removed to match gmc-config desired state
           ansible.builtin.debug:
             msg: "Successfully removed resources not declared in gmc-config. Cluster now matches desired state."
+          tags:
+            - install
+            - update-configuration
 
       when: resources_need_removal
+      tags:
+        - install
+        - update-configuration
 
   when:
     - pre_install_dynamic_statefulsets is defined
@@ -157,3 +202,4 @@
     - pre_install_dynamic_pvcs is defined
   tags:
     - install
+    - update-configuration

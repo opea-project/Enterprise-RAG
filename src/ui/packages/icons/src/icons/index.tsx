@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { ComponentType } from "react";
@@ -35,10 +35,16 @@ import { LinkIcon } from "@/icons/LinkIcon";
 import { LoadingIcon } from "@/icons/LoadingIcon";
 import { LogoutIcon } from "@/icons/LogoutIcon";
 import { MdFileIcon } from "@/icons/MdFileIcon";
+import { MicrophoneIcon } from "@/icons/MicrophoneIcon";
+import { MicrophoneRecordingIcon } from "@/icons/MicrophoneRecordingIcon";
 import { MoreOptionsIcon } from "@/icons/MoreOptionsIcon";
 import { NewChatIcon } from "@/icons/NewChatIcon";
 import { OptionsIcon } from "@/icons/OptionsIcon";
+import { PanelHideIcon } from "@/icons/PanelHideIcon";
+import { PanelShowIcon } from "@/icons/PanelShowIcon";
 import { PdfFileIcon } from "@/icons/PdfFileIcon";
+import { PinFilledIcon } from "@/icons/PinFilledIcon";
+import { PinIcon } from "@/icons/PinIcon";
 import { PlainTextIcon } from "@/icons/PlainTextIcon";
 import { PlusIcon } from "@/icons/PlusIcon";
 import { PromptSendIcon } from "@/icons/PromptSendIcon";
@@ -53,6 +59,7 @@ import { SideMenuIcon } from "@/icons/SideMenuIcon";
 import { SortDownIcon } from "@/icons/SortDownIcon";
 import { SortUpDownIcon } from "@/icons/SortUpDownIcon";
 import { SortUpIcon } from "@/icons/SortUpIcon";
+import { SpeakerIcon } from "@/icons/SpeakerIcon";
 import { SuccessIcon } from "@/icons/SuccessIcon";
 import { TelemetryIcon } from "@/icons/TelemetryIcon";
 import { TextFileIcon } from "@/icons/TextFileIcon";
@@ -83,6 +90,8 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   "doc-file": DocFileIcon,
   "docx-file": DocxFileIcon,
   "pdf-file": PdfFileIcon,
+  pin: PinIcon,
+  "pin-filled": PinFilledIcon,
   "hide-side-menu": HideSideMenuIcon,
   "identity-provider": IdentityProviderIcon,
   info: InfoIcon,
@@ -90,9 +99,13 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   link: LinkIcon,
   loading: LoadingIcon,
   logout: LogoutIcon,
+  microphone: MicrophoneIcon,
+  "microphone-recording": MicrophoneRecordingIcon,
   "more-options": MoreOptionsIcon,
   options: OptionsIcon,
   "new-chat": NewChatIcon,
+  "panel-hide": PanelHideIcon,
+  "panel-show": PanelShowIcon,
   "plain-text": PlainTextIcon,
   plus: PlusIcon,
   "prompt-send": PromptSendIcon,
@@ -111,6 +124,7 @@ export const icons: Record<string, ComponentType<IconBaseProps>> = {
   telemetry: TelemetryIcon,
   "text-file": TextFileIcon,
   upload: UploadIcon,
+  speaker: SpeakerIcon,
   "external-link": ExternalLinkIcon,
 };
 

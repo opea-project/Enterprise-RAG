@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,9 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "intel-enterprise-rag-ui-input-validation",
       fileName: "intel-enterprise-rag-ui-input-validation",
+    },
+    rollupOptions: {
+      external: ["zod"],
     },
   },
   plugins: [dts(), viteTsconfigPaths()],

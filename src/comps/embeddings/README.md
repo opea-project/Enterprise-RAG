@@ -35,13 +35,13 @@ Users are able to configure and build embedding-related services according to th
 
 Support for specific model servers with Dockerfiles or build instruction.
 
-| Model server                | langchain | llama_index |
-| ------------                | ----------| ------------|
-| [TorchServe](./impl/model_server/torchserve)  | &#x2713;  | &#x2717;    |
-| [TEI](./impl/model_server/tei/)                | &#x2713;  | &#x2713;    |
-| [OVMS](./impl/model_server/ovms)              | &#x2717;  | &#x2717;    |
-| [mosec](./impl/model_server/mosec)            | &#x2713;  | &#x2717;    |
-
+| Model server                                  | langchain | llama_index | generic  |
+| --------------------------------------------  | --------- | ----------- | -------- | 
+| [TorchServe](./impl/model_server/torchserve)  | &#x2713;  | &#x2717;    | &#x2717; |
+| [TEI](./impl/model_server/tei/)               | &#x2713;  | &#x2713;    | &#x2717; |
+| [OVMS](./impl/model_server/ovms)              | &#x2717;  | &#x2717;    | &#x2717; |
+| [mosec](./impl/model_server/mosec)            | &#x2713;  | &#x2717;    | &#x2717; |
+| [vLLM](./impl/model_server/vllm)              | &#x2717;  | &#x2717;    | &#x2713; |
 ---
 
 ## Configuration Options
@@ -52,8 +52,8 @@ The configuration for the Embedding Microservice is specified in the [impl/micro
 |---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `EMBEDDING_USVC_PORT`                 | The port of the microservice, by default 6000.                                                                        |
 | `EMBEDDING_MODEL_NAME`                | The name of language model to be used (e.g., "bge-large-en-v1.5")                                             |
-| `EMBEDDING_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'llama_index' |
-| `EMBEDDING_MODEL_SERVER`              | Specifies the type of model server (e.g. "tei", "ovms")                                                               |
+| `EMBEDDING_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'llama_index' or 'generic' |
+| `EMBEDDING_MODEL_SERVER`              | Specifies the type of model server (e.g. "tei", "vllm", "ovms")                                                               |
 | `EMBEDDING_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8090"                                                       |
 
 
@@ -133,6 +133,15 @@ docker run -d --name="embedding-microservice" \
   opea/embedding
 ```
 
+```bash
+# for generic
+docker run -d --name="embedding-microservice" \
+  -e EMBEDDING_CONNECTOR=generic \
+  --net=host \
+  --ipc=host \
+  opea/embedding
+```
+
 If the model server is running at a different endpoint than the default, update the `EMBEDDING_MODEL_SERVER_ENDPOINT` variable accordingly. Here's an example of how to pass configuration using the docker run command:
 
 ```bash
@@ -159,6 +168,17 @@ docker run -d --name="embedding-microservice" \
   opea/embedding
 ```
 
+```bash
+# for generic
+docker run -d --name="embedding-microservice" \
+  -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090" \
+  -e EMBEDDING_MODEL_NAME="BAAI/bge-base-en" \
+  -e EMBEDDING_CONNECTOR="generic" \
+  -e EMBEDDING_MODEL_SERVER="vllm" \
+  --net=host \
+  --ipc=host \
+  opea/embedding
+```
 
 ### Verify the Embedding Microservice
 

@@ -1,5 +1,5 @@
 {#
-Copyright (C) 2024-2025 Intel Corporation
+Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 apiVersion: config.nri/v1alpha1
@@ -22,7 +22,11 @@ spec:
       - {{ balloons.vllm_custom_name }}
 {% endif %}
       - torchserve-reranking
-      - torchserve-embedding
+      - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
+{% if audio is defined and audio.enabled %}
+      - vllm-audio-cpu
+      - tts-fastapi-model-server
+{% endif %}
   balloonTypes:
   - name: reserved
     minCPUs: 1
@@ -66,7 +70,7 @@ spec:
       operator: In
       values:
       - torchserve-reranking
-  - name: torchserve-embedding-balloon
+  - name: {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}-balloon
     minCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
     maxCPUs: {{ embedding_cpus if (amx_supported or gaudi) and (embedding_cpus | int) > 0 and (maxBalloonsEmbedding | int) != 0 else -1 }}
 {% if balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0 %}
@@ -83,7 +87,7 @@ spec:
     - key: name
       operator: In
       values:
-      - torchserve-embedding
+      - {{ embedding_service_type | default('torchserve_embedding') | replace('_', '-') }}
   instrumentation:
     httpEndpoint: :8891
     metrics:

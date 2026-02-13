@@ -1,0 +1,17 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Add the HTTPS port configuration
+# kubectl apply --server-side -f envoy-service-https.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: envoy-nai-system-nai-ingress-gateway-ff52ba1f
+  namespace: envoy-gateway-system
+spec:
+  ports:
+    - name: https-443
+      port: 443
+      protocol: TCP
+      targetPort: 8443

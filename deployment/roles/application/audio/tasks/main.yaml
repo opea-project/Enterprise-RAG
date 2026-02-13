@@ -1,0 +1,89 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Set override_values.yaml path
+  ansible.builtin.set_fact:
+    audio_helm_override_values_path: >-
+      {{ tmp_dir }}/{{ audio.helm.release_name }}-override-values.yaml
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Ensure namespace exists
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ audio.namespace }}"
+  tags:
+    - install
+
+- name: Enforce PSS
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ audio.namespace }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "restricted"
+  when: enforcePSS
+  tags:
+    - install
+
+- name: Generate override values file from template
+  ansible.builtin.template:
+    src: "values.yaml.j2"
+    dest: "{{ audio_helm_override_values_path }}"
+    mode: '0644'
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Set fact for Helm values files
+  ansible.builtin.set_fact:
+    values_files: >
+      {{
+        [audio.helm.default_values_file] +
+        [audio_helm_override_values_path]
+      }}
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Install Audio Helm chart
+  kubernetes.core.helm:
+    name: "{{ audio.helm.release_name }}"
+    chart_ref: "{{ audio.helm.chart_directory }}"
+    release_namespace: "{{ audio.namespace }}"
+    create_namespace: true
+    wait: true
+    timeout: "{{ helm_timeout }}"
+    values_files: "{{ values_files }}"
+  retries: 5
+  delay: 15
+  tags:
+    - install
+
+- name: Uninstall Audio Helm chart
+  kubernetes.core.helm:
+    name: "{{ audio.helm.release_name }}"
+    release_namespace: "{{ audio.namespace }}"
+    state: absent
+    wait: true
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Delete namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ audio.namespace }}"
+    state: absent
+  tags:
+    - uninstall

@@ -1,10 +1,10 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { TextInput } from "@intel-enterprise-rag-ui/components";
+import { getValidationErrorMessage } from "@intel-enterprise-rag-ui/input-validation";
 import { sanitizeString } from "@intel-enterprise-rag-ui/utils";
 import { ChangeEvent, useEffect, useState } from "react";
-import { ValidationError } from "yup";
 
 import {
   OnArgumentValidityChangeHandler,
@@ -56,7 +56,7 @@ const ServiceArgumentTextInput = ({
       return true;
     } catch (validationError) {
       setIsInvalid(true);
-      setErrorMessage((validationError as ValidationError).message);
+      setErrorMessage(getValidationErrorMessage(validationError));
       return false;
     }
   };

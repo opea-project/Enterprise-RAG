@@ -1,19 +1,17 @@
 {
   "name": "@intel-enterprise-rag-ui/markdown",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.1.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Markdown renderer for Intel Enterprise RAG UI",
-  "main": "./dist/intel-enterprise-rag-ui-markdown.umd.cjs",
   "module": "./dist/intel-enterprise-rag-ui-markdown.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/intel-enterprise-rag-ui-markdown.js",
-      "require": "./dist/intel-enterprise-rag-ui-markdown.umd.cjs"
+      "import": "./dist/intel-enterprise-rag-ui-markdown.js"
     },
     "./style.css": "./dist/style.css",
     "./style": "./src/style.ts"
@@ -22,20 +20,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "vite build"
   },
   "dependencies": {
-    "@intel-enterprise-rag-ui/components": "workspace:^",
     "@intel-enterprise-rag-ui/tailwind-theme": "workspace:^",
     "@intel-enterprise-rag-ui/utils": "workspace:^",
-    "react-markdown": "^9.0.1",
-    "react-syntax-highlighter": "^15.6.1",
-    "remark-gfm": "^4.0.0"
-  },
-  "overrides": {
-    "react-syntax-highlighter": {
-      "prismjs": "^1.30.0"
-    }
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.1"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

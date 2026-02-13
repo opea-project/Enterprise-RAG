@@ -1,0 +1,24 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.batch-actions-menu {
+  @apply min-w-40;
+
+  &__item {
+    @apply flex cursor-pointer items-center gap-2 px-3 py-2;
+    @apply text-light-text-primary dark:text-dark-text-primary;
+    @apply hover:bg-light-bg-2 dark:hover:bg-dark-bg-2;
+
+    &--disabled {
+      @apply cursor-not-allowed opacity-50;
+    }
+
+    &--delete {
+      @apply text-light-status-error dark:text-dark-status-error;
+    }
+  }
+
+  &__icon {
+    @apply text-base;
+  }
+}

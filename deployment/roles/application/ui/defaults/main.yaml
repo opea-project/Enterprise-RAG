@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -7,7 +7,7 @@ ui:
   namespace: "rag-ui"
   domainName: erag.com
   helm:
-    version: "v3.16.1"
+    version: "{{ helm_version }}"
     chart_name: "chatqa-app"
     chart_version: "1.1.0"
     release_name: "chatqa-app"
@@ -23,3 +23,4 @@ ui:
     keycloakClientId: "EnterpriseRAG-oidc"
     adminResourceRole: "ERAG-admin"
     chatDisclaimerText: "Responses from this solution may require further verification. You are solely responsible for verifying the accuracy of the information provided and how you choose to use it."
+    chatMaintenanceMode: true

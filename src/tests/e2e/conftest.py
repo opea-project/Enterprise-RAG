@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import hashlib
 from pathlib import Path
@@ -266,6 +266,12 @@ def temporarily_remove_brute_force_detection(keycloak_helper):
     keycloak_helper.set_brute_force_detection(False)
     yield
     keycloak_helper.set_brute_force_detection(True)
+
+
+@pytest.fixture(scope="session")
+def test_language():
+    """Get the test language from environment variable"""
+    return os.getenv("TEST_LANG", "en")
 
 
 @pytest.fixture(scope="session")

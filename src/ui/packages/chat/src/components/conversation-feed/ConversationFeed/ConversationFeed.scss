@@ -1,0 +1,18 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.conversation-feed__wrapper {
+  @apply relative overflow-y-auto;
+}
+
+.conversation-feed__scroll {
+  @apply h-full overflow-y-auto pb-8 [scrollbar-gutter:stable];
+}
+
+.conversation-feed {
+  @apply flex w-full flex-col;
+}
+
+.conversation-turn {
+  @apply flex w-full flex-col;
+}

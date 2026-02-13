@@ -1,8 +1,9 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+import { SummaryType } from "@/features/docsum/api/types";
 import { RootState } from "@/store";
 
 interface PasteTextTabState {
@@ -12,6 +13,7 @@ interface PasteTextTabState {
   isLoading: boolean;
   errorMessage: string;
   isInvalid: boolean;
+  summaryType: SummaryType;
 }
 
 const initialState: PasteTextTabState = {
@@ -21,6 +23,7 @@ const initialState: PasteTextTabState = {
   isLoading: false,
   errorMessage: "",
   isInvalid: false,
+  summaryType: "map_reduce",
 };
 
 const pasteTextTabSlice = createSlice({
@@ -45,6 +48,9 @@ const pasteTextTabSlice = createSlice({
     setIsInvalid: (state, action: PayloadAction<boolean>) => {
       state.isInvalid = action.payload;
     },
+    setSummaryType: (state, action: PayloadAction<SummaryType>) => {
+      state.summaryType = action.payload;
+    },
     clearPasteTextTab: (state) => {
       state.text = "";
       state.summary = "";
@@ -61,6 +67,7 @@ export const {
   setIsLoading,
   setErrorMessage,
   setIsInvalid,
+  setSummaryType,
   clearPasteTextTab,
   resetPasteTextTabSlice,
 } = pasteTextTabSlice.actions;

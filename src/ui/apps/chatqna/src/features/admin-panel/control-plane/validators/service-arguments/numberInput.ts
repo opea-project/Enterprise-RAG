@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -7,20 +7,21 @@ import {
   isValidNumber,
   NumberInputRange,
 } from "@intel-enterprise-rag-ui/input-validation";
-import { object, string } from "yup";
+import { z } from "zod";
 
 const createValidationSchema = (
   range: NumberInputRange,
   isNullable?: boolean,
 ) =>
-  object().shape({
-    numberInput: string()
-      .test("is-valid-number", "Enter a valid number value", isValidNumber)
-      .test(
-        "is-in-range",
-        getIsInRangeMessage(range),
-        isInRange(range, isNullable),
-      ),
+  z.object({
+    numberInput: z
+      .string()
+      .refine(isValidNumber, {
+        message: "Enter a valid number value",
+      })
+      .refine(isInRange(range, isNullable), {
+        message: getIsInRangeMessage(range),
+      }),
   });
 
 export const validateServiceArgumentNumberInput = async (
@@ -29,5 +30,5 @@ export const validateServiceArgumentNumberInput = async (
   isNullable?: boolean,
 ) => {
   const validationSchema = createValidationSchema(range, isNullable);
-  return await validationSchema.validate({ numberInput: value });
+  return await validationSchema.parseAsync({ numberInput: value });
 };

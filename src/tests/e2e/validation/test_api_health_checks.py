@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import allure
@@ -32,7 +32,9 @@ def test_api_health_checks(generic_api_helper):
             path = lp.get("httpGet", {}).get("path")
             port_name = lp.get("httpGet", {}).get("port")
             if path in ["v1/health_check", "/v1/health_check", "/health", "/healthz"]:
-                selector = pod.metadata.labels.get("app.kubernetes.io/name")
+                selector = {"app.kubernetes.io/name": pod.metadata.labels.get("app.kubernetes.io/name")}
+                if pod.metadata.labels.get("app.kubernetes.io/component"):
+                    selector["app.kubernetes.io/component"] = pod.metadata.labels.get("app.kubernetes.io/component")
                 container_port = None
                 if isinstance(port_name, int):
                     # Port may be specified as a number or as a name
@@ -42,7 +44,7 @@ def test_api_health_checks(generic_api_helper):
                         if port.name == port_name:
                             container_port = port.containerPort
                             break
-                svcs.append({"selector": {"app.kubernetes.io/name": selector},
+                svcs.append({"selector": selector,
                              "namespace": ns,
                              "port": container_port,
                              "health_path": path})
@@ -52,11 +54,18 @@ def test_api_health_checks(generic_api_helper):
         try:
             response = generic_api_helper.call_health_check_api(
                 service['namespace'], service['selector'], service['port'], service['health_path'])
-            assert response.status_code == 200, \
-                f"Got unexpected status code for {service['selector']} health check API call"
-        except (AssertionError, requests.exceptions.RequestException) as e:
 
-            logger.warning(e)
+            if response.status_code != 200:
+                error_msg = (
+                    f"Health check failed for {service['selector']}. "
+                    f"Status Code: {response.status_code}, "
+                    f"Response Body: {response.text}"
+                )
+                logger.error(error_msg)
+                assert response.status_code == 200, error_msg
+
+        except (AssertionError, requests.exceptions.RequestException) as e:
+            logger.warning(f"Error during health check for {service['selector']}: {e}")
             failed_microservices.append(service)
 
-    assert failed_microservices == [], "/v1/health_check API call didn't succeed for some microservices"
+    assert failed_microservices == [], f"Health check failed for services: {failed_microservices}"

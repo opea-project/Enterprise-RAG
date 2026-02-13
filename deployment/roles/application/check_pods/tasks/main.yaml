@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -11,19 +11,22 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Define operation_mode
       set_fact:
         operation_mode: >-
           {{
             'install' if 'install' in ansible_run_tags
-            or 'restore' in ansible_run_tags else
+            or 'restore' in ansible_run_tags
+            or 'update-configuration' in ansible_run_tags else
             'uninstall' if 'uninstall' in ansible_run_tags
           }}
       tags:
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Include tasks to get enabled namespaces
       ansible.builtin.include_role:
@@ -33,6 +36,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Get all namespaces
       kubernetes.core.k8s_info:
@@ -42,6 +46,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Compare enabled namespaces with existing namespaces
       set_fact:
@@ -54,6 +59,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Get pods in enabled namespaces
       kubernetes.core.k8s_info:
@@ -66,6 +72,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Identify empty namespaces
       set_fact:
@@ -79,6 +86,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Identify containers with "not ready" status
       set_fact:
@@ -99,6 +107,7 @@
       tags:
         - install
         - restore
+        - update-configuration
 
     - name: Filter out Job pods from verification
       set_fact:
@@ -112,6 +121,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Verify pods based on operation_mode
       set_fact:
@@ -134,6 +144,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Store health check result
       set_fact:
@@ -186,6 +197,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Success summary message
       debug:
@@ -201,6 +213,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
   rescue:
     - name: Store health check result on rescue
@@ -227,6 +240,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Wait 60 seconds before retry
       pause:
@@ -236,6 +250,7 @@
         - install
         - restore
         - uninstall
+        - update-configuration
 
     - name: Retry the role on failure
       include_role:
@@ -245,3 +260,4 @@
         - install
         - restore
         - uninstall
+        - update-configuration

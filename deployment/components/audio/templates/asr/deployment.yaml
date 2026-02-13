@@ -1,0 +1,113 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.asr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "audio.asr.fullname" . }}
+  labels:
+    {{- include "audio.asr.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.asr.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "audio.asr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "audio.asr.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      serviceAccountName: {{ include "audio.asr.name" . }}
+      initContainers:
+        - name: wait-for-vllm-asr
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          image: alpine/curl
+          imagePullPolicy: {{ .Values.asr.image.pullPolicy }}
+          env:
+            - name: ASR_MODEL_SERVER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: audio-asr-config
+                  key: ASR_MODEL_SERVER_ENDPOINT
+          command:
+            - sh
+            - -c
+            - |
+                if [ -z "$ASR_MODEL_SERVER_ENDPOINT" ]; then
+                  echo "Environment variable ASR_MODEL_SERVER_ENDPOINT is not set. Skipping the init container.";
+                else
+                  until curl -s ${ASR_MODEL_SERVER_ENDPOINT}/health; do
+                    echo "waiting for ASR model server ${ASR_MODEL_SERVER_ENDPOINT}/health to be ready...";
+                    sleep 2;
+                  done;
+                fi;
+      containers:
+        - name: {{ include "audio.asr.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{ if .Values.alternateTagging }}
+          image: {{ .Values.asr.image.repository }}:{{ .Values.asr.image.name }}_{{ .Values.asr.image.tag }}
+          {{ else }}
+          image: {{ .Values.asr.image.repository }}/{{ .Values.asr.image.name }}:{{ .Values.asr.image.tag }}
+          {{ end }}
+          imagePullPolicy: {{ .Values.asr.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: audio-asr-config
+          env:
+            - name: LOGFLAG
+              value: "True"
+          {{- if .Values.proxy.httpProxy }}
+            - name: http_proxy
+              value: {{ .Values.proxy.httpProxy }}
+          {{- end }}
+          {{- if .Values.proxy.httpsProxy }}
+            - name: https_proxy
+              value: {{ .Values.proxy.httpsProxy }}
+          {{- end }}
+          {{- if .Values.proxy.noProxy }}
+            - name: no_proxy
+              value: {{ .Values.proxy.noProxy }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 9009
+          livenessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /v1/health_check
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.asr.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

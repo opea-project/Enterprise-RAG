@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -10,6 +10,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Get all BalloonsPolicies
   kubernetes.core.k8s_info:
@@ -19,6 +20,7 @@
   register: balloons_policies
   tags:
     - install
+    - update-configuration
 
 - name: Remove all BalloonsPolicies
   kubernetes.core.k8s:
@@ -30,6 +32,7 @@
   loop: "{{ balloons_policies.resources }}"
   tags:
     - install
+    - update-configuration
 
 - name: Gather NUMA topology info
   ansible.builtin.include_role:
@@ -44,6 +47,7 @@
     - pre-upgrade
     - uninstall
     - topology-preview
+    - update-configuration
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -92,6 +96,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Apply nri-resource-policy-balloons chart
   kubernetes.core.helm:
@@ -115,6 +120,7 @@
   delay: 15
   tags:
     - install
+    - update-configuration
 
 - name: Calculate maxReplicasGaudi_VLLM
   ansible.builtin.set_fact:
@@ -134,6 +140,7 @@
   loop: "{{ pipelines }}"
   tags:
     - install
+    - update-configuration
 
 - name: Get limits from vLLM
   ansible.builtin.include_tasks:
@@ -141,6 +148,7 @@
   when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
   tags:
     - install
+    - update-configuration
 
 - name: Apply balloons/labels/taints for each node
   ansible.builtin.include_role:
@@ -149,8 +157,10 @@
   loop: "{{ cpu_topology_per_node | dict2items }}"
   loop_control:
     loop_var: item
+  when: cpu_topology_per_node is defined
   tags:
     - install
+    - update-configuration
 
 - name: Process custom vLLM container
   ansible.builtin.include_tasks:
@@ -158,6 +168,7 @@
   when: balloons.vllm_custom_name is defined and balloons.vllm_custom_name | length > 0
   tags:
     - install
+    - update-configuration
 
 - name: Uninstall NRI balloons policy
   ansible.builtin.include_tasks:

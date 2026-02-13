@@ -103,7 +103,7 @@ helm install telemetry-traces --create-namespace charts/traces -n monitoring-tra
 
 Install traces **collector** and **instrumentation**:
 ```
-helm install telemetry-traces-instr charts/trace-instr -n monitoring-traces 
+helm install telemetry-traces-instr charts/traces-instr -n monitoring-traces 
 ```
 
 Check [tracing README.md](charts/traces/README.md) for details.

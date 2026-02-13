@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import uuid
@@ -95,6 +95,17 @@ class MinioEventData(BaseModel):
   EventName: Optional[str] = None
   Key: Optional[str] = None
   Records: List[Record]
+
+class SeaweedFSEventMessage(BaseModel):
+    old_entry: Optional[dict] = None
+    new_entry: Optional[dict] = None
+    delete_chunks: Optional[bool] = None
+    signatures: Optional[List[int]] = None
+
+class SeaweedFSEventData(BaseModel):
+    key: str
+    event_type: str
+    message: Optional[SeaweedFSEventMessage] = None
 
 class PresignedRequest(BaseModel):
     bucket_name: str
@@ -203,7 +214,7 @@ class ObjectStatus(Base):
             late_chunking_duration=late_chunking_duration,
             embedding_duration=embedding_duration,
             ingestion_duration=ingestion_duration,
-            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration+ingestion_duration,
+            processing_duration=text_extractor_duration+text_compression_duration+text_splitter_duration+embedding_duration+late_chunking_duration,
             **kwargs
         )
 

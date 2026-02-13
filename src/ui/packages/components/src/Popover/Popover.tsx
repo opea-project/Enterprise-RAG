@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./Popover.scss";
@@ -25,3 +25,5 @@ export const Popover = ({ ariaLabel, children, ...rest }: PopoverProps) => (
     <AriaDialog aria-label={ariaLabel}>{children}</AriaDialog>
   </AriaPopover>
 );
+
+export type { PopoverProps };

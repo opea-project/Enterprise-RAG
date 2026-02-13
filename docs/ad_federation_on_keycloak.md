@@ -28,12 +28,12 @@ LDAP groups created within the designated OU and configured using appropriate LD
   - Enterprise RAG user role mappings
     - `ERAG-admin` → Administrative privileges within ERAG
     - `ERAG-user` → Standard user privileges within ERAG
-  - MinIO policy mappings (if using MinIO)
+  - SeaweedFS policy mappings (if using SeaweedFS)
     - `erag-admin-group` → access to all buckets
     - `erag-user-group` → restriced access only to selected buckets
 
 > [!NOTE]
-> The group names in Active Directory must exactly match the group names configured in both Keycloak and MinIO policies. This ensures that group-based access controls function correctly and users are assigned the appropriate roles and permissions.
+> The group names in Active Directory must exactly match the group names configured in both Keycloak and SeaweedFS policies. This ensures that group-based access controls function correctly and users are assigned the appropriate roles and permissions.
 > Only direct group memberships are supported when integrating Active Directory with Keycloak via federation. Users must be explicitly listed in the member attribute of the target AD group. Group nesting (i.e., indirect membership via nested groups) is not resolved and will not be recognized by Keycloak during authentication or role mapping.
 
 To get full DN names you can use the following PowerShell commands:
@@ -64,7 +64,7 @@ keycloak:
 
 The installation scripts automatically create LDAP group mappers that link Active Directory groups to Keycloak client roles. To integrate additional AD groups beyond the default `ERAG-user` and `ERAG-admin` (groups for portal access) and `erag-user-group` and `erag-admin-group` (groups for storage access policies), you may need to modify the default mapper's LDAP filter. For example, you can use a wildcard-based filter to match multiple groups dynamically. Note that each Keycloak realm client supports only one group mapper, so all desired groups must be included in a single, properly configured LDAP filter expression.
 
-Similarly, when integrating with storage systems (such as MinIO), you must create or update access policies to control bucket permissions. Ensure that policy names exactly match the role names defined in the `EnterpriseRAG-oidc-minio` Keycloak realm client. When provisioning new buckets, add them to the appropriate policy to maintain consistent access control aligned with your AD group mappings.
+Similarly, when integrating with storage systems (such as SeaweedFS), you must create or update access policies to control bucket permissions. Ensure that policy names exactly match the role names defined in the `EnterpriseRAG-oidc-minio` Keycloak realm client. When provisioning new buckets, add them to the appropriate policy to maintain consistent access control aligned with your AD group mappings.
 
 ### LDAP over SSL
 

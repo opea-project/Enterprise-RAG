@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 variable "api_key" {
@@ -166,5 +166,11 @@ variable "vllm_size_vcpu" {
 variable "solution_version" {
   description = "Intel® AI for Enterprise RAG solution version to deploy - can be a tag (e.g., 'release-2.0.0') or branch name (e.g., 'main', 'develop')"
   type        = string
-  default     = "release-2.0.0"
+  default     = "release-2.1.0"
+}
+
+variable "habana_version" {
+  description = "(Gaudi only) Version of the Habana device plugin, driver and runtime to deploy"
+  type        = string
+  default     = "1.22.2-32"
 }

@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -42,6 +42,14 @@
   kubernetes.core.helm:
     name: "{{ balloons.helm.release_name }}"
     namespace: "{{ balloons.namespace }}"
+    state: absent
+  tags:
+    - always
+
+- name: Uninstall NRI Balloons Controller
+  kubernetes.core.helm:
+    name: "nri-balloons-controller"
+    namespace: "{{ balloons.controller.namespace }}"
     state: absent
   tags:
     - always
@@ -102,9 +110,47 @@
     definition:
       spec:
         taints: >-
-          {{ node.spec.taints | rejectattr('key', 'equalto', 'inference_eligible') | list if node.spec.taints is defined else [] }}
+          {{ node.spec.taints |
+          rejectattr('key', 'equalto', 'inference_eligible') |
+          list if node.spec.taints is defined else [] }}
   loop: "{{ all_nodes.resources }}"
   loop_control:
     loop_var: node
+  tags:
+    - always
+
+- name: Check if cert-manager namespace was installed by erag
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Namespace
+    name: cert-manager
+  register: cert_manager_ns
+  ignore_errors: true
+  tags:
+    - always
+
+- name: Uninstall cert-manager if installed by erag
+  kubernetes.core.helm:
+    name: cert-manager
+    release_namespace: cert-manager
+    state: absent
+    wait: true
+  when:
+    - cert_manager_ns.resources | length > 0
+    - cert_manager_ns.resources[0].metadata.labels['installed-by'] is defined
+    - cert_manager_ns.resources[0].metadata.labels['installed-by'] == 'erag'
+  tags:
+    - always
+
+- name: Remove cert-manager namespace if installed by erag
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: cert-manager
+    state: absent
+  when:
+    - cert_manager_ns.resources | length > 0
+    - cert_manager_ns.resources[0].metadata.labels['installed-by'] is defined
+    - cert_manager_ns.resources[0].metadata.labels['installed-by'] == 'erag'
   tags:
     - always

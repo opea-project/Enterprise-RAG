@@ -265,6 +265,45 @@
   - topology-preview
   - update-configuration
 
+- name: Check for nodes with hyperthreading disabled
+  set_fact:
+    nodes_without_hyperthreading: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('value.threads_per_core', 'defined')
+        | selectattr('value.threads_per_core', 'equalto', 1)
+        | map(attribute='key')
+        | list
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Fail if balloons are enabled but hyperthreading is disabled on any node
+  fail:
+    msg: |
+      ERROR: Balloons are not supported without Hyperthreading.
+
+      Balloons feature requires Hyperthreading to be enabled on all cluster nodes.
+
+      Nodes with Hyperthreading DISABLED (Thread(s) per core: 1):
+      {% for node in nodes_without_hyperthreading %}
+        - {{ node }}
+      {% endfor %}
+
+      Please either:
+        1. Enable Hyperthreading in the BIOS on the affected nodes, or
+        2. Disable balloons in your config.yaml by setting: balloons.enabled: false
+  when:
+  - balloons.enabled | default(false) | bool
+  - nodes_without_hyperthreading | length > 0
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
 - name: Check if any node is Gaudi
   set_fact:
     gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
@@ -375,6 +414,100 @@
 - name: Parse replicas calculation output
   set_fact:
     optimal_replicas: "{{ replicas_calculation_result.stdout | trim | from_json }}"
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Validate that services with CPU requirements got replicas allocated
+  block:
+    - name: Check if VLLM has replicas
+      set_fact:
+        vllm_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.vllm.replicas', 'defined')
+            | selectattr('value.vllm.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Check if Embedding has replicas
+      set_fact:
+        embedding_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.embedding.replicas', 'defined')
+            | selectattr('value.embedding.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Check if Reranking has replicas
+      set_fact:
+        reranking_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.torchserve_reranking.replicas', 'defined')
+            | selectattr('value.torchserve_reranking.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Fail if VLLM has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for VLLM service.
+
+          VLLM requires {{ VLLM_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - VLLM_CPUS | int > 0
+        - not (vllm_has_replicas | bool)
+
+    - name: Fail if Embedding has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for Embedding service.
+
+          Embedding requires {{ EMBEDDING_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - EMBEDDING_CPUS | int > 0
+        - not (embedding_has_replicas | bool)
+
+    - name: Fail if Reranking has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for Reranking service.
+
+          Reranking requires {{ RERANKER_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - RERANKER_CPUS | int > 0
+        - not (reranking_has_replicas | bool)
+
   tags:
   - install
   - topology-preview

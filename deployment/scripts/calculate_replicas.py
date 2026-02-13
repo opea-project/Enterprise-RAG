@@ -67,6 +67,8 @@ def verify_memory_requirements(current_vllm_size, reranking_size, embedding_size
         verified_replicas_count = int(max_allocatable_memory // inference_memory_sum)
         # Ensure we don't return more replicas than originally calculated
         verified_replicas_count = min(verified_replicas_count, replicas)
+        # Ensure we never return negative replicas
+        verified_replicas_count = max(0, verified_replicas_count)
         memory_usage_percent = (verified_replicas_count * inference_memory_sum / node_memory_size) * 100
         return verified_replicas_count, memory_usage_percent
 
@@ -88,7 +90,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
 
     Returns:
         Dict with node names as keys and calculations with metadata as values.
-        
+
     Algorithm:
         - When all services fit in NUMA node (n > 0) and throughput_mode=True: tries to maximize 
           replicas while keeping VLLM >= 75% of original size
@@ -148,7 +150,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
                     # We can fit more replicas
                     available_cpu_for_vllm = numa_node_size - max_possible_replicas_per_numa * (reranking_size + embedding_size)
                     max_vllm_size_per_replica = available_cpu_for_vllm // max_possible_replicas_per_numa
-                    
+
                     replicas = max_possible_replicas_per_numa * numa_nodes_count
                     current_vllm_size = max_vllm_size_per_replica
                 else:
@@ -169,7 +171,7 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
                 # Calculate the maximum VLLM size for this replica count
                 available_cpu_for_vllm = numa_node_size - max_possible_replicas_per_numa * (reranking_size + embedding_size)
                 max_vllm_size_per_replica = available_cpu_for_vllm // max_possible_replicas_per_numa
-                
+
                 replicas = max_possible_replicas_per_numa * numa_nodes_count
                 current_vllm_size = max_vllm_size_per_replica
             else:
@@ -201,6 +203,11 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
             memory_overcommit_buffer_percent
         )
 
+        # Set per-service replicas to 0 if service has 0 CPU size
+        vllm_replicas = verified_replicas_count if current_vllm_size > 0 else 0
+        embedding_replicas = verified_replicas_count if embedding_size > 0 else 0
+        reranking_replicas = verified_replicas_count if reranking_size > 0 else 0
+
         results[node_name] = {
             'replicas': verified_replicas_count,
             'adjusted_vllm_size': current_vllm_size // 2,
@@ -209,15 +216,15 @@ def calculate_replicas(nodes_dict, vllm_size, reranking_size, embedding_size, th
             'amx_supported': node_data.get('amx_supported', False),
             'memory_usage_percent': round(memory_usage_percent, 2),
             'vllm': {
-                'replicas': verified_replicas_count,
+                'replicas': vllm_replicas,
                 'adjusted_cpu_size': current_vllm_size // 2
             },
             'embedding': {
-                'replicas': verified_replicas_count,
+                'replicas': embedding_replicas,
                 'cpu_size': embedding_size // 2
             },
             'torchserve_reranking': {
-                'replicas': verified_replicas_count,
+                'replicas': reranking_replicas,
                 'cpu_size': reranking_size // 2
             }
         }

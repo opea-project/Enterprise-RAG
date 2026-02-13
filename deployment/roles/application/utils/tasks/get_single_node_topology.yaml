@@ -115,6 +115,18 @@
     - topology-preview
     - update-configuration
 
+- name: Get threads per core
+  kubernetes.core.k8s_exec:
+    pod: "{{ pod_name }}"
+    container: ubuntu
+    namespace: topology-discovery
+    command: bash -c "lscpu | grep 'Thread(s) per core' | awk '{print $NF}'"
+  register: threads_per_core_result
+  tags:
+    - install
+    - topology-preview
+    - update-configuration
+
 - name: Update cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: >-
@@ -126,7 +138,8 @@
             'amx_supported': (amx_check.rc == 0),
             'numa_balanced': numa_balanced,
             'gaudi': habana_plugin_present,
-            'total_memory_GiB': (total_memory_GiB.stdout | int)
+            'total_memory_GiB': (total_memory_GiB.stdout | int),
+            'threads_per_core': (threads_per_core_result.stdout | int)
           }
         })
       }}

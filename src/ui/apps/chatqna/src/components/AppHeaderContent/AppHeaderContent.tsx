@@ -28,7 +28,7 @@ const APP_VERSION =
   getChatQnAAppEnv("ERAG_VERSION") || import.meta.env.VITE_APP_VERSION;
 const MAINTENANCE_MODE = getChatQnAAppEnv("MAINTENANCE_MODE");
 const USER_GUIDE_URL =
-  "https://github.com/opea-project/Enterprise-RAG/blob/main/docs/Intel_AI_for_Enterprise_RAG_User_Guide_2.0.0.pdf";
+  "https://github.com/opea-project/Enterprise-RAG/blob/main/docs/Intel_AI_for_Enterprise_RAG_User_Guide_2.1.0.pdf";
 
 export const AppHeaderLeftSideContent = () => {
   const location = useLocation();

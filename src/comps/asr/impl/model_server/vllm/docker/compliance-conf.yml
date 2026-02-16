@@ -6,9 +6,9 @@ dependencies:
   - pip-manual
 base-image:
   override:
-    - python:3.11-slim-bookworm
+    - public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
 apt:
-  base-image-override: python:3.11-slim-bookworm
+  base-image-override: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
 pip-manual:
   packages:
 # git/vllm-project/vllm/requirements/common.txt

@@ -31,8 +31,8 @@
     kcDomainName: "{{ keycloak.domainName | default('auth.erag.com') }}"
     keycloakRealm: "{{ ui.extraUiConfigVars.keycloakRealm | default('EnterpriseRAG') }}"
     clientId: "{{ client_id | default('EnterpriseRAG-oidc-minio') }}"
-    s3_host: "{{ edp_helm_values.s3ApiDomain | default('s3.erag.com') }}"
-    admin_host: "{{ edp_helm_values.uiBrowserDomain | default('filer.erag.com') }}"
+    s3_host: "{{ edp_helm_values.s3ApiDomain | default((edp_helm_values.s3DomainPrefix | default('s3')) ~ '.' ~ (FQDN | default('erag.com'))) }}"
+    admin_host: "{{ edp_helm_values.uiBrowserDomain | default((edp_helm_values.uiBrowserDomainPrefix | default('seaweedfs')) ~ '.' ~ (FQDN | default('erag.com'))) }}"
     seaweedfs: "{{ edp_helm_values.seaweedfs | default('{}') }}"
   tags:
     - install

@@ -16,24 +16,33 @@ balloonsEnabled: {{ balloons.enabled | default(false) }}
 
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 
+{% set fqdn = FQDN | default('erag.com') %}
+{% set s3_prefix = edp.s3DomainPrefix if edp.s3DomainPrefix is defined else 's3' %}
+{% set ui_prefix = edp.uiBrowserDomainPrefix if edp.uiBrowserDomainPrefix is defined else 'seaweedfs' %}
+{% set s3_api_domain = edp.s3ApiDomain if edp.s3ApiDomain is defined else s3_prefix ~ '.' ~ fqdn %}
+{% set ui_browser_domain = edp.uiBrowserDomain if edp.uiBrowserDomain is defined else ui_prefix ~ '.' ~ fqdn %}
+
+s3ApiDomain: &s3ApiDomain "{{ s3_api_domain }}"
+uiBrowserDomain: &uiBrowserDomain "{{ ui_browser_domain }}"
+
 {% set storage = lookup('env', 'edp_storage_type') or edp.storageType if edp.storageType is defined else "seaweedfs" %}
 {% if storage == "minio" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
 edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
-edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
+edpExternalUrl: "https://{{ s3_api_domain }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 edpExternalCertVerify: false
 edpInternalCertVerify: false
 edpOidcClientSecret: {{ edp_client_secret_id }}
-minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
-minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
+minioApiDomain: &minioApiDomain "{{ s3_api_domain }}"
+minioBrowserDomain: &minioBrowserDomain "{{ ui_browser_domain }}"
 bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
 {% elif storage == "seaweedfs" %}
 edpAccessKey: {{ EDP_MINIO_ACCESS_KEY }}
 edpSecretKey: {{ EDP_MINIO_SECRET_KEY }}
-edpExternalUrl: "https://{{ edp.minio.apiDomainName }}"
+edpExternalUrl: "https://{{ s3_api_domain }}"
 {% if hpaEnabled is defined %}
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
@@ -45,8 +54,8 @@ presignedUrlCredentialsSystemFallback: true
 edpExternalCertVerify: false
 edpInternalCertVerify: false
 edpOidcClientSecret: {{ edp_client_secret_id }}
-minioApiDomain: &minioApiDomain "{{ edp.minio.apiDomainName }}"
-minioBrowserDomain: &minioBrowserDomain "{{ edp.minio.domainName }}"
+minioApiDomain: &minioApiDomain "{{ s3_api_domain }}"
+minioBrowserDomain: &minioBrowserDomain "{{ ui_browser_domain }}"
 bucketNameRegexFilter: {{ edp.minio.bucketNameRegexFilter | default('.*', true) }}
 {% elif storage == "s3" %}
 edpBaseRegion: "{{ lookup('env', 's3_region') or edp.s3.region }}"

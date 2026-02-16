@@ -32,6 +32,8 @@ embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
 
 s3ApiDomain: &s3ApiDomain "s3.erag.com"
 uiBrowserDomain: &uiBrowserDomain "seaweedfs.erag.com"
+s3DomainPrefix: "s3"
+uiBrowserDomainPrefix: "seaweedfs"
 
 redisUrl: "edp-redis:6379"
 redisUsername: "default"

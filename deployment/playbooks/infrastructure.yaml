@@ -186,16 +186,3 @@
   when:
     - deploy_k8s
   ansible.builtin.import_playbook: kubernetes_sigs.kubespray.reset
-
-- name: Remove Kubernetes cluster artifacts
-  become: false
-  hosts: localhost
-  tags:
-    - delete
-    - never
-  tasks:
-    - name: Remove Kubernetes cluster artifacts
-      ansible.builtin.include_role:
-        name: cluster
-        tasks_from: cleanup_artifacts
-      when: deploy_k8s

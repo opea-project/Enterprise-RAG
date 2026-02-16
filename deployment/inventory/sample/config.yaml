@@ -210,7 +210,7 @@ edp:
   dpGuard:
     enabled: false
   rbac:
-    enabled: true
+    enabled: false
   storageType: seaweedfs
   s3:
     region: "us-east-1"

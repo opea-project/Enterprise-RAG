@@ -76,7 +76,7 @@ edp:
   s3DomainPrefix: "s3"
   uiBrowserDomainPrefix: "seaweedfs"
 
-  storageType: minio
+  storageType: seaweedfs
   minio:
     domainName: "{{ (uiBrowserDomainPrefix | default('seaweedfs')) ~ '.' ~ (FQDN | default('erag.com')) }}"
     apiDomainName: "{{ (s3DomainPrefix | default('s3')) ~ '.' ~ (FQDN | default('erag.com')) }}"

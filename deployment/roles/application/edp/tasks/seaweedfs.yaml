@@ -149,10 +149,22 @@
     - install
     - pre-upgrade
 
+- name: Check if SeaweedFS admin secret exists
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: seaweedfs-admin-secret
+    namespace: "{{ seaweedfs.namespace | default('seaweedfs') }}"
+  register: seaweedfs_admin_secret_check
+  tags:
+    - install
+    - pre-upgrade
+
 - name: Generate SeaweedFS admin password
   ansible.builtin.set_fact:
     seaweedfs_admin_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
     seaweedfs_admin_user: "admin"
+  when: seaweedfs_admin_secret_check.resources | length == 0
   tags:
     - install
     - pre-upgrade
@@ -170,6 +182,7 @@
       data:
         adminUser: "{{ seaweedfs_admin_user | b64encode }}"
         adminPassword: "{{ seaweedfs_admin_password | b64encode }}"
+  when: seaweedfs_admin_secret_check.resources | length == 0
   tags:
     - install
     - pre-upgrade

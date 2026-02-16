@@ -20,11 +20,11 @@ from pathlib import Path
 
 from tests.e2e.helpers.api_request_helper import ApiRequestHelper, ApiResponse
 from tests.e2e.validation.buildcfg import cfg
-from tests.e2e.validation.constants import AUDIO_FILES_DIR
+from tests.e2e.validation.constants import AUDIO_OUTPUT_FILES_DIR, TEST_AUDIO_DIR
 
 logger = logging.getLogger(__name__)
 
-MODELS_DIR = Path(AUDIO_FILES_DIR)
+MODELS_DIR = Path(AUDIO_OUTPUT_FILES_DIR)
 MODELS_BASE_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
 
 
@@ -45,7 +45,6 @@ class VoiceModel:
 class AudioData:
     """Generated audio container."""
     audio_bytes: bytes
-    text: str
     voice: str
     sample_rate: int = 22050
     format: str = "wav"
@@ -60,12 +59,18 @@ class AudioData:
 
     @property
     def filepath(self):
-        return os.path.join(AUDIO_FILES_DIR, self.filename)
+        return os.path.join(AUDIO_OUTPUT_FILES_DIR, self.filename)
 
 
 VOICES: dict[str, VoiceModel] = {
-    # English US
-    "en_male_joe": VoiceModel("vits-piper-en_US-joe-medium", "en", "male", "Joe - US male")
+    # https://huggingface.co/csukuangfj/vits-piper-en_US-joe-medium/blob/main/MODEL_CARD
+    "en_male_joe": VoiceModel("vits-piper-en_US-joe-medium", "en", "male", "Joe - US male"),
+    # https://huggingface.co/csukuangfj/vits-piper-en_US-ljspeech-medium/blob/main/MODEL_CARD
+    "en_female": VoiceModel("vits-piper-en_US-ljspeech-medium", "en", "female", "US female"),
+    # https://huggingface.co/csukuangfj/vits-piper-en_US-kusal-medium/blob/main/MODEL_CARD
+    "en_male_kusal": VoiceModel("vits-piper-en_US-kusal-medium", "en", "female", "US male"),
+    #https://huggingface.co/csukuangfj/vits-piper-en_US-bryce-medium/blob/main/MODEL_CARD
+    "en_male_bryce": VoiceModel("vits-piper-en_US-bryce-medium", "en", "male", "US male Bryce"),
 }
 
 
@@ -93,7 +98,6 @@ class SherpaTTS:
 
         return AudioData(
             audio_bytes=audio_bytes,
-            text=text,
             voice=voice_key,
             sample_rate=audio.sample_rate,
             format=format
@@ -106,7 +110,7 @@ class SherpaTTS:
         Returns:
             Path: The path to the saved .wav file.
         """
-        directory = Path(AUDIO_FILES_DIR)
+        directory = Path(AUDIO_OUTPUT_FILES_DIR)
         directory.mkdir(parents=True, exist_ok=True)
 
         file_path = directory / audio_data.filename
@@ -218,11 +222,12 @@ class AudioApiHelper(ApiRequestHelper):
     def __init__(self, keycloak_helper):
         super().__init__(keycloak_helper=keycloak_helper)
         self.asr_api_path = f"https://{cfg.get('FQDN')}/v1/audio/transcriptions"
+        self.tts_api_path = f"https://{cfg.get('FQDN')}/v1/audio/speech"
         self.tts = SherpaTTS()
 
-    def generate_audio(self, text: str,  speed: float = 1.0, format="wav") -> AudioData:
+    def generate_audio(self, text: str, voice_key: str = "en_male_joe", speed: float = 1.0, format="wav") -> AudioData:
         """Generate audio bytes from text using SherpaTTS."""
-        audio_data = self.tts.generate(text, speed=speed, format=format)
+        audio_data = self.tts.generate(text, voice_key=voice_key, speed=speed, format=format)
         self.tts.save(audio_data)
         return audio_data
 
@@ -283,3 +288,110 @@ class AudioApiHelper(ApiRequestHelper):
             selected_words.append(secrets.choice(all_words))
 
         return " ".join(selected_words)
+
+    def load_audio_from_file(self, file_path: str) -> AudioData:
+        """Load audio bytes from a file into an AudioData container."""
+        audio_dir = Path(TEST_AUDIO_DIR)
+        file_path = audio_dir / file_path
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"Audio file not found: {file_path}")
+
+        audio_bytes = file_path.read_bytes()
+        return AudioData(
+            audio_bytes=audio_bytes,
+            voice="unknown",
+            sample_rate=22050,
+            format=file_path.suffix[1:],
+            _filename=file_path.name
+        )
+
+    def text_to_speech(self, text: str, as_user=False):
+        """
+        Call the text-to-speech API with the given text.
+
+        Args:
+            text: The input text to convert to speech
+            as_user: Whether to make the request as a user
+
+        Returns:
+            ApiResponse containing the MP3 audio data
+        """
+        headers = self.get_headers(as_user)
+
+        payload = {
+            "input": text
+        }
+
+        logger.debug(f"Requesting text-to-speech API call with text: '{text}'")
+        start_time = time.time()
+        response = requests.post(
+            url=self.tts_api_path,
+            headers=headers,
+            json=payload,
+            verify=False
+        )
+
+        api_call_duration = round(time.time() - start_time, 2)
+        logger.info(f"TTS API call duration: {api_call_duration}s")
+
+        return ApiResponse(response, api_call_duration)
+
+    def text_to_speech_audio(self, input_text: str, filename: str, as_user: bool = False) -> AudioData:
+        """
+        Call TTS API and return the audio as AudioData container.
+
+        Args:
+            input_text: The text to convert to speech
+            filename: The filename to save the MP3 as
+            as_user: If True, call TTS API as a regular user instead of admin
+
+        Returns:
+            AudioData container with the MP3 audio
+        """
+        logger.info(f"Calling TTS with input (length: {len(input_text)} chars){' as user' if as_user else ''}")
+        tts_response = self.text_to_speech(input_text, as_user=as_user)
+        assert tts_response.status_code == 200, f"TTS API call failed: {tts_response.text}"
+
+        # Get the MP3 audio data from response
+        mp3_audio_bytes = tts_response.content
+        assert len(mp3_audio_bytes) > 0, "TTS API returned empty audio data"
+        size_in_mb = len(mp3_audio_bytes) / (1024 * 1024)
+        logger.info(f"TTS API returned {size_in_mb:.2f} MB of MP3 audio")
+
+        audio_data = AudioData(
+            audio_bytes=mp3_audio_bytes,
+            voice="tts_api",
+            format="mp3",
+            _filename=filename
+        )
+
+        # Save the MP3 file to disk
+        saved_path = self.tts.save(audio_data)
+        logger.info(f"Saved TTS output to: {saved_path}")
+
+        return audio_data
+
+    def transcribe_to_text(self, audio_data: AudioData, original_text: str = None) -> str:
+        """
+        Transcribe audio to text using ASR API.
+
+        Args:
+            audio_data: The audio data to transcribe
+            original_text: Optional original text for comparison logging
+
+        Returns:
+            The transcribed text
+        """
+        logger.info("Transcribing audio using ASR API")
+        asr_response = self.transcribe_audio(audio_data)
+        assert asr_response.status_code == 200, f"ASR transcription failed: {asr_response.text}"
+
+        transcription = self.get_transcription_text(asr_response).strip()
+
+        if original_text is not None:
+            logger.info(f"Original text: '{original_text}' | Transcribed text: '{transcription}'")
+        else:
+            logger.info(f"Transcribed text: '{transcription}'")
+
+        return transcription

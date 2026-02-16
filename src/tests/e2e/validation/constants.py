@@ -6,7 +6,8 @@
 CHUNK_SIZE = 512
 CHUNK_OVERLAPPING = 64
 DATAPREP_UPLOAD_DIR = "e2e/files/dataprep_upload"
-AUDIO_FILES_DIR = "e2e/files/audio"
+AUDIO_OUTPUT_FILES_DIR = "e2e/files/audio_output"
+TEST_AUDIO_DIR = "e2e/files/audio"
 TEST_FILES_DIR = "e2e/files"
 VITE_KEYCLOAK_REALM = "EnterpriseRAG"
 VITE_KEYCLOAK_CLIENT_ID = "EnterpriseRAG-oidc"

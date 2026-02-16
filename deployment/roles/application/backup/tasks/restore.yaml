@@ -124,6 +124,25 @@
       {% endfor %}
       {{ result }}
 
+
+# Cleanup resources using selector format first
+- name: Cleanup kubernetes resources by selector
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: "{{ item.dp.split('/')[0] }}"
+    label_selectors: >-
+      {{ item.dp.split('selector:')[1] | trim }}
+    namespace: "{{ item.ns }}"
+    wait: true
+    wait_timeout: 300
+  loop: >-
+    {{ cleanup_list | from_yaml | selectattr('dp', 'search', '^[^/]+/selector:') | list }}
+  loop_control:
+    label: "{{ item.ns }}:{{ item.dp }}"
+  failed_when: false
+
+# Cleanup Helm resources by name
 - name: Cleanup deployments using Helm
   kubernetes.core.helm:
     name: "{{ item.dp.split('/') | last }}"
@@ -136,7 +155,8 @@
     label: "{{ item.ns }}:{{ item.dp.split('/') | last }}"
   failed_when: false
 
-- name: Cleanup kubernetes resources
+# Cleanup other resources by name
+- name: Cleanup kubernetes resources by name
   kubernetes.core.k8s:
     state: absent
     api_version: v1
@@ -145,7 +165,8 @@
     namespace: "{{ item.ns }}"
     wait: true
     wait_timeout: 300
-  loop: "{{ cleanup_list | from_yaml | rejectattr('dp', 'match', '^Helm/') | list }}"
+  loop: >-
+    {{ cleanup_list | from_yaml | rejectattr('dp', 'match', '^Helm/') | rejectattr('dp', 'search', '^[^/]+/selector:') | list }}
   loop_control:
     label: "{{ item.ns }}:{{ item.dp }}"
   failed_when: false
@@ -181,7 +202,7 @@
 
 - name: Restore from backup
   ansible.builtin.command:
-    cmd: velero restore create "{{ restore_name }}" --exclude-resources "instrumentations.opentelemetry.io" --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
+    cmd: velero restore create "{{ restore_name }}" --exclude-resources "instrumentations.opentelemetry.io,pods,replicasets.apps,gmconnectors.gmc.opea.io,validatingwebhookconfigurations.admissionregistration.k8s.io" --existing-resource-policy update --namespace {{ velero.namespace }} --from-backup {{ selected_backup }} --item-operation-timeout {{ velero.backup.itemOperationTimeout }} --labels "{{ velero.backup.restore_labels.items() | map('join', '=') | join(',') }}"
 
 - name: Monitor restore completion
   kubernetes.core.k8s_info:

@@ -43,7 +43,7 @@ dataset = Dataset.from_list([example])
 
 ## Launch LLM
 
-Please follow instructions in section [../rag_eval/README.md](../../rag_eval/README.md#launch-service-of-llm-as-a-judge) to launch LLM as a judge with your desired LLM such as `meta-llama/Llama-3-8B-Instruct`. 
+Please follow instructions in section [evaluation/rag_eval/README.md](../../evaluation/rag_eval/README.md#launch-service-of-llm-as-a-judge) to launch LLM as a judge with your desired LLM such as `meta-llama/Llama-3-8B-Instruct`. 
 
 ```python3
 # note - if you wish to use answer relevancy metric, please set the embedding parameter

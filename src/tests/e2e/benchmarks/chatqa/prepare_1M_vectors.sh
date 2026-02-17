@@ -59,7 +59,7 @@ wait_for_ingest()
 	while true
 	do
 		count_vectors
-		if [[ "$IN_PROGRESS" -eq 0 ]]; then
+		if [[ "$IN_PROGRESS" -eq 1 ]]; then
 			break
 		fi
 		echo "waiting 30 seconds to verify if ingestion process is completed"

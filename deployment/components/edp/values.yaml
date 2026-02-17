@@ -826,7 +826,7 @@ textExtractor:
       memory: "8Gi"
     limits:
       cpu: "12"
-      memory: "32Gi"
+      memory: "40Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 2

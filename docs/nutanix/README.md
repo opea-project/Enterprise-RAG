@@ -46,7 +46,7 @@ These requirements support both Nutanix Enterprise AI and Intel® AI for Enterpr
 | Resource Type                      | Specs                            |
 | ---------------------------------- | -------------------------------- |
 | Number of Instances                | 4 VM Instances                   |
-| AWS EC2 Instance Type              | 4x c8i.16xlarge                  |
+| AWS EC2 Instance Type              | 4x m8i.16xlarge                  |
 | GCP Compute Engine Instance Type   | 4x c4-standard-48-lssd           |
 | Azure VM Instance Type             | 4x Standard_D64s_v6              |
 | Remote File Storage (NFS equivalent) | 512GB Total                    

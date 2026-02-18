@@ -19,7 +19,7 @@ resource random_id "rid" {
 locals {
   name   = "nutanix-${random_id.rid.dec}"
   region = "us-east-1"
-  instance_types = ["c8i.16xlarge"]
+  instance_types = ["m8i.16xlarge"]
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)

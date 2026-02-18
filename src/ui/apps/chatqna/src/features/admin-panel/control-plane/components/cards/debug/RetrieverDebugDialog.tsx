@@ -186,8 +186,13 @@ const RetrieverDebugDialog = () => {
 
   return (
     <Dialog
+      data-testid="retriever-debug-dialog"
       trigger={
-        <Button size="sm" className="absolute right-4 top-4">
+        <Button
+          data-testid="retriever-debug-trigger-button"
+          size="sm"
+          className="absolute right-4 top-4"
+        >
           Debug
         </Button>
       }
@@ -228,6 +233,7 @@ const RetrieverDebugDialog = () => {
             </p>
           )}
           <Button
+            data-testid="format-json-button"
             size="sm"
             isDisabled={isFormatJSONButtonDisabled()}
             onPress={formatSearchByJSON}
@@ -335,6 +341,7 @@ const RetrieverDebugParamsForm = ({
       )}
       <p className="mb-2 mt-3">Reranker</p>
       <CheckboxInput
+        data-testid="reranker-enabled-checkbox"
         label="Enable Reranker"
         size="sm"
         name="reranker-enabled"

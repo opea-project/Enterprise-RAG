@@ -92,6 +92,7 @@ export const ChatHistoryList = ({
     <aside aria-label="Chat History List">
       <div className="chat-history-list__search-bar">
         <SearchBar
+          data-testid="chat-history-search-bar"
           value={searchFilter}
           placeholder="Search chat history..."
           onChange={setSearchFilter}

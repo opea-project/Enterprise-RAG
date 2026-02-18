@@ -14,8 +14,17 @@ import ProcessingTimeFormatSettingsOption from "@/features/admin-panel/data-inge
 
 const DataIngestionSettingsDialog = () => (
   <Dialog
+    data-testid="data-ingestion-settings-dialog"
     trigger={
-      <Tooltip title="Settings" trigger={<IconButton icon="settings" />} />
+      <Tooltip
+        title="Settings"
+        trigger={
+          <IconButton
+            data-testid="data-ingestion-settings-button"
+            icon="settings"
+          />
+        }
+      />
     }
     title="Settings"
     maxWidth={800}

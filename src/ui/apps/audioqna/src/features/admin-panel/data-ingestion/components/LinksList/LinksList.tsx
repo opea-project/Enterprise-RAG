@@ -41,6 +41,7 @@ const LinksList = ({
               {value}
             </p>
             <IconButton
+              data-testid="delete-link-from-list-button"
               icon="delete"
               color="error"
               aria-label="Delete link from the list"

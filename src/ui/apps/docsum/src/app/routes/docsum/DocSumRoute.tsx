@@ -71,6 +71,7 @@ const DocSumRoute = () => {
       }}
     >
       <Tabs
+        data-testid="docsum-tabs"
         tabs={docsumTabs}
         selectedTab={selectedTab}
         onSelectionChange={handleTabSelectionChange}

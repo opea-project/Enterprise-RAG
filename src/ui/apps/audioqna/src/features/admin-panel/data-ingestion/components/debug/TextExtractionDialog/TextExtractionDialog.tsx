@@ -66,6 +66,7 @@ export const TextExtractionForm = ({
   return (
     <div className="text-extraction-dialog__content-form-column">
       <CheckboxInput
+        data-testid="enable-text-extraction-form-checkbox"
         label="Use Parameters"
         name="use-parameters"
         isSelected={isFormEnabled}
@@ -74,6 +75,7 @@ export const TextExtractionForm = ({
       />
       <form onSubmit={handleSubmit}>
         <TextInput
+          data-testid="chunk-size-input"
           label="Chunk Size (0-9999)"
           type="number"
           name="chunk_size"
@@ -82,6 +84,7 @@ export const TextExtractionForm = ({
           onChange={handleRangeInputChange}
         />
         <TextInput
+          data-testid="chunk-overlap-input"
           label="Chunk Overlap (0-9999)"
           type="number"
           name="chunk_overlap"
@@ -90,6 +93,7 @@ export const TextExtractionForm = ({
           onChange={handleRangeInputChange}
         />
         <CheckboxInput
+          data-testid="use-semantic-chunking-checkbox"
           label="Use Semantic Chunking"
           name="use_semantic_chunking"
           isSelected={formData.use_semantic_chunking}
@@ -98,7 +102,11 @@ export const TextExtractionForm = ({
             handleCheckboxInputChange("use_semantic_chunking", isSelected)
           }
         />
-        <Button type="submit" isDisabled={isLoadingExtractedText}>
+        <Button
+          data-testid="extract-text-submit-button"
+          type="submit"
+          isDisabled={isLoadingExtractedText}
+        >
           Extract Text
         </Button>
       </form>
@@ -145,6 +153,7 @@ const ExtractedText = ({ extractedText, isError }: ExtractedTextProps) => {
       <pre className={preClassNames}>{visibleFormattedExtractedText}</pre>
       {isLoadMoreButtonVisible && (
         <Button
+          data-testid="load-more-text-button"
           size="sm"
           variant="outlined"
           onPress={handleLoadMoreTextButtonPress}
@@ -188,7 +197,12 @@ const TextExtractionDialog = ({
   };
 
   const trigger = (
-    <Button size="sm" variant="outlined" onPress={handlePress}>
+    <Button
+      data-testid="extract-text-trigger-button"
+      size="sm"
+      variant="outlined"
+      onPress={handlePress}
+    >
       Extract Text
     </Button>
   );
@@ -213,7 +227,11 @@ const TextExtractionDialog = ({
   };
 
   return (
-    <Dialog trigger={trigger} title={dialogTitle}>
+    <Dialog
+      trigger={trigger}
+      title={dialogTitle}
+      data-testid="text-extraction-dialog"
+    >
       <div className="text-extraction-dialog__content">
         <TextExtractionForm
           isLoadingExtractedText={isLoading}

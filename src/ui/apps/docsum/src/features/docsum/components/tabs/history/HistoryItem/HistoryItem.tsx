@@ -54,7 +54,11 @@ const HistoryItem = ({
   const icon = useMemo(() => getItemIcon(itemData), [itemData]);
 
   return (
-    <Anchor className={className} onPress={handleEntryPress}>
+    <Anchor
+      data-testid="history-item"
+      className={className}
+      onPress={handleEntryPress}
+    >
       {icon}
       {titleElement}
       <HistoryItemMenu

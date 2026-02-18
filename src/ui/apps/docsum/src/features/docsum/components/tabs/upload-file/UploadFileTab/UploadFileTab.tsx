@@ -191,6 +191,7 @@ const UploadFileTab = () => {
         )}
         <FileInput
           ref={fileInputRef}
+          data-testid="upload-file-file-input"
           errorMessage={errorMessage}
           totalSizeLimit={CLIENT_MAX_BODY_SIZE}
           className={`${fileData ? "hidden" : "visible"}`}

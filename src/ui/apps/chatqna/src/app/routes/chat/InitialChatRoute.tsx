@@ -22,7 +22,6 @@ import {
   AppHeaderLeftSideContent,
   AppHeaderRightSideContent,
 } from "@/components/AppHeaderContent/AppHeaderContent";
-
 import { paths } from "@/config/paths";
 import {
   useChangeChatNameMutation,
@@ -35,7 +34,7 @@ import {
 import { usePostPromptMutation } from "@/features/chat/api/chatQnA.api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getChatQnAAppEnv } from "@/utils";
-        
+
 const MAINTENANCE_MODE = getChatQnAAppEnv("MAINTENANCE_MODE");
 
 const InitialChatRoute = () => {
@@ -130,10 +129,9 @@ const InitialChatRoute = () => {
         <div className="flex h-screen flex-col items-center justify-center p-8 text-center">
           <h2>Maintenance Mode</h2>
           <p>
-            The Chat QnA application is currently under maintenance.
-            
- Only <Link to="/admin-panel">Admin Panel</Link> is
-            accessible. Please check back later.
+            The Chat QnA application is currently under maintenance. Only{" "}
+            <Link to="/admin-panel">Admin Panel</Link> is accessible. Please
+            check back later.
           </p>
         </div>
       </PageLayout>

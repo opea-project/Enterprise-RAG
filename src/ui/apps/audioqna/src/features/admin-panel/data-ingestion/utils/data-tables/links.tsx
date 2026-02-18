@@ -106,11 +106,21 @@ export const getLinksTableColumns = ({
       <div className="flex items-center justify-center gap-2">
         <LinkTextExtractionDialog uuid={id} linkUri={uri} />
         {status === "error" && (
-          <Button size="sm" variant="outlined" onPress={() => retryHandler(id)}>
+          <Button
+            data-testid="retry-link-button"
+            size="sm"
+            variant="outlined"
+            onPress={() => retryHandler(id)}
+          >
             Retry
           </Button>
         )}
-        <Button size="sm" color="error" onPress={() => deleteHandler(id)}>
+        <Button
+          data-testid="delete-link-button"
+          size="sm"
+          color="error"
+          onPress={() => deleteHandler(id)}
+        >
           Delete
         </Button>
       </div>

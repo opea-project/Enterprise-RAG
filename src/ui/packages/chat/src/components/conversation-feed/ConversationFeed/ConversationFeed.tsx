@@ -167,7 +167,7 @@ export const ConversationFeed = ({
         className="conversation-feed__scroll"
         onScroll={handleScroll}
       >
-        <div className="conversation-feed">
+        <div className="conversation-feed" data-testid="conversation-feed">
           {conversationTurns.map(
             ({ id, question, answer, error, isPending, sources }) => {
               // Only pass active state if this turn matches the current playing turn
@@ -182,7 +182,7 @@ export const ConversationFeed = ({
                     "conversation-turn--pending": isPending,
                   })}
                 >
-                  <UserMessage question={question} />
+                  <UserMessage id={id} question={question} />
                   <BotMessage
                     id={id}
                     answer={answer}

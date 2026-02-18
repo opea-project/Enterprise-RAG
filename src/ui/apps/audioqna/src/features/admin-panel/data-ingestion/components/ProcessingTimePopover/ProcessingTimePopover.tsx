@@ -145,6 +145,7 @@ const ProcessingTimePopover = memo(
       <>
         <Button
           ref={triggerRef}
+          data-testid="processing-time-popover-trigger"
           variant="text"
           className="processing-time-popover__trigger"
           onPress={togglePopover}

@@ -26,6 +26,7 @@ export const ExportChatDialog = ({
 
   return (
     <ActionDialog
+      data-testid="export-chat-dialog"
       title="Export Chat"
       confirmLabel="Export"
       isOpen={isOpen}

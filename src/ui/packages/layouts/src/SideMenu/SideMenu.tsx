@@ -75,7 +75,12 @@ export const SideMenuIconButton = ({
     <Tooltip
       title={tooltipTitle}
       trigger={
-        <IconButton icon={icon} aria-label={ariaLabel} onPress={onPress} />
+        <IconButton
+          data-testid="side-menu-icon-button"
+          icon={icon}
+          aria-label={ariaLabel}
+          onPress={onPress}
+        />
       }
       placement="bottom"
     />

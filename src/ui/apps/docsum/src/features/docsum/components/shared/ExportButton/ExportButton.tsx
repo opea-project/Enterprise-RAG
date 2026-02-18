@@ -11,6 +11,7 @@ interface ExportButtonProps {
 
 const ExportButton = ({ onPress, className }: ExportButtonProps) => (
   <Button
+    data-testid="export-summary-button"
     variant="outlined"
     size="sm"
     className={`flex items-center gap-2 ${className ?? ""}`}

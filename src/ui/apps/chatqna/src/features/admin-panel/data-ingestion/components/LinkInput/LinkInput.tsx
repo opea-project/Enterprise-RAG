@@ -115,6 +115,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
       <div className="flex items-start gap-2">
         <TextInput
           ref={inputRef}
+          data-testid="link-input"
           type="url"
           value={value}
           name="link-input"
@@ -126,6 +127,7 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
           onKeyDown={handleLinkInputKeyDown}
         />
         <IconButton
+          data-testid="add-link-button"
           icon="plus"
           variant="contained"
           aria-label="Add list to the list"
@@ -139,7 +141,11 @@ const LinkInput = ({ addLinkToList }: LinkInputProps) => {
           commas, spaces, or new lines. Each link must start with{" "}
           <code>http://</code> or <code>https://</code>
         </p>
-        <Button size="sm" onPress={handleBrowseFilesButtonPress}>
+        <Button
+          data-testid="browse-files-button"
+          size="sm"
+          onPress={handleBrowseFilesButtonPress}
+        >
           Browse Files
         </Button>
         {uploadError && (

@@ -70,6 +70,7 @@ const UploadErrorsPopover = ({ uploadErrors }: UploadErrorsPopoverProps) => {
         </p>
       </div>
       <Popover
+        data-testid="upload-errors-popover"
         isOpen={isOpen}
         triggerRef={triggerRef}
         placement="top end"

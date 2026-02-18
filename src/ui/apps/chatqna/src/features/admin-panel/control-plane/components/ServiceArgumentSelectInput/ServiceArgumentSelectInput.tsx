@@ -42,6 +42,7 @@ const ServiceArgumentSelectInput = ({
 
   return (
     <SelectInput
+      data-testid={`service-argument-select-input-${name}`}
       value={selected}
       items={options}
       label={name}

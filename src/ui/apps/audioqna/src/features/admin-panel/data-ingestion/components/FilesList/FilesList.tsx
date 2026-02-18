@@ -38,6 +38,7 @@ const FilesList = ({ files, setFiles }: FilesListProps) => {
               </p>
             </div>
             <IconButton
+              data-testid="delete-file-from-list-button"
               icon="delete"
               color="error"
               aria-label="Delete file from the list"

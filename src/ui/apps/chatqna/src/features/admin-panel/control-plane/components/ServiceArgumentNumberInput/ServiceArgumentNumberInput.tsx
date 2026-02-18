@@ -133,6 +133,7 @@ const ServiceArgumentNumberInput = ({
 
   return (
     <TextInput
+      data-testid={`service-argument-number-input-${name}`}
       name={name}
       label={name}
       value={displayValue}

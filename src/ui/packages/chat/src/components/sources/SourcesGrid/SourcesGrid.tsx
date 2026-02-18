@@ -50,6 +50,7 @@ export const SourcesGrid = ({ sources, onFileDownload }: SourcesGridProps) => {
       </div>
       {isShowMoreBtnVisible && (
         <Button
+          data-testid="show-all-sources-button"
           variant="outlined"
           size="sm"
           className="float-right mt-2"

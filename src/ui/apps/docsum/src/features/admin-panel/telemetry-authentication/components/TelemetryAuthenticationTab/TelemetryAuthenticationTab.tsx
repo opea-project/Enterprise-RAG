@@ -11,12 +11,14 @@ const keycloakAdminPanelUrl = getDocSumAppEnv("KEYCLOAK_ADMIN_PANEL_URL");
 const TelemetryAuthenticationTab = () => (
   <div className="grid grid-cols-1 gap-4 px-16 py-8 md:grid-cols-2 lg:grid-cols-3">
     <AnchorCard
+      data-testid="grafana-dashboard-link"
       icon="telemetry"
       text="Grafana Dashboard"
       href={grafanaDashboardUrl}
       isExternal
     />
     <AnchorCard
+      data-testid="keycloak-admin-panel-link"
       icon="identity-provider"
       text="Keycloak Admin Panel"
       href={keycloakAdminPanelUrl}

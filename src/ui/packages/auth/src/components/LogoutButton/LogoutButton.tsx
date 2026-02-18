@@ -11,7 +11,14 @@ interface LogoutButtonProps {
 export const LogoutButton = ({ onPress }: LogoutButtonProps) => (
   <Tooltip
     title="Logout"
-    trigger={<IconButton icon="logout" aria-label="Logout" onPress={onPress} />}
+    trigger={
+      <IconButton
+        data-testid="logout-button"
+        icon="logout"
+        aria-label="Logout"
+        onPress={onPress}
+      />
+    }
     placement="bottom"
   />
 );

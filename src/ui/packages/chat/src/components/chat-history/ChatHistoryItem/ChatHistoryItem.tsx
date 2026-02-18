@@ -72,12 +72,17 @@ export const ChatHistoryItem = ({
   }
 
   return (
-    <Anchor className={className} onPress={handleItemPress}>
+    <Anchor
+      data-testid="chat-history-item"
+      className={className}
+      onPress={handleItemPress}
+    >
       {pinned && (
         <Tooltip
           title="Unpin"
           trigger={
             <Button
+              data-testid="unpin-chat-button"
               aria-label="Unpin chat"
               className="chat-history-item__pin-icon"
               onPress={onPinChange}

@@ -41,6 +41,7 @@ const ServiceArgumentCheckbox = ({
 
   return (
     <CheckboxInput
+      data-testid={`service-argument-checkbox-${name}`}
       label={name}
       size="sm"
       tooltipText={tooltipText}

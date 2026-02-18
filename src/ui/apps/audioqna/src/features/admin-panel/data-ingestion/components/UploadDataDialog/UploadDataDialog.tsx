@@ -156,10 +156,17 @@ const UploadDataDialog = () => {
   return (
     <Dialog
       ref={dialogRef}
+      data-testid="upload-data-dialog"
       trigger={
         <Tooltip
           title="Upload Data"
-          trigger={<IconButton icon="upload" variant="contained" />}
+          trigger={
+            <IconButton
+              data-testid="upload-data-trigger-button"
+              icon="upload"
+              variant="contained"
+            />
+          }
         />
       }
       footer={

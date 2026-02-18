@@ -49,6 +49,7 @@ const RefreshButton = () => {
       title={tooltipTitle}
       trigger={
         <IconButton
+          data-testid="refresh-button"
           isDisabled={isFetchingData}
           icon={icon}
           iconClassName={iconClassName}

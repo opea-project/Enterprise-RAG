@@ -17,6 +17,7 @@ const ChunksProgressBar = memo(
     return (
       <div className="flex flex-nowrap items-center gap-2">
         <ProgressBar
+          data-testid="chunks-progress-bar"
           value={processedChunks}
           maxValue={totalChunks}
           aria-label="Processed Chunks"

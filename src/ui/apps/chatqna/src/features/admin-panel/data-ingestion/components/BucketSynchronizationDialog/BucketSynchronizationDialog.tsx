@@ -57,6 +57,7 @@ const BucketSynchronizationDialogFooter = ({
         <p className="error">{ERROR_MESSAGES.POST_FILES_SYNC}</p>
       )}
       <Button
+        data-testid="synchronize-buckets-button"
         icon={btnIcon}
         isDisabled={isSyncActionDisabled}
         onPress={handleSynchronizeBtnPress}
@@ -120,6 +121,7 @@ const BucketSynchronizationDialog = () => {
         title="Synchronize Buckets"
         trigger={
           <IconButton
+            data-testid="trigger-bucket-synchronization-button"
             variant="outlined"
             icon="bucket-synchronization"
             onPress={handleDialogTriggerPress}
@@ -162,6 +164,7 @@ const BucketSynchronizationDialog = () => {
   return (
     <Dialog
       ref={dialogRef}
+      data-testid="bucket-synchronization-dialog"
       trigger={dialogTrigger}
       title="Bucket Synchronization"
       footer={

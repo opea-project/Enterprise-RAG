@@ -120,6 +120,7 @@ const FilesDataTable = () => {
     <div className="files-data-table-wrapper">
       <div className="files-data-table-wrapper__header">
         <SearchBar
+          data-testid="files-search-bar"
           value={filter}
           placeholder="Filter files by status, bucket, or name"
           onChange={setFilter}

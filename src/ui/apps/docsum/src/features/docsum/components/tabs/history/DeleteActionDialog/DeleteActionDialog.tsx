@@ -26,6 +26,7 @@ const DeleteActionDialog = ({
 
   return (
     <ActionDialog
+      data-testid="delete-summary-dialog"
       title="Delete Summary"
       confirmLabel="Delete"
       confirmColor="error"

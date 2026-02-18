@@ -84,6 +84,7 @@ const ServiceArgumentTextInput = ({
 
   return (
     <TextInput
+      data-testid={`service-argument-text-input-${name}`}
       name={name}
       label={name}
       value={displayValue}

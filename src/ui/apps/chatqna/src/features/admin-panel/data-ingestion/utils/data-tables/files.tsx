@@ -118,6 +118,7 @@ export const getFilesTableColumns = ({
     }) => (
       <div className="flex items-center justify-center gap-2">
         <Button
+          data-testid="download-file-button"
           size="sm"
           onPress={() => downloadHandler(object_name, bucket_name)}
         >
@@ -125,11 +126,17 @@ export const getFilesTableColumns = ({
         </Button>
         <FileTextExtractionDialog uuid={id} fileName={object_name} />
         {status === "error" && (
-          <Button size="sm" variant="outlined" onPress={() => retryHandler(id)}>
+          <Button
+            data-testid="retry-file-button"
+            size="sm"
+            variant="outlined"
+            onPress={() => retryHandler(id)}
+          >
             Retry
           </Button>
         )}
         <Button
+          data-testid="delete-file-button"
           size="sm"
           color="error"
           onPress={() => deleteHandler(object_name, bucket_name)}

@@ -63,7 +63,10 @@ const GeneratedSummary = ({
 
     return (
       <div className="generated-summary__result">
-        <div className="generated-summary__content">
+        <div
+          className="generated-summary__content"
+          data-testid="generated-summary-content"
+        >
           <Markdown text={displaySummary ?? ""} />
         </div>
         {showCopyButton && (

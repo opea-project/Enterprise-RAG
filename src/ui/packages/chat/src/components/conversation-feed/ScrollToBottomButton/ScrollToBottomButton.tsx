@@ -21,6 +21,7 @@ export const ScrollToBottomButton = ({
 }: ScrollToBottomButtonProps) => (
   <IconButton
     {...rest}
+    data-testid="scroll-to-bottom-button"
     icon="scroll-to-bottom"
     aria-label="Scroll to bottom"
     className={classNames([

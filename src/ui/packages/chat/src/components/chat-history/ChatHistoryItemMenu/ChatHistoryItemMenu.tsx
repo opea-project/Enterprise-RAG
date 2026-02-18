@@ -72,6 +72,7 @@ export const ChatHistoryItemMenu = ({
             title="More"
             trigger={
               <IconButton
+                data-testid="chat-history-item-menu-button"
                 icon="more-options"
                 size="sm"
                 aria-label="Manage Chat"
@@ -84,20 +85,20 @@ export const ChatHistoryItemMenu = ({
         ariaLabel="Chat History Item Menu"
         onOpenChange={onOpenChange}
       >
-        <Menu onAction={handleMenuAction}>
-          <MenuItem id="rename">
+        <Menu data-testid="chat-history-item-menu" onAction={handleMenuAction}>
+          <MenuItem data-testid="rename-chat-menu-item" id="rename">
             <EditIcon />
             <span>Rename</span>
           </MenuItem>
-          <MenuItem id="export">
+          <MenuItem data-testid="export-chat-menu-item" id="export">
             <ExportIcon />
             <span>Export</span>
           </MenuItem>
-          <MenuItem id="pin">
+          <MenuItem data-testid="pin-chat-menu-item" id="pin">
             {pinned ? <PinFilledIcon /> : <PinIcon />}
             <span>{pinned ? "Unpin" : "Pin"}</span>
           </MenuItem>
-          <MenuItem id="delete">
+          <MenuItem data-testid="delete-chat-menu-item" id="delete">
             <DeleteIcon />
             <span>Delete</span>
           </MenuItem>

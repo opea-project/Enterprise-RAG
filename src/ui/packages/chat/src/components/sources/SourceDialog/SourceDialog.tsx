@@ -33,7 +33,10 @@ export const SourceDialog = ({
     <Tooltip
       title="Show details"
       trigger={
-        <Button className={`source-dialog__trigger ${className ?? ""}`}>
+        <Button
+          data-testid="source-dialog-trigger"
+          className={`source-dialog__trigger ${className ?? ""}`}
+        >
           <div className="source-dialog__trigger__icon">{triggerIcon}</div>
           <div className="source-dialog__trigger__name">{name}</div>
         </Button>
@@ -48,6 +51,7 @@ export const SourceDialog = ({
 
   return (
     <ActionDialog
+      data-testid="source-dialog"
       title={title}
       trigger={trigger}
       maxWidth={600}

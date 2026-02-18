@@ -62,6 +62,7 @@ const FilesInput = ({ files, setFiles }: FilesInputProps) => {
 
   return (
     <FileInput
+      data-testid="files-input"
       errorMessage={errorMessage}
       totalSizeLimit={CLIENT_MAX_BODY_SIZE}
       supportedFileExtensions={SUPPORTED_FILE_EXTENSIONS}

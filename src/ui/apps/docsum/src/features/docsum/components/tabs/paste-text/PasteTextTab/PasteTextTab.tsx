@@ -152,6 +152,7 @@ const PasteTextTab = () => {
         <div className="paste-text-tab__text-area-col__header">
           <Label htmlFor="paste-text">Text to Summarize</Label>
           <Button
+            data-testid="paste-text-clear-button"
             size="sm"
             variant="outlined"
             isDisabled={isClearBtnDisabled}
@@ -161,6 +162,7 @@ const PasteTextTab = () => {
           </Button>
         </div>
         <TextAreaInput
+          data-testid="paste-text-textarea-input"
           id="paste-text"
           name="paste-text"
           value={text}

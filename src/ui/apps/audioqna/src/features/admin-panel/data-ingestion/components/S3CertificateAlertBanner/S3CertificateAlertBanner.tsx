@@ -53,6 +53,7 @@ const S3CertificateAlertBanner = () => {
         the action again.
       </p>
       <Anchor
+        data-testid="s3-certificate-link"
         href={s3Url}
         className="text-light-text-inverse"
         onPress={handleS3UrlPress}
@@ -63,7 +64,12 @@ const S3CertificateAlertBanner = () => {
         If you believe this is a false positive, you can dismiss this alert
         using the button below.
       </p>
-      <Button variant="outlined" size="sm" onPress={handleDismissBtnPress}>
+      <Button
+        data-testid="dismiss-s3-certificate-alert-button"
+        variant="outlined"
+        size="sm"
+        onPress={handleDismissBtnPress}
+      >
         Dismiss
       </Button>
     </div>

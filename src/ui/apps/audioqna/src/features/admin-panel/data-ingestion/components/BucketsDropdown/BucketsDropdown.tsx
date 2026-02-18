@@ -42,6 +42,7 @@ const BucketsDropdown = ({
 
   return (
     <SelectInput
+      data-testid="s3-bucket-dropdown"
       value={selectedBucket}
       items={bucketsList}
       name="s3-bucket"

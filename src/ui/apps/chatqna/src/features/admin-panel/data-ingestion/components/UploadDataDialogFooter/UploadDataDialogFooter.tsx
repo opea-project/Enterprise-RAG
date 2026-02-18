@@ -40,6 +40,7 @@ const UploadDataDialogFooter = ({
         toBeUploadedMessage
       )}
       <Button
+        data-testid="upload-data-button"
         icon={uploadBtnIcon}
         isDisabled={isUploadDisabled}
         onPress={onSubmit}

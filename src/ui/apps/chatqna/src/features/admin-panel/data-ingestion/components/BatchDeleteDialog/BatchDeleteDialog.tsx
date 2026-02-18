@@ -39,15 +39,26 @@ const BatchDeleteDialog = ({
   return (
     <Dialog
       ref={dialogRef}
+      data-testid="batch-delete-dialog"
       title="Confirm Delete"
       maxWidth={500}
       onClose={onClose}
       footer={
         <div className="batch-delete-dialog__actions">
-          <Button size="sm" color="error" onPress={handleConfirm}>
+          <Button
+            data-testid="batch-delete-confirm-button"
+            size="sm"
+            color="error"
+            onPress={handleConfirm}
+          >
             Confirm
           </Button>
-          <Button size="sm" variant="outlined" onPress={onClose}>
+          <Button
+            data-testid="batch-delete-cancel-button"
+            size="sm"
+            variant="outlined"
+            onPress={onClose}
+          >
             Cancel
           </Button>
         </div>

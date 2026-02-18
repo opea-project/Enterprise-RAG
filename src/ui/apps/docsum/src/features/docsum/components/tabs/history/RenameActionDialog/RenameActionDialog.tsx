@@ -67,6 +67,7 @@ const RenameActionDialog = ({
 
   return (
     <ActionDialog
+      data-testid="rename-summary-dialog"
       title="Rename Summary"
       isConfirmDisabled={isRenameActionDisabled}
       isOpen={isOpen}
@@ -76,6 +77,7 @@ const RenameActionDialog = ({
     >
       <TextInput
         ref={textInputRef}
+        data-testid="rename-summary-input"
         value={newTitle}
         size="sm"
         label="Summary Title"

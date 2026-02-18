@@ -86,6 +86,7 @@ const LinksDataTable = () => {
     <div className="links-data-table-wrapper">
       <div className="links-data-table-wrapper__header">
         <SearchBar
+          data-testid="links-search-bar"
           value={filter}
           placeholder="Filter links by status or link"
           onChange={setFilter}

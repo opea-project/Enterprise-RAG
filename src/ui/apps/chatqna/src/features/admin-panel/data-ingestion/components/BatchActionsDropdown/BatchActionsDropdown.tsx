@@ -40,7 +40,10 @@ const BatchActionsDropdown = ({
   return (
     <MenuTrigger
       trigger={
-        <Button isDisabled={isActionsDisabled}>
+        <Button
+          data-testid="batch-actions-button"
+          isDisabled={isActionsDisabled}
+        >
           Actions{selectedCount > 0 ? ` (${selectedCount})` : ""}
         </Button>
       }

@@ -68,6 +68,7 @@ export const RenameChatDialog = ({
     >
       <TextInput
         ref={textInputRef}
+        data-testid="rename-chat-input"
         name="new-chat-name"
         value={newChatName}
         size="sm"

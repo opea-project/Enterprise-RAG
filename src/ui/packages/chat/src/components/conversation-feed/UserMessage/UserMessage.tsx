@@ -9,9 +9,9 @@ import { memo, useState } from "react";
 
 import { ChatTurn } from "@/types";
 
-type UserMessageProps = Pick<ChatTurn, "question">;
+type UserMessageProps = Pick<ChatTurn, "id" | "question">;
 
-const UserMessage = ({ question }: UserMessageProps) => {
+const UserMessage = ({ id, question }: UserMessageProps) => {
   const [showActionButtons, setShowActionButtons] = useState(false);
 
   const handleMouseEnter = () => {
@@ -24,8 +24,8 @@ const UserMessage = ({ question }: UserMessageProps) => {
 
   return (
     <article
+      data-testid={`user-message-${id}`}
       className="user-message"
-      data-testid="user-message"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >

@@ -94,6 +94,7 @@ const AdminPanelRoute = () => {
       }}
     >
       <Tabs
+        data-testid="admin-panel-tabs"
         tabs={adminPanelTabs}
         selectedTab={selectedTab}
         onSelectionChange={handleTabSelectionChange}

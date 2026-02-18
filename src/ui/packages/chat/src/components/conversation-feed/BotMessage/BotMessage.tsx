@@ -75,7 +75,7 @@ const BotMessage = ({
   });
 
   return (
-    <div className={className} data-testid="bot-message">
+    <div className={className} data-testid={`bot-message-${id}`}>
       <ChatBotIcon className="bot-message__chat-bot-icon" />
       {isWaitingForAnswer ? <PulsingDot /> : botResponse}
     </div>

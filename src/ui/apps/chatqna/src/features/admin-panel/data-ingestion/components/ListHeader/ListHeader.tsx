@@ -19,7 +19,12 @@ const ListHeader = ({ title, onClearListBtnPress }: ListHeaderProps) => (
     })}
   >
     {title && <h3>{title}</h3>}
-    <Button color="error" size="sm" onPress={onClearListBtnPress}>
+    <Button
+      data-testid="delete-all-button"
+      color="error"
+      size="sm"
+      onPress={onClearListBtnPress}
+    >
       Delete All
     </Button>
   </header>

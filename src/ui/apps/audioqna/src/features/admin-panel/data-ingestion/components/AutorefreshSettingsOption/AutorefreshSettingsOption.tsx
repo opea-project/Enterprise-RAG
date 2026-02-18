@@ -42,6 +42,7 @@ const AutorefreshSettingsOption = () => {
       name="Autorefresh"
       input={
         <CheckboxInput
+          data-testid="autorefresh-checkbox"
           name="data-ingestion-autorefresh"
           label={label}
           size="sm"

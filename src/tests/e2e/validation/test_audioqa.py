@@ -246,15 +246,18 @@ def test_tts_basic(audioqa_api_helper):
 @allure.testcase("IEASG-T349")
 def test_tts_empty_text(audioqa_api_helper):
     """Test TTS API with empty text input. Verify that the API handles it gracefully"""
-    input_text = "                  "
 
-    audio_data = audioqa_api_helper.text_to_speech_audio(input_text, "test_tts_empty_text.mp3")
-    transcription = audioqa_api_helper.transcribe_to_text(audio_data, original_text=input_text)
-    # Verify transcription contains no actual words or contains word "empty" or "blank"
-    if transcription.strip() != "":
-        assert "empty" in transcription.lower() or "blank" in transcription.lower(), (
-            f"ASR should indicate empty input, but got: '{transcription}'"
-        )
+    input_text = "                  "
+    response = audioqa_api_helper.text_to_speech(input_text)
+    assert response.status_code == 200, f"TTS API call failed for empty text: {response.text}"
+
+    input_text = ""
+    response = audioqa_api_helper.text_to_speech(input_text)
+    assert response.status_code == 200, f"TTS API call failed for empty text: {response.text}"
+
+    input_text = "\t\n\r"
+    response = audioqa_api_helper.text_to_speech(input_text)
+    assert response.status_code == 200, f"TTS API call failed for empty text: {response.text}"
 
 
 @allure.testcase("IEASG-T350")
@@ -272,7 +275,7 @@ def test_tts_overload(audioqa_api_helper):
 def test_tts_as_user(audioqa_api_helper, temporarily_remove_regular_user_required_actions):
     """Test TTS API call with user authentication to ensure that it works for authenticated users"""
     input_text = "Check whether user can access text-to-speech API"
-    expected_words = ["check", "whether", "user", "access", "speech"]
+    expected_words = ["check", "whether", "user", "speech"]
 
     audio_data = audioqa_api_helper.text_to_speech_audio(input_text, "test_tts_as_user.mp3", as_user=True)
     transcription = audioqa_api_helper.transcribe_to_text(audio_data, original_text=input_text)

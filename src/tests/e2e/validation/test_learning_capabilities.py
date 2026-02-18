@@ -245,7 +245,7 @@ def test_get_context_from_filename(edp_helper, chatqa_api_helper):
 def test_docx_tables(edp_helper, chatqa_api_helper):
     """*.docx file learning capabilities (with tables inside the file)"""
     # 1. Table with a single cell
-    question = "What was the proffession of the person who whispered the name Trenvahir?"
+    question = "What was the profession of the person who whispered the name Trenvahir?"
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_table_single_cell.docx", question)
     assert chatqa_api_helper.words_in_response(["clockmaker"], response), UNRELATED_RESPONSE_MSG
     # 2. Table with many cells

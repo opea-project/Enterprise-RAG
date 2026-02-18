@@ -63,6 +63,7 @@ For detailed trade-offs and parameter tuning, see Redis documentation:
 - SVS-VAMANA reference and parameters: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/#svs-vamana-index
 - SVS compression and tuning options: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/svs-compression/
 - SVS-VAMANA perf comparison details: https://redis.io/blog/tech-dive-comprehensive-compression-leveraging-quantization-and-dimensionality-reduction/
+
 Note that changing index settings can require additional RAM and storage for the vector database, since new indexes may be created before old ones are removed. This operation might be time-consuming for large datasets.
 
 Ensure the Redis instances have enough resources assigned, both from compute and storage. This is configurable via `deployment/inventory/**/config.yaml` as follows:

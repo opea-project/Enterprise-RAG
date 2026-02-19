@@ -1,4 +1,4 @@
-# IBM Cloud Terraform Configuration for Enterprise RAG (Intel Gaudi)
+# IBM Cloud Terraform Configuration for Enterprise RAG
 
 This directory contains Terraform configuration files for deploying the Enterprise RAG solution on IBM Cloud using Intel hardware.
 

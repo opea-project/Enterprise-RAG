@@ -113,8 +113,10 @@ solution_version = "release-2.1.0"  # Options: "release-2.1.0", "release-1.5.0",
 ```hcl
 # Instance Configuration
 instance_profile = ""  # Intel instance
-# Example gaudi instance: gx3d-160x1792x8gaudi3
-# Example xeon instance: bx3d-128x640
+# Recommended gaudi instance: gx3d-160x1792x8gaudi3
+# Recommended xeon instance: bx3d-128x640
+
+deployment_type = ""   # "hpu" for Gaudi, "cpu" for Xeon
 
 boot_volume_size = 250                       # GB
 
@@ -122,8 +124,7 @@ boot_volume_size = 250                       # GB
 solution_version = "release-2.1.0"         # Git tag or branch (default: "release-2.1.0")
                                             # Examples: "release-2.1.0", "release-1.5.0", "main"
 
-# Model Configuration (Intel Gaudi optimized)
-deployment_type       = "hpu"
+# Model Configuration
 llm_model_gaudi      = ""
 embedding_model_name = ""
 reranking_model_name = ""

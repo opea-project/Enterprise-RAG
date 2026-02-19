@@ -1,6 +1,0 @@
-FROM audioqna-ui-base:latest
-
-COPY compliance /compliance
-
-# CMD from base Dockerfile
-CMD ["nginx", "-g", "daemon off;"]

@@ -1,8 +1,0 @@
-= File header
-
-File content
-
-.An example table
-|=======================
-|Not important | cell content
-|=======================

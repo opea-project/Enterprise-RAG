@@ -1,141 +1,5 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-{{- if eq .Values.type "chatqa" }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nginx-config
-data:
-  nginx.conf: |
-    worker_processes  auto;
-
-    error_log  /var/cache/nginx/error.log notice;
-    pid /var/cache/nginx/nginx.pid;
-
-
-    events {
-        worker_connections  1024;
-    }
-
-
-    http {
-        client_body_temp_path /var/cache/nginx/client_temp;
-        proxy_temp_path /var/cache/nginx/proxy_temp;
-        fastcgi_temp_path /var/cache/nginx/fastcgi_temp;
-        uwsgi_temp_path /var/cache/nginx/uwsgi_temp;
-        scgi_temp_path /var/cache/nginx/scgi_temp;
-        include       /etc/nginx/mime.types;
-        default_type  application/octet-stream;
-
-        log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                          '$status $body_bytes_sent "$http_referer" '
-                          '"$http_user_agent" "$http_x_forwarded_for"';
-
-        access_log  /var/log/nginx/access.log  main;
-
-        sendfile        on;
-        #tcp_nopush     on;
-
-        keepalive_timeout  65;
-
-        gzip on;
-        gzip_comp_level 6;
-        gzip_min_length 256;
-
-        # disable gzip compression for browsers that don't support it
-        gzip_disable "msie6";
-
-        # MIME types compressed by gzip
-        # text/html is compressed by default
-        gzip_types
-        application/javascript
-        application/octet-stream # fonts
-        font/eot
-        font/otf
-        font/ttf
-        image/svg+xml
-        text/css
-        text/javascript;
-
-        server {
-            listen       {{ .Values.service.port }};
-            server_name  localhost;
-
-            client_max_body_size 1m;
-
-            location / {
-                root   /usr/share/nginx/html;
-                try_files $uri $uri/ /index.html;
-                index  index.html index.htm;
-            }
-
-            location /config.json {
-                root /usr/share/nginx/html;
-                add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
-                add_header Pragma "no-cache";
-                add_header Expires 0;
-            }
-
-            location /v1/system_fingerprint/append_arguments {
-                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
-                proxy_set_header Host $host;
-            }
-
-            location /v1/system_fingerprint/change_arguments {
-                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
-                proxy_set_header Host $host;
-            }
-
-            location /v1/chat_history {
-                proxy_pass {{ .Values.extraNginxVars.chatHistoryEndpoint }};
-                proxy_set_header Host $host;
-            }
-
-            location /api/v1/chatqna {
-                proxy_pass {{ .Values.extraNginxVars.chatqaEndpoint }};
-                proxy_set_header Host $host;
-                proxy_send_timeout 10m;
-                proxy_read_timeout 10m;
-                proxy_buffering off;
-                proxy_cache off;
-            }
-
-            # Generic location for docsum endpoint
-            location /api/v1/docsum {
-                proxy_pass {{ .Values.extraNginxVars.chatqaEndpoint }};
-                proxy_set_header Host $host;
-                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
-                proxy_send_timeout 60m;
-                proxy_read_timeout 60m;
-                proxy_buffering off;
-                proxy_cache off;
-            }
-
-            location /api/v1/edp {
-                proxy_pass {{ .Values.extraNginxVars.edpEndpoint }};
-                proxy_set_header Host $host;
-                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
-                proxy_read_timeout 60m;
-                proxy_send_timeout 60m;
-            }
-
-            location /api/v1/chatqa/status {
-                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
-                proxy_set_header Host $host;
-            }
-
-            location /api/v1/docsum/status {
-                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
-                proxy_set_header Host $host;
-            }
-
-            error_page   500 502 503 504  /50x.html;
-            location = /50x.html {
-                root   /usr/share/nginx/html;
-            }
-        }
-    }
-{{- else if eq .Values.type "docsum" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -209,6 +73,47 @@ data:
                 add_header Expires 0;
             }
 
+
+            {{- if or (eq .Values.type "chatqa") (eq .Values.type "audioqna") }}
+            location /api/v1/chatqna {
+                proxy_pass {{ .Values.extraNginxVars.chatqaEndpoint }};
+                proxy_set_header Host $host;
+                proxy_send_timeout 10m;
+                proxy_read_timeout 10m;
+                proxy_buffering off;
+                proxy_cache off;
+            }
+
+            location /v1/chat_history {
+                proxy_pass {{ .Values.extraNginxVars.chatHistoryEndpoint }};
+                proxy_set_header Host $host;
+            }
+
+            location /api/v1/edp {
+                proxy_pass {{ .Values.extraNginxVars.edpEndpoint }};
+                proxy_set_header Host $host;
+                client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
+                proxy_read_timeout 60m;
+                proxy_send_timeout 60m;
+            }
+
+            location /api/v1/chatqa/status {
+                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
+                proxy_set_header Host $host;
+            }
+
+            location /v1/system_fingerprint/append_arguments {
+                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
+                proxy_set_header Host $host;
+            }
+
+            location /v1/system_fingerprint/change_arguments {
+                proxy_pass {{ .Values.extraNginxVars.systemFingerprintEndpoint }};
+                proxy_set_header Host $host;
+            }
+            {{- end }}
+
+            {{- if eq .Values.type "docsum" }}
             location /api/v1/docsum {
                 proxy_pass {{ .Values.extraNginxVars.docsumEndpoint }};
                 client_max_body_size {{ .Values.extraNginxVars.dataprepClientMaxBodySize }};
@@ -223,6 +128,32 @@ data:
                 proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
                 proxy_set_header Host $host;
             }
+            {{- end }}
+
+            {{- if eq .Values.type "audioqna" }}
+            location /v1/audio/transcriptions {
+                proxy_pass {{ .Values.extraNginxVars.audioqnaEndpoint }};
+                proxy_set_header Host $host;
+                proxy_send_timeout 10m;
+                proxy_read_timeout 10m;
+                proxy_buffering off;
+                proxy_cache off;
+            }
+
+            location /v1/audio/speech {
+                proxy_pass {{ .Values.extraNginxVars.audioqnaEndpoint }};
+                proxy_set_header Host $host;
+                proxy_send_timeout 10m;
+                proxy_read_timeout 10m;
+                proxy_buffering off;
+                proxy_cache off;
+            }
+
+            location /api/v1/audio/status {
+                proxy_pass {{ .Values.extraNginxVars.statusEndpoint }};
+                proxy_set_header Host $host;
+            }
+            {{- end }}
 
             error_page   500 502 503 504  /50x.html;
             location = /50x.html {
@@ -230,4 +161,3 @@ data:
             }
         }
     }
-{{- end }}

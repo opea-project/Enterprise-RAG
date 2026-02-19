@@ -1,0 +1,11 @@
+FROM asr-base:latest
+
+COPY compliance /compliance
+
+WORKDIR /compliance/ospdt
+COPY Dockerfile .
+COPY uv.lock .
+
+# CMD from base Dockerfile
+WORKDIR /home/user/comps/asr
+CMD ["python", "opea_asr_microservice.py"]

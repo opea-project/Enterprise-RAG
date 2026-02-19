@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # requires jq
@@ -115,7 +115,7 @@ function print_log() {
 
 function get_access_token() {
 
-    ACCESS_TOKEN=$(curl -s -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+    ACCESS_TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "username=${KEYCLOAK_USER}" \
         -d "password=${ADMIN_PASSWORD}" \
@@ -130,7 +130,7 @@ function curl_keycloak() {
     local response=""
     local retry_count=${4:-0}
 
-    response=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" "$url" \
+    response=$(curl -sk -o /dev/null -w "%{http_code}" -X "$method" "$url" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Content-Type: application/json" \
         -d "$json")
@@ -161,7 +161,7 @@ function curl_get_id() {
     local retry_count=${2:-0}
     local response=""
 
-    response=$(curl -s -X GET "$url" \
+    response=$(curl -sk -X GET "$url" \
         -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Content-Type: application/json")
 
@@ -181,7 +181,7 @@ function get_client_id() {
 
     local client_id=""
     client_id=$(curl_get_id "$url")
-    client_id=$(echo $client_id | jq -r --arg key "clientId" --arg value "$client_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    client_id=$(echo "$client_id" | jq -r --arg key "clientId" --arg value "$client_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$client_id"
 }
@@ -193,7 +193,7 @@ function get_group_id() {
 
     local group_id=""
     group_id=$(curl_get_id "$url")
-    group_id=$(echo $group_id | jq -r --arg key "name" --arg value "$group_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    group_id=$(echo "$group_id" | jq -r --arg key "name" --arg value "$group_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$group_id"
 }
@@ -205,7 +205,7 @@ function get_realm_role_id() {
 
     local role_id=""
     role_id=$(curl_get_id "$url")
-    role_id=$(echo $role_id | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    role_id=$(echo "$role_id" | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$role_id"
 }
@@ -217,10 +217,9 @@ function get_client_role_id() {
 
     client_id=$(get_client_id "$realm_name" "$client_name")
     local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/clients/${client_id}/roles"
-
     local role_id=""
     role_id=$(curl_get_id "$url")
-    role_id=$(echo $role_id | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    role_id=$(echo "$role_id" | jq -r --arg key "name" --arg value "$role_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$role_id"
 }
@@ -232,7 +231,7 @@ function get_user_id() {
 
     local user_id=""
     user_id=$(curl_get_id "$url")
-    user_id=$(echo $user_id | jq -r --arg key "username" --arg value "$username" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    user_id=$(echo "$user_id" | jq -r --arg key "username" --arg value "$username" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$user_id"
 }
@@ -248,7 +247,7 @@ function get_resource_id() {
 
     local resource_id=""
     resource_id=$(curl_get_id "$url")
-    resource_id=$(echo $resource_id | jq -r --arg key "name" --arg value "$resource_name" '.[] | select(.[$key] == $value)' | jq -r '._id')
+    resource_id=$(echo "$resource_id" | jq -r --arg key "name" --arg value "$resource_name" '.[] | select(.[$key] == $value)' | jq -r '._id')
 
     echo "$resource_id"
 }
@@ -263,7 +262,7 @@ function get_policy_id() {
 
     local policy_id=""
     policy_id=$(curl_get_id "$url")
-    policy_id=$(echo $policy_id | jq -r --arg key "name" --arg value "$policy_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    policy_id=$(echo "$policy_id" | jq -r --arg key "name" --arg value "$policy_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$policy_id"
 }
@@ -276,7 +275,7 @@ function get_global_client_scope_id() {
 
     local scope_id=""
     scope_id=$(curl_get_id "$url")
-    scope_id=$(echo $scope_id | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    scope_id=$(echo "$scope_id" | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$scope_id"
 }
@@ -292,7 +291,7 @@ function get_client_client_scope_id() {
 
     local scope_id=""
     scope_id=$(curl_get_id "$url")
-    scope_id=$(echo $scope_id | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    scope_id=$(echo "$scope_id" | jq -r --arg key "name" --arg value "$scope_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$scope_id"
 }
@@ -324,7 +323,7 @@ function create_realm() {
 function prevent_bruteforce() {
     local realm_name=$1
 
-    curl -s -X PUT "${KEYCLOAK_URL}/admin/realms/${realm_name}" \
+    curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/${realm_name}" \
     -H "Authorization: Bearer ${ACCESS_TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{
@@ -341,10 +340,15 @@ function prevent_bruteforce() {
 
 function delete_realm() {
     local realm_name=$1
+    local url="${KEYCLOAK_URL}/admin/realms/${realm_name}"
 
-    curl -s -X DELETE "${KEYCLOAK_URL}/admin/realms/${realm_name}" \
-    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-    -H "Content-Type: application/json" | jq
+    if curl_keycloak "$url" "" "DELETE"; then
+        print_log "Realm '$realm_name' deleted"
+    elif [[ $HTTP_CODE == 404 ]]; then
+        print_log "Realm '$realm_name' not found"
+    else
+        print_log "Failed to delete realm '$realm_name' with '$HTTP_CODE'"
+    fi
 }
 
 function create_client() {
@@ -562,14 +566,14 @@ function create_oidc_config() {
     local oidc_client_secret=$6
 
     # Retrieve OIDC URLs from endpoint
-    local oidc_metadata=$(curl -s -X GET "${endpoint}")
-    local oidc_authorization_url="$(echo $oidc_metadata | jq -r .authorization_endpoint)"
-    local oidc_token_url="$(echo $oidc_metadata | jq -r .token_endpoint)"
-    local oidc_logout_url="$(echo $oidc_metadata | jq -r .end_session_endpoint)"
-    local oidc_user_info_url="$(echo $oidc_metadata | jq -r .userinfo_endpoint)"
-    local oidc_issuer="$(echo $oidc_metadata | jq -r .issuer)"
+    local oidc_metadata=$(curl -sk -X GET "${endpoint}")
+    local oidc_authorization_url="$(echo "$oidc_metadata" | jq -r .authorization_endpoint)"
+    local oidc_token_url="$(echo "$oidc_metadata" | jq -r .token_endpoint)"
+    local oidc_logout_url="$(echo "$oidc_metadata" | jq -r .end_session_endpoint)"
+    local oidc_user_info_url="$(echo "$oidc_metadata" | jq -r .userinfo_endpoint)"
+    local oidc_issuer="$(echo "$oidc_metadata" | jq -r .issuer)"
     local oidc_metadata_descriptor_url="$endpoint"
-    local oidc_jwks_url="$(echo $oidc_metadata | jq -r .jwks_uri)"
+    local oidc_jwks_url="$(echo "$oidc_metadata" | jq -r .jwks_uri)"
 
     local url="$KEYCLOAK_URL/admin/realms/$realm_name/identity-provider/instances"
 
@@ -841,6 +845,7 @@ function add_client_scope_mapper() {
     fi
 }
 
+
 function create_client_policy() {
     local realm_name=$1
     local client_name=$2
@@ -974,7 +979,7 @@ function get_ad_federation_id() {
 
     local federation_id=""
     federation_id=$(curl_get_id "$url")
-    federation_id=$(echo $federation_id | jq -r --arg key "name" --arg value "$federation_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
+    federation_id=$(echo "$federation_id" | jq -r --arg key "name" --arg value "$federation_name" '.[] | select(.[$key] == $value)' | jq -r '.id')
 
     echo "$federation_id"
 }
@@ -1027,6 +1032,7 @@ print_header "Configuring Keycloak"
 
 get_access_token
 
+# delete_realm "$KEYCLOAK_REALM"
 create_realm "$KEYCLOAK_REALM"
 prevent_bruteforce "$KEYCLOAK_REALM"
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "authorization='false' authentication='false' clientauthentication='true'"

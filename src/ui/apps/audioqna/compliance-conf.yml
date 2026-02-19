@@ -1,0 +1,10 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "../"
+dependencies:
+  - pnpm
+container_distribution: DockerHub
+dockerfile_distribution: GitHub
+comments: ""
+pnpm:
+  src_dir: "../.."

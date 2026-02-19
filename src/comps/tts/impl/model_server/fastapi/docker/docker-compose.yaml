@@ -1,0 +1,47 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  tts-model-server:
+    build:
+      context: ../../../../../../
+      dockerfile: comps/tts/impl/model_server/fastapi/docker/Dockerfile
+    image: tts-fastapi-model-server:latest
+    container_name: tts-fastapi-model-server
+    network_mode: host
+    volumes:
+      - "./data:/data"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      HF_HOME: "/data"
+      OMP_NUM_THREADS: ${OMP_NUM_THREADS}
+    ipc: host
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${TTS_PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  tts_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/tts/impl/microservice/Dockerfile
+    image: opea/tts:latest
+    container_name: tts-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      TTS_MODEL_SERVER: "fastapi"
+      TTS_MODEL_SERVER_ENDPOINT: http://localhost:${TTS_PORT}
+      NO_PROXY: ${NO_PROXY}
+    restart: unless-stopped
+    depends_on:
+      tts-model-server:
+        condition: service_healthy

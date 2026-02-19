@@ -1,0 +1,14 @@
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.git
+**/.gitignore
+**/README.md
+**/docker-compose.yml
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+**/.mypy_cache
+**/node_modules
+**/*.log

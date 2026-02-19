@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ARG python_version=3.11
@@ -8,9 +8,13 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y asciidoctor nano libreoffice libgl1-mesa-glx tesseract-ocr libmagic1 && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl

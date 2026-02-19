@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./CheckboxInput.scss";
@@ -18,8 +18,8 @@ type CheckboxInputSize = "sm";
 export type CheckboxInputChangeHandler = (isSelected: boolean) => void;
 
 interface CheckboxInputProps extends AriaCheckboxProps {
-  /** Label for the checkbox input */
-  label: string;
+  /** Label for the checkbox input (optional for standalone checkboxes) */
+  label?: string;
   /** Size of the checkbox input */
   size?: CheckboxInputSize;
   /** Tooltip text for additional info */
@@ -49,6 +49,7 @@ export const CheckboxInput = ({
       className={classNames("checkbox-input", {
         "checkbox-input--sm": size === "sm",
         "checkbox-input--dense": dense,
+        "checkbox-input--standalone": !label,
       })}
     >
       <AriaCheckbox
@@ -62,18 +63,20 @@ export const CheckboxInput = ({
           isSelected ? <CheckboxCheckIcon aria-hidden="true" /> : null
         }
       </AriaCheckbox>
-      <span>
-        <AriaLabel htmlFor={inputId} className="checkbox-input__label">
-          {label}
-        </AriaLabel>
-        {tooltipText && (
-          <Tooltip
-            title={tooltipText}
-            trigger={<InfoIcon />}
-            placement="left"
-          />
-        )}
-      </span>
+      {label && (
+        <span>
+          <AriaLabel htmlFor={inputId} className="checkbox-input__label">
+            {label}
+          </AriaLabel>
+          {tooltipText && (
+            <Tooltip
+              title={tooltipText}
+              trigger={<InfoIcon />}
+              placement="left"
+            />
+          )}
+        </span>
+      )}
     </div>
   );
 };

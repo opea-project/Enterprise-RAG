@@ -7,7 +7,7 @@ Intel® AI for Enterprise RAG simplifies transforming your enterprise data into 
 Enable intelligent AI experiences that understand your business context:
 
 * **Domain-Specific Intelligence** - Enrich conversations and document processing with your organizational knowledge without training or fine-tuning models
-* **Multiple Use Cases** - Support for ChatQ&A for conversational AI and Document Summarization for extracting key insights from documents
+* **Multiple Use Cases** - Support for ChatQ&A for conversational AI, Document Summarization for extracting key insights from documents, and AudioQnA for voice-based question answering
 * **Rapid Deployment** - Transform enterprise documents into AI-powered experiences in minutes, not months
 * **Enterprise-Ready Scale** - Deploy secure, compliant AI solutions that grow with your business needs
 
@@ -84,7 +84,8 @@ Document Summarization's pipeline architecture is available [here](./docs/images
 |---------------------|-------------------------------------------------------------------------------------------------------------------|
 | Operating System    | Ubuntu 22.04/24.04                                                                                                |
 | Hardware Platforms  | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors<br>3rd Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator<br>4th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 2 AI Accelerator <br>6th Gen Intel® Xeon® Scalable processors and Intel® Gaudi® 3 AI Accelerator|
-| Kubernetes Version  | 1.29.5 <br> 1.29.12 <br> 1.30.8 <br> 1.31.4                                                                       |
+| Kubernetes Version  | 1.32.9 <br> 1.33.5                                                                  |
+| Helm Version        | 3.17.0: required for SeaweedFS (default) <br> 3.16.1: supported for other S3-compatible backends <br> **Note:** Helm v4 is not supported |
 | Python              | 3.11                                                                                                              |
 
 ## Software Prerequisites
@@ -114,7 +115,7 @@ To deploy the solution on a platform with Gaudi® AI Accelerator you need to hav
 -  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
--  **Gaudi driver**: `1.22.1`
+-  **Gaudi driver**: `1.22.2`
 
 # Getting Started
 

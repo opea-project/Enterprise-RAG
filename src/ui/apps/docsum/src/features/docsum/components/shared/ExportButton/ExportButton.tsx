@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@intel-enterprise-rag-ui/components";
@@ -11,6 +11,7 @@ interface ExportButtonProps {
 
 const ExportButton = ({ onPress, className }: ExportButtonProps) => (
   <Button
+    data-testid="export-summary-button"
     variant="outlined"
     size="sm"
     className={`flex items-center gap-2 ${className ?? ""}`}

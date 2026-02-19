@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -67,6 +67,7 @@ const RenameActionDialog = ({
 
   return (
     <ActionDialog
+      data-testid="rename-summary-dialog"
       title="Rename Summary"
       isConfirmDisabled={isRenameActionDisabled}
       isOpen={isOpen}
@@ -76,6 +77,7 @@ const RenameActionDialog = ({
     >
       <TextInput
         ref={textInputRef}
+        data-testid="rename-summary-input"
         value={newTitle}
         size="sm"
         label="Summary Title"

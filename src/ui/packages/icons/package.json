@@ -1,25 +1,23 @@
 {
   "name": "@intel-enterprise-rag-ui/icons",
   "private": true,
-  "version": "2.0.1",
+  "version": "2.1.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Icons for Intel Enterprise RAG UI",
-  "main": "./dist/intel-enterprise-rag-ui-icons.umd.cjs",
   "module": "./dist/intel-enterprise-rag-ui-icons.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/intel-enterprise-rag-ui-icons.js",
-      "require": "./dist/intel-enterprise-rag-ui-icons.umd.cjs"
+      "import": "./dist/intel-enterprise-rag-ui-icons.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && vite build"
+    "build": "vite build"
   },
   "dependencies": {
     "react-icons": "^5.3.0"

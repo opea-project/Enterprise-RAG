@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { ActionDialog } from "@intel-enterprise-rag-ui/components";
@@ -26,6 +26,7 @@ const DeleteActionDialog = ({
 
   return (
     <ActionDialog
+      data-testid="delete-summary-dialog"
       title="Delete Summary"
       confirmLabel="Delete"
       confirmColor="error"

@@ -62,7 +62,8 @@ CPU and memory resources for vLLM, reranking, and embedding services are **autom
 
 To adjust these values, modify the resource configuration in your pipeline's `resources-reference-cpu.yaml` file under the `services` section for each component.
 
-**Note:** If `edp.vllm.enabled` is set to `true`, ensure that vLLM resources are also properly configured in the [`edp values file`](../edp/values.yaml) under the `vllm.resources` section.
+> **Note:** If `edp.vllm.enabled` is set to `true`, ensure that vLLM resources are also properly configured in the [`edp values file`](../edp/values.yaml) under the `vllm.resources` section.
+
 
 ## Node Topology Discovery and Scheduling
 

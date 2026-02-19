@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
@@ -53,6 +53,7 @@ class ServiceType(Enum):
     # End GenAIComps exclusive
     DOC_SUMMARY = 35
     LATE_CHUNKING = 36
+    NAMESPACE_STATUS_WATCHER = 37
 
 
 class MegaServiceEndpoint(Enum):

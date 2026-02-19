@@ -3,6 +3,7 @@
     balloons_policy_file: "{{ tmp_dir }}/{{ balloons.helm.release_name }}-{{ item.key }}-override-values.yaml"
   tags:
     - install
+    - update-configuration
 
 - name: Generate Balloons policy
   ansible.builtin.template:
@@ -23,6 +24,7 @@
     cpus_per_numa_node: "{{ item.value.cpus_per_numa_node }}"
   tags:
     - install
+    - update-configuration
 
 - name: Apply balloons policy
   kubernetes.core.k8s:
@@ -30,6 +32,7 @@
     src: "{{ balloons_policy_file }}"
   tags:
     - install
+    - update-configuration
 
 - name: Identify if node is eligible for inference
   set_fact:
@@ -37,14 +40,14 @@
       {{ 'true' if (item.value.amx_supported | bool and optimal_replicas[item.key].replicas | int != 0) else 'false' }}
   tags:
     - install
-
+    - update-configuration
 - name: Identify if node is eligible for vllm
   set_fact:
     inference_eligible_vllm_label: >-
       {{ 'true' if (item.value.amx_supported | bool and optimal_replicas[item.key].replicas | int != 0) else 'false' }}
   tags:
     - install
-
+    - update-configuration
 - name: Label node as inference-eligible for inference
   kubernetes.core.k8s:
     state: patched
@@ -58,6 +61,7 @@
           inference-eligible: "{{ inference_eligible_label | string | lower }}"
   tags:
     - install
+    - update-configuration
 
 - name: Label node as inference-eligible for vllm
   kubernetes.core.k8s:
@@ -72,6 +76,7 @@
           inference-eligible-vllm: "{{ inference_eligible_vllm_label | string | lower }}"
   tags:
     - install
+    - update-configuration
 
 - name: Add taint if node is eligible for vllm
   kubernetes.core.k8s:
@@ -88,6 +93,7 @@
   when: inference_eligible_vllm_label | lower == 'true'
   tags:
     - install
+    - update-configuration
 
 - name: Add taint if node is eligible for inference
   kubernetes.core.k8s:
@@ -104,3 +110,4 @@
   when: inference_eligible_label | lower == 'true'
   tags:
     - install
+    - update-configuration

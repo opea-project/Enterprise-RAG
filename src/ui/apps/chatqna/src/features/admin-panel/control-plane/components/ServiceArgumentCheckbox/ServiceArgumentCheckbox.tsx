@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -41,6 +41,7 @@ const ServiceArgumentCheckbox = ({
 
   return (
     <CheckboxInput
+      data-testid={`service-argument-checkbox-${name}`}
       label={name}
       size="sm"
       tooltipText={tooltipText}

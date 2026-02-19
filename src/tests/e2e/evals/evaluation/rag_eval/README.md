@@ -12,8 +12,8 @@
 - [MultiHop (English dataset)](#multihop-english-dataset)
   - [Evaluation](#evaluation)
   - [Usage Guide](#usage-guide)
+  - [Tips to Control the Evaluation Scope](#tips-to-control-the-evaluation-scope)
 - [Acknowledgements](#acknowledgements)
-
 
 <!-- /TOC -->
 
@@ -28,10 +28,10 @@ For evaluating the accuracy of a RAG pipeline, we use latest published dataset a
 
 
  - Metrics (measure accuracy of both the context retrieval and response generation).
-   - [BLEU](../metrics/bleu)
-   - [ROUGE(L)](../metrics/rogue)
-   - [RAGAS](../metrics/ragas)
-   - [Hits@4, Hits@10, MAP@10, MRR@10](../metrics/retrieval)
+   - [BLEU](../../metrics/bleu)
+   - [ROUGE(L)](../../metrics/rouge)
+   - [RAGAS](../../metrics/ragas)
+   - [Hits@4, Hits@10, MAP@10, MRR@10](../../metrics/retrieval)
    
    See dedicated section [Metrics](#metrics) for full details.
 
@@ -156,26 +156,22 @@ export TEI_MODEL_NAME=BAAI/bge-large-en-v1.5
 
 The following metrics evaluate different aspects of the Retrieval-Augmented Generation (RAG) system, covering document retrieval effectiveness, the quality of generated answers, and the faithfulness and grounding of responses.
 
-| **Category**                        | **Metric**                       | **Description**                                                                                         | 
-| ----------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Retrieval / Reranking**           |                                  | *These metrics assess how effectively the system retrieves relevant documents from the knowledge base.* |
-|                                     | `Hits@K`                         | Proportion of queries with at least one relevant document in the top-K results                          |
-|                                     | `MRR@K` (Mean Reciprocal Rank)   | Reflects how early the first relevant document appears in the top-K ranking                             |
-|                                     | `MAP@K` (Mean Average Precision) | Average precision across all relevant documents in the top-K results                                    |
-| | | | 
-| **Generated Response (End-to-End)** |                                  | *These metrics evaluate the quality of the final answer produced by the full RAG pipeline.*             |
-|                                     | `bleu-avg`, `bleu-1` to `bleu-4` | N-gram precision between generated and reference answers (BLEU-avg is the average of BLEU-n)            |
-|                                     | `rouge-L`                        | Longest common subsequence between generated and reference texts                                        |
-|                                     | `LLM-score`                      | Score given by a large language model acting as a judge of response quality — *Not implemented*         |
-| | | | 
-| **Faithfulness & QA (RAGAS)**       |                                  | *RAGAS metrics are designed to assess factual consistency and contextual grounding.*                    |
-|                                     | `answer_correctness`             | Semantic correctness of the generated answer compared to the ground truth                               |
-|                                     | `answer_relevancy`               | Degree to which the answer addresses the original question                                              |
-|                                     | `semantic_similarity`            | Semantic similarity between generated and reference answer                                              |
-|                                     | `context_precision`              | Precision of retrieved context supporting the answer                                                    |
-|                                     | `context_recall`                 | Recall of relevant context in retrieved content                                                         |
-|                                     | `faithfulness`                   | Degree to which the answer is grounded in the retrieved context (i.e., free from hallucinations)        |
-
+| **Category**                                                                                                                         | **Metric**                             | **Description**                                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Retrieval / Reranking**<br>*These metrics assess how effectively the system retrieves relevant documents from the knowledge base.* | **Hits@K**                             | Proportion of queries with at least one relevant document in the top-K results                   |
+|                                                                                                                                      | **MRR@K** (Mean Reciprocal Rank)       | Reflects how early the first relevant document appears in the top-K ranking                      |
+|                                                                                                                                      | **MAP@K** (Mean Average Precision)     | Average precision across all relevant documents in the top-K results                             |
+| | | |
+| **Generated Response (End-to-End)**<br>*These metrics evaluate the quality of the final answer produced by the full RAG pipeline.*   | **BLEU-avg**, **BLEU-1** to **BLEU-4** | N-gram precision between generated and reference answers (BLEU-avg is the average of BLEU-n)     |
+|                                                                                                                                      | **ROUGE-L**                            | Longest common subsequence between generated and reference texts                                 |
+|                                                                                                                                      | **LLM-score**                          | Score given by a large language model acting as a judge of response quality — *Not implemented*  |
+| | | |
+| **Faithfulness & QA (RAGAS)**<br>*RAGAS metrics are designed to assess factual consistency and contextual grounding.*                | **answer_correctness**                 | Semantic correctness of the generated answer compared to the ground truth                        |
+|                                                                                                                                      | **answer_relevancy**                   | Degree to which the answer addresses the original question                                       |
+|                                                                                                                                      | **semantic_similarity**                | Semantic similarity between generated and reference answer                                       |
+|                                                                                                                                      | **context_precision**                  | Precision of retrieved context supporting the answer                                             |
+|                                                                                                                                      | **context_recall**                     | Recall of relevant context in retrieved content                                                  |
+|                                                                                                                                      | **faithfulness**                       | Degree to which the answer is grounded in the retrieved context (i.e., free from hallucinations) |
 
 
 ## MultiHop (English dataset)
@@ -187,7 +183,7 @@ This evaluation uses [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixu
 
 ### Evaluation
 
-This section explains how to run the evaluation pipeline for Multihop dataset.
+This section explains how to run the evaluation pipeline for MultiHop dataset.
 
 The evaluation script is located at `examples/eval_multihop.py`. 
 
@@ -197,25 +193,27 @@ To list all available arguments and their usage, run:
 python eval_multihop.py --help
 ```
 
-| **Argument**           | **Default Value**                                 | **Description**                                                                                 |
-| ---------------------- |---------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| `--output_dir`         | `./output`                                        | Directory to save evaluation results                                                            |
-| `--auth_file`          | `deployment/ansible-logs/default_credentials.txt` | Path to credentials file with `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD` |
-| `--cluster_config_file`| `deployment/inventory/sample/config.yaml`         | Path to cluster configuration YAML file with deployment settings                                |
-| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json`               | Path to the evaluation dataset                                                                  |
-| `--docs_path`          | `multihop_dataset/corpus.json`                    | Path to the documents for retrieval                                                             |
-| `--limits`             | `100`                                             | Number of queries to evaluate (0 means evaluate all; default: 100)                              |
-| `--ingest_docs`        | *(flag)*                                          | Ingest documents into the vector database (use only on first run)                               |
-| `--generation_metrics` | *(flag)*                                          | Compute text generation metrics (`BLEU`, `ROUGE`)                                               |
-| `--retrieval_metrics`  | *(flag)*                                          | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                          |
-| `--skip_normalize`     | *(flag)*                                          | Skip 'None' separator normalization for exact 1:1 text matching                                 |
-| `--ragas_metrics`      | *(flag)*                                          | Compute RAGAS metrics (answer correctness, context precision, etc.)                             |
-| `--resume_checkpoint`  | *None*                                            | Path to a checkpoint file to resume evaluation from previous state                              |
-| `--keep_checkpoint`    | *(flag)*                                          | Keep the checkpoint file after evaluation (do not delete)                                       |
-| `--llm_judge_endpoint` | `http://localhost:8008`                           | URL of the LLM judge service; only used for RAGAS evaluation                                    |
-| `--embedding_endpoint` | `http://localhost:8090/embed`                     | URL of the embedding service endpoint, only used for RAGAS                                      |
-| `--temperature`        | Read from RAG system config                       | Controls text generation randomness; defaults to RAG system setting if omitted.                 |
-| `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted.                            |
+| **Argument**           | **Default Value**                                 | **Description**                                                                                                                      |
+| ---------------------- |---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `--output_dir`         | `./output`                                        | Directory to save evaluation results                                                                                                 |
+| `--auth_file`          | `deployment/ansible-logs/default_credentials.txt` | Path to credentials file with `KEYCLOAK_ERAG_ADMIN_USERNAME` and `KEYCLOAK_ERAG_ADMIN_PASSWORD`                                      |
+| `--cluster_config_file`| `deployment/inventory/sample/config.yaml`         | Path to cluster configuration YAML file with deployment settings                                                                     |
+| `--dataset_path`       | `multihop_dataset/MultiHopRAG.json`               | Path to the evaluation dataset                                                                                                       |
+| `--docs_path`          | `multihop_dataset/corpus.json`                    | Path to the documents for retrieval                                                                                                  |
+| `--limits`             | `100`                                             | Number of queries to evaluate (0 means evaluate all; default: 100)                                                                   |
+| `--exclude_types`      | *None*                                            | Exclude queries by question type. Queries matching these question types will be skipped. Example: --exclude_types comparison_query   |
+| `--ingest_docs`        | *(flag)*                                          | Ingest documents into the vector database (use only on first run)                                                                    |
+| `--generation_metrics` | *(flag)*                                          | Compute text generation metrics (`BLEU`, `ROUGE`)                                                                                    |
+| `--retrieval_metrics`  | *(flag)*                                          | Compute retrieval metrics (`Hits@K`, `MAP@K`, `MRR@K`)                                                                               |
+| `--skip_normalize`     | *(flag)*                                          | Skip 'None' separator normalization for exact 1:1 text matching                                                                      |
+| `--ragas_metrics`      | *(flag)*                                          | Compute RAGAS metrics (answer correctness, context precision, etc.)                                                                  |
+| `--resume_checkpoint`  | *None*                                            | Path to a checkpoint file to resume evaluation from previous state                                                                   |
+| `--keep_checkpoint`    | *(flag)*                                          | Keep the checkpoint file after evaluation (do not delete)                                                                            |
+| `--llm_judge_endpoint` | `http://localhost:8008`                           | URL of the LLM judge service; only used for RAGAS evaluation                                                                         |
+| `--embedding_endpoint` | `http://localhost:8090/embed`                     | URL of the embedding service endpoint, only used for RAGAS                                                                           |
+| `--temperature`        | Read from RAG system config                       | Controls text generation randomness; defaults to RAG system setting if omitted                                                       |
+| `--max_new_tokens`     | Read from RAG system config                       | Maximum tokens generated; defaults to RAG system setting if omitted                                                                  |
+| `--bucket_names`       | *None*                                            | Filter retrieval and generation by specific bucket names. If not provided, all buckets are used. Example: --bucket_names secondary   |
 
 
 > Note: If `--dataset_path` and `--docs_path` are set to their default values and the corresponding files are not found locally, they will be automatically downloaded at runtime from [yixuantt/MultiHopRAG](https://huggingface.co/datasets/yixuantt/MultiHopRAG) and saved to the expected local paths.
@@ -224,7 +222,7 @@ python eval_multihop.py --help
 
 ### Usage Guide
 
-This section outlines how to run Multihop evaluation of the RAG pipeline using [examples/eval_multihop.py](examples/eval_multihop.py).
+This section outlines how to run MultiHop evaluation of the RAG pipeline using [examples/eval_multihop.py](examples/eval_multihop.py).
   - **Ingest Documents**
 
     To ingest the MultiHop dataset into the RAG system, use the flag `--ingest_docs`:
@@ -250,7 +248,7 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
 
     _Metrics: BLEU, ROUGE, (LLM-score – not implemented yet)_
 
-    To evaluate the quality of RAG generated answers on Multihop queries, run:
+    To evaluate the quality of RAG generated answers on MultiHop queries, run:
 
     ```bash
     # First-time run (with document ingestion)
@@ -266,6 +264,7 @@ This section outlines how to run Multihop evaluation of the RAG pipeline using [
     > NOTE:
     > If you are using custom configuration (e.g., a modified cluster FQDN) or your credentials are in a different location,
     > remember to provide --cluster_config_file and/or --auth_file as shown above in the Ingest Documents section.
+
 
   - **Evaluate Retrieval Quality**
 
@@ -374,6 +373,44 @@ The evaluation results are stored in the output/ directory with detailed logs an
 
 The query and its corresponding ground_truth_text originate from the yixuantt/MultiHopRAG dataset.
 
+### Tips to Control the Evaluation Scope
+
+**Controlling the Number of Queries with `--limits`:**
+
+The `--limits` parameter allows you to control how many queries from the dataset are evaluated. This is particularly useful for quick testing during development to verify that the pipeline works correctly.
+
+```bash
+# Evaluate only the first 2 queries (quick test)
+python eval_multihop.py --generation_metrics --limits 2
+```
+
+**Excluding Specific Query Types with `--exclude_types`:**
+
+The dataset specified by `--dataset_path` (default: multihop_dataset/MultiHopRAG.json) contains queries along with their `question_type`. You can selectively exclude specific query types from evaluation using the `--exclude_types` parameter. This is useful when you want to focus on particular aspects of your RAG system, for example, to compute accuracy metrics separately for each query type and identify which types your RAG handles better or worse.
+
+```bash
+# Exclude comparison queries from evaluation
+python eval_multihop.py --retrieval_metrics --exclude_types comparison_query
+
+# Exclude multiple query types (space-separated)
+python eval_multihop.py --retrieval_metrics --exclude_types comparison_query inference_query
+```
+
+**Filtering Evaluation by Buckets with `--bucket_names`:**
+
+The `--bucket_names` parameter restricts the evaluation to a specified set of buckets. This is useful for analyzing RAG accuracy on targeted document collections.
+
+Behavior:
+- without `--bucket_names`: All buckets are searched.
+- with `--bucket_names`: Only documents from the specified buckets are retrieved and used for answer generation.
+
+```bash
+# Evaluate using only documents from the "secondary" bucket
+python eval_multihop.py --retrieval_metrics --bucket_names secondary
+
+# Evaluate using documents from both "secondary" and "third" buckets
+python eval_multihop.py --retrieval_metrics --bucket_names secondary third
+```
 
 ## Acknowledgements
 This example is mostly adapted from [MultiHop-RAG](https://github.com/yixuantt/MultiHop-RAG) repo, we thank the authors for their great work!

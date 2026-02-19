@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """
@@ -49,7 +49,7 @@ processing, and robotic automation.
 """
 
 
-@allure.testcase("IEASG-T300")
+@allure.testcase("IEASG-T328")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_paste_text_tab_rendered(docsum_ui_helper):
@@ -69,7 +69,7 @@ async def test_paste_text_tab_rendered(docsum_ui_helper):
     logger.info("Paste Text tab is rendered")
 
 
-@allure.testcase("IEASG-T301")
+@allure.testcase("IEASG-T329")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_user_can_fill_textarea(docsum_ui_helper):
@@ -102,45 +102,63 @@ async def test_user_can_fill_textarea(docsum_ui_helper):
     logger.info("User can fill textarea successfully")
 
 
-@allure.testcase("IEASG-T302")
+@allure.testcase("IEASG-T330")
 @pytest.mark.ui
 @pytest.mark.asyncio
 async def test_user_can_generate_summary(docsum_ui_helper):
     """
-    CORE TEST: User fills text and generates a summary.
+    CORE TEST: User fills text and generates a summary with each strategy.
     
-    This is the main user flow:
+    This is the main user flow tested for all 3 strategies:
     1. Fill textarea with text
-    2. Click Generate Summary button
-    3. Verify summary is generated
+    2. Select summarization strategy from dropdown
+    3. Click Generate Summary button
+    4. Verify summary is generated
+    
+    Strategies: Map Reduce, Stuff, Refine.
     """
-    logger.info("Test: User Can Generate Summary (Core Flow)")
+    strategies = [
+        ("map_reduce", "Map Reduce"),
+        ("stuff", "Stuff"),
+        ("refine", "Refine"),
+    ]
     
-    # Step 1: Fill textarea with sample text
-    fill_success = await docsum_ui_helper.fill_textarea("paste-text", SAMPLE_TEXT)
-    assert fill_success, "Failed to fill textarea"
-    logger.info("Step 1: Filled textarea with text")
+    for strategy, strategy_label in strategies:
+        logger.info(f"--- Testing strategy: {strategy_label} ---")
+        
+        # Step 1: Fill textarea with sample text
+        fill_success = await docsum_ui_helper.fill_textarea("paste-text", SAMPLE_TEXT)
+        assert fill_success, f"[{strategy_label}] Failed to fill textarea"
+        logger.info(f"[{strategy_label}] Step 1: Filled textarea with text")
+        
+        await docsum_ui_helper.page.wait_for_timeout(500)
+        
+        # Step 2: Select summarization strategy
+        strategy_selected = await docsum_ui_helper.select_summary_strategy(strategy)
+        assert strategy_selected, f"[{strategy_label}] Failed to select strategy"
+        logger.info(f"[{strategy_label}] Step 2: Selected strategy")
+        
+        await docsum_ui_helper.page.wait_for_timeout(300)
+        
+        # Step 3: Verify Generate Summary button is enabled and click it
+        button_enabled = await docsum_ui_helper.is_generate_summary_button_enabled()
+        assert button_enabled, f"[{strategy_label}] Generate Summary button should be enabled"
+        
+        click_success = await docsum_ui_helper.click_generate_summary_button()
+        assert click_success, f"[{strategy_label}] Failed to click Generate Summary button"
+        logger.info(f"[{strategy_label}] Step 3: Clicked Generate Summary button")
+        
+        # Step 4: Wait for and verify summary generation
+        summary_text = await docsum_ui_helper.wait_for_summary(
+            content_class="generated-summary__content",
+            timeout=60000
+        )
+        
+        assert summary_text is not None, f"[{strategy_label}] No summary was generated"
+        assert len(summary_text.strip()) > 0, f"[{strategy_label}] Summary is empty"
+        
+        logger.info(f"[{strategy_label}] Step 4: Summary generated ({len(summary_text)} chars)")
+        logger.info(f"[{strategy_label}] Summary preview: {summary_text[:100]}...")
+        logger.info(f"[{strategy_label}] PASSED")
     
-    await docsum_ui_helper.page.wait_for_timeout(500)
-    
-    # Step 2: Verify Generate Summary button is enabled and click it
-    button_enabled = await docsum_ui_helper.is_button_enabled("Generate Summary")
-    assert button_enabled, "Generate Summary button should be enabled"
-    
-    click_success = await docsum_ui_helper.click_button("Generate Summary")
-    assert click_success, "Failed to click Generate Summary button"
-    logger.info("Step 2: Clicked Generate Summary button")
-    
-    # Step 3: Wait for and verify summary generation
-    summary_text = await docsum_ui_helper.wait_for_summary(
-        content_class="generated-summary__content",
-        timeout=60000
-    )
-    
-    assert summary_text is not None, "No summary was generated"
-    assert len(summary_text.strip()) > 0, "Summary is empty"
-    
-    logger.info(f"Step 3: Summary generated ({len(summary_text)} chars)")
-    logger.info(f"Summary preview: {summary_text[:100]}...")
-    
-    logger.info("SUCCESS: User can fill text and generate summary")
+    logger.info("SUCCESS: All 3 summarization strategies produced summaries")

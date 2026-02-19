@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -42,6 +42,7 @@ const ServiceArgumentSelectInput = ({
 
   return (
     <SelectInput
+      data-testid={`service-argument-select-input-${name}`}
       value={selected}
       items={options}
       label={name}

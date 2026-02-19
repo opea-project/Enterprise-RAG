@@ -23,9 +23,11 @@ This code implements an interface for connecting to multiple vector store databa
 Support for specific vector databases:
 
 | Vector Database    |  Status   |
-| -------------------| --------- |
-| [REDIS](#redis)    | &#x2713;  |
-| [REDIS-CLUSTER](#redis-cluster)    | &#x2713;  |
+| -------------------| :---------: |
+| [REDIS](#redis)    | &#x2713; |
+| [REDIS-CLUSTER](#redis-cluster) | &#x2713;  |
+| [MSSQL](#microsoft-sql-server) | Experimental |
+| [PGVECTOR](#pgvector) | Deployment only |
 
 ## Getting Started
 
@@ -50,6 +52,23 @@ To configure VectorStore to use Redis, please refer to [ConnectorRedis](#Connect
 
 Configuration is exactly the same as for Redis.
 
+#### Microsoft SQL Server
+
+For more information on this database, refer to https://learn.microsoft.com/en-us/sql/sql-server/what-s-new-in-sql-server-2025?view=sql-server-ver17
+
+> [!NOTE]
+> Role-based access control (RBAC) for vector databases is not supported when using `mssql`.
+
+For browsing and managing MS SQL it is advised to install [SQL Server Management Studio](https://learn.microsoft.com/en-us/ssms/install/install). Then, to connect to the server directly, use port-forward:
+
+```bash
+kubectl port-forward svc/mssql -n vdb --address 0.0.0.0 1433:1433
+```
+
+#### PgVector
+
+For more information on this database, refer to https://github.com/pgvector/pgvector
+
 ### VectorStore implementations
 
 To use VectorStore with a specific database, you should not only select it as shown in the [example usage](#example-usage). Based on available endpoints defined in the [support matrix](#support-matrix) each database endpoint requires some minimum configuration. Configuration parameters for individual databases are shown below.
@@ -71,6 +90,42 @@ Or use more specific configuration for endpoint URL:
 | REDIS_SSL            | false         | Schema to use, if `true` is passed, `rediss://` schema is used              |
 | REDIS_USERNAME       | Not set       | Database username (Optional)                                                |
 | REDIS_PASSWORD       | Not set       | Database password (Optional)                                                |
+
+#### ConnectorMssql
+
+Configure the full endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| MSSQL_URL            | Not set       | Connection string for MS SQL Server |
+
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| MSSQL_HOST           | localhost     | Hostname or IP Address |
+| MSSQL_PORT           | 1433          | Default port |
+| MSSQL_DB             | 'vdb'         | Default database name |
+| MSSQL_USER           | 'edp'         | Database username |
+| MSSQL_PASSWORD       | Not set       | Database password |
+
+#### ConnectorPgVector
+
+Configure the full endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| POSTGRES_URL            | Not set       | Connection string for Postgresql |
+
+Or use more specific configuration for endpoint URL:
+
+| Environment Variable | Default Value | Description                                                                 |
+|----------------------|---------------|-----------------------------------------------------------------------------|
+| POSTGRES_HOST           | localhost     | Hostname or IP Address |
+| POSTGRES_PORT           | 5432          | Default port |
+| POSTGRES_DB             | 'vdb'         | Default database name |
+| POSTGRES_USERNAME       | 'edp'         | Database username |
+| POSTGRES_PASSWORD       | Not set       | Database password |
 
 ### Example usage
 

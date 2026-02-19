@@ -1,0 +1,28 @@
+{{- if index .Values "app-monitors" "enabled" }}
+{{- $audioEnabled := false }}
+{{- if hasKey .Values "audio" }}
+{{- if hasKey .Values.audio "enabled" }}
+{{- $audioEnabled = .Values.audio.enabled }}
+{{- end }}
+{{- end }}
+{{- if $audioEnabled }}
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: asr-svc
+  namespace: monitoring
+  labels:
+    release: {{.Release.Name}}
+spec:
+  namespaceSelector:
+    matchNames:
+    - audio
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: asr
+  endpoints:
+  - port: "http"
+{{- end }}
+{{- end }}

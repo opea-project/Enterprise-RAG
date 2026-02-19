@@ -1,5 +1,5 @@
 ---
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 vector_databases:
@@ -40,3 +40,6 @@ vector_databases:
       enabled: true
       size: "8Gi"
       storageClass: ""  # Empty means use default storage class
+
+  mssql:
+    mssql_pid: "Express"

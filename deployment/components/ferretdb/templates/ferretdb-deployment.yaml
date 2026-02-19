@@ -1,3 +1,4 @@
+{{- include "ferretdb.verifyIsDependency" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

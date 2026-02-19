@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 REGISTRY_NAME=localhost:5000
@@ -132,10 +132,13 @@ tag_and_push() {
     log_info "Starting push for $full_image_name"
 
     if [[ "$registry_url" == *"aws"* ]]; then
-        if ! aws ecr describe-repositories --repository-names "$repo_name" > /dev/null 2>&1; then
-            log_info "Creating ECR repository $repo_name"
-            aws ecr create-repository \
-                --repository-name "${repo_name}" > /dev/null 2>&1
+        log_info "Checking if repository ${repo_name}/${image} exists in ${registry_url}"
+        aws ecr describe-repositories --repository-names "${repo_name}/${image}" > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            log_info "Repository ${repo_name}/${image} exists in ${registry_url}"
+        else
+            log_info "Repository ${repo_name}/${image} does not exist in ${registry_url}. Creating it..."
+            aws ecr create-repository --repository-name "${repo_name}/${image}" > /dev/null 2>&1
         fi
     fi
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -17,9 +17,9 @@ from minio.error import S3Error
 from urllib.parse import unquote_plus
 from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket, get_local_minio_client_using_token_credentials
 from app.database import get_db
-from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse
+from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse, SeaweedFSEventData
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
-from app.rbac import RBACFactory
+from app.rbac import RBACFactory, get_seaweedfs_client_using_bearer_token
 from celery.result import AsyncResult
 from comps.cores.mega.logger import change_opea_logger_level, get_opea_logger
 from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -39,6 +39,39 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 
 minio_external = get_remote_minio_client()
 minio_internal = get_local_minio_client()
+
+def is_directory_marker(object_name: str, size: int = None, content_type: str = None) -> bool:
+    """
+    Check if an object is a directory marker rather than an actual file.
+
+    Directory markers can be:
+    1. Objects ending with '/'
+    2. Zero-byte objects with directory-related content types
+    3. Zero-byte objects without file extensions (likely implicit directories)
+
+    Args:
+        object_name: The name/path of the object
+        size: The size of the object in bytes (optional)
+        content_type: The MIME type of the object (optional)
+
+    Returns:
+        True if the object appears to be a directory marker, False otherwise
+    """
+    if object_name.endswith('/'):
+        return True
+
+    if content_type is not None and content_type.lower() in [
+            'application/x-directory',
+            'inode/directory',
+            'application/directory',
+            'httpd/unix-directory'
+        ]:
+        return True
+
+    if size is not None and size == 0:
+        return True
+
+    return False
 
 @app.get('/health')
 def health_check():
@@ -145,6 +178,25 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
 # -------------- Minio operations ------------
 
 
+def ensure_bucket_exists(client, bucket_name: str):
+    try:
+        if not client.bucket_exists(bucket_name):
+            raise HTTPException(status_code=404, detail="Bucket not found")
+    except S3Error as e:
+        error_code = getattr(e, "code", "")
+        if error_code == "NoSuchBucket":
+            raise HTTPException(status_code=404, detail="Bucket not found")
+        if error_code == "AccessDenied":
+            raise HTTPException(status_code=403, detail="Access denied")
+        logger.error(f"Error checking bucket existence for {bucket_name}: {e}")
+        raise HTTPException(status_code=503, detail="Error checking bucket existence")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error checking bucket existence for {bucket_name}: {e}")
+        raise HTTPException(status_code=503, detail="Error checking bucket existence")
+
+
 @app.post('/api/presignedUrl')
 def presigned_url(input: PresignedRequest, request: Request) -> PresignedResponse:
     """
@@ -189,6 +241,31 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
         credentials = None
         access_token = request.headers.get('Authorization')
         token_fallback = str(os.getenv('PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK')).lower() in ['true', '1', 't', 'y', 'yes']
+        bearer_token_auth = str(os.getenv('USE_BEARER_TOKEN_AUTH')).lower() in ['true', '1', 't', 'y', 'yes']
+
+        if bearer_token_auth:
+            logger.info("presigned_url: advanced IAM mode enabled")
+
+            if not access_token:
+                raise ValueError("Authorization header is required for the OIDC Bearer auth mode.")
+
+            access_token = access_token.replace('Bearer ', '')
+            token = { "access_token": access_token }
+            token_client = get_seaweedfs_client_using_bearer_token(token)
+            ensure_bucket_exists(token_client, bucket_name)
+
+            # Get the external S3 endpoint URL
+            external_url = os.getenv('EDP_EXTERNAL_URL', 'https://s3.erag.com')
+            # Ensure no trailing slash
+            external_url = external_url.rstrip('/')
+
+            # Build simple direct URL, SeaweedFS validates the Bearer token at request time
+            url = f"{external_url}/{bucket_name}/{object_name}"
+
+            logger.debug(f"presigned_url: URL: {url}")
+            return PresignedResponse(url=url)
+
+        bucket_check_client = minio_internal
         if access_token:
             access_token = access_token.replace('Bearer ', '')
             token = { "access_token": access_token }
@@ -196,6 +273,7 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
             try:
                 local_client._provider.retrieve() # throws ValueError
                 credentials = local_client._provider._credentials
+                bucket_check_client = local_client
             except (ValueError, urllib3.exceptions.MaxRetryError) as e:
                 if token_fallback:
                     logger.warning(f"Falling back to system credentials for presignedUrl due to a problem with retrieving token credentials. {e}")
@@ -208,6 +286,9 @@ def presigned_url(input: PresignedRequest, request: Request) -> PresignedRespons
                 credentials = None # System credentials will be used inside generate_presigned_url() when credentials is None
             else:
                 raise ValueError("Authorization header is required for token credentials and system fallback is disabled.")
+
+        ensure_bucket_exists(bucket_check_client, bucket_name)
+
         url = generate_presigned_url(minio_external, method, bucket_name, object_name, expiry, region, credentials)
         logger.debug(f"Generated presignedUrl for [{method}] {bucket_name}/{object_name}")
         return PresignedResponse(url=url)
@@ -449,6 +530,9 @@ def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_f
             for bucket_name in bucket_names:
                 files = client.list_objects(bucket_name)
                 for obj in files:
+                    if is_directory_marker(obj.object_name, obj.size, getattr(obj, 'content_type', None)):
+                        logger.debug(f"Skipping directory marker: {obj.object_name} in bucket {bucket_name}")
+                        continue
                     file_status = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == obj.object_name).first()
                     if file_status:
                         if file_status.etag != obj.etag or file_status.size != obj.size:
@@ -474,7 +558,8 @@ def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_f
         try:
             for bucket_name in bucket_names:
                 files = client.list_objects(bucket_name)
-                objects = [obj.object_name for obj in files]
+                # Filter out directory markers when building object list
+                objects = [obj.object_name for obj in files if not is_directory_marker(obj.object_name, obj.size, getattr(obj, 'content_type', None))]
                 files_in_db_but_not_in_minio = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name.notin_(objects)).all()
 
                 for obj in files_in_db_but_not_in_minio:
@@ -517,6 +602,10 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
             etag = record.s3.object.eTag
             content_type = record.s3.object.contentType
             size = record.s3.object.size or 0
+
+            if is_directory_marker(object_name, size, content_type):
+                logger.debug(f"Skipping directory marker: {object_name} in bucket {bucket_name}")
+                return JSONResponse(content={'message': 'Directory marker ignored'})
             try:
                 add_new_file(bucket_name, object_name, etag, content_type, size)
             except Exception as e:
@@ -541,6 +630,66 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
         return JSONResponse(content={'message': 'File(s) deleted successfully'})
 
     raise HTTPException(status_code=501, detail="Event not implemented")
+
+
+@app.post('/seaweedfs_event')
+def process_seaweedfs_event(event: SeaweedFSEventData):
+    """
+    Processes events from SeaweedFS.
+    Handles 'create', 'update' and 'delete' events
+
+    SeaweedFS sends events with this structure:
+    {
+        "key": "/path/to/file",
+        "event_type": "...",
+        "message": {
+            "old_entry": {...},
+            "new_entry": {...},
+            "delete_chunks": ...,
+            "signatures": ...
+    }
+    """
+    logger.info(f"Received SeaweedFS event: {event}")
+
+    key_parts = event.key.strip('/').split('/', 2)
+
+    bucket_name = unquote_plus(key_parts[1])
+    object_name = unquote_plus(key_parts[2])
+
+    if event.event_type in ['create', 'update', 'rename']:
+        if not event.message or not event.message.new_entry:
+            logger.warning(f"{event.event_type} event missing new_entry")
+            raise HTTPException(status_code=400, detail="Missing new_entry")
+
+        # Example new_entry: {'name': 'text.txt', 'attributes': {'file_size': 186, 'mime': 'text/plain', 'md5': '...'}}
+        # For simplicity, we use available md5 provided by seaweedfs as a tag
+        new_entry = event.message.new_entry
+        attributes = new_entry.get('attributes', {})
+        logger.info(f"Extracted attributes: {attributes}")
+        size = attributes.get('file_size', 0)
+        content_type = attributes.get('mime', 'application/octet-stream')
+        etag = attributes.get('md5', '')
+
+        if is_directory_marker(object_name, size, content_type):
+            logger.debug(f"Skipping directory marker: {object_name} in bucket {bucket_name}")
+            return JSONResponse(content={'message': 'Directory marker ignored'})
+
+        try:
+            add_new_file(bucket_name, object_name, str(etag), content_type, size)
+            return JSONResponse(content={'message': 'File uploaded successfully'})
+        except Exception as e:
+            logger.error(f"Error adding file to database: {e}")
+            raise HTTPException(status_code=500, detail="Error adding file")
+
+    elif event.event_type == 'delete':
+        try:
+            delete_existing_file(bucket_name, object_name)
+            return JSONResponse(content={'message': 'File deleted successfully'})
+        except Exception as e:
+            logger.error(f"Error deleting existing file: {e}")
+            raise HTTPException(status_code=500, detail="Error deleting file")
+
+    return JSONResponse(content={'message': f'Event {event.event_type} ignored'})
 
 
 # ------------- API link management ------------

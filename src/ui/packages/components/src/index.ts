@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 export * from "@/ActionDialog/ActionDialog";
@@ -13,6 +13,7 @@ export * from "@/ColorSchemeSwitch/useColorScheme";
 export * from "@/CopyButton/CopyButton";
 export * from "@/DataTable/DataTable";
 export * from "@/Dialog/Dialog";
+export * from "@/DropdownButton/DropdownButton";
 export * from "@/FileInput/FileInput";
 export * from "@/IconButton/IconButton";
 export * from "@/Label/Label";

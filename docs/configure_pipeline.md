@@ -195,3 +195,16 @@ pipelines:
 ```
 
 This allows you to control which model list and configuration are used for each pipeline deployment.
+
+
+## Switching Pipeline Modes
+
+Intel® AI for Enterprise RAG supports switching between different pipeline configurations to optimize for specific workloads:
+
+- **ChatQA Pipeline**: Complete RAG workflow including embedding, retrieval, reranking, and LLM inference for interactive queries
+- **Upload-Optimized Pipeline**: Streamlined configuration focused on document embedding and ingestion for high-throughput bulk upload operations
+
+The upload-optimized pipeline reduces resource consumption by 60-80% while increasing embedding throughput by 3-6x, making it ideal for large-scale document ingestion tasks.
+
+For detailed information on pipeline switching, including step-by-step configuration instructions, use cases, performance characteristics, and best practices, see:
+- **[switching_pipelines.md](switching_pipelines.md)** - Complete guide to switching between ChatQA and upload-optimized pipeline configurations

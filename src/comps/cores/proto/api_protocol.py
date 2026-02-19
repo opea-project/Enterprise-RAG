@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import time
@@ -460,7 +460,8 @@ class AudioSpeechRequest(BaseModel):
     model: Optional[str] = "microsoft/speecht5_tts"
     voice: Optional[str] = "default"
     response_format: Optional[str] = "mp3"
-    speed: Optional[NonNegativeFloat] = 1.0
+    streaming: Optional[bool] = False
+    instructions: Optional[str] = None
 
 
 class ChatMessage(BaseModel):

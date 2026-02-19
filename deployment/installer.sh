@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # EXPERIMENTAL FEATURE
@@ -12,7 +12,7 @@ set -o pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONFIG_DIR="inventory"
-DEFAULT_CONFIG="${ERAG_CONFIG_DIR:-${CONFIG_DIR}/cluster}"
+DEFAULT_CONFIG="${CONFIG_DIR}/cluster"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -100,7 +100,6 @@ show_help() {
     echo "  -h, --help              - Show this help message"
     echo ""
     echo "Environment Variables:"
-    echo "  ERAG_CONFIG_DIR         - Default config directory path (config.yaml/inventory.ini will be loaded from this directory)"
     echo "  HF_TOKEN                - Hugging Face token for private model access"
     echo "  KUBECONFIG              - Path to kubeconfig file for cluster access"
     echo ""
@@ -128,10 +127,6 @@ show_help() {
     echo "  # Build and push custom images"
     echo "  $0 setup images --tag=custom_build --registry=your-registry.com"
     echo ""
-    echo "  # Using environment variable for config directory:"
-    echo "  export ERAG_CONFIG_DIR=/path/to/your/config-dir"
-    echo "  $0 application install --config=\$ERAG_CONFIG_DIR/config.yaml --inventory=\$ERAG_CONFIG_DIR/inventory.ini"
-    echo ""
 }
 
 
@@ -142,19 +137,49 @@ VENV_PATH="$SCRIPT_DIR/$VENV_NAME"
 setup_initialize() {
     log "INFO" "Initializing Enterprise RAG virtual environment..."
     
-    if ! python3 -m venv --help &> /dev/null; then
-        log "WARN" "python3-venv module not found. Installing..."
+    # Always use system Python for venv creation, not any activated venv
+    local SYSTEM_PYTHON="/usr/bin/python3"
+    if [[ ! -x "$SYSTEM_PYTHON" ]]; then
+        SYSTEM_PYTHON=$(command -v python3)
+    fi
+    
+    local python_version
+    python_version=$($SYSTEM_PYTHON --version 2>&1 | grep -oP '\d+\.\d+')
+    local venv_package="python${python_version}-venv"
+    
+    local test_venv_dir
+    test_venv_dir=$(mktemp -d)
+    if ! $SYSTEM_PYTHON -m venv "$test_venv_dir/test-venv" &> /dev/null; then
+        rm -rf "$test_venv_dir"
+        log "WARN" "python3-venv module not working (ensurepip not available)."
         if command -v apt &> /dev/null; then
-            sudo apt update && sudo apt install -y python3-venv
+            log "INFO" "Attempting to install $venv_package (requires sudo)..."
+            if sudo -n true 2>/dev/null; then
+                # Passwordless sudo available
+                sudo apt update && sudo apt install -y "$venv_package"
+            else
+                # Need password for sudo
+                log "INFO" "sudo password required to install $venv_package"
+                sudo apt update && sudo apt install -y "$venv_package"
+            fi
+            if [[ $? -ne 0 ]]; then
+                log "ERROR" "Failed to install $venv_package. Please install it manually:"
+                log "ERROR" "  sudo apt install $venv_package"
+                return 1
+            fi
         else
-            log "ERROR" "This script is designed for Ubuntu/Debian systems. Please install python3-venv manually."
+            log "ERROR" "python3-venv is required but not installed."
+            log "ERROR" "Please install it manually using your package manager:"
+            log "ERROR" "sudo apt install $venv_package"
             return 1
         fi
+    else
+        rm -rf "$test_venv_dir"
     fi
     
     if [[ ! -d "$VENV_PATH" ]]; then
         log "INFO" "Creating virtual environment at: $VENV_PATH"
-        python3 -m venv "$VENV_PATH"
+        $SYSTEM_PYTHON -m venv "$VENV_PATH"
         if [[ $? -ne 0 ]]; then
             log "ERROR" "Failed to create virtual environment"
             return 1
@@ -361,21 +386,15 @@ parse_options() {
     fi
 
     # Log configuration
-    if [[ -n "$PARSED_CONFIG_FILE" && "$PARSED_CONFIG_DIR" == "$ERAG_CONFIG_DIR" && -n "$ERAG_CONFIG_DIR" ]]; then
-        log "INFO" "Using config from ERAG_CONFIG_DIR directory: $PARSED_CONFIG_FILE"
-    elif [[ -n "$PARSED_CONFIG_FILE" && "$PARSED_CONFIG_DIR" == "$DEFAULT_CONFIG" ]]; then
-        log "INFO" "Using default config: $PARSED_CONFIG_FILE"
-    elif [[ "$PARSED_CONFIG_EXPLICIT" == "true" ]]; then
+    if [[ "$PARSED_CONFIG_EXPLICIT" == "true" ]]; then
         log "INFO" "Using config from --config flag: $PARSED_CONFIG_FILE"
+    else
+        log "INFO" "Using default config: $PARSED_CONFIG_FILE"
     fi
 
     # Log inventory
-    if [[ -n "$PARSED_INVENTORY_FILE" && "$PARSED_CONFIG_DIR" == "$ERAG_CONFIG_DIR" && -n "$ERAG_CONFIG_DIR" ]]; then
-        log "INFO" "Using inventory from ERAG_CONFIG_DIR directory: $PARSED_INVENTORY_FILE"
-    elif [[ -n "$PARSED_INVENTORY_FILE" && "$PARSED_CONFIG_DIR" == "$DEFAULT_CONFIG" ]]; then
-        log "INFO" "Using default inventory: $PARSED_INVENTORY_FILE"
-    elif [[ -n "$PARSED_INVENTORY_FILE" ]]; then
-        log "INFO" "Using inventory from --inventory flag: $PARSED_INVENTORY_FILE"
+    if [[ -n "$PARSED_INVENTORY_FILE" ]]; then
+        log "INFO" "Using inventory: $PARSED_INVENTORY_FILE"
     fi
 
     if [[ -n "$PARSED_CUSTOM_TAG" ]]; then
@@ -476,15 +495,13 @@ run_ansible_playbook() {
         extra_args+=" -e registry=$PARSED_CUSTOM_REGISTRY"
     fi
 
-    # Use virtual environment ansible-playbook if available, otherwise use system ansible
+    # Use ansible-playbook from PATH (user must have sourced the venv or have ansible installed)
     local ansible_cmd="ansible-playbook"
-    if [ -f "$VENV_PATH/bin/ansible-playbook" ]; then
-        ansible_cmd="$VENV_PATH/bin/ansible-playbook"
-        log "DEBUG" "Using virtual environment ansible-playbook: $ansible_cmd"
-    else
-        log "WARNING" "Virtual environment not found, using system ansible-playbook"
-        log "INFO" "For better isolation, create venv with: $0 setup python-env"
-        log "INFO" "Then activate it with: source $VENV_PATH/bin/activate"
+    if ! command -v ansible-playbook &> /dev/null; then
+        log "ERROR" "ansible-playbook not found in PATH"
+        log "INFO" "Run: $0 setup python-env"
+        log "INFO" "Then activate: source $VENV_PATH/bin/activate"
+        return 1
     fi
     
     local cmd="$ansible_cmd -u $USER $become_flag $inventory_flag $SCRIPT_DIR/playbooks/$playbook.yaml --tags $tags -e @$config_file $PARSED_VERBOSITY $extra_args"
@@ -537,7 +554,7 @@ setup_interactive_config() {
     echo -e "${BLUE}=== Inventory Type Selection ===${NC}"
     echo "Choose inventory type for your deployment:"
     echo "  1) localhost  - Deploy applications on existing Kubernetes cluster (localhost only)"
-    echo "  2) sample     - Multi-node cluster deployment with sample inventory"
+    echo "  2) remote     - Remote cluster deployment (multi-node)"
     echo ""
     echo -n "Select inventory type (1 or 2) [1]: "
     read -r inventory_choice
@@ -549,7 +566,7 @@ setup_interactive_config() {
         log "INFO" "Selected localhost inventory"
     elif [[ "$inventory_choice" == "2" ]]; then
         inventory_type="sample"
-        log "INFO" "Selected sample inventory for multi-node cluster"
+        log "INFO" "Selected remote cluster deployment (multi-node)"
     else
         log "ERROR" "Invalid selection. Please choose 1 or 2"
         exit 1
@@ -562,6 +579,20 @@ setup_interactive_config() {
         cp "$CONFIG_DIR/sample/config.yaml" "$config_dir/"
         log "INFO" "Using inventory.ini from $inventory_type"
         cp "$CONFIG_DIR/$inventory_type/inventory.ini" "$config_dir/"
+    fi
+
+    if [[ "$inventory_type" == "sample" ]]; then
+        log "INFO" ""
+        log "INFO" "============================================================"
+        log "INFO" "Please edit the inventory file before proceeding:"
+        log "INFO" "  $config_dir/inventory.ini"
+        log "INFO" ""
+        log "INFO" "You need to fill in:"
+        log "INFO" "  - Node hostnames and IP addresses (ansible_host=<ip>)"
+        log "INFO" "  - SSH username (ansible_user=<user>)"
+        log "INFO" "  - Control plane and worker node assignments"
+        log "INFO" "============================================================"
+        log "INFO" ""
     fi
 
     log "INFO" "Press Enter to keep current values, or type new values"
@@ -730,21 +761,8 @@ deploy_complete_stack() {
     log "INFO" "Prerequisites: config.yaml and inventory file must be provided"
     echo ""
     
-    # Initialize virtual environment
-    log "INFO" "Step 1/4: Initializing Python virtual environment..."
-    if [[ -d "$VENV_PATH" ]]; then
-        log "INFO" "Virtual environment already exists at: $VENV_PATH - skipping initialization"
-    else
-        if ! setup_initialize; then
-            log "ERROR" "Failed to initialize Python virtual environment"
-            exit 1
-        fi
-    fi
-    log "SUCCESS" "Virtual environment ready"
-    echo ""
-    
     # Validate configuration
-    log "INFO" "Step 2/4: Configure machine to prepare for deployment..."
+    log "INFO" "Step 1/3: Configure machine to prepare for deployment..."
     if ! run_ansible_playbook "setup" "configure" "$config_dir" true ""; then
         log "ERROR" "Configuration failed"
         exit 1
@@ -752,8 +770,7 @@ deploy_complete_stack() {
     log "SUCCESS" "Configuration setup completed"
     echo ""
 
-
-    log "INFO" "Step 3/4: Deploying Kubernetes cluster..."
+    log "INFO" "Step 2/3: Deploying Kubernetes cluster..."
     if ! run_ansible_playbook "infrastructure" "install" "$config_dir" true "-e deploy_k8s=true"; then
         log "ERROR" "Kubernetes cluster deployment failed"
         exit 1
@@ -762,7 +779,7 @@ deploy_complete_stack() {
     echo ""
 
     # Deploy Enterprise RAG application
-    log "INFO" "Step 4/4: Deploying Enterprise RAG application stack..."
+    log "INFO" "Step 3/3: Deploying Enterprise RAG application stack..."
     if ! run_ansible_playbook "application" "install" "$config_dir" false ""; then
         log "ERROR" "Enterprise RAG application deployment failed"
         exit 1
@@ -782,10 +799,8 @@ deploy_complete_stack() {
     log "SUCCESS" "=== Enterprise RAG Stack Deployment Completed Successfully! ==="
     echo ""
     echo -e "${GREEN}Deployment Summary:${NC}"
-    echo "  ✓ System prerequisites validated"
     echo "  ✓ Configuration setup completed"
     echo "  ✓ Kubernetes cluster deployed"
-    echo "  ✓ Post-installation tasks completed"
     echo "  ✓ Enterprise RAG application deployed"
     echo ""
     printf "  ${GREEN}Total deployment time: "
@@ -841,19 +856,6 @@ delete_complete_stack() {
     log "WARN" "Starting deletion process in 5 seconds... Press Ctrl+C to abort"
     sleep 5
     
-    # Initialize virtual environment
-    log "INFO" "Initializing Python virtual environment..."
-    if [[ -d "$VENV_PATH" ]]; then
-        log "INFO" "Virtual environment already exists at: $VENV_PATH - skipping initialization"
-    else
-        if ! setup_initialize; then
-            log "ERROR" "Failed to initialize Python virtual environment"
-            exit 1
-        fi
-    fi
-    log "SUCCESS" "Virtual environment ready"
-    echo ""
-    
     # Validate configuration exists
     if [[ ! -f "$config_dir/config.yaml" ]]; then
         log "ERROR" "Configuration file not found at $config_dir/config.yaml"
@@ -864,7 +866,9 @@ delete_complete_stack() {
     # Step 1: Uninstall Enterprise RAG application
     log "INFO" "Step 1/3: Uninstalling Enterprise RAG application..."
     if ! run_ansible_playbook "application" "uninstall" "$config_dir" false ""; then
-        log "WARN" "Some issues occurred during application uninstall, continuing..."
+        log "ERROR" "Application uninstall step failed."
+        log "WARN" "Proceeding with cluster removal despite application uninstall failure..."
+        log "INFO" "You may need to manually clean up application resources later."
     else
         log "SUCCESS" "Enterprise RAG application uninstalled"
     fi
@@ -877,10 +881,12 @@ delete_complete_stack() {
     if [[ "$deploy_k8s" == "true" ]]; then
         log "INFO" "Step 2/3: Deleting Kubernetes cluster..."
         if ! run_ansible_playbook "infrastructure" "delete" "$config_dir" true "-e deploy_k8s=true"; then
-            log "ERROR" "Some issues occurred during cluster deletion, exiting..."
-            exit 1
+            log "ERROR" "Cluster deletion step failed."
+            log "WARN" "Proceeding with cluster removal cleanup despite cluster deletion failure..."
+            log "INFO" "You may need to manually clean up cluster resources on the nodes."
+        else
+            log "SUCCESS" "Kubernetes cluster deleted"
         fi
-        log "SUCCESS" "Kubernetes cluster deleted"
         echo ""
         
         log "INFO" "Step 3/3: Cleaning up remaining resources..."
@@ -933,13 +939,14 @@ main() {
     # Parse all command-line options first
     parse_options "$@"
 
-    # Check virtual environment status
-    if [[ -d "$VENV_PATH" ]]; then
-        log "INFO" "Enterprise RAG virtual environment found at: $VENV_PATH"
-        source "$VENV_PATH/bin/activate"
-    else
-        log "WARN" "No Enterprise RAG virtual environment found"
-        log "INFO" "To create and install packages: $0 setup python-env"
+    # Skip venv check for python-env setup and config (no ansible needed)
+    if [[ "$PARSED_COMPONENT" == "setup" && ("$PARSED_ACTION" == "python-env" || "$PARSED_ACTION" == "config") ]]; then
+        log "INFO" "Running setup $PARSED_ACTION..."
+    elif ! command -v ansible-playbook &> /dev/null; then
+        log "WARN" "ansible-playbook not found in PATH"
+        log "INFO" "Create the virtual environment: $0 setup python-env"
+        log "INFO" "Then activate it: source $VENV_PATH/bin/activate"
+        exit 1
     fi
 
     # Process commands based on component and action
@@ -950,7 +957,11 @@ main() {
                     setup_initialize
                     ;;
                 "configure")
-                    log "INFO" "You will be asked for sudo password for localhost to install required tools."
+                    log "INFO" "The configure step requires sudo privileges to install system dependencies."
+                    log "INFO" "This includes tools like kubectl, helm, and other prerequisites."
+                    if ! sudo -n true 2>/dev/null; then
+                        log "INFO" "You may be prompted for your sudo password."
+                    fi
                     run_ansible_playbook "setup" "configure" "$PARSED_CONFIG_DIR" true ""
                     ;;
                 "images")

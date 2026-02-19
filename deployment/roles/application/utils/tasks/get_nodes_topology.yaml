@@ -1,7 +1,6 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
----
 - name: Ensure topology-discovery namespace exists
   kubernetes.core.k8s:
     state: present
@@ -11,8 +10,9 @@
       metadata:
         name: topology-discovery
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: label topology-discovery namespace
   kubernetes.core.k8s:
@@ -26,8 +26,9 @@
           pod-security.kubernetes.io/enforce: "privileged"
   when: enforcePSS
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Create a topology discovery daemonset
   kubernetes.core.k8s:
@@ -58,29 +59,113 @@
             containers:
             - name: ubuntu
               image: ubuntu
-              command: [ "sleep", "infinity" ]
+              command: ["sleep", "infinity"]
             restartPolicy: Always
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Wait for node-topology-debugger pods to be ready
   kubernetes.core.k8s_info:
     kind: Pod
     namespace: topology-discovery
     label_selectors:
-      - app=node-topology-debugger
+    - app=node-topology-debugger
   register: pods_info
   until: pods_info.resources | length > 0 and (pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length) == (pods_info.resources | length)
   retries: 30
   delay: 10
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Initialize cpu_topology_per_node dict
   set_fact:
     cpu_topology_per_node: {}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Determine effective resource path based on upload mode
+  set_fact:
+    effective_resources_path: >-
+      {{
+        (upload_pipelines_config | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+        if (upload_pipelines | default(false) | bool)
+        else (pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | map(attribute='resourcesPath') | first)
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Validate pipelines configuration
+  block:
+
+    - name: Ensure pipelines list is defined and not empty
+      fail:
+        msg: |
+          ERROR: 'pipelines' is empty or not defined in config.yaml.
+
+          At least one pipeline must be configured.
+      when: pipelines | default([]) | length == 0
+
+    - name: Ensure at least one chatqa or docsum pipeline exists
+      fail:
+        msg: |
+          ERROR: No pipeline of type 'chatqa' or 'docsum' found in config.yaml.
+
+          At least one pipeline with type 'chatqa' or 'docsum' must be defined.
+          Configured pipeline types: {{ pipelines | map(attribute='type') | list | join(', ') }}
+      when: pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) | length == 0
+
+    - name: Check existence of samplePath files
+      stat:
+        path: "{{ pipelines_dir }}/{{ item.samplePath }}"
+      register: sample_path_checks
+      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop_control:
+        label: "{{ item.samplePath }}"
+
+    - name: Fail if any samplePath file is missing
+      fail:
+        msg: |
+          ERROR: Pipeline samplePath file not found.
+
+          Namespace: {{ item.item.namespace }}
+          samplePath (config.yaml): {{ item.item.samplePath }}
+
+          Please verify that 'samplePath' points to an existing file.
+      when: not item.stat.exists
+      loop: "{{ sample_path_checks.results }}"
+      loop_control:
+        label: "{{ item.item.samplePath }}"
+
+    - name: Check existence of resourcesPath files
+      stat:
+        path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
+      register: resources_path_checks
+      loop: "{{ pipelines | selectattr('type', 'in', ['chatqa', 'docsum']) }}"
+      loop_control:
+        label: "{{ item.resourcesPath }}"
+
+    - name: Fail if any resourcesPath file is missing
+      fail:
+        msg: |
+          ERROR: Pipeline resourcesPath file not found.
+
+          Namespace: {{ item.item.namespace }}
+          resourcesPath (config.yaml): {{ item.item.resourcesPath }}
+
+          Please verify that 'resourcesPath' points to an existing file.
+      when: not item.stat.exists
+      loop: "{{ resources_path_checks.results }}"
+      loop_control:
+        label: "{{ item.item.resourcesPath }}"
+
   tags:
     - install
     - topology-preview
@@ -91,12 +176,7 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
@@ -104,8 +184,9 @@
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Set RERANKER_CPUS from resources reference file
   set_fact:
@@ -113,12 +194,7 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
@@ -126,8 +202,37 @@
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Detect embedding service type from pipeline
+  set_fact:
+    embedding_service_type: >-
+      {{
+        (
+          (
+            lookup('file', pipelines_dir ~ '/' ~ (
+              pipelines
+              | selectattr('type', 'in', ['chatqa', 'docsum'])
+              | map(attribute='samplePath')
+              | first
+            ), errors='ignore')
+            | from_yaml
+          ).get('spec', {}).get('nodes', {}).get('root', {}).get('steps', [])
+          | selectattr('internalService.isDownstreamService', 'defined')
+          | selectattr('internalService.serviceName', 'search', '-embedding-svc$')
+          | map(attribute='internalService.serviceName')
+          | first
+          | default('vllm-embedding-svc')
+          | regex_replace('-embedding-svc$', '')
+          | regex_replace('-', '_')
+        ) + '_embedding'
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Set EMBEDDING_CPUS from resources reference file
   set_fact:
@@ -135,21 +240,17 @@
       {{
         (
           (
-            lookup('file', pipelines_dir ~ '/' ~ (
-              pipelines
-              | selectattr('type', 'in', ['chatqa', 'docsum'])
-              | map(attribute='resourcesPath')
-              | first
-            ), errors='ignore')
+            lookup('file', pipelines_dir ~ '/' ~ effective_resources_path, errors='ignore')
             | from_yaml
           )
           | default({})
-        ).get('services', {}).get('torchserve_embedding', {}).get('resources', {}).get('requests', {}).get('cpu', 0)
+        ).get('services', {}).get(embedding_service_type, {}).get('resources', {}).get('requests', {}).get('cpu', 0)
         | int
       }}
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Gather CPU/NUMA/AMX info for each node
   include_tasks: get_single_node_topology.yaml
@@ -160,15 +261,56 @@
   loop_control:
     label: "{{ item.spec.nodeName }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Check for nodes with hyperthreading disabled
+  set_fact:
+    nodes_without_hyperthreading: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('value.threads_per_core', 'defined')
+        | selectattr('value.threads_per_core', 'equalto', 1)
+        | map(attribute='key')
+        | list
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Fail if balloons are enabled but hyperthreading is disabled on any node
+  fail:
+    msg: |
+      ERROR: Balloons are not supported without Hyperthreading.
+
+      Balloons feature requires Hyperthreading to be enabled on all cluster nodes.
+
+      Nodes with Hyperthreading DISABLED (Thread(s) per core: 1):
+      {% for node in nodes_without_hyperthreading %}
+        - {{ node }}
+      {% endfor %}
+
+      Please either:
+        1. Enable Hyperthreading in the BIOS on the affected nodes, or
+        2. Disable balloons in your config.yaml by setting: balloons.enabled: false
+  when:
+  - balloons.enabled | default(false) | bool
+  - nodes_without_hyperthreading | length > 0
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Check if any node is Gaudi
   set_fact:
     gaudi_detected: "{{ cpu_topology_per_node.values() | selectattr('gaudi', 'equalto', true) | list | length > 0 }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Calculate optimal replicas using Python script
   ansible.builtin.shell: |
@@ -185,8 +327,9 @@
       --max-replicas-per-node {{ balloons.max_replicas_per_node | default(10) }}
   register: replicas_calculation_result
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Delete node-topology-debugger daemonset
   kubernetes.core.k8s:
@@ -195,9 +338,10 @@
     name: node-topology-debugger
     namespace: topology-discovery
   tags:
-    - install
-    - uninstall
-    - topology-preview
+  - install
+  - uninstall
+  - topology-preview
+  - update-configuration
 
 - name: Delete topology-discovery namespace
   kubernetes.core.k8s:
@@ -205,9 +349,10 @@
     kind: Namespace
     name: topology-discovery
   tags:
-    - install
-    - uninstall
-    - topology-preview
+  - install
+  - uninstall
+  - topology-preview
+  - update-configuration
 
 - name: Create log directory if it does not exist
   ansible.builtin.file:
@@ -215,11 +360,12 @@
     state: directory
     mode: '755'
   loop:
-    - "{{ log_dir }}"
-    - "{{ tmp_dir }}"
+  - "{{ log_dir }}"
+  - "{{ tmp_dir }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Save replicas calculation output to file
   copy:
@@ -227,8 +373,9 @@
     dest: "{{ tmp_dir }}/inference_pods_distribution.yaml"
     mode: '0644'
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Display topology calculation results
   ansible.builtin.pause:
@@ -251,8 +398,8 @@
         Inference memory request: {{ info.memory_usage_percent }}%
         VLLM Replicas: {{ info.vllm.replicas }}
         VLLM CPU Size: {{ info.vllm.adjusted_cpu_size }}
-        Embedding Replicas: {{ info.torchserve_embedding.replicas }}
-        Embedding CPU Size: {{ info.torchserve_embedding.cpu_size }}
+        Embedding Replicas: {{ info.embedding.replicas }}
+        Embedding CPU Size: {{ info.embedding.cpu_size }}
         Reranking Replicas: {{ info.torchserve_reranking.replicas }}
         Reranking CPU Size: {{ info.torchserve_reranking.cpu_size }}
       ------------------------------------------
@@ -261,26 +408,136 @@
       Gaudi Nodes Count: {{ (replicas_calculation_result.stdout | from_json).gaudi_nodes_count }}
       ==========================================
   tags:
-    - topology-preview
+  - topology-preview
   when: '"topology-preview" in ansible_run_tags'
 
 - name: Parse replicas calculation output
   set_fact:
     optimal_replicas: "{{ replicas_calculation_result.stdout | trim | from_json }}"
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Validate that services with CPU requirements got replicas allocated
+  block:
+    - name: Check if VLLM has replicas
+      set_fact:
+        vllm_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.vllm.replicas', 'defined')
+            | selectattr('value.vllm.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Check if Embedding has replicas
+      set_fact:
+        embedding_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.embedding.replicas', 'defined')
+            | selectattr('value.embedding.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Check if Reranking has replicas
+      set_fact:
+        reranking_has_replicas: >-
+          {{
+            optimal_replicas
+            | dict2items
+            | selectattr('key', 'ne', 'total_replicas')
+            | selectattr('key', 'ne', 'gaudi_nodes_count')
+            | selectattr('value.torchserve_reranking.replicas', 'defined')
+            | selectattr('value.torchserve_reranking.replicas', 'gt', 0)
+            | list
+            | length > 0
+          }}
+
+    - name: Fail if VLLM has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for VLLM service.
+
+          VLLM requires {{ VLLM_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - VLLM_CPUS | int > 0
+        - not (vllm_has_replicas | bool)
+
+    - name: Fail if Embedding has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for Embedding service.
+
+          Embedding requires {{ EMBEDDING_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - EMBEDDING_CPUS | int > 0
+        - not (embedding_has_replicas | bool)
+
+    - name: Fail if Reranking has CPU requirements but no replicas
+      fail:
+        msg: |
+          ERROR: Insufficient resources for Reranking service.
+
+          Reranking requires {{ RERANKER_CPUS }} CPUs, but the topology calculation resulted in 0 replicas.
+          This likely means there is insufficient memory available on the cluster nodes.
+
+          Please either:
+            1. Increase available memory on your cluster nodes
+            2. Deploy the solution with balloons disabled by setting: balloons.enabled: false in config.yaml
+      when:
+        - RERANKER_CPUS | int > 0
+        - not (reranking_has_replicas | bool)
+
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
 
 - name: Fail if no possible working setup (no replicas and no Gaudi nodes)
   fail:
     msg: >-
-      No possible working setup: total_replicas and gaudi_nodes_count are both zero.
-      The current hardware topology does not allow any service replicas to be scheduled.
-      Please check your cluster configuration and available resources.
+      No possible working setup: total_replicas and gaudi_nodes_count are both zero. The current hardware topology does not allow any service replicas to be scheduled. Please check your cluster configuration and available resources.
   when:
-    - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
-    - optimal_replicas.total_replicas == 0
-    - optimal_replicas.gaudi_nodes_count == 0
+  - '"topology-preview" in ansible_run_tags or "install" in ansible_run_tags'
+  - optimal_replicas.total_replicas == 0
+  - optimal_replicas.gaudi_nodes_count == 0
   tags:
-    - install
-    - topology-preview
+  - install
+  - topology-preview
+- name: Warn if topology detection resulted in empty nodes during update
+  debug:
+    msg: |
+      WARNING: Node topology detection returned empty results during {{ 'pipeline update' if 'update-configuration' in ansible_run_tags else 'installation' }}.
+      This may indicate topology discovery DaemonSet pods failed to schedule.
+      Ensure nodes are available and not fully tainted during topology discovery.
+      cpu_topology_per_node: {{ cpu_topology_per_node | default({}) }}
+      optimal_replicas: {{ optimal_replicas | default({}) }}
+  when:
+  - cpu_topology_per_node is defined
+  - (cpu_topology_per_node | length) == 0
+  - optimal_replicas is defined
+  - optimal_replicas.total_replicas == 0
+  tags:
+  - install
+  - update-configuration
+  - topology-preview

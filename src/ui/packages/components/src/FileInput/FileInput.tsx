@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./FileInput.scss";
@@ -134,7 +134,11 @@ export const FileInput = forwardRef<FileInputHandle, FileInputProps>(
               <FileIcon fontSize={20} />
               <p>Drag and Drop File{multiple && "s"}</p>
               <p className="file-input__box__caption">or</p>
-              <Button size="sm" onPress={handleBrowseFilesButtonPress}>
+              <Button
+                data-testid="browse-files-button"
+                size="sm"
+                onPress={handleBrowseFilesButtonPress}
+              >
                 Browse Files
               </Button>
               {totalSizeLimit && (
@@ -152,6 +156,7 @@ export const FileInput = forwardRef<FileInputHandle, FileInputProps>(
             multiple={multiple}
             aria-label={ariaLabel}
             onChange={onChange}
+            data-testid="file-input"
           />
         </div>
         {hasErrorMessage && (

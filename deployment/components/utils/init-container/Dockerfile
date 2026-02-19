@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # Using Debian Bookworm (12) - smallest stable Debian with modern glibc 2.36
@@ -11,7 +11,7 @@ RUN apt-get update && \
         curl \
         jq \
         ca-certificates && \
-    curl -LO https://dl.k8s.io/release/v1.30.8/bin/linux/amd64/kubectl && \
+    curl -LO https://dl.k8s.io/release/v1.33.7/bin/linux/amd64/kubectl && \
     install -m 0755 kubectl /usr/local/bin/kubectl && \
     rm kubectl && \
     apt-get clean && \

@@ -1,6 +1,6 @@
 # Enterprise RAG Enhanced DataPrep Service
 
-The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `MinIO`, `AWS S3`, and `S3-compatible` endpoints.
+The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document processing capabilities for the Enterprise RAG system, ensuring automated data flow from storage to retriever-ready format. The service supports multiple storage backends for managing and processing documents: `SeaweedFS`, `AWS S3`, and `S3-compatible` endpoints.
 
 ## Table of Contents
 
@@ -30,10 +30,10 @@ The OPEA ERAG Enhanced Data Preparation (EDP) service provides advanced document
 
 - Python >=3.11 is required to run EDP.
 - A stand alone `redis` server for task management is required.
-- A stand alone `redis search` server or Redis >= 8.0 for VectorDB data is required.
+- A stand alone vector database deployed is required. List of supported databases can be found in [deployment/components/vector_databases/README.md](../../deployment/components/vector_databases/README.md)
 - A stand alone `postgresql` server for storing file and link entries is required.
 - A S3 compatible storage (one of the following)
-    - A stand alone `MinIO` server for storing files. This is included and optional.
+    - A stand alone `SeaweedFS` server for storing files. This is included and optional.
     - An external AWS S3 bucket. Example scripts for creating one are located in terraform directory - see [terraform/README.md](terraform/README.md).
     - External server compatible with the S3 API
 
@@ -51,14 +51,14 @@ Similar to other Enterprise RAG components, EDP has its own section under the de
 ### Storage endpoints
 Use the config.yaml file to define the storage backend. Set the desired `storageType` under the edp section in your config.yaml, see [inventory/sample/config.yaml](../../deployment/inventory/sample/config.yaml). Then, configure the appropriate sub-section based on the selected type.
 
-#### Internal MinIO Storage (default)
-This will deploy and use the bundled MinIO instance:
+#### Internal SeaweedFS Storage (default)
+This will deploy and use the bundled SeaweedFS instance:
 ```yaml
 edp:
   enabled: true
-  storageType: minio
-  minio:
-    domainName: minio.erag.com
+  storageType: seaweedfs
+  seaweedfs:
+    domainName: seaweedfs.erag.com
     apiDomainName: s3.erag.com
     bucketNameRegexFilter: ".*"
 ```
@@ -96,6 +96,9 @@ edp:
     externalUrl: "https://s3.example.com"
     bucketNameRegexFilter: ".*"
 ```
+
+> [!IMPORTANT]
+> When using NetApp ONTAP as the S3-compatible storage endpoint, ensure that the NetApp appliance software is upgraded to version 9.16.1P4 or above.
 
 Optionally, the environment variables (using the same names as in the legacy bash-based deployment, such as `edp_storage_type`, `s3_compatible_endpoint`, `s3_access_key`, `s3_secret_key`, etc.) can be exported instead of using config.yaml. However, defining configuration in the YAML file is preferred for clarity, consistency, and better integration with automated Ansible-based deployments.
 
@@ -230,8 +233,8 @@ If you want to utilize all functionality, depending on the application server yo
 |         | EDP_INTERNAL_CERT_VERIFY   | Should EDP verify the internal S3 endpoint certificate validity |
 |         | EDP_BASE_REGION            | Base region for EDP S3 buckets |
 |         | EDP_SYNC_TASK_TIME_SECONDS | If defined and not empty, will enable Celery's periodic task to pull changes from storage |
-|         | MINIO_ACCESS_KEY           | Access key either to MinIO or S3 IAM user |
-|         | MINIO_SECRET_KEY           | Secret key either to MinIO or S3 IAM user |
+|         | MINIO_ACCESS_KEY           | Access key for S3-compatible storage (Legacy variable name) |
+|         | MINIO_SECRET_KEY           | Secret key for S3-compatible storage (Legacy variable name) |
 |         | BUCKET_NAME_REGEX_FILTER   | Regex filter for filtering out available buckets by name |
 |         | CELERY_BROKER_URL          | URL for Celery broker |
 |         | CELERY_BACKEND_URL         | URL for Celery backend |
@@ -265,12 +268,14 @@ If you want to utilize all functionality, depending on the application server yo
 |         | EDP_EXTERNAL_CERT_VERIFY   | Should EDP verify the external S3 endpoint certificate validity |
 |         | EDP_INTERNAL_CERT_VERIFY   | Should EDP verify the internal S3 endpoint certificate validity |
 |         | EDP_BASE_REGION            | Base region for EDP S3 buckets |
-|         | MINIO_ACCESS_KEY           | Access key either to MinIO or S3 IAM user |
-|         | MINIO_SECRET_KEY           | Secret key either to MinIO or S3 IAM user |
+|         | MINIO_ACCESS_KEY           | Access key for S3-compatible storage (Legacy variable name) |
+|         | MINIO_SECRET_KEY           | Secret key for S3-compatible storage (Legacy variable name) |
 |         | BUCKET_NAME_REGEX_FILTER   | Regex filter for filtering out available buckets by name |
 |         | VECTOR_DB_RBAC                  | Set the type of RBAC bucket filtering |
 |         | VECTOR_DB_RBAC_STATIC_CONFIG    | Configuration of STATIC rbac settings |
 |         | VECTOR_DB_RBAC_CACHE_EXPIRATION | Configuration of entry TTL for CACHED rbac settings |
+|         | USE_BEARER_TOKEN_AUTH           | Enable SeaweedFS specific authentication using Bearer tokens (bypassing STS) |
+|         | PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK | Use system credentials for presigned URLs if user credentials unavailable (Required for SeaweedFS) |
 | Sqs     | AWS_SQS_EVENT_QUEUE_URL    | AWS SQS Queue url to listen for S3 events |
 |         | EDP_BACKEND_ENDPOINT       | Endpoint to backend service |
 |         | AWS_DEFAULT_REGION         | Base region for EDP S3 buckets |
@@ -349,7 +354,7 @@ And proceed to the following url `http://localhost:1234/docs`
 ## Troubleshooting
 
 ### My selected S3 or S3-Compatible storage does not support bucket notifications
-If you are unable to use bucket notifications through the `minio-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart ([deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml)) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
+If you are unable to use bucket notifications through the `seaweedfs-event` URL or use `aws-sqs`, you will not receive notifications of file changes from your storage. To mitigate this, you have the option of manual or scheduled sync. Manual sync can be performed by sending a `POST /api/v1/edp/files/sync` request, which queries the storage buckets and compares them to the data in the EDP database. You can also perform a differential query without synchronization tasks by sending a `GET /api/v1/edp/files/sync` request. This will return a JSON array containing status of all files - either to be added, deleted, updated or skipped. Additionally, you can configure a scheduled sync job to perform the sync task at regular intervals. To set this up, configure the `celery.config.scheduledSync` options in the Helm chart ([deployment/components/edp/values.yaml](../../deployment/components/edp/values.yaml)) by enabling it and configuring the synchronization period. See the [Storage Synchronization section](#storage-synchronization) for instructions.
 
 ### File upload certificate error
 If you deployed ERAG with self-signed certificates, you might also need to accept the external storage certificate. Web browsers require acceptance of certificates for each domain they encounter, even if these are self-signed wildcard certificates. Therefore, you must accept certificates for both your Web GUI and the S3 endpoint. For instance, if your GUI is running under myrag.example.com and the storage is configured at s3.myrag.example.com, you need to visit both domains directly and accept their self-signed certificates. Alternatively, you can upload the self-signed certificates to your browser's certificate store.

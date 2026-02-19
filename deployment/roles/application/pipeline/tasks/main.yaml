@@ -1,16 +1,51 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+- name: Determine effective pipeline paths based on upload mode
+  ansible.builtin.set_fact:
+    effective_sample_path: >-
+      {{
+        (upload_pipelines_config | selectattr('type', 'equalto', item.type) | map(attribute='samplePath') | first)
+        if (upload_pipelines | default(false) | bool)
+        else item.samplePath
+      }}
+    effective_resources_path: >-
+      {{
+        (upload_pipelines_config | selectattr('type', 'equalto', item.type) | map(attribute='resourcesPath') | first)
+        if (upload_pipelines | default(false) | bool)
+        else item.resourcesPath
+      }}
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
+- name: Debug pipeline item configuration
+  debug:
+    msg: |
+      Pipeline item details:
+        namespace: {{ item.namespace }}
+        samplePath: {{ effective_sample_path }}
+        resourcesPath: {{ effective_resources_path }}
+        modelConfigPath: {{ item.modelConfigPath | default('not set') }}
+        upload_pipelines: {{ upload_pipelines | default(false) }}
+        type: {{ item.type }}
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
 - name: Set override facts
   ansible.builtin.set_fact:
     helm_override_values_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-values.yaml"
-    helm_resources_path: "{{ pipelines_dir }}/{{ item.resourcesPath }}"
+    helm_resources_path: "{{ pipelines_dir }}/{{ effective_resources_path }}"
     helm_override_resources_path: "{{ tmp_dir }}/{{ gmc.helm.chart_name }}-override-resources.yaml"
     helm_override_model_config_path: "{{ pipelines_dir }}/{{ item.modelConfigPath }}"
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate override values file from template
   ansible.builtin.template:
@@ -20,6 +55,16 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
+
+- name: Initialize optimal_replicas if not defined
+  ansible.builtin.set_fact:
+    optimal_replicas: {}
+  when: optimal_replicas is not defined
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
 
 - name: Generate override resources values file from template
   ansible.builtin.template:
@@ -29,6 +74,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Ensure pipeline namespace exists
   kubernetes.core.k8s:
@@ -40,6 +86,7 @@
         name: "{{ item.namespace }}"
   tags:
     - install
+    - update-configuration
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -65,6 +112,7 @@
         name: "{{ gmc.namespace }}"
   tags:
     - install
+    - update-configuration
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -86,7 +134,7 @@
       {{
         [gmc.helm.default_values_file] +
         [gmc.helm.default_resources_file] +
-        ([gmc.helm.tdx_resources_file] if (tdx.coco.enabled | bool) else []) +
+        ([gmc.helm.tdx_resources_file] if (tdx is defined and tdx.coco is defined and tdx.coco.enabled | bool) else []) +
         ([helm_resources_path] if item.resourcesPath is defined else []) +
         [helm_override_resources_path] +
         [helm_override_values_path] +
@@ -95,6 +143,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -117,6 +166,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Run pre-upgrade checks
   ansible.builtin.include_role:
@@ -129,9 +179,6 @@
     release_values_files: "{{ values_files }}"
   tags:
     - pre-upgrade
-
-
-
 
 - name: Install or Upgrade Helm chart
   kubernetes.core.helm:
@@ -149,15 +196,17 @@
   delay: 15
   tags:
     - install
+    - update-configuration
 
 - name: Extract LLM_VLLM_API_KEY from pipeline configuration
   ansible.builtin.set_fact:
-    llm_vllm_api_key: "{{ (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | map(attribute='internalService.config.LLM_VLLM_API_KEY') | first | default('') }}"
+    llm_vllm_api_key: "{{ (lookup('file', pipelines_dir + effective_sample_path) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | map(attribute='internalService.config.LLM_VLLM_API_KEY') | first | default('') }}"
   when:
-    - item.samplePath is defined
-    - (lookup('file', pipelines_dir + item.samplePath) | from_yaml).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | selectattr('internalService.config.LLM_VLLM_API_KEY', 'defined') | list | length > 0
+    - effective_sample_path is defined
+    - (lookup('file', pipelines_dir + effective_sample_path) | from_yaml | default({})).spec.nodes.root.steps | selectattr('name', 'equalto', 'Llm') | selectattr('internalService.config.LLM_VLLM_API_KEY', 'defined') | list | length > 0
   tags:
     - install
+    - update-configuration
 
 - name: Create VLLM API key secret from template
   kubernetes.core.k8s:
@@ -168,14 +217,17 @@
     - llm_vllm_api_key != ''
   tags:
     - install
+    - update-configuration
 
 - name: Apply pipeline
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('file', pipelines_dir + item.samplePath) }}"
+    definition: "{{ lookup('file', pipelines_dir + effective_sample_path) }}"
     namespace: "{{ item.namespace }}"
+  register: pipeline_apply_result
   tags:
     - install
+    - update-configuration
 
 - name: Remove obsolete dynamically-generated resources
   ansible.builtin.include_role:
@@ -185,6 +237,7 @@
     pipeline_item: "{{ item }}"
   tags:
     - install
+    - update-configuration
 
 - name: Remove pipeline namespace
   kubernetes.core.k8s:

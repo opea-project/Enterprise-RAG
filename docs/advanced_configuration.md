@@ -26,13 +26,14 @@ This document describes configuration options available when deploying Intel® A
 8. [Horizontal Pod Autoscaling (HPA)](#horizontal-pod-autoscaling-hpa)
 9. [Additional Configuration Options](#additional-configuration-options)
    1. [Additional Pipelines](#additional-pipelines)
-   2. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
-   3. [EDP Storage Types](#edp-storage-types)
-   4. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
-   5. [Security Settings](#security-settings)
-   6. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
-   7. [Registry Configuration](#registry-configuration)
-   8. [Local Image Building](#local-image-building)
+   2. [Vector Database Selection](#vector-database-selection)
+   3. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
+   4. [EDP Storage Types](#edp-storage-types)
+   5. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
+   6. [Security Settings](#security-settings)
+   7. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
+   8. [Registry Configuration](#registry-configuration)
+   9. [Local Image Building](#local-image-building)
 
 ---
 
@@ -448,12 +449,91 @@ Once deployed, run the provided shell script:
 ./scripts/test_translation.sh
 ```
 
+#### AudioQnA Solution
+
+AudioQnA is a solution that enables voice-based question answering, combining automatic speech recognition (ASR) and text-to-speech (TTS) capabilities with the ChatQnA pipeline. This allows users to ask questions using voice input and receive audio responses.
+
+**Enabling AudioQnA:**
+
+To enable AudioQnA functionality for testing with ChatQnA solutions, you need to set `audio.enabled` to `true` in your configuration file:
+
+```yaml
+audio:
+  enabled: true                                  # Default: false
+  namespace: audio                               # Default: audio
+  asr_model: "openai/whisper-small"             # Automatic Speech Recognition model
+  tts_model: "microsoft/speecht5_tts"           # Text-to-Speech model
+```
+
+**Configuration Options:**
+
+- `enabled`: Set to `true` to deploy AudioQnA components alongside ChatQnA
+- `namespace`: Kubernetes namespace where audio services will be deployed
+- `asr_model`: Model used for converting speech to text (Automatic Speech Recognition). Checkout the [microservice page](../src/comps/asr/) for more information.
+- `tts_model`: Model used for converting text to speech (Text-to-Speech). Checkout the [microservice page](../src/comps/tts/impl/model_server/fastapi/) for more information.
+
+**Requirements:**
+
+- AudioQnA works with ChatQnA pipelines (type: `chatqa`)
+- Audio services are deployed in a separate namespace but integrate with your ChatQnA solution
+- Both ASR and TTS models are downloaded and deployed when audio is enabled
+
+> [!NOTE]
+> AudioQnA adds additional resource requirements to your deployment. Ensure your cluster has sufficient resources for both the ChatQnA pipeline and the audio processing services.
+
+### Vector Database Selection
+
+Intel® AI for Enterprise RAG supports multiple vector database backends for storing and retrieving embeddings. You can select the appropriate database based on your deployment scale and requirements.
+
+**Available Options:**
+
+1. **redis-cluster** - Multi-node Redis cluster with distributed vector search
+   - Best for: Production deployments with large-scale data (1M+ vectors)
+   - Features: High availability, horizontal scalability, distributed hash slots
+
+2. **mssql** - Microsoft SQL Server 2025 Express Edition with vector support
+  - Best for: Organizations already using Microsoft SQL Server ecosystem
+  - Features: SQL-based vector operations, familiar SQL interface
+  - **Important**: Requires accepting Microsoft SQL Server EULA during deployment
+  - **Limitations**: Role-based access control (RBAC) for vector databases is not supported with `mssql`, so be sure to set `edp.rbac.enabled` to false in config.yaml
+
+**Configuration:**
+
+Modify the `vector_store` parameter in your inventory configuration file ([config.yaml](../deployment/inventory/sample/config.yaml)):
+
+```yaml
+vector_databases:
+  enabled: true
+  namespace: vdb
+  vector_store: redis-cluster  # Options: redis, redis-cluster, mssql
+  vector_datatype: FLOAT32
+  vector_dims: 768  # Must match your embedding model dimensions
+```
+
+**Microsoft SQL Server EULA Acceptance:**
+
+If you select `mssql` as your vector store, the deployment will pause and prompt you to accept the Microsoft SQL Server terms:
+
+```bash
+[vector_databases : Ask the operator to accept the EULA]
+Do you accept the Microsoft SQL Server 2025 Express Edition EULA? [Y/N]
+Type Y to accept, N to decline. Press ENTER to confirm.
+```
+
+Press `Y` and then `ENTER` to accept and continue. The deployment will not proceed without EULA acceptance.
+
+**Additional Resources:**
+
+For detailed information about each vector database implementation, storage configuration, monitoring, and operational guidance, refer to:
+- [Vector Databases Component Documentation](../deployment/components/vector_databases/README.md)
+- [Performance tuning for vector databases](performance_tuning_tips.md#vector-database-selection)
+
 ### Vector Store Database Storage Settings
 
 > [!NOTE]
 > The default settings are suitable for smaller deployments only (by default, approximately 5GB of data).
 
-You can expand the storage configuration for both the Vector Store and MinIO deployments by modifying their respective configurations:
+You can expand the storage configuration for both the Vector Store and SeaweedFS deployments by modifying their respective configurations:
 
 If using EDP, update the `deployment/edp/values.yaml` file to increase the storage size under the `persistence` section. For example, set `size: 100Gi` to allocate 100GB of storage.
 
@@ -464,7 +544,7 @@ Similarly, for the selected Vector Store, you can increase the persistent storag
 
 ### EDP Storage Types
 
-By default, the EDP storage type is set to MinIO, which deploys MinIO and S3 in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
+By default, the EDP storage type is set to SeaweedFS, which deploys SeaweedFS in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
 
 ### Additional Settings for Running Telemetry
 

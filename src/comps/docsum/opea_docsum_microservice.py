@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
@@ -6,7 +6,7 @@ import os
 import time
 
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from fastapi.responses import Response
 from openai import BadRequestError
 from requests.exceptions import ConnectionError, RequestException
@@ -64,12 +64,13 @@ def get_endpoint_semaphore():
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.
 # Its input and output data types must comply with the registered ones above.
-async def process(input: TextDocList) -> Response:
+async def process(input: TextDocList, raw_request: Request) -> Response:
     """
     Processes the given TextDocList input using the OPEA DocSum microservice.
 
     Args:
         input (TextDocList): The input parameters for the DocSum processing.
+        raw_request (Request): FastAPI Request object for monitoring client disconnections
 
     Returns:
         Response: The response from the OPEA DocSum microservice.
@@ -79,7 +80,7 @@ async def process(input: TextDocList) -> Response:
         start = time.time()
         try:
             # Pass the input to the 'run' method of the microservice instance
-            res = await opea_docsum.run(input)
+            res = await opea_docsum.run(input, raw_request)
         except BadRequestError as e:
             error_message = f"A BadRequestError occurred while processing: {str(e)}"
             logger.exception(error_message)

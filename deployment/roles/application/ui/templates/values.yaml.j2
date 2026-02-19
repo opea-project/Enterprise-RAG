@@ -1,11 +1,13 @@
 {#
-Copyright (C) 2024-2025 Intel Corporation
+Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
 {% for pipeline in pipelines %}
 {% if pipeline.type == "docsum" %}
 type: docsum
+{% elif pipeline.type == "chatqa" and audio.enabled is defined and audio.enabled %}
+type: audioqna
 {% endif %}
 {% endfor %}
 
@@ -21,6 +23,9 @@ extraUiConfigVars:
   keycloakAdminPanelDomainName: "{{ keycloak.domainName }}"
   s3DomainName: "{{ edp.minio.apiDomainName }}"
   chatDisclaimerText: "{{ ui.extraUiConfigVars.chatDisclaimerText }}"
+  chatMaintenanceMode: "{{ upload_pipelines | default(false) | string | lower }}"
+  audioEnabled: "{{ audio.enabled | default(false) }}"
+  asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
 
 service:
   type: ClusterIP
@@ -41,6 +46,8 @@ image:
 {% for pipeline in pipelines %}
 {% if pipeline.type == "docsum" %}
     name: erag-docsum-ui
+{% elif pipeline.type == "chatqa" and audio.enabled is defined and audio.enabled %}
+    name: erag-audioqna-ui
 {% endif %}
 {% endfor %}
     tag: {{ tag }}

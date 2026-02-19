@@ -1,8 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Metadata Verification Task
-# This task processes metadata diffs and validates all changes according to validation rules
+# Processes metadata diffs and validates changes according to rules
+# Cleans up diff/processed files before check, retains on failure
 
 - name: Clean previous reports directory
   ansible.builtin.file:
@@ -64,7 +65,59 @@
       - "  Mitigations Applied: {{ metadata_verification_result.mitigations_applied }}"
       - "  Mitigations Pending: {{ metadata_verification_result.mitigations_pending }}"
 
+- name: Identify clean components (no rejections or mitigations)
+  ansible.builtin.set_fact:
+    clean_components: "{{ metadata_validations | selectattr('response', 'in', ['approve']) | map(attribute='component') | unique | list }}"
+    problem_components: "{{ (metadata_validations | selectattr('response', 'in', ['reject', 'mitigate']) | map(attribute='component') | unique | list) }}"
+
+- name: Clean metadata artifacts for clean components only
+  when: clean_components | length > 0
+  block:
+    - name: Find metadata files for clean components
+      ansible.builtin.find:
+        paths: "{{ upgrade_metadata_dir }}"
+        patterns:
+          - "{{ item }}-*-upgrade.diff"
+          - "{{ item }}-*-manifest.yaml.processed.yaml"
+          - "{{ item }}-*-upgrade.yaml.processed.yaml"
+          - "{{ item }}-*-manifest.yaml"
+          - "{{ item }}-*-upgrade.yaml"
+      register: component_cleanup_files
+      loop: "{{ clean_components }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Remove metadata files for clean components
+      ansible.builtin.file:
+        path: "{{ file_item.path }}"
+        state: absent
+      loop: "{{ component_cleanup_files.results | map(attribute='files') | flatten }}"
+      loop_control:
+        loop_var: file_item
+        label: "{{ file_item.path | basename }}"
+      when: component_cleanup_files.results | map(attribute='files') | flatten | length > 0
+
+- name: Retain metadata artifacts for problem components
+  ansible.builtin.debug:
+    msg: "Metadata verification issues detected - diff files retained for components: {{ problem_components | join(', ') }}"
+  when: problem_components | length > 0
+
+# Generate report before failing so it's always available
+- name: Generate pre-upgrade report
+  ansible.builtin.include_tasks:
+    file: pre_upgrade_report.yaml
+  tags:
+    - pre-upgrade
+
+- name: Fail if changes are rejected
+  ansible.builtin.fail:
+    msg: |
+      Metadata verification failed: {{ metadata_verification_result.rejected_count }} change(s) rejected by validation rules.
+      Review diff files at {{ upgrade_metadata_dir }} for details.
+      Rejected changes must be addressed before upgrade can proceed.
+  when: metadata_verification_result.rejected_count > 0
+
 - name: Fail if mitigations are pending
   ansible.builtin.fail:
-    msg: "Metadata verification failed: {{ metadata_verification_result.mitigations_pending }} mitigation(s) pending"
+    msg: "Metadata verification failed: {{ metadata_verification_result.mitigations_pending }} mitigation(s) pending. Review files at {{ upgrade_metadata_dir }}"
   when: metadata_verification_result.mitigations_pending > 0

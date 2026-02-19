@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 .side-menu {
@@ -6,13 +6,14 @@
   @apply h-full w-64; // this width should match the margin for open SideMenu in PageLayout
   @apply bg-light-bg-2 dark:bg-dark-bg-2;
   @apply transition-transform duration-300 ease-in-out;
+  @apply p-4;
 
   & > .side-menu__header {
     @apply flex h-[6rem] items-center px-6; // SideMenu header height matches AppHeader height
   }
 
   & > .side-menu__content {
-    @apply flex-1 overflow-y-auto px-2;
+    @apply flex-1 overflow-y-auto;
   }
 
   &.side-menu--left {

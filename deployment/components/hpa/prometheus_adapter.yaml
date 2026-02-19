@@ -18,6 +18,18 @@ rules:
         matches: ^vllm:time_per_output_token_seconds_sum$
         as: "vllm_token_latency"
       metricsQuery: 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-service-m"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-service-m"}[1m])) by (<<.GroupBy>>))'
+    - seriesQuery: '{__name__="vllm:request_queue_time_seconds_sum",service="vllm-embedding-svc"}'
+      seriesFilters: []
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+      name:
+        matches: ^vllm:request_queue_time_seconds_sum$
+        as: "vllm_embedding_request_queue_time"
+      metricsQuery: 'avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-embedding-svc"}[2m])) by (<<.GroupBy>>)'
     - seriesQuery: '{__name__="vllm:time_per_output_token_seconds_sum",service="vllm-gaudi-svc"}'
       seriesFilters: []
       resources:

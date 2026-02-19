@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./HistoryItem.scss";
@@ -54,7 +54,11 @@ const HistoryItem = ({
   const icon = useMemo(() => getItemIcon(itemData), [itemData]);
 
   return (
-    <Anchor className={className} onPress={handleEntryPress}>
+    <Anchor
+      data-testid="history-item"
+      className={className}
+      onPress={handleEntryPress}
+    >
       {icon}
       {titleElement}
       <HistoryItemMenu

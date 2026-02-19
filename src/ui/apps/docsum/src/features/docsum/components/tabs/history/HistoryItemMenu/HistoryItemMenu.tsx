@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./HistoryItemMenu.scss";
@@ -47,6 +47,7 @@ const HistoryItemMenu = ({
             title="More"
             trigger={
               <IconButton
+                data-testid="history-item-menu-button"
                 icon="more-options"
                 size="sm"
                 aria-label="Manage Summary"
@@ -59,16 +60,16 @@ const HistoryItemMenu = ({
         ariaLabel="Summary History Item Menu"
         onOpenChange={onOpenChange}
       >
-        <Menu onAction={setSelectedOption}>
-          <MenuItem id="rename">
+        <Menu data-testid="history-item-menu" onAction={setSelectedOption}>
+          <MenuItem data-testid="rename-summary-menu-item" id="rename">
             <EditIcon />
             <span>Rename</span>
           </MenuItem>
-          <MenuItem id="export">
+          <MenuItem data-testid="export-summary-menu-item" id="export">
             <ExportIcon />
             <span>Export</span>
           </MenuItem>
-          <MenuItem id="delete">
+          <MenuItem data-testid="delete-summary-menu-item" id="delete">
             <DeleteIcon />
             <span>Delete</span>
           </MenuItem>

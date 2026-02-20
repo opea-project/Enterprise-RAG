@@ -286,8 +286,11 @@ def temporarily_remove_brute_force_detection(keycloak_helper):
 
 @pytest.fixture(scope="session")
 def test_language():
-    """Get the test language from environment variable"""
-    return os.getenv("TEST_LANG", "en")
+    """Get the test language from config or environment variable"""
+    llm_model = cfg.get("llm_model", "")
+    if "CYFRAGOVPL/PLLuM-12B-chate" in llm_model or "PLLuM" in llm_model:
+        return "pl"
+    return cfg.get("test_language") or os.getenv("TEST_LANG", "en")
 
 
 @pytest.fixture(scope="session")

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+  <rect width="400" height="300" fill="#f0f0f0"/>
+  <text x="200" y="50" font-size="20" text-anchor="middle" fill="#333">
+    Klythar Pindlebaum
+  </text>
+  <text x="200" y="100" font-size="16" text-anchor="middle" fill="#666">
+    Klythar Pindlebaum był genialnym architektem i projektantem.
+  </text>
+  <text x="200" y="140" font-size="14" text-anchor="middle" fill="#666">
+    Jego projekty budynków były znane w całym królestwie
+  </text>
+  <text x="200" y="170" font-size="14" text-anchor="middle" fill="#666">
+    za ich innowacyjny design i niezwykłą funkcjonalność.
+  </text>
+</svg>

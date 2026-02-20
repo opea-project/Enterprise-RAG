@@ -40,3 +40,221 @@ test_adoc_tables:
           expected_any: ["42"]
         - question: "Podaj opis produktu o nazwie 'Luminoid Krux'"
           expected_any: ["kompaktowa", "lekka", "kostka"]
+test_docx_text_only:
+  - en:
+      files: [story.docx]
+      questions:
+        - question: "What was the name of the girl who decided to visit the old tree at the edge of the village?"
+          expected_any: ["Asfehehehe"]
+    pl:
+      files: [story.docx]
+      questions:
+        - question: "Jak miała na imię dziewczyna, która postanowiła odwiedzić stare drzewo na skraju wioski?"
+          expected_any: ["Asfehehehe"]
+test_pptx_text_only:
+  - en:
+      files: [story.pptx]
+      questions:
+        - question: "In the story about validation team at Impelooo, what surprising things has AI started to write?"
+          expected_any: ["poetry"]
+    pl:
+      files: [story.pptx]
+      questions:
+        - question: "W historii o zespole walidacji w Impelooo, jakie zaskakujące rzeczy AI zaczęła pisać?"
+          expected_any: ["poezja"]
+test_pptx_complex:
+  - en:
+      files: [test_dataprep.pptx]
+      questions:
+        - question: "List the capitals and locations of the regions: Kaczap, Ugrap, Magracz, Balgacz, Wielgacz."
+          expected_any: ["Kaczap - Kruczak - Mountains", "Ugrap - Urkap - Valleys", "Magracz - Milkuk - Migmapanna Plateau", "Balgacz - Brukap", "Wielgacz - Wysokacz"]
+        - question: "Provide the results from the pie chart on slide 4 and the bar chart on slide 5."
+          expected_any: ["Sales - Wysokacz", "1st Qtr: 8.2", "2nd Qtr: 3.2", "3rd Qtr: 1.4", "4th Qtr: 1.2", "GDP", "Point 1: 100.0", "Point 2: 250.0", "Quality of Life", "Point 1: 10.0", "Point 2: 35.0"]
+        - question: "What are the steps in SmartArt Process 1?"
+          expected_any: ["Smart1", "Smart2", "Smart3"]
+    pl:
+      files: [test_dataprep.pptx]
+      questions:
+        - question: "Wymień stolice i położenie krain: Kaczap, Ugrap, Magracz, Balgacz, Wielgacz."
+          expected_any: ["Kaczap: Kruczak - Góry", "Ugrap: Urkap - Doliny", "Magracz: Milkuk - Płaskowyż Migmapanna", "Balgacz: Brukap", "Wielgacz: Wysokacz"]
+        - question: "Podaj wyniki z Wykresu kołowego na slajdzie nr 4 oraz słupkowego na slajdzie nr 5."
+          expected_any: ["Sales - Wysokacz", "1st Qtr: 8.2", "2nd Qtr: 3.2", "3rd Qtr: 1.4", "4th Qtr: 1.2", "PKB", "Point 1: 100.0", "Point 2: 250.0", "Jakość życia", "Point 1: 10.0", "Point 2: 35.0"]
+        - question: "Jakie są kroki w Smartart Process 1?"
+          expected_any: ["Smart1", "Smart2", "Smart3"]
+test_pdf_text_only:
+  - en:
+      files: [story.pdf]
+      questions:
+        - question: "In the story about Intel's headquarters in Gdansk, what was found by Krystianooo?"
+          expected_any: ["door", "dimension"]
+    pl:
+      files: [story.pdf]
+      questions:
+        - question: "W historii o siedzibie Intela w Gdańsku, co znalazł Krystianooo?"
+          expected_any: ["drzwi", "wymiar"]
+test_json_text_only:
+  - en:
+      files: [story.json]
+      questions:
+        - question: "What is RagRag?"
+          expected_any: ["whale"]
+    pl:
+      files: [story.json]
+      questions:
+        - question: "Czym jest RagRag?"
+          expected_any: ["wieloryb"]
+test_doc_text_only:
+  - en:
+      files: [story.doc]
+      questions:
+        - question: "What rare ingredient did Zephyrglint add to his potion during the lunar eclipse?"
+          expected_any: ["marshfire", "dew"]
+    pl:
+      files: [story.doc]
+      questions:
+        - question: "Jaki rzadki składnik Zephyrglint dodał do eliksiru podczas zaćmienia księżyca?"
+          expected_any: ["bagien", "ros"]
+test_ppt_text_only:
+  - en:
+      files: [story.ppt]
+      questions:
+        - question: "How did Snizzleflap arrive in Fluffington?"
+          expected_any: ["sky", "cloud"]
+    pl:
+      files: [story.ppt]
+      questions:
+        - question: "Jak Snizzleflap przybył do Fluffington?"
+          expected_any: ["puszyst", "chmur", "kłębiastej"]
+test_md_text_only:
+  - en:
+      files: [story.md]
+      questions:
+        - question: "What was Crinklebonk made of?"
+          expected_any: ["paper"]
+    pl:
+      files: [story.md]
+      questions:
+        - question: "Z czego został wykonany Crinklebonk?"
+          expected_any: ["papier"]
+test_html_text_only:
+  - en:
+      files: [story.html]
+      questions:
+        - question: "What are some of the things that people in the town of Glimphtoodle began to forget as the strange phenomenon progressed?"
+          expected_any: ["pie", "song", "conversations", "friend", "plan"]
+    pl:
+      files: [story.html]
+      questions:
+        - question: "Jakie rzeczy mieszkańcy miasta Glimphtoodle zaczęli zapominać w miarę postępu dziwnego zjawiska?"
+          expected_any: ["ciast", "piosenk", "rozm", "przyjaciel", "plan"]
+test_tiff_text_only:
+  - en:
+      files: [story.tiff]
+      questions:
+        - question: "What was the name of Zanthroglid's famous creation?"
+          expected_any: ["clockwork", "duck"]
+    pl:
+      files: [story.tiff]
+      questions:
+        - question: "Jak nazywało się słynne dzieło Zanthroglida?"
+          expected_any: ["mechani", "kaczka"]
+test_jpg_text_only:
+  - en:
+      files: [story.jpg]
+      questions:
+        - question: "What was Zorvultrix's rare ability?"
+          expected_any: ["heal", "wound"]
+    pl:
+      files: [story.jpg]
+      questions:
+        - question: "Jaka była rzadka umiejętność Zorvultrixa?"
+          expected_any: ["lecz", "rany"]
+test_jpeg_text_only:
+  - en:
+      files: [story.jpeg]
+      questions:
+        - question: "What was Frellor Tindrack's goal?"
+          expected_any: ["island", "find", "ilverden"]
+    pl:
+      files: [story.jpeg]
+      questions:
+        - question: "Jaki był cel Frellora Tindracka?"
+          expected_any: ["wysp", "odnale", "ilverden"]
+test_png_text_only:
+  - en:
+      files: [story.png]
+      questions:
+        - question: "What did Squeeferplonk discover in the hidden cave?"
+          expected_any: ["crystal", "power"]
+    pl:
+      files: [story.png]
+      questions:
+        - question: "Co Squeeferplonk odkrył w ukrytej jaskini?"
+          expected_any: ["kryształ", "moc"]
+test_svg_text_only:
+  - en:
+      files: [story.svg]
+      questions:
+        - question: "What was Klythar Pindlebaum's profession?"
+          expected_any: ["architect", "designer"]
+    pl:
+      files: [story.svg]
+      questions:
+        - question: "Jaki był zawód Klythara Pindlebauma?"
+          expected_any: ["architekt", "projektant"]
+test_xlsx_text_only:
+  - en:
+      files: [story.xlsx]
+      questions:
+        - question: "What was Zerlith Quarble's profession or passion?"
+          expected_any: ["alchemist"]
+    pl:
+      files: [story.xlsx]
+      questions:
+        - question: "Jaki był zawód lub pasja Zerlithy Quarble?"
+          expected_any: ["alchemik"]
+test_xls_text_only:
+  - en:
+      files: [story.xls]
+      questions:
+        - question: "What did Brindle Sprocketwick create that was extraordinary?"
+          expected_any: ["clock"]
+    pl:
+      files: [story.xls]
+      questions:
+        - question: "Co niezwykłego stworzył Brindle Sprocketwick?"
+          expected_any: ["zegar"]
+test_csv_text_only:
+  - en:
+      files: [story.csv]
+      questions:
+        - question: "What did the Sandweaver create when it malfunctioned?"
+          expected_any: ["golden", "dust", "strange", "sand", "cloth"]
+    pl:
+      files: [story.csv]
+      questions:
+        - question: "Co Sandweaver stworzył, gdy uległ awarii?"
+          expected_any: ["złot", "pył", "dziwn", "pias", "tkan"]
+test_jsonl_text_only:
+  - en:
+      files: [story.jsonl]
+      questions:
+        - question: "What was Yulvar Dimspark's secret talent?"
+          expected_any: ["manipulate", "time", "rewind", "moments"]
+    pl:
+      files: [story.jsonl]
+      questions:
+        - question: "Jaki był sekretny talent Yulvara Dimsparka?"
+          expected_any: ["manipul", "czas", "cof", "chwil"]
+test_xml_text_only:
+  - en:
+      files: [story.xml]
+      questions:
+        - question: "What was Tressivorn Quindle known for in Bravenreach?"
+          expected_any: ["brewed", "potion", "wound"]
+    pl:
+      files: [story.xml]
+      questions:
+        - question: "Z czego znany był Tressivorn Quindle w Bravenreach?"
+          expected_any: ["warz", "unikal", "mikstur"]
+

@@ -52,153 +52,119 @@ def test_txt(edp_helper, chatqa_api_helper, test_data):
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T56")
-def test_docx_text_only(edp_helper, chatqa_api_helper):
+def test_docx_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (pure text inside the file)"""
-    question = "What was the name of the girl who decided to visit the old tree at the edge of the village?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.docx", question)
-    assert "Asfehehehe" in response, UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T54")
-def test_pdf_text_only(edp_helper, chatqa_api_helper):
+def test_pdf_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.pdf file learning capabilities (pure text inside the file)"""
-    question = "In the story about Intel's headquarters in Gdansk, what was found by Krystianooo?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.pdf", question)
-    assert chatqa_api_helper.words_in_response(["door", "dimension"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T55")
-def test_pptx_text_only(edp_helper, chatqa_api_helper):
+def test_pptx_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.pptx file learning capabilities (pure text inside the file)"""
-    question = "In the story about validation team at Impelooo, what surprising things has AI started to write?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.pptx", question)
-    assert "poetry" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
+
+@allure.testcase("IEASG-T230")
+def test_pptx_complex(edp_helper, chatqa_api_helper, test_data):
+    """*.pptx file learning capabilities (tables, charts, and SmartArt)"""
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T104")
-def test_json_text_only(edp_helper, chatqa_api_helper):
+def test_json_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.json file learning capabilities (pure text inside the file)"""
-    question = "What is RagRag?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.json", question)
-    assert "whale" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T105")
-def test_doc_text_only(edp_helper, chatqa_api_helper):
+def test_doc_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.doc file learning capabilities (pure text inside the file)"""
-    question = "What rare ingredient did Zephyrglint add to his potion during the lunar eclipse?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.doc", question)
-    assert chatqa_api_helper.words_in_response(["marshfire", "dew"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T106")
-def test_ppt_text_only(edp_helper, chatqa_api_helper):
+def test_ppt_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.ppt file learning capabilities (pure text inside the file)"""
-    question = "How did Snizzleflap arrive in Fluffington?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.ppt", question)
-    assert chatqa_api_helper.words_in_response(["sky", "cloud"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T107")
-def test_md_text_only(edp_helper, chatqa_api_helper):
+def test_md_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.md file learning capabilities (pure text inside the file)"""
-    question = "What was Crinklebonk made of?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.md", question)
-    assert "paper" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T108")
-def test_html_text_only(edp_helper, chatqa_api_helper):
+def test_html_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.html file learning capabilities (pure text inside the file)"""
-    question = ("What are some of the things that people in the town of Glimphtoodle began to forget "
-                "as the strange phenomenon progressed?")
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.html", question)
-    assert chatqa_api_helper.words_in_response(["pie", "song", "conversations", "friend", "plan"], response),(
-        UNRELATED_RESPONSE_MSG)
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T109")
-def test_tiff_text_only(edp_helper, chatqa_api_helper):
+def test_tiff_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.tiff file learning capabilities (pure text inside the file)"""
-    question = "What was the name of Zanthroglid's famous creation?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.tiff", question)
-    assert chatqa_api_helper.words_in_response(["clockwork", "duck"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T110")
-def test_jpg_text_only(edp_helper, chatqa_api_helper):
+def test_jpg_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.jpg file learning capabilities (pure text inside the file)"""
-    question = "What was Zorvultrix's rare ability?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.jpg", question)
-    assert chatqa_api_helper.words_in_response(["heal", "wound"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T111")
-def test_jpeg_text_only(edp_helper, chatqa_api_helper):
+def test_jpeg_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.jpeg file learning capabilities (pure text inside the file)"""
-    question = "What was Frellor Tindrack's goal?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.jpeg", question)
-    assert chatqa_api_helper.words_in_response(["island", "find", "ilverden"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T112")
-def test_png_text_only(edp_helper, chatqa_api_helper):
+def test_png_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.png file learning capabilities (pure text inside the file)"""
-    question = "What did Squeeferplonk discover in the hidden cave?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.png", question)
-    assert chatqa_api_helper.words_in_response(["crystal", "power"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T113")
-def test_svg_text_only(edp_helper, chatqa_api_helper):
+def test_svg_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.svg file learning capabilities (pure text inside the file)"""
-    question = "What was Klythar Pindlebaum's profession?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.svg", question)
-    assert chatqa_api_helper.words_in_response(["architect", "designer"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T114")
-def test_xlsx_text_only(edp_helper, chatqa_api_helper):
+def test_xlsx_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.xlsx file learning capabilities (pure text inside the file)"""
-    question = "What was Zerlith Quarble's profession or passion?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.xlsx", question)
-    assert "alchemist" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T115")
-def test_xls_text_only(edp_helper, chatqa_api_helper):
+def test_xls_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.xls file learning capabilities (pure text inside the file)"""
-    question = "What did Brindle Sprocketwick create that was extraordinary?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.xls", question)
-    assert "clock" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T116")
-def test_csv_text_only(edp_helper, chatqa_api_helper):
+def test_csv_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.csv file learning capabilities (pure text inside the file)"""
-    question = "What did the Sandweaver create when it malfunctioned?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.csv", question)
-    assert chatqa_api_helper.words_in_response(["golden ", "dust", "strange", "sand", "cloth"], response), (
-        UNRELATED_RESPONSE_MSG)
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T117")
-def test_jsonl_text_only(edp_helper, chatqa_api_helper):
+def test_jsonl_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.jsonl file learning capabilities (pure text inside the file)"""
-    question = "What was Yulvar Dimspark's secret talent?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.jsonl", question)
-    assert chatqa_api_helper.words_in_response(["manipulate ", "time", "rewind", "moments"], response), (
-        UNRELATED_RESPONSE_MSG)
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T118")
-def test_xml_text_only(edp_helper, chatqa_api_helper):
+def test_xml_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.xml file learning capabilities (pure text inside the file)"""
-    question = "What was Tressivorn Quindle known for in Bravenreach?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.xml", question)
-    assert chatqa_api_helper.words_in_response(["brewed", "potion", "wound"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T162")

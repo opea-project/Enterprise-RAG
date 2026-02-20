@@ -97,9 +97,25 @@ def pytest_collection_modifyitems(config, items):
         add_marker(item, "feature", pipeline_tag)
         add_marker(item, "feature", llm_model_tag)
 
+    items[:] = remove_skipped_tests(items)
+
 
 def add_marker(item, label_name, label_value):
     item.add_marker(allure.label(label_name, label_value))
+
+
+def remove_skipped_tests(items):
+    """
+    Filter out skipped tests from the collection phase to ensure they are excluded
+    from the final report instead of being marked as 'Skipped'.
+    """
+    remaining_items = []
+    for item in items:
+        skip_marker = item.get_closest_marker("skip")
+        if skip_marker:
+            continue
+        remaining_items.append(item)
+    return remaining_items
 
 
 @pytest.fixture(scope="session", autouse=True)

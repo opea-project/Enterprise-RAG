@@ -36,6 +36,7 @@ interface AudioQnAGraphState {
   isLoading: boolean;
   selectedServiceNode: Node<ServiceData> | null;
   isRenderable: boolean;
+  isAutorefreshEnabled: boolean;
 }
 
 const initialState: AudioQnAGraphState = {
@@ -44,6 +45,7 @@ const initialState: AudioQnAGraphState = {
   isLoading: false,
   selectedServiceNode: null,
   isRenderable: false,
+  isAutorefreshEnabled: false,
 };
 
 export const resetAudioQnAGraph = createAsyncThunk(
@@ -187,6 +189,12 @@ export const audioQnAGraphSlice = createSlice({
     setAudioQnAGraphIsRenderable: (state, action: PayloadAction<boolean>) => {
       state.isRenderable = action.payload;
     },
+    setAudioQnAGraphIsAutorefreshEnabled: (
+      state,
+      action: PayloadAction<boolean>,
+    ) => {
+      state.isAutorefreshEnabled = action.payload;
+    },
     resetAudioQnAGraphSlice: () => initialState,
   },
 });
@@ -200,6 +208,7 @@ export const {
   setAudioQnAGraphIsLoading,
   setAudioQnAGraphSelectedServiceNode,
   setAudioQnAGraphIsRenderable,
+  setAudioQnAGraphIsAutorefreshEnabled,
   resetAudioQnAGraphSlice,
 } = audioQnAGraphSlice.actions;
 
@@ -213,5 +222,7 @@ export const audioQnAGraphSelectedServiceNodeSelector = (state: RootState) =>
   state.audioQnAGraph.selectedServiceNode;
 export const audioQnAGraphIsRenderableSelector = (state: RootState) =>
   state.audioQnAGraph.isRenderable;
+export const audioQnAGraphIsAutorefreshEnabledSelector = (state: RootState) =>
+  state.audioQnAGraph.isAutorefreshEnabled;
 
 export default audioQnAGraphSlice.reducer;

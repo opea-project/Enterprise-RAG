@@ -36,6 +36,7 @@ interface ChatQnAGraphState {
   isLoading: boolean;
   selectedServiceNode: Node<ServiceData> | null;
   isRenderable: boolean;
+  isAutorefreshEnabled: boolean;
 }
 
 const initialState: ChatQnAGraphState = {
@@ -44,6 +45,7 @@ const initialState: ChatQnAGraphState = {
   isLoading: false,
   selectedServiceNode: null,
   isRenderable: false,
+  isAutorefreshEnabled: false,
 };
 
 export const resetChatQnAGraph = createAsyncThunk(
@@ -210,6 +212,12 @@ export const chatQnAGraphSlice = createSlice({
     setChatQnAGraphIsRenderable: (state, action: PayloadAction<boolean>) => {
       state.isRenderable = action.payload;
     },
+    setChatQnAGraphIsAutorefreshEnabled: (
+      state,
+      action: PayloadAction<boolean>,
+    ) => {
+      state.isAutorefreshEnabled = action.payload;
+    },
     resetChatQnAGraphSlice: () => initialState,
   },
 });
@@ -223,6 +231,7 @@ export const {
   setChatQnAGraphIsLoading,
   setChatQnAGraphSelectedServiceNode,
   setChatQnAGraphIsRenderable,
+  setChatQnAGraphIsAutorefreshEnabled,
   resetChatQnAGraphSlice,
 } = chatQnAGraphSlice.actions;
 
@@ -236,5 +245,7 @@ export const chatQnAGraphSelectedServiceNodeSelector = (state: RootState) =>
   state.chatQnAGraph.selectedServiceNode;
 export const chatQnAGraphIsRenderableSelector = (state: RootState) =>
   state.chatQnAGraph.isRenderable;
+export const chatQnAGraphIsAutorefreshEnabledSelector = (state: RootState) =>
+  state.chatQnAGraph.isAutorefreshEnabled;
 
 export default chatQnAGraphSlice.reducer;

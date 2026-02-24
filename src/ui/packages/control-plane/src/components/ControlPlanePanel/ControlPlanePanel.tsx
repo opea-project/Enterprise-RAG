@@ -5,43 +5,25 @@ import "@xyflow/react/dist/style.css";
 import "./ControlPlanePanel.scss";
 
 import {
+  CheckboxInputChangeHandler,
   IconButton,
   LoadingFallback,
   Tooltip,
 } from "@intel-enterprise-rag-ui/components";
-import { ConfigurableServiceIcon } from "@intel-enterprise-rag-ui/icons";
 import classNames from "classnames";
 import { ComponentType, useCallback, useState } from "react";
 
-import { ServiceStatusIndicator } from "@/components/ServiceStatusIndicator/ServiceStatusIndicator";
-import { ServiceStatus } from "@/types";
-
-const ServiceStatusLegend = () => (
-  <div className="graph-legend" data-testid="graph-legend">
-    <div className="graph-legend__item">
-      <ServiceStatusIndicator status={ServiceStatus.Ready} noTooltip />
-      <p>Ready</p>
-    </div>
-    <div className="graph-legend__item">
-      <ServiceStatusIndicator status={ServiceStatus.NotReady} noTooltip />
-      <p>Not Ready</p>
-    </div>
-    <div className="graph-legend__item">
-      <ServiceStatusIndicator status={ServiceStatus.NotAvailable} noTooltip />
-      <p>Status Not Available</p>
-    </div>
-    <div className="graph-legend__item">
-      <ConfigurableServiceIcon />
-      <p>Configurable Service</p>
-    </div>
-  </div>
-);
+import { GraphControls } from "@/components/GraphControls/GraphControls";
 
 interface ControlPlanePanelProps {
   isLoading: boolean;
   isRenderable: boolean;
   Graph: ComponentType;
   ConfigPanel?: ComponentType;
+  isAutorefreshEnabled: boolean;
+  onAutorefreshChange: CheckboxInputChangeHandler;
+  onRefresh: () => void;
+  isFetching: boolean;
   onConfigPanelToggle?: (isVisible: boolean) => void;
 }
 
@@ -50,6 +32,10 @@ export const ControlPlanePanel = ({
   isRenderable,
   Graph,
   ConfigPanel,
+  isAutorefreshEnabled,
+  onAutorefreshChange,
+  onRefresh,
+  isFetching,
   onConfigPanelToggle,
 }: ControlPlanePanelProps) => {
   const [isConfigPanelVisible, setIsConfigPanelVisible] = useState(true);
@@ -71,7 +57,12 @@ export const ControlPlanePanel = ({
       if (isRenderable) {
         return (
           <>
-            <ServiceStatusLegend />
+            <GraphControls
+              isAutorefreshEnabled={isAutorefreshEnabled}
+              onAutorefreshChange={onAutorefreshChange}
+              onRefresh={onRefresh}
+              isFetching={isFetching}
+            />
             <Graph />
           </>
         );

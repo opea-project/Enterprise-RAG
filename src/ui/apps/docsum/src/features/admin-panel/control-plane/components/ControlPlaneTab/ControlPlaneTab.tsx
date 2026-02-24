@@ -5,29 +5,59 @@ import { useColorScheme } from "@intel-enterprise-rag-ui/components";
 import {
   ControlPlanePanel,
   PipelineGraph,
+  useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
 import { FitViewOptions } from "@xyflow/react";
+import { useCallback } from "react";
 
-import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
+import {
+  useGetServicesDataQuery,
+  useLazyGetServicesDataQuery,
+} from "@/features/admin-panel/control-plane/api";
 import {
   docSumGraphEdgesSelector,
   docSumGraphIsLoadingSelector,
   docSumGraphIsRenderableSelector,
   docSumGraphNodesSelector,
+  docSumGraphIsAutorefreshEnabledSelector,
+  setDocSumGraphIsAutorefreshEnabled,
 } from "@/features/admin-panel/control-plane/store/docSumGraph.slice";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
   useGetServicesDataQuery();
 
+  const dispatch = useAppDispatch();
   const isLoading = useAppSelector(docSumGraphIsLoadingSelector);
   const isRenderable = useAppSelector(docSumGraphIsRenderableSelector);
+  const isAutorefreshEnabled = useAppSelector(
+    docSumGraphIsAutorefreshEnabledSelector,
+  );
+
+  const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
+
+  const handleAutorefreshChange = useCallback(
+    (enabled: boolean) => {
+      dispatch(setDocSumGraphIsAutorefreshEnabled(enabled));
+    },
+    [dispatch],
+  );
+
+  const handleRefresh = useCallback(() => {
+    getServicesData();
+  }, [getServicesData]);
+
+  useControlPlanePolling(handleRefresh, isAutorefreshEnabled);
 
   return (
     <ControlPlanePanel
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={DocSumGraph}
+      isAutorefreshEnabled={isAutorefreshEnabled}
+      onAutorefreshChange={handleAutorefreshChange}
+      onRefresh={handleRefresh}
+      isFetching={isFetching}
     />
   );
 };

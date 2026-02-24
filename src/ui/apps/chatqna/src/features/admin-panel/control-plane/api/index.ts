@@ -100,8 +100,16 @@ export const controlPlaneApi = createApi({
 
         return { data: { details, parameters }, error: undefined };
       },
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        dispatch(resetChatQnAGraph());
+      onQueryStarted: async (
+        _,
+        { dispatch, queryFulfilled, getCacheEntry },
+      ) => {
+        const cacheEntry = getCacheEntry();
+        const isInitialLoad = !cacheEntry?.data;
+
+        if (isInitialLoad) {
+          dispatch(resetChatQnAGraph());
+        }
 
         try {
           const { data } = await queryFulfilled;
@@ -114,7 +122,9 @@ export const controlPlaneApi = createApi({
           dispatch(addNotification({ severity: "error", text: errorMessage }));
           dispatch(setChatQnAGraphIsRenderable(false));
         } finally {
-          dispatch(setChatQnAGraphIsLoading(false));
+          if (isInitialLoad) {
+            dispatch(setChatQnAGraphIsLoading(false));
+          }
         }
       },
       providesTags: ["Services Data"],
@@ -165,6 +175,7 @@ export const controlPlaneApi = createApi({
 
 export const {
   useGetServicesDataQuery,
+  useLazyGetServicesDataQuery,
   useChangeArgumentsMutation,
   usePostRetrieverQueryMutation,
 } = controlPlaneApi;

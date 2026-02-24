@@ -71,24 +71,3 @@
     }
   }
 }
-
-.graph-legend {
-  @apply absolute z-10 ml-12 mt-4 flex flex-col gap-2 rounded p-4;
-  @apply bg-light-bg-1/50 dark:bg-dark-bg-1/70;
-
-  & .graph-legend__item {
-    @apply flex items-center gap-2;
-
-    & > p {
-      @apply text-xs;
-    }
-
-    &:last-of-type {
-      @apply mt-3;
-
-      & svg {
-        @apply text-xs;
-      }
-    }
-  }
-}

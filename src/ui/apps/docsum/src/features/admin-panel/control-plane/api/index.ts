@@ -61,8 +61,17 @@ export const controlPlaneApi = createApi({
 
         return { data: { details }, error: undefined };
       },
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        dispatch(resetDocSumGraph());
+      onQueryStarted: async (
+        _,
+        { dispatch, queryFulfilled, getCacheEntry },
+      ) => {
+        const cacheEntry = getCacheEntry();
+        const isInitialLoad = !cacheEntry?.data;
+
+        if (isInitialLoad) {
+          dispatch(resetDocSumGraph());
+        }
+
         try {
           const { data } = await queryFulfilled;
           dispatch(setupDocSumGraph(data));
@@ -74,7 +83,9 @@ export const controlPlaneApi = createApi({
           dispatch(addNotification({ severity: "error", text: errorMessage }));
           dispatch(setDocSumGraphIsRenderable(false));
         } finally {
-          dispatch(setDocSumGraphIsLoading(false));
+          if (isInitialLoad) {
+            dispatch(setDocSumGraphIsLoading(false));
+          }
         }
       },
       providesTags: ["Services Data"],
@@ -82,4 +93,5 @@ export const controlPlaneApi = createApi({
   }),
 });
 
-export const { useGetServicesDataQuery } = controlPlaneApi;
+export const { useGetServicesDataQuery, useLazyGetServicesDataQuery } =
+  controlPlaneApi;

@@ -22,6 +22,7 @@ interface DocSumGraphState {
   isLoading: boolean;
   selectedServiceNode: Node<ServiceNodeData> | null;
   isRenderable: boolean;
+  isAutorefreshEnabled: boolean;
 }
 
 const initialState: DocSumGraphState = {
@@ -30,6 +31,7 @@ const initialState: DocSumGraphState = {
   isLoading: false,
   selectedServiceNode: null,
   isRenderable: false,
+  isAutorefreshEnabled: false,
 };
 
 export const resetDocSumGraph = createAsyncThunk(
@@ -103,6 +105,12 @@ export const docSumGraphSlice = createSlice({
     setDocSumGraphIsRenderable: (state, action: PayloadAction<boolean>) => {
       state.isRenderable = action.payload;
     },
+    setDocSumGraphIsAutorefreshEnabled: (
+      state,
+      action: PayloadAction<boolean>,
+    ) => {
+      state.isAutorefreshEnabled = action.payload;
+    },
     resetDocSumGraphSlice: () => initialState,
   },
 });
@@ -112,6 +120,7 @@ export const {
   setDocSumGraphNodes,
   setDocSumGraphIsLoading,
   setDocSumGraphIsRenderable,
+  setDocSumGraphIsAutorefreshEnabled,
   resetDocSumGraphSlice,
 } = docSumGraphSlice.actions;
 
@@ -123,5 +132,7 @@ export const docSumGraphIsLoadingSelector = (state: RootState) =>
   state.docSumGraph.isLoading;
 export const docSumGraphIsRenderableSelector = (state: RootState) =>
   state.docSumGraph.isRenderable;
+export const docSumGraphIsAutorefreshEnabledSelector = (state: RootState) =>
+  state.docSumGraph.isAutorefreshEnabled;
 
 export default docSumGraphSlice.reducer;

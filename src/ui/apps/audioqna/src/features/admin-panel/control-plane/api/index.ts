@@ -75,8 +75,16 @@ export const controlPlaneApi = createApi({
 
         return { data: { details } };
       },
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        dispatch(resetAudioQnAGraph());
+      onQueryStarted: async (
+        _,
+        { dispatch, queryFulfilled, getCacheEntry },
+      ) => {
+        const cacheEntry = getCacheEntry();
+        const isInitialLoad = !cacheEntry?.data;
+
+        if (isInitialLoad) {
+          dispatch(resetAudioQnAGraph());
+        }
 
         try {
           const { data } = await queryFulfilled;
@@ -89,7 +97,9 @@ export const controlPlaneApi = createApi({
           dispatch(addNotification({ severity: "error", text: errorMessage }));
           dispatch(setAudioQnAGraphIsRenderable(false));
         } finally {
-          dispatch(setAudioQnAGraphIsLoading(false));
+          if (isInitialLoad) {
+            dispatch(setAudioQnAGraphIsLoading(false));
+          }
         }
       },
       providesTags: ["Services Data"],
@@ -97,4 +107,5 @@ export const controlPlaneApi = createApi({
   }),
 });
 
-export const { useGetServicesDataQuery } = controlPlaneApi;
+export const { useGetServicesDataQuery, useLazyGetServicesDataQuery } =
+  controlPlaneApi;

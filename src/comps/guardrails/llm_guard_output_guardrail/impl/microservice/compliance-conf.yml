@@ -5,6 +5,7 @@ dependencies:
   - pip-uv
   - apt
   - spacy-manual
+  - manual
 spacy-manual:
   packages:
     - zh_core_web_sm
@@ -14,3 +15,9 @@ base-image:
     - python:3.11-slim-bookworm
 apt:
   base-image-override: python:3.11-slim-bookworm
+manual:
+  packages:
+# Added because of manual copy from UV image in Dockerfile
+    - name: astral-sh/uv
+      origin: github
+      license: MIT

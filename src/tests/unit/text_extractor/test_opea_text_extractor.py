@@ -115,37 +115,51 @@ def test_load_data_file_exception(mock_load_files, reset_singleton):
 
 # Tests for _load_files method
 
+@patch('comps.text_extractor.utils.opea_text_extractor.FileParser')
 @patch.object(OPEATextExtractor, '_save_file_to_local_disk')
-@patch.object(OPEATextExtractor, '_load_text')
-def test_load_files(mock_load_text, mock_save_file, reset_singleton, mock_uploadfile):
+def test_load_files(mock_save_file, mock_file_parser, reset_singleton, mock_uploadfile):
     """Test the _load_files method with a single file."""
     text_extractor = OPEATextExtractor()
     mock_path = MagicMock()
     mock_path.resolve.return_value = "/tmp/test_document.txt"
     mock_save_file.return_value = mock_path
-    mock_load_text.return_value = "Parsed text content"
+
+    mock_parser_instance = MagicMock()
+    mock_parser_instance.parse.return_value = "Parsed text content"
+    mock_parser_instance.parse_metadata.return_value = {
+        'filename': 'test_document.txt',
+        'ingestion_date': '2026-02-27',
+    }
+    mock_file_parser.return_value = mock_parser_instance
 
     result = text_extractor._load_files([mock_uploadfile])
 
     mock_save_file.assert_called_once_with(mock_uploadfile)
-    mock_load_text.assert_called_once_with("/tmp/test_document.txt")
+    mock_file_parser.assert_called_once_with("/tmp/test_document.txt")
     assert len(result) == 1
     assert isinstance(result[0], TextDoc)
     assert result[0].text == "Parsed text content"
     assert result[0].metadata['filename'] == "test_document.txt"
-    assert 'timestamp' in result[0].metadata
+    assert 'ingestion_date' in result[0].metadata
 
+@patch('comps.text_extractor.utils.opea_text_extractor.FileParser')
 @patch.object(OPEATextExtractor, '_save_file_to_local_disk')
-@patch.object(OPEATextExtractor, '_load_text')
 @patch('os.path.exists')
 @patch('os.remove')
-def test_load_files_cleanup(mock_remove, mock_exists, mock_load_text, mock_save_file, reset_singleton, mock_uploadfile):
+def test_load_files_cleanup(mock_remove, mock_exists, mock_save_file, mock_file_parser, reset_singleton, mock_uploadfile):
     """Test that _load_files cleans up the saved file."""
     text_extractor = OPEATextExtractor()
     mock_path = MagicMock()
     mock_path.resolve.return_value = "/tmp/test_document.txt"
     mock_save_file.return_value = mock_path
-    mock_load_text.return_value = "Parsed text content"
+
+    mock_parser_instance = MagicMock()
+    mock_parser_instance.parse.return_value = "Parsed text content"
+    mock_parser_instance.parse_metadata.return_value = {
+        'filename': 'test_document.txt',
+        'ingestion_date': '2026-02-27',
+    }
+    mock_file_parser.return_value = mock_parser_instance
     mock_exists.return_value = True
 
     text_extractor._load_files([mock_uploadfile])

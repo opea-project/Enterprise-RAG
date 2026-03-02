@@ -233,3 +233,28 @@ class LoadPdf(AbstractLoader):
         logger.info(f"[{self.file_path}] Total processing time: {end_time - start_time:.2f} seconds for {page_count} pages")
 
         return result
+
+    def extract_metadata(self):
+        """Extract rich metadata from PDF document properties."""
+        metadata = super().extract_metadata()
+        
+        try:
+            doc = pymupdf.open(self.file_path)
+            meta = doc.metadata or {}
+            doc.close()
+            
+            if meta.get('title'):
+                metadata['file_title'] = meta['title']
+            if meta.get('author'):
+                metadata['author'] = meta['author']
+            
+            # Parse PDF dates (D:YYYYMMDDHHmmSS format)
+            from datetime import datetime
+            for pdf_key, out_key in [('creationDate', 'creation_date'), ('modDate', 'last_update_date')]:
+                if date_str := meta.get(pdf_key):
+                    clean = (date_str[2:16] if date_str.startswith('D:') else date_str[:14]).ljust(14, '0')
+                    metadata[out_key] = int(datetime.strptime(clean, '%Y%m%d%H%M%S').timestamp())
+        except Exception as e:
+            logger.error(f"[{self.file_path}] PDF metadata extraction failed: {e}")
+        
+        return metadata

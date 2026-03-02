@@ -316,3 +316,22 @@ class LoadPpt(AbstractLoader):
         else:
             self.file_path = pptx_path
             self.file_type = "pptx"
+
+    def extract_metadata(self):
+        """Extract rich metadata from PPTX document properties."""
+        metadata = super().extract_metadata()
+        
+        try:
+            props = pptx.Presentation(self.file_path).core_properties
+            if props.title:
+                metadata['file_title'] = props.title
+            if props.author:
+                metadata['author'] = props.author
+            if props.created:
+                metadata['creation_date'] = int(props.created.timestamp())
+            if props.modified:
+                metadata['last_update_date'] = int(props.modified.timestamp())
+        except Exception as e:
+            logger.error(f"[{self.file_path}] PPTX metadata extraction failed: {e}")
+        
+        return metadata

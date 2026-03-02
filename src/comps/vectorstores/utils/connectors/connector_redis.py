@@ -61,20 +61,21 @@ class ConnectorRedis(VectorStoreConnector):
         metadata_schema = [{"name": field, "type": "text"} for field in base_fields]
         metadata_schema.append({"name": "start_index", "type": "numeric"})
 
-        # Find and update the bucket_name field to include index_missing attribute
-        for field in metadata_schema:
-            if field["name"] == "file_id":
-                field["attrs"] = {"index_missing": True}
-            if field["name"] == "link_id":
-                field["attrs"] = {"index_missing": True}  
+        # Document metadata fields for filtering (text for exact match and wildcard search, numeric for range queries)
+        metadata_schema.extend([{"name": f, "type": "text"} for f in ["file_title", "author"]])
+        metadata_schema.extend([{"name": f, "type": "numeric"} for f in ["creation_date", "ingestion_date", "last_update_date"]])
 
-        if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
-            hierarchical_fields = [
+        # Mark optional fields for index_missing support
+        for field in metadata_schema:
+            if field["name"] in ("file_id", "link_id"):
+                field["attrs"] = {"index_missing": True}
+
+        if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES", "false")).lower() == "true":
+            metadata_schema.extend([
                 {"name": "doc_id", "type": "text"},
                 {"name": "page", "type": "numeric"},
                 {"name": "summary", "type": "numeric"},
-            ]
-            metadata_schema.extend(hierarchical_fields)
+            ])
 
         return metadata_schema
 

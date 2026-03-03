@@ -31,13 +31,13 @@ spec:
           serviceName: embedding-svc
           config:
             endpoint: /v1/embeddings
-            EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
-            EMBEDDING_MODEL_SERVER: "torchserve"
-            EMBEDDING_CONNECTOR: "langchain"
-      - name: TorchserveEmbedding
+            EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
+            EMBEDDING_MODEL_SERVER: "vllm"
+            EMBEDDING_CONNECTOR: "generic"
+      - name: VLLMEmbedding
         dependency: Hard
         internalService:
-          serviceName: torchserve-embedding-svc
+          serviceName: vllm-embedding-svc
           isDownstreamService: true
       - name: Retriever
         data: $response

@@ -26,6 +26,7 @@ extraUiConfigVars:
   chatMaintenanceMode: "{{ upload_pipelines | default(false) | string | lower }}"
   audioEnabled: "{{ audio.enabled | default(false) }}"
   asrModel: "{{ audio.asr_model | default('openai/whisper-small') }}"
+  useBearerTokenAuth: "{{ (edp.storageType | default('') == 'seaweedfs') and (edp.rbac.enabled | default(false)) }}"
 
 service:
   type: ClusterIP

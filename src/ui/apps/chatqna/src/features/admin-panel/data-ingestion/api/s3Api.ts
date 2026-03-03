@@ -8,11 +8,14 @@ import { PostFileRequest } from "@/features/admin-panel/data-ingestion/types/api
 import { RootState } from "@/store";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
+import { getChatQnAAppEnv } from "@/utils";
 
 const s3ApiBaseQuery = fetchBaseQuery({
   prepareHeaders: (headers) => {
     const token = keycloakService.getToken();
-    if (token) {
+    const s3SendBearerTokenEnv = getChatQnAAppEnv("S3_SEND_BEARER_TOKEN");
+
+    if (token && s3SendBearerTokenEnv === "true") {
       headers.set("Authorization", `Bearer ${token}`);
     }
     return headers;

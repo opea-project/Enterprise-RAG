@@ -18,6 +18,7 @@ data:
       {{- if or (eq .Values.type "chatqa") (eq .Values.type "audioqna") }}
       "S3_URL": "https://{{ .Values.extraUiConfigVars.s3DomainName }}",
       "CHAT_DISCLAIMER_TEXT": "{{ .Values.extraUiConfigVars.chatDisclaimerText }}",
+      "S3_SEND_BEARER_TOKEN": {{ (.Values.extraUiConfigVars.useBearerTokenAuth | lower) | quote }},
       {{- end }}
       "ERAG_VERSION": {{ .Chart.AppVersion | quote }},
       "MAINTENANCE_MODE": {{ (.Values.extraUiConfigVars.chatMaintenanceMode | lower) | quote }}

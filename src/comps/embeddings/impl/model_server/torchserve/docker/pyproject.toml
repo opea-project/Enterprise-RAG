@@ -24,9 +24,14 @@ dependencies = [
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "packaging==24.2",
-    "setuptools == 80.10.2",     # security update
     "requests == 2.32.5",
     "urllib3 == 2.6.3",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "setuptools >= 80.10.2"
 ]
 
 [tool.uv.sources]
@@ -38,4 +43,3 @@ torch = [
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
-

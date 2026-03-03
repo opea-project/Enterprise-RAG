@@ -19,8 +19,6 @@ dependencies = [
     "shortuuid==1.0.13",
     "starlette==0.49.1",
     "python-dotenv==1.1.0",
-    # vulnerability updates
-    "urllib3 == 2.6.3",
 ]
 
 [project.optional-dependencies]
@@ -33,4 +31,10 @@ test = [
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "urllib3 == 2.6.3",
 ]

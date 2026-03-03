@@ -25,6 +25,11 @@ dependencies = [
     "llvmlite==0.46.0", # dependency of qwen_tts
 ]
 
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+]
+
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu" },

@@ -40,3 +40,8 @@ test = [
 
 [tool.uv.sources]
 Intel-Enterprise-RAG-VectorStores = { path = "../../../vectorstores/impl/requirements" }
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+]

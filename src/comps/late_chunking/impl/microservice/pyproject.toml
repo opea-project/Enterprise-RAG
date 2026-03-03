@@ -39,3 +39,8 @@ test = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
 ]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+]

@@ -445,7 +445,6 @@ dependencies = [
     { name = "opentelemetry-exporter-otlp" },
     { name = "opentelemetry-sdk" },
     { name = "opentelemetry-semantic-conventions" },
-    { name = "pillow" },
     { name = "prometheus-fastapi-instrumentator" },
     { name = "pyjwt" },
     { name = "pymongo" },
@@ -470,6 +469,11 @@ test = [
     { name = "pytest-cov" },
 ]
 
+[package.dev-dependencies]
+security-overrides = [
+    { name = "pillow" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = "==3.13.3" },
@@ -489,7 +493,6 @@ requires-dist = [
     { name = "opentelemetry-sdk", specifier = "==1.25.0" },
     { name = "opentelemetry-sdk", marker = "extra == 'test'", specifier = "==1.25.0" },
     { name = "opentelemetry-semantic-conventions", specifier = "==0.46b0" },
-    { name = "pillow", specifier = "==11.3.0" },
     { name = "prometheus-fastapi-instrumentator", specifier = "==7.0.0" },
     { name = "pyjwt", specifier = "==2.10.1" },
     { name = "pymongo", specifier = "==4.8.0" },
@@ -505,6 +508,9 @@ requires-dist = [
     { name = "uvicorn", specifier = "==0.30.1" },
 ]
 provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+security-overrides = [{ name = "pillow", specifier = "==11.3.0" }]
 
 [[package]]
 name = "jax"

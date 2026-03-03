@@ -266,14 +266,22 @@ helm upgrade --install nai-core ntnx-charts/nai-core \
 kubectl get pods -n nai-system  
 # All pods should be in Running/Ready state
 ```
+Example output:
+```bash
+NAME                                        READY   STATUS      RESTARTS   AGE
+nai-api-7dbf9c4688-lmg47                    1/1     Running     0          2m20s
+nai-api-db-migrate-7fkuf-74xrd              0/1     Completed   0          2m20s
+nai-db-0                                    1/1     Running     0          2m20s
+nai-iep-model-controller-56875f96c9-n95m8   1/1     Running     0          2m20s
+nai-ui-65ff7f58bb-2clxg                     1/1     Running     0          2m20s
+prometheus-nai-0                            2/2     Running     0          2m18s
+```
 
 ---
 
 ## Dashboard Access
 
 ### Configure TLS and Gateway
-
-Refer to the [Nutanix Enterprise AI Dashboard Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-login-t.html) for complete setup instructions.
 
 ### Setup HTTPS Access
 
@@ -350,10 +358,10 @@ kubectl get svc -n envoy-gateway-system
 # Example output
 NAME                                            TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)                                   AGE
 envoy-gateway                                   ClusterIP      172.20.18.224   <none>                                                                   18000/TCP,18001/TCP,18002/TCP,19001/TCP   7d22h
-envoy-nai-system-nai-ingress-gateway-ff52ba1f   LoadBalancer   172.20.28.43    nutanix-example-url.us-east-1.elb.amazonaws.com   80:30214/TCP,443:31000/TCP                17m
+envoy-nai-system-nai-ingress-gateway-ff52ba1f   LoadBalancer   172.20.28.43    {uuid}.us-east-1.elb.amazonaws.com   80:30214/TCP,443:31000/TCP                17m
 
 # Login URL
-https://nutanix-example-url.us-east-1.elb.amazonaws.com
+https://{uuid}.us-east-1.elb.amazonaws.com
 ```
 
 ### Login Credentials
@@ -374,13 +382,14 @@ Default credentials for Nutanix Enterprise AI portal:
 **Obtain Hugging Face Token:**
 
 1. Sign up at [Hugging Face](https://huggingface.co/) and create an API token
-2. Navigate to **Settings** in the Nutanix Enterprise AI portal (click your username in the top-right corner)
+2. Navigate to **Settings** in the Nutanix Enterprise AI portal
 3. Add your Hugging Face token
 
 **Configure Model Access:**
 
-1. Go to **Settings** in the Nutanix Enterprise AI portal
-2. Click **Allow All** for model access control
+1. Go to **Models** in the Nutanix Enterprise AI portal
+2. Switch to **Model Access Control** tab
+3. Click **Allow All** for model access control
 
 ![Allow All Model Access](./images/image-model-access.png)
 
@@ -453,13 +462,6 @@ kubectl get isvc -n nai-admin
 kubectl describe isvc ENDPOINT_NAME -n nai-admin
 ```
 
-### Fix Prometheus Metrics
-
-```bash
-pip install kubernetes
-python3 fix_metrics.py
-```
-
 ---
 ## 🚀 Congratulations! 🎉
 
@@ -469,6 +471,13 @@ At this point, you have successfully deployed Nutanix Enterprise AI on AWS EKS a
 
 
 ## (OPTIONAL) Monitoring & Troubleshooting
+
+### Fix Prometheus Metrics
+
+```bash
+pip install kubernetes
+python3 fix_metrics.py
+```
 
 #### Common Kubernetes Commands
 

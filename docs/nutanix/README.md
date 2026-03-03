@@ -15,19 +15,23 @@
   - [Architecture Diagram](#architecture-diagram)
     - [Logical architecture diagram](#logical-architecture-diagram)
   - [Deployment Steps](#deployment-steps)
-  - [1.Tools Installation](#1tools-installation)
-    - [Install Terraform](#install-terraform)
-    - [Install AWS CLI](#install-aws-cli)
-    - [Install kubectl](#install-kubectl)
-    - [Install Helm](#install-helm)
-  - [2.Deploy Nutanix Enterprise AI](#2deploy-nutanix-enterprise-ai)
-  - [3.Deploy Intel® AI for Enterprise RAG](#3deploy-intel-ai-for-enterprise-rag)
-  - [4. (Optional) Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint](#4-optional-update-existing-intel-ai-for-enterprise-rag-deployment-to-use-nutanix-enterprise-ai-endpoint)
+  - [1. Tools Installation](#1-tools-installation)
+    - [1.1 Tools Required for EKS](#11-tools-required-for-eks)
+      - [Install Terraform](#install-terraform)
+      - [Install AWS CLI](#install-aws-cli)
+    - [1.2 Tools required for all deployments](#12-tools-required-for-all-deployments)
+      - [Install kubectl](#install-kubectl)
+      - [Install Helm](#install-helm)
+  - [2. Deploy Nutanix Enterprise AI](#2-deploy-nutanix-enterprise-ai)
+  - [3. Configure the Pipeline](#3-configure-the-pipeline)
+  - [4. Deploy Intel® AI for Enterprise RAG](#4-deploy-intel-ai-for-enterprise-rag)
+  - [Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint](#update-existing-intel-ai-for-enterprise-rag-deployment-to-use-nutanix-enterprise-ai-endpoint)
     - [Prerequisites](#prerequisites)
     - [Obtain Nutanix Enterprise AI Endpoint Details](#obtain-nutanix-enterprise-ai-endpoint-details)
     - [Update the ChatQA GMConnector Configuration](#update-the-chatqa-gmconnector-configuration)
     - [Update the vLLM API Key Secret](#update-the-vllm-api-key-secret)
     - [Verify the Configuration](#verify-the-configuration)
+  - [Obtaining Configuration from Nutanix AI LLM Endpoint](#obtaining-configuration-from-nutanix-ai-llm-endpoint)
 
 ## Requirements for Nutanix Enterprise AI + Intel® AI for Enterprise RAG Deployment
 
@@ -49,10 +53,10 @@ These requirements support both Nutanix Enterprise AI and Intel® AI for Enterpr
 | AWS EC2 Instance Type              | 4x m8i.16xlarge                  |
 | GCP Compute Engine Instance Type   | 4x c4-standard-48-lssd           |
 | Azure VM Instance Type             | 4x Standard_D64s_v6              |
-| Remote File Storage (NFS equivalent) | 512GB Total                    
+| Remote File Storage (NFS equivalent) | 512GB Total                    |
 
 > [!NOTE]
-> For VMs, a Virtual core may actually represent a hyperthread. We suggest using VM instances with 64 vCPUs each(or 48 vCPUs if 64 does not exist). 
+> For VMs, a Virtual core may actually represent a hyperthread. We suggest using VM instances with 64 vCPUs each (or 48 vCPUs if 64 does not exist). 
 
 ## Nutanix Enterprise AI Endpoint Configuration
 
@@ -77,7 +81,8 @@ Below are our initial tested SLAs based on the provided system requirements for 
 **Note: Users can introduce other model sizes, but that could impact compatibility and performance. Carefully evaluate your requirements and test thoroughly.**
 
 > [!NOTE]
-> In this case vCPUs means cores with HyperThreading enabled. In other VM environment than AWS, HyperThreading might be disabled.
+> In this case, vCPUs mean cores with HyperThreading enabled. In VM environments other than AWS, HyperThreading might be disabled.
+> If HyperThreading is disabled, balloons needs to be also disabled in `config.yaml`
 
 ## Architecture Diagram
 
@@ -95,8 +100,9 @@ Below are our initial tested SLAs based on the provided system requirements for 
 4. Validate Demo by navigating to the Intel® AI for Enterprise RAG Web Application
 
 
-## 1.Tools Installation
+## 1. Tools Installation
 
+## 1.1 Tools Required for EKS
 ### Install Terraform
 
 Follow Terraform [instructions here](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-terraform)
@@ -133,6 +139,7 @@ curl "https://awscli.amazonaws.com/awscliv2.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
 ```
+## 1.2 Tools Required for all deployments
 
 ### Install kubectl
 
@@ -150,14 +157,58 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 ```
 ---
-## 2.Deploy Nutanix Enterprise AI
+## 2. Deploy Nutanix Enterprise AI
 
 1. For Nutanix Kubernetes Platform (NKP) or on-premises deployments, follow [Nutanix documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_4:top-nai-install-t.html)
 
-2. For AWS EKS follow [EKS Deployment](NUTANIX-AI-EKS.md)
+2. For AWS EKS follow [NAI EKS Deployment](NUTANIX-AI-EKS.md)
+
+## 3. Configure the Pipeline
+### Configure External LLM Endpoint 
+
+Refer to [Obtaining configuration from Nutanix AI LLM Endpoint](#obtaining-configuration-from-nutanix-ai-llm-endpoint) to obtain the configuration needed for this step.
+
+Edit `deployment/pipelines/<your-pipeline>/reference-external-endpoint.yaml` and configure the LLM settings:
+
+```yaml
+config:
+  endpoint: <endpoint path>
+  LLM_MODEL_SERVER: vllm
+  LLM_MODEL_SERVER_ENDPOINT: "https://your-vllm-endpoint.com/api"
+  LLM_MODEL_NAME: <model_name>
+  LLM_VLLM_API_KEY: "your-api-key-here"
+```
+
+Replace the placeholder values with your actual LLM endpoint details.
+
+For higher security in production environments, consider injecting Kubernetes Secrets instead of storing credentials in configuration files. Refer to [Update the vLLM API Key Secret](#update-the-vllm-api-key-secret) for secure credential management.
+
+If your endpoint does not have properly configured TLS you can also add `LLM_TLS_SKIP_VERIFY: "True"`
+
+Or, to update an existing Intel® AI for Enterprise RAG deployment, see [Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint](#update-existing-intel-ai-for-enterprise-rag-deployment-to-use-nutanix-enterprise-ai-endpoint).
+
+### Inventory configuration
+
+Change pipeline file in inventory's `config.yaml` to use file, that you have recently changed
+
+```yaml
+pipelines:
+  - namespace: chatqa
+     samplePath: chatqa/reference-external-endpoint.yaml
+     resourcesPath: chatqa/resources-reference-external-endpoint.yaml
+     modelConfigPath: chatqa/resources-model-cpu.yaml
+     type: chatqa
+ ```
+
+ Additionally, if eRAG and NAI are on the same cluster, balloons needs to be configured:
+```yaml
+balloons:
+    ...
+    vllm_custom_name: "kserve-container" 
+```
 
 ---
-## 3.Deploy Intel® AI for Enterprise RAG
+## 4. Deploy Intel® AI for Enterprise RAG
 
 1. For Nutanix Kubernetes Platform (NKP) or on-premises deployments, follow [Intel® AI for Enterprise RAG deployment on Kubernetes](../application_deployment_guide.md). 
 > [!NOTE] 
@@ -166,26 +217,25 @@ chmod 700 get_helm.sh
 2. For AWS EKS follow [EKS Deployment](../eks_deployment.md)
 
 ---
-## 4. (Optional) Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint 
+# Update Existing Intel® AI for Enterprise RAG Deployment to Use Nutanix Enterprise AI endpoint 
 
-If you have an existing Intel® AI for Enterprise RAG deployment and want to switch the vLLM endpoint to point to a Nutanix Enterprise AI endpoint, follow the steps below. For more details on external LLM endpoint configuration, refer to the [Pipeline Configuration section in the EKS Deployment Guide](../eks_deployment.md#pipeline-configuration-optional).
+If you have an existing Intel® AI for Enterprise RAG deployment and want to switch the vLLM endpoint to point to a Nutanix Enterprise AI endpoint, follow the steps below.
 
-### Prerequisites
+> [!WARNING] 
+> If you are using balloons policy with `vllm_custom_name` set, instalator will check for resources allocated for this model to ensure that it will fit. 
+> If you deploy model that uses more vCPUs than the one that Intel® AI for Enterprise RAG was deployed with, balloons might not work.
+
+## Prerequisites
 
 - An existing Intel® AI for Enterprise RAG deployment with the `chatqa` pipeline running
 - Access to a Nutanix Enterprise AI endpoint (URL, model name, and API key)
 - `kubectl` configured to access your Kubernetes cluster
 
-### Obtain Nutanix Enterprise AI Endpoint Details
+## Obtain Nutanix Enterprise AI Endpoint Details
 
-1. Navigate to your Nutanix Enterprise AI management console
-2. Click on **Endpoints** to view the list of available LLM endpoints
-3. Select the desired vLLM endpoint to view its details, including:
-   - Endpoint URL (e.g., `https://nutanix-ai-endpoint.example.com/api/v1/chat/completions`)
-   - Model name (e.g., `llama-3-3b`)
-   - API key
+Refer to [Obtaining configuration from Nutanix AI LLM Endpoint](#obtaining-configuration-from-nutanix-ai-llm-endpoint) to obtain the configuration needed for this step.
 
-### Update the ChatQA GMConnector Configuration
+## Update the ChatQA GMConnector Configuration
 
 Patch the `chatqa` GMConnector to use the new Nutanix Enterprise AI endpoint:
 
@@ -207,7 +257,7 @@ env:
 
 Save and exit the editor to apply the changes.
 
-### Update the vLLM API Key Secret
+## Update the vLLM API Key Secret
 
 Update the secret containing the vLLM API key with your new Nutanix Enterprise AI API key:
 
@@ -220,7 +270,7 @@ kubectl patch secret vllm-api-key-secret \
 
 Replace `YOUR_NUTANIX_AI_API_KEY_HERE` with the actual API key from your Nutanix Enterprise AI endpoint.
 
-### Verify the Configuration
+## Verify the Configuration
 
 1. Restart the LLM pods to pick up the new configuration:
 
@@ -238,6 +288,52 @@ Look for log entries indicating successful connection to the Nutanix Enterprise 
 [INFO] - [llms_microservice] - Connection with LLM model server validated successfully.
 ```
 
-3. Test through the Chat UI to confirm.
-
+3. Test through the Chat UI to confirm
+For instructions on accessing the UI, see [Access the UI/Grafana](../deployment/README.md#access-the-uigrafana).
 ---
+
+# Obtaining Configuration from Nutanix AI LLM Endpoint
+
+> For complete Nutanix AI endpoint [configuration instructions, refer to the Nutanix AI documentation.](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-endpoints-page-c.html)
+
+High Level steps: Acquire the Nutanix AI vLLM endpoint details from your Nutanix AI deployment.
+
+1. Navigate to your Nutanix AI management Console
+2. Click on "Endpoints" to view the list of available LLM endpoints
+3. Select the desired vLLM endpoint to view its details, including the URL, API key, and Sample Request code (see screenshot).
+
+![Nutanix AI Endpoint](./images/nutanix-endpoint.png)
+
+> [!NOTE]
+> Make sure that your url ends with `/api`
+
+Example Nutanix AI vLLM endpoint configuration:
+```bash
+curl -k -X 'POST' 'https://nutanix-ai-endpoint.example.com/api/v1/chat/completions' \
+ -H "Authorization: Bearer $API_KEY" \
+ -H 'accept: application/json' \
+ -H 'Content-Type: application/json' \
+ -d '{
+      "model": "llama-3-3b",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Explain Deep Neural Networks in simple terms"
+        }
+      ],
+      "max_tokens": 256,
+      "stream": false
+}'
+
+```
+
+Example configuration:
+```yaml
+config:
+  endpoint: /v1/chat/completions
+  LLM_MODEL_SERVER: vllm
+  LLM_MODEL_SERVER_ENDPOINT: "https://nutanix-ai-endpoint.example.com/api"
+  LLM_MODEL_NAME: "llama-3-3b"
+  LLM_VLLM_API_KEY: "your-api-key-here" 
+  LLM_TLS_SKIP_VERIFY: "True"
+```

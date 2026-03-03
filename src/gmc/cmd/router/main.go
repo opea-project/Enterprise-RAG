@@ -105,6 +105,7 @@ type EnsembleStepOutput struct {
 type GMCGraphRoutingError struct {
 	ErrorMessage string `json:"error"`
 	Cause        string `json:"cause"`
+	UserMessage  string `json:"user_message"`
 }
 
 type ReadCloser struct {
@@ -136,11 +137,11 @@ var (
 	llmAllTokensLatencyMeasure  metric.Float64Histogram
 
 	// pipeline preceding LLM (pre-LLM)
-	pipelineLatencyMeasure   metric.Float64Histogram
-	stepLatencyMeasure       metric.Float64Histogram
+	pipelineLatencyMeasure metric.Float64Histogram
+	stepLatencyMeasure     metric.Float64Histogram
 
 	// e2e (pipeline + llm)
-	e2eLatencyMeasure metric.Float64Histogram
+	e2eLatencyMeasure                 metric.Float64Histogram
 	e2eTimeToFirstTokenLatencyMeasure metric.Float64Histogram
 )
 
@@ -227,7 +228,6 @@ func initMeter() {
 	if err != nil {
 		log.Error(err, "metrics: cannot register e2e TTFT latency histogram measure")
 	}
-
 
 	println("otel/metrics: configured")
 }
@@ -435,10 +435,48 @@ func pickupRouteByCondition(initInput []byte, condition string) bool {
 	return false
 }
 
+// extractUserMessage attempts to extract a user-friendly error message from the raw error cause string.
+// It searches for a 'message' field in common error formats returned by LLM/embedding backends
+//
+// Extraction priority:
+//  1. 'message' field value from Python dict or JSON formats, e.g.:
+//     - Input:  `{'message': "Token limit exceeded", 'code': 400}` -> Output: `Token limit exceeded`
+//     - Input:  `{"message":"Token limit exceeded","code":400}` -> Output: `Token limit exceeded`
+//  2. Text after "Error details: " prefix, e.g.:
+//     - Input:  `Error occured for step... Error details: Internal server error` -> Output: `Internal server error`
+//  3. Full cause string as-is (fallback)
+func extractUserMessage(cause string) string {
+	// Try to find 'message' field in various quote/spacing formats used by Python dicts and JSON.
+	// The last character of each prefix serves as the closing delimiter for the value.
+	for _, prefix := range []string{`'message': "`, `'message': '`, `"message":"`, `"message": "`} {
+		idx := strings.Index(cause, prefix)
+		if idx == -1 {
+			continue
+		}
+		start := idx + len(prefix)
+		delimiter := prefix[len(prefix)-1]
+		end := strings.Index(cause[start:], string(delimiter))
+		if end == -1 {
+			continue
+		}
+		return cause[start : start+end]
+	}
+
+	// Fallback: extract everything after "Error details: " prefix
+	const errorDetailsPrefix = "Error details: "
+	if idx := strings.Index(cause, errorDetailsPrefix); idx != -1 {
+		return cause[idx+len(errorDetailsPrefix):]
+	}
+
+	return cause
+}
+
 func prepareErrorResponse(err error, errorMessage string) []byte {
+	cause := fmt.Sprintf("%v", err)
 	igRoutingErr := &GMCGraphRoutingError{
 		errorMessage,
-		fmt.Sprintf("%v", err),
+		cause,
+		extractUserMessage(cause),
 	}
 	errorResponseBytes, err := json.Marshal(igRoutingErr)
 	if err != nil {
@@ -475,7 +513,7 @@ func callService(
 	// Determine timeout and max retries based on namespace and step name
 	timeout := CallClientTimeoutSeconds * time.Second
 	maxRetries := 0
-	
+
 	// Special handling for docsum namespace TextExtractor and TextSplitter steps
 	// FIXME: Workaroud for 2nd request after deployment freezing on services with ProcessPoolExecutor
 	if OtelNamespace == "docsum" && (step.StepName == "TextExtractor" || step.StepName == "TextSplitter") {
@@ -548,7 +586,7 @@ func callService(
 		if err != nil {
 			lastErr = err
 			otlpr.WithContext(log, ctx).Error(err, "An error has occurred while calling service", "service", serviceUrl, "attempt", attempt)
-			
+
 			// If we have retries left, continue to next attempt
 			if attempt < maxRetries {
 				// Add a small backoff delay before retry
@@ -1158,14 +1196,14 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 			}
 
 			// Check if this is a json: response or already identified as one
-            currentChunk := string(buffer[:n])
+			currentChunk := string(buffer[:n])
 			isJSONStart := strings.HasPrefix(currentChunk, "json:")
 			isDataDoneWithJSON := strings.HasPrefix(currentChunk, "data:") &&
-									strings.Contains(currentChunk, "[DONE]") &&
-									strings.Contains(currentChunk, "json:")
+				strings.Contains(currentChunk, "[DONE]") &&
+				strings.Contains(currentChunk, "json:")
 
-            if isJSONStart || isDataDoneWithJSON {
-                remainingBytes, readErr := io.ReadAll(responseBody)
+			if isJSONStart || isDataDoneWithJSON {
+				remainingBytes, readErr := io.ReadAll(responseBody)
 				if readErr != nil {
 					otlpr.WithContext(log, ctx).Error(readErr, "failed to read remaining response body after json: prefix")
 					spanTokens.RecordError(readErr)
@@ -1176,7 +1214,7 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 				}
 
 				// Combine first chunk with remaining data
-        		fullResponse := currentChunk + string(remainingBytes)
+				fullResponse := currentChunk + string(remainingBytes)
 
 				w.Header().Set("Content-Type", "application/json")
 				if _, err := w.Write([]byte(fullResponse)); err != nil {
@@ -1198,8 +1236,7 @@ func mcGraphHandler(w http.ResponseWriter, req *http.Request) {
 					return
 				}
 				break
-            }
-
+			}
 
 			if !firstTokenCollected {
 				firstTokenCollected = true

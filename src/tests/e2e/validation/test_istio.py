@@ -44,7 +44,6 @@ chatqa_endpoints = [
     "retriever-svc.chatqa.svc.cluster.local:6620",
     "router-service.chatqa.svc.cluster.local:8080",
     "torchserve-reranking-svc.chatqa.svc.cluster.local:8090",
-    "torchserve-embedding-svc.chatqa.svc.cluster.local:8090",
     # vllm endpoint name is different depending on the platform
     # "vllm-service-m.chatqa.svc.cluster.local:8000"
 ]
@@ -60,10 +59,15 @@ edp_endpoints = [
     "edp-backend.edp.svc.cluster.local:5000",
     "edp-celery.edp.svc.cluster.local:5000",
     "edp-flower.edp.svc.cluster.local:5555",
-    "edp-minio.edp.svc.cluster.local:9000"
 ]
 if cfg.get("edp", {}).get("enabled"):
     http_endpoints.extend(edp_endpoints)
+
+seaweedfs_endpoints = [
+    "seaweedfs-s3.seaweedfs.svc.cluster.local:8333",
+]
+if cfg.get("edp", {}).get("enabled") and cfg.get("edp", {}).get("storageType") == "seaweedfs":
+    http_endpoints.extend(seaweedfs_endpoints)
 
 fingerprint_endpoints = [
     "fingerprint-svc.fingerprint.svc.cluster.local:6012",
@@ -77,23 +81,29 @@ docsum_endpoints = [
     "router-service.docsum.svc.cluster.local:8080",
     "text-compression-svc.docsum.svc.cluster.local:9397",
     "text-extractor-svc.docsum.svc.cluster.local:9398",
-    "text-splitter-svc.docsum.svc.cluster.local:9399"
+    "text-splitter-svc.docsum.svc.cluster.local:9399",
+    "vllm-service-m.docsum.svc.cluster.local:8000",
 ]
 for pipeline in cfg.get("pipelines", []):
     if pipeline.get("type") == "docsum":
         http_endpoints.extend(docsum_endpoints)
 
-telemetry_endpoints = [
-    # # Monitoring-traces endpoints
+telemetry_traces_endpoints = [
     "otelcol-traces-collector.monitoring-traces.svc.cluster.local:4318",
     "otelcol-traces-collector-monitoring.monitoring-traces.svc.cluster.local:8888",
     "telemetry-traces-otel-operator.monitoring-traces.svc.cluster.local:8080",
     "telemetry-traces-otel-operator-webhook.monitoring-traces.svc.cluster.local:443",
     "telemetry-traces-tempo.monitoring-traces.svc.cluster.local:4318",
-    # # Monitoring endpoints
+]
+if cfg.get("telemetry", {}).get("enabled") and cfg.get("telemetry", {}).get("traces", {}).get("enabled"):
+    http_endpoints.extend(telemetry_traces_endpoints)
+
+telemetry_endpoints = [
     "alertmanager-operated.monitoring.svc.cluster.local:9094",
     "loki-canary.monitoring.svc.cluster.local:3500",
     "loki-memberlist.monitoring.svc.cluster.local:7946",
+    # prometheus-adapter serves Kubernetes aggregated API called by kube-apiserver (not in mesh)
+    # "prometheus-adapter.monitoring.svc.cluster.local:443",
     "prometheus-operated.monitoring.svc.cluster.local:9090",
     "telemetry-grafana.monitoring.svc.cluster.local:80",
     "telemetry-kube-prometheus-alertmanager.monitoring.svc.cluster.local:8080",
@@ -109,10 +119,19 @@ telemetry_endpoints = [
     "telemetry-logs-minio-svc.monitoring.svc.cluster.local:9000",
     # Node exporter access cannot be restricted
     # "telemetry-prometheus-node-exporter.monitoring.svc.cluster.local:9100",
-    "telemetry-prometheus-redis-exporter.monitoring.svc.cluster.local:9121"
 ]
 if cfg.get("telemetry", {}).get("enabled"):
     http_endpoints.extend(telemetry_endpoints)
+
+audio_endpoints = [
+    "asr-svc.audio.svc.cluster.local:9009",
+    "namespace-status-watcher-svc.audio.svc.cluster.local:9010",
+    "tts-fastapi-model-server.audio.svc.cluster.local:8008",
+    "tts-svc.audio.svc.cluster.local:9009",
+    "vllm-audio-cpu.audio.svc.cluster.local:8008",
+]
+if cfg.get("audio", {}).get("enabled"):
+    http_endpoints.extend(audio_endpoints)
 
 redis_endpoints = [
     # gets populated within prepare_tests fixture
@@ -127,7 +146,7 @@ if cfg.get("edp", {}).get("enabled"):
 
 mongodb_endpoints = []
 if cfg.get("fingerprint", {}).get("enabled"):
-    mongodb_endpoints = ["fingerprint-mongodb.fingerprint.svc.cluster.local:27017"]
+    mongodb_endpoints = ["fingerprint-mongodb-ferretdb.fingerprint.svc.cluster.local:27017"]
 
 istio_test_data = {
     ConnectionType.HTTP: http_endpoints,
@@ -166,7 +185,7 @@ def get_vector_db_endpoints():
 
 def get_edp_redis_endpoints():
     if cfg.get("edp", {}).get("enabled"):
-        return ["edp-redis-master.edp.svc.cluster.local:6379"]
+        return ["edp-redis.edp.svc.cluster.local:6379"]
     return []
 
 
@@ -201,7 +220,6 @@ class TestIstioInMesh:
         yield
         istio_helper.delete_namespace()
 
-    @pytest.mark.xfail(reason="Fix to be implemented")
     @allure.testcase("IEASG-T142")
     def test_authorization_gets_connections_blocked(self, istio_helper):
         endpoints = {endpoint: connection_type for connection_type, endpoint_list in istio_test_data.items() for endpoint in endpoint_list}

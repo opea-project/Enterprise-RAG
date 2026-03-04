@@ -50,6 +50,7 @@ test = [
 [dependency-groups]
 security-overrides = [
   "pillow>=12.1.1",
+  "nltk>=3.9.3",
 ]
 
 [tool.uv.sources]

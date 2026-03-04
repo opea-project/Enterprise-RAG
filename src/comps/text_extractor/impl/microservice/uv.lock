@@ -246,15 +246,6 @@ wheels = [
 ]
 
 [[package]]
-name = "chardet"
-version = "5.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f3/0d/f7b6ab21ec75897ed80c17d79b15951a719226b9fababf1e40ea74d69079/chardet-5.2.0.tar.gz", hash = "sha256:1b3b6ff479a8c414bc3fa2c0852995695c4a026dcd6d0633b2dd092ca39c1cf7", size = 2069618, upload-time = "2023-08-01T19:23:02.662Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/6f/f5fbc992a329ee4e0f288c1fe0e2ad9485ed064cac731ed2fe47dcc38cbf/chardet-5.2.0-py3-none-any.whl", hash = "sha256:e1cf59446890a00105fe7b7912492ea04b6e6f06d4b742b2c788469e34c82970", size = 199385, upload-time = "2023-08-01T19:23:00.661Z" },
-]
-
-[[package]]
 name = "charset-normalizer"
 version = "3.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -976,6 +967,7 @@ test = [
 
 [package.dev-dependencies]
 security-overrides = [
+    { name = "nltk" },
     { name = "pillow" },
 ]
 
@@ -1037,14 +1029,17 @@ requires-dist = [
     { name = "torch", specifier = "==2.8.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torchvision", specifier = "==0.23.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "transformers", specifier = "==4.53.0" },
-    { name = "unstructured", extras = ["all-docs"], specifier = "==0.17.2" },
+    { name = "unstructured", extras = ["all-docs"], specifier = "==0.18.18" },
     { name = "urllib3", specifier = "==2.6.3" },
     { name = "uvicorn", specifier = "==0.30.1" },
 ]
 provides-extras = ["test"]
 
 [package.metadata.requires-dev]
-security-overrides = [{ name = "pillow", specifier = ">=12.1.1" }]
+security-overrides = [
+    { name = "nltk", specifier = ">=3.9.3" },
+    { name = "pillow", specifier = ">=12.1.1" },
+]
 
 [[package]]
 name = "jax"
@@ -1641,6 +1636,19 @@ wheels = [
 ]
 
 [[package]]
+name = "msoffcrypto-tool"
+version = "6.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "olefile" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a6/34/6250bdddaeaae24098e45449ea362fb3555a65fba30cad0ad5630ea48d1a/msoffcrypto_tool-6.0.0.tar.gz", hash = "sha256:9a5ebc4c0096b42e5d7ebc2350afdc92dc511061e935ca188468094fdd032bbe", size = 40593, upload-time = "2026-01-12T08:59:56.73Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3c/85/9e359fa9279e1d6861faaf9b6f037a3226374deb20a054c3937be6992013/msoffcrypto_tool-6.0.0-py3-none-any.whl", hash = "sha256:46c394ed5d9641e802fc79bf3fb0666a53748b23fa8c4aa634ae9d30d46fe397", size = 48791, upload-time = "2026-01-12T08:59:55.394Z" },
+]
+
+[[package]]
 name = "multidict"
 version = "6.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1687,7 +1695,7 @@ wheels = [
 
 [[package]]
 name = "nltk"
-version = "3.9.2"
+version = "3.9.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -1695,9 +1703,9 @@ dependencies = [
     { name = "regex" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/76/3a5e4312c19a028770f86fd7c058cf9f4ec4321c6cf7526bab998a5b683c/nltk-3.9.2.tar.gz", hash = "sha256:0f409e9b069ca4177c1903c3e843eef90c7e92992fa4931ae607da6de49e1419", size = 2887629, upload-time = "2025-10-01T07:19:23.764Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/8f/915e1c12df07c70ed779d18ab83d065718a926e70d3ea33eb0cd66ffb7c0/nltk-3.9.3.tar.gz", hash = "sha256:cb5945d6424a98d694c2b9a0264519fab4363711065a46aa0ae7a2195b92e71f", size = 2923673, upload-time = "2026-02-24T12:05:53.833Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/90/81ac364ef94209c100e12579629dc92bf7a709a84af32f8c551b02c07e94/nltk-3.9.2-py3-none-any.whl", hash = "sha256:1e209d2b3009110635ed9709a67a1a3e33a10f799490fa71cf4bec218c11c88a", size = 1513404, upload-time = "2025-10-01T07:19:21.648Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/7e/9af5a710a1236e4772de8dfcc6af942a561327bb9f42b5b4a24d0cf100fd/nltk-3.9.3-py3-none-any.whl", hash = "sha256:60b3db6e9995b3dd976b1f0fa7dec22069b2677e759c28eb69b62ddd44870522", size = 1525385, upload-time = "2026-02-24T12:05:46.54Z" },
 ]
 
 [[package]]
@@ -3323,12 +3331,12 @@ wheels = [
 
 [[package]]
 name = "unstructured"
-version = "0.17.2"
+version = "0.18.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
     { name = "beautifulsoup4" },
-    { name = "chardet" },
+    { name = "charset-normalizer" },
     { name = "dataclasses-json" },
     { name = "emoji" },
     { name = "filetype" },
@@ -3348,9 +3356,9 @@ dependencies = [
     { name = "unstructured-client" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/49/b95ff4b609d7328cd0394ac9d8ad69839e11a1f879462496afcf4887154a/unstructured-0.17.2.tar.gz", hash = "sha256:af18c3caef0a6c562cf77e34ee8b6ff522b605031d2336ffe565df66f126aa46", size = 1684745, upload-time = "2025-03-20T16:55:58.507Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/46/ed7c358d0a8851ff10e761888baade66a7061e05c40092f8239b98b860c5/unstructured-0.18.18.tar.gz", hash = "sha256:cfe6c84a36d374e5767930e13cfc10622357b3b68a5b7c735fdb1eeca08c6b57", size = 1693431, upload-time = "2025-11-07T01:07:20.186Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/88/061a9dedd4e8cc0c31097c3275a9ef1fd7307e26afac5cd582487386e1b8/unstructured-0.17.2-py3-none-any.whl", hash = "sha256:527dd26a4b273aebef2f9119c9d4f0d0ce17640038d92296d23abe89be123840", size = 1771563, upload-time = "2025-03-20T16:55:56.751Z" },
+    { url = "https://files.pythonhosted.org/packages/88/32/060aa452bb92384ab6f07eaee736131f894c6023a35d5fc4870621af13c3/unstructured-0.18.18-py3-none-any.whl", hash = "sha256:d5189bdd5e2a1c5ed3cc289cfb4fb483c6f2dd544b42744bdc5b81d3388ea527", size = 1779719, upload-time = "2025-11-07T01:07:18.156Z" },
 ]
 
 [package.optional-dependencies]
@@ -3358,6 +3366,7 @@ all-docs = [
     { name = "effdet" },
     { name = "google-cloud-vision" },
     { name = "markdown" },
+    { name = "msoffcrypto-tool" },
     { name = "networkx" },
     { name = "onnx" },
     { name = "onnxruntime" },

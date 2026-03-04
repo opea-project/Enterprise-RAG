@@ -95,6 +95,11 @@ def test_ppt_text_only(edp_helper, chatqa_api_helper, test_data):
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
+def test_msg_text_only(edp_helper, chatqa_api_helper, test_data):
+    """*.msg file learning capabilities (Outlook email - pure text inside the file)"""
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
+
 @allure.testcase("IEASG-T107")
 def test_md_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.md file learning capabilities (pure text inside the file)"""
@@ -168,34 +173,15 @@ def test_xml_text_only(edp_helper, chatqa_api_helper, test_data):
 
 
 @allure.testcase("IEASG-T162")
-def test_docx_multi_paragraph(edp_helper, chatqa_api_helper):
+def test_docx_multi_paragraph(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (multiple paragraphs inside the file)"""
-    question = ("How many people work in the team that the Cloud Solutions Developer Intern for AI RAG Application "
-                "candidate joins?")
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "Front-end Intern_example.docx", question)
-    assert chatqa_api_helper.words_in_response(["12", "13"], response), UNRELATED_RESPONSE_MSG
-    question = "What is the name of the group offering the Cloud Solutions Developer Intern for AI RAG position?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["dcai", "ecosystem"], response), UNRELATED_RESPONSE_MSG
-    question = ("What technologies do I need to know when applying for the position of "
-                "Cloud Solutions Developer Intern for AI RAG Application?")
-    response = ask_question(chatqa_api_helper, question)
-    technologies = ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", 
-                    "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
-    assert chatqa_api_helper.words_in_response(technologies, response), (
-        UNRELATED_RESPONSE_MSG)
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T163")
-def test_docx_with_images(edp_helper, chatqa_api_helper):
+def test_docx_with_images(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (with images and text surrounding the images)"""
-    question = "What was Vellimer doing when the storm occurred?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story_docx_pictures.docx", question)
-    assert chatqa_api_helper.words_in_response(["roof", "rod", "waiting"], response), UNRELATED_RESPONSE_MSG
-    question = ("How does the village of Fernloft remember Vellimer today?"
-                "What signs make them think he might still be around? ")
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["broom", "weather"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @pytest.mark.xfail(reason="Feature not implemented yet")
@@ -208,130 +194,73 @@ def test_get_context_from_filename(edp_helper, chatqa_api_helper):
 
 
 @allure.testcase("IEASG-T166")
-def test_docx_tables(edp_helper, chatqa_api_helper):
+def test_docx_tables(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (with tables inside the file)"""
-    # 1. Table with a single cell
-    question = "What was the profession of the person who whispered the name Trenvahir?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_table_single_cell.docx", question)
-    assert chatqa_api_helper.words_in_response(["clockmaker"], response), UNRELATED_RESPONSE_MSG
-    # 2. Table with many cells
-    question = "Who discovered a plant called Whisperfern Lucida?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_table.docx", question)
-    assert chatqa_api_helper.words_in_response(["kren", "talweir"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T165")
-def test_docx_formatted_text(edp_helper, chatqa_api_helper):
+def test_docx_formatted_text(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (with formatted text inside the file)"""
-    # 1. Check if heading is recognized
-    question = "What is the full name of girl called Lucifelle?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_formatted_text.docx", question)
-    assert chatqa_api_helper.words_in_response(["lunibelle", "sound"], response), UNRELATED_RESPONSE_MSG
-    # 2. Test italic text
-    question = "In the story about Lunibelle Lucifelle, what did the girl loved to collect?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["sound"], response), UNRELATED_RESPONSE_MSG
-    # 3. Test bold text
-    question = "How did the villagers perceive Lunibelle Lucifelle?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["strange", "kind"], response), UNRELATED_RESPONSE_MSG
-    # 4. Test underline text
-    question = "What happened to the village during the storm in the story about Lunibelle Lucifelle?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["disappeared", "silent", "no voices", "trees creaked"], response),(
-        UNRELATED_RESPONSE_MSG)
-    # 5. Test color text
-    question = "What did Lunibelle Lucifelle do when she reached the center of the square?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["box", "whisper", "sky"], response), UNRELATED_RESPONSE_MSG
-    # 6. Test text highlighted in yellow
-    question = "What sound did the rain make in the story about Lunibelle Lucifelle?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["clapped", "clapping", "hands"], response), UNRELATED_RESPONSE_MSG
-    # 7. Test big text
-    question = "How do people react when they hear the wind play a soft tune in the story about Lunibelle Lucifelle?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["smile"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T167")
-def test_docx_with_hyperlink(edp_helper, chatqa_api_helper):
+def test_docx_with_hyperlink(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (with hyperlinks inside the file)"""
-    question = "Give me a link to a website called AAAFFFGGGKKK"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_with_hyperlink.docx", question)
-    assert "aaafffgggkkk-top-secret.com" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T168")
-def test_docx_numbered_and_bulleted_lists(edp_helper, chatqa_api_helper):
+def test_docx_numbered_and_bulleted_lists(edp_helper, chatqa_api_helper, test_data):
     """*.docx file learning capabilities (with numbered and bulleted lists inside the file)"""
-    # 1. Test bulleted list
-    question = "When was the document 'YYTTRREEWWQQ' created at?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_docx_numbered_and_bulleted_lists.docx", question)
-    assert "17" in response.lower(), UNRELATED_RESPONSE_MSG
-    # 2. Test numbered list
-    question = "What happens when the 'vanishing algorithm' is executed in a closed environment?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["0.43", "0,43"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @pytest.mark.smoke
 @allure.testcase("IEASG-T169")
-def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper):
+def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper, test_data):
     """Verify if the content is actually forgotten after file deletion"""
-    question = "What did the note say that Zenvorlith Marnqueeble left when he disappeared?"
-    file_name = "story_to_be_deleted.txt"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, file_name, question)
-    assert chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
-    response = delete_file(edp_helper, os.path.join(DATAPREP_UPLOAD_DIR, file_name))
+    stage = test_data.stages[0]
+    file_name = stage["files"][0]
+    question = stage["questions"][0]["question"]
+    expected = stage["questions"][0]["expected_any"]
+
+    file_path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
+    logger.info(f"Ingesting file: {file_name}")
+    edp_helper.upload_file_and_wait_for_ingestion(file_path)
+    response = ask_question(chatqa_api_helper, question)
+    assert chatqa_api_helper.words_in_response(expected, response), UNRELATED_RESPONSE_MSG
+
+    response = delete_file(edp_helper, file_path)
     assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
     logger.debug("Sleeping to make sure the file is deleted")
     time.sleep(10)
     logger.debug("Asking question once again after file deletion")
     response = ask_question(chatqa_api_helper, question)
-    assert not chatqa_api_helper.words_in_response(["nice", "forget", "remember"], response), UNRELATED_RESPONSE_MSG
+    assert not chatqa_api_helper.words_in_response(expected, response), UNRELATED_RESPONSE_MSG
 
 
 @allure.testcase("IEASG-T176")
-def test_adoc_basic(edp_helper, chatqa_api_helper):
+def test_adoc_basic(edp_helper, chatqa_api_helper, test_data):
     """Validate basic *.adoc files support and learning capabilities"""
-    # 1. Test lists
-    question = "What did Grendal Nuvrick see when he woke up?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "story.adoc", question)
-    assert "squirrel" in response.lower(), UNRELATED_RESPONSE_MSG
-
-    # 2. Test titles
-    question = "What are the titles in the story about Grendal Nuvrick?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["strange", "end"], response), UNRELATED_RESPONSE_MSG
-
-    # 3. Text formatting
-    question = "What did Grendal Nuvrick say when he saw the squirrel?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["not", "normal"], response), UNRELATED_RESPONSE_MSG
-    question = "What did Grendal Nuvrick say when he opened the door and smiled?"
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["think", "stay"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T177")
-def test_adoc_recognized_as_troff_mime_type(edp_helper, chatqa_api_helper):
+def test_adoc_recognized_as_troff_mime_type(edp_helper, chatqa_api_helper, test_data):
     """
     Upload a file with 'text/troff' mime type.
     Check if the file is recognized as adoc.
     Ask a question related to the content of the file.
     """
-    question = " What category does Flornax Quibit belong to?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_troff_mime_type.adoc", question)
-    assert "homeware" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T178")
-def test_adoc_links(edp_helper, chatqa_api_helper):
+def test_adoc_links(edp_helper, chatqa_api_helper, test_data):
     """Check if links are properly extracted from the adoc file"""
-    question = "Give me a link to the website that describes the story of a man named Snorflina Quibbledew"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_links.adoc", question)
-    assert "https://pppoooiiiuuu.org" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T179")
@@ -341,45 +270,25 @@ def test_adoc_tables(edp_helper, chatqa_api_helper, test_data):
 
 
 @allure.testcase("IEASG-T180")
-def test_adoc_source_code(edp_helper, chatqa_api_helper):
+def test_adoc_source_code(edp_helper, chatqa_api_helper, test_data):
     """Put a code block in the adoc file and check if it is recognized"""
-    question = ("What does the dockerfile set up? I refer to "
-                "'Example Dockerfile with Explanations' document created by LipTanBuTan")
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_source_code.adoc", question)
-    assert chatqa_api_helper.words_in_response(["flask", "python", "web"], response), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T181")
-def test_adoc_substitutions(edp_helper, chatqa_api_helper):
+def test_adoc_substitutions(edp_helper, chatqa_api_helper, test_data):
     """Check if substitutions are recognized in the text (*.adoc file)"""
-    question = "What village did Plonka Nibbertwist live in?"
-    response = upload_and_ask_question(edp_helper, chatqa_api_helper, "test_adoc_substitutions.adoc", question)
-    assert "zumbleflick" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T262")
-def test_logs_parsing_capability(edp_helper, chatqa_api_helper):
+def test_logs_parsing_capability(edp_helper, chatqa_api_helper, test_data):
     """Check if chatbot can extract information from log files"""
-    file = "system_logs.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
-
-    question = ("How many WARNING logs came from the MonitoringService? "
-                "These logs have the following string inside: '[MonitoringService] WARNING'")
-    response = ask_question(chatqa_api_helper, question)
-    assert chatqa_api_helper.words_in_response(["3", "three"], response), UNRELATED_RESPONSE_MSG
-
-    question = "At what time did the ERROR from InventoryService occur?"
-    response = ask_question(chatqa_api_helper, question)
-    assert "10:01:47" in response.lower(), UNRELATED_RESPONSE_MSG
-
-    question = ("What was the last WARNING that comes from PaymentService? Provide the full log line. "
-                "It should contain [PaymentService] string inside.")
-    response = ask_question(chatqa_api_helper, question)
-    assert "transaction tx1005 delayed due to network latency" in response.lower(), UNRELATED_RESPONSE_MSG
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
 @allure.testcase("IEASG-T264")
-def test_reupload(edp_helper, chatqa_api_helper):
+def test_reupload(edp_helper, chatqa_api_helper, test_data):
     """Check if re-uploading the same file and updated file works as expected"""
 
     def modify_file(file__to_modify, old_value, new_value):
@@ -389,32 +298,38 @@ def test_reupload(edp_helper, chatqa_api_helper):
             f.write(content)
             f.truncate()
 
-    question = "How many vinyl records does Frankooo have as of September 17, 2025?"
-    file = "test_reupload.txt"
-    file_path = os.path.join(DATAPREP_UPLOAD_DIR, file)
+    stage = test_data.stages[0]
+    file_name = stage["files"][0]
+    question = stage["questions"][0]["question"]
+    expected_initial = stage["questions"][0]["expected_any"][0]
+    expected_modified = stage["questions"][0]["expected_modified"]
+    modify_old = stage["questions"][0]["modify_old"]
+    modify_new = stage["questions"][0]["modify_new"]
+
+    file_path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
 
     # Upload initial file
     edp_helper.upload_file_and_wait_for_ingestion(file_path)
     response = ask_question(chatqa_api_helper, question)
-    assert "187" in response, UNRELATED_RESPONSE_MSG
+    assert expected_initial in response, UNRELATED_RESPONSE_MSG
 
     # Re-upload the same file
     edp_helper.upload_file_and_wait_for_ingestion(file_path)
     response = ask_question(chatqa_api_helper, question)
-    assert "187" in response, UNRELATED_RESPONSE_MSG
+    assert expected_initial in response, UNRELATED_RESPONSE_MSG
 
     # Upload updated file
     try:
-        modify_file(file_path, "187", "212")
+        modify_file(file_path, modify_old, modify_new)
         edp_helper.upload_file_and_wait_for_ingestion(file_path)
         response = ask_question(chatqa_api_helper, question)
-        assert "212" in response, UNRELATED_RESPONSE_MSG
+        assert expected_modified in response, UNRELATED_RESPONSE_MSG
     finally:
-        modify_file(file_path, "212", "187")  # restore original file content
+        modify_file(file_path, modify_new, modify_old)  # restore original file content
 
 
 @allure.testcase("IEASG-T249")
-def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerprint_api_helper, test_data):
     """
     Upload a file with a list of 20 elements.
     Ask a question that requires the entire list to be included in the answer.
@@ -431,43 +346,50 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
     if not original_k or not original_search_type:
         pytest.skip("Failed to get current retriever's parameters")
 
-    file = "test_similarity_search_with_siblings.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
-    question = "List 20 Principles for a Meaningful Life by Giorgiooo"
+    stage = test_data.stages[0]
+    file_name = stage["files"][0]
+    question = stage["questions"][0]["question"]
+    expected_absent = stage["questions"][0]["expected_absent"]
+    expected_present = stage["questions"][0]["expected_present"]
+
+    file_path = os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file_name)
+    edp_helper.upload_file_and_wait_for_ingestion(file_path)
 
     try:
         if original_search_type != "similarity":
             fingerprint_api_helper.set_component_parameters("retriever", search_type="similarity", k=original_k)
 
         response = ask_question(chatqa_api_helper, question)
-        assert "Stay humble" not in response, ("'Stay humble' is the last principle in the list. It should not be "
+        assert expected_absent not in response, (f"'{expected_absent}' is the last principle in the list. It should not be "
                                                "included in the answer when search_type='similarity'")
 
         # Change search type to similarity_with_siblings. Expect the response to be longer
         fingerprint_api_helper.set_component_parameters("retriever", search_type="similarity_search_with_siblings",
                                                         k=original_k)
         response = ask_question(chatqa_api_helper, question)
-        assert "Stay humble" in response, "With similarity_with_siblings search type, the answer should be longer"
+        assert expected_present in response, "With similarity_with_siblings search type, the answer should be longer"
     finally:
         # Restore default parameters
         fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
 
 
 @allure.testcase("IEASG-T308")
-def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper):
+def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper, test_data):
     """
     Upload a file with a list of 35 elements.
     Ask a question that requires the entire list to be included in the answer.
     With late chunking enabled, expect the full answer. Otherwise, just save the response for comparison.
     """
-    file = "test_late_chunking.txt"
-    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(DATAPREP_UPLOAD_DIR, file))
-    question = "List 35 cities in Europe to visit by Zaravinth"
+    stage = test_data.stages[0]
+    file = stage["files"][0]
+    q = stage["questions"][0]
 
-    response = ask_question(chatqa_api_helper, question)
+    edp_helper.upload_file_and_wait_for_ingestion(os.path.join(TEST_FILES_DIR, f"dataset_{test_data.language}", file))
+
+    response = ask_question(chatqa_api_helper, q["question"])
     if cfg.get("edp", {}).get("late_chunking", {}).get("enabled", False):
         # With late chunking enabled, expect the full answer
-        assert chatqa_api_helper.words_in_response(["Rome", "Dublin", "Malmo", "Bruges", "Milan"], response)
+        assert chatqa_api_helper.words_in_response(q["expected_all"], response)
 
 
 @pytest.mark.xfail(reason="Feature not implemented yet - requires graph structures support")

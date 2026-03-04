@@ -125,6 +125,17 @@ test_ppt_text_only:
       questions:
         - question: "Jak Snizzleflap przybył do Fluffington?"
           expected_any: ["puszyst", "chmur", "kłębiastej"]
+test_msg_text_only:
+  - en:
+      files: [story.msg]
+      questions:
+        - question: "Who discovered a hidden library in the mountains?"
+          expected_any: ["Zylvanthor"]
+    pl:
+      files: [story.msg]
+      questions:
+        - question: "Kto odkrył ukrytą bibliotekę w górach?"
+          expected_any: ["Zylvanthor"]
 test_md_text_only:
   - en:
       files: [story.md]
@@ -257,4 +268,257 @@ test_xml_text_only:
       questions:
         - question: "Z czego znany był Tressivorn Quindle w Bravenreach?"
           expected_any: ["warz", "unikal", "mikstur"]
-
+test_adoc_basic:
+  - en:
+      files: [story.adoc]
+      questions:
+        - question: "What did Grendal Nuvrick see when he woke up?"
+          expected_any: ["squirrel"]
+        - question: "What are the titles in the story about Grendal Nuvrick?"
+          expected_any: ["strange", "end"]
+        - question: "What did Grendal Nuvrick say when he saw the squirrel?"
+          expected_any: ["not", "normal"]
+        - question: "What did Grendal Nuvrick say when he opened the door and smiled?"
+          expected_any: ["think", "stay"]
+    pl:
+      files: [story.adoc]
+      questions:
+        - question: "Co zobaczył Grendal Nuvrick, gdy się obudził?"
+          expected_any: ["wiewiórk"]
+        - question: "Jakie są tytuły w historii o Grendalu Nuvricku?"
+          expected_any: ["dziwn", "koniec"]
+        - question: "Co powiedział Grendal Nuvrick, gdy zobaczył wiewiórkę?"
+          expected_any: ["nie", "normaln"]
+        - question: "Co powiedział Grendal Nuvrick, gdy otworzył drzwi i się uśmiechnął?"
+          expected_any: ["myślę", "zostan"]
+test_adoc_recognized_as_troff_mime_type:
+  - en:
+      files: [test_adoc_troff_mime_type.adoc]
+      questions:
+        - question: "What category does Flornax Quibit belong to?"
+          expected_any: ["homeware", "Homeware"]
+    pl:
+      files: [test_adoc_troff_mime_type.adoc]
+      questions:
+        - question: "Do jakiej kategorii należy Flornax Quibit?"
+          expected_any: ["homeware", "Homeware"]
+test_adoc_links:
+  - en:
+      files: [test_adoc_links.adoc]
+      questions:
+        - question: "Give me a link to the website that describes the story of a man named Snorflina Quibbledew"
+          expected_any: ["https://pppoooiiiuuu.org"]
+    pl:
+      files: [test_adoc_links.adoc]
+      questions:
+        - question: "Podaj link do strony opisującej historię mężczyzny o imieniu Snorflina Quibbledew"
+          expected_any: ["https://pppoooiiiuuu.org"]
+test_adoc_source_code:
+  - en:
+      files: [test_adoc_source_code.adoc]
+      questions:
+        - question: "What does the dockerfile set up? I refer to 'Example Dockerfile with Explanations' document created by LipTanBuTan"
+          expected_all: ["flask", "python", "web"]
+    pl:
+      files: [test_adoc_source_code.adoc]
+      questions:
+        - question: "Co konfiguruje plik dockerfile? Mam na myśli dokument 'Example Dockerfile with Explanations' stworzony przez LipTanBuTan"
+          expected_all: ["kopi", "flask", "python"]
+test_adoc_substitutions:
+  - en:
+      files: [test_adoc_substitutions.adoc]
+      questions:
+        - question: "What village did Plonka Nibbertwist live in?"
+          expected_any: ["zumbleflick", "Zumbleflick"]
+    pl:
+      files: [test_adoc_substitutions.adoc]
+      questions:
+        - question: "W jakiej wiosce mieszkała Plonka Nibbertwist?"
+          expected_any: ["zumbleflick", "Zumbleflick"]
+test_docx_with_hyperlink:
+  - en:
+      files: [test_docx_with_hyperlink.docx]
+      questions:
+        - question: "Give me a link to a website called AAAFFFGGGKKK"
+          expected_any: ["aaafffgggkkk-top-secret.com"]
+    pl:
+      files: [test_docx_with_hyperlink.docx]
+      questions:
+        - question: "Podaj link do strony internetowej o nazwie AAAFFFGGGKKK"
+          expected_any: ["aaafffgggkkk-top-secret.com"]
+test_content_is_forgotten_after_file_deletion:
+  - en:
+      files: [story_to_be_deleted.txt]
+      questions:
+        - question: "What did the note say that Zenvorlith Marnqueeble left when he disappeared?"
+          expected_any: ["nice", "forget", "remember"]
+    pl:
+      files: [story_to_be_deleted.txt]
+      questions:
+        - question: "Co było napisane na karteczce, którą Zenvorlith Marnqueeble zostawił, gdy zniknął?"
+          expected_any: ["miły", "zapomn", "pamięta"]
+test_reupload:
+  - en:
+      files: [test_reupload.txt]
+      questions:
+        - question: "How many vinyl records does Frankooo have as of September 17, 2025?"
+          expected_any: ["187"]
+          expected_modified: "212"
+          modify_old: "187"
+          modify_new: "212"
+    pl:
+      files: [test_reupload.txt]
+      questions:
+        - question: "Ile płyt winylowych posiada Frankooo na dzień 17 września 2025 roku?"
+          expected_any: ["187"]
+          expected_modified: "212"
+          modify_old: "187"
+          modify_new: "212"
+test_similarity_search_with_siblings:
+  - en:
+      files: [test_similarity_search_with_siblings.txt]
+      questions:
+        - question: "List 20 Principles for a Meaningful Life by Giorgiooo"
+          expected_absent: "Stay humble"
+          expected_present: "Stay humble"
+    pl:
+      files: [test_similarity_search_with_siblings.txt]
+      questions:
+        - question: "Wymień 20 zasad wartościowego życia według Giorgiooo"
+          expected_absent: "Bądź pokorny"
+          expected_present: "Bądź pokorny"
+test_late_chunking:
+  - en:
+      files: [test_late_chunking.txt]
+      questions:
+        - question: "List 35 cities in Europe to visit by Zaravinth"
+          expected_all: ["Rome", "Dublin", "Malmo", "Bruges", "Milan"]
+    pl:
+      files: [test_late_chunking.txt]
+      questions:
+        - question: "Wymień 35 europejskich miast do odwiedzenia według Zaravinth"
+          expected_all: ["Rzym", "Dublin", "Malmö", "Brugia", "Mediolan"]
+test_docx_numbered_and_bulleted_lists:
+  - en:
+      files: [test_docx_numbered_and_bulleted_lists.docx]
+      questions:
+        - question: "When was the document 'YYTTRREEWWQQ' created at?"
+          expected_any: ["17"]
+        - question: "What happens when the 'vanishing algorithm' is executed in a closed environment?"
+          expected_any: ["0.43", "0,43"]
+    pl:
+      files: [test_docx_numbered_and_bulleted_lists.docx]
+      questions:
+        - question: "Kiedy został sporządzony dokument 'YYTTRREEWWQQ'?"
+          expected_any: ["17"]
+        - question: "Co się dzieje, gdy 'algorytm znikania' jest wykonywany w zamkniętym środowisku?"
+          expected_any: ["0,43", "0.43"]
+test_docx_formatted_text:
+  - en:
+      files: [test_docx_formatted_text.docx]
+      questions:
+        - question: "What is the full name of girl called Lucifelle?"
+          expected_any: ["lunibelle", "sound"]
+        - question: "In the story about Lunibelle Lucifelle, what did the girl loved to collect?"
+          expected_any: ["sound"]
+        - question: "How did the villagers perceive Lunibelle Lucifelle?"
+          expected_any: ["strange", "kind"]
+        - question: "What happened to the village during the storm in the story about Lunibelle Lucifelle?"
+          expected_any: ["disappeared", "silent", "no voices", "trees creaked"]
+        - question: "What did Lunibelle Lucifelle do when she reached the center of the square?"
+          expected_any: ["box", "whisper", "sky"]
+        - question: "What sound did the rain make in the story about Lunibelle Lucifelle?"
+          expected_any: ["clapped", "clapping", "hands"]
+        - question: "How do people react when they hear the wind play a soft tune in the story about Lunibelle Lucifelle?"
+          expected_any: ["smile"]
+    pl:
+      files: [test_docx_formatted_text.docx]
+      questions:
+        - question: "Jak brzmi pełne imię dziewczyny o nazwisku Lucifelle?"
+          expected_any: ["lunibelle", "dźwięk"]
+        - question: "W historii o Lunibelle Lucifelle, co dziewczyna uwielbiała zbierać?"
+          expected_any: ["dźwięk"]
+        - question: "Jak mieszkańcy wioski postrzegali Lunibelle Lucifelle?"
+          expected_any: ["dziwn", "życzliw"]
+        - question: "Co stało się z wioską podczas burzy w historii o Lunibelle Lucifelle?"
+          expected_any: ["zniknęły", "cicha", "bez głosów", "drzewa nie skrzypiały"]
+        - question: "Co zrobiła Lunibelle Lucifelle, gdy dotarła na środek placu?"
+          expected_any: ["pudełko", "wyszeptała", "niebo"]
+        - question: "Jaki dźwięk wydawał deszcz w historii o Lunibelle Lucifelle?"
+          expected_any: ["klaska", "dłoni"]
+        - question: "Jak ludzie reagują, gdy słyszą, że wiatr gra cichą melodię w historii o Lunibelle Lucifelle?"
+          expected_any: ["uśmiech"]
+test_docx_tables:
+  - en:
+      files: [test_docx_table_single_cell.docx]
+      questions:
+        - question: "What was the profession of the person who whispered the name Trenvahir?"
+          expected_any: ["clockmaker"]
+    pl:
+      files: [test_docx_table_single_cell.docx]
+      questions:
+        - question: "Jaki był zawód osoby o imieniu Trenvahir?"
+          expected_any: ["zegarmistrz"]
+  - en:
+      files: [test_docx_table.docx]
+      questions:
+        - question: "Who discovered a plant called Whisperfern Lucida?"
+          expected_any: ["kren", "talweir"]
+    pl:
+      files: [test_docx_table.docx]
+      questions:
+        - question: "Kto odkrył roślinę o nazwie Whisperfern Lucida?"
+          expected_any: ["kren", "talweir"]
+test_docx_with_images:
+  - en:
+      files: [story_docx_pictures.docx]
+      questions:
+        - question: "What was Vellimer doing when the storm occurred?"
+          expected_any: ["roof", "rod", "waiting"]
+        - question: "How does the village of Fernloft remember Vellimer today? What signs make them think he might still be around?"
+          expected_any: ["broom", "weather"]
+    pl:
+      files: [story_docx_pictures.docx]
+      questions:
+        - question: "Co robił Vellimer, gdy nadciągała burza?"
+          expected_any: ["dach", "pręt", "czekaj"]
+        - question: "Jak wioska Fernloft wspomina dziś Vellimera? Jakie znaki wskazują, że może wciąż być w pobliżu?"
+          expected_any: ["miotł", "pogod"]
+test_docx_multi_paragraph:
+  - en:
+      files: [Front-end Intern_example.docx]
+      questions:
+        - question: "How many people work in the team that the Cloud Solutions Developer Intern for AI RAG Application candidate joins?"
+          expected_any: ["12", "13"]
+        - question: "What is the name of the group offering the Cloud Solutions Developer Intern for AI RAG position?"
+          expected_any: ["dcai", "ecosystem"]
+        - question: "What technologies do I need to know when applying for the position of Cloud Solutions Developer Intern for AI RAG Application?"
+          expected_all: ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
+    pl:
+      files: [Front-end Intern_example.docx]
+      questions:
+        - question: "Ile osób pracuje w zespole, do którego dołącza kandydat na stanowisko Stażysty Cloud Solutions Developer dla aplikacji AI RAG?"
+          expected_any: ["12", "13"]
+        - question: "Jak nazywa się grupa oferująca stanowisko Stażysty Cloud Solutions Developer dla AI RAG?"
+          expected_any: ["dcai", "ecosystem"]
+        - question: "Jakie technologie muszę znać, aplikując na stanowisko Stażysty Cloud Solutions Developer dla aplikacji AI RAG?"
+          expected_all: ["react", "javascript", "css", "git", "jenkins", "ansible", "terraform", "kubernetes", "docker", "cicd", "github", "typescript", "react redux", "react router", "tailwind", "linux", "aws"]
+test_logs_parsing_capability:
+  - en:
+      files: [system_logs.txt]
+      questions:
+        - question: "How many WARNING logs came from the MonitoringService? These logs have the following string inside: '[MonitoringService] WARNING'"
+          expected_any: ["3", "three"]
+        - question: "At what time did the ERROR from InventoryService occur?"
+          expected_any: ["10:01:47"]
+        - question: "What was the last WARNING that comes from PaymentService? Provide the full log line. It should contain [PaymentService] string inside."
+          expected_any: ["transaction tx1005 delayed due to network latency"]
+    pl:
+      files: [system_logs.txt]
+      questions:
+        - question: "Ile ostrzeżeń WARNING pochodziło z MonitoringService? Te logi zawierają ciąg znaków: '[MonitoringService] WARNING'"
+          expected_any: ["3", "trzy"]
+        - question: "O której godzinie wystąpił błąd ERROR z InventoryService?"
+          expected_any: ["10:01:47"]
+        - question: "Jakie było ostatnie ostrzeżenie WARNING z PaymentService? Podaj pełną linię logu. Powinna zawierać ciąg [PaymentService]."
+          expected_any: ["transaction tx1005 delayed due to network latency"]

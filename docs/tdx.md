@@ -3,6 +3,9 @@
 This document outlines the deployment process of ChatQnA components on Intel® Xeon® Processors where the microservices
 are protected by [Intel TDX](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html).
 
+> [!NOTE]
+> `[CoCo]` deployment is not supported since release-2.1.0.
+
 ## Table of Contents
 
 1. [What is Intel TDX](#what-is-intel-tdx)
@@ -11,8 +14,7 @@ are protected by [Intel TDX](https://www.intel.com/content/www/us/en/developer/t
 3. [Getting Started](#getting-started)
     1. [Prepare Intel Xeon node](#prepare-intel-xeon-node)
     2. [Prepare the cluster](#prepare-the-cluster)
-    3. [Build Intel® AI for Enterprise RAG images](#build-intel-ai-for-enterprise-rag-images)
-    4. [Deploy the ChatQnA](#deploy-the-chatqna)
+    3. [Deploy the ChatQnA/Audio ChatQnA/Docsum](#deploy-the-chatqna-audio-chatqna-docsum)
 4. [Protected services](#protected-services)
 5. [Advanced configuration](#advanced-configuration)
     1. [Authenticated registry or encrypted images](#authenticated-registry-or-encrypted-images)
@@ -92,7 +94,7 @@ Follow the below steps on the server node with Intel Xeon Processor:
 
 ### Prepare the cluster
 
-1. Follow the steps to [deploy kubernetes cluster](../README.md#pre-installation).
+1. Follow the steps to [deploy kubernetes cluster](cluster_deployment_guide.md).
 
 2. `[one TD]` Make sure to deploy the cluster inside the TD and check if NRI kubernetes plugin is enabled. Run device
    injector at index 10:
@@ -108,38 +110,14 @@ Follow the below steps on the server node with Intel Xeon Processor:
 
 4. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components).
 
-### Build Intel® AI for Enterprise RAG images
-
-Follow the steps below to build Intel® AI for Enterprise RAG images:
-
-1. Set the environment variables:
-
-   ```bash
-   export REGISTRY="your_container_registry"
-   export TAG="your_tag"
-   ```
-
-2. Login to your registry:
-
-   ```bash
-   docker login your_container_registry
-   ```
-
-3. Push the images to your container registry:
-
-   ```bash
-   ./update_images.sh --build --push --registry "${REGISTRY}" --tag "${TAG}"
-   ```
-
-### Deploy the Docsum
-
-Intel® TDX in Intel® AI for Enterprise RAG is not supported for Docsum yet.
-
-### Deploy the ChatQnA
+### Deploy the ChatQnA, Audio ChatQnA, Docsum
 
 Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
-1. Update `inventory/sample/config.yaml`:
+1. Update config
+   
+   - For ChatQnA and Audio ChatQnA: `inventory/sample/config.yaml`
+   - For Docsum: `inventory/sample/config_docsum.yaml`
 
    ```yaml
    huggingToken: "<HUGGING_FACE_TOKEN>" # [OPTIONAL] Provide your Hugging Face token here - required for gated/private models
@@ -163,19 +141,27 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
    ```bash
    git clone -b {{ kbs_ver }} https://github.com/confidential-containers/trustee
-   cd trustee/kbs
+   pushd trustee/kbs
    make cli ATTESTER=tdx-attester
    mkdir -p /opt/trustee/target/release
+   popd
    cp trustee/target/release/kbs-client /opt/trustee/target/release
    ```
 
 3. Deploy Intel® AI for Enterprise RAG:
 
-   Make sure that you have exported the KBS_ADDRESS, which points to the Key Broker Service (KBS):
+   Make sure that you have exported the `KBS_ADDRESS`, which points to the Key Broker Service ([KBS](https://confidentialcontainers.org/docs/attestation/architecture/#key-broker-service)).
+   KBS can be deployed on any trusted machine. The most common cases are described below.
 
-    ```bash
-    export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
-    ```
+   - `CoCo` - if KBS was deployed on the same kubernetes node as whole cluster, that is simply: 
+
+       ```bash
+        export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
+       ```
+   - `one-TD` - the most common case is when KBS runs on host of the TD:
+        ```bash
+        export KBS_ADDRESS=http://<HOST IP ADDRESS>:8080
+        ```
 
    Now you can deploy Intel® AI for Enterprise RAG:
 
@@ -231,3 +217,4 @@ There are two mechanisms used to customize the deployment with Intel TDX:
 > `[CoCo]` deployment path is experimental and not fully supported for all the microservices yet due to lack of support 
 > for port forwarding support in kata VM, 
 > [see this issue](https://github.com/kata-containers/kata-containers/issues/1693).
+

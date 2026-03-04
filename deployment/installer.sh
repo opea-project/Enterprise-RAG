@@ -73,7 +73,6 @@ show_help() {
     echo "    config [directory]    - Generate configuration variables interactively in specified directory"
     echo ""
     echo "  validate"
-    echo "    config                - Validate configuration"
     echo "    hardware              - Validate hardware"
     echo ""
     echo "  cluster"
@@ -87,8 +86,8 @@ show_help() {
     echo "    show-config           - Display current configuration and validation status"
     echo ""
     echo "  stack"
-    echo "    deploy-complete       - Deploy complete Enterprise RAG stack"
-    echo "    delete-complete       - Delete complete Enterprise RAG stack"
+    echo "    deploy                - Deploy complete Enterprise RAG stack"
+    echo "    delete                - Delete complete Enterprise RAG stack"
     echo ""
     echo "Options:"
     echo "  --config=<path>         - Path to config.yaml file"
@@ -113,10 +112,9 @@ show_help() {
     echo ""
     echo "  # Validate hardware and configuration"
     echo "  $0 validate hardware --config=/path/to/config.yaml --inventory=/path/to/inventory.ini"
-    echo "  $0 validate config --config=/path/to/config.yaml"
     echo ""
     echo "  # Complete stack deployment (recommended)"
-    echo "  $0 stack deploy-complete --config=/path/to/config.yaml --inventory=/path/to/inventory.ini"
+    echo "  $0 stack deploy --config=/path/to/config.yaml --inventory=/path/to/inventory.ini"
     echo ""
     echo "  # Manual step-by-step deployment"
     echo "  $0 setup configure --config=/path/to/config.yaml --inventory=/path/to/inventory.ini"
@@ -470,22 +468,26 @@ run_ansible_playbook() {
         log "INFO" "This operation requires sudo privileges (passwordless sudo required)"
     fi
 
-    # Always use inventory file
+    # Application playbook targets localhost directly and does not need sudo,
+    # so skip the inventory (which sets ansible_become=true) for application layer
     local inventory_flag=""
-    local inventory_file
-    
-    if [[ -n "$PARSED_INVENTORY_FILE" ]]; then
-        inventory_file="$PARSED_INVENTORY_FILE"
+    if [[ "$playbook" != "application" ]]; then
+        local inventory_file
+        if [[ -n "$PARSED_INVENTORY_FILE" ]]; then
+            inventory_file="$PARSED_INVENTORY_FILE"
+        else
+            inventory_file="$config_dir/inventory.ini"
+        fi
+
+        if [ -f "$inventory_file" ]; then
+            inventory_flag="-i $inventory_file"
+            log "INFO" "Using inventory file: $inventory_file"
+        else
+            log "ERROR" "Inventory file not found at $inventory_file - exiting"
+            exit 1
+        fi
     else
-        inventory_file="$config_dir/inventory.ini"
-    fi
-    
-    if [ -f "$inventory_file" ]; then
-        inventory_flag="-i $inventory_file"
-        log "INFO" "Using inventory file: $inventory_file"
-    else
-        log "ERROR" "Inventory file not found at $inventory_file - exiting"
-        exit 1
+        log "INFO" "Application playbook runs on localhost - skipping inventory"
     fi
 
     if [ -n "$PARSED_CUSTOM_TAG" ]; then
@@ -771,11 +773,17 @@ deploy_complete_stack() {
     echo ""
 
     log "INFO" "Step 2/3: Deploying Kubernetes cluster..."
-    if ! run_ansible_playbook "infrastructure" "install" "$config_dir" true "-e deploy_k8s=true"; then
+    if ! run_ansible_playbook "infrastructure" "install" "$config_dir" false "-e deploy_k8s=true"; then
         log "ERROR" "Kubernetes cluster deployment failed"
         exit 1
     fi
     log "SUCCESS" "Kubernetes cluster deployment completed"
+
+    # Workaround: Fix artifact ownership after infrastructure deployment (CI/CD compatibility)
+    if [[ -d "$config_dir/artifacts" ]]; then
+        log "INFO" "Fixing artifact ownership..."
+        sudo chown -R "$USER:$USER" "$config_dir/artifacts" || log "WARN" "Could not fix artifact ownership"
+    fi
     echo ""
 
     # Deploy Enterprise RAG application
@@ -880,7 +888,7 @@ delete_complete_stack() {
     
     if [[ "$deploy_k8s" == "true" ]]; then
         log "INFO" "Step 2/3: Deleting Kubernetes cluster..."
-        if ! run_ansible_playbook "infrastructure" "delete" "$config_dir" true "-e deploy_k8s=true"; then
+        if ! run_ansible_playbook "infrastructure" "delete" "$config_dir" false "-e deploy_k8s=true"; then
             log "ERROR" "Cluster deletion step failed."
             log "WARN" "Proceeding with cluster removal cleanup despite cluster deletion failure..."
             log "INFO" "You may need to manually clean up cluster resources on the nodes."
@@ -968,7 +976,6 @@ main() {
                     build_and_update_images
                     ;;
                 "config")
-                    # setup config creates NEW configuration in a directory
                     # Takes directory as positional argument: setup config /path/to/dir
                     local target_dir
                     
@@ -1005,13 +1012,21 @@ main() {
         "cluster")
             case "$PARSED_ACTION" in
                 "deploy")
-                    run_ansible_playbook "infrastructure" "install" "$PARSED_CONFIG_DIR" true "-e deploy_k8s=true"
+                    if ! run_ansible_playbook "infrastructure" "install" "$PARSED_CONFIG_DIR" false "-e deploy_k8s=true"; then
+                        log "ERROR" "Kubernetes cluster deployment failed"
+                        exit 1
+                    fi
+                    # Workaround: Fix artifact ownership after infrastructure deployment (CI/CD compatibility)
+                    if [[ -d "$PARSED_CONFIG_DIR/artifacts" ]]; then
+                        log "INFO" "Fixing artifact ownership..."
+                        sudo chown -R "$USER:$USER" "$PARSED_CONFIG_DIR/artifacts" || log "WARN" "Could not fix artifact ownership"
+                    fi
                     ;;
                 "post-install")
-                    run_ansible_playbook "infrastructure" "post-install" "$PARSED_CONFIG_DIR" true "-e deploy_k8s=false"
+                    run_ansible_playbook "infrastructure" "post-install" "$PARSED_CONFIG_DIR" false "-e deploy_k8s=false"
                     ;;
                 "delete")
-                    run_ansible_playbook "infrastructure" "delete" "$PARSED_CONFIG_DIR" true "-e deploy_k8s=true"
+                    run_ansible_playbook "infrastructure" "delete" "$PARSED_CONFIG_DIR" false "-e deploy_k8s=true"
                     ;;
                 *)
                     log "ERROR" "Unknown action for cluster: $PARSED_ACTION"
@@ -1045,7 +1060,7 @@ main() {
                     run_ansible_playbook "validate" "config" "$PARSED_CONFIG_DIR" false ""
                     ;;
                 "hardware")
-                    run_ansible_playbook "validate" "hardware" "$PARSED_CONFIG_DIR" true ""
+                    run_ansible_playbook "validate" "hardware" "$PARSED_CONFIG_DIR" false ""
                     ;;
                 *)
                     log "ERROR" "Unknown action for validate: $PARSED_ACTION"
@@ -1056,15 +1071,15 @@ main() {
             ;;
         "stack")
             case "$PARSED_ACTION" in
-                "deploy-complete")
+                "deploy")
                     deploy_complete_stack "$PARSED_CONFIG_DIR"
                     ;;
-                "delete-complete")
+                "delete")
                     delete_complete_stack "$PARSED_CONFIG_DIR"
                     ;;
                 *)
                     log "ERROR" "Unknown action for stack: $PARSED_ACTION"
-                    log "INFO" "Available actions: deploy-complete, delete-complete"
+                    log "INFO" "Available actions: deploy, delete"
                     exit 1
                     ;;
             esac

@@ -293,7 +293,7 @@ wheels = [
 
 [[package]]
 name = "intel-enterprise-rag-reranking-torchserve"
-version = "2.1.0"
+version = "2.1.1"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },

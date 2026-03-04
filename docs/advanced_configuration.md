@@ -29,7 +29,8 @@ This document describes configuration options available when deploying Intel® A
    2. [Vector Database Selection](#vector-database-selection)
    3. [Vector Store Database Storage Settings](#vector-store-database-storage-settings)
    4. [EDP Storage Types](#edp-storage-types)
-   5. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
+   5. [Reverse Proxy for External S3 Storage (NetApp ONTAP)](#reverse-proxy-for-external-s3-storage-netapp-ontap)
+   6. [Additional Settings for Running Telemetry](#additional-settings-for-running-telemetry)
    6. [Security Settings](#security-settings)
    7. [Trust Domain Extensions (TDX)](#trust-domain-extensions-tdx)
    8. [Registry Configuration](#registry-configuration)
@@ -545,6 +546,36 @@ Similarly, for the selected Vector Store, you can increase the persistent storag
 ### EDP Storage Types
 
 By default, the EDP storage type is set to SeaweedFS, which deploys SeaweedFS in-cluster. For additional options, refer to the [EDP documentation](../src/edp/README.md).
+
+### Reverse Proxy for External S3 Storage (NetApp ONTAP)
+
+When using an external S3-compatible storage backend (e.g. **NetApp ONTAP** with the `netapp-trident` CSI driver), web browsers cannot reach the ONTAP `data_lif` directly because it is an internal network interface. The `reverse_proxy_storage` option instructs the ingress component to create a reverse proxy that routes browser file-upload traffic through the cluster ingress to the storage backend.
+
+```yaml
+# Default: false
+reverse_proxy_storage: true   # Enable ingress reverse proxy for external S3 storage
+```
+
+When `reverse_proxy_storage: true` the ingress exposes the storage endpoint at `s3.<FQDN>` (e.g. `s3.erag.com`). You must also configure the EDP component to use this ingress hostname as its external URL, because the ONTAP `data_lif` is not reachable from outside the cluster:
+
+```yaml
+edp:
+  enabled: true
+  rbac:
+    enabled: false    # Must be disabled when using ONTAP
+  storageType: s3compatible
+  s3compatible:
+    internalUrl: "https://<ontap_data_lif>"   # Used by in-cluster pods
+    externalUrl: "https://s3.<your-fqdn>"     # Used by web browsers via ingress
+```
+
+> [!NOTE]
+> The `s3.<FQDN>` hostname must be registered in your DNS and added to your inventory
+> as an ingress host. The deployment will print a warning during pre-install if
+> `reverse_proxy_storage` is enabled but `ontap_data_lif` is not set.
+
+For full NetApp ONTAP setup instructions see the
+[NetApp Trident CSI Integration guide](../deployment/roles/infrastructure/netapp_trident_csi_setup/netapp_trident_integration.md).
 
 ### Additional Settings for Running Telemetry
 

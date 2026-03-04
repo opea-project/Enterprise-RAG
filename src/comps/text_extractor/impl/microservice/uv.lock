@@ -934,7 +934,6 @@ dependencies = [
     { name = "pandas" },
     { name = "pathvalidate" },
     { name = "pdfminer-six" },
-    { name = "pillow" },
     { name = "prometheus-fastapi-instrumentator" },
     { name = "pyasn1" },
     { name = "pymupdf" },
@@ -975,6 +974,11 @@ test = [
     { name = "setuptools" },
 ]
 
+[package.dev-dependencies]
+security-overrides = [
+    { name = "pillow" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = "==3.13.3" },
@@ -1009,7 +1013,6 @@ requires-dist = [
     { name = "pandas", specifier = "==2.2.2" },
     { name = "pathvalidate", specifier = "==3.2.2" },
     { name = "pdfminer-six", specifier = "==20260107" },
-    { name = "pillow", specifier = "==12.1.1" },
     { name = "prometheus-fastapi-instrumentator", specifier = "==7.0.0" },
     { name = "pyasn1", specifier = "==0.6.2" },
     { name = "pymupdf", specifier = "==1.27.1" },
@@ -1039,6 +1042,9 @@ requires-dist = [
     { name = "uvicorn", specifier = "==0.30.1" },
 ]
 provides-extras = ["test"]
+
+[package.metadata.requires-dev]
+security-overrides = [{ name = "pillow", specifier = ">=12.1.1" }]
 
 [[package]]
 name = "jax"

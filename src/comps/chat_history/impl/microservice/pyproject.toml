@@ -45,5 +45,5 @@ test = [
 
 [dependency-groups]
 security-overrides = [
-  "pillow==11.3.0",
+  "pillow>=12.1.1",
 ]

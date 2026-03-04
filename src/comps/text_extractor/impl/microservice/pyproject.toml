@@ -26,7 +26,6 @@ dependencies = [
     "markdown==3.0.0",
     "olefile==0.47",
     "pandas==2.2.2",
-    "Pillow==12.1.1",
     "pymupdf==1.27.1",
     "pymupdf4llm[layout]==0.2.9",
     "pymupdf-layout==1.27.1",
@@ -71,6 +70,11 @@ test = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "setuptools==80.10.2",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
 ]
 
 [tool.uv.sources]

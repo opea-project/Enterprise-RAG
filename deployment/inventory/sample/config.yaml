@@ -77,7 +77,7 @@ clusterCerts:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "2.1.0"
+tag: "2.1.1"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
@@ -145,7 +145,7 @@ gmc:
 
 ingress:
   enabled: true
-  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
+  service_type: NodePort # Set it accordingly to environment if LoadBalancer is supported
 
 keycloak:
   enabled: true

@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG ASR Microservice for converting audio to text

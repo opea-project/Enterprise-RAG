@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG VLLM Audio Model Server for converting audio to text

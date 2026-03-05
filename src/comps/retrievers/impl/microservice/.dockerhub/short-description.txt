@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG Retrieval Service for retrieving relevant documents and context

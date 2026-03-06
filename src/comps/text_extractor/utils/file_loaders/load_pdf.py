@@ -10,6 +10,7 @@ import nltk
 import time
 import os
 import re
+import multiprocessing
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from comps.text_extractor.utils.file_loaders.abstract_loader import AbstractLoader
@@ -17,6 +18,7 @@ from comps.text_extractor.utils.file_loaders.load_image import LoadImage
 from comps.cores.mega.logger import get_opea_logger
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
+
 
 # Markers added by pymupdf4llm for OCR text
 PICTURE_TEXT_START_MARKER = "---- Start of picture text ----"
@@ -86,7 +88,6 @@ def _extract_page(doc, page_num, log_identifier=""):
     page = doc.load_page(page_num)
     result = ""
 
-
     # Create a temporary single-page Document because pymupdf4llm.to_text() expects a Document, not a Page.
     single_page_doc = pymupdf.open()
     single_page_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
@@ -120,10 +121,11 @@ def _extract_page(doc, page_num, log_identifier=""):
             logger.error(f"[{log_identifier}] Error parsing image on page {page_num + 1}: {e}. Ignoring...")
         finally:
             if img_path and img_path != "" and os.path.exists(img_path) and not os.path.isdir(img_path):
-                logger.debug(f"[{log_identifier}] Removed {img_path} after processing")
-                os.remove(img_path)
+                    logger.debug(f"[{log_identifier}] Removed {img_path} after processing")
+                    os.remove(img_path)
 
     return result
+
 
 def _save_image(data, save_path="/tmp/opea_upload"):
     """Save image data to a file."""
@@ -136,6 +138,7 @@ def _save_image(data, save_path="/tmp/opea_upload"):
     with open(image_filename, "wb") as f:
         f.write(data["image"])
     return image_filename
+
 
 class LoadPdf(AbstractLoader):
     def __init__(self, file_path):
@@ -150,7 +153,7 @@ class LoadPdf(AbstractLoader):
         
         Environment variables:
         - PDF_PARALLEL_PROCESSING: Enable/disable parallel processing (default: true)
-        - PDF_MAX_WORKERS: Maximum number of parallel workers (default: auto-detect)
+        - TEXT_EXTRACTOR_MAX_WORKERS: Maximum number of parallel workers (default: 12; injected automatically from pod CPU limit via Kubernetes Downward API)
         """
 
         doc = pymupdf.open(self.file_path)
@@ -161,14 +164,17 @@ class LoadPdf(AbstractLoader):
         
         # Configuration from environment variables
         enable_parallel = os.getenv('PDF_PARALLEL_PROCESSING', 'true').lower() == 'true'
-        max_workers = os.getenv('PDF_MAX_WORKERS', None)
-        
-        if max_workers:
-            max_workers = int(max_workers)
-        else:
-            # Auto-detect: use min of (page_count, cpu_count, 8)
-            # Cap at 8 to avoid excessive memory usage
-            max_workers = min(page_count, os.cpu_count() or 4, 8)
+
+        # Never create a nested pool: if this code is already running inside a worker
+        # process (spawned by the microservice's ProcessPoolExecutor), creating another
+        # pool here would multiply process count by max_workers, causing OOM.
+        if multiprocessing.current_process().name != 'MainProcess':
+            enable_parallel = False
+            logger.info(f"[{self.file_path}] Running inside worker process, using sequential processing to avoid nested pool")
+
+        # PDF_MAX_WORKERS is injected by the Kubernetes Downward API (limits.cpu)
+        # in the pod spec, so this always reflects the actual pod CPU limit.
+        max_workers = min(page_count, int(os.getenv('PDF_MAX_WORKERS', 12)))
         
         start_time = time.time()
         
@@ -183,7 +189,7 @@ class LoadPdf(AbstractLoader):
                     executor.submit(_process_single_page_from_file, self.file_path, i): i
                     for i in range(page_count)
                 }
-                
+
                 # Collect results as they complete
                 for future in as_completed(future_to_page):
                     page_num = future_to_page[future]
@@ -211,6 +217,7 @@ class LoadPdf(AbstractLoader):
             else:
                 logger.info(f"[{self.file_path}] Using sequential processing (parallel disabled)")
             
+            doc = None
             try:
                 result = ""
                 doc = pymupdf.open(self.file_path)
@@ -231,7 +238,6 @@ class LoadPdf(AbstractLoader):
         
         end_time = time.time()
         logger.info(f"[{self.file_path}] Total processing time: {end_time - start_time:.2f} seconds for {page_count} pages")
-
         return result
 
     def extract_metadata(self):

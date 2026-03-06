@@ -816,17 +816,17 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
-    - name: PDF_MAX_WORKERS
+    - name: TEXT_EXTRACTOR_MAX_WORKERS
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
   resources:
     requests:
       cpu: "2"
-      memory: "8Gi"
+      memory: "4Gi"
     limits:
       cpu: "12"
-      memory: "40Gi"
+      memory: "24Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 2

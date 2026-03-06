@@ -12,4 +12,6 @@ data:
   EMBEDDING_CONNECTOR: {{ .Values.embedding.config.connector | quote }}
   EMBEDDING_MODEL_NAME: {{ .Values.embedding.config.modelName | quote }}
   EMBEDDING_MODEL_SERVER: {{ .Values.embedding.config.modelServer | quote }}
+  EMBEDDING_TIMEOUT: {{ .Values.embedding.config.timeout | default "120" | quote }}
+  OPEA_LOGGER_LEVEL: {{ .Values.embedding.config.opeaLoggerLevel | default "INFO" | quote }}
 {{- end }}

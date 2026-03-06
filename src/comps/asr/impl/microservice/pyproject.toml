@@ -12,8 +12,8 @@ dependencies = [
     "fastapi==0.120.2",
     "langchain==0.3.27",
     "langchain-openai==0.3.35",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
     "prometheus-fastapi-instrumentator==7.0.0",
     "uvicorn==0.30.1",
     "shortuuid==1.0.13",
@@ -29,12 +29,13 @@ test = [
     "pytest-cov==5.0.0",
     "fastapi==0.120.2",
     "docarray[full]==0.40.0",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
-    "opentelemetry-sdk==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
+    "opentelemetry-sdk==1.39.1",
 ]
 
 [dependency-groups]
 security-overrides = [
   "pillow>=12.1.1",
+  "protobuf>=6.33.5",
 ]

@@ -15,9 +15,9 @@ dependencies = [
     "filelock == 3.20.3", # dependency of huggingface_hub
     "jinja2==3.1.6",
     "numpy==2.2.1",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
-    "opentelemetry-sdk==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
+    "opentelemetry-sdk==1.39.1",
     "prometheus-fastapi-instrumentator==7.0.0",
     "python-dotenv==1.1.0",
     "requests==2.32.5",
@@ -35,12 +35,13 @@ test = [
     "pytest-cov==5.0.0",
     "fastapi==0.120.2",
     "docarray==0.40.0",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
-    "opentelemetry-sdk==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
+    "opentelemetry-sdk==1.39.1",
 ]
 
 [dependency-groups]
 security-overrides = [
   "pillow>=12.1.1",
+  "protobuf>=6.33.5",
 ]

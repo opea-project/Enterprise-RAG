@@ -28,6 +28,7 @@ dependencies = [
 [dependency-groups]
 security-overrides = [
   "pillow>=12.1.1",
+  "protobuf>=6.33.5",
 ]
 
 [tool.uv.sources]

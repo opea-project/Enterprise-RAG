@@ -42,17 +42,6 @@ cd docker
 docker compose up --build -d
 ```
 
-By default, the .env file is configured to use the langchain connector. However, switching to llama_index is straightforward. To build the service with the llama_index connector, you can export the `EMBEDDING_CONNECTOR` environment variable before running the command:
-
-```bash
-export EMBEDDING_CONNECTOR=llama_index
-docker compose up --build -d
-```
-Alternatively, you can define it inline:
-```bash
-EMBEDDING_CONNECTOR=llama_index docker compose up --build -d
-```
-
 #### Service Cleanup
 
 To cleanup the services, run the following commands:

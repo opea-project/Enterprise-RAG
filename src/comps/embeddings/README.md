@@ -35,26 +35,25 @@ Users are able to configure and build embedding-related services according to th
 
 Support for specific model servers with Dockerfiles or build instruction.
 
-| Model server                                  | langchain | llama_index | generic  |
-| --------------------------------------------  | --------- | ----------- | -------- | 
-| [TorchServe](./impl/model_server/torchserve)  | &#x2713;  | &#x2717;    | &#x2717; |
-| [TEI](./impl/model_server/tei/)               | &#x2713;  | &#x2713;    | &#x2717; |
-| [OVMS](./impl/model_server/ovms)              | &#x2717;  | &#x2717;    | &#x2717; |
-| [mosec](./impl/model_server/mosec)            | &#x2713;  | &#x2717;    | &#x2717; |
-| [vLLM](./impl/model_server/vllm)              | &#x2717;  | &#x2717;    | &#x2713; |
----
+| Model server name                             |  Status   |
+| --------------------------------------------- | --------- |
+| [VLLM](./impl/model_server/vllm/)             | &#x2713;  |
+| [TorchServe](./impl/model_server/torchserve)  | &#x2713;  |
+| [TEI](./impl/model_server/tei/)               | &#x2713;  |
+| [OVMS](./impl/model_server/ovms)              | &#x2713;  |
+| [mosec](./impl/model_server/mosec)            | &#x2713;  |
+
 
 ## Configuration Options
 
 The configuration for the Embedding Microservice is specified in the [impl/microservice/.env](impl/microservice/.env) file. You can adjust these settings by modifing this dotenv file or by exporting environment variables.
 
-| Environment Variable            | Description                                                                                                           |
-|---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| `EMBEDDING_USVC_PORT`                 | The port of the microservice, by default 6000.                                                                        |
-| `EMBEDDING_MODEL_NAME`                | The name of language model to be used (e.g., "bge-large-en-v1.5")                                             |
-| `EMBEDDING_CONNECTOR`                 | The framework used to connect to the model. Supported values: 'langchain', 'llama_index' or 'generic' |
-| `EMBEDDING_MODEL_SERVER`              | Specifies the type of model server (e.g. "tei", "vllm", "ovms")                                                               |
-| `EMBEDDING_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint, e.g., "http://localhost:8090"                                                       |
+| Environment Variable                | Description                                                        |
+|-------------------------------------|--------------------------------------------------------------------|
+| `EMBEDDING_USVC_PORT`               | The port of the microservice, by default 6000.                     |
+| `EMBEDDING_MODEL_NAME`              | The name of language model to be used (e.g., "bge-base-en-v1.5")   |
+| `EMBEDDING_MODEL_SERVER`            | Specifies the type of model server (e.g. "tei", "vllm", "ovms")    |
+| `EMBEDDING_MODEL_SERVER_ENDPOINT`   | URL of the model server endpoint, e.g., "http://localhost:8090"    |
 
 
 ## Getting started
@@ -70,12 +69,13 @@ The Embedding Microservice interacts with an Embedding model endpoint, which mus
 Depending on the model server you want to use, follow the approppriate instructions in the [./impl/model_server](./impl/model_server/) directory to set up and start the service.
 
 
-Currently there're 4 model servers supported:
+Currently there're 5 model servers supported:
 
-1. Build embedding model server based on the [**_TEI endpoint_**](./impl/model_server/tei/), which provides more flexibility, but may bring some network latency.
-2. Utilize [**_Torchserve_**](./impl/model_server/torchserve/), which supports [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch) for a performance boost on Intel-based Hardware.
-3. Utilize [**_Mosec_**](./impl/model_server/mosec/) to run a model server with Intel® Extension for PyTorch* optimizations.
-4. Run an embedding model server with [**_OVMS_**](./impl/model_server/ovms/) - an open source model server built on top of the OpenVINO™ toolkit, which enables optimized inference across a wide range of hardware platforms.
+1. [**_TEI_**](./impl/model_server/tei/) - provides more flexibility, but may bring some network latency.
+2. [**_TorchServe_**](./impl/model_server/torchserve/) - supports [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch) for a performance boost on Intel-based hardware.
+3. [**_Mosec_**](./impl/model_server/mosec/) - runs a model server with [Intel® Extension for PyTorch](https://github.com/intel/intel-extension-for-pytorch) optimizations.
+4. [**_OVMS_**](./impl/model_server/ovms/) - an open source model server built on top of the [OpenVINO™ toolkit](https://github.com/openvinotoolkit/openvino), which enables optimized inference across a wide range of hardware platforms.
+5. [**_VLLM_**](./impl/model_server/vllm/) - a high-performance inference engine that, while primarily used for text generation, can also serve embedding models with very high throughput and low latency.
 
 Refer to `README.md` of a particular library to get more information on starting a model server.
 
@@ -113,72 +113,26 @@ Please note that the building process may take a while to complete.
 
 #### Run the Docker Container
 
-Ensure that the `EMBEDDING_CONNECTOR` corresponds to the specific image built with the relevant requirements. Below are examples for both Langchain and Llama Index:
-
 ```bash
-# for langchain
 docker run -d --name="embedding-microservice" \
-  -e EMBEDDING_CONNECTOR=langchain \
   --net=host \
   --ipc=host \
   opea/embedding
 ```
 
-```bash
-# for llama_index
-docker run -d --name="embedding-microservice" \
-  -e EMBEDDING_CONNECTOR=llama_index \
-  --net=host \
-  --ipc=host \
-  opea/embedding
-```
-
-```bash
-# for generic
-docker run -d --name="embedding-microservice" \
-  -e EMBEDDING_CONNECTOR=generic \
-  --net=host \
-  --ipc=host \
-  opea/embedding
-```
 
 If the model server is running at a different endpoint than the default, update the `EMBEDDING_MODEL_SERVER_ENDPOINT` variable accordingly. Here's an example of how to pass configuration using the docker run command:
 
 ```bash
-# for langchain
 docker run -d --name="embedding-microservice" \
   -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090" \
-  -e EMBEDDING_MODEL_NAME="bge-large-en-v1.5" \
-  -e EMBEDDING_CONNECTOR="langchain" \
+  -e EMBEDDING_MODEL_NAME="bge-base-en-v1.5" \
   -e EMBEDDING_MODEL_SERVER="tei" \
   --net=host \
   --ipc=host \
   opea/embedding
 ```
 
-```bash
-# for llama_index
-docker run -d --name="embedding-microservice" \
-  -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090" \
-  -e EMBEDDING_MODEL_NAME="bge-large-en-v1.5" \
-  -e EMBEDDING_CONNECTOR="llama_index" \
-  -e EMBEDDING_MODEL_SERVER="tei" \
-  --net=host \
-  --ipc=host \
-  opea/embedding
-```
-
-```bash
-# for generic
-docker run -d --name="embedding-microservice" \
-  -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://localhost:8090" \
-  -e EMBEDDING_MODEL_NAME="BAAI/bge-base-en" \
-  -e EMBEDDING_CONNECTOR="generic" \
-  -e EMBEDDING_MODEL_SERVER="vllm" \
-  --net=host \
-  --ipc=host \
-  opea/embedding
-```
 
 ### Verify the Embedding Microservice
 
@@ -267,11 +221,11 @@ For multiple documents:
 
 ### Parameter `return_pooling`
 
-By default, the embedding service returns a single vector per text. With TorchServe and the Langchain connector, setting `return_pooling=true` returns embeddings for each token instead of an aggregated vector. This enables a technique known as late chunking, where the input is embedded as a whole, and then chunked after embedding, based on token-level vector.
+By default, the embedding service returns a single vector per text. With TorchServe, setting `return_pooling=true` returns embeddings for each token instead of an aggregated vector. This enables a technique known as late chunking, where the input is embedded as a whole, and then chunked after embedding, based on token-level vector.
 
 
 > Note:
-> The return pooling is currently supported only with TorchServe + Langchain.
+> The return pooling is currently supported only with TorchServe.
 
 **Example Input:**
 

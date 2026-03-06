@@ -5,10 +5,11 @@
 
 import allure
 import pytest
-ORIGINAL_TEST = "test_embeddings_langchain_ovms.sh"
+
+ORIGINAL_TEST = "test_embeddings_tei.sh"
 
 
-@allure.testcase("IEASG-T9")
+@allure.testcase("IEASG-T6")
 @pytest.mark.embeddings
-def test_embeddings_langchain_ovms_golden(assert_bash_test_succeeds):
+def test_embeddings_tei_golden(assert_bash_test_succeeds):
     assert_bash_test_succeeds(ORIGINAL_TEST)

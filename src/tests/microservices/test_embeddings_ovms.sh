@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # This test checks embedding microservice by sending request and verifying 200 response code and response content.
-# Framework: Langchain
-# Moder server: OVMS
+# Model server: OVMS
 
 set -xe
 
@@ -16,11 +15,11 @@ CONTAINER_NAME_BASE="test-comps-embeddings"
 ENDPOINT_CONTAINER_DIR="./comps/embeddings/impl/model_server/ovms/docker"
 ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint"
 ENDPOINT_IMAGE_NAME="opea/${ENDPOINT_CONTAINER_NAME}:comps"
-ENDPOINT_BUILD_VENV_NAME="test-embeddings-langchain-ovms-venv"
+ENDPOINT_BUILD_VENV_NAME="test-embeddings-ovms-venv"
 ENDPOINT_BUILD_VENV_SRC="${WORKPATH}/tests/${ENDPOINT_BUILD_VENV_NAME}"
 
 MICROSERVICE_API_PORT=5005
-MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-langchain"
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
 function test_fail() {
@@ -34,7 +33,7 @@ function build_docker_images() {
     echo $(pwd)
 
     docker build -t ${ENDPOINT_IMAGE_NAME} -f comps/embeddings/impl/model_server/ovms/docker/Dockerfile comps/embeddings/impl/model_server/ovms/
-    docker build --target langchain -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
     }
 
 
@@ -68,7 +67,6 @@ function start_service() {
         -e no_proxy=$no_proxy \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="ovms" \
-        -e EMBEDDING_CONNECTOR=langchain \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}

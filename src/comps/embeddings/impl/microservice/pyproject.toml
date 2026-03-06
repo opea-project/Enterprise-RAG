@@ -21,8 +21,7 @@ dependencies = [
     "langsmith == 0.3.45",
     "huggingface_hub == 0.30.0",
     "filelock == 3.20.3", # dependency of huggingface_hub
-    "llama-index-embeddings-text-embeddings-inference == 0.4.2",
-    "torch == 2.8.0",
+    "torch == 2.8.0",  # transitive: langchain-huggingface -> sentence-transformers -> torch
     "transformers == 4.53.3",
     "setuptools == 80.10.2",
     "starlette==0.49.1",
@@ -53,6 +52,8 @@ security-overrides = [
   "nltk>=3.9.3",
 ]
 
+# torch is explicitly pinned to the CPU-only index. Without this, pip/uv resolves to
+# the default GPU-enabled wheel, which inflates the Docker image size significantly
 [tool.uv.sources]
 torch = [
     { index = "pytorch-cpu" },

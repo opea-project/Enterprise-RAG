@@ -16,8 +16,8 @@ Usage:
         OUTPUT_DIR (optional): Directory where the combined model will be saved. Defaults to '/model/1'.
 
 Example usage:
-    export EMBEDDING_DIR=/data/bge-large-en-v1.5_embeddings
-    export TOKENIZER_DIR=/data/bge-large-en-v1.5_tokenizer
+    export EMBEDDING_DIR=/data/bge-base-en-v1.5_embeddings
+    export TOKENIZER_DIR=/data/bge-base-en-v1.5_tokenizer
     export OUTPUT_DIR=/model/1
     python combine_models.py
 """

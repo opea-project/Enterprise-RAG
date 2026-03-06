@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class Embeddings_Langchain_Torchserve_EnvKeys(Enum):
+class EmbeddingsTorchserveEnvKeys(Enum):
     """This struct declares all env variables from .env file.
 
     It is created to ensure env variables for testing are in sync with design by devs.
@@ -20,7 +20,6 @@ class Embeddings_Langchain_Torchserve_EnvKeys(Enum):
     TORCHSERVE_MGMT_PORT = "TORCHSERVE_MGMT_PORT"
     TORCHSERVE_METRICS_PORT = "TORCHSERVE_METRICS_PORT"
     TORCHSERVE_MODEL_NAME = "TORCHSERVE_MODEL_NAME"
-    EMBEDDING_CONNECTOR = "EMBEDDING_CONNECTOR"
     TORCHSERVE_BATCH_SIZE = "TORCHSERVE_BATCH_SIZE"
     TORCHSERVE_AMP_DTYPE = "TORCHSERVE_AMP_DTYPE"
     TORCHSERVE_MIN_WORKERS = "TORCHSERVE_MIN_WORKERS"
@@ -30,7 +29,7 @@ class Embeddings_Langchain_Torchserve_EnvKeys(Enum):
     OMP_NUM_THREADS = "OMP_NUM_THREADS"
 
 
-class EmbeddingsLangchainTorchserveDockerSetup(EmbeddingsDockerSetup):
+class EmbeddingsTorchserveDockerSetup(EmbeddingsDockerSetup):
     ENDPOINT_CONTAINER_NAME = f"{EmbeddingsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
     ENDPOINT_IMAGE_NAME = f"opea/{ENDPOINT_CONTAINER_NAME}:comps"
 
@@ -39,8 +38,8 @@ class EmbeddingsLangchainTorchserveDockerSetup(EmbeddingsDockerSetup):
         return self.get_docker_env(self._ENV_KEYS.TORCHSERVE_PORT)
 
     @property
-    def _ENV_KEYS(self) -> Type[Embeddings_Langchain_Torchserve_EnvKeys]:
-        return Embeddings_Langchain_Torchserve_EnvKeys
+    def _ENV_KEYS(self) -> Type[EmbeddingsTorchserveEnvKeys]:
+        return EmbeddingsTorchserveEnvKeys
 
     @property
     def _MODEL_SERVER_READINESS_MSG(self) -> str:
@@ -65,9 +64,6 @@ class EmbeddingsLangchainTorchserveDockerSetup(EmbeddingsDockerSetup):
     @property
     def _microservice_envs(self) -> dict:
         return {
-            "EMBEDDING_CONNECTOR": self.get_docker_env(
-                self._ENV_KEYS.EMBEDDING_CONNECTOR
-            ),
             "EMBEDDING_MODEL_NAME": self.get_docker_env(
                 self._ENV_KEYS.TORCHSERVE_MODEL_NAME
             ),

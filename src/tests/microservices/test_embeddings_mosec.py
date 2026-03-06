@@ -4,14 +4,14 @@ import allure
 import pytest
 import requests
 
-from tests.docker_setups.embeddings.langchain_mosec import (
-    EmbeddingsLangchainMosecDockerSetup,
+from tests.docker_setups.embeddings.mosec import (
+    EmbeddingsMosecDockerSetup,
 )
 
 
 @pytest.fixture(scope="module")
 def containers():
-    containers = EmbeddingsLangchainMosecDockerSetup("comps/embeddings/impl/model_server/mosec/docker/.env")
+    containers = EmbeddingsMosecDockerSetup("comps/embeddings/impl/model_server/mosec/docker/.env")
     containers.deploy()
 
     yield containers

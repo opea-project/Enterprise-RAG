@@ -16,4 +16,4 @@ This service integrates with other OPEA ERAG components:
 
 OPEA ERAG is licensed under the Apache License, Version 2.0.
 
-Copyright © 2024–2025 Intel Corporation. All rights reserved.
+Copyright © 2024–2026 Intel Corporation. All rights reserved.

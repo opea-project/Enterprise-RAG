@@ -8,14 +8,14 @@ import allure
 import pytest
 import requests
 
-from tests.docker_setups.embeddings.langchain_torchserve import (
-    EmbeddingsLangchainTorchserveDockerSetup,
+from tests.docker_setups.embeddings.torchserve import (
+    EmbeddingsTorchserveDockerSetup,
 )
 
 
 @pytest.fixture(scope="module")
 def containers():
-    containers = EmbeddingsLangchainTorchserveDockerSetup(
+    containers = EmbeddingsTorchserveDockerSetup(
         "comps/embeddings/impl/model_server/torchserve/docker/.env"
     )
     containers.deploy()

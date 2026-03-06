@@ -45,14 +45,14 @@ The script initiates a Docker container with the OVMS server running on port (`O
 
 If you'd like to check whether the endpoint is already running, check out following request:
 ```bash
-export MODEL_NAME="bge-large-en-v1.5"
-curl http://localhost:9000/v2/models/${MODEL_NAME}
+export MODEL_NAME="bge-base-en-v1.5"
+curl http://localhost:9000/v2/models/$MODEL_NAME
 ```
 
 If the endpoint is correctly running, it should print out an output similar to the one below:
 ```json
 {
-   "name":"bge-large-en-v1.5",
+   "name":"bge-base-en-v1.5",
    "versions":["1"],
    "platform":"OpenVINO",
    "inputs":[
@@ -104,8 +104,8 @@ docker compose down
 
 - Test the `embedding-ovms-model-server` using the following command:
    ```bash
-   export MODEL_NAME="bge-large-en-v1.5"
-   curl -X POST http://localhost:9000/v2/models/${MODEL_NAME}/infer -H 'Content-Type: application/json' -d '{"inputs" : [ {"name" : "Parameter_1", "shape" : [1], "datatype"  : "BYTES", "data" : ["What is Intel Gaudi?"]}]}'
+   export MODEL_NAME="bge-base-en-v1.5"
+   curl -X POST http://localhost:9000/v2/models/$MODEL_NAME/infer -H 'Content-Type: application/json' -d '{"inputs" : [ {"name" : "Parameter_1", "shape" : [1], "datatype"  : "BYTES", "data" : ["What is Intel Gaudi?"]}]}'
    ```
 - Check the `embedding-ovms-microservice` status:
     ```bash

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class Embeddings_Langchain_Mosec_EnvKeys(Enum):
+class EmbeddingsMosecEnvKeys(Enum):
     """This struct declares all env variables from .env file.
 
     It is created to ensure env variables for testing are in sync with design by devs.
@@ -18,13 +18,12 @@ class Embeddings_Langchain_Mosec_EnvKeys(Enum):
 
     MOSEC_PORT = "MOSEC_PORT"
     MOSEC_MODEL_NAME = "MOSEC_MODEL_NAME"
-    EMBEDDING_CONNECTOR = "EMBEDDING_CONNECTOR"
     MOSEC_AMP_DTYPE = "MOSEC_AMP_DTYPE"
     MOSEC_MAX_BATCH_SIZE = "MOSEC_MAX_BATCH_SIZE"
     MOSEC_MAX_WAIT_TIME = "MOSEC_MAX_WAIT_TIME"
 
 
-class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
+class EmbeddingsMosecDockerSetup(EmbeddingsDockerSetup):
 
     ENDPOINT_CONTAINER_NAME = f"{EmbeddingsDockerSetup.CONTAINER_NAME_BASE}-endpoint"
     ENDPOINT_IMAGE_NAME = f"opea/{ENDPOINT_CONTAINER_NAME}:comps"
@@ -33,8 +32,8 @@ class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
 
 
     @property
-    def _ENV_KEYS(self) -> Type[Embeddings_Langchain_Mosec_EnvKeys]:
-        return Embeddings_Langchain_Mosec_EnvKeys
+    def _ENV_KEYS(self) -> Type[EmbeddingsMosecEnvKeys]:
+        return EmbeddingsMosecEnvKeys
 
     @property
     def _MODEL_SERVER_READINESS_MSG(self) -> str:
@@ -45,7 +44,6 @@ class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
         envs = [
             self._ENV_KEYS.MOSEC_PORT,
             self._ENV_KEYS.MOSEC_MODEL_NAME,
-            self._ENV_KEYS.EMBEDDING_CONNECTOR,
             self._ENV_KEYS.MOSEC_AMP_DTYPE,
             self._ENV_KEYS.MOSEC_MAX_BATCH_SIZE,
             self._ENV_KEYS.MOSEC_MAX_WAIT_TIME,
@@ -56,7 +54,6 @@ class EmbeddingsLangchainMosecDockerSetup(EmbeddingsDockerSetup):
     @property
     def _microservice_envs(self) -> dict:
         return {
-            "EMBEDDING_CONNECTOR": self.get_docker_env(self._ENV_KEYS.EMBEDDING_CONNECTOR),
             "EMBEDDING_MODEL_NAME": self.get_docker_env(self._ENV_KEYS.MOSEC_MODEL_NAME),
             "EMBEDDING_MODEL_SERVER": "mosec",
             "EMBEDDING_MODEL_SERVER_ENDPOINT": f"http://{self._HOST_IP}:{self.INTERNAL_COMMUNICATION_PORT}",

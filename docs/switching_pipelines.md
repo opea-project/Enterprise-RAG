@@ -293,7 +293,6 @@ spec:
             endpoint: /v1/embeddings
             EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
             EMBEDDING_MODEL_SERVER: "vllm"
-            EMBEDDING_CONNECTOR: "generic"
       - name: VLLMEmbedding
         dependency: Hard
         internalService:

@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # This test checks embedding microservice by sending request and verifying 200 response code and response content.
-# Framework: Llamaindex
-# Moder server: TEI
+# Model server: TEI
 
 set -xe
 
@@ -17,7 +16,7 @@ ENDPOINT_CONTAINER_NAME="${CONTAINER_NAME_BASE}-endpoint-tei"
 ENDPOINT_IMAGE_NAME="ghcr.io/huggingface/text-embeddings-inference:cpu-1.5"
 
 MICROSERVICE_API_PORT=5005
-MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice-llamaindex"
+MICROSERVICE_CONTAINER_NAME="${CONTAINER_NAME_BASE}-microservice"
 MICROSERVICE_IMAGE_NAME="opea/${MICROSERVICE_CONTAINER_NAME}:comps"
 
 function test_fail() {
@@ -28,9 +27,7 @@ function test_fail() {
 
 function build_docker_images() {
     cd $WORKPATH
-    echo $(pwd)
-
-    docker build --target llama_index -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
+    docker build -t ${MICROSERVICE_IMAGE_NAME} -f comps/embeddings/impl/microservice/Dockerfile .
 }
 
 function start_service() {
@@ -38,43 +35,42 @@ function start_service() {
     internal_communication_port=5001
 
     docker run -d --name="${ENDPOINT_CONTAINER_NAME}" \
-        --runtime runc \
-        -p $internal_communication_port:80 \
-        -v ./data:/data \
-        "${ENDPOINT_IMAGE_NAME}" \
-        --model-id $model
-    sleep 1m
+      --runtime runc \
+      -p $internal_communication_port:80 \
+      -v ./data:/data \
+      --pull always "${ENDPOINT_IMAGE_NAME}" \
+      --model-id $model
+
+    sleep 20
 
     docker run -d --name ${MICROSERVICE_CONTAINER_NAME} \
         --runtime runc \
         -p ${MICROSERVICE_API_PORT}:6000 \
-        -e http_proxy=$http_proxy \
-        -e https_proxy=$https_proxy \
-        -e no_proxy=$no_proxy \
+        -e http_proxy="" \
+        -e https_proxy="" \
         -e EMBEDDING_MODEL_NAME="${model}" \
         -e EMBEDDING_MODEL_SERVER="tei" \
-        -e EMBEDDING_CONNECTOR=llama_index \
         -e EMBEDDING_MODEL_SERVER_ENDPOINT="http://${IP_ADDRESS}:${internal_communication_port}" \
         --ipc=host \
         ${MICROSERVICE_IMAGE_NAME}
-    sleep 15s
+    sleep 1m
 }
 
 function check_containers() {
-  container_names=("${ENDPOINT_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
-  failed_containers="false"
+    container_names=("${ENDPOINT_CONTAINER_NAME}" "${MICROSERVICE_CONTAINER_NAME}")
+    failed_containers="false"
 
-  for name in "${container_names[@]}"; do
+    for name in "${container_names[@]}"; do
     if [ "$( docker container inspect -f '{{.State.Status}}' "${name}" )" != "running" ]; then
-      echo "Container '${name}' failed. Print logs:"
-      docker logs "${name}"
-      failed_containers="true"
+        echo "Container '${name}' failed. Print logs:"
+        docker logs "${name}"
+        failed_containers="true"
     fi
-  done
+    done
 
-  if [[ "${failed_containers}" == "true" ]]; then
-    test_fail "There are failed containers"
-  fi
+    if [[ "${failed_containers}" == "true" ]]; then
+        test_fail "There are failed containers"
+    fi
 }
 
 function validate_microservice() {
@@ -107,17 +103,17 @@ function purge_containers() {
     cids=$(docker ps -aq --filter "name=${CONTAINER_NAME_BASE}-*")
     if [[ ! -z "$cids" ]]
     then
-      docker stop $cids
-      docker rm $cids
+        docker stop $cids
+        docker rm $cids
     fi
 }
 
 function remove_images() {
     # Remove images and the build cache
     iid=$(docker images \
-      --filter=reference=${ENDPOINT_IMAGE_NAME} \
-      --filter=reference=${MICROSERVICE_IMAGE_NAME} \
-      --format "{{.ID}}" \
+        --filter=reference=${ENDPOINT_IMAGE_NAME} \
+        --filter=reference=${MICROSERVICE_IMAGE_NAME} \
+        --format "{{.ID}}" \
     )
     if [[ ! -z "$iid" ]]; then docker rmi $iid && sleep 1s; fi
 }

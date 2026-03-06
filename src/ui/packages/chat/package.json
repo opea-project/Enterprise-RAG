@@ -1,7 +1,7 @@
 {
   "name": "@intel-enterprise-rag-ui/chat",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Chat components and utilities for Intel Enterprise RAG UI",

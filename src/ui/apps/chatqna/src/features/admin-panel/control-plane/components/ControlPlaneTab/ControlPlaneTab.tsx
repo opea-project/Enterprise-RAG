@@ -5,29 +5,30 @@ import { useColorScheme } from "@intel-enterprise-rag-ui/components";
 import {
   ControlPlanePanel,
   PipelineGraph,
+  ServiceData,
   useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
 import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
 import {
+  useChangeArgumentsMutation,
   useGetServicesDataQuery,
   useLazyGetServicesDataQuery,
 } from "@/features/admin-panel/control-plane/api";
 import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import {
   chatQnAGraphEdgesSelector,
+  chatQnAGraphIsAutorefreshEnabledSelector,
   chatQnAGraphIsLoadingSelector,
   chatQnAGraphIsRenderableSelector,
   chatQnAGraphNodesSelector,
-  chatQnAGraphIsAutorefreshEnabledSelector,
   onChatQnAGraphConnect,
   onChatQnAGraphEdgesChange,
   onChatQnAGraphNodesChange,
-  setChatQnAGraphSelectedServiceNode,
   setChatQnAGraphIsAutorefreshEnabled,
+  setChatQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
-import { ServiceData } from "@/features/admin-panel/control-plane/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
@@ -41,6 +42,7 @@ const ControlPlaneTab = () => {
   );
 
   const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
+  const [changeArguments] = useChangeArgumentsMutation();
 
   const handleAutorefreshChange = useCallback(
     (enabled: boolean) => {
@@ -60,7 +62,7 @@ const ControlPlaneTab = () => {
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={ChatQnAGraph}
-      ConfigPanel={ServiceCard}
+      ConfigPanel={() => <ServiceCard changeArguments={changeArguments} />}
       isAutorefreshEnabled={isAutorefreshEnabled}
       onAutorefreshChange={handleAutorefreshChange}
       onRefresh={handleRefresh}

@@ -14,8 +14,10 @@ export interface PostFileToExtractTextRequest {
   queryParams?: PostToExtractTextQueryParams;
 }
 
-export interface PostToExtractTextQueryParams
-  extends Record<string, number | boolean | undefined | string> {
+export interface PostToExtractTextQueryParams extends Record<
+  string,
+  number | boolean | undefined | string
+> {
   chunk_size?: number;
   chunk_overlap?: number;
   use_semantic_chunking?: boolean;

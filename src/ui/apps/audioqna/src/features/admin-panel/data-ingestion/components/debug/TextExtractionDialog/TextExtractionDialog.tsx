@@ -10,11 +10,11 @@ import {
   LoadingFallback,
   TextInput,
 } from "@intel-enterprise-rag-ui/components";
+import { useDebug } from "@intel-enterprise-rag-ui/utils";
 import classNames from "classnames";
 import { ChangeEventHandler, FormEvent, useMemo, useState } from "react";
 
 import { PostToExtractTextQueryParams } from "@/features/admin-panel/data-ingestion/types/api";
-import useDebug from "@/hooks/useDebug";
 
 interface TextExtractionFormProps {
   isLoadingExtractedText: boolean;

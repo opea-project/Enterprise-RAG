@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  FetchedServicesData,
   ServiceNodeData,
-  ServiceStatus,
+  updateNodes,
 } from "@intel-enterprise-rag-ui/control-plane";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Edge, Node } from "@xyflow/react";
@@ -12,8 +13,6 @@ import {
   graphEdges,
   graphNodes,
 } from "@/features/admin-panel/control-plane/config/graph";
-import { ServiceDetails } from "@/features/admin-panel/control-plane/types";
-import { FetchedServicesData } from "@/features/admin-panel/control-plane/types/api";
 import { RootState } from "@/store/index";
 
 interface DocSumGraphState {
@@ -50,41 +49,6 @@ export const setupDocSumGraph = createAsyncThunk(
   },
 );
 
-const updateNodes = (fetchedServicesData: FetchedServicesData) => {
-  const graphNodes = [...initialState.nodes];
-
-  const updatedNodes = graphNodes
-    .map((node) => updateNodeDetails(node, fetchedServicesData))
-    .filter((node) => node.data.status);
-
-  return updatedNodes;
-};
-
-const updateNodeDetails = (
-  node: Node<ServiceNodeData>,
-  fetchedServicesData: FetchedServicesData,
-): Node<ServiceNodeData> => {
-  const nodeId = node.data.id;
-  let nodeDetails: ServiceDetails = {};
-  let nodeStatus: ServiceStatus | undefined;
-
-  const { details: serviceDetails } = fetchedServicesData;
-  if (serviceDetails[nodeId]) {
-    const { details, status } = serviceDetails[nodeId];
-    nodeDetails = details || {};
-    nodeStatus = status as ServiceStatus;
-  }
-
-  return {
-    ...node,
-    data: {
-      ...node.data,
-      details: nodeDetails,
-      status: nodeStatus,
-    },
-  };
-};
-
 export const docSumGraphSlice = createSlice({
   name: "docSumGraph",
   initialState,
@@ -97,7 +61,10 @@ export const docSumGraphSlice = createSlice({
       action: PayloadAction<FetchedServicesData>,
     ) => {
       const fetchedServicesData = action.payload;
-      state.nodes = updateNodes(fetchedServicesData) as typeof state.nodes;
+      state.nodes = updateNodes(
+        graphNodes,
+        fetchedServicesData,
+      ) as typeof state.nodes;
     },
     setDocSumGraphIsLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;

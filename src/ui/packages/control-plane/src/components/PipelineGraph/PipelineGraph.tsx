@@ -21,7 +21,7 @@ import {
 import debounce from "lodash.debounce";
 import { useEffect } from "react";
 
-import ServiceNode from "@/components/ServiceNode/ServiceNode";
+import { ServiceNode } from "@/components/ServiceNode/ServiceNode";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,

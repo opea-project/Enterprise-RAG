@@ -1,16 +1,7 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { parseServiceDetailsResponseData as parseServiceDetailsShared } from "@intel-enterprise-rag-ui/control-plane";
-import { formatSnakeCaseToTitleCase } from "@intel-enterprise-rag-ui/utils";
-
-import {
-  FetchedServiceDetails,
-  GetServicesDetailsResponse,
-} from "@/features/admin-panel/control-plane/types/api";
-import { formatServiceDetailValue } from "@/features/admin-panel/control-plane/utils";
-
-const SERVICE_NODE_IDS = [
+export const SERVICE_NODE_IDS = [
   "embedding_model_server",
   "embedding",
   "retriever",
@@ -28,7 +19,7 @@ const SERVICE_NODE_IDS = [
   "tts-model-server",
 ] as const;
 
-const SERVICE_NAME_NODE_ID_MAP: Record<
+export const SERVICE_NAME_NODE_ID_MAP: Record<
   string,
   (typeof SERVICE_NODE_IDS)[number]
 > = {
@@ -49,16 +40,4 @@ const SERVICE_NAME_NODE_ID_MAP: Record<
   "v1:tts-svc": "tts",
   "v1:tts-fastapi-model-server": "tts-model-server",
   "v1:vllm-audio-cpu": "vllm-audio-cpu",
-};
-
-export const parseServiceDetailsResponseData = (
-  response: GetServicesDetailsResponse,
-): FetchedServiceDetails => {
-  return parseServiceDetailsShared(response, {
-    serviceNameNodeIdMap: SERVICE_NAME_NODE_ID_MAP,
-    serviceNodeIds: SERVICE_NODE_IDS,
-    excludedServices: ["fgp", "router"],
-    formatSnakeCaseToTitleCase,
-    formatServiceDetailValue,
-  }) as FetchedServiceDetails;
 };

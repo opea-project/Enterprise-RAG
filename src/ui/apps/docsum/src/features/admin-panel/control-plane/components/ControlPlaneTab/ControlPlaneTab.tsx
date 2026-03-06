@@ -16,10 +16,10 @@ import {
 } from "@/features/admin-panel/control-plane/api";
 import {
   docSumGraphEdgesSelector,
+  docSumGraphIsAutorefreshEnabledSelector,
   docSumGraphIsLoadingSelector,
   docSumGraphIsRenderableSelector,
   docSumGraphNodesSelector,
-  docSumGraphIsAutorefreshEnabledSelector,
   setDocSumGraphIsAutorefreshEnabled,
 } from "@/features/admin-panel/control-plane/store/docSumGraph.slice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";

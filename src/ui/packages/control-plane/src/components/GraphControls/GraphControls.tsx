@@ -11,7 +11,7 @@ import {
 import { ConfigurableServiceIcon } from "@intel-enterprise-rag-ui/icons";
 
 import { ServiceStatusIndicator } from "@/components/ServiceStatusIndicator/ServiceStatusIndicator";
-import { ServiceStatus } from "@/types";
+import { ServiceStatus } from "@/types/index";
 
 interface GraphControlsProps {
   isAutorefreshEnabled: boolean;
@@ -33,19 +33,22 @@ export const GraphControls = ({
       <div className="graph-controls__legend">
         <div className="graph-controls__legend-item">
           <ServiceStatusIndicator status={ServiceStatus.Ready} noTooltip />
-          <p>Ready</p>
+          <p className="graph-controls__legend-label">Ready</p>
         </div>
         <div className="graph-controls__legend-item">
           <ServiceStatusIndicator status={ServiceStatus.NotReady} noTooltip />
-          <p>Not Ready</p>
+          <p className="graph-controls__legend-label">Not Ready</p>
         </div>
         <div className="graph-controls__legend-item">
-          <ServiceStatusIndicator status={ServiceStatus.NotAvailable} noTooltip />
-          <p>Status Not Available</p>
+          <ServiceStatusIndicator
+            status={ServiceStatus.NotAvailable}
+            noTooltip
+          />
+          <p className="graph-controls__legend-label">Status Not Available</p>
         </div>
         <div className="graph-controls__legend-item">
-          <ConfigurableServiceIcon />
-          <p>Configurable Service</p>
+          <ConfigurableServiceIcon fontSize={12} />
+          <p className="graph-controls__legend-label">Configurable Service</p>
         </div>
       </div>
       <div className="graph-controls__actions">
@@ -56,9 +59,8 @@ export const GraphControls = ({
             size="sm"
             isSelected={isAutorefreshEnabled}
             onChange={onAutorefreshChange}
-            dense
-            standalone
             data-testid="control-plane-autorefresh-checkbox"
+            dense
           />
         </div>
         <div className="graph-controls__actions-item">

@@ -6,15 +6,17 @@ import debounce from "lodash.debounce";
 import {
   ChangeEvent,
   HTMLAttributes,
-  useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
 const DEBOUNCE_MS = 100;
 
-interface SearchBarProps
-  extends Omit<HTMLAttributes<HTMLInputElement>, "onChange"> {
+interface SearchBarProps extends Omit<
+  HTMLAttributes<HTMLInputElement>,
+  "onChange"
+> {
   value: string;
   placeholder?: string;
   onChange: (value: string) => void;
@@ -30,8 +32,8 @@ export const SearchBar = ({
 
   useEffect(() => setInner(value), [value]);
 
-  const debouncedOnChange = useCallback(
-    debounce((newValue: string) => onChange(newValue), DEBOUNCE_MS),
+  const debouncedOnChange = useMemo(
+    () => debounce((newValue: string) => onChange(newValue), DEBOUNCE_MS),
     [onChange],
   );
 

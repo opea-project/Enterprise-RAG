@@ -1,7 +1,7 @@
 {
   "name": "@intel-enterprise-rag-ui/control-plane",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Pipeline graph component for Intel Enterprise RAG UI",
@@ -23,9 +23,12 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@intel-enterprise-rag-ui/chat": "workspace:^",
     "@intel-enterprise-rag-ui/components": "workspace:^",
     "@intel-enterprise-rag-ui/icons": "workspace:^",
-    "@intel-enterprise-rag-ui/tailwind-theme": "workspace:^"
+    "@intel-enterprise-rag-ui/input-validation": "workspace:^",
+    "@intel-enterprise-rag-ui/tailwind-theme": "workspace:^",
+    "@intel-enterprise-rag-ui/utils": "workspace:^"
   },
   "devDependencies": {},
   "peerDependencies": {

@@ -5,28 +5,30 @@ import { useColorScheme } from "@intel-enterprise-rag-ui/components";
 import {
   ControlPlanePanel,
   PipelineGraph,
+  ServiceData,
   useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
-import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
-import { useCallback } from "react";
+import { Node, NodeChange } from "@xyflow/react";
+import { useCallback, useMemo } from "react";
 
 import {
+  useChangeArgumentsMutation,
   useGetServicesDataQuery,
   useLazyGetServicesDataQuery,
 } from "@/features/admin-panel/control-plane/api";
+import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import {
   audioQnAGraphEdgesSelector,
+  audioQnAGraphIsAutorefreshEnabledSelector,
   audioQnAGraphIsLoadingSelector,
   audioQnAGraphIsRenderableSelector,
   audioQnAGraphNodesSelector,
-  audioQnAGraphIsAutorefreshEnabledSelector,
   onAudioQnAGraphConnect,
   onAudioQnAGraphEdgesChange,
   onAudioQnAGraphNodesChange,
-  setAudioQnAGraphSelectedServiceNode,
   setAudioQnAGraphIsAutorefreshEnabled,
+  setAudioQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/audioQnAGraph.slice";
-import { ServiceData } from "@/features/admin-panel/control-plane/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
@@ -40,6 +42,7 @@ const ControlPlaneTab = () => {
   );
 
   const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
+  const [changeArguments] = useChangeArgumentsMutation();
 
   const handleAutorefreshChange = useCallback(
     (enabled: boolean) => {
@@ -59,6 +62,7 @@ const ControlPlaneTab = () => {
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={AudioQnAGraph}
+      ConfigPanel={() => <ServiceCard changeArguments={changeArguments} />}
       isAutorefreshEnabled={isAutorefreshEnabled}
       onAutorefreshChange={handleAutorefreshChange}
       onRefresh={handleRefresh}
@@ -91,9 +95,15 @@ const AudioQnAGraph = () => {
     );
   };
 
-  const fitViewOptions: FitViewOptions = {
-    padding: { x: 0.75 },
-  };
+  const fitViewOptions = useMemo(
+    () => ({
+      padding: {
+        x: 0.75,
+        y: 0.5,
+      },
+    }),
+    [],
+  );
 
   return (
     <PipelineGraph

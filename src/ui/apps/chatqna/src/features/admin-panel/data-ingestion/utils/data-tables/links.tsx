@@ -9,8 +9,7 @@ import DataItemStatus from "@/features/admin-panel/data-ingestion/components/Dat
 import LinkTextExtractionDialog from "@/features/admin-panel/data-ingestion/components/debug/LinkTextExtractionDialog/LinkTextExtractionDialog";
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { LinkDataItem } from "@/features/admin-panel/data-ingestion/types";
-
-import { formatStatusForFilter } from "./utils";
+import { formatStatusForFilter } from "@/features/admin-panel/data-ingestion/utils/data-tables/utils";
 
 interface LinkActionsHandlers {
   retryHandler: (id: string) => void;

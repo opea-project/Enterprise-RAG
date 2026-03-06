@@ -7,7 +7,7 @@
   }
 
   &__label-wrapper {
-    @apply flex h-6 flex-row items-center gap-2;
+    @apply mb-2 flex h-6 flex-row items-center gap-2;
   }
 
   &__input,
@@ -55,12 +55,12 @@
   }
 
   &--sm {
-    .textarea-input--with-label {
-      @apply grid grid-rows-[1rem_1fr] gap-1;
+    &.textarea-input--with-label {
+      @apply grid grid-rows-[1rem_1fr] gap-2;
     }
 
     .textarea-input__label-wrapper {
-      @apply h-4 gap-1;
+      @apply mb-2 h-4 gap-1;
     }
 
     .textarea-input__input {

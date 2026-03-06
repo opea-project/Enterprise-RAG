@@ -9,13 +9,13 @@ import classNames from "classnames";
 import { memo } from "react";
 
 import { ServiceStatusIndicator } from "@/components/ServiceStatusIndicator/ServiceStatusIndicator";
-import { ServiceNodeData } from "@/types";
+import { ServiceNodeData } from "@/types/index";
 
 interface ServiceNodeProps {
   data: ServiceNodeData;
 }
 
-const ServiceNode = ({
+const ServiceNodeComponent = ({
   data: {
     displayName,
     targetPosition,
@@ -79,4 +79,4 @@ const ServiceNode = ({
   );
 };
 
-export default memo(ServiceNode);
+export const ServiceNode = memo(ServiceNodeComponent);

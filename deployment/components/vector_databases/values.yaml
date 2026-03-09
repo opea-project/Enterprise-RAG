@@ -99,10 +99,10 @@ redis-cluster:
       loadmodule /usr/local/lib/redis/modules/rejson.so MAXDEPTH 1000
     resources:
       requests:
-        cpu: 2
-        memory: 4Gi
+        cpu: 250m
+        memory: 500Mi
       limits:
-        cpu: 16
+        cpu: 4
         memory: 16Gi
   persistence:
     size: "10Gi"

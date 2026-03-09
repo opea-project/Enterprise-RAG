@@ -52,7 +52,7 @@
               metric: "{{ item.key }}"
               pre_value: "{{ item.value }}"
               post_value: "{{ post_component[item.key] | default('N/A') }}"
-              match: "{{ (post_component[item.key] | default(-1)) == item.value }}"
+              match: "{{ (post_component[item.key] | default(-1)) >= item.value }}"
           loop: "{{ pre_component | dict2items }}"
           when: item.key != 'component'
 

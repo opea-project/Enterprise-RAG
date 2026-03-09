@@ -5,7 +5,7 @@ Generated: {{ ansible_date_time.iso8601 }}
 
 ## Summary
 
-**Overall Status: {{ 'PASSED ✓' if verification_passed else 'FAILED ✗' }}**
+**Overall Status: {{ 'PASSED' if verification_passed else 'FAILED' }}**
 
 Total components verified: {{ verification_results | length }}
 - Passed: {{ verification_results | selectattr('status', 'equalto', 'PASSED') | list | length }}
@@ -19,7 +19,7 @@ Total components verified: {{ verification_results | length }}
 ## Component Details
 
 {% for result in verification_results %}
-### {{ result.component }}{% if result.mapped_to is defined and result.mapped_to %} → {{ result.mapped_to }}{% endif %}
+### {{ result.component }}{% if result.mapped_to is defined and result.mapped_to %} -> {{ result.mapped_to }}{% endif %}
 
 **Status: {{ result.status }}**
 
@@ -27,10 +27,10 @@ Total components verified: {{ verification_results | length }}
 **Reason:** {{ result.reason }}
 
 {% elif result.details is defined %}
-| Metric | Pre-Upgrade | Post-Upgrade | Match |
-|--------|-------------|--------------|-------|
+| Metric | Pre-Upgrade | Post-Upgrade | Status | Change |
+|--------|-------------|--------------|--------|--------|
 {% for detail in result.details %}
-| {{ detail.metric }} | {{ detail.pre_value }} | {{ detail.post_value }} | {{ '✓' if detail.match else '✗' }} |
+| {{ detail.metric }} | {{ detail.pre_value }} | {{ detail.post_value }} | {{ 'OK' if detail.match else 'FAIL' }} | {% if detail.post_value != 'N/A' and detail.pre_value != 'N/A' %}{{ (detail.post_value | int) - (detail.pre_value | int) if ((detail.post_value | int) - (detail.pre_value | int)) != 0 else '-' }}{% else %}-{% endif %} |
 {% endfor %}
 
 {% endif %}

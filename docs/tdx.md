@@ -115,11 +115,17 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
    registry: "<IMAGE_REGISTRY>"     # [OPTIONAL] Provide your_container_registry - can be left intact for default image
    tag: "<IMAGE_TAG>"          # [OPTIONAL] Provide your_tag - can be left intact for default image
    tdx:
-      enabled: true|false  # Set to true to enable Intel TDX.
-      td_type: one-td|coco # Set accordingly to your deployment case: [one TD]/[CoCo] 
-      attestation:
-         enabled: true|false # [one TD] Set to true to enable TDX based attestation.
+     enabled: true|false    # Set to true to Intel® TDX.
+     one_td:
+       enabled: true|false  # Set accordingly to your deployment case. 
+     coco:
+       enabled: true|false  # Set accordingly to your deployment case. 
+       runtime_class_name: kata-qemu-tdx
+     attestation:
+       enabled: true|false  # Set to true to enable attestation via KBS.
+       kbs_address: ""      # Protocol, address IP and port to connect to KBS. E.g. http://127.0.0.1:8080
    ```
+   There is no support for enabling `one_td` and `coco` at once.
 
    Setting `attestation.enabled` enforces TDX attestation as a prerequisite for a successful Intel® AI for Enterprise RAG
    deployment.    
@@ -140,7 +146,8 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
 3. Deploy Intel® AI for Enterprise RAG:
 
-   Make sure that you have exported the `KBS_ADDRESS`, which points to the Key Broker Service ([KBS](https://confidentialcontainers.org/docs/attestation/architecture/#key-broker-service)).
+   If `tdx.kbs_address` is not provided in config file, variable may be passed via environment variable `KBS_ADDRESS`, 
+   which points to the Key Broker Service ([KBS](https://confidentialcontainers.org/docs/attestation/architecture/#key-broker-service)).
    KBS can be deployed on any trusted machine. The most common cases are described below.
 
    - `CoCo` - if KBS was deployed on the same kubernetes node as whole cluster, that is simply: 

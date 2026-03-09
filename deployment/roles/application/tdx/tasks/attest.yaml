@@ -8,13 +8,6 @@
   tags:
     - install
 
-- name: Fail if  KBS address does not exist
-  ansible.builtin.fail:
-    msg: "KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable."
-  when: KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0
-  tags:
-    - install
-
 - name: Create namespace TDX
   kubernetes.core.k8s:
     api_version: v1

@@ -111,9 +111,6 @@
       ansible.builtin.include_role:
         name: tdx
         tasks_from: verify_variables.yaml
-        apply:
-          tags:
-            - pre-upgrade
       tags:
         - install
         - display-configuration

@@ -96,19 +96,9 @@ Follow the below steps on the server node with Intel Xeon Processor:
 
 1. Follow the steps to [deploy kubernetes cluster](cluster_deployment_guide.md).
 
-2. `[one TD]` Make sure to deploy the cluster inside the TD and check if NRI kubernetes plugin is enabled. Run device
-   injector at index 10:
+2. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
 
-   ```bash
-   git clone https://github.com/containerd/nri.git
-   cd nri/plugins/device-injector
-   go build
-   ./device-injector -idx 10
-   ```
-
-3. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
-
-4. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components).
+3. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components).
 
 ### Deploy the ChatQnA, Audio ChatQnA, Docsum
 

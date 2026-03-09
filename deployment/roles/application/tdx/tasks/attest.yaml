@@ -24,6 +24,12 @@
   tags:
     - install
 
+- name: Install NRI device injector
+  ansible.builtin.include_tasks:
+    file: manage_nri_device_injector.yaml
+  tags:
+    - install
+
 - name: Deploy attestation pod
   kubernetes.core.k8s:
     state: present
@@ -58,3 +64,8 @@
     - install
   when: '"ATTESTATION COMPLETED SUCCESSFULLY" not in tdx_attestation_logs.log'
 
+- name: Uninstall NRI device injector
+  ansible.builtin.include_tasks:
+    file: manage_nri_device_injector.yaml
+  tags:
+    - uninstall

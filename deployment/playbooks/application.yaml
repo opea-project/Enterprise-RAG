@@ -123,9 +123,10 @@
       ansible.builtin.include_role:
         name: tdx
         tasks_from: attest.yaml
+      when: tdx.enabled and tdx.attestation.enabled
       tags:
         - install
-      when: tdx.enabled and tdx.attestation.enabled
+        - uninstall
 
     - name: Install NRI balloons policy
       include_role:

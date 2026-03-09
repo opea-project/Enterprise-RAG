@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+nri_device_injector_version: "v0.10.0"
+
 tdx:
   enabled: false
   td_type: "one-td" # allowed options: one-td, coco

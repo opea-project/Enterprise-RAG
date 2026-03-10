@@ -185,6 +185,8 @@ telemetry:
   enabled: true
   traces:
     enabled: false
+  logging:
+    enabled: false
 
 ui:
   enabled: true

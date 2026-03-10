@@ -182,6 +182,10 @@ ui:
 edp:
   enabled: false
 
+rag_utils:
+  enabled: true
+  namespace: default
+
 fingerprint:
   enabled: false
   namespace: fingerprint

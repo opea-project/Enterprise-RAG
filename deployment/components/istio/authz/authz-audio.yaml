@@ -16,7 +16,6 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/auth-apisix/sa/auth-apisix
-        - cluster.local/ns/chatqa/sa/text-extractor
         - cluster.local/ns/edp/sa/edp-chart
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
@@ -28,7 +27,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: vllm-asr-cpu
+      app.kubernetes.io/name: vllm-audio-cpu
   action: DENY
   rules:
   - from:

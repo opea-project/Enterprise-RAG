@@ -70,12 +70,22 @@ class VLLMConnector(AbstractConnector):
         if hasattr(self, '_client') and self._client:
             await self._client.close()
 
+    async def get_models(self) -> dict:
+        """Forward the /v1/models listing from the underlying model server."""
+        models = await self._client.models.list()
+        return models.model_dump()
+
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
+            max_new_tokens = input.max_new_tokens
+            if input.max_completion_tokens is not None:
+                logger.warning("Both max_completion_tokens and max_new_tokens are set. max_completion_tokens will take precedence.")
+                max_new_tokens = input.max_completion_tokens
+
             generator = await self._client.chat.completions.create(
                 model=self._model_name,
                 messages=input.messages.model_dump() if isinstance(input.messages, LLMPromptTemplate) else input.messages,
-                max_tokens=input.max_new_tokens,
+                max_tokens=max_new_tokens,
                 temperature=input.temperature,
                 top_p=input.top_p,
                 stream=input.stream and not self._disable_streaming,

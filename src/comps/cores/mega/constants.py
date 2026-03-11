@@ -82,6 +82,7 @@ class MegaServiceEndpoint(Enum):
     TTS = "/v1/audio/speech"
     ASR = "/v1/audio/transcriptions"
     CHAT = "/v1/chat/completions"
+    CHAT_MODELS = "/v1/models"
     RETRIEVAL = "/v1/retrieval"
     RERANKING = "/v1/reranking"
     PROMPT_TEMPLATE = "/v1/prompt_template"

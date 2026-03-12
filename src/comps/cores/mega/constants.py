@@ -54,6 +54,7 @@ class ServiceType(Enum):
     DOC_SUMMARY = 35
     LATE_CHUNKING = 36
     NAMESPACE_STATUS_WATCHER = 37
+    QUERY_REWRITE = 38
 
 
 class MegaServiceEndpoint(Enum):
@@ -102,6 +103,7 @@ class MegaServiceEndpoint(Enum):
     TEXT_SPLITTER = "/v1/text_splitter"
     CHAT_HISTORY = "/v1/chat_history"
     LATE_CHUNKING = "/v1/late_chunking"
+    QUERY_REWRITE = "/v1/query_rewrite"
 
     # COMMON
     LIST_SERVICE = "/v1/list_service"

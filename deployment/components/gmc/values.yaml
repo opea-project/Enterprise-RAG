@@ -25,6 +25,9 @@ common_registry: &repo "docker.io/opea"
 llm_model: &cpu_model "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: &hpu_model "mistralai/Mixtral-8x7B-Instruct-v0.1"
 
+# Query Rewrite model
+query_rewrite_model: &query_rewrite_model "AMead10/Llama-3.2-3B-Instruct-AWQ"
+
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
 # embedding_model_name: &embedding_model_name "BAAI/bge-large-en-v1.5"
 
@@ -270,6 +273,13 @@ images:
     pullPolicy: Always
     envs:
       LLM_VLLM_MODEL_NAME: *cpu_model
+  vllm_query_rewrite:
+    image: "erag-vllm-cpu"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envs:
+      LLM_VLLM_MODEL_NAME: *query_rewrite_model
   langdtct-usvc:
     image: "erag-language-detection"
     repository: *repo
@@ -287,6 +297,12 @@ images:
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/docsum/impl/microservice/.env"
+  query-rewrite-usvc:
+    image: "erag-query-rewrite"
+    repository: *repo
+    tag: *tag
+    pullPolicy: Always
+    envfile: "src/comps/query_rewrite/impl/microservice/.env"
   init-container:
     image: "erag-init-container"
     repository: *repo

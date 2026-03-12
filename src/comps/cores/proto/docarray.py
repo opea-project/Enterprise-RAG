@@ -38,6 +38,7 @@ class PrevQuestionDetails(BaseDoc):
 
 class TextDoc(BaseDoc, TopologyInfo):
     text: str
+    original_query: Optional[str] = None
     metadata: Optional[dict] = {}
     history_id: Optional[str] = None
     return_pooling: Optional[bool] = None

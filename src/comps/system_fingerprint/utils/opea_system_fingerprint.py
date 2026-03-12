@@ -13,6 +13,7 @@ from comps.system_fingerprint.utils.object_document_mapper import (
     PromptTemplateEnParams,
     PromptTemplatePlParams,
     LLMParams,
+    QueryRewriteParams,
     ComponentDetails,
     Fingerprint,
     Argument,
@@ -51,7 +52,7 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 document_models = [
     RetrieverParams, RerankerParams, PromptTemplateEnParams, PromptTemplatePlParams, ComponentDetails, Fingerprint, Argument,
     ComponentConfiguration, ComponentTopology, LLMGuardInputGuardrailParams,
-    LLMGuardOutputGuardrailParams, LLMGuardDataprepGuardrailParams, PackedParams, LLMParams, AnonymizeModel,
+    LLMGuardOutputGuardrailParams, LLMGuardDataprepGuardrailParams, PackedParams, LLMParams, QueryRewriteParams, AnonymizeModel,
     BanSubstringsModel, BanTopicsModel,
     CodeModel, InvisibleText,
     PromptInjectionModel, RegexModel, SecretsModel, SentimentModel,
@@ -215,6 +216,7 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                     llm=LLMParams(),
                     retriever=RetrieverParams(),
                     reranker=RerankerParams(),
+                    query_rewrite=QueryRewriteParams(),
                     prompt_template=PromptTemplatePlParams() if self.template_language == "pl" else PromptTemplateEnParams(),
                     input_guard=LLMGuardInputGuardrailParams(
                         anonymize=AnonymizeModel(),
@@ -446,6 +448,10 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
                 self.current_arguments.parameters.llm = LLMParams(
                     **param[1]
                 )
+            elif param[0] == "query_rewrite" and param[1] is not None:
+                self.current_arguments.parameters.query_rewrite = QueryRewriteParams(
+                    **param[1]
+                )
             elif param[0] == "input_guard" and param[1] is not None:
                 for k, v in param[1].items():
                     if k == "anonymize":
@@ -599,6 +605,11 @@ class OPEASystemFingerprintController(OPEAMongoConnector):
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.reranker.model_dump()))
+        packed_parameters.update(
+            {"query_rewrite_params":
+                remove_id(
+                    self.current_arguments.parameters.query_rewrite.model_dump())
+             })
         packed_parameters.update(
             remove_id(
                 self.current_arguments.parameters.prompt_template.model_dump()))

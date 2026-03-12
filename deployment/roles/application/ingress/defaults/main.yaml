@@ -13,3 +13,5 @@ ingress:
     chart_directory: "{{ playbook_dir }}/../components/ingress"
     release_name: "ingress-nginx"
     default_values_file: "{{ playbook_dir }}/../components/ingress/values.yaml"
+
+reverse_proxy_storage: false

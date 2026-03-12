@@ -281,12 +281,28 @@
   - topology-preview
   - update-configuration
 
-- name: Fail if balloons are enabled but hyperthreading is disabled on any node
+- name: Check for nodes with hyperthreading enabled
+  set_fact:
+    nodes_with_hyperthreading: >-
+      {{
+        cpu_topology_per_node
+        | dict2items
+        | selectattr('value.threads_per_core', 'defined')
+        | selectattr('value.threads_per_core', 'gt', 1)
+        | map(attribute='key')
+        | list
+      }}
+  tags:
+  - install
+  - topology-preview
+  - update-configuration
+
+- name: Fail if balloons are enabled but no node has hyperthreading enabled
   fail:
     msg: |
-      ERROR: Balloons are not supported without Hyperthreading.
+      ERROR: Balloons require at least one node with Hyperthreading enabled.
 
-      Balloons feature requires Hyperthreading to be enabled on all cluster nodes.
+      Balloons feature can run on mixed clusters, but at least one node must have Hyperthreading enabled.
 
       Nodes with Hyperthreading DISABLED (Thread(s) per core: 1):
       {% for node in nodes_without_hyperthreading %}
@@ -294,11 +310,11 @@
       {% endfor %}
 
       Please either:
-        1. Enable Hyperthreading in the BIOS on the affected nodes, or
+        1. Enable Hyperthreading in the BIOS on at least one cluster node, or
         2. Disable balloons in your config.yaml by setting: balloons.enabled: false
   when:
   - balloons.enabled | default(false) | bool
-  - nodes_without_hyperthreading | length > 0
+  - nodes_with_hyperthreading | length == 0
   tags:
   - install
   - topology-preview

@@ -3,12 +3,12 @@
 
 [project]
 name = "Intel-Enterprise-RAG-LLM_Guard_Dataprep_Guardrail_Microservice"
-version = "2.1.0"
+version = "2.1.1"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "pip==25.3",
-    "nltk==3.9.1",
+    "nltk==3.9.3",
     "llm-guard==0.3.16",
     "pydantic==2.7.4",
     "pyyaml==6.0.1",

@@ -32,7 +32,7 @@ nfs_csi_storage_class: "nfs-csi"
 # Setup when install_csi is "netapp-trident"
 # Configure NetApp Trident CSI driver for ONTAP storage
 # Requires existing NetApp ONTAP system with configured SVM
-trident_operator_version: "2506.0"    # Trident operator version (becomes 100.2506.0 in Helm chart)
+trident_operator_version: "2510.0"    # Trident operator version (becomes 100.2510.0 in Helm chart)
 trident_namespace: "trident"          # Kubernetes namespace for Trident
 trident_storage_class: "netapp-trident" # StorageClass name for Trident
 trident_backend_name: "ontap-nas"     # Backend configuration name
@@ -42,6 +42,10 @@ ontap_data_lif: ""                    # ONTAP data LIF IP address
 ontap_svm: ""                         # Storage Virtual Machine (SVM) name
 ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
+
+# Set to true to expose the external storage backend (ontap_data_lif) through the ingress controller
+# as a reverse proxy at s3.<FQDN>. Requires ontap_data_lif and ingress.enabled to be set.
+reverse_proxy_storage: false          # Enable reverse proxy for external storage backend
 
 huggingToken: "" # Huggingface token is required for gated/private models
 
@@ -73,7 +77,7 @@ clusterCerts:
   pathToKey: "" # Provide absolute path to key
 
 registry: "docker.io/opea" # alternatively "localhost:5000/erag" for local registry
-tag: "2.1.0"
+tag: "2.1.1"
 setup_registry: true
 use_alternate_tagging: false
 helm_timeout: "10m0s"
@@ -141,7 +145,7 @@ gmc:
 
 ingress:
   enabled: true
-  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
+  service_type: NodePort # Set it accordingly to environment if LoadBalancer is supported
 
 keycloak:
   enabled: true

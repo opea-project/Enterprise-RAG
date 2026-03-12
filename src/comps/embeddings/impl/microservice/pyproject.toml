@@ -3,7 +3,7 @@
 
 [project]
 name = "Intel-Enterprise-RAG-Embedding_Microservice"
-version = "2.1.0"
+version = "2.1.1"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
@@ -45,6 +45,12 @@ test = [
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "nltk>=3.9.3",
 ]
 
 [tool.uv.sources]

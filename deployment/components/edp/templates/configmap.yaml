@@ -23,6 +23,18 @@ data:
   FINGERPRINT_ENDPOINT: "http://fingerprint-svc.fingerprint.svc:6012/v1/system_fingerprint/append_arguments"
   PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK: {{ .Values.presignedUrlCredentialsSystemFallback | quote }}
   USE_BEARER_TOKEN_AUTH: {{ .Values.useBearerTokenAuth | default "false" | quote }}
+  {{- /* Lookup EMBEDDING_TIMEOUT_SECONDS from embedding-usvc-config in chatqa namespace */ -}}
+  {{- $embeddingTimeout := .Values.embedding.config.timeout | default "120" }}
+  {{- $embeddingConfigMap := lookup "v1" "ConfigMap" "chatqa" "embedding-usvc-config" }}
+  {{- if $embeddingConfigMap }}
+    {{- if hasKey $embeddingConfigMap.data "EMBEDDING_TIMEOUT_SECONDS" }}
+      {{- $embeddingTimeout = index $embeddingConfigMap.data "EMBEDDING_TIMEOUT_SECONDS" }}
+    {{- else if hasKey $embeddingConfigMap.data "EMBEDDING_TIMEOUT" }}
+      {{- /* Fallback to old name for backwards compatibility */ -}}
+      {{- $embeddingTimeout = index $embeddingConfigMap.data "EMBEDDING_TIMEOUT" }}
+    {{- end }}
+  {{- end }}
+  EMBEDDING_TIMEOUT_SECONDS: {{ $embeddingTimeout | quote }}
   {{- /* Query embedding service configuration from chatqa namespace */ -}}
   {{- $embeddingReplicas := 1 }}
   {{- $maxNewWorkers := 8 }}

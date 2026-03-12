@@ -161,7 +161,7 @@ images:
     pullPolicy: Always
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
-      EMBEDDING_TIMEOUT: "120"
+      EMBEDDING_TIMEOUT_SECONDS: "120"
       OPEA_LOGGER_LEVEL: "INFO"
   reranking-usvc:
     image: "erag-reranking"

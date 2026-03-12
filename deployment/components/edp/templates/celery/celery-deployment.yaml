@@ -138,6 +138,11 @@ spec:
                 configMapKeyRef:
                   name: edp-configmap
                   key: MAX_NEW_WORKERS
+            - name: EMBEDDING_TIMEOUT_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: edp-configmap
+                  key: EMBEDDING_TIMEOUT_SECONDS
           {{- toYaml .Values.celery.environment | nindent 12 }}
           ports:
             - name: http

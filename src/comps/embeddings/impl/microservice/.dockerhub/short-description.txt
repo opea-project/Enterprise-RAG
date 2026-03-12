@@ -1,1 +1,0 @@
-Intel® AI for Enterprise RAG Embedding Microservice for interacting with an embedding endpoint

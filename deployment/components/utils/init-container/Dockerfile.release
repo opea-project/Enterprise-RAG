@@ -1,9 +1,0 @@
-FROM init-container-base:latest
-
-COPY compliance /compliance
-
-WORKDIR /compliance/ospdt
-COPY Dockerfile .
-
-# CMD from base Dockerfile
-ENTRYPOINT ["/bin/bash"]

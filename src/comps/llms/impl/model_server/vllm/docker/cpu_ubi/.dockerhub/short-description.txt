@@ -1,1 +1,0 @@
-vLLM model server for Intel® CPU based on Red Hat® universal base image

@@ -48,23 +48,28 @@ vector_databases:
 
 ### Redis Vector Database Performance Settings
 
-In addition, larger databases might benefit from different vector store index configuration, such as changing the search algorithm from `FLAT` to `HNSW`. This is configurable via `deployment/inventory/**/config.yaml` as follows:
+Starting with Redis 8.2, use `SVS-VAMANA` as the recommended default vector index backend for Enterprise RAG deployments, especially for medium/large datasets. It is optimized for better memory efficiency and query throughput while keeping high recall.
+
+This is configurable via `deployment/inventory/**/config.yaml` as follows:
 
 ```yaml
 edp:
   ingestion:
     config:
-      vector_algorithm: "HNSW"
+      vector_algorithm: "SVS-VAMANA"
       vector_datatype: "FLOAT32"
       vector_distance_metric: "COSINE"
-      # For HNSW Algorithm additional settings are available
-      vector_hnsw_m: "32"
-      vector_hnsw_ef_construction: "32"
-      vector_hnsw_ef_runtime: "32"
-      vector_hnsw_epsilon: "0.01"
 ```
 
-Note that changing those settings requires additional RAM and storage for the vector database, since it creates additional indexes without removing the already existing ones. This operation might be time-consuming, depending on the amount of data already stored in the database.
+If your priority is faster index build time or compatibility with existing tuning profiles, `HNSW` remains a valid alternative.
+
+For detailed trade-offs and parameter tuning, see Redis documentation:
+- Vector indexes overview: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/
+- SVS-VAMANA reference and parameters: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/#svs-vamana-index
+- SVS compression and tuning options: https://redis.io/docs/latest/develop/ai/search-and-query/vectors/svs-compression/
+- SVS-VAMANA perf comparison details: https://redis.io/blog/tech-dive-comprehensive-compression-leveraging-quantization-and-dimensionality-reduction/
+
+Note that changing index settings can require additional RAM and storage for the vector database, since new indexes may be created before old ones are removed. This operation might be time-consuming for large datasets.
 
 Ensure the Redis instances have enough resources assigned, both from compute and storage. This is configurable via `deployment/inventory/**/config.yaml` as follows:
 

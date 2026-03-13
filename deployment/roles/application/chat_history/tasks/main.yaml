@@ -9,6 +9,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Build Helm chart dependencies
   ansible.builtin.command:
@@ -21,6 +22,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Generate password
   ansible.builtin.include_role:
@@ -29,12 +31,14 @@
     apply:
       tags:
         - pre-upgrade
+        - update-configuration
   loop:
     - name: CHAT_HISTORY_POSTGRES
       user: "{{ chat_history.database.auth.user.db_user }}"
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 # Creates chatqa_namespace
 - name: Get chatqa namespace
@@ -43,6 +47,7 @@
     tasks_from: get_chatqa_namespace.yaml
   tags:
     - install
+    - update-configuration
 
 - name: Ensure namespace exists
   kubernetes.core.k8s:
@@ -57,6 +62,7 @@
     - "{{ chatqa_namespace }}"
   tags:
     - install
+    - update-configuration
 
 - name: Enforce PSS
   kubernetes.core.k8s:
@@ -71,6 +77,7 @@
   when: enforcePSS
   tags:
     - install
+    - update-configuration
 
 - name: Create password secret
   kubernetes.core.k8s:
@@ -91,7 +98,7 @@
     - "{{ chat_history.namespace }}"
   tags:
     - install
-
+    - update-configuration
 - name: Generate override values file from template
   ansible.builtin.template:
     src: "values.yaml.j2"
@@ -100,6 +107,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Set values_files list
   ansible.builtin.set_fact:
@@ -113,6 +121,7 @@
   tags:
     - install
     - pre-upgrade
+    - update-configuration
 
 - name: Run pre-upgrade checks
   ansible.builtin.include_role:
@@ -147,6 +156,7 @@
   delay: 15
   tags:
     - install
+    - update-configuration
 
 - name: Mark secret for password management
   ansible.builtin.include_role:
@@ -155,6 +165,7 @@
     apply:
       tags:
         - install
+        - update-configuration
   vars:
     namespace: "{{ chat_history.namespace }}"
     secret_name: "{{ chat_history.database.auth.password_secret_name }}"
@@ -164,6 +175,7 @@
         user: "{{ chat_history.database.auth.user.db_user }}"
   tags:
     - install
+    - update-configuration
 
 - name: Uninstall Helm chart
   kubernetes.core.helm:

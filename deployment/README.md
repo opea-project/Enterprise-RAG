@@ -89,6 +89,22 @@ If your K8s cluster requires installing any of these tools, follow the [Infrastr
 
 Once you have a K8s cluster with all infrastructure components installed, you can install the Intel® AI for Enterprise RAG application on top of it. Follow the [Application Deployment Guide](../docs/application_deployment_guide.md).
 
+### Upload-Optimized Pipeline Deployment
+
+For environments focused on document upload and embedding workloads, you can deploy an upload-optimized pipeline configuration. Set `upload_pipelines: true` in your `config.yaml` and run:
+
+```sh
+ansible-playbook playbooks/application.yaml --tags install,update-configuration -e @<path to config.yaml>
+```
+
+The upload-optimized configuration:
+- Uses a streamlined pipeline focused on embedding and upload throughput
+- Automatically excludes chat_history component (not needed for upload-only workloads)  
+- Maintains fingerprint service for request tracking
+- Can be toggled back to full pipeline mode by setting `upload_pipelines: false` and running with `--tags update-configuration`
+
+For detailed information about pipeline switching, see the [Switching Pipelines Guide](../docs/switching_pipelines.md).
+
 ## Update application components (models, configurations) as needed
 
 After the application is installed, you can update its components (for example, change the LLM or embedding model) by editing your configuration file and running the install tag again. The deployment scripts will detect changes and update only the involved components, minimizing downtime and unnecessary redeployments.

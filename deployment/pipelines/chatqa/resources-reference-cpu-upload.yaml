@@ -7,7 +7,8 @@
 #
 # Key differences from default (reference-cpu) resources:
 #   - Embedding service: Increased resources for high throughput
-#   - TorchServe embedding: Increased replicas and resource al#   - Removed: LLM, retriever, reranking, guardrails, prompt-template resources
+#   - TorchServe embedding: Increased replicas and resource allocation
+#   - Removed: LLM, retriever, reranking, guardrails, prompt-template resources
 #
 
 services:

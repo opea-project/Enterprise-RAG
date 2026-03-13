@@ -52,7 +52,8 @@ export const createQnAApi = (
             }
 
             if (!response.ok) {
-              return Promise.reject(response);
+              const body = await response.text();
+              return Promise.reject({ status: response.status, data: body });
             }
 
             const contentType = response.headers.get("Content-Type");

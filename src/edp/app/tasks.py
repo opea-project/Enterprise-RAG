@@ -47,6 +47,7 @@ TEXT_SPLITTER_ENDPOINT  = os.environ.get('TEXT_SPLITTER_ENDPOINT')
 EMBEDDING_ENDPOINT = os.environ.get('EMBEDDING_ENDPOINT')
 LATE_CHUNKING_ENDPOINT = os.environ.get('LATE_CHUNKING_ENDPOINT')
 INGESTION_ENDPOINT = os.environ.get('INGESTION_ENDPOINT')
+EMBEDDING_TIMEOUT = int(os.getenv('EMBEDDING_TIMEOUT_SECONDS', '120'))
 
 class WithEDPTask(Task):
 
@@ -425,7 +426,7 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
             try:
                 # Step 1: Embedding
                 start_embedding = datetime.datetime.now()
-                embed_response = requests.post(EMBEDDING_ENDPOINT, json={"docs": docs_batch})
+                embed_response = requests.post(EMBEDDING_ENDPOINT, json={"docs": docs_batch}, timeout=EMBEDDING_TIMEOUT)
                 embedding_time = datetime.datetime.now() - start_embedding
 
                 if embed_response.status_code != 200:
@@ -747,7 +748,7 @@ def process_link_task(self, link_id: Any, *args, **kwargs):
         # Step 5.1 - send each chunk of text from dataprep to the embedding service
         docs_batch = dataprep_docs[i:i+batch_size]
         start_embedding_time = datetime.datetime.now()
-        response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch })
+        response = requests.post(EMBEDDING_ENDPOINT, json={ "docs": docs_batch }, timeout=EMBEDDING_TIMEOUT)
         end_embedding_time = datetime.datetime.now()
         total_embedding_duration += (end_embedding_time - start_embedding_time)
         logger.debug(f"[{link_db.id}] Chunk {i} embedding completed.")

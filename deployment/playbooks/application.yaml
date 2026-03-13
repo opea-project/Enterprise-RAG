@@ -111,9 +111,6 @@
       ansible.builtin.include_role:
         name: tdx
         tasks_from: verify_variables.yaml
-        apply:
-          tags:
-            - pre-upgrade
       tags:
         - install
         - display-configuration
@@ -123,9 +120,10 @@
       ansible.builtin.include_role:
         name: tdx
         tasks_from: attest.yaml
+      when: tdx.enabled and tdx.attestation.enabled
       tags:
         - install
-      when: tdx.enabled and tdx.attestation.enabled
+        - uninstall
 
     - name: Install NRI balloons policy
       include_role:
@@ -188,15 +186,33 @@
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
+
+    # Uninstall chat_history when upload_pipelines=true
+    - name: Uninstall Chat History when upload_pipelines is enabled
+      kubernetes.core.helm:
+        name: "{{ chat_history.helm.release_name }}"
+        namespace: "{{ chat_history.namespace }}"
+        state: absent
+      when: >
+        upload_pipelines | default(false) | bool
+        and "update-configuration" in ansible_run_tags
+        and chat_history is defined
+      tags:
+        - update-configuration
+      ignore_errors: true
 
     - name: Chat History role
       ansible.builtin.include_role:
         name: chat_history
-      when: chat_history.enabled or "pre-upgrade" in ansible_run_tags
+      when: >
+        (chat_history.enabled or "pre-upgrade" in ansible_run_tags)
+        and not (upload_pipelines | default(false) | bool and "update-configuration" in ansible_run_tags)
       tags:
         - install
         - uninstall
         - pre-upgrade
+        - update-configuration
 
     - name: Audio role
       ansible.builtin.include_role:

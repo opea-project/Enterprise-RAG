@@ -31,8 +31,6 @@
     OIDC_ALIAS: "{{ keycloak.oidc.alias | default('') }}"
     OIDC_CLIENT_ID: "{{ keycloak.oidc.client_id | default('') }}"
     OIDC_CLIENT_SECRET: "{{ keycloak.oidc.client_secret | default('') }}"
-    OIDC_ADMIN_GID: "{{ keycloak.oidc.admin_gid | default('') }}"
-    OIDC_USER_GID: "{{ keycloak.oidc.user_gid | default('') }}"
     FEDERATION_ENDPOINT: "{{ keycloak.federation.endpoint | default('') }}"
     FEDERATION_BIND_DN: "{{ keycloak.federation.bind_dn | default('') }}"
     FEDERATION_BIND_PASSWORD: "{{ keycloak.federation.bind_password | default('') }}"

@@ -9,8 +9,10 @@ import {
 } from "@intel-enterprise-rag-ui/components";
 import classNames from "classnames";
 
-interface ScrollToBottomButtonProps
-  extends Omit<IconButtonProps, "color" | "icon"> {
+interface ScrollToBottomButtonProps extends Omit<
+  IconButtonProps,
+  "color" | "icon"
+> {
   show: boolean;
 }
 

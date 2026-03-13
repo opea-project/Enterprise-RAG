@@ -3,6 +3,7 @@
 import magic
 import os
 from comps.cores.mega.logger import get_opea_logger
+from comps.text_extractor.utils.file_loaders.fallback_loader import FallbackLoader
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
@@ -53,6 +54,23 @@ class FileParser:
         logger.info(f"Finished processing file {self.file_path} with loader {file_loader['loader_class']}")
 
         return data
+
+    def parse_metadata(self):
+        """Extract metadata from file using the appropriate loader."""
+        supported_mappings = self.supported_file(self.mime_type)
+        file_loader = next(m for m in supported_mappings if m['file_type'] == self.file_type)
+
+        loader_class = getattr(
+            __import__(f"comps.text_extractor.utils.file_loaders.{file_loader['loader_file_name']}", fromlist=['comps']),
+            file_loader['loader_class']
+        )
+
+        try:
+            return loader_class(self.file_path).extract_metadata()
+        except Exception as e:
+            logger.error(f"Metadata extraction failed for {self.file_path}: {e}")
+            # Return basic filesystem metadata as fallback
+            return FallbackLoader(self.file_path).extract_metadata()
 
     def default_mappings(self):
         return [

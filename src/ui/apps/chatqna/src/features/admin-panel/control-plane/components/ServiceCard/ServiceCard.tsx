@@ -4,25 +4,89 @@
 import "./ServiceCard.scss";
 
 import {
-  cards,
-  SelectedServiceId,
-} from "@/features/admin-panel/control-plane/components/cards";
-import { chatQnAGraphSelectedServiceNodeSelector } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
-import { useAppSelector } from "@/store/hooks";
+  LLMCard,
+  LLMInputGuardCard,
+  LLMOutputGuardCard,
+  PostRetrieverQueryRequest,
+  PromptTemplateCard,
+  RerankerCard,
+  RetrieverCard,
+  RetrieverDebugDialogProps,
+  validatePromptTemplateForm,
+} from "@intel-enterprise-rag-ui/control-plane";
+import { useDebug } from "@intel-enterprise-rag-ui/utils";
 
-const ServiceCard = () => {
+import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
+import {
+  chatQnAGraphNodesSelector,
+  chatQnAGraphSelectedServiceNodeSelector,
+} from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
+import { useAppSelector } from "@/store/hooks";
+import { getErrorMessage } from "@/utils/api";
+
+type ChangeArgumentsFunction = (
+  request: { name: string; data: unknown }[],
+) => void;
+
+interface ServiceCardProps {
+  changeArguments: ChangeArgumentsFunction;
+}
+
+const ServiceCard = ({ changeArguments }: ServiceCardProps) => {
   const selectedServiceNode = useAppSelector(
     chatQnAGraphSelectedServiceNodeSelector,
   );
+  const chatQnAGraphNodes = useAppSelector(chatQnAGraphNodesSelector);
+  const [postRetrieverQuery] = usePostRetrieverQueryMutation();
+  const { isDebugEnabled } = useDebug();
+
+  const rerankerNode = chatQnAGraphNodes.find((node) => node.id === "reranker");
+
+  const handlePostRetrieverQuery: RetrieverDebugDialogProps["onPostRetrieverQuery"] =
+    async (request: PostRetrieverQueryRequest) => {
+      return await postRetrieverQuery(request);
+    };
+
+  const handleGetErrorMessage: RetrieverDebugDialogProps["onGetErrorMessage"] =
+    (error: unknown, defaultMessage: string) => {
+      return getErrorMessage(error, defaultMessage);
+    };
 
   if (selectedServiceNode === null) {
     return <NoServiceSelectedCard />;
   }
 
   const { id, data } = selectedServiceNode;
-  const selectedServiceId = id as SelectedServiceId;
-  const SelectedServiceCard = cards[selectedServiceId];
-  return <SelectedServiceCard data={data} />;
+
+  const cards: Record<string, JSX.Element> = {
+    retriever: (
+      <RetrieverCard
+        data={data}
+        changeArguments={changeArguments}
+        isDebugEnabled={isDebugEnabled}
+        rerankerArgs={rerankerNode?.data?.rerankerArgs}
+        onPostRetrieverQuery={handlePostRetrieverQuery}
+        onGetErrorMessage={handleGetErrorMessage}
+      />
+    ),
+    reranker: <RerankerCard data={data} changeArguments={changeArguments} />,
+    prompt_template: (
+      <PromptTemplateCard
+        data={data}
+        changeArguments={changeArguments}
+        validatePromptTemplateForm={validatePromptTemplateForm}
+      />
+    ),
+    input_guard: (
+      <LLMInputGuardCard data={data} changeArguments={changeArguments} />
+    ),
+    llm: <LLMCard data={data} changeArguments={changeArguments} />,
+    output_guard: (
+      <LLMOutputGuardCard data={data} changeArguments={changeArguments} />
+    ),
+  };
+
+  return cards[id] || null;
 };
 
 const NoServiceSelectedCard = () => (

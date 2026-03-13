@@ -70,12 +70,22 @@ class VLLMConnector(AbstractConnector):
         if hasattr(self, '_client') and self._client:
             await self._client.close()
 
+    async def get_models(self) -> dict:
+        """Forward the /v1/models listing from the underlying model server."""
+        models = await self._client.models.list()
+        return models.model_dump()
+
     async def generate(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         try:
+            max_new_tokens = input.max_new_tokens
+            if input.max_completion_tokens is not None:
+                logger.warning("Both max_completion_tokens and max_new_tokens are set. max_completion_tokens will take precedence.")
+                max_new_tokens = input.max_completion_tokens
+
             generator = await self._client.chat.completions.create(
                 model=self._model_name,
                 messages=input.messages.model_dump() if isinstance(input.messages, LLMPromptTemplate) else input.messages,
-                max_tokens=input.max_new_tokens,
+                max_tokens=max_new_tokens,
                 temperature=input.temperature,
                 top_p=input.top_p,
                 stream=input.stream and not self._disable_streaming,
@@ -83,17 +93,17 @@ class VLLMConnector(AbstractConnector):
                 # stop=["###Pytanie", "###Odpowiedź", "###Historia rozmowy"] if "pllum" in self._model_name.lower() else None,
             )
         except ReadTimeout as e:
-            error_message = f"Failed to stream from the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
+            error_message = f"Failed to stream from the VLLM Connector. Connection established with '{e.request.url}' but " \
                 "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
             logger.error(error_message)
             raise ReadTimeout(error_message)
         except ConnectionError as e:
-            error_message = f"Failed to stream from the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+            error_message = f"Failed to stream from the VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
             logger.error(error_message)
             raise ConnectionError(error_message)
         except RequestException as e:
             error_code = e.response.status_code if e.response else 'No response'
-            error_message = f"Failed to stream from the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
+            error_message = f"Failed to stream from the VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
             logger.error(error_message)
             raise RequestException(error_message)
         except openai.BadRequestError as e:
@@ -176,17 +186,17 @@ class VLLMConnector(AbstractConnector):
                     else:
                         logger.debug("Not appending json data since it is not a dict")
                 except httpx.ReadTimeout as e:
-                    error_message = f"Failed to invoke the Generic VLLM Connector. Connection established with '{e.request.url}' but " \
+                    error_message = f"Failed to invoke the VLLM Connector. Connection established with '{e.request.url}' but " \
                         "no response received in set timeout. Check if the model is running and all optimizations are set correctly."
                     logger.error(error_message)
                     raise httpx.ReadTimeout(error_message)
                 except httpx.ConnectError as e:
-                    error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
+                    error_message = f"Failed to invoke the VLLM Connector. Unable to connect to '{e.request.url}'. Check if the endpoint is available and running."
                     logger.error(error_message)
                     raise httpx.ConnectError(error_message)
                 except RequestException as e:
                     error_code = e.response.status_code if e.response else 'No response'
-                    error_message = f"Failed to invoke the Generic VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
+                    error_message = f"Failed to invoke the VLLM Connector. Unable to connect to '{self._endpoint}', status_code: {error_code}. Check if the endpoint is available and running."
                     logger.error(error_message)
                     raise RequestException(error_message)
                 except Exception as e:

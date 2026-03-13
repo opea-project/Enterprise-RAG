@@ -7,6 +7,7 @@ from comps.cores.proto.docarray import EmbedDoc, SearchedDoc
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
+
 class OPEAVectorStore():
     """
     A class representing a vector store for OPEA.

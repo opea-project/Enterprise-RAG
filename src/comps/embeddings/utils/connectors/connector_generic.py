@@ -8,6 +8,8 @@ This includes vLLM with OpenAI-compatible API and other custom implementations.
 
 import aiohttp
 import asyncio
+import os
+import time
 from typing import Any, List, Optional
 
 from comps import get_opea_logger
@@ -29,14 +31,14 @@ class VLLMEmbeddings:
     uses a different API format (OpenAI embeddings endpoint).
     """
     
-    def __init__(self, model_name: str, base_url: str, timeout: int = 60):
+    def __init__(self, model_name: str, base_url: str, timeout: int = 120):
         """
         Initialize vLLM Embeddings connector.
         
         Args:
             model_name: Full model identifier, including the organization/namespace (e.g., 'BAAI/bge-base-en')
             base_url: Base URL of the vLLM server (e.g., 'http://localhost:8108')
-            timeout: Request timeout in seconds
+            timeout: Request timeout in seconds (default: 120)
         """
         self.model_name = model_name
         self.endpoint = base_url.rstrip('/') + '/v1/embeddings'
@@ -61,6 +63,7 @@ class VLLMEmbeddings:
         }
 
         try:
+            start_time = time.time()
             logger.debug(f"vLLM embedding request to {self.endpoint}: {len(texts)} texts")
 
             async with aiohttp.ClientSession() as session:
@@ -72,6 +75,8 @@ class VLLMEmbeddings:
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
+                        duration = time.time() - start_time
+                        logger.debug(f"vLLM error after {duration:.2f}s: status {response.status}")
                         raise aiohttp.ClientResponseError(
                             request_info=response.request_info,
                             history=None,
@@ -82,17 +87,25 @@ class VLLMEmbeddings:
                     result = await response.json()
                     embeddings = [item["embedding"] for item in result.get("data", [])]
 
-                    logger.debug(f"vLLM returned {len(embeddings)} embeddings")
+                    duration = time.time() - start_time
+                    logger.debug(f"vLLM returned {len(embeddings)} embeddings in {duration:.2f}s (batch size: {len(texts)}, avg: {duration/len(texts):.3f}s per text)")
                     return embeddings
 
         except aiohttp.ClientResponseError as e:
-            logger.exception(f"Client response error calling vLLM: {e}")
+            duration = time.time() - start_time
+            logger.exception(f"Client response error calling vLLM after {duration:.2f}s: {e}")
             raise ValueError(f"vLLM returned an error response: {e.status} - {e.message}")
         except aiohttp.ClientError as e:
-            logger.exception(f"Network error calling vLLM: {e}")
+            duration = time.time() - start_time
+            logger.exception(f"Network error calling vLLM after {duration:.2f}s: {e}")
             raise ConnectionError(f"Failed to connect to vLLM at {self.endpoint}: {e}")
+        except asyncio.TimeoutError:
+            duration = time.time() - start_time
+            logger.error(f"Timeout calling vLLM after {duration:.2f}s (timeout={self.timeout}s, batch_size={len(texts)})")
+            raise
         except Exception as e:
-            logger.exception(f"Error embedding documents with vLLM: {e}")
+            duration = time.time() - start_time
+            logger.exception(f"Error embedding documents with vLLM after {duration:.2f}s: {e}")
             raise
 
         return [] 
@@ -157,7 +170,10 @@ class GenericEmbedding(EmbeddingConnector):
 
     def _initialize(self, model_name: str, model_server: str, endpoint: str, api_config: Optional[dict] = None):
         super().__init__(model_name, model_server, endpoint)
-        self._embedder = self._select_embedder()
+        
+        # Get timeout from environment variable or use default
+        timeout = int(os.getenv('EMBEDDING_TIMEOUT', '120'))
+        self._embedder = self._select_embedder(timeout=timeout)
 
         if api_config is not None:
             self._set_api_config(api_config)

@@ -82,11 +82,16 @@ helm_timeout: "10m0s"
 hpaEnabled: true
 enforcePSS: true
 
-tdx:
+tdx: # enables Intel® Trust Domain Extensions
   enabled: false
-  td_type: "one-td" # allowed options: one-td, coco
+  one_td:
+    enabled: false  # incompatible with coco
+  coco:
+    enabled: false  # incompatible with one_td
+    runtime_class_name: kata-qemu-tdx
   attestation:
     enabled: false
+    kbs_address: ""
 
 llm_model: "casperhansen/llama-3-8b-instruct-awq"
 llm_model_gaudi: "mistralai/Mixtral-8x7B-Instruct-v0.1"

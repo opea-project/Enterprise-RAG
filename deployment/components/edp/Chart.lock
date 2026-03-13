@@ -1,9 +1,9 @@
 dependencies:
 - name: edp-redis
   repository: file://charts/edp-redis
-  version: 1.0.4
+  version: 1.0.3
 - name: postgresql
   repository: file://../postgresql
-  version: 0.1.5
-digest: sha256:87e8ea7913d3435c3b0e2a45565472372c9986928512d7ba883464acdfc8109c
-generated: "2026-03-04T11:51:51.262121822+01:00"
+  version: 0.1.4
+digest: sha256:058a7716a77c7eb7b9943cb45a37f1216654b20067f7c5b4696db44ff2a775a1
+generated: "2026-02-16T05:03:24.696756874-08:00"

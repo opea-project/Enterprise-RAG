@@ -8,11 +8,13 @@ The OPEA ERAG Embedding Microservice is designed to efficiently convert textual 
 
 ### Support Matrix
 
-| Model server | langchain | llama_index |
-| ------------ | ----------| ------------|
-| torchserve   | &#x2713;  | &#x2717;    |
-| OVMS         | &#x2717;  | &#x2717;    |
-| mosec        | &#x2713;  | &#x2717;    |
+| Model server  | Status    |
+| ------------- | --------- |
+| vLLM          | &#x2713;  |
+| TorchServe    | &#x2713;  |
+| TEI           | &#x2713;  |
+| OVMS          | &#x2713;  |
+| Mosec         | &#x2713;  |
 
 ## 🔗 Related Components
 
@@ -26,4 +28,4 @@ This service integrates with other OPEA ERAG components:
 
 OPEA ERAG is licensed under the Apache License, Version 2.0.
 
-Copyright © 2024–2025 Intel Corporation. All rights reserved.
+Copyright © 2024–2026 Intel Corporation. All rights reserved.

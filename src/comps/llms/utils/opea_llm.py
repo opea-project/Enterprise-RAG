@@ -73,3 +73,6 @@ class OPEALlm:
 
     async def run(self, input: LLMParamsDoc) -> Union[GeneratedDoc, StreamingResponse]:
         return await self._connector.generate(input)
+
+    async def get_models(self) -> dict:
+        return await self._connector.get_models()

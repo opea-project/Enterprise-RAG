@@ -91,6 +91,7 @@ The upload pipeline is a lightweight configuration designed specifically for doc
 - **VLLM Embedding**: Model server for embedding inference (with higher replica count)
 
 **Components excluded:**
+- **Chat History**: Not needed during upload-only operations
 - **Retriever**: Not needed during upload-only operations
 - **Reranking**: Not needed during upload-only operations
 - **Prompt Template**: Not needed for document ingestion
@@ -126,25 +127,32 @@ To enable the upload-optimized pipeline configuration:
 upload_pipelines: true
 ```
 
-**2. Switch the pipeline:**
+**2. Deploy or switch the pipeline:**
+
+For initial deployment:
+```bash
+cd deployment
+ansible-playbook playbooks/application.yaml --tags install,update-configuration -e @inventory/test-cluster/config.yaml
+```
 
 For an existing deployment:
 ```bash
 cd deployment
-ansible-playbook -K playbooks/application.yaml --tags update-configuration -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+ansible-playbook playbooks/application.yaml --tags update-configuration -e @inventory/test-cluster/config.yaml
 ```
 
 **3. Verify the deployment:**
 
 ```bash
-# Check that only upload-related pods are running
+# Check that upload pipeline pods are running
 kubectl get pods -n chatqa
 
 # You should see:
-# - fingerprint pods
-# - embedding pods (increased count)
+# - fingerprint pods (maintained for request tracking)
+# - embedding pods (increased count for higher throughput)
 # - vllm-embedding pods
-# - NO vllm (LLM), retriever, reranking, or llm-guard pods
+# - NO chat-history pods (excluded in upload mode)
+# - NO vllm (LLM), retriever, reranking, or llm-guard pods (if using minimal config)
 ```
 
 **Alternative: Override via command line**
@@ -152,8 +160,7 @@ kubectl get pods -n chatqa
 Upload mode can also be enabled without editing the configuration file:
 
 ```bash
-ansible-playbook -K playbooks/application.yaml --tags update-configuration \
-  -i inventory/test-cluster/inventory.ini \
+ansible-playbook playbooks/application.yaml --tags install,update-configuration \
   -e @inventory/test-cluster/config.yaml \
   -e upload_pipelines=true
 ```
@@ -173,7 +180,7 @@ upload_pipelines: false
 
 ```bash
 cd deployment
-ansible-playbook -K playbooks/application.yaml --tags update-configuration -i inventory/test-cluster/inventory.ini -e @inventory/test-cluster/config.yaml
+ansible-playbook playbooks/application.yaml --tags update-configuration -e @inventory/test-cluster/config.yaml
 ```
 
 **3. Verify the deployment:**
@@ -184,6 +191,7 @@ kubectl get pods -n chatqa
 
 # You should see all components:
 # - fingerprint, embedding, vllm-embedding
+# - chat-history (restored)
 # - retriever, reranking, vllm-reranking
 # - llm, vllm (LLM), llm-guard, prompt-template
 ```
@@ -191,8 +199,7 @@ kubectl get pods -n chatqa
 **Alternative: Override via command line:**
 
 ```bash
-ansible-playbook -K playbooks/application.yaml --tags update-configuration \
-  -i inventory/test-cluster/inventory.ini \
+ansible-playbook playbooks/application.yaml --tags update-configuration \
   -e @inventory/test-cluster/config.yaml \
   -e upload_pipelines=false
 ```
@@ -293,7 +300,6 @@ spec:
             endpoint: /v1/embeddings
             EMBEDDING_MODEL_SERVER_ENDPOINT: vllm-embedding-svc
             EMBEDDING_MODEL_SERVER: "vllm"
-            EMBEDDING_CONNECTOR: "generic"
       - name: VLLMEmbedding
         dependency: Hard
         internalService:

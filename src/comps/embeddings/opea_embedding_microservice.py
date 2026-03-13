@@ -36,12 +36,15 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "impl/microservice/.env"))
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
 
+# Check if EMBEDDING_CONNECTOR is defined and issue a deprecation warning
+if os.getenv("EMBEDDING_CONNECTOR"):
+    logger.warning("EMBEDDING_CONNECTOR environment variable is deprecated and will be ignored.")
+
 # Initialize an instance of the OPEAEmbedding class with environment variables.
 opea_embedding = OPEAEmbedding(
     model_name=sanitize_env(os.getenv("EMBEDDING_MODEL_NAME")),
     model_server=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER")),
     endpoint=sanitize_env(os.getenv("EMBEDDING_MODEL_SERVER_ENDPOINT")),
-    connector=sanitize_env(os.getenv("EMBEDDING_CONNECTOR")),
 )
 
 # Register the microservice with the specified configuration.
@@ -53,7 +56,7 @@ opea_embedding = OPEAEmbedding(
     port=int(os.getenv('EMBEDDING_USVC_PORT', default=6000)),
     input_datatype=Union[TextDoc, TextDocList],
     output_datatype=Union[EmbedDoc, EmbedDocList],
-    validate_methods=[opea_embedding.validate_method]
+    validate_methods=[opea_embedding._connector._validate]
 )
 @register_statistics(names=[USVC_NAME])
 # Define a function to handle processing of input for the microservice.

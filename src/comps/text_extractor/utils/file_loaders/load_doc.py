@@ -664,3 +664,22 @@ class LoadDoc(AbstractLoader):
         self.file_path = docx_path
         self.file_type = "docx"
         logger.info(f"[{doc_path}] Converted to docx")
+
+    def extract_metadata(self):
+        """Extract rich metadata from DOCX document properties."""
+        metadata = super().extract_metadata()
+        
+        try:
+            props = docx.Document(self.file_path).core_properties
+            if props.title:
+                metadata['file_title'] = props.title
+            if props.author:
+                metadata['author'] = props.author
+            if props.created:
+                metadata['creation_date'] = int(props.created.timestamp())
+            if props.modified:
+                metadata['last_update_date'] = int(props.modified.timestamp())
+        except Exception as e:
+            logger.error(f"[{self.file_path}] DOCX metadata extraction failed: {e}")
+        
+        return metadata

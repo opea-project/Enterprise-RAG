@@ -9,9 +9,21 @@ from typing import Union
 
 from comps import get_opea_logger
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
+from comps.embeddings.utils.connectors.ovms_connector import OVMSConnector
+from comps.embeddings.utils.connectors.tei_connector import TEIConnector
+from comps.embeddings.utils.connectors.torchserve_connector import TorchServeConnector
+from comps.embeddings.utils.connectors.vllm_connector import VLLMConnector
+from comps.embeddings.utils.connectors.mosec_connector import MosecConnector
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
+SUPPORTED_INTEGRATIONS = {
+    "tei": TEIConnector,
+    "vllm": VLLMConnector,
+    "torchserve": TorchServeConnector,
+    "mosec": MosecConnector,
+    "ovms": OVMSConnector,
+}
 
 class OPEAEmbedding:
     """
@@ -21,23 +33,21 @@ class OPEAEmbedding:
 
     _instance = None
 
-    def __new__(cls, model_name: str, model_server: str, endpoint: str, connector: str):
+    def __new__(cls, model_name: str, model_server: str, endpoint: str):
 
         if cls._instance is None:
             cls._instance = super(OPEAEmbedding, cls).__new__(cls)
-            cls._instance._initialize(model_name, model_server, endpoint, connector)
+            cls._instance._initialize(model_name, model_server, endpoint)
         else:
             if (cls._instance._model_name != model_name or
-                cls._instance._model_server != model_server or
-                cls._instance._connector != connector):
+                cls._instance._model_server != model_server):
                 logger.warning(f"Existing OPEAEmbedding instance has different parameters: "
                               f"{cls._instance._model_name} != {model_name}, "
                               f"{cls._instance._model_server} != {model_server}, "
-                              f"{cls._instance._connector} != {connector}. "
                               "Proceeding with the existing instance.")
         return cls._instance
 
-    def _initialize(self, model_name: str, model_server: str, endpoint: str, connector: str) -> None:
+    def _initialize(self, model_name: str, model_server: str, endpoint: str) -> None:
         """
         Initializes the OPEAEmbedding instance.
 
@@ -45,12 +55,10 @@ class OPEAEmbedding:
             model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5').
             model_server (str): The URL of the model server.
             endpoint (str): The endpoint for the model server.
-            connector (str): The name of the connector framework to be used.
         """
         self._model_name = model_name
         self._model_server = model_server.lower()
         self._endpoint = endpoint
-        self._connector = connector.lower()
         self._APIs = []
 
         self.REQUEST_BATCH_SIZE = 16 # how many texts are in one request
@@ -62,20 +70,29 @@ class OPEAEmbedding:
         if self._is_api_based():
             self._api_config = self._get_api_config()
 
-        self._SUPPORTED_FRAMEWORKS = {
-            "langchain": self._import_langchain,
-            "llama_index": self._import_llamaindex,
-            "generic": self._import_generic,
-        }
+        try:
+            self._connector = self._get_connector()
+        except ValueError:
+            raise
+        except Exception as e:
+            logger.exception(f"An unexpected error occurred while initializing the connector module: {e}")
+            raise
 
-        if self._connector not in self._SUPPORTED_FRAMEWORKS:
-            logger.error(
-                f"Unsupported framework: {self._connector}. "
-                f"Supported frameworks: {list(self._SUPPORTED_FRAMEWORKS.keys())}"
-            )
-            raise NotImplementedError(f"Unsupported framework: {self._connector}.")
-        else:
-            self._SUPPORTED_FRAMEWORKS[self._connector]()
+
+    def _get_connector(self):
+        if self._model_server not in SUPPORTED_INTEGRATIONS:
+            error_message = f"Invalid model server: {self._model_server}. Available servers: {list(SUPPORTED_INTEGRATIONS.keys())}"
+
+            logger.error(error_message)
+            raise ValueError(error_message)
+        
+        kwargs = {
+            "model_name": self._model_name,
+            "endpoint": self._endpoint,
+            "api_config": self._api_config
+        }
+        return SUPPORTED_INTEGRATIONS[self._model_server](**kwargs)
+
 
     async def run(self, input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDocList]:
         """
@@ -93,7 +110,7 @@ class OPEAEmbedding:
             if input.text.strip() == "":
                 raise ValueError("Input text is empty. Provide a valid input text.")
 
-            embed_vector = await self.embed_documents(texts=[input.text], return_pooling=input.return_pooling)
+            embed_vector = await self._connector.embed_documents(texts=[input.text], return_pooling=input.return_pooling)
             if len(embed_vector) == 1 and isinstance(embed_vector[0], list):
                 embed_vector = embed_vector[0]
             res = EmbedDoc(text=input.text, embedding=embed_vector, metadata=input.metadata)
@@ -115,7 +132,7 @@ class OPEAEmbedding:
             async def multithreaded_embed_query(i, batch, semaphore):
                 async with semaphore:
                     texts = [doc.text for doc in batch]
-                    res_vectors = await self.embed_documents(texts=texts, return_pooling=input.return_pooling)
+                    res_vectors = await self._connector.embed_documents(texts=texts, return_pooling=input.return_pooling)
 
                     if len(res_vectors) == 1:
                         res_vector = res_vectors[0]
@@ -138,47 +155,6 @@ class OPEAEmbedding:
                 flatten_docs.extend(d)
 
             return EmbedDocList(docs=flatten_docs) # return EmbedDocList
-
-
-    def _import_langchain(self) -> None:
-        try:
-            from comps.embeddings.utils.connectors import connector_langchain
-            self.embed_query = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
-            self.embed_documents = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
-            self.validate_method = connector_langchain.LangchainEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
-        except ModuleNotFoundError:
-            logger.exception("langchain module not found. Ensure it is installed if you need its functionality.")
-            raise
-        except Exception as e:
-            logger.exception(f"An unexpected error occurred while initializing the connector_langchain module {e}")
-            raise
-
-    def _import_llamaindex(self) -> None:
-        try:
-            from comps.embeddings.utils.connectors import connector_llamaindex
-            self.embed_query = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
-            self.embed_documents = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
-            self.validate_method = connector_llamaindex.LlamaIndexEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
-        except ModuleNotFoundError:
-            logger.exception("llama_index module not found. Ensure it is installed if you need its functionality.")
-            raise
-        except Exception as e:
-            logger.exception(f"An unexpected error occurred while initializing the connector_llamaindex module: {e}")
-            raise
-
-    def _import_generic(self) -> None:
-        """Import generic connector for model servers with custom APIs (e.g., vLLM)"""
-        try:
-            from comps.embeddings.utils.connectors import connector_generic
-            self.embed_query = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
-            self.embed_documents = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
-            self.validate_method = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
-        except ModuleNotFoundError:
-            logger.exception("generic connector module not found. Ensure it is properly installed.")
-            raise
-        except Exception as e:
-            logger.exception(f"An unexpected error occurred while initializing the connector_generic module: {e}")
-            raise
 
 
     def _get_api_config(self) -> dict:

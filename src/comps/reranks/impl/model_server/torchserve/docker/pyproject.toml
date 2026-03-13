@@ -3,7 +3,7 @@
 
 [project]
 name = "Intel-Enterprise-RAG-Reranking-Torchserve"
-version = "2.1.1"
+version = "2.1.0"
 requires-python = ">=3.10"
 
 dependencies = [
@@ -22,8 +22,13 @@ dependencies = [
     "psutil==5.9.5",
     "expecttest==0.3.0",
     "packaging==24.2",
-    "setuptools == 80.10.2",     # security update,
     "urllib3 == 2.6.3",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "setuptools == 80.10.2",
 ]
 
 [tool.uv.sources]

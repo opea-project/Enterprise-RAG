@@ -256,9 +256,12 @@
       global:
         dnsService: "{{ dns_service_name }}"
       otelcol-logs:
+        enabled: "{{ telemetry.logging.enabled | default(true) | bool }}"
         image:
           repository: "{{ helm_otelcol_logs_image_repo }}"
           tag: "{{ helm_otelcol_logs_image_tag }}"
+      loki:
+        enabled: "{{ telemetry.logging.enabled | default(true) | bool }}"
     create_namespace: true
     wait: true
     timeout: "{{ helm_timeout }}"

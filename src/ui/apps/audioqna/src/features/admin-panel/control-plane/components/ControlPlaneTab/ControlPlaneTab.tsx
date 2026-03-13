@@ -5,35 +5,68 @@ import { useColorScheme } from "@intel-enterprise-rag-ui/components";
 import {
   ControlPlanePanel,
   PipelineGraph,
+  ServiceData,
+  useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
-import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
-import { useCallback } from "react";
+import { Node, NodeChange } from "@xyflow/react";
+import { useCallback, useMemo } from "react";
 
-import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
+import {
+  useChangeArgumentsMutation,
+  useGetServicesDataQuery,
+  useLazyGetServicesDataQuery,
+} from "@/features/admin-panel/control-plane/api";
+import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import {
   audioQnAGraphEdgesSelector,
+  audioQnAGraphIsAutorefreshEnabledSelector,
   audioQnAGraphIsLoadingSelector,
   audioQnAGraphIsRenderableSelector,
   audioQnAGraphNodesSelector,
   onAudioQnAGraphConnect,
   onAudioQnAGraphEdgesChange,
   onAudioQnAGraphNodesChange,
+  setAudioQnAGraphIsAutorefreshEnabled,
   setAudioQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/audioQnAGraph.slice";
-import { ServiceData } from "@/features/admin-panel/control-plane/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
   useGetServicesDataQuery();
 
+  const dispatch = useAppDispatch();
   const isLoading = useAppSelector(audioQnAGraphIsLoadingSelector);
   const isRenderable = useAppSelector(audioQnAGraphIsRenderableSelector);
+  const isAutorefreshEnabled = useAppSelector(
+    audioQnAGraphIsAutorefreshEnabledSelector,
+  );
+
+  const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
+  const [changeArguments] = useChangeArgumentsMutation();
+
+  const handleAutorefreshChange = useCallback(
+    (enabled: boolean) => {
+      dispatch(setAudioQnAGraphIsAutorefreshEnabled(enabled));
+    },
+    [dispatch],
+  );
+
+  const handleRefresh = useCallback(() => {
+    getServicesData();
+  }, [getServicesData]);
+
+  useControlPlanePolling(handleRefresh, isAutorefreshEnabled);
 
   return (
     <ControlPlanePanel
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={AudioQnAGraph}
+      ConfigPanel={() => <ServiceCard changeArguments={changeArguments} />}
+      isAutorefreshEnabled={isAutorefreshEnabled}
+      onAutorefreshChange={handleAutorefreshChange}
+      onRefresh={handleRefresh}
+      isFetching={isFetching}
     />
   );
 };
@@ -62,9 +95,15 @@ const AudioQnAGraph = () => {
     );
   };
 
-  const fitViewOptions: FitViewOptions = {
-    padding: { x: 0.75 },
-  };
+  const fitViewOptions = useMemo(
+    () => ({
+      padding: {
+        x: 0.75,
+        y: 0.5,
+      },
+    }),
+    [],
+  );
 
   return (
     <PipelineGraph

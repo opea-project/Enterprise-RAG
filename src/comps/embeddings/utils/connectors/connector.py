@@ -26,13 +26,11 @@ class EmbeddingConnector(ABC):
     Attributes:
         _endpoint (str): The endpoint for the model server.
         _model_server (str): The model server to use.
-        _embedder (Embeddings): The selected embedder.
     """
 
-    def __init__(self, model_name: str, model_server: str, endpoint: str, api_config: Optional[dict] = None):
+    def __init__(self, model_name: str, endpoint: str, api_config: Optional[dict] = None):
         self._endpoint = endpoint
         self._model_name = model_name
-        self._model_server = model_server
 
     def _sanitize_input(value: str) -> str:
         """
@@ -109,13 +107,3 @@ class EmbeddingConnector(ABC):
         except Exception as e:
             logger.exception(f"An unexpected error occurred: {e}")
             raise
-
-    @abstractmethod
-    def change_configuration(self, **kwargs) -> None:
-        """
-        Changes the configuration of the embedder.
-
-        Args:
-            **kwargs: The new configuration parameters.
-        """
-        raise NotImplementedError

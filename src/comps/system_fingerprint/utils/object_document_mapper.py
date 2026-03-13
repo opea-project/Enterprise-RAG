@@ -273,10 +273,16 @@ class LLMParams(Document):
     stream: bool = True
 
 
+class QueryRewriteParams(Document):
+    max_new_tokens: int = 256
+    temperature: float = 0.1
+
+
 class PackedParams(Document):
     llm: LLMParams = None
     retriever: RetrieverParams = None
     reranker: RerankerParams = None
+    query_rewrite: QueryRewriteParams = None
     input_guard: LLMGuardInputGuardrailParams = None
     output_guard: LLMGuardOutputGuardrailParams = None
     dataprep_guard: LLMGuardDataprepGuardrailParams = None

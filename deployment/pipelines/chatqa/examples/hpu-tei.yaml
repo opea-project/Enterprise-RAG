@@ -33,7 +33,6 @@ spec:
             endpoint: /v1/embeddings
             EMBEDDING_MODEL_SERVER_ENDPOINT: tei-embedding-svc
             EMBEDDING_MODEL_SERVER: "tei"
-            EMBEDDING_CONNECTOR: "langchain"
       - name: TeiEmbedding
         internalService:
           serviceName: tei-embedding-svc

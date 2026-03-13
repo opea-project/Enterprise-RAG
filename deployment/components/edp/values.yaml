@@ -319,11 +319,11 @@ postgresql:
     secretKey: "DATABASE_PASSWORD"
   resources:
     requests:
-      cpu: "1"
-      memory: "1Gi"
+      cpu: "100m"
+      memory: "200Mi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "512m"
+      memory: "2Gi"
   persistence:
     enabled: true
     size: "10Gi"
@@ -492,11 +492,11 @@ celery:
   replicas: 1
   resources:
     requests:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "512m"
+      memory: "6Gi"
     limits:
-      cpu: "4"
-      memory: "8Gi"
+      cpu: "2"
+      memory: "12Gi"
 
 flower:
   enabled: true
@@ -549,11 +549,11 @@ flower:
   replicas: 1
   resources:
     requests:
-      cpu: "1"
-      memory: "1Gi"
+      cpu: "50m"
+      memory: "64Mi"
     limits:
-      cpu: "2"
-      memory: "2Gi"
+      cpu: "512m"
+      memory: "1Gi"
 
 backend:
   postgresql:
@@ -703,10 +703,10 @@ backend:
   replicas: 1
   resources:
     requests:
-      cpu: "2"
-      memory: "2Gi"
+      cpu: "100m"
+      memory: "512Mi"
     limits:
-      cpu: "2"
+      cpu: "1"
       memory: "2Gi"
 
 hierarchicalDataprep:
@@ -816,17 +816,17 @@ textExtractor:
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
-    - name: PDF_MAX_WORKERS
+    - name: TEXT_EXTRACTOR_MAX_WORKERS
       valueFrom:
         resourceFieldRef:
           resource: limits.cpu
   resources:
     requests:
-      cpu: "2"
-      memory: "8Gi"
+      cpu: "4"
+      memory: "4Gi"
     limits:
       cpu: "12"
-      memory: "40Gi"
+      memory: "24Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 2
@@ -865,10 +865,10 @@ textCompression:
     default_text_compression_methods: "header_footer_stripper"
   resources:
     requests:
-      cpu: "0.5"
+      cpu: "0.1"
       memory: "64Mi"
     limits:
-      cpu: "2"
+      cpu: "512m"
       memory: "1Gi"
   hpa:
     minReplicas: 1
@@ -916,11 +916,11 @@ textSplitter:
     late_chunk_overlap: "1024"
   resources:
     requests:
-      cpu: "1"
+      cpu: "100m"
       memory: "512Mi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "2Gi"
   hpa:
     minReplicas: 1
     maxReplicas: 1
@@ -971,6 +971,8 @@ embedding:
     modelName: "BAAI/bge-base-en-v1.5"
     modelServer: "torchserve"
     modelServerEndpoint: "http://torchserve-embedding-svc.chatqa.svc:8090"
+    timeout: "120"
+    opeaLoggerLevel: "INFO"
   nameOverride: "edp-embedding"
   name: "erag-embedding"
   repository: "docker.io/opea"
@@ -1009,11 +1011,11 @@ ingestion:
   replicas: 1
   resources:
     requests:
-      cpu: "1"
-      memory: "2Gi"
+      cpu: "100m"
+      memory: "512Mi"
     limits:
-      cpu: "4"
-      memory: "4Gi"
+      cpu: "2"
+      memory: "2Gi"
 
 vllm:
   enabled: false

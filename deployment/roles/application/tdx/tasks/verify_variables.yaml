@@ -2,52 +2,50 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-# tdx
-- ansible.builtin.set_fact:
-    tdx: "{{ tdx | default({}, true) }}"
+- name: Ensure TDX is enabled when his features are enabled
+  ansible.builtin.assert:
+    that:
+      - not tdx.coco.enabled  # coco can be enabled only if TDX is enabled
+      - not tdx.one_td.enabled  # one_td can be enabled only if TDX is enabled
+      - not tdx.attestation.enabled  # attestation can be enabled only if TDX is enabled
+    fail_msg: "To use TDX features (coco, one_td, attestation), TDX must be enabled in config as well."
+  when: not tdx.enabled
   tags:
     - install
+    - display-configuration
+    - pre-upgrade
 
-# tdx.enabled
-- ansible.builtin.set_fact:
-    tdx: "{{ tdx | combine({'enabled': tdx.enabled | default(false, true)}) }}"
+- name: Ensure TDX features are compatible
+  ansible.builtin.assert:
+    that:
+      - tdx.coco.enabled or tdx.one_td.enabled  # one of tdx.coco and tdx.one_td must be enabled
+      - not (tdx.one_td.enabled and not tdx.coco.enabled)  # both of tdx.coco and tdx.one_td can not be enabled at once
+    fail_msg: "Exactly one of tdx.coco and tdx.one_td must be enabled when TDX is enabled."
+  when: tdx.enabled
   tags:
     - install
+    - display-configuration
+    - pre-upgrade
 
-# tdx.attestation
-- ansible.builtin.set_fact:
-    tdx: "{{ tdx | combine({'attestation': tdx.attestation | default({}, true)}) }}"
+# Load KBS_ADDRESS from config, if not provided read from env
+- name: Load KBS_ADDRESS environment variable
+  ansible.builtin.set_fact:
+    KBS_ADDRESS: "{{ tdx.attestation.kbs_address | default(lookup('ansible.builtin.env', 'KBS_ADDRESS'), true) }}"
+  when: tdx.attestation.enabled
   tags:
     - install
+    - display-configuration
+    - pre-upgrade
 
-# tdx.attestation.enabled
-- ansible.builtin.set_fact:
-    tdx: >-
-      {{
-        tdx | combine({
-          'attestation': {
-            'enabled': tdx.attestation.enabled | default(false, true)
-          }
-        })
-      }}
+- name: Verify if KBS address is provided
+  ansible.builtin.assert:
+    that:
+      - (KBS_ADDRESS | default('') | string | length) > 0  # kbs_address can not be an empty string
+    fail_msg: >
+      TDX attestation requires kbs_address. Please set the tdx.attestation.kbs_address in config
+      or set environment variable `KBS_ADDRESS`.
+  when: tdx.attestation.enabled
   tags:
     - install
-
-# Helper variables:
-#   tdx.one_td.enabled
-#   tdx.coco.enabled
-- ansible.builtin.set_fact:
-    tdx: >-
-      {{
-        tdx | combine({
-          'one_td': {
-            'enabled': (tdx.td_type | default('', true)) == 'one-td'
-          }
-        }) | combine ({
-          'coco': {
-            'enabled': (tdx.td_type | default('', true)) == 'coco'
-          }
-        })
-      }}
-  tags:
-    - install
+    - display-configuration
+    - pre-upgrade

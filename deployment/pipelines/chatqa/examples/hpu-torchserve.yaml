@@ -33,7 +33,6 @@ spec:
             endpoint: /v1/embeddings
             EMBEDDING_MODEL_SERVER_ENDPOINT: torchserve-embedding-svc
             EMBEDDING_MODEL_SERVER: "torchserve"
-            EMBEDDING_CONNECTOR: "langchain"
       - name: TorchserveEmbedding
         internalService:
           serviceName: torchserve-embedding-svc

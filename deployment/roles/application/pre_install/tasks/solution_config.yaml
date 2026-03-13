@@ -7,22 +7,6 @@
     - install
     - display-configuration
 
-- name: Load tdx system variable
-  ansible.builtin.set_fact:
-    KBS_ADDRESS: "{{ lookup('env', 'KBS_ADDRESS') }}"
-  when: tdx.enabled
-  tags:
-    - install
-    - display-configuration
-
-- name: Add KBS_ADDRESS configuration issue
-  ansible.builtin.set_fact:
-    configuration_issues: "{{ configuration_issues + ['KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable when TDX CoCo is enabled.'] }}"
-  when: tdx.enabled and (KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0)
-  tags:
-    - install
-    - display-configuration
-
 - name: Set facts for domain names if not defined
   ansible.builtin.set_fact:
     ui: >

@@ -28,6 +28,7 @@ telemetry:
     helm_repo: https://open-telemetry.github.io/opentelemetry-helm-charts
 
   logging:
+    enabled: true
     charts_path: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs"
     helm_default_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/values.yaml"
     helm_journalctl_values_file: "{{ playbook_dir }}/../components/telemetry/helm/charts/logs/values-journalctl.yaml"

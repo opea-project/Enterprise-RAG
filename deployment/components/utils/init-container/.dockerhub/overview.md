@@ -14,4 +14,4 @@ Used in deployments that require checking the status of other services before st
 
 OPEA ERAG is licensed under the Apache License, Version 2.0.
 
-Copyright © 2024–2025 Intel Corporation. All rights reserved.
+Copyright © 2024–2026 Intel Corporation. All rights reserved.

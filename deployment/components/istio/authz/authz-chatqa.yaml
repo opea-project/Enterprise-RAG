@@ -271,3 +271,39 @@ spec:
         notPrincipals:
         - cluster.local/ns/chatqa/sa/default
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# vllm-query-rewrite-svc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-vllm-query-rewrite-svc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm_query_rewrite
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/query-rewrite-usvc
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
+---
+# query-rewrite-usvc
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: chatqa-query-rewrite-usvc
+  namespace: chatqa
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: query-rewrite-usvc
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notPrincipals:
+        - cluster.local/ns/chatqa/sa/default
+        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus

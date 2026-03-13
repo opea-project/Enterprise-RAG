@@ -90,18 +90,35 @@ class OPEATextExtractor:
 
         for file in files:
             saved_path = ""
-            # if files have to be persisted internally
             try:
                 path = self._save_file_to_local_disk(file)
                 saved_path = str(path.resolve())
                 logger.info(f"Saved file {file.filename} to {saved_path}")
 
+                # Parse file and extract metadata using the loader pattern
+                parser = FileParser(saved_path)
+                doc_metadata = parser.parse_metadata()
+                logger.debug(f"Extracted metadata for {file.filename}: {doc_metadata}")
+
+                # Build metadata dict from extracted metadata
+                # filename and ingestion_date always come from parse_metadata
                 metadata = {
-                    'filename': file.filename,
-                    'timestamp': time.time()
+                    'filename': doc_metadata.get('filename', file.filename),
+                    'ingestion_date': doc_metadata.get('ingestion_date'),
                 }
 
-                loaded_docs.append(TextDoc(text=self._load_text(saved_path), metadata=metadata))
+                # Only add optional metadata fields when they have meaningful values
+                MISSING_DATE = -1
+                if doc_metadata.get('file_title') and doc_metadata['file_title'] != metadata['filename']:
+                    metadata['file_title'] = doc_metadata['file_title']
+                if doc_metadata.get('author'):
+                    metadata['author'] = doc_metadata['author']
+                if doc_metadata.get('creation_date', MISSING_DATE) != MISSING_DATE:
+                    metadata['creation_date'] = doc_metadata['creation_date']
+                if doc_metadata.get('last_update_date', MISSING_DATE) != MISSING_DATE:
+                    metadata['last_update_date'] = doc_metadata['last_update_date']
+
+                loaded_docs.append(TextDoc(text=parser.parse(), metadata=metadata))
             except Exception as e:
                 logger.error(e)
                 raise e

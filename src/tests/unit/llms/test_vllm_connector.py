@@ -12,7 +12,7 @@ from comps.llms.utils.connectors.vllm_connector import VLLMConnector
 
 """
 To execute these tests with coverage report, navigate to the `src` folder and run the following command:
-   pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms/test_generic_connector.py
+   pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms/test_vllm_connector.py
 
 Alternatively, to run all tests for the 'llms' module, execute the following command:
    pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms
@@ -216,7 +216,7 @@ async def test_vllm_connector_generate_read_timeout(sample_llm_params):
         with pytest.raises(ReadTimeout) as exc_info:
             await connector.generate(sample_llm_params)
 
-        assert "Failed to stream from the Generic VLLM Connector" in str(exc_info.value)
+        assert "Failed to stream from the VLLM Connector" in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -241,7 +241,7 @@ async def test_vllm_connector_generate_connection_error(sample_llm_params):
         with pytest.raises(ConnectionError) as exc_info:
             await connector.generate(sample_llm_params)
 
-        assert "Failed to stream from the Generic VLLM Connector" in str(exc_info.value)
+        assert "Failed to stream from the VLLM Connector" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

@@ -44,7 +44,7 @@ ENV HF_HOME="/home/user/tmp"
 WORKDIR /home/user/
 COPY ./docker/pyproject.toml pyproject.toml
 COPY ./docker/uv.lock uv.lock
-RUN uv sync --locked --no-cache
+RUN uv sync --locked --no-cache --group security-overrides
 ENV PATH="/home/user/.venv/bin:$PATH"
 
 # Add TS entrypoint

@@ -1,0 +1,11 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+import { useSearchParams } from "react-router-dom";
+
+export const useDebug = () => {
+  const [searchParams] = useSearchParams();
+  const isDebugEnabled = searchParams.get("debug") === "true";
+
+  return { isDebugEnabled };
+};

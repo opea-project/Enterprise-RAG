@@ -5,37 +5,68 @@ import { useColorScheme } from "@intel-enterprise-rag-ui/components";
 import {
   ControlPlanePanel,
   PipelineGraph,
+  ServiceData,
+  useControlPlanePolling,
 } from "@intel-enterprise-rag-ui/control-plane";
 import { FitViewOptions, Node, NodeChange } from "@xyflow/react";
 import { useCallback, useMemo } from "react";
 
-import { useGetServicesDataQuery } from "@/features/admin-panel/control-plane/api";
+import {
+  useChangeArgumentsMutation,
+  useGetServicesDataQuery,
+  useLazyGetServicesDataQuery,
+} from "@/features/admin-panel/control-plane/api";
 import ServiceCard from "@/features/admin-panel/control-plane/components/ServiceCard/ServiceCard";
 import {
   chatQnAGraphEdgesSelector,
+  chatQnAGraphIsAutorefreshEnabledSelector,
   chatQnAGraphIsLoadingSelector,
   chatQnAGraphIsRenderableSelector,
   chatQnAGraphNodesSelector,
   onChatQnAGraphConnect,
   onChatQnAGraphEdgesChange,
   onChatQnAGraphNodesChange,
+  setChatQnAGraphIsAutorefreshEnabled,
   setChatQnAGraphSelectedServiceNode,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
-import { ServiceData } from "@/features/admin-panel/control-plane/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const ControlPlaneTab = () => {
   useGetServicesDataQuery();
 
+  const dispatch = useAppDispatch();
   const isLoading = useAppSelector(chatQnAGraphIsLoadingSelector);
   const isRenderable = useAppSelector(chatQnAGraphIsRenderableSelector);
+  const isAutorefreshEnabled = useAppSelector(
+    chatQnAGraphIsAutorefreshEnabledSelector,
+  );
+
+  const [getServicesData, { isFetching }] = useLazyGetServicesDataQuery();
+  const [changeArguments] = useChangeArgumentsMutation();
+
+  const handleAutorefreshChange = useCallback(
+    (enabled: boolean) => {
+      dispatch(setChatQnAGraphIsAutorefreshEnabled(enabled));
+    },
+    [dispatch],
+  );
+
+  const handleRefresh = useCallback(() => {
+    getServicesData();
+  }, [getServicesData]);
+
+  useControlPlanePolling(handleRefresh, isAutorefreshEnabled);
 
   return (
     <ControlPlanePanel
       isLoading={isLoading}
       isRenderable={isRenderable}
       Graph={ChatQnAGraph}
-      ConfigPanel={ServiceCard}
+      ConfigPanel={() => <ServiceCard changeArguments={changeArguments} />}
+      isAutorefreshEnabled={isAutorefreshEnabled}
+      onAutorefreshChange={handleAutorefreshChange}
+      onRefresh={handleRefresh}
+      isFetching={isFetching}
     />
   );
 };

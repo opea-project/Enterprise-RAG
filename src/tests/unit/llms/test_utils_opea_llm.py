@@ -54,7 +54,6 @@ def test_initialization_succeeds_with_valid_params(reset_singleton, mock_get_con
     # Assert that the instance is created successfully when connector_name is empty string (as it is optional)
     instance2 = OPEALlm(model_name="model2", model_server="vllm", model_server_endpoint="http://server:1234")
     assert isinstance(instance2, OPEALlm), "Instance was not created successfully."
-    # todo: check if the connector handler is the type of generic
 
 
 def test_initializaction_raises_exception_when_missing_required_args(reset_singleton, mock_get_connector):

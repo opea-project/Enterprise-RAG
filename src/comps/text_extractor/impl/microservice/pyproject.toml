@@ -3,14 +3,14 @@
 
 [project]
 name = "Intel-Enterprise-RAG-Text_Extractor_Microservice"
-version = "2.1.1"
+version = "2.1.0"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "fastapi==0.120.2",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
-    "opentelemetry-sdk==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
+    "opentelemetry-sdk==1.39.1",
     "prometheus-fastapi-instrumentator==7.0.0",
     "numpy==2.1.0",
     "docarray[full]==0.40.0",
@@ -66,16 +66,18 @@ test = [
     "pytest-cov==5.0.0",
     "fastapi==0.120.2",
     "docarray[full]==0.40.0",
-    "opentelemetry-api==1.25.0",
-    "opentelemetry-exporter-otlp==1.25.0",
-    "opentelemetry-sdk==1.25.0",
+    "opentelemetry-api==1.39.1",
+    "opentelemetry-exporter-otlp==1.39.1",
+    "opentelemetry-sdk==1.39.1",
     "setuptools==80.10.2",
 ]
 
 [dependency-groups]
 security-overrides = [
   "pillow>=12.1.1",
+  "protobuf>=6.33.5",
   "nltk>=3.9.3",
+  "cryptography==46.0.5",
 ]
 
 [tool.uv.sources]

@@ -25,4 +25,5 @@ security-overrides = [
   "pillow>=12.1.1",
   "protobuf>=6.33.5",
   "h11>=0.16.0",
+  "cryptography==46.0.5",
 ]

@@ -14,6 +14,7 @@ import pytest
 import tarfile
 import urllib3
 import yaml
+import glob
 
 from tests.e2e.validation.buildcfg import cfg
 from tests.e2e.validation.constants import TEST_FILES_DIR
@@ -97,7 +98,10 @@ def pytest_collection_modifyitems(config, items):
         add_marker(item, "feature", pipeline_tag)
         add_marker(item, "feature", llm_model_tag)
 
-    items[:] = remove_skipped_tests(items)
+    remaining, deselected = remove_skipped_tests(items)
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+    items[:] = remaining
 
 
 def add_marker(item, label_name, label_value):
@@ -106,16 +110,76 @@ def add_marker(item, label_name, label_value):
 
 def remove_skipped_tests(items):
     """
-    Filter out skipped tests from the collection phase to ensure they are excluded
-    from the final report instead of being marked as 'Skipped'.
+    Filter out tests with skip markers from the collection phase so they
+    are fully deselected rather than appearing as 'Skipped' in the report.
     """
     remaining_items = []
+    deselected_items = []
     for item in items:
         skip_marker = item.get_closest_marker("skip")
         if skip_marker:
+            deselected_items.append(item)
             continue
         remaining_items.append(item)
-    return remaining_items
+    return remaining_items, deselected_items
+
+
+# Track tests that were skipped at runtime
+_runtime_skipped_tests = []
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """
+    Detect tests that are skipped at runtime (pytest.skip() inside test body)
+    and track them for removal from allure results.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    if report.skipped and call.when in ("call", "setup"):
+        _runtime_skipped_tests.append(item.nodeid)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Remove allure result files for tests that were skipped at runtime,
+    so they don't appear in the Allure report at all.
+    """
+    if not _runtime_skipped_tests:
+        return
+
+    allure_dir = session.config.option.__dict__.get("allure_report_dir", None)
+    if not allure_dir:
+        # Try the --alluredir option
+        for arg in session.config.invocation_params.args:
+            if isinstance(arg, str) and arg.startswith("--alluredir"):
+                if "=" in arg:
+                    allure_dir = arg.split("=", 1)[1]
+                break
+        if not allure_dir:
+            allure_dir = session.config.getoption("--alluredir", default=None)
+
+    if not allure_dir or not os.path.isdir(allure_dir):
+        return
+
+    import json as json_module
+    for result_file in glob.glob(os.path.join(allure_dir, "*-result.json")):
+        try:
+            with open(result_file, "r") as f:
+                data = json_module.load(f)
+            full_name = data.get("fullName", "")
+            test_name = data.get("name", "")
+            status = data.get("status", "")
+            if status == "skipped":
+                # Match by checking if any tracked nodeid is part of the fullName
+                for nodeid in _runtime_skipped_tests:
+                    # nodeid format: tests/e2e/validation/test_edp.py::test_edp_rbac
+                    test_func = nodeid.split("::")[-1]
+                    if test_func == test_name or test_func in full_name:
+                        os.remove(result_file)
+                        break
+        except Exception:
+            continue
 
 
 @pytest.fixture(scope="session", autouse=True)

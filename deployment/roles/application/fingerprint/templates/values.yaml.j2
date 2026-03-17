@@ -26,7 +26,7 @@ ferretdb:
       password: "{{ FINGERPRINT_POSTGRES_PASSWORD }}"
 
 systemFingerprint:
-  templateLanguage: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+  templateLanguage: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
 
 {% if tdx.coco.enabled %}
   podAnnotations:

@@ -130,7 +130,7 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -208,7 +208,7 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
   chat-history-usvc:
     image: "erag-chat-history"
     repository: *repo

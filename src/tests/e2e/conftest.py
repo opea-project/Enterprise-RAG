@@ -352,7 +352,7 @@ def temporarily_remove_brute_force_detection(keycloak_helper):
 def test_language():
     """Get the test language from config or environment variable"""
     llm_model = cfg.get("llm_model", "")
-    if "CYFRAGOVPL/PLLuM-12B-chate" in llm_model or "PLLuM" in llm_model:
+    if "CYFRAGOVPL/PLLuM-12B-chat" in llm_model or "PLLuM" in llm_model or "Bielik" in llm_model:
         return "pl"
     return cfg.get("test_language") or os.getenv("TEST_LANG", "en")
 

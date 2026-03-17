@@ -158,6 +158,7 @@ images:
 {% endif %}
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
+      METADATA_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}

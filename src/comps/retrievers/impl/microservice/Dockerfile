@@ -47,6 +47,9 @@ COPY --chown=user:user ./comps/vectorstores/impl/requirements/pyproject.toml ../
 RUN uv sync --locked --no-cache --group security-overrides
 ENV PATH="/home/user/comps/retrievers/impl/microservice/.venv/bin:$PATH"
 
+# spaCy for Polish only, need to install the model via uv from GitHub release (not a standard PyPI package)
+RUN uv pip install https://github.com/explosion/spacy-models/releases/download/pl_core_news_sm-3.8.0/pl_core_news_sm-3.8.0.tar.gz
+
 WORKDIR /home/user
 COPY --chown=user:user ./comps/__init__.py ./comps/__init__.py
 COPY --chown=user:user ./comps/cores ./comps/cores

@@ -11,7 +11,7 @@ For detailed information and practical examples of how to use OpenVINO Model Ser
 1. [OVMS Model Server](#ovms-model-server)
 2. [Getting Started](#getting-started)
    - 2.1. [Prerequisite](#prerequisite)
-   - 2.2. [🚀 Start the TEI Service via script (Option 1)](#-start-the-tei-service-via-script-option-1)
+   - 2.2. [🚀 Start the OVMS Service via script (Option 1)](#-start-the-ovms-service-via-script-option-1)
      - 2.2.1. [Run the script](#run-the-script)
      - 2.2.2. [Verify the OVMS](#verify-the-ovms)
    - 2.3. [🚀 Deploy OVMS with Embedding Microservice using Docker Compose (Option 2)](#-deploy-ovms-with-embedding-microservice-using-docker-compose-option-2)
@@ -32,7 +32,7 @@ export HF_TOKEN=${your_hf_api_token}
 ```
 
 
-### 🚀 Start the TEI Service via script (Option 1)
+### 🚀 Start the OVMS Service via script (Option 1)
 #### Run the script
 ```bash
 chmod +x run_ovms.sh

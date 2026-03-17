@@ -72,3 +72,17 @@ class VectorStoreConnector(ABC):
 
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str):
         raise NotImplementedError
+
+    # Document metadata filter methods (for metadata extracted at ingestion time)
+    def get_author_filter_expression(self, authors):
+        raise NotImplementedError
+
+    def get_text_exclude_filter_expression(self, field: str, value: str):
+        """Generic negation for any text field (e.g. author != 'X')."""
+        raise NotImplementedError
+
+    def get_title_filter_expression(self, title_pattern: str, exact_match: bool = False):
+        raise NotImplementedError
+
+    def get_date_range_filter_expression(self, field: str, start_timestamp: int = None, end_timestamp: int = None):
+        raise NotImplementedError

@@ -1,0 +1,36 @@
+# Copyright (C) 2025-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+[project]
+name = "Intel-Enterprise-RAG-Retriever-NER-OVMS"
+version = "2.1.0"
+requires-python = ">=3.11,<3.12"
+
+dependencies = [
+    "optimum-intel==1.27.0",
+    "transformers==4.53.3",
+    "torch==2.10.0",  
+    "nncf==2.19.0",
+    "flask==3.1.2",
+    "gunicorn==23.0.0",  
+    "numpy==1.26.4",
+    "scipy==1.15.3",
+    "requests==2.32.5",
+    "huggingface-hub==0.34.2",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "protobuf>=6.33.5",
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 
 from comps.cores.proto.docarray import TextDoc
 from comps.cores.mega.logger import get_opea_logger
-from comps.text_splitter.utils.splitter import MarkdownSplitter, Splitter, SemanticSplitter
+from comps.text_splitter.utils.splitter import MarkdownSplitter, Splitter, SemanticSplitter, TableAwareSplitter
 from typing import List
 import os
 from comps.cores.utils.utils import sanitize_env
@@ -77,6 +77,10 @@ class OPEATextSplitter:
                 chunk_size=cur_chunk_size,
                 chunk_overlap=cur_chunk_overlap,
                 )
+            table_splitter = TableAwareSplitter(
+                chunk_size=cur_chunk_size,
+                chunk_overlap=cur_chunk_overlap,
+                )
 
             for doc in loaded_docs:
                 extension = "" if "url" in doc.metadata else os.path.splitext(doc.metadata.get("filename", ""))[1].lower()
@@ -84,6 +88,9 @@ class OPEATextSplitter:
                 if extension in [".adoc", ".md", ".html"]:
                     logger.info(f"Using MarkdownSplitter for document: {doc.metadata}")
                     chunks = md_splitter.split_text(doc.text, extension)
+                elif extension in [".docx", ".doc"]:
+                    logger.info(f"Using TableAwareSplitter for document: {doc.metadata}")
+                    chunks = table_splitter.split_text(doc.text)
                 else:
                     chunks = default_splitter.split_text(doc.text)
 

@@ -96,6 +96,131 @@ class Splitter(AbstractSplitter):
         ]
         return separators
 
+
+class TableAwareSplitter(Splitter):
+    """Splitter that preserves table structure and propagates headers for Word documents.
+
+    When a table fits within a single chunk, it is kept whole.
+    When a table exceeds chunk_size, it is split by rows with the header
+    row propagated to each resulting chunk.
+    Non-table text is split using RecursiveCharacterTextSplitter.
+    """
+
+    _TABLE_ROW_RE = re.compile(r'^\|.+\|$')
+    _TABLE_SEPARATOR_RE = re.compile(r'^\|[\s-]+(\|[\s-]+)*\|$')
+
+    def split_text(self, text: str) -> List[Document]:
+        segments = self._segment_text(text)
+        chunks: List[Document] = []
+        offset = 0
+
+        for seg_type, content in segments:
+            if seg_type == 'table':
+                if len(content) <= self.chunk_size:
+                    chunks.append(Document(
+                        page_content=content,
+                        metadata={"start_index": offset},
+                    ))
+                else:
+                    for table_chunk, local_offset in self._split_table(content):
+                        chunks.append(Document(
+                            page_content=table_chunk,
+                            metadata={"start_index": offset + local_offset},
+                        ))
+            else:
+                if content.strip():
+                    doc = Document(page_content=content)
+                    split_docs = self.text_splitter.split_documents([doc])
+                    for split_doc in split_docs:
+                        local_idx = split_doc.metadata.get("start_index", 0)
+                        split_doc.metadata["start_index"] = offset + local_idx
+                    chunks.extend(split_docs)
+
+            offset += len(content) + 1
+
+        return chunks
+
+    def _segment_text(self, text: str) -> list:
+        """Split text into alternating ('text', content) and ('table', content) segments."""
+        lines = text.split('\n')
+        segments = []
+        current_type = 'text'
+        current_lines: list = []
+
+        for line in lines:
+            is_table_line = bool(self._TABLE_ROW_RE.match(line.strip())) if line.strip() else False
+
+            if is_table_line and current_type == 'text':
+                if current_lines:
+                    segments.append(('text', '\n'.join(current_lines)))
+                current_lines = [line]
+                current_type = 'table'
+            elif not is_table_line and current_type == 'table':
+                if current_lines:
+                    segments.append(('table', '\n'.join(current_lines)))
+                current_lines = [line]
+                current_type = 'text'
+            else:
+                current_lines.append(line)
+
+        if current_lines:
+            segments.append((current_type, '\n'.join(current_lines)))
+
+        return segments
+
+    def _split_table(self, table_text: str) -> List[tuple]:
+        lines = [line for line in table_text.split('\n') if line.strip()]
+        if len(lines) < 2:
+            return [(table_text, 0)]
+
+        header_row = lines[0]
+        if len(lines) > 1 and self._TABLE_SEPARATOR_RE.match(lines[1].strip()):
+            separator_row = lines[1]
+            header = header_row + '\n' + separator_row
+            data_rows = lines[2:]
+        else:
+            header = header_row
+            data_rows = lines[1:]
+
+        if not data_rows:
+            return [(table_text, 0)]
+
+        row_offsets = []
+        search_from = 0
+        for row in data_rows:
+            pos = table_text.find(row, search_from)
+            row_offsets.append(pos if pos != -1 else search_from)
+            search_from = row_offsets[-1] + len(row)
+
+        header_len = len(header) + 1
+        chunks: List[tuple] = []
+        current_rows: List[str] = []
+        current_len = header_len
+        first_row_idx = 0
+
+        for i, row in enumerate(data_rows):
+            row_len = len(row) + 1
+            if current_len + row_len > self.chunk_size and current_rows:
+                chunks.append((
+                    header + '\n' + '\n'.join(current_rows),
+                    row_offsets[first_row_idx],
+                ))
+                current_rows = [row]
+                current_len = header_len + row_len
+                first_row_idx = i
+            else:
+                current_rows.append(row)
+                current_len += row_len
+
+        if current_rows:
+            chunks.append((
+                header + '\n' + '\n'.join(current_rows),
+                row_offsets[first_row_idx],
+            ))
+
+        return chunks
+
+
 class MarkdownSplitter(AbstractSplitter):
     def __init__(self, chunk_size: int = 100, chunk_overlap: int = 10):
         self.chunk_size = chunk_size

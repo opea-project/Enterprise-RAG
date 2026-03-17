@@ -1,8 +1,10 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from datetime import datetime
+
 from beanie import Document
-from typing import List
+from typing import List, Optional
 
 from comps.cores.proto.docarray import ChatMessage
 
@@ -10,6 +12,7 @@ class ChatHistoryDocument(Document):
     history: List[ChatMessage]
     user_id: str
     history_name: str
+    created_at: Optional[datetime] = None
 
     class Settings:
         name = "chat_history_collection"
@@ -28,6 +31,7 @@ class ChatHistoryDocument(Document):
                     }
                 ],
                 "user_id": "6ff3f26b-4e9e-4f7d-a46e-584fad772435",
-                "history_name": "user_session_123"
+                "history_name": "user_session_123",
+                "created_at": "2026-01-15T12:00:00+00:00"
             }
         }

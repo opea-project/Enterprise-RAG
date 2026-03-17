@@ -31,6 +31,7 @@ class ChatHistory(BaseModel):
 class ChatHistoryName(BaseModel):
     id: str
     history_name: str
+    created_at: Optional[str] = None
 
 class PrevQuestionDetails(BaseDoc):
     question: str

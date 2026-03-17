@@ -1,7 +1,8 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
+from datetime import datetime, timezone
+from typing import List, Optional
 
 from comps import get_opea_logger
 from comps.cores.proto.docarray import ChatMessage, ChatHistoryName
@@ -13,6 +14,20 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 
 def generate_history_title(history: List[ChatMessage]) -> str:
 	return history[0].question[:30] if len(history[0].question) > 30 else history[0].question
+
+def _format_created_at(created_at: Optional[datetime]) -> Optional[str]:
+    """Formats a datetime to an ISO 8601 string with millisecond precision and UTC timezone.
+
+    Normalizes precision to milliseconds for consistency - FerretDB stores timestamps with millisecond precision only.
+    """
+    if not created_at:
+        return None
+    # Ensure UTC timezone
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    # Truncate to milliseconds for consistency with DB precision
+    created_at = created_at.replace(microsecond=(created_at.microsecond // 1000) * 1000)
+    return created_at.isoformat()
 
 class OPEAChatHistoryConnector(OPEAMongoConnector):
     def __init__(self, mongodb_host, mongodb_port) -> None:
@@ -30,14 +45,19 @@ class OPEAChatHistoryConnector(OPEAMongoConnector):
         Inserts a new chat history into the database.
         """
         try:
-            h = ChatHistoryDocument(history=chat_history, user_id=user_id, history_name=f"{generate_history_title(chat_history)}")
+            h = ChatHistoryDocument(
+                history=chat_history,
+                user_id=user_id,
+                history_name=f"{generate_history_title(chat_history)}",
+                created_at=datetime.now(timezone.utc),
+            )
             id = await self.insert(h)
         except Exception as e:
             err_msg = f"Error inserting history: {chat_history[0].question} for user_id: {user_id}: {e}"
             logger.error(err_msg)
             raise Exception(err_msg) from e
         logger.info(f"History inserted inserted: {h}")
-        return ChatHistoryName(id=str(id), history_name=h.history_name)
+        return ChatHistoryName(id=str(id), history_name=h.history_name, created_at=_format_created_at(h.created_at))
 
     async def append_history(self, history_id: str, chat_history: List[ChatMessage], user_id: str) -> ChatHistoryName:
         """
@@ -60,7 +80,7 @@ class OPEAChatHistoryConnector(OPEAMongoConnector):
             logger.error(err_msg)
             raise Exception(err_msg) from e
         logger.info(f"History with id: {history_id} updated")
-        return ChatHistoryName(id=str(h.id), history_name=h.history_name)
+        return ChatHistoryName(id=str(h.id), history_name=h.history_name, created_at=_format_created_at(h.created_at))
 
     async def change_history_name(self, history_id: str, history_name: str, user_id: str) -> None:
         """
@@ -113,7 +133,10 @@ class OPEAChatHistoryConnector(OPEAMongoConnector):
         """
         try:
             histories = await ChatHistoryDocument.find(ChatHistoryDocument.user_id == user_id).to_list()
-            parsed_histories = [ChatHistoryName(id=str(h.id), history_name=h.history_name) for h in histories]
+            parsed_histories = [
+                ChatHistoryName(id=str(h.id), history_name=h.history_name, created_at=_format_created_at(h.created_at))
+                for h in histories
+            ]
         except ValueError as e:
             err_msg = f"Error retrieving histories for user: {user_id}: {e}"
             logger.error(err_msg)

@@ -12,6 +12,7 @@ This document details the deployment of Intel® AI for Enterprise RAG. By defaul
    5. [Deploy the Intel® AI for Enterprise RAG application on top of the prepared infrastructure](#deploy-the-intel-ai-for-enterprise-rag-application-on-top-of-the-prepared-infrastructure)
    6. [Update application components (models, configurations) as needed](#update-application-components-models-configurations-as-needed)
    7. [Create and restore backups of user data and configurations](#create-and-restore-backups-of-user-data-and-configurations)
+   8. [Troubleshooting](#troubleshooting)
 2. [Interact with the Deployed Pipeline](#interact-with-the-deployed-pipeline)
    1. [Test Deployment](#test-deployment)
    2. [Access the UI/Grafana](#access-the-uigrafana)
@@ -125,6 +126,12 @@ This will apply the changes and update only the affected services.
 The application supports taking backups and restoring user data, including ingested vector data, ingested documents, user accounts and credentials, and chat history.
 
 For detailed instructions on how to configure backup functionality, create backups, and restore from backups, refer to the [Backup and Restore Guide](../docs/backup.md).
+
+## Troubleshooting
+
+If you encounter issues during or after deployment, use the Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster.
+
+For detailed instructions on using the debug tool, refer to the [Debug Tool Guide](../docs/debug_tool.md).
 
 # Interact with the Deployed Pipeline
 

@@ -30,6 +30,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[building_images.md](building_images.md)**
   Guide for building Docker images locally for Intel® AI for Enterprise RAG components and pushing them to registries.
 
+- **[debug_tool.md](debug_tool.md)**
+  Guide for using the Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster for troubleshooting deployment issues.
+
 
 
 ### Backup and Recovery
@@ -57,7 +60,7 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
   Instructions for configuring Single Sign-On integration using Microsoft Entra ID with Keycloak for enterprise authentication.
 
 - **[ad_federation_on_keycloak.md](ad_federation_on_keycloak.md)**
-  Instructions for configuring Keycloak user federation using Microsoft Active Directory for enterprise authentication. 
+  Instructions for configuring Keycloak user federation using Microsoft Active Directory for enterprise authentication.
 
 ### Service Mesh and Security
 

@@ -58,7 +58,9 @@ src/tests/e2e/files/audio_output/
 
 # credentials
 deployment/default_credentials.txt
- 
+
+ # Debug tool output
+ **/debug_bundle_*
 
 # .venv files
 *venv*/

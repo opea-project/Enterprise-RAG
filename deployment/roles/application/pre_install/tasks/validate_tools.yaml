@@ -66,6 +66,26 @@
     - validate-tools
     - uninstall
 
+- name: Extract helm version number
+  ansible.builtin.set_fact:
+    helm_version: "{{ helm_check.stdout | regex_search('v([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first }}"
+  when: helm_check.rc == 0
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
+- name: Add helm version validation issue
+  ansible.builtin.set_fact:
+    validation_issues: "{{ validation_issues + ['helm version ' + helm_version + ' is not supported. Please install helm >= 3.17.0 and < 4.0.0.'] }}"
+  when:
+    - helm_check.rc == 0
+    - helm_version is version('3.17.0', '<') or helm_version is version('4.0.0', '>=')
+  tags:
+    - install
+    - validate-tools
+    - uninstall
+
 - name: Check if kubectl is installed
   ansible.builtin.command:
     cmd: kubectl version --client

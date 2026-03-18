@@ -101,9 +101,9 @@
   tags:
     - configure
 
-- name: Check if Helm version is 3.17 or higher
+- name: Check if Helm version is >= 3.17 and < 4.0
   ansible.builtin.set_fact:
-    helm_version_ok: "{{ helm_current_version.stdout is version('3.17', '>=') }}"
+    helm_version_ok: "{{ helm_current_version.stdout is version('3.17', '>=') and helm_current_version.stdout is version('4.0', '<') }}"
   when: helm_check.rc == 0
   tags:
     - configure
@@ -115,7 +115,7 @@
       {% if helm_check.rc != 0 %}
       Helm is not installed. Installing Helm {{ helm_version }}...
       {% elif not helm_version_ok | default(false) %}
-      Helm version is below 3.17. Upgrading to Helm {{ helm_version }}...
+      Helm version is outside the supported range (>= 3.17, < 4.0). Installing Helm {{ helm_version }}...
       {% endif %}
   when: helm_check.rc != 0 or not helm_version_ok | default(false)
   tags:
@@ -123,7 +123,7 @@
 
 - name: Display Helm version info
   ansible.builtin.debug:
-    msg: "[INFO]: Helm version {{ helm_current_version.stdout }} detected - requirement satisfied (>= 3.17)"
+    msg: "[INFO]: Helm version {{ helm_current_version.stdout }} detected - requirement satisfied (>= 3.17, < 4.0)"
   when:
     - helm_check.rc == 0
     - helm_version_ok | default(false)

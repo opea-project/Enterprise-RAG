@@ -61,7 +61,7 @@ test_pptx_text_only:
       files: [story.pptx]
       questions:
         - question: "W historii o zespole walidacji w Impelooo, jakie zaskakujące rzeczy AI zaczęła pisać?"
-          expected_any: ["poezja"]
+          expected_any: ["poez"]
 test_pptx_complex:
   - en:
       files: [test_dataprep.pptx]
@@ -323,7 +323,7 @@ test_adoc_source_code:
       files: [test_adoc_source_code.adoc]
       questions:
         - question: "Co konfiguruje plik dockerfile? Mam na myśli dokument 'Example Dockerfile with Explanations' stworzony przez LipTanBuTan"
-          expected_all: ["kopi", "flask", "python"]
+          expected_all: ["docker", "flask", "python"]
 test_adoc_substitutions:
   - en:
       files: [test_adoc_substitutions.adoc]

@@ -36,9 +36,10 @@ export const createChatHistoryApi = (keycloakService: KeycloakService) =>
           url: CHAT_HISTORY_API_ENDPOINTS.GET_CHAT_HISTORY,
         }),
         transformResponse: (response: ApiChatItemData[]) =>
-          response.map(({ id, history_name }) => ({
+          response.map(({ id, history_name, created_at }) => ({
             id: id,
             name: history_name,
+            createdAt: created_at,
           })),
         providesTags: [CHATS_LIST_TAG],
       }),
@@ -56,9 +57,14 @@ export const createChatHistoryApi = (keycloakService: KeycloakService) =>
           method: "POST",
           body: { history, id },
         }),
-        transformResponse: ({ id, history_name }: ApiChatItemData) => ({
+        transformResponse: ({
+          id,
+          history_name,
+          created_at,
+        }: ApiChatItemData) => ({
           id,
           name: history_name,
+          createdAt: created_at,
         }),
         invalidatesTags: () => [CHATS_LIST_TAG],
       }),

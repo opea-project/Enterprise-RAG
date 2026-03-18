@@ -1,27 +1,27 @@
-= Example Dockerfile with Explanations
+= Przykładowy Dockerfile z wyjaśnieniami
 
-This document provides an example of a simple Dockerfile that sets up a container to run a Python web application using Flask. Below is the code along with explanations for each section.
+Ten dokument przedstawia przykład prostego pliku Dockerfile, który konfiguruje kontener do uruchomienia aplikacji webowej w Pythonie przy użyciu Flask. Poniżej znajduje się kod wraz z wyjaśnieniami dla każdej sekcji.
 
 [source,dockerfile]
 ----
 
-# Use an official Python runtime as a parent image
+# Użyj oficjalnego środowiska Python jako obrazu bazowego
 FROM python:3.8-slim
 
 LABEL created_by="LipTanBuTan <LipTanBuTan@intel.com>"
 
-# Set the working directory in the container
+# Ustaw katalog roboczy w kontenerze
 WORKDIR /app
 
-# Copy the current directory contents into the container
+# Skopiuj zawartość bieżącego katalogu do kontenera
 COPY . /app
 
-# Install the required Python packages
+# Zainstaluj wymagane pakiety Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside the container
+# Udostępnij port 5000 światu zewnętrznemu poza kontenerem
 EXPOSE 5000
 
-# Define the command to run the application
+# Zdefiniuj polecenie do uruchomienia aplikacji
 CMD ["python", "app.py"]
 ----

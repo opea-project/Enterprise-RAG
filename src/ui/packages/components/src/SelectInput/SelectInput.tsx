@@ -29,8 +29,10 @@ export type SelectInputChangeHandler<T extends AriaKey = AriaKey> = (
   item: T,
 ) => void;
 
-interface SelectInputProps<T extends AriaKey = AriaKey>
-  extends Omit<AriaSelectProps, "onChange"> {
+interface SelectInputProps<T extends AriaKey = AriaKey> extends Omit<
+  AriaSelectProps,
+  "onChange"
+> {
   /** Selected value */
   value?: T | null;
   /** List of selectable items */

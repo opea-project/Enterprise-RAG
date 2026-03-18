@@ -3,7 +3,7 @@
 
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
-import { ChatTurn, SourceDocumentType } from "@/types";
+import { ChatHistoryItemData, ChatTurn, SourceDocumentType } from "@/types";
 
 // type for history array that is sent to API via POST request on /save endpoint
 export interface ChatHistoryEntry {
@@ -41,12 +41,7 @@ export type ChatErrorResponse = FetchBaseQueryError & {
 export interface ApiChatItemData {
   history_name: string;
   id: string;
-}
-
-export interface ChatHistoryItemData {
-  id: string;
-  name: string;
-  isPinned?: boolean;
+  created_at: string;
 }
 
 export interface SaveChatRequest {
@@ -54,9 +49,11 @@ export interface SaveChatRequest {
   id?: string; // if not provided, a new history will be created
 }
 
-export type SaveChatResponse = ChatHistoryItemData;
+type ChatHistoryItemResponse = Omit<ChatHistoryItemData, "isPinned">;
 
-export type GetAllChatsResponse = ChatHistoryItemData[];
+export type SaveChatResponse = ChatHistoryItemResponse;
+
+export type GetAllChatsResponse = ChatHistoryItemResponse[];
 
 export interface GetChatByIdResponse {
   historyId: string;

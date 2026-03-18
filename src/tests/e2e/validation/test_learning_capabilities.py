@@ -372,7 +372,6 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
         # Restore default parameters
         fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
 
-
 @allure.testcase("IEASG-T308")
 def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper, test_data):
     """
@@ -380,6 +379,9 @@ def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper, te
     Ask a question that requires the entire list to be included in the answer.
     With late chunking enabled, expect the full answer. Otherwise, just save the response for comparison.
     """
+    if not test_data.stages:
+        pytest.skip("Test not supported for Polish language")
+
     stage = test_data.stages[0]
     file = stage["files"][0]
     q = stage["questions"][0]
@@ -583,6 +585,9 @@ def run_standard_validation(edp_helper, chatqa_api_helper, test_data):
     2. For each question in the stage, ask the question and validate the response against expected answers.
     3. Support both 'expected_any' and 'expected_all' validation methods.
     """
+    if not test_data.stages:
+        pytest.skip("No available stages for this language in the test data. Look at the dataset file.")
+
     for stage in test_data.stages:
         # 1. File ingestion
         for file_name in stage.get("files", []):

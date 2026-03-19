@@ -152,7 +152,7 @@ install_csi not in ['local-path-provisioner', 'nfs', 'netapp-trident']
 # - "netapp-trident": Use for NetApp ONTAP storage with Trident CSI driver
 
 # Setup when install_csi is "netapp-trident"
-trident_operator_version: "2506.0"
+trident_operator_version: "2510.0"
 trident_namespace: "trident"
 trident_storage_class: "netapp-trident"
 trident_backend_name: "ontap-nas"
@@ -161,6 +161,52 @@ ontap_data_lif: ""
 ontap_svm: ""
 ontap_username: ""
 ontap_password: ""
+```
+
+### 5. NetApp Trident CSI Role Tasks
+**File**: [`deployment/roles/infrastructure/netapp_trident_csi_setup/tasks/main.yaml`](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/tasks/main.yaml)
+
+**Changes Made**:
+- Added ONTAP connectivity validation for both management LIF and data LIF before attempting backend registration
+- Added verification that the `TridentBackendConfig` object reaches `Bound` phase after creation, failing fast with a clear error if the backend does not become bound within the timeout
+
+```yaml
+- name: Verify ONTAP management LIF connectivity
+  ansible.builtin.wait_for:
+    host: "{{ ontap_management_lif }}"
+    port: 443
+    timeout: 10
+  register: mgmt_lif_check
+  failed_when: mgmt_lif_check.failed
+  tags:
+    - install
+    - post-install
+
+- name: Verify ONTAP data LIF connectivity
+  ansible.builtin.wait_for:
+    host: "{{ ontap_data_lif }}"
+    port: 2049
+    timeout: 10
+  register: data_lif_check
+  failed_when: data_lif_check.failed
+  tags:
+    - install
+    - post-install
+
+- name: Wait for TridentBackendConfig to reach Bound phase
+  kubernetes.core.k8s_info:
+    api_version: trident.netapp.io/v1
+    kind: TridentBackendConfig
+    name: "{{ trident_backend_name }}"
+    namespace: "{{ trident_namespace }}"
+  register: backend_status
+  until: backend_status.resources[0].status.phase == "Bound"
+  retries: 12
+  delay: 10
+  failed_when: backend_status.resources[0].status.phase != "Bound"
+  tags:
+    - install
+    - post-install
 ```
 
 ## New Ansible Role Created
@@ -180,7 +226,7 @@ deployment/roles/infrastructure/netapp_trident_csi_setup/
 
 #### [defaults/main.yaml](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/defaults/main.yaml)
 Default variables for Trident configuration including:
-- Trident operator version (25.06)
+- Trident operator version (25.10)
 - Namespace and StorageClass names
 - ONTAP backend connection parameters
 
@@ -190,7 +236,10 @@ Main Ansible tasks including:
   - Create Trident namespace
   - Add official NetApp Helm repository
   - Install Trident operator via Helm
+  - Validate connectivity to ONTAP management LIF (port 443)
+  - Validate connectivity to ONTAP data LIF (port 2049 / NFS)
   - Create ONTAP NAS backend configuration
+  - Verify `TridentBackendConfig` object reaches `Bound` phase
   - Create StorageClass with ReadWriteMany support
   - Manage default StorageClass annotations
 
@@ -215,6 +264,7 @@ spec:
   svm: {{ ontap_svm }}
   username: {{ ontap_username }}
   password: {{ ontap_password }}
+  useREST: true
 ```
 
 [**trident-storageclass.yaml.j2**](https://github.com/sushma-m1/Enterprise-RAG/blob/main/deployment/roles/infrastructure/netapp_trident_csi_setup/templates/trident-storageclass.yaml.j2): Kubernetes StorageClass
@@ -238,13 +288,14 @@ reclaimPolicy: Delete
 
 ### Prerequisites
 1. **NetApp ONTAP System**: Configured ONTAP cluster with:
+   - ONTAP software version 9.16.1P4 or above
    - Storage Virtual Machine (SVM) configured
    - NFS protocol enabled
    - Data and management LIFs configured
    - Aggregate with available space
 
 2. **Kubernetes Cluster**: Running Kubernetes cluster with:
-   - Helm 3.x installed
+   - Helm 3.17 or higher installed
    - Ubuntu nodes (for NFS utilities installation)
    - Network connectivity to ONTAP system
 
@@ -261,9 +312,28 @@ ontap_data_lif: "192.168.1.101"          # ONTAP data interface IP
 ontap_svm: "svm_ai"                       # Storage Virtual Machine name
 ontap_username: "admin"                   # ONTAP admin username
 ontap_password: "password123"             # ONTAP admin password
+
+# Required: route storage traffic through the ingress reverse proxy so that
+# web browsers (which cannot reach the ONTAP data_lif directly) can upload files.
+reverse_proxy_storage: true
+
+# Required EDP configuration when using ONTAP:
+# - rbac must be disabled
+# - storageType must be s3compatible
+# - externalUrl must point to the ingress-exposed S3 hostname
+edp:
+  enabled: true
+  rbac:
+    enabled: false    # Must be disabled when using ONTAP
+  storageType: s3compatible
+  s3compatible:
+    internalUrl: "https://192.168.1.101"   # ONTAP data_lif – used by in-cluster pods
+    externalUrl: "https://s3.erag.com"     # Ingress hostname – used by web browsers
 ```
 
-## Deployment Process
+> **Note**: `externalUrl` must match the hostname registered in your DNS and ingress
+> configuration (e.g. `s3.<your-fqdn>`). This is the address browsers use when
+> uploading files through the UI; the `data_lif` IP is only reachable inside the cluster.
 
 ### Step 1: Configure Parameters
 1. Copy sample configuration:
@@ -274,6 +344,9 @@ ontap_password: "password123"             # ONTAP admin password
 2. Edit `inventory/my-cluster/config.yaml`:
    - Set `install_csi: "netapp-trident"`
    - Fill in all ONTAP connection parameters
+   - Set `reverse_proxy_storage: true` to enable the ingress reverse proxy for storage traffic (required because web browsers cannot reach the ONTAP `data_lif` directly)
+   - Set `edp.s3compatible.externalUrl` to `https://s3.<your-fqdn>` (e.g. `https://s3.erag.com`) — this is the ingress-exposed S3 hostname used by the web UI; the `data_lif` IP is not accessible from outside the cluster
+   - Set `edp.rbac.enabled: false` — must be disabled when using ONTAP as the storage backend
    - Configure other Enterprise RAG settings
 
 ### Step 2: Deploy Infrastructure
@@ -370,9 +443,9 @@ kubectl get pvc --all-namespaces
 
 ## Version Compatibility
 
-- **Trident Version**: 25.06 (Helm chart version 100.2506.0)
+- **Trident Version**: 25.10 (Helm chart version 100.2510.0)
 - **Kubernetes**: 1.31+ (as supported by Enterprise RAG)
-- **ONTAP**: 9.8+ (recommended for full feature support)
+- **ONTAP**: 9.16.1P4+ (recommended for full feature support)
 - **Ubuntu**: 22.04/24.04 (for NFS utilities)
 
 ## Future Enhancements

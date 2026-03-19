@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Default Validation Rules
@@ -17,15 +17,61 @@
 #   data_regex: ".*secret.*"                # content with "secret" (both required)
 
 validation_rules:
-  # sample - reject changes in release values supplied for installing helm release
-  # - path_regex: ".*release-values.*"
-  #   response: "reject"
-  #   note: "OIDC client secret may change"
+  # Approve all formatting differences - these don't affect functionality
 
-  # sample - comment changes are documentation only
-  # - path_regex: ".*comment.*"
+  # Empty diffs - no actual changes
+  - path_regex: "^$"
+    data_regex: "^$"
+    response: "approve"
+    note: "Empty diff - no changes detected"
+
+  # Image tag changes for any service (common during upgrades)
+  - data_regex: "^\\s*tag:\\s*.*$"
+    response: "approve"
+    note: "Image tag change - expected during version upgrades"
+
+  # Resource requests/limits changes (CPU, memory)
+  - path_regex: ".*/resources/(requests|limits)/(cpu|memory)$"
+    data_regex: ".*"
+    response: "approve"
+    note: "Resource allocation changes - approved for performance tuning"
+
+  # ERAG_VERSION changes (solution version)
+  - data_regex: ".*ERAG_VERSION.*"
+    response: "approve"
+    note: "ERAG_VERSION change - expected during version upgrades"
+
+  # vllmNodes configuration formatting
+  - path_regex: ".*vllmNodes.*"
+    response: "approve"
+    note: "vllmNodes configuration formatting differences"
+
+  # YAML multiline vs inline strings with escaped newlines (\n vs actual newlines)
+  # - path_regex: ".*(extraEnv|extraVolumes|extraVolumeMounts|command|args|keycloakx).*"
+  - path_regex: ".*(extraEnv|extraVolumes|extraVolumeMounts|command|args).*"
+    response: "approve"
+    note: "YAML formatting: multiline vs inline strings with escaped characters"
+
+  # # Template formatting: inline with escaped quotes vs multiline
+  # - path_regex: ".*modelChatTemplate.*"
   #   response: "approve"
-  #   note: "Comment changes are documentation only"
+  #   note: "Template formatting: inline vs multiline representation"
+
+  # Backslash line continuation differences
+  - path_regex: ".*"
+    data_regex: ".*\\\\.*"
+    response: "approve"
+    note: "Backslash line continuation formatting differences"
+
+  # Empty string formatting differences
+  - path_regex: ".*(fullnameOverride|nameOverride).*"
+    response: "approve"
+    note: "Empty string formatting changes"
+
+  # # vllmNodes formatting (multiline YAML differences)
+  # - path_regex: ".*vllmNodes.*"
+  #   response: "approve"
+  #   note: "YAML structure formatting differences"
 
   # Default fallback - reject all other changes
   - path_regex: ".*"

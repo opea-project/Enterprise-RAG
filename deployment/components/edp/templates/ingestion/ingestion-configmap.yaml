@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -7,6 +7,7 @@ metadata:
   name: edp-ingestion-configmap
   namespace: edp
 data:
+  EMBEDDING_MODEL_NAME: {{ .Values.ingestion.config.embedding_model_name | quote }}
   VECTOR_STORE: {{ .Values.ingestion.config.vector_store | quote }}
   VECTOR_ALGORITHM: {{ .Values.ingestion.config.vector_algorithm | quote }}
   VECTOR_DIMS: {{ .Values.ingestion.config.vector_dims | quote }}

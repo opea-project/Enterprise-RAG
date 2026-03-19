@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { IconButton, Tooltip } from "@intel-enterprise-rag-ui/components";
@@ -11,7 +11,14 @@ interface LogoutButtonProps {
 export const LogoutButton = ({ onPress }: LogoutButtonProps) => (
   <Tooltip
     title="Logout"
-    trigger={<IconButton icon="logout" aria-label="Logout" onPress={onPress} />}
+    trigger={
+      <IconButton
+        data-testid="logout-button"
+        icon="logout"
+        aria-label="Logout"
+        onPress={onPress}
+      />
+    }
     placement="bottom"
   />
 );

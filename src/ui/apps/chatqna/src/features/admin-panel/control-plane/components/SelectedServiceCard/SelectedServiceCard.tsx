@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./SelectedServiceCard.scss";
@@ -94,6 +94,7 @@ const SelectedServiceCardFooter = ({
 }: SelectedServiceCardFooterProps) => (
   <footer className="selected-service-card__footer">
     <Button
+      data-testid="confirm-service-changes-button"
       size="sm"
       color="success"
       isDisabled={isConfirmChangesButtonDisabled}
@@ -103,6 +104,7 @@ const SelectedServiceCardFooter = ({
       Confirm Changes
     </Button>
     <Button
+      data-testid="cancel-service-changes-button"
       size="sm"
       variant="outlined"
       isDisabled={isConfirmChangesButtonDisabled}

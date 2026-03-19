@@ -1,0 +1,19 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.config.configMapName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "nri-balloons-controller.labels" . | nindent 4 }}
+data:
+  TARGET_CONTAINER_NAME: {{ .Values.config.targetContainerName | quote }}
+  INIT_CONTAINER_NAME: {{ .Values.config.initContainer.name | quote }}
+  INIT_CONTAINER_IMAGE: {{ .Values.config.initContainer.image | quote }}
+  INIT_CONTAINER_SERVICE_ACCOUNT: {{ include "nri-balloons-controller.fullname" . }}-init-container
+  INIT_CONTAINER_CLUSTER_ROLE: {{ include "nri-balloons-controller.fullname" . }}-init-container-role
+  BALLOONS_NAMESPACE: {{ .Values.config.balloons.namespace | quote }}
+  BALLOONS_DAEMONSET: {{ .Values.config.balloons.daemonsetName | quote }}
+  WAIT_TIMEOUT: {{ .Values.config.balloons.waitTimeout | quote }}

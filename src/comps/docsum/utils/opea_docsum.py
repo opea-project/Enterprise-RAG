@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
@@ -6,16 +6,23 @@ import logging
 import requests
 import time
 
+from fastapi import Request
 from fastapi.responses import StreamingResponse
-from langchain.chains.summarize import load_summarize_chain
-from langchain.docstore.document import Document
+from langchain_classic.chains.summarize import load_summarize_chain
+from langchain_core.documents import Document
 from langchain_core.outputs import LLMResult
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from typing import Union
+from typing import Union, Optional
 
 from comps.cores.proto.docarray import TextDocList, GeneratedDoc
 from comps.cores.mega.logger import get_opea_logger
+from comps.cores.mega.cancellation_wrapper import maybe_cancel_on_disconnect
+from comps.cores.proto.api_protocol import (
+    ChatCompletionResponseStreamChoice,
+    ChatCompletionStreamResponse,
+    DeltaMessage,
+)
 from comps.docsum.utils.templates import templ_en, templ_refine_en
 
 
@@ -117,12 +124,13 @@ class OPEADocsum:
 
         logger.info("OPEADocsum configuration validated successfully.")
 
-    async def run(self, input: TextDocList) -> Union[GeneratedDoc, StreamingResponse]:
+    async def run(self, input: TextDocList, raw_request: Optional[Request] = None) -> Union[GeneratedDoc, StreamingResponse]:
         """
         Process the given TextDocList input and return a summary.
 
         Args:
             input (TextDocList): The input documents to summarize.
+            raw_request (Optional[Request]): FastAPI Request for cancellation monitoring
         """
         start_time = time.time()
         if not input.summary_type:
@@ -132,7 +140,7 @@ class OPEADocsum:
             if summary_type not in SUPPORTED_SUMMARY_TYPES:
                 raise ValueError(f"Unsupported summary_type: {summary_type}. Supported types are: {SUPPORTED_SUMMARY_TYPES}")
         use_stream = input.stream if input.stream is not None else True
-        
+
         chat_semaphore = asyncio.Semaphore(self.max_concurrency)
 
         client = ConcurrencyLimitedChatOpenAI(
@@ -175,150 +183,166 @@ class OPEADocsum:
 
         if use_stream:
             async def stream_generator():
-                try:
-                    current_step = None
-                    step_counter = 0
-                    reduce_counter = 0
-                    map_runs_seen = set()  # Track unique map run IDs
-                    chat_model_to_step = {}  # Map chat model run_id to step number
-                    is_final_output = False  # Track if we're in the final output phase
+                async with maybe_cancel_on_disconnect(raw_request):
+                    try:
+                        current_step = None
+                        step_counter = 0
+                        reduce_counter = 0
+                        map_runs_seen = set()  # Track unique map run IDs
+                        chat_model_to_step = {}  # Map chat model run_id to step number
+                        is_final_output = False  # Track if we're in the final output phase
 
-                    async for event in chain.astream_events(docs, version="v2"):
-                        kind = event["event"]
+                        def build_stream_chunk(content: str, finish_reason: Optional[str] = None) -> str:
+                            stream_chunk = ChatCompletionStreamResponse(
+                                model="docsum",
+                                choices=[
+                                    ChatCompletionResponseStreamChoice(
+                                        index=0,
+                                        delta=DeltaMessage(content=content),
+                                        finish_reason=finish_reason,
+                                    )
+                                ],
+                            )
+                            return f"data: {stream_chunk.model_dump_json()}\n\n"
 
-                        if kind == "on_chain_start":
-                            chain_name = event.get("name", "")
-                            run_id = event.get("run_id", "")
+                        async for event in chain.astream_events(docs, version="v2"):
+                            kind = event["event"]
 
-                            if summary_type == "map_reduce":
-                                if "llmchain" in chain_name.lower():
-                                    # Check if this is the first or subsequent chains
-                                    # The first N LLMChains are for mapping, after that it's combine
-                                    if run_id not in map_runs_seen:
-                                        map_runs_seen.add(run_id)
-                                        if len(map_runs_seen) <= len(input.docs):
-                                            current_step = "map"
-                                            logger.debug(f"Detected map phase, run {len(map_runs_seen)}")
-                                        else:
-                                            current_step = "reduce"
-                                            logger.debug("Detected reduce/combine phase")
+                            if kind == "on_chain_start":
+                                chain_name = event.get("name", "")
+                                run_id = event.get("run_id", "")
 
-                        if kind == "on_chain_end":
-                            chain_name = event.get("name", "")
-                            if "mapreducedocumentschain" in chain_name.lower():
-                                is_final_output = True
-                                logger.debug("Final MapReduceDocumentsChain ending - next output is final")
-                            
-                            if summary_type == "map_reduce" and "stuffdocumentschain" in chain_name.lower():
-                                logger.info("Final reduce/combine completed - breaking early")
-                                break
-                            elif summary_type == "refine" and "refinedocumentschain" in chain_name.lower():
-                                logger.info("Final refine completed - breaking early")
-                                break
-                            elif summary_type == "stuff" and "stuffdocumentschain" in chain_name.lower():
-                                logger.info("Stuff chain completed - breaking early")
-                                break
+                                if summary_type == "map_reduce":
+                                    if "llmchain" in chain_name.lower():
+                                        # Check if this is the first or subsequent chains
+                                        # The first N LLMChains are for mapping, after that it's combine
+                                        if run_id not in map_runs_seen:
+                                            map_runs_seen.add(run_id)
+                                            if len(map_runs_seen) <= len(input.docs):
+                                                current_step = "map"
+                                                logger.debug(f"Detected map phase, run {len(map_runs_seen)}")
+                                            else:
+                                                current_step = "reduce"
+                                                logger.debug("Detected reduce/combine phase")
 
-                        # Track chat model starts to assign step numbers
-                        if kind == "on_chat_model_start":
-                            run_id = event.get("run_id", "")
-                            if summary_type == "map_reduce":
-                                # Check if we've moved past the map phase
-                                if step_counter >= len(input.docs):
-                                    # We're in the reduce phase
-                                    current_step = "reduce"
-                                    reduce_counter += 1
-                                    chat_model_to_step[run_id] = f"reduce_{reduce_counter}"
-                                    logger.debug(f"Chat model {run_id[:8]} assigned to reduce step {reduce_counter}")
-                                elif current_step == "map":
-                                    # Assign a step number to this chat model run
-                                    step_counter += 1
-                                    chat_model_to_step[run_id] = step_counter
-                                    logger.debug(f"Chat model {run_id[:8]} assigned to map step {step_counter}")
-                                else:
-                                    # First chat model, assume it's a map step
-                                    current_step = "map"
-                                    step_counter += 1
-                                    chat_model_to_step[run_id] = step_counter
-                                    logger.debug(f"Chat model {run_id[:8]} assigned to map step {step_counter}")
-                            elif summary_type == "refine":
-                                if current_step is None:
-                                    step_counter = 1
-                                    current_step = "initial"
-                                    chat_model_to_step[run_id] = "initial"
-                                    logger.debug("Starting initial summary")
-                                else:
-                                    step_counter += 1
-                                    current_step = "refine"
-                                    chat_model_to_step[run_id] = step_counter
-                                    logger.debug(f"Starting refine step {step_counter}")
+                            if kind == "on_chain_end":
+                                chain_name = event.get("name", "")
+                                if "mapreducedocumentschain" in chain_name.lower():
+                                    is_final_output = True
+                                    logger.debug("Final MapReduceDocumentsChain ending - next output is final")
 
-                        elif kind == "on_chat_model_stream":
-                            content = event["data"]["chunk"].content
-                            run_id = event.get("run_id", "")
-                            if content:
-                                show_intermediate = logger.isEnabledFor(logging.DEBUG)
+                                if summary_type == "map_reduce" and "stuffdocumentschain" in chain_name.lower():
+                                    logger.info("Final reduce/combine completed - breaking early")
+                                    break
+                                elif summary_type == "refine" and "refinedocumentschain" in chain_name.lower():
+                                    logger.info("Final refine completed - breaking early")
+                                    break
+                                elif summary_type == "stuff" and "stuffdocumentschain" in chain_name.lower():
+                                    logger.info("Stuff chain completed - breaking early")
+                                    break
 
-                                if summary_type == "stuff":
-                                    # Stuff has no intermediate steps, all output is final
-                                    yield f"data: {content}\n\n"
-                                elif summary_type == "map_reduce":
-                                    step = chat_model_to_step.get(run_id, "unknown")
-
-                                    if isinstance(step, int):
-                                        if show_intermediate:
-                                            yield f"data: [INTERMEDIATE_MAP_{step}] {content}\n\n"
-                                    elif isinstance(step, str) and step.startswith("reduce_"):
-                                        if is_final_output or reduce_counter == 1:
-                                            yield f"data: {content}\n\n"
-                                        else:
-                                            if show_intermediate:
-                                                reduce_num = step.split("_")[1]
-                                                yield f"data: [INTERMEDIATE_REDUCE_{reduce_num}] {content}\n\n"
+                            # Track chat model starts to assign step numbers
+                            if kind == "on_chat_model_start":
+                                run_id = event.get("run_id", "")
+                                if summary_type == "map_reduce":
+                                    # Check if we've moved past the map phase
+                                    if step_counter >= len(input.docs):
+                                        # We're in the reduce phase
+                                        current_step = "reduce"
+                                        reduce_counter += 1
+                                        chat_model_to_step[run_id] = f"reduce_{reduce_counter}"
+                                        logger.debug(f"Chat model {run_id[:8]} assigned to reduce step {reduce_counter}")
+                                    elif current_step == "map":
+                                        # Assign a step number to this chat model run
+                                        step_counter += 1
+                                        chat_model_to_step[run_id] = step_counter
+                                        logger.debug(f"Chat model {run_id[:8]} assigned to map step {step_counter}")
                                     else:
-                                        if show_intermediate:
-                                            yield f"data: {content}\n\n"
+                                        # First chat model, assume it's a map step
+                                        current_step = "map"
+                                        step_counter += 1
+                                        chat_model_to_step[run_id] = step_counter
+                                        logger.debug(f"Chat model {run_id[:8]} assigned to map step {step_counter}")
                                 elif summary_type == "refine":
-                                    step = chat_model_to_step.get(run_id, 1)
-
-                                    if step == "initial":
-                                        if len(input.docs) == 1:
-                                            yield f"data: {content}\n\n"
-                                        else:
-                                            if show_intermediate:
-                                                yield f"data: [INTERMEDIATE_INITIAL] {content}\n\n"
-                                    elif isinstance(step, int):
-                                        is_final_refine = step >= len(input.docs)
-                                        if is_final_refine:
-                                            yield f"data: {content}\n\n"
-                                        else:
-                                            if show_intermediate:
-                                                yield f"data: [INTERMEDIATE_REFINE_{step}] {content}\n\n"
+                                    if current_step is None:
+                                        step_counter = 1
+                                        current_step = "initial"
+                                        chat_model_to_step[run_id] = "initial"
+                                        logger.debug("Starting initial summary")
                                     else:
-                                        if show_intermediate:
-                                            yield f"data: {content}\n\n"
+                                        step_counter += 1
+                                        current_step = "refine"
+                                        chat_model_to_step[run_id] = step_counter
+                                        logger.debug(f"Starting refine step {step_counter}")
 
-                        elif kind == "on_chain_end" and "output_text" in event["data"].get("output", {}):
-                            output_text = event["data"]["output"]["output_text"]
-                            logger.debug(f"Final summary: {output_text}")
+                            elif kind == "on_chat_model_stream":
+                                content = event["data"]["chunk"].content
+                                run_id = event.get("run_id", "")
+                                if content:
+                                    show_intermediate = logger.isEnabledFor(logging.DEBUG)
 
-                except Exception as e:
-                    logger.error(f"Streaming error: {e}")
-                    yield f"data: [ERROR] {str(e)}\n\n"
-                finally:
-                    yield "data: [DONE]\n\n"
+                                    if summary_type == "stuff":
+                                        # Stuff has no intermediate steps, all output is final
+                                        yield build_stream_chunk(content)
+                                    elif summary_type == "map_reduce":
+                                        step = chat_model_to_step.get(run_id, "unknown")
+
+                                        if isinstance(step, int):
+                                            if show_intermediate:
+                                                yield build_stream_chunk(f"[INTERMEDIATE_MAP_{step}] {content}")
+                                        elif isinstance(step, str) and step.startswith("reduce_"):
+                                            if is_final_output or reduce_counter == 1:
+                                                yield build_stream_chunk(content)
+                                            else:
+                                                if show_intermediate:
+                                                    reduce_num = step.split("_")[1]
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_REDUCE_{reduce_num}] {content}")
+                                        else:
+                                            if show_intermediate:
+                                                yield build_stream_chunk(content)
+                                    elif summary_type == "refine":
+                                        step = chat_model_to_step.get(run_id, 1)
+
+                                        if step == "initial":
+                                            if len(input.docs) == 1:
+                                                yield build_stream_chunk(content)
+                                            else:
+                                                if show_intermediate:
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_INITIAL] {content}")
+                                        elif isinstance(step, int):
+                                            is_final_refine = step >= len(input.docs)
+                                            if is_final_refine:
+                                                yield build_stream_chunk(content)
+                                            else:
+                                                if show_intermediate:
+                                                    yield build_stream_chunk(f"[INTERMEDIATE_REFINE_{step}] {content}")
+                                        else:
+                                            if show_intermediate:
+                                                yield build_stream_chunk(content)
+
+                            elif kind == "on_chain_end" and "output_text" in event["data"].get("output", {}):
+                                output_text = event["data"]["output"]["output_text"]
+                                logger.debug(f"Final summary: {output_text}")
+
+                    except Exception as e:
+                        logger.error(f"Streaming error: {e}")
+                        yield build_stream_chunk(f"[ERROR] {str(e)}")
+                    finally:
+                        yield build_stream_chunk("", finish_reason="stop")
+                        yield "data: [DONE]\n\n"
 
             return StreamingResponse(stream_generator(), media_type="text/event-stream")
         else:
-            response = await chain.ainvoke(docs)
-            # Only map_reduce and refine return intermediate_steps
-            if "intermediate_steps" in response and logger.isEnabledFor(logging.DEBUG):
-                intermediate_steps = response["intermediate_steps"]
-                logger.debug("intermediate_steps:")
-                for step in intermediate_steps:
-                    logger.debug(step)
+            async with maybe_cancel_on_disconnect(raw_request):
+                response = await chain.ainvoke(docs)
+                # Only map_reduce and refine return intermediate_steps
+                if "intermediate_steps" in response and logger.isEnabledFor(logging.DEBUG):
+                    intermediate_steps = response["intermediate_steps"]
+                    logger.debug("intermediate_steps:")
+                    for step in intermediate_steps:
+                        logger.debug(step)
 
-            output_text = response["output_text"]
-            logger.debug(f"SUMMARY: {output_text}")
-            logger.info(f"Summarization completed in {time.time() - start_time:.3f} seconds.")
-            return GeneratedDoc(text=output_text, prompt="", stream=False)
+                output_text = response["output_text"]
+                logger.debug(f"SUMMARY: {output_text}")
+                logger.info(f"Summarization completed in {time.time() - start_time:.3f} seconds.")
+                return GeneratedDoc(text=output_text, prompt="", stream=False)

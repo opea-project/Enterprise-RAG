@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./IconButton.scss";
@@ -24,6 +24,8 @@ export interface IconButtonProps extends AriaButtonProps {
   size?: IconButtonSizes;
   /** Variant of the button (outlined, contained) */
   variant?: IconButtonVariants;
+  /** Additional classes to apply to the icon */
+  iconClassName?: string;
   /** Test identifier for automated testing */
   "data-testid"?: string;
 }
@@ -33,7 +35,15 @@ export interface IconButtonProps extends AriaButtonProps {
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (
-    { icon, color = "primary", size = "md", variant, className, ...rest },
+    {
+      icon,
+      color = "primary",
+      size = "md",
+      variant,
+      iconClassName,
+      className,
+      ...rest
+    },
     ref,
   ) => {
     const iconButtonClassNames = classNames(
@@ -58,7 +68,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 
     return (
       <AriaButton {...rest} ref={ref} className={iconButtonClassNames}>
-        <IconComponent />
+        <IconComponent className={iconClassName} />
       </AriaButton>
     );
   },

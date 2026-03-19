@@ -1,4 +1,8 @@
 images:
+  asrUsvc:
+    image_name: asr
+    dockerfile_path: src/comps/asr/impl/microservice/Dockerfile
+    docker_context: src
   docsumUsvc:
     image_name: docsum
     dockerfile_path: src/comps/docsum/impl/microservice/Dockerfile
@@ -59,6 +63,10 @@ images:
     image_name: mosec_embedding
     dockerfile_path: src/comps/embeddings/impl/model_server/mosec/docker/Dockerfile
     docker_context: src/comps/embeddings/impl/model_server/mosec
+  namespaceStatusWatcherUsvc:
+    image_name: namespace-status-watcher
+    dockerfile_path: src/comps/namespace_status_watcher/impl/microservice/Dockerfile
+    docker_context: src
   otelcolContribJournalctl:
     image_name: otelcol-contrib-journalctl
     dockerfile_path: deployment/components/telemetry/helm/charts/logs/Dockerfile-otelcol-contrib-journalctl
@@ -103,6 +111,14 @@ images:
     image_name: torchserve_reranking
     dockerfile_path: src/comps/reranks/impl/model_server/torchserve/docker/Dockerfile
     docker_context: src/comps/reranks/impl/model_server/torchserve
+  ttsUsvc:
+    image_name: tts
+    dockerfile_path: src/comps/tts/impl/microservice/Dockerfile
+    docker_context: src
+  ttsFastapiModelServer:
+    image_name: tts-fastapi-model-server
+    dockerfile_path: src/comps/tts/impl/model_server/fastapi/docker/Dockerfile
+    docker_context: src
   chatQnAUiUsvc:
     image_name: chatqna-conversation-ui
     dockerfile_path: src/ui/apps/chatqna/Dockerfile
@@ -111,6 +127,14 @@ images:
     image_name: docsum-ui
     dockerfile_path: src/ui/apps/docsum/Dockerfile
     docker_context: src
+  audioQnAUiUsvc:
+    image_name: audioqna-ui
+    dockerfile_path: src/ui/apps/audioqna/Dockerfile
+    docker_context: src
+  vllmAudio:
+    image_name: vllm-audio
+    dockerfile_path: src/comps/asr/impl/model_server/vllm/docker/Dockerfile
+    docker_context: src/comps/asr/impl/model_server/vllm
   vllmGaudi:
     image_name: vllm-gaudi
     dockerfile_path: src/comps/llms/impl/model_server/vllm/docker/hpu/Dockerfile
@@ -119,3 +143,7 @@ images:
     image_name: init-container
     dockerfile_path: deployment/components/utils/init-container/Dockerfile
     docker_context: deployment/components/utils/init-container
+  nriBallonsController:
+    image_name: nri-balloons-controller
+    dockerfile_path: src/nri_balloons_controller/Dockerfile
+    docker_context: src/nri_balloons_controller

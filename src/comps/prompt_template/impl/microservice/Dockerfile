@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # Dockerfile for the RAG reranking microservice
@@ -10,10 +10,14 @@ ARG python_image_version=${python_version}-slim-bookworm
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
     vim && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN rm -rf /home/user/.local/lib/python${python_version}/site-packages/*
 RUN rm -rf /usr/local/lib/python${python_version}/site-packages/*

@@ -123,8 +123,8 @@ kubectl apply -f efs-example.yaml
 # Verify EFS CSI driver is running
 kubectl get pods -n kube-system | grep efs-csi
 
-# Check CSI driver addon
-kubectl get addon -A
+# Check CSI drivers
+kubectl get csidrivers
 ```
 
 #### Validate Storage Configuration
@@ -266,14 +266,22 @@ helm upgrade --install nai-core ntnx-charts/nai-core \
 kubectl get pods -n nai-system  
 # All pods should be in Running/Ready state
 ```
+Example output:
+```bash
+NAME                                        READY   STATUS      RESTARTS   AGE
+nai-api-7dbf9c4688-lmg47                    1/1     Running     0          2m20s
+nai-api-db-migrate-7fkuf-74xrd              0/1     Completed   0          2m20s
+nai-db-0                                    1/1     Running     0          2m20s
+nai-iep-model-controller-56875f96c9-n95m8   1/1     Running     0          2m20s
+nai-ui-65ff7f58bb-2clxg                     1/1     Running     0          2m20s
+prometheus-nai-0                            2/2     Running     0          2m18s
+```
 
 ---
 
 ## Dashboard Access
 
 ### Configure TLS and Gateway
-
-Refer to the [Nutanix Enterprise AI Dashboard Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_0:top-nai-login-t.html) for complete setup instructions.
 
 ### Setup HTTPS Access
 
@@ -296,6 +304,12 @@ Refer to the [Nutanix Enterprise AI Dashboard Documentation](https://portal.nuta
      port: 443
      protocol: TCP
      targetPort: 8443
+   ```
+
+   Or run the command below to add the HTTPS port configuration:
+
+   ```bash
+   kubectl apply --server-side -f envoy-service-https.yaml
    ```
 
 3. **Create TLS certificates**
@@ -344,10 +358,10 @@ kubectl get svc -n envoy-gateway-system
 # Example output
 NAME                                            TYPE           CLUSTER-IP      EXTERNAL-IP                                                              PORT(S)                                   AGE
 envoy-gateway                                   ClusterIP      172.20.18.224   <none>                                                                   18000/TCP,18001/TCP,18002/TCP,19001/TCP   7d22h
-envoy-nai-system-nai-ingress-gateway-ff52ba1f   LoadBalancer   172.20.28.43    nutanix-example-url.us-east-1.elb.amazonaws.com   80:30214/TCP,443:31000/TCP                17m
+envoy-nai-system-nai-ingress-gateway-ff52ba1f   LoadBalancer   172.20.28.43    {uuid}.us-east-1.elb.amazonaws.com   80:30214/TCP,443:31000/TCP                17m
 
 # Login URL
-https://nutanix-example-url.us-east-1.elb.amazonaws.com
+https://{uuid}.us-east-1.elb.amazonaws.com
 ```
 
 ### Login Credentials
@@ -368,13 +382,14 @@ Default credentials for Nutanix Enterprise AI portal:
 **Obtain Hugging Face Token:**
 
 1. Sign up at [Hugging Face](https://huggingface.co/) and create an API token
-2. Navigate to **Settings** in the Nutanix Enterprise AI portal (click your username in the top-right corner)
+2. Navigate to **Settings** in the Nutanix Enterprise AI portal
 3. Add your Hugging Face token
 
 **Configure Model Access:**
 
-1. Go to **Settings** in the Nutanix Enterprise AI portal
-2. Click **Allow All** for model access control
+1. Go to **Models** in the Nutanix Enterprise AI portal
+2. Switch to **Model Access Control** tab
+3. Click **Allow All** for model access control
 
 ![Allow All Model Access](./images/image-model-access.png)
 
@@ -447,13 +462,6 @@ kubectl get isvc -n nai-admin
 kubectl describe isvc ENDPOINT_NAME -n nai-admin
 ```
 
-### Fix Prometheus Metrics
-
-```bash
-pip install kubernetes
-python3 fix_metrics.py
-```
-
 ---
 ## 🚀 Congratulations! 🎉
 
@@ -462,7 +470,14 @@ At this point, you have successfully deployed Nutanix Enterprise AI on AWS EKS a
 ---
 
 
-## (OPTIONAL) Additional Monitoring & Troubleshooting
+## (OPTIONAL) Monitoring & Troubleshooting
+
+### Fix Prometheus Metrics
+
+```bash
+pip install kubernetes
+python3 fix_metrics.py
+```
 
 #### Common Kubernetes Commands
 
@@ -534,9 +549,50 @@ For Intel AMX-enabled workloads, monitor tile usage during inference operations 
    sudo processwatch -f AMX_TILE
    ```
 
+### Terraform Destroy Issue
+
+`terraform destroy` may sometimes fail with errors like this when AWS resources have active dependencies:
+
+```
+Error: deleting EC2 Subnet (subnet-01c6c5c08ea973bf6) ...
+       DependencyViolation: The subnet 'subnet-01c6c5c08ea973bf6' has dependencies and cannot be deleted.
+
+Error: deleting EC2 Internet Gateway (igw-01874ebb29c30139c) ...
+       DependencyViolation: Network vpc-0650d0bcbe00812d2 has some mapped public address(es).
+       Please unmap those public address(es) before detaching the gateway.
+```
+
+For example, subnets cannot be deleted if they are still associated with network interfaces, route tables, or load balancers. Similarly, internet gateways cannot be detached from a VPC if there are mapped public IP addresses. These dependency violations occur because AWS enforces resource relationships to prevent accidental disruption.
+
+To resolve this issue, manually identify and remove any dependent resources before retrying `terraform destroy`. These dependencies most commonly include load balancers and non-default security groups. Ensure all associated resources are deleted or detached to prevent AWS dependency violations.
+
+```bash
+# Identify and remove load balancers
+aws elb describe-load-balancers --query 'LoadBalancerDescriptions[*].LoadBalancerName'
+[
+    "load_balancer_name"
+]
+aws elb delete-load-balancer --load-balancer-name <load_balancer_name>
+
+# Identify and remove non-default security groups
+aws ec2 describe-security-groups --filters Name=vpc-id,Values=<vpc_id> \
+    --query "SecurityGroups[?GroupName!='default'].GroupId"
+[
+    "security_group_id"
+]
+aws ec2 delete-security-group --group-id <security_group_id>
+{
+    "Return": true,
+    "GroupId": "security_group_id"
+}
+
+# Re-run terraform destroy
+terraform destroy
+```
+
 ---
 
-### Related Documentation
+### Additional Resources
 
 - [Nutanix Enterprise AI Documentation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Enterprise-AI-v2_4:top-nai-cluster-setup-eks-t.html)
 - [AWS EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)

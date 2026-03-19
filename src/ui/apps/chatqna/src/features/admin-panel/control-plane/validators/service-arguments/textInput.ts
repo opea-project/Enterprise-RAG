@@ -1,27 +1,32 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
   containsSupportedCommaSeparatedValues,
   noEmpty,
 } from "@intel-enterprise-rag-ui/input-validation";
-import { object, string } from "yup";
+import { z } from "zod";
 
 const createValidationSchema = (
   isNullable?: boolean,
   isCommaSeparated?: boolean,
   supportedValues?: string[],
 ) =>
-  object().shape({
-    textInput: string()
-      .test("no-empty", "This value cannot be empty", noEmpty(isNullable))
-      .test(
-        "should-contain-supported-values",
-        "Only supported values are allowed. Check the tooltip for more details.",
+  z.object({
+    textInput: z
+      .string()
+      .refine(noEmpty(isNullable), {
+        message: "This value cannot be empty",
+      })
+      .refine(
         containsSupportedCommaSeparatedValues(
           isCommaSeparated,
           supportedValues,
         ),
+        {
+          message:
+            "Only supported values are allowed. Check the tooltip for more details.",
+        },
       ),
   });
 
@@ -36,5 +41,5 @@ export const validateServiceArgumentTextInput = async (
     isCommaSeparated,
     supportedValues,
   );
-  await validationSchema.validate({ textInput: value });
+  await validationSchema.parseAsync({ textInput: value });
 };

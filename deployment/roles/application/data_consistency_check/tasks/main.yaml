@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -45,9 +45,9 @@
       ansible.builtin.include_tasks: check_vdb.yaml
       when: vector_databases is defined and vector_databases.enabled | default(false)
 
-    - name: Check MinIO data consistency
-      ansible.builtin.include_tasks: check_minio.yaml
-      when: edp is defined and edp.enabled | default(false) and edp.storageType | default('') == "minio"
+    - name: Check SeaweedFS data consistency
+      ansible.builtin.include_tasks: check_seaweedfs.yaml
+      when: edp is defined and edp.enabled | default(false) and (edp.seaweedfs.enabled | default(false) or edp.storageType | default('') == 'seaweedfs')
 
     - name: Check Fingerprint data consistency
       ansible.builtin.include_tasks: check_fingerprint.yaml

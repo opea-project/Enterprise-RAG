@@ -1,6 +1,6 @@
 ---
 # Source: retriever-usvc/templates/configmap.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -13,7 +13,7 @@ data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
 ---
 # Source: retriever-usvc/templates/service.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: v1
@@ -41,7 +41,7 @@ metadata:
   name: retriever-usvc
 ---
 # Source: retriever-usvc/templates/deployment.yaml
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
@@ -71,6 +71,8 @@ spec:
           {{- include "redis_init_container" . | nindent 8 }}
         {{- else if eq (index .Values "images" .filename "vector_store") "pgvector" }}
           {{- include "postgresql_init_container" . | nindent 8 }}
+        {{- else if eq (index .Values "images" .filename "vector_store") "mssql" }}
+          {{- include "mssql_init_container" . | nindent 8 }}
         {{- end }}
       {{- include "gmc.imagePullSecrets" . }}
       containers:

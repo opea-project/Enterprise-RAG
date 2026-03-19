@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -67,6 +67,7 @@ const ExportActionDialog = memo(
 
     return (
       <ActionDialog
+        data-testid="export-summary-action-dialog"
         title="Export Summary"
         confirmLabel="Export"
         isOpen={isOpen}
@@ -75,6 +76,7 @@ const ExportActionDialog = memo(
       >
         <div className="mb-4">
           <SelectInput
+            data-testid="export-summary-format-select"
             label="Export Format"
             value={selectedFormat}
             items={EXPORT_FORMATS}
@@ -84,7 +86,9 @@ const ExportActionDialog = memo(
         </div>
         <p className="text-white-600 text-xs">
           File will be saved as:{" "}
-          <strong>{generateExportFileName(fileName, selectedFormat)}</strong>
+          <strong data-testid="export-summary-file-name">
+            {generateExportFileName(fileName, selectedFormat)}
+          </strong>
         </p>
       </ActionDialog>
     );

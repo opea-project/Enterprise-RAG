@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { IconButton, Tooltip } from "@intel-enterprise-rag-ui/components";
@@ -14,12 +14,14 @@ const options = {
     routePath: paths.adminPanel,
     icon: "admin-panel" as IconName,
     ariaLabel: "Switch to Admin Panel",
+    dataTestId: "view-switch-btn--to-admin-panel",
   },
   "admin-panel": {
     tooltip: "Switch to Document Summarization",
     routePath: paths.docsum,
     icon: "plain-text" as IconName,
     ariaLabel: "Switch to Document Summarization",
+    dataTestId: "view-switch-btn--to-docsum",
   },
 } as const;
 
@@ -53,6 +55,7 @@ const ViewSwitchButton = () => {
       title={options[currentView].tooltip}
       trigger={
         <IconButton
+          data-testid={options[currentView].dataTestId}
           icon={options[currentView].icon}
           aria-label={options[currentView].ariaLabel}
           onPress={handlePress}

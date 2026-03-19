@@ -59,7 +59,7 @@ wait_for_ingest()
 	while true
 	do
 		count_vectors
-		if [[ "$IN_PROGRESS" -eq 0 ]]; then
+		if [[ "$IN_PROGRESS" -eq 1 ]]; then
 			break
 		fi
 		echo "waiting 30 seconds to verify if ingestion process is completed"
@@ -75,7 +75,7 @@ upload_file()
 	echo $tmpstr > /tmp/dataprep.json
 	curloutput=$(curl -k --no-buffer "${EDP_URL}/presignedUrl" -X POST -d @/tmp/dataprep.json -H 'Content-Type: application/json' -H "Authorization: Bearer ${USER_ACCESS_TOKEN}")
 	furl=$(echo $curloutput | jq -r '.url')
-	curl -k -X PUT -T "$TEMP_DIR/$filename" "$furl"
+	curl -k -X PUT -H "Authorization: Bearer ${USER_ACCESS_TOKEN}" -T "$TEMP_DIR/$filename" "$furl"
 }
 
 upload_relevant_documents()

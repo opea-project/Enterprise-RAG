@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
@@ -21,6 +21,9 @@ To execute these tests with coverage report, navigate to the `src` folder and ru
 Alternatively, to run all tests for the 'llms' module, execute the following command:
    pytest --disable-warnings --cov=comps/llms --cov-report=term --cov-report=html tests/unit/llms
 """
+
+# Define the service name to match the microservice
+USVC_NAME = 'opea_service@llm'
 
 @pytest.fixture
 def mock_get_connector():
@@ -48,7 +51,6 @@ def clean_env_vars():
       del os.environ['LLM_MODEL_NAME']
       del os.environ['LLM_MODEL_SERVER']
       del os.environ['LLM_MODEL_SERVER_ENDPOINT']
-      del os.environ['LLM_CONNECTOR']
       del os.environ['LLM_DISABLE_STREAMING']
    except Exception:
       pass
@@ -58,6 +60,22 @@ def mock_OPEALlm():
    with patch('comps.llms.utils.opea_llm.OPEALlm.__init__', autospec=True) as MockClass:
       MockClass.return_value = None
       yield MockClass
+
+@pytest.fixture(scope='function', autouse=True)
+def event_loop_cleanup():
+   """Cleanup fixture to handle event loop and asyncio tasks properly"""
+   yield
+   # Get all pending tasks and cancel them
+   try:
+      loop = asyncio.get_event_loop()
+      pending = asyncio.all_tasks(loop)
+      for task in pending:
+         task.cancel()
+      # Give tasks a chance to cancel
+      if pending:
+         loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+   except Exception:
+      pass
 
 @patch('dotenv.load_dotenv')
 def test_microservice_declaration_complies_with_guidelines(mock_load_dotenv, mock_get_connector, mock_validate_config, mock_cores_mega_microservice):
@@ -107,7 +125,6 @@ def test_initialization_succeeds_with_env_vars_present(mock_get_connector, clean
          "LLM_MODEL_NAME": "test_model_name",
          "LLM_MODEL_SERVER": "test_model_server",
          "LLM_MODEL_SERVER_ENDPOINT": "http://testhost:1234",
-         "LLM_CONNECTOR": "",
          "LLM_DISABLE_STREAMING": "False",
       },
    ):
@@ -122,7 +139,6 @@ def test_initialization_succeeds_with_env_vars_present(mock_get_connector, clean
       assert test_module.opea_llm._model_name == "test_model_name", "Model name does not match"
       assert test_module.opea_llm._model_server == "test_model_server", "Model server does not match"
       assert test_module.opea_llm._model_server_endpoint == "http://testhost:1234", "Model server endpoint does not match"
-      assert test_module.opea_llm._connector_name == "", "Connector name should be empty"
       assert not test_module.opea_llm._disable_streaming, "Disable streaming flag should be unset"
 
 

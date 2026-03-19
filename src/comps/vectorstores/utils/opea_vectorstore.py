@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import List, Optional
@@ -49,6 +49,7 @@ class OPEAVectorStore():
             "redis": self._import_redis,
             "redis-cluster": self._import_redis,
             "pgvector": self._import_pgvector,
+            "mssql": self._import_mssql,
         }
 
         if self._vector_store_name not in self._SUPPORTED_VECTOR_STORES:
@@ -161,3 +162,13 @@ class OPEAVectorStore():
             self.vector_store = ConnectorPgVector()
         except ModuleNotFoundError:
             logger.exception("exception when loading ConnectorPgVector")
+
+    def _import_mssql(self):
+        """
+        Imports the ConnectorMssql connector.
+        """
+        try:
+            from comps.vectorstores.utils.connectors.connector_mssql import ConnectorMssql
+            self.vector_store = ConnectorMssql()
+        except ModuleNotFoundError:
+            logger.exception("exception when loading ConnectorMssql")

@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./Dialog.scss";
@@ -45,6 +45,8 @@ export interface DialogProps extends PropsWithChildren {
   onClose?: () => void;
   /** Callback when open state changes */
   onOpenChange?: (isOpen: boolean) => void;
+  /** Additional props for testing purposes */
+  "data-testid"?: string;
 }
 
 /**
@@ -63,6 +65,7 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
       onClose,
       onOpenChange,
       children,
+      "data-testid": dataTestId = "dialog",
       ...rest
     }: DialogProps,
     forwardedRef,
@@ -92,6 +95,7 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
       >
         <div className={dialogWrapperClassName} style={{ maxWidth }}>
           <AriaDialog
+            data-testid={dataTestId}
             role="dialog"
             className="dialog__box"
             aria-labelledby={headingId}
@@ -142,6 +146,7 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
           <AriaModal className="dialog" isDismissable>
             <div className={dialogWrapperClassName} style={{ maxWidth }}>
               <AriaDialog
+                data-testid={dataTestId}
                 role="dialog"
                 className="dialog__box"
                 aria-labelledby={headingId}
@@ -159,6 +164,7 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
                           {title}
                         </AriaHeading>
                         <IconButton
+                          data-testid={`${dataTestId}-close-button`}
                           icon="close"
                           aria-label="Close dialog"
                           onPress={() => {
@@ -167,9 +173,19 @@ export const Dialog = forwardRef<DialogRef, DialogProps>(
                           }}
                         />
                       </header>
-                      <section className="dialog__content">{children}</section>
+                      <section
+                        className="dialog__content"
+                        data-testid={`${dataTestId}-content`}
+                      >
+                        {children}
+                      </section>
                       {footer && (
-                        <footer className="dialog__actions">{footer}</footer>
+                        <footer
+                          className="dialog__actions"
+                          data-testid={`${dataTestId}-footer`}
+                        >
+                          {footer}
+                        </footer>
                       )}
                     </>
                   );

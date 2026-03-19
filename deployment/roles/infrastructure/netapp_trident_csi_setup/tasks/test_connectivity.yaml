@@ -1,0 +1,88 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# TEST ONTAP BACKEND CONNECTIVITY FROM WORKER NODES
+- name: Check if ONTAP management LIF is defined
+  ansible.builtin.assert:
+    that:
+      - ontap_management_lif is defined
+      - ontap_management_lif | length > 0
+    fail_msg: "ONTAP management LIF is not defined in variables"
+    success_msg: "ONTAP management LIF is defined: {{ ontap_management_lif }}"
+  run_once: true
+  tags:
+    - install
+    - post-install
+
+- name: Check if ONTAP data LIF is defined
+  ansible.builtin.assert:
+    that:
+      - ontap_data_lif is defined
+      - ontap_data_lif | length > 0
+    fail_msg: "ONTAP data LIF is not defined in variables"
+    success_msg: "ONTAP data LIF is defined: {{ ontap_data_lif }}"
+  run_once: true
+  tags:
+    - install
+    - post-install
+
+- name: Test connectivity to ONTAP management LIF from worker nodes
+  ansible.builtin.wait_for:
+    host: "{{ ontap_management_lif }}"
+    port: 443
+    timeout: 10
+    state: started
+  register: mgmt_lif_test
+  ignore_errors: true
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['kube_node'] }}"
+  tags:
+    - install
+    - post-install
+
+- name: Test connectivity to ONTAP data LIF from worker nodes
+  ansible.builtin.wait_for:
+    host: "{{ ontap_data_lif }}"
+    port: 2049
+    timeout: 10
+    state: started
+  register: data_lif_test
+  ignore_errors: true
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['kube_node'] }}"
+  tags:
+    - install
+    - post-install
+
+- name: Display ONTAP connectivity test results
+  ansible.builtin.debug:
+    msg: |
+      ONTAP Connectivity Test Results:
+      {% for result in mgmt_lif_test.results %}
+      Node {{ result.item }}: Management LIF {{ ontap_management_lif }}:443 - {% if result.failed %}❌ FAILED{% else %}✅ SUCCESS{% endif %}
+      {% endfor %}
+      {% for result in data_lif_test.results %}
+      Node {{ result.item }}: Data LIF {{ ontap_data_lif }}:2049 - {% if result.failed %}❌ FAILED{% else %}✅ SUCCESS{% endif %}
+      {% endfor %}
+  run_once: true
+  tags:
+    - install
+    - post-install
+
+- name: Fail if any worker node cannot reach management LIF
+  ansible.builtin.fail:
+    msg: "Worker node {{ item.item }} cannot connect to ONTAP management LIF {{ ontap_management_lif }}:443"
+  when: item.failed
+  loop: "{{ mgmt_lif_test.results }}"
+  tags:
+    - install
+    - post-install
+
+- name: Fail if any worker node cannot reach data LIF
+  ansible.builtin.fail:
+    msg: "Worker node {{ item.item }} cannot connect to ONTAP data LIF {{ ontap_data_lif }}:2049"
+  when: item.failed
+  loop: "{{ data_lif_test.results }}"
+  tags:
+    - install
+    - post-install

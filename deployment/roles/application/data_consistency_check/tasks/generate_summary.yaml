@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -24,8 +24,8 @@
           {% if vdb_report_data is defined %}
           - **Vector Database**: Vector store with embeddings
           {% endif %}
-          {% if minio_report_data is defined %}
-          - **MinIO**: Object storage for document files
+          {% if seaweedfs_report_data is defined %}
+          - **SeaweedFS**: Object storage for document files
           {% endif %}
           {% if fingerprint_report_data is defined %}
           - **Fingerprint**: MongoDB for document fingerprinting
@@ -53,13 +53,13 @@
           ### {{ vdb_report_data.component }}
           - keys-count: {{ vdb_report_data.keys_count }}
           {% endif %}
-          {% if minio_report_data is defined %}
+          {% if seaweedfs_report_data is defined %}
 
-          ## MinIO Component
+          ## SeaweedFS Component
 
-          ### {{ minio_report_data.component }}
-          - files-count: {{ minio_report_data.files_count }}
-          - buckets-count: {{ minio_report_data.buckets_count }}
+          ### {{ seaweedfs_report_data.component }}
+          - files-count: {{ seaweedfs_report_data.files_count }}
+          - buckets-count: {{ seaweedfs_report_data.buckets_count }}
           {% endif %}
           {% if fingerprint_report_data is defined %}
 
@@ -107,10 +107,10 @@
         yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': vdb_report_data.component, 'keys_count': vdb_report_data.keys_count | int}]}) }}"
       when: vdb_report_data is defined
 
-    - name: Add MinIO to YAML report
+    - name: Add SeaweedFS to YAML report
       ansible.builtin.set_fact:
-        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': minio_report_data.component, 'buckets_count': minio_report_data.buckets_count | int, 'files_count': minio_report_data.files_count | int}]}) }}"
-      when: minio_report_data is defined
+        yaml_report_data: "{{ yaml_report_data | combine({'components': yaml_report_data.components + [{'component': seaweedfs_report_data.component, 'buckets_count': seaweedfs_report_data.buckets_count | int, 'files_count': seaweedfs_report_data.files_count | int}]}) }}"
+      when: seaweedfs_report_data is defined
 
     - name: Add Fingerprint to YAML report
       ansible.builtin.set_fact:

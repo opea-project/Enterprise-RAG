@@ -2,14 +2,24 @@
 - name: Load initial configuration
   ansible.builtin.include_tasks:
     file: initial_config.yaml
+    apply:
+      tags:
+        - always
+        - update-configuration
   tags:
     - always
+    - update-configuration
 
 - name: Load solution configuration
   ansible.builtin.include_tasks:
     file: solution_config.yaml
+    apply:
+      tags:
+        - always
+        - update-configuration
   tags:
     - always
+    - update-configuration
 
 - name: Verify configuration
   ansible.builtin.include_tasks:
@@ -26,6 +36,9 @@
       CONFIGURATION SUCCESSFUL
 
       All configuration checks passed successfully!
+
+      Upload Mode:
+        • Upload mode: {{ upload_pipelines | default(false) }}
 
       Environment Configuration:
         • huggingToken: {{ 'SET' if huggingToken is defined and huggingToken != '' else 'NOT SET (ensure models are publicly available)' }}

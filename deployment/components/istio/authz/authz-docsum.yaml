@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: security.istio.io/v1
@@ -53,24 +53,6 @@ spec:
         - cluster.local/ns/docsum/sa/llm-usvc
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---
-# fgp-usvc
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: docsum-fgp-usvc
-  namespace: docsum
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: fingerprint-usvc
-  action: DENY
-  rules:
-  - from:
-    - source:
-        notPrincipals:
-        - cluster.local/ns/docsum/sa/default
-        - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
----
 # llm-svc
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
@@ -86,7 +68,6 @@ spec:
   - from:
     - source:
         notPrincipals:
-        - cluster.local/ns/docsum/sa/default
         - cluster.local/ns/docsum/sa/docsum-usvc
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
 ---

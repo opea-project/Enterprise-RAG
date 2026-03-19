@@ -1,5 +1,5 @@
 {{- if not .Values.hierarchicalDataprep.enabled -}}
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 apiVersion: apps/v1
@@ -17,6 +17,7 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/text-extractor-config: {{ include (print $.Template.BasePath "/textExtractor/text-extractor-configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -54,12 +55,18 @@ spec:
             - name: no_proxy
               value: {{ include "helm-edp.noProxyWithContainers" . | quote }}
           {{- end }}
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
           {{- if .Values.textExtractor.environment }}
             {{- toYaml .Values.textExtractor.environment | nindent 12 }}
           {{- end }}
           envFrom:
             - secretRef:
                 name: vector-database-config
+            - configMapRef:
+                name: edp-text-extractor-configmap
           ports:
             - name: http
               containerPort: 9398

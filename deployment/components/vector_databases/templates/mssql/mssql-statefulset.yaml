@@ -1,0 +1,148 @@
+{{- if index .Values "mssql" "enabled" -}}
+# Copyright (C) 2024-2025 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: mssql
+    app.kubernetes.io/instance: mssql
+spec:
+  serviceName: mssql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mssql
+      app.kubernetes.io/instance: mssql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mssql
+        app.kubernetes.io/instance: mssql
+    spec:
+      serviceAccountName: {{ .Values.mssql.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mssql
+          securityContext:
+            capabilities:
+              drop:
+              - ALL
+              add:
+              - NET_BIND_SERVICE # required, without it mssql won't start
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 10001
+          env:
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: MSSQL_SA_PASSWORD
+            - name: ACCEPT_EULA
+              value: {{ .Values.mssql.config.accept_eula | quote }}
+            - name: MSSQL_PID
+              value: {{ .Values.mssql.config.mssql_pid | quote }}
+          envFrom:
+            - secretRef:
+                name: mssql-secret
+          image: "{{ .Values.mssql.image.repository }}:{{ .Values.mssql.image.tag }}"
+          ports:
+            - name: mssql
+              containerPort: 1433
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            {{- if index .Values "mssql" "persistence" "enabled" }}
+            - mountPath: /var/opt/mssql/data
+              name: mssql-data
+            - mountPath: /var/opt/mssql/log
+              name: mssql-log
+            - mountPath: /var/opt/mssql/secrets
+              name: mssql-secrets
+            {{- end }}
+          resources:
+            {{- if .Values.mssql.resources }}
+            {{- toYaml .Values.mssql.resources | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+{{- if index .Values "mssql" "metrics" "enabled" }}
+        - name: metrics
+          image: awaragi/prometheus-mssql-exporter:v1.3.0
+          ports:
+            - containerPort: 4000
+              name: metrics
+          env:
+            - name: SERVER
+              value: localhost
+            - name: USERNAME
+              value: SA
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mssql-secret
+                  key: MSSQL_SA_PASSWORD
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+{{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        {{- if not (index .Values "mssql" "persistence" "enabled") }}
+        - name: mssql-data
+          emptyDir: {}
+        - name: mssql-log
+          emptyDir: {}
+        - name: mssql-secrets
+          emptyDir: {}
+        {{- end }}
+  {{- if index .Values "mssql" "persistence" "enabled" }}
+  volumeClaimTemplates:
+  - metadata:
+      name: mssql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.mssql.persistence.storageClass }}
+      storageClassName: {{ .Values.mssql.persistence.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.mssql.persistence.dataSize | default "10Gi" }}
+  - metadata:
+      name: mssql-log
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.mssql.persistence.logSize | default "2Gi" }}
+  - metadata:
+      name: mssql-secrets
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.mssql.persistence.secretsSize | default "1Gi" }}
+  {{- end }}
+{{- end }}

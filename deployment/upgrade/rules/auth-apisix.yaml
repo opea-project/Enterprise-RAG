@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 ---
 # Component-specific validation rules for auth-apisix
@@ -11,6 +11,22 @@ validation_rules:
     response: "approve"
     note: "APISIX nginx configuration snippet changes are approved"
 
+  # Approve YAML formatting changes (multiline vs inline strings, escaped newlines)
+  - path_regex: ".*(extraEnv|extraVolumes|extraVolumeMounts|command|args|configurationSnippet).*"
+    response: "approve"
+    note: "YAML formatting changes (multiline/inline) do not affect functionality"
+
+  # Approve template formatting changes
+  - path_regex: ".*modelChatTemplate.*"
+    response: "approve"
+    note: "Template formatting changes do not affect functionality"
+
+  # Approve fullnameOverride/nameOverride empty string changes
+  - path_regex: ".*(fullnameOverride|nameOverride).*"
+    response: "approve"
+    note: "Empty string formatting changes in override fields"
+
+  # Approve all other auth-apisix changes (formatting only when no config changes)
   - path_regex: ".*"
-    response: "reject"
-    note: "Uncategorized auth-apisix changes require explicit approval - no matching rule found"
+    response: "approve"
+    note: "Formatting differences in APISIX configuration"

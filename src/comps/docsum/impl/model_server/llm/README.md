@@ -10,9 +10,6 @@ For detailed information about the LLM microservice, including:
 
 Please refer to the [LLM Microservice README](../../../../llms/README.md).
 
-> [!IMPORTANT]
-> Docsum microservice uses OpenAI Client to connect to the LLM. Therefore, OpenAI API is required to run the pipeline correctly. To enable LLM with OpenAI API for streaming, run LLM with `LLM_OPENAI_FORMAT_STREAMING` set to `True`.
-
 ## Getting Started
 
 To build and start all the services use Docker Compose

@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import "./AboutDialog.scss";
@@ -28,7 +28,12 @@ export const AboutDialog = ({
   userGuideUrl,
 }: AboutDialogProps) => {
   const trigger = (
-    <Tooltip title="About" trigger={<IconButton icon="info" />} />
+    <Tooltip
+      title="About"
+      trigger={
+        <IconButton data-testid="about-dialog-trigger-button" icon="info" />
+      }
+    />
   );
 
   const dialogRef = useRef<DialogRef>(null);
@@ -40,6 +45,7 @@ export const AboutDialog = ({
   return (
     <Dialog
       ref={dialogRef}
+      data-testid="about-dialog"
       trigger={trigger}
       title="About"
       maxWidth={600}

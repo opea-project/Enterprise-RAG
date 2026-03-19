@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -93,6 +93,43 @@
   tags:
     - configure
 
+- name: Extract current Helm version
+  ansible.builtin.shell: helm version --short --client 2>/dev/null | grep -oP 'v\K[0-9]+\.[0-9]+' || echo "0.0"
+  register: helm_current_version
+  when: helm_check.rc == 0
+  ignore_errors: true
+  tags:
+    - configure
+
+- name: Check if Helm version is 3.17 or higher
+  ansible.builtin.set_fact:
+    helm_version_ok: "{{ helm_current_version.stdout is version('3.17', '>=') }}"
+  when: helm_check.rc == 0
+  tags:
+    - configure
+
+- name: Display info if Helm needs installation/upgrade
+  ansible.builtin.debug:
+    msg: |
+      [INFO]: Helm version {{ helm_current_version.stdout | default('not installed') }} detected.
+      {% if helm_check.rc != 0 %}
+      Helm is not installed. Installing Helm {{ helm_version }}...
+      {% elif not helm_version_ok | default(false) %}
+      Helm version is below 3.17. Upgrading to Helm {{ helm_version }}...
+      {% endif %}
+  when: helm_check.rc != 0 or not helm_version_ok | default(false)
+  tags:
+    - configure
+
+- name: Display Helm version info
+  ansible.builtin.debug:
+    msg: "[INFO]: Helm version {{ helm_current_version.stdout }} detected - requirement satisfied (>= 3.17)"
+  when:
+    - helm_check.rc == 0
+    - helm_version_ok | default(false)
+  tags:
+    - configure
+
 - name: Download Helm archive
   ansible.builtin.get_url:
     url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
@@ -102,6 +139,7 @@
     http_proxy: "{{ httpProxy | default('') }}"
     https_proxy: "{{ httpsProxy | default('') }}"
     no_proxy: "{{ noProxy | default('') }}"
+  when: helm_check.rc != 0 or not helm_version_ok | default(false)
   tags:
     - configure
 
@@ -113,9 +151,7 @@
     remote_src: true
     extra_opts:
       - "--strip-components=1"
-  args:
-    creates: /usr/bin/helm
-  when: helm_check.rc != 0
+  when: helm_check.rc != 0 or not helm_version_ok | default(false)
   tags:
     - configure
 
@@ -125,6 +161,6 @@
     path: /usr/bin/helm
     owner: "{{ ansible_user_id | default(lookup('env', 'USER')) }}"
     mode: '0755'
-  when: helm_check.rc != 0
+  when: helm_check.rc != 0 or not helm_version_ok | default(false)
   tags:
     - configure

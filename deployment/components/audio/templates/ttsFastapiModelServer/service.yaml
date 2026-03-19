@@ -1,0 +1,20 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.ttsFastapiModelServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "audio.ttsFastapiModelServer.fullname" . }}
+  labels:
+    {{- include "audio.ttsFastapiModelServer.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.ttsFastapiModelServer.service.type }}
+  ports:
+    - port: {{ .Values.ttsFastapiModelServer.service.port }}
+      targetPort: {{ .Values.ttsFastapiModelServer.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "audio.ttsFastapiModelServer.selectorLabels" . | nindent 4 }}
+{{- end }}

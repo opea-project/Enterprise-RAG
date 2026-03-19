@@ -12,7 +12,7 @@ Support for storage backends for storing and processing files:
 
 | Storage Endpoints  |  Status   |
 | -------------------| --------- |
-| MinIO              | &#x2713;  |
+| SeaweedFS          | &#x2713;  |
 | AWS S3             | &#x2713;  |
 | AWS S3 Compatible  | &#x2713;  |
 
@@ -27,7 +27,7 @@ This image serves three main service roles:
 ## 🔗 Related Components
 
 This service works with other components:
-- Storage service (MinIO, AWS S3 or S3 compatible) for document persistence
+- Storage service (SeaweedFS, AWS S3 or S3 compatible) for document persistence
 - Ingestion service for vector database integration
 - Embedding service for generating vector representations of documents for semantic search
 - Retriever service for accessing processed documents

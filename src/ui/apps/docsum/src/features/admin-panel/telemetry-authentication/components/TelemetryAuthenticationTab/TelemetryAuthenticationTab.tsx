@@ -1,4 +1,4 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { AnchorCard } from "@intel-enterprise-rag-ui/components";
@@ -11,12 +11,14 @@ const keycloakAdminPanelUrl = getDocSumAppEnv("KEYCLOAK_ADMIN_PANEL_URL");
 const TelemetryAuthenticationTab = () => (
   <div className="grid grid-cols-1 gap-4 px-16 py-8 md:grid-cols-2 lg:grid-cols-3">
     <AnchorCard
+      data-testid="grafana-dashboard-link"
       icon="telemetry"
       text="Grafana Dashboard"
       href={grafanaDashboardUrl}
       isExternal
     />
     <AnchorCard
+      data-testid="keycloak-admin-panel-link"
       icon="identity-provider"
       text="Keycloak Admin Panel"
       href={keycloakAdminPanelUrl}

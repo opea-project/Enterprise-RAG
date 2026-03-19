@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from functools import reduce
@@ -21,18 +21,21 @@ from kr8s._exceptions import ExecError
 from kr8s.objects import Namespace, Pod, objects_from_files
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 state_logger = logger.getChild("state")
 
 
 ISTIO_NS_PREFIX = "istio-test-"
-ERROR_LOG_TIMEOUT_SEC = 20
-MAX_RUNNING_QUERIES = 10  # how many query pods can be actively tracked at the same time
+ERROR_LOG_TIMEOUT_SEC = 6
+MAX_RUNNING_QUERIES = 8  # how many query pods can be actively tracked at the same time
 DEF_LOOP_INTERVAL_SEC = 0.25
 MAX_RETRY_COUNT = 3 # number of retries allowed for query after first TIMEOUT or ERROR state
 RETRY_BACKOFF_SEC = 2 # time before query in RETRY state is restored to NEW state
 FILES_DIR = "e2e/files"
 DEF_LOG_TS_MARGIN_SEC = 0.5 # default timestamp offset to add to log statements for correction
+NAMESPACE_DELETE_TIMEOUT_SEC = 30  # timeout for namespace deletion before switching to pod count monitoring
+POD_COUNT_SLACK = 4  # minimum free slots for new queries when waiting for pod cleanup
+NODE_POD_BUFFER = 6  # reserved pod capacity margin for system churn/reconciliation
 
 
 class ConnectionType(Enum):
@@ -130,34 +133,81 @@ class TestNamespace():
     def count_pods(self):
         return len(list(kr8s.get("pods", namespace=self.namespace_name)))
 
-    def delete(self):
+    def delete(
+        self,
+        max_running_queries: int = MAX_RUNNING_QUERIES,
+        pod_counter=None,
+        pod_target: Optional[int] = None,
+    ):
+        # Delete namespace; wait NAMESPACE_DELETE_TIMEOUT_SEC, then fall back to pod-count monitoring.
+        # pod_counter/pod_target override the defaults (node-wide count vs max_running_queries).
+        if pod_counter is None:
+            pod_counter = self.count_pods
+        if pod_target is None:
+            pod_target = max_running_queries - POD_COUNT_SLACK
         try:
             namespace = Namespace.get(self.namespace_name)
-            logger.info(f"Deleting namespace: {self.namespace_name}")
+            logger.info(f"[namespace-delete] Deleting namespace: {self.namespace_name}")
             namespace.delete()
 
-            logger.info(f"Waiting for namespace {self.namespace_name} to be deleted...")
-            while True:
+            delete_start = time.time()
+            deadline = delete_start + NAMESPACE_DELETE_TIMEOUT_SEC
+            logger.info(f"[namespace-delete] Waiting for namespace {self.namespace_name} to be deleted (timeout: {NAMESPACE_DELETE_TIMEOUT_SEC}s)...")
+
+            while time.time() < deadline:
                 try:
                     Namespace.get(self.namespace_name)
+                    elapsed = time.time() - delete_start
+                    logger.debug(f"[namespace-delete] Namespace still exists after {elapsed:.1f}s, waiting...")
                     time.sleep(2)
                 except Exception:
-                    logger.info(f"Namespace {self.namespace_name} deleted successfully!")
-                    break
+                    elapsed = time.time() - delete_start
+                    logger.info(f"[namespace-delete] Namespace {self.namespace_name} deleted successfully in {elapsed:.1f}s!")
+                    return
+
+            # Namespace deletion timed out - switch to pod count monitoring
+            elapsed = time.time() - delete_start
+            logger.warning(f"[namespace-delete] Namespace deletion timeout after {elapsed:.1f}s, switching to pod count monitoring")
+
+            # Wait for pod count (all pods on node) to drop enough to allow new queries
+            logger.info(
+                f"[namespace-delete] Waiting for pod count to drop below {pod_target} "
+                f"(max_running={max_running_queries}, slack={POD_COUNT_SLACK})"
+            )
+            while True:
+                try:
+                    # Check if namespace is gone
+                    Namespace.get(self.namespace_name)
+                except Exception:
+                    elapsed = time.time() - delete_start
+                    logger.info(f"[namespace-delete] Namespace {self.namespace_name} finally deleted after {elapsed:.1f}s!")
+                    return
+
+                pod_count = pod_counter()
+                elapsed = time.time() - delete_start
+                logger.debug(f"[namespace-delete] Current pod count: {pod_count} (target: <{pod_target}) after {elapsed:.1f}s")
+
+                if pod_count < pod_target:
+                    logger.info(f"[namespace-delete] Pod count ({pod_count}) below threshold ({pod_target}), proceeding after {elapsed:.1f}s")
+                    return
+
+                time.sleep(2)
+
         except Exception as e:
-            logger.info(f"Error while deleting namespace {self.namespace_name}: {e}")
+            logger.info(f"[namespace-delete] Error while deleting namespace {self.namespace_name}: {e}")
 
 
 class TestPod():
     pod_ip_ptrn = re.compile(r"POD_IP=(?P<pod_ip>[0-9.]+);")
 
-    def __init__(self, connection_type, namespace_name):
+    def __init__(self, connection_type, namespace_name, node_name: Optional[str] = None):
         self.connection_type = connection_type
         self.namespace_name = namespace_name
+        self.node_name = node_name
         if connection_type == ConnectionType.REDIS:
-            self.image = "redis/redis-stack:7.2.0-v9"
+            self.image = "redis:8.2.2"
         elif connection_type == ConnectionType.POSTGRESQL:
-            self.image = "bitnamilegacy/postgresql:16.3.0-debian-12-r23"
+            self.image = "postgres:16-alpine"
         elif connection_type == ConnectionType.MONGODB:
             self.image = "mongo:5.0.6"
         elif connection_type == ConnectionType.HTTP:
@@ -179,11 +229,13 @@ class TestPod():
                         "name": "test-container",
                         "image": self.image,
                         "command": ["/bin/sh", "-c"],
-                        "args": ['trap exit TERM; sleep 300 & wait']
+                        "args": ['trap exit TERM; sleep 60 & wait']
                     }
                 ],
             },
         }
+        if self.node_name is not None:
+            pod_spec["spec"]["nodeSelector"] = {"kubernetes.io/hostname": self.node_name}
         self.pod = Pod(pod_spec)
         self.pod.create()
         # trigger once to warm up pod creation
@@ -223,8 +275,9 @@ class TestPod():
 
 class DebugPod:
 
-    def __init__(self):
+    def __init__(self, node_name: Optional[str] = None):
         self.pod = None
+        self.node_name = node_name
 
     def create(self):
         pod_spec = {
@@ -239,7 +292,7 @@ class DebugPod:
                         "name": "inotify-check",
                         "image": "ubuntu:22.04",
                         "command": ["/bin/sh", "-c"],
-                        "args": ['trap exit TERM; sleep 300 & wait'],
+                        "args": ['trap exit TERM; sleep 60 & wait'],
                         "securityContext": {"privileged": True},
                         "volumeMounts": [
                             {"name": "proc", "mountPath": "/host/proc"},
@@ -254,6 +307,8 @@ class DebugPod:
                 "restartPolicy": "Never",
             },
         }
+        if self.node_name is not None:
+            pod_spec["spec"]["nodeSelector"] = {"kubernetes.io/hostname": self.node_name}
         self.pod = Pod(pod_spec)
         self.pod.create()
 
@@ -360,8 +415,7 @@ class LogWatcher(threading.Thread):
 
 
 class QueryWorkloadLookup:
-    """Lookup workloads targeted by service endpoint.
-    """
+    # Maps service endpoints to their backing workload pod names.
 
     endpoint_ptrn = re.compile(r"^(?P<service>[^.]+)\.(?P<namespace>[^.]+)\.svc.+")
     cache_ttl_sec = 60
@@ -408,6 +462,78 @@ class LogCheck:
     details: str
 
 
+@dataclass
+class NodeCapacity:
+    # Cluster pod-capacity snapshot; node chosen has the most free slots (allocatable - running).
+    pod_limit: int              # allocatable pods on the chosen node
+    node_name: Optional[str]    # name of the most-spacious node (None if unknown)
+    running_pods: int           # pods on that node at snapshot time
+    max_running_queries: int    # recommended concurrent test-query pod cap
+
+
+def count_pods_on_node(node_name: Optional[str] = None) -> int:
+    # Count all pods on node_name, or across all nodes if None.
+    all_pods = kr8s.get("pods", namespace=kr8s.ALL)
+    if node_name is None:
+        return len(list(all_pods))
+    return sum(
+        1 for pod in all_pods
+        if getattr(pod.spec, "nodeName", None) == node_name
+    )
+
+
+def _query_node_capacity(default: int = MAX_RUNNING_QUERIES) -> NodeCapacity:
+    # Find the node with the most free pod slots; fall back to defaults on error.
+    try:
+        nodes = kr8s.get("nodes")
+        if not nodes:
+            logger.warning("[capacity] No nodes returned, using default max_running_queries=%d", default)
+            return NodeCapacity(
+                pod_limit=default + NODE_POD_BUFFER,
+                node_name=None,
+                running_pods=0,
+                max_running_queries=default,
+            )
+        # Pick the node with the most free slots
+        best_node_name = None
+        best_alloc = None
+        best_running = None
+        best_free = None
+        for node in nodes:
+            alloc = int(node.status.allocatable.get("pods", str(default + NODE_POD_BUFFER)))
+            running = count_pods_on_node(node.metadata.name)
+            free = alloc - running
+            if best_free is None or free > best_free:
+                best_free = free
+                best_alloc = alloc
+                best_running = running
+                best_node_name = node.metadata.name
+        available = best_free - NODE_POD_BUFFER
+        result = min(default, max(1, available))
+        logger.info(
+            "[capacity] Most-spacious node: %s, pod_limit: %d, running_pods: %d, "
+            "free_pods: %d, buffer: %d, available: %d => max_running_queries: %d (hard cap: %d)",
+            best_node_name, best_alloc, best_running, best_free,
+            NODE_POD_BUFFER, available, result, default,
+        )
+        return NodeCapacity(
+            pod_limit=best_alloc,
+            node_name=best_node_name,
+            running_pods=best_running,
+            max_running_queries=result,
+        )
+    except Exception as exc:
+        logger.warning(
+            "[capacity] Failed to query node pod capacity (%s), using defaults", exc
+        )
+        return NodeCapacity(
+            pod_limit=default + NODE_POD_BUFFER,
+            node_name=None,
+            running_pods=0,
+            max_running_queries=default,
+        )
+
+
 class IstioHelper:
 
     dst_workload_ptrn = re.compile(r'\Wdst.workload="(?P<workload>[^"]+)"')
@@ -422,7 +548,10 @@ class IstioHelper:
         self.pod_ip = None
         self.connection_type = None
         self.namespace = None
-        self.max_running_queries = MAX_RUNNING_QUERIES
+        _capacity = _query_node_capacity()
+        self.node_pod_limit: int = _capacity.pod_limit
+        self.node_name: Optional[str] = _capacity.node_name
+        self.max_running_queries: int = _capacity.max_running_queries
         self.loop_interval = DEF_LOOP_INTERVAL_SEC
         self.query_list: list[ServiceQuery] = []
         self.query_pods: dict[tuple[ConnectionType, str], TestPod] = {}
@@ -439,10 +568,16 @@ class IstioHelper:
         self.namespace.create()
 
     def delete_namespace(self):
-        self.namespace.delete()
+        # Use all-node pod count to reflect true node pressure.
+        node_pod_target = self.node_pod_limit - NODE_POD_BUFFER - POD_COUNT_SLACK
+        self.namespace.delete(
+            max_running_queries=self.max_running_queries,
+            pod_counter=lambda: count_pods_on_node(self.node_name),
+            pod_target=node_pod_target,
+        )
 
     def prepare_query(self, query: ServiceQuery):
-        pod: TestPod = TestPod(query.query_key.connection_type, self.namespace.namespace_name)
+        pod: TestPod = TestPod(query.query_key.connection_type, self.namespace.namespace_name, node_name=self.node_name)
         self.query_pods[query.query_key] = pod
         pod.create()
 
@@ -580,7 +715,23 @@ class IstioHelper:
         return 0
 
     def query_multiple_endpoints(self, endpoints: dict[str, ConnectionType]):
-        debug_pod = DebugPod()
+        # Pre-flight: check that the node has enough free pod slots to run at least
+        # POD_COUNT_SLACK new pods after reserving NODE_POD_BUFFER for system churn.
+        current_all_pods = count_pods_on_node(self.node_name)
+        free_pods = self.node_pod_limit - current_all_pods - NODE_POD_BUFFER
+        logger.info(
+            "[capacity] Pre-flight check: node_pod_limit=%d, all_pods_on_node=%d, "
+            "buffer=%d => free_pods=%d (need at least %d)",
+            self.node_pod_limit, current_all_pods, NODE_POD_BUFFER, free_pods, POD_COUNT_SLACK,
+        )
+        if free_pods < POD_COUNT_SLACK:
+            raise RuntimeError(
+                f"Not enough free pod capacity on node '{self.node_name}' to run tests: "
+                f"node_pod_limit={self.node_pod_limit}, all_pods={current_all_pods}, "
+                f"buffer={NODE_POD_BUFFER} => free={free_pods} < POD_COUNT_SLACK={POD_COUNT_SLACK}. "
+                "Free up node capacity before running istio connectivity tests."
+            )
+        debug_pod = DebugPod(node_name=self.node_name)
         debug_pod.create()
         # make sure if there are enough inotify watches, otherwise getting logs won't be possible
         try:
@@ -618,8 +769,10 @@ class IstioHelper:
                         self.endpoint_retries[query_key.endpoint] -= 1
                         mon_endpoint_retries[query_key.endpoint] += 1
                         self.retire_query(query)
-                        logger.info(f"Will retry query at {query_key.connection_type.value} endpoint {query_key.endpoint}")
-                        query.set_state(QueryState.RETRY, RETRY_BACKOFF_SEC, QueryState.NEW)
+                        retry_num = MAX_RETRY_COUNT - self.endpoint_retries[query_key.endpoint]
+                        backoff_sec = RETRY_BACKOFF_SEC * (1.5 ** (retry_num - 1))
+                        logger.info(f"Will retry query at {query_key.connection_type.value} endpoint {query_key.endpoint} (retry {retry_num}/{MAX_RETRY_COUNT}, backoff {backoff_sec:.2f}s)")
+                        query.set_state(QueryState.RETRY, backoff_sec, QueryState.NEW)
                         self.query_list.append(self.query_list.pop(i))
                         continue
                 if query.state in [QueryState.BLOCKED, QueryState.UNBLOCKED, QueryState.TIMEOUT, QueryState.ERROR]:
@@ -632,8 +785,13 @@ class IstioHelper:
                 else:
                     i += 1
             # select NEW queries for running
-            num_running = max(sum(query.state.is_selected() for query in self.query_list), self.namespace.count_pods())
-            num_to_select = (self.max_running_queries if self.max_running_queries > 0 else len(self.query_list)) - num_running
+            actual_pod_count = self.namespace.count_pods()
+            num_running = max(sum(query.state.is_selected() for query in self.query_list), actual_pod_count)
+            effective_max = self.max_running_queries if self.max_running_queries > 0 else len(self.query_list)
+            num_to_select = effective_max - num_running
+            # Log pod count status periodically for CICD debugging
+            if num_to_select <= 0 and actual_pod_count > 0:
+                logger.debug(f"[pod-monitor] Pod count: {actual_pod_count}, max_running: {effective_max}, num_running: {num_running}, can_select: {num_to_select}")
             i = 0
             while num_to_select > 0 and i < len(self.query_list):
                 query = self.query_list[i]
@@ -644,7 +802,9 @@ class IstioHelper:
             time.sleep(self.loop_interval)
         log_watcher.stop()
         last_snapshot = log_watcher.snapshot()
+        final_pod_count = self.namespace.count_pods()
         logger.info("[monitoring] Collected number of log statements: %s; timestamps: %s", (len(last_snapshot) or '(ZERO)'), log_watcher.get_lifecycle_tstamps())
+        logger.info("[monitoring] Final pod count in test namespace: %d, max_running_queries: %d", final_pod_count, self.max_running_queries)
         if not log_watcher.initialized():
             logger.warning("Log watcher did NOT initialize")
         logger.info("[monitoring] UNBLOCKED endpoints: %s", sorted(mon_unblocked_endpoints))

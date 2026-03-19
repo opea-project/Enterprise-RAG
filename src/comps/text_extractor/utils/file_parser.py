@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import magic
 import os
@@ -7,8 +7,11 @@ from comps.cores.mega.logger import get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 class FileParser:
-    def __init__(self, file_path):
+    def __init__(self, file_path, asr_endpoint=None):
         self._mappings = self.default_mappings()
+        self.asr_endpoint = asr_endpoint
+        # Add audio file support if ASR endpoint is configured
+        self._add_audio_support_if_enabled()
 
         self.file_path = file_path
         self.file_type = str(file_path.split('.')[-1]).lower()
@@ -31,16 +34,18 @@ class FileParser:
         supported_mappings = self.supported_file(self.mime_type)
         file_loader = next(m for m in supported_mappings if m['file_type'] == self.file_type)
 
-        loader = getattr(
-            __import__(f"comps.text_extractor.utils.file_loaders.{file_loader['loader_file_name']}", fromlist=['comps']),
-            file_loader['loader_class']
-        )
+        loader_module = __import__(f"comps.text_extractor.utils.file_loaders.{file_loader['loader_file_name']}", fromlist=['comps'])
+        loader_class = getattr(loader_module, file_loader['loader_class'])
 
         logger.info(f"Started processing file {self.file_path} with loader {file_loader['loader_class']}")
 
         data = None
         try:
-            data = loader(self.file_path).extract_text()
+            kwargs = {}
+            if file_loader['loader_class'] == 'LoadAudio':
+                kwargs['asr_endpoint'] = self.asr_endpoint
+            loader_instance = loader_class(self.file_path, **kwargs)
+            data = loader_instance.extract_text()
         except Exception as e:
             logger.error(f"Error while processing file {self.file_path} with loader {file_loader['loader_class']}. {e}")
             raise
@@ -75,6 +80,18 @@ class FileParser:
             {'file_type': 'png',   'loader_file_name': 'load_image',            'loader_class': 'LoadImage',           'mime_type': 'image/png'},
             {'file_type': 'svg',   'loader_file_name': 'load_image',            'loader_class': 'LoadImage',           'mime_type': 'image/svg+xml'},
         ]
+
+    def _add_audio_support_if_enabled(self):
+        """Add audio file support (MP3, WAV) if ASR_MODEL_SERVER_ENDPOINT is configured."""
+        if self.asr_endpoint and self.asr_endpoint.strip() != "":
+            logger.info(f"ASR endpoint configured at {self.asr_endpoint}. Enabling MP3 and WAV file support.")
+            audio_mappings = [
+                {'file_type': 'mp3',   'loader_file_name': 'load_audio',           'loader_class': 'LoadAudio',           'mime_type': 'audio/mpeg'},
+                {'file_type': 'wav',   'loader_file_name': 'load_audio',           'loader_class': 'LoadAudio',           'mime_type': 'audio/x-wav, audio/wav'},
+            ]
+            self._mappings.extend(audio_mappings)
+        else:
+            logger.debug("ASR endpoint not configured. MP3 and WAV file support disabled.")
 
     def supported_mime_types(self):
         mime_types = set()

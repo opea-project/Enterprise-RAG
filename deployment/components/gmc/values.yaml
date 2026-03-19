@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 # Default values for gmc.
@@ -207,6 +207,10 @@ images:
     envfile: "src/comps/embeddings/impl/model_server/torchserve/docker/.env"
     envs:
       TORCHSERVE_MODEL_NAME: *embedding_model_name
+  vllm_embedding:
+    envfile: "src/comps/embeddings/impl/model_server/vllm/docker/.env"
+    envs:
+      EMBEDDING_VLLM_MODEL_NAME: *embedding_model_name
   torchserve_reranking:
     image: "erag-torchserve_reranking"
     repository: *repo
@@ -221,6 +225,8 @@ images:
     tag: *tag
     pullPolicy: Always
     envfile: "src/comps/retrievers/impl/microservice/.env"
+    envs:
+      EMBEDDING_MODEL_NAME: *embedding_model_name
   ingestion-usvc:
     image: "erag-ingestion"
     repository: *repo

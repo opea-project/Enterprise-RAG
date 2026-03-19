@@ -1,0 +1,96 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+# Verify backup availability for upgrade workflow
+
+- name: Verify backup for upgrade
+  tags:
+    - verify-backup
+    - pre-upgrade
+  block:
+    - name: Check if Velero namespace exists
+      kubernetes.core.k8s_info:
+        kind: Namespace
+        name: "{{ velero.namespace | default('velero') }}"
+      register: velero_ns_check
+      failed_when: false
+
+    - name: Fail if Velero not available and backup required
+      ansible.builtin.fail:
+        msg: |
+          Velero is not installed (namespace '{{ velero.namespace | default('velero') }}' not found).
+          Upgrade requires a valid backup. Options:
+            1. Install Velero and create a backup first
+            2. Set allow_upgrade_without_backup=true to bypass (not recommended)
+      when:
+        - velero_ns_check.resources | length == 0
+        - not (allow_upgrade_without_backup | default(false) | bool)
+
+    - name: Skip backup verification when Velero not present (bypass enabled)
+      ansible.builtin.debug:
+        msg: "WARNING: Velero not found, bypassing backup verification (allow_upgrade_without_backup=true)"
+      when:
+        - velero_ns_check.resources | length == 0
+        - allow_upgrade_without_backup | default(false) | bool
+
+    - name: Query backups for current solution version
+      kubernetes.core.k8s_info:
+        api_version: velero.io/v1
+        kind: Backup
+        namespace: "{{ velero.namespace | default('velero') }}"
+        label_selectors:
+          - "meta.erag/solution-version={{ solution_version }}"
+      register: version_backups
+      when: velero_ns_check.resources | length > 0
+
+    - name: Find completed backups within age threshold
+      ansible.builtin.set_fact:
+        valid_backups: "{{ version_backups.resources | default([]) | selectattr('status.phase', 'equalto', 'Completed') | list }}"
+      when: velero_ns_check.resources | length > 0
+
+    - name: Filter backups by age
+      ansible.builtin.script:
+        cmd: "{{ role_path }}/files/filter_backups_by_age.py"
+      environment:
+        BACKUPS_JSON: "{{ valid_backups | to_json }}"
+        MAX_AGE_HOURS: "{{ upgrade_backup_max_age_hours | default(6) }}"
+      register: filtered_backups_result
+      changed_when: false
+      when:
+        - velero_ns_check.resources | length > 0
+        - valid_backups | length > 0
+
+    - name: Parse filtered backups
+      ansible.builtin.set_fact:
+        fresh_backups: "{{ (filtered_backups_result.stdout | from_json).backups | default([]) }}"
+      when:
+        - velero_ns_check.resources | length > 0
+        - filtered_backups_result is defined
+        - filtered_backups_result.stdout is defined
+
+    - name: Fail if no fresh backup available
+      ansible.builtin.fail:
+        msg: |
+          No backup found for version {{ solution_version }} within the last {{ upgrade_backup_max_age_hours | default(6) }} hours.
+
+          Create a backup before upgrade:
+            ansible-playbook playbooks/backup.yaml --tags backup -e @<your-config.yaml>
+
+          Or set allow_upgrade_without_backup=true to bypass (not recommended for production).
+      when:
+        - velero_ns_check.resources | length > 0
+        - (fresh_backups | default([]) | length) == 0
+        - not (allow_upgrade_without_backup | default(false) | bool)
+
+    - name: Record verified backup for upgrade
+      ansible.builtin.set_fact:
+        upgrade_verified_backup: "{{ fresh_backups[0].name }}"
+        upgrade_verified_backup_timestamp: "{{ fresh_backups[0].completionTimestamp }}"
+      when:
+        - velero_ns_check.resources | length > 0
+        - (fresh_backups | default([]) | length) > 0
+
+    - name: Display backup verification result
+      ansible.builtin.debug:
+        msg: "Verified backup for upgrade: {{ upgrade_verified_backup }} (completed: {{ upgrade_verified_backup_timestamp }})"
+      when: upgrade_verified_backup is defined

@@ -18,7 +18,7 @@ import pytest
 import pytest_asyncio
 from playwright.async_api import async_playwright
 
-from tests.e2e.helpers.ui_helper import ChatUIHelper, DocSumUIHelper
+from tests.e2e.helpers.ui_helper import ChatUIHelper, DocSumUIHelper, AudioChatUIHelper
 from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
@@ -154,9 +154,20 @@ async def browser(playwright_instance):
             "--height=1080"
         ])
 
+    # Firefox preferences for audio testing - auto-grant microphone permissions
+    # This is required for AudioQnA tests that use the microphone
+    firefox_prefs = {
+        "permissions.default.microphone": 1,  # Auto-grant microphone permission
+        "media.navigator.streams.fake": True,  # Use fake media streams
+        "media.navigator.permission.disabled": True,  # Disable permission prompts
+        "dom.webnotifications.enabled": False,  # Disable notifications
+        "dom.push.enabled": False,  # Disable push notifications
+    }
+
     browser = await playwright_instance.firefox.launch(
         headless=headless,
-        args=launch_args
+        args=launch_args,
+        firefox_user_prefs=firefox_prefs
     )
     logger.info("Firefox browser launched successfully")
     yield browser
@@ -362,3 +373,28 @@ async def docsum_ui_helper(page, admin_credentials):
 
     logger.info("DocSum UI helper ready")
     yield docsum_helper
+
+
+@pytest_asyncio.fixture
+async def audio_chat_ui_helper(page, admin_credentials):
+    """
+    Create audio chat helper with authenticated session.
+
+    Combines chat functionality with audio capabilities (mic, TTS).
+
+    Args:
+        page: Playwright page fixture
+        admin_credentials: Admin credentials fixture
+
+    Yields:
+        AudioChatUIHelper instance
+    """
+    username = admin_credentials['username']
+    password = admin_credentials['password']
+
+    # Initialize and login
+    helper = AudioChatUIHelper(page, base_url=cfg.get('FQDN'), credentials=admin_credentials)
+    await helper.login_as_admin(username, password)
+
+    logger.info("Audio chat helper ready")
+    yield helper

@@ -10,5 +10,6 @@ spec:
   managementLIF: {{ ontap_management_lif }}
   dataLIF: {{ ontap_data_lif }}
   svm: {{ ontap_svm }}
+  useREST: true
   credentials:
     name: {{ trident_backend_name }}-secret

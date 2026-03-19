@@ -31,15 +31,20 @@ llm_model: "casperhansen/llama-3-8b-instruct-awq"
 ```
 
 ### Vector Database Selection
-* For large-scale deployments (e.g., 1M+ vectors), use `redis-cluster` instead of standard redis.
+* Intel® AI for Enterprise RAG supports following vector database backends. Choose based on your deployment scale:
+  - **redis-cluster**: Multi-node cluster for production and large-scale deployments (1M+ vectors)
+  - **mssql**: Microsoft SQL Server 2025 Express Edition for SQL-based vector operations
 * Modify the `vector_store` parameter in [config.yaml](../deployment/inventory/sample/config.yaml):
 
 ```yaml
 vector_databases:
   enabled: true
   namespace: vdb
-  vector_store: redis-cluster  # Options: redis, redis-cluster
+  vector_store: redis-cluster  # Options: redis-cluster, mssql
 ```
+
+> [!NOTE]
+> Selecting `mssql` requires accepting the Microsoft SQL Server EULA during deployment. Also, role-based access control (RBAC) for vector databases is not supported when using `mssql`. For detailed information about vector database options, see [Vector Database Selection](advanced_configuration.md#vector-database-selection).
 
 ### Redis Vector Database Performance Settings
 

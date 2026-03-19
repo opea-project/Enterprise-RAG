@@ -1,8 +1,10 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 .control-plane-panel {
   @apply bg-light-bg-1 dark:bg-dark-bg-1 grid grid-cols-1;
+  @apply relative;
+  @apply h-[calc(100vh_-_8rem)] overflow-hidden;
 
   &__with-config-panel {
     @apply grid-cols-[1fr_22rem];
@@ -11,6 +13,41 @@
   &__not-renderable {
     @apply flex h-full w-full items-center justify-center;
   }
+}
+
+.config-panel-wrapper {
+  @apply overflow-hidden;
+  @apply transition-transform duration-300 ease-in-out;
+
+  &--visible {
+    @apply translate-x-0;
+  }
+
+  &--hidden {
+    @apply translate-x-[22rem];
+  }
+}
+
+.config-panel-toggle-wrapper {
+  @apply absolute right-[22rem] top-4 z-20;
+  @apply transition-all duration-300 ease-in-out;
+
+  &--panel-hidden {
+    @apply right-0;
+  }
+}
+
+.config-panel-toggle-button {
+  @apply flex items-center justify-center;
+  @apply h-10 w-8;
+  @apply bg-light-bg-2 dark:bg-dark-bg-2;
+  @apply border-light-border dark:border-dark-border border;
+  @apply border-r-0;
+  @apply rounded-l-md;
+  @apply text-light-text-primary dark:text-dark-text-primary;
+  @apply hover:bg-light-bg-1/80 dark:hover:bg-dark-bg-1/80;
+  @apply cursor-pointer;
+  @apply shadow-md;
 }
 
 .graph-wrapper {

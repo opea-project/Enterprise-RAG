@@ -1,5 +1,5 @@
 {#
-Copyright (C) 2024-2025 Intel Corporation
+Copyright (C) 2024-2026 Intel Corporation
 SPDX-License-Identifier: Apache-2.0
 #}
 
@@ -81,4 +81,9 @@ kube-prometheus-stack:
         - url: redis://vdb-redis-cluster-headless.vdb.svc.cluster.local:6379
           name: redis-vector-db
   {% endif %}
+{% endif %}
+
+{% if audio is defined %}
+audio:
+  enabled: {{ audio.enabled }}
 {% endif %}

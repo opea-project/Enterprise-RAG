@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ---
@@ -12,6 +12,7 @@
       }}
   tags:
     - install
+    - update-configuration
 
 - name: Fail if no chatqa namespace is found
   ansible.builtin.fail:
@@ -19,3 +20,4 @@
   when: chatqa_namespace is not defined or chatqa_namespace | length == 0
   tags:
     - install
+    - update-configuration

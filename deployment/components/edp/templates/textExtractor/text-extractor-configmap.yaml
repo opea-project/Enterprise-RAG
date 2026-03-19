@@ -1,0 +1,16 @@
+{{- if not .Values.hierarchicalDataprep.enabled -}}
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edp-text-extractor-configmap
+  namespace: edp
+data:
+  {{- with .Values.textExtractor.config }}
+  {{- if .asr_model_server_endpoint }}
+  ASR_MODEL_SERVER_ENDPOINT: {{ .asr_model_server_endpoint | quote }}
+  {{- end }}
+  {{- end }}
+{{- end }}

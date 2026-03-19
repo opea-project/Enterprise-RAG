@@ -1,7 +1,5 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
-# TODO: Implement a Generic Connector
 
 import asyncio
 import os
@@ -44,15 +42,12 @@ class OPEAEmbedding:
         Initializes the OPEAEmbedding instance.
 
         Args:
-            model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5'). 
-                      Internally, only the short name (the last part after the final '/') will be used. For instance, 
-                      'bge-large-en-v1.5' will be extracted from 'BAAI/bge-large-en-v1.5'.
-
+            model_name (str): The full name of the model, which may include the repository ID (e.g., 'BAAI/bge-large-en-v1.5').
             model_server (str): The URL of the model server.
             endpoint (str): The endpoint for the model server.
             connector (str): The name of the connector framework to be used.
         """
-        self._model_name = model_name.split('/')[-1].lower()    # Extract the last part of the model name
+        self._model_name = model_name
         self._model_server = model_server.lower()
         self._endpoint = endpoint
         self._connector = connector.lower()
@@ -69,12 +64,15 @@ class OPEAEmbedding:
 
         self._SUPPORTED_FRAMEWORKS = {
             "langchain": self._import_langchain,
-            "llama_index": self._import_llamaindex
+            "llama_index": self._import_llamaindex,
+            "generic": self._import_generic,
         }
 
         if self._connector not in self._SUPPORTED_FRAMEWORKS:
-            logger.error(f"Unsupported framework: {self._connector}. "
-                          f"Supported frameworks: {list(self._SUPPORTED_FRAMEWORKS.keys())}")
+            logger.error(
+                f"Unsupported framework: {self._connector}. "
+                f"Supported frameworks: {list(self._SUPPORTED_FRAMEWORKS.keys())}"
+            )
             raise NotImplementedError(f"Unsupported framework: {self._connector}.")
         else:
             self._SUPPORTED_FRAMEWORKS[self._connector]()
@@ -167,6 +165,21 @@ class OPEAEmbedding:
         except Exception as e:
             logger.exception(f"An unexpected error occurred while initializing the connector_llamaindex module: {e}")
             raise
+
+    def _import_generic(self) -> None:
+        """Import generic connector for model servers with custom APIs (e.g., vLLM)"""
+        try:
+            from comps.embeddings.utils.connectors import connector_generic
+            self.embed_query = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_query
+            self.embed_documents = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config).embed_documents
+            self.validate_method = connector_generic.GenericEmbedding(self._model_name, self._model_server, self._endpoint, self._api_config)._validate
+        except ModuleNotFoundError:
+            logger.exception("generic connector module not found. Ensure it is properly installed.")
+            raise
+        except Exception as e:
+            logger.exception(f"An unexpected error occurred while initializing the connector_generic module: {e}")
+            raise
+
 
     def _get_api_config(self) -> dict:
         try:

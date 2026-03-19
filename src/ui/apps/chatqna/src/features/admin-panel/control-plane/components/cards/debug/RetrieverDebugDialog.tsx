@@ -1,6 +1,7 @@
-// Copyright (C) 2024-2025 Intel Corporation
+// Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { ConversationFeed, PromptInput } from "@intel-enterprise-rag-ui/chat";
 import {
   Button,
   CheckboxInput,
@@ -10,8 +11,6 @@ import {
 import { ChangeEventHandler, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import ConversationFeed from "@/components/ConversationFeed/ConversationFeed";
-import PromptInput from "@/components/PromptInput/PromptInput";
 import { usePostRetrieverQueryMutation } from "@/features/admin-panel/control-plane/api";
 import ServiceArgumentNumberInput from "@/features/admin-panel/control-plane/components/ServiceArgumentNumberInput/ServiceArgumentNumberInput";
 import ServiceArgumentSelectInput from "@/features/admin-panel/control-plane/components/ServiceArgumentSelectInput/ServiceArgumentSelectInput";
@@ -187,8 +186,13 @@ const RetrieverDebugDialog = () => {
 
   return (
     <Dialog
+      data-testid="retriever-debug-dialog"
       trigger={
-        <Button size="sm" className="absolute right-4 top-4">
+        <Button
+          data-testid="retriever-debug-trigger-button"
+          size="sm"
+          className="absolute right-4 top-4"
+        >
           Debug
         </Button>
       }
@@ -229,6 +233,7 @@ const RetrieverDebugDialog = () => {
             </p>
           )}
           <Button
+            data-testid="format-json-button"
             size="sm"
             isDisabled={isFormatJSONButtonDisabled()}
             onPress={formatSearchByJSON}
@@ -336,6 +341,7 @@ const RetrieverDebugParamsForm = ({
       )}
       <p className="mb-2 mt-3">Reranker</p>
       <CheckboxInput
+        data-testid="reranker-enabled-checkbox"
         label="Enable Reranker"
         size="sm"
         name="reranker-enabled"

@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
@@ -70,7 +70,7 @@ so it should remain unchanged."""
 @pytest.mark.asyncio
 async def test_header_footer_stripper_copyright_pattern():
     """Test that copyright patterns are stripped correctly."""
-    text = """This is some text.\ninternal use only Copyright: © 2024-2025 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
+    text = """This is some text.\ninternal use only Copyright: © 2024-2026 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
 
     compressor = HeaderFooterStripper()
     compressed_text = await compressor.compress_text(text)
@@ -83,7 +83,7 @@ async def test_header_footer_stripper_copyright_pattern():
 @pytest.mark.asyncio
 async def test_header_footer_stripper_copyright_pattern_without_new_lines():
     """Test that copyright patterns are stripped correctly."""
-    text = """This is some text. Copyright (C) 2024-2025 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
+    text = """This is some text. Copyright (C) 2024-2026 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
 
     compressor = HeaderFooterStripper()
     compressed_text = await compressor.compress_text(text)
@@ -96,7 +96,7 @@ async def test_header_footer_stripper_copyright_pattern_without_new_lines():
 @pytest.mark.asyncio
 async def test_header_footer_stripper_all_rights_reserved_pattern():
     """Test that copyright patterns are stripped correctly."""
-    text= """This is some text.\nAll rights reserved. 2024-2025 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
+    text= """This is some text.\nAll rights reserved. 2024-2026 Intel Corporation\nSPDX-License-Identifier: Apache-2.0\nThis is the main content.\n"""
 
     compressor = HeaderFooterStripper()
     compressed_text = await compressor.compress_text(text)
@@ -109,7 +109,7 @@ async def test_header_footer_stripper_all_rights_reserved_pattern():
 @pytest.mark.asyncio
 async def test_header_footer_stripper_all_rights_reserved_pattern_without_new_lines():
     """Test that copyright patterns are stripped correctly."""
-    text = """This is some text. All rights reserved 2024-2025 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
+    text = """This is some text. All rights reserved 2024-2026 Intel Corporation SPDX-License-Identifier: Apache-2.0 This is the main content.\n"""
 
     compressor = HeaderFooterStripper()
     compressed_text = await compressor.compress_text(text)

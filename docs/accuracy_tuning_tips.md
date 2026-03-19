@@ -73,6 +73,9 @@ Additionally, the choice of late chunking must be made at deployment time. Switc
 
 ### How to enable it
 
+> [!WARNING]
+> Late chunking is enabled only with Torchserve model server for embedding. In order to run it set `pipelines.samplePath` in config.yaml to `chatqa/examples/cpu-torchserve.yaml`.
+
 To enable late chunking, edit your inventory `config.yaml` file:
 
 1. **Update the embedding model** to use a model that supports longer token sequences:
@@ -87,7 +90,14 @@ To enable late chunking, edit your inventory `config.yaml` file:
        enabled: true
    ```
 
-3. **Run the installation** with the updated configuration by following the deployment steps in the [Application Deployment Guide](application_deployment_guide.md).
+3. **Update pipeline path**:
+   ```yaml
+   pipelines:
+   - namespace: chatqa
+      samplePath: chatqa/examples/cpu-torchserve.yaml
+   ```
+
+4. **Run the installation** with the updated configuration by following the deployment steps in the [Application Deployment Guide](application_deployment_guide.md).
 
 
 ## Accuracy Assessment and Monitoring

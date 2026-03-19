@@ -168,11 +168,13 @@ def test_presigned_url():
             "method": method
         }
         os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
-        with patch('app.main.generate_presigned_url') as mock_generate_presigned_url:
-            mock_generate_presigned_url.return_value = "http://example.com/presigned-url"
-            response = client.post('/api/presignedUrl', json=payload)
-            assert response.status_code == 200
-            assert response.json() == {'url': 'http://example.com/presigned-url'}
+        with patch('app.main.ensure_bucket_exists') as mock_ensure_bucket:
+            with patch('app.main.generate_presigned_url') as mock_generate_presigned_url:
+                mock_ensure_bucket.return_value = None
+                mock_generate_presigned_url.return_value = "http://example.com/presigned-url"
+                response = client.post('/api/presignedUrl', json=payload)
+                assert response.status_code == 200
+                assert response.json() == {'url': 'http://example.com/presigned-url'}
 
 def test_presigned_url_missing_data():
     fields = ["bucket_name", "object_name"]
@@ -199,18 +201,20 @@ def test_presigned_url_s3_error():
             "method": method
         }
         os.environ["PRESIGNED_URL_CREDENTIALS_SYSTEM_FALLBACK"] = "True"
-        with patch('app.main.generate_presigned_url' ) as mock_generate_presigned_url:
-            mock_generate_presigned_url.side_effect = S3Error(
-                code='NoSuchBucket',
-                resource='my-bucket/my-object',
-                message='The specified bucket does not exist',
-                request_id='',
-                host_id='',
-                response=BaseHTTPResponse()
-            )
-            response = client.post('/api/presignedUrl', json=payload)
-            assert response.status_code == 400
-            assert response.json()['detail'].startswith('An error occurred')
+        with patch('app.main.ensure_bucket_exists') as mock_ensure_bucket:
+            with patch('app.main.generate_presigned_url' ) as mock_generate_presigned_url:
+                mock_ensure_bucket.return_value = None
+                mock_generate_presigned_url.side_effect = S3Error(
+                    code='NoSuchBucket',
+                    resource='my-bucket/my-object',
+                    message='The specified bucket does not exist',
+                    request_id='',
+                    host_id='',
+                    response=BaseHTTPResponse()
+                )
+                response = client.post('/api/presignedUrl', json=payload)
+                assert response.status_code == 400
+                assert response.json()['detail'].startswith('An error occurred')
 
 def test_presigned_url_wrong_method():
     methods = ['POST', 'PATCH']

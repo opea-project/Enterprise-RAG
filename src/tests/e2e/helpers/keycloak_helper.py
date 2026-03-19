@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -207,3 +207,44 @@ class KeycloakHelper:
         response = requests.put(url, json=realm_settings, headers=headers, verify=False)
         if response.status_code != 204:
             raise Exception(f"Failed to update brute force detection (status {response.status_code}): {response.text}")
+
+    def add_user(self, username, password, first_name="", last_name="", email=""):
+        """Add a new user to Keycloak"""
+        logger.info(f"Adding new user '{username}' to Keycloak")
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/users"
+        headers = {
+            "Authorization": f"Bearer {self.admin_access_token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "username": username,
+            "enabled": True,
+            "firstName": first_name,
+            "lastName": last_name,
+            "email": email,
+            "credentials": [{
+                "type": "password",
+                "value": password,
+                "temporary": False
+            }]
+        }
+        response = requests.post(url, json=payload, headers=headers, verify=False)
+        if response.status_code != 201:
+            raise Exception(f"Failed to add user '{username}' (status {response.status_code}): {response.text}")
+        logger.info(f"User '{username}' added successfully")
+
+    def user_exists(self, username):
+        """Check if a user exists in Keycloak"""
+        logger.info(f"Checking if user '{username}' exists in Keycloak")
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/users?username={username}"
+        headers = {
+            "Authorization": f"Bearer {self.admin_access_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200:
+            raise Exception(f"Failed to check user existence (status {response.status_code}): {response.text}")
+        users = response.json()
+        exists = len(users) > 0
+        logger.info(f"User '{username}' exists: {exists}")
+        return exists

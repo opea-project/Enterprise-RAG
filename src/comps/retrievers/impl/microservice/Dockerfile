@@ -1,4 +1,4 @@
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 ARG python_version=3.11
@@ -8,10 +8,24 @@ FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8
+ARG python_version
 
 RUN apt-get -y update && \
     apt-get install --no-install-recommends --fix-missing -y nano git && \
+    apt-get install -y --only-upgrade \
+      openssl=3.0.18-1~deb12u2 \
+      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ARG ACCEPT_MSSQL_EULA=Y
+ENV ACCEPT_EULA=${ACCEPT_MSSQL_EULA}
+RUN apt-get -y update && apt-get install -y curl 
+RUN curl -sSL -O https://packages.microsoft.com/config/debian/$(grep VERSION_ID /etc/os-release | cut -d '"' -f 2 | cut -d '.' -f 1)/packages-microsoft-prod.deb
+RUN dpkg -i packages-microsoft-prod.deb && rm packages-microsoft-prod.deb
+RUN apt-get -y update && apt-get install -y msodbcsql18
+RUN apt-get remove -y curl  && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl
 RUN rm -rf /home/user/.local/lib/python${python_version}/site-packages/*

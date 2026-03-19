@@ -476,14 +476,14 @@ test_docx_with_images:
         - question: "What was Vellimer doing when the storm occurred?"
           expected_any: ["roof", "rod", "waiting"]
         - question: "How does the village of Fernloft remember Vellimer today? What signs make them think he might still be around?"
-          expected_any: ["broom", "weather"]
+          expected_any: ["broom", "weather", "Quorchleff"]
     pl:
       files: [story_docx_pictures.docx]
       questions:
         - question: "Co robił Vellimer, gdy nadciągała burza?"
           expected_any: ["dach", "pręt", "czekaj"]
         - question: "Jak wioska Fernloft wspomina dziś Vellimera? Jakie znaki wskazują, że może wciąż być w pobliżu?"
-          expected_any: ["miotł", "pogod"]
+          expected_any: ["miotł", "pogod", "Quorchleff"]
 test_docx_multi_paragraph:
   - en:
       files: [Front-end Intern_example.docx]

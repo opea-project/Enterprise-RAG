@@ -1,4 +1,4 @@
-FROM openvino/model_server:2025.4.1
+FROM openvino/model_server:2026.0
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
 
 ENV LANG=C.UTF-8

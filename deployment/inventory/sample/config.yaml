@@ -241,4 +241,7 @@ vector_databases:
   namespace: vdb
   vector_store: redis-cluster  # Supported options: redis-cluster, mssql (RBAC not supported with mssql)
   vector_datatype: FLOAT32
-  vector_dims: 768
+  # vector_dims is auto-detected from embedding_model_name and does not need
+  # to be set manually. Override only when using a custom model that is not
+  # recognized by the auto-detection or you're in air-gapped environment.
+  # vector_dims: 768

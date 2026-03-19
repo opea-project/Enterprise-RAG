@@ -19,7 +19,7 @@
   ansible.builtin.assert:
     that:
       - tdx.coco.enabled or tdx.one_td.enabled  # one of tdx.coco and tdx.one_td must be enabled
-      - not (tdx.one_td.enabled and not tdx.coco.enabled)  # both of tdx.coco and tdx.one_td can not be enabled at once
+      - not (tdx.one_td.enabled and tdx.coco.enabled)  # both of tdx.coco and tdx.one_td can not be enabled at once
     fail_msg: "Exactly one of tdx.coco and tdx.one_td must be enabled when TDX is enabled."
   when: tdx.enabled
   tags:

@@ -16,3 +16,16 @@ manual:
     - name: astral-sh/uv
       origin: github
       license: MIT
+# openssl and libssl added due to manual security updates
+    - name: openssl
+      origin: apt
+      license: Apache 2.0
+    - name: libssl
+      origin: apt
+      license: Apache 2.0
+    - name: curl
+      origin: apt
+      license: MIT
+    - name: msodbcsql18
+      origin: apt
+      license: MIT

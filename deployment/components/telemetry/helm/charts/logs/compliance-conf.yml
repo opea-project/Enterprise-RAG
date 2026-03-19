@@ -3,3 +3,10 @@ dockerfile: "Dockerfile-otelcol-contrib-journalctl"
 docker_context: "./"
 dependencies:
   - apt
+  - manual
+manual:
+  packages:
+# Added because of manual copy files from container
+    - name: open-telemetry/opentelemetry-collector-contrib
+      origin: github
+      license: Apache 2.0

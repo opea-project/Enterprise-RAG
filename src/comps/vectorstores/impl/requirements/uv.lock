@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.11.*"
 
 [[package]]
@@ -438,8 +438,8 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = "==8.3.4" },
     { name = "pytest-asyncio", marker = "extra == 'test'", specifier = "==0.24.0" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = "==5.0.0" },
-    { name = "redis", specifier = "===6.2.0" },
-    { name = "redisvl", git = "https://github.com/redis/redis-vl-python.git?rev=defa62a3f291fd8093baf0c652c7d71e6528bfcb" },
+    { name = "redis", specifier = "==7.3.0" },
+    { name = "redisvl", specifier = "==0.16.0" },
     { name = "shortuuid", specifier = "==1.0.13" },
     { name = "urllib3", specifier = "==2.6.3" },
 ]
@@ -1152,20 +1152,20 @@ wheels = [
 
 [[package]]
 name = "redis"
-version = "6.2.0"
+version = "7.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "async-timeout", marker = "python_full_version < '3.11.3'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/9a/0551e01ba52b944f97480721656578c8a7c46b51b99d66814f85fe3a4f3e/redis-6.2.0.tar.gz", hash = "sha256:e821f129b75dde6cb99dd35e5c76e8c49512a5a0d8dfdc560b2fbd44b85ca977", size = 4639129, upload-time = "2025-05-28T05:01:18.91Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/82/4d1a5279f6c1251d3d2a603a798a1137c657de9b12cfc1fba4858232c4d2/redis-7.3.0.tar.gz", hash = "sha256:4d1b768aafcf41b01022410b3cc4f15a07d9b3d6fe0c66fc967da2c88e551034", size = 4928081, upload-time = "2026-03-06T18:18:16.287Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/67/e60968d3b0e077495a8fee89cf3f2373db98e528288a48f1ee44967f6e8c/redis-6.2.0-py3-none-any.whl", hash = "sha256:c8ddf316ee0aab65f04a11229e94a64b2618451dab7a67cb2f77eb799d872d5e", size = 278659, upload-time = "2025-05-28T05:01:16.955Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/28/84e57fce7819e81ec5aa1bd31c42b89607241f4fb1a3ea5b0d2dbeaea26c/redis-7.3.0-py3-none-any.whl", hash = "sha256:9d4fcb002a12a5e3c3fbe005d59c48a2cc231f87fbb2f6b70c2d89bb64fec364", size = 404379, upload-time = "2026-03-06T18:18:14.583Z" },
 ]
 
 [[package]]
 name = "redisvl"
-version = "0.7.0"
-source = { git = "https://github.com/redis/redis-vl-python.git?rev=defa62a3f291fd8093baf0c652c7d71e6528bfcb#defa62a3f291fd8093baf0c652c7d71e6528bfcb" }
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonpath-ng" },
     { name = "ml-dtypes" },
@@ -1175,6 +1175,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "redis" },
     { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c7/cf/a41c9b547d46a1945b3a154c304efdb0e10df8c8117a333382522f915b6a/redisvl-0.16.0.tar.gz", hash = "sha256:992c0b8c305fbcd89f6b39fb75f1cd708ac7f8d2cf332bd08a2ad49f67f610c4", size = 874578, upload-time = "2026-03-13T12:56:31.137Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/7d/6685ad622785f9b78772ab36ffd00cf9b957b19a4ec846dd72dc420e1b89/redisvl-0.16.0-py3-none-any.whl", hash = "sha256:af11e4b3bd2c23241f715d6979afeb8a738bee83551b538bed35cca025006114", size = 199510, upload-time = "2026-03-13T12:56:29.239Z" },
 ]
 
 [[package]]

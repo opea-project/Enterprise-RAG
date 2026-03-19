@@ -55,10 +55,6 @@ COPY --chown=user:user ./comps/ingestion/impl/microservice/.env ./comps/ingestio
 COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
 
 WORKDIR /home/user/comps/ingestion/impl/microservice/.venv/lib/python3.11/site-packages
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-20250603_160239.patch /tmp/issue-346-20250603_160239.patch
-RUN git apply /tmp/issue-346-20250603_160239.patch
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-custom.patch /tmp/issue-346-custom.patch
-RUN git apply /tmp/issue-346-custom.patch
 
 WORKDIR /home/user/comps/ingestion
 CMD ["python", "opea_ingestion_microservice.py"]

@@ -59,10 +59,6 @@ COPY --chown=user:user ./comps/retrievers/impl/microservice/.env ./comps/retriev
 COPY --chown=user:user ./comps/retrievers/opea_retriever_microservice.py ./comps/retrievers/opea_retriever_microservice.py
 
 WORKDIR /home/user/comps/retrievers/impl/microservice/.venv/lib/python3.11/site-packages
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-20250603_160239.patch /tmp/issue-346-20250603_160239.patch
-RUN git apply /tmp/issue-346-20250603_160239.patch
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-custom.patch /tmp/issue-346-custom.patch
-RUN git apply /tmp/issue-346-custom.patch
 
 WORKDIR /home/user/comps/retrievers
 CMD ["python", "opea_retriever_microservice.py"]

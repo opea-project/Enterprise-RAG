@@ -8,8 +8,8 @@ requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "shortuuid==1.0.13",
-    "redis===6.2.0",
-    "redisvl @ git+https://github.com/redis/redis-vl-python.git@defa62a3f291fd8093baf0c652c7d71e6528bfcb",
+    "redis==7.3.0",
+    "redisvl==0.16.0",
     "pyodbc==5.3.0",
     "urllib3 == 2.6.3",
 ]

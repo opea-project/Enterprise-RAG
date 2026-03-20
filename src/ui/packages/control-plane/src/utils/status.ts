@@ -64,6 +64,13 @@ export interface ParseServiceDetailsConfig<T extends string> {
   serviceNodeIds: readonly T[];
 }
 
+/** Maps model server config keys to the graph node IDs they label */
+const MODEL_SERVER_CONFIG_NODE_MAP: Record<string, string> = {
+  EMBEDDING_MODEL_SERVER: "embedding_model_server",
+  RERANKING_MODEL_SERVER: "reranker_model_server",
+  LLM_MODEL_SERVER: "llm_model_server",
+};
+
 /**
  * Parses the GMConnector backend response into a structured format for the UI.
  * @param {GetServicesDetailsResponse} response - The GMConnector response from the backend.
@@ -135,6 +142,19 @@ export const parseServiceDetails = <T extends string>(
     metadataEntries,
   );
 
+  const modelServerDisplayNames: Record<string, string> = {};
+  for (const step of steps) {
+    const config = step.internalService.config ?? {};
+    for (const [configKey, nodeId] of Object.entries(
+      MODEL_SERVER_CONFIG_NODE_MAP,
+    )) {
+      if (config[configKey]) {
+        const formattedName = formatServiceDetailValue(config[configKey]);
+        modelServerDisplayNames[nodeId] = `${formattedName} Model Server`;
+      }
+    }
+  }
+
   const serviceDetails: FetchedServiceDetails = Object.fromEntries(
     serviceNodeIds.map((id) => [id, {}]),
   );
@@ -142,7 +162,8 @@ export const parseServiceDetails = <T extends string>(
   for (const serviceNodeId in serviceDetails) {
     const details = metadata[serviceNodeId];
     const status = statuses[serviceNodeId];
-    serviceDetails[serviceNodeId] = { status, details };
+    const displayName = modelServerDisplayNames[serviceNodeId];
+    serviceDetails[serviceNodeId] = { status, details, displayName };
   }
   return serviceDetails;
 };

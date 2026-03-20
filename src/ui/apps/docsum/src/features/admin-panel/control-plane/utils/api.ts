@@ -4,10 +4,10 @@
 export const SERVICE_NODE_IDS = [
   "docsum",
   "llm",
+  "llm_model_server",
   "text_compression",
   "text_extractor",
   "text_splitter",
-  "vllm",
 ] as const;
 
 export const SERVICE_NAME_NODE_ID_MAP: Record<
@@ -19,5 +19,5 @@ export const SERVICE_NAME_NODE_ID_MAP: Record<
   "v1:text-compression-svc": "text_compression",
   "v1:text-extractor-svc": "text_extractor",
   "v1:text-splitter-svc": "text_splitter",
-  "v1:vllm-service-m": "vllm",
+  "v1:vllm-service-m": "llm_model_server",
 };

@@ -10,7 +10,7 @@ export const updateNodes = (
   graphNodes: Node<ServiceData>[],
   fetchedServicesData: FetchedServicesData,
   llmNodePositionNoGuards?: { x: number; y: number },
-  vllmNodePositionNoGuards?: { x: number; y: number },
+  llmModelServerNodePositionNoGuards?: { x: number; y: number },
 ) => {
   const updatedNodes = graphNodes
     .map((node) => updateNodeDetails(node, fetchedServicesData))
@@ -18,7 +18,9 @@ export const updateNodes = (
 
   const updatedNodesIds = updatedNodes.map(({ id }) => id);
   const llmNodeIndex = updatedNodes.findIndex(({ id }) => id === "llm");
-  const vllmNodeIndex = updatedNodes.findIndex(({ id }) => id === "vllm");
+  const llmModelServerNodeIndex = updatedNodes.findIndex(
+    ({ id }) => id === "llm_model_server",
+  );
 
   if (
     !updatedNodesIds.includes("input_guard") &&
@@ -32,10 +34,11 @@ export const updateNodes = (
   if (
     !updatedNodesIds.includes("input_guard") &&
     !updatedNodesIds.includes("output_guard") &&
-    vllmNodeIndex !== -1 &&
-    vllmNodePositionNoGuards
+    llmModelServerNodeIndex !== -1 &&
+    llmModelServerNodePositionNoGuards
   ) {
-    updatedNodes[vllmNodeIndex].position = vllmNodePositionNoGuards;
+    updatedNodes[llmModelServerNodeIndex].position =
+      llmModelServerNodePositionNoGuards;
   }
 
   return updatedNodes;
@@ -50,10 +53,12 @@ export const updateNodeDetails = (
   let nodeStatus: ServiceStatus | undefined;
 
   const { details: serviceDetails, parameters } = fetchedServicesData;
+  let nodeDisplayName: string | undefined;
   if (serviceDetails[nodeId]) {
-    const { details, status } = serviceDetails[nodeId];
+    const { details, status, displayName } = serviceDetails[nodeId];
     nodeDetails = details || {};
     nodeStatus = status as ServiceStatus;
+    nodeDisplayName = displayName;
   }
 
   const servicesArgsMap: Record<string, unknown> = {
@@ -73,6 +78,7 @@ export const updateNodeDetails = (
           ...node.data,
           details: nodeDetails,
           status: nodeStatus,
+          ...(nodeDisplayName && { displayName: nodeDisplayName }),
           [key]: value,
         },
       };
@@ -85,6 +91,7 @@ export const updateNodeDetails = (
       ...node.data,
       details: nodeDetails,
       status: nodeStatus,
+      ...(nodeDisplayName && { displayName: nodeDisplayName }),
     },
   };
 };

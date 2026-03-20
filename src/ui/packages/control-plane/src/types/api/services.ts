@@ -13,6 +13,7 @@ export interface FetchedServiceDetails {
   [serviceNodeId: string]: {
     status?: ServiceStatus;
     details?: { [key: string]: string };
+    displayName?: string;
   };
 }
 

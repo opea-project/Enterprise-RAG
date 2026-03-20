@@ -22,8 +22,8 @@ import {
 import {
   graphEdges,
   graphNodes,
+  llmModelServerNodePositionNoGuards,
   llmNodePositionNoGuards,
-  vllmNodePositionNoGuards,
 } from "@/features/admin-panel/control-plane/config/graph";
 import { RootState } from "@/store/index";
 
@@ -108,7 +108,7 @@ export const audioQnAGraphSlice = createSlice({
         graphNodes,
         fetchedServicesData,
         llmNodePositionNoGuards,
-        vllmNodePositionNoGuards,
+        llmModelServerNodePositionNoGuards,
       ) as typeof state.nodes;
     },
     setAudioQnAGraphSelectedServiceNode: (

@@ -13,7 +13,7 @@ import {
 import { Edge, Node, Position } from "@xyflow/react";
 
 export const llmNodePositionNoGuards = { x: 840, y: 144 };
-export const vllmNodePositionNoGuards = { x: 840, y: 288 };
+export const llmModelServerNodePositionNoGuards = { x: 840, y: 288 };
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -152,7 +152,7 @@ const graphNodes: Node<ServiceData>[] = [
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalSourcePosition: Position.Bottom,
-      additionalSourceId: "llm-vllm-source",
+      additionalSourceId: "llm-llm_model_server-source",
       selected: false,
       configurable: true,
     },
@@ -161,11 +161,11 @@ const graphNodes: Node<ServiceData>[] = [
     selectable: true,
   },
   {
-    id: "vllm",
+    id: "llm_model_server",
     position: { x: 1040, y: 288 },
     data: {
-      id: "vllm",
-      displayName: "vLLM Model Server",
+      id: "llm_model_server",
+      displayName: "LLM Model Server",
       targetPosition: Position.Top,
       selected: false,
       configurable: false,
@@ -250,10 +250,10 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm-vllm",
+    id: "llm-llm_model_server",
     source: "llm",
-    target: "vllm",
-    sourceHandle: "llm-vllm-source",
+    target: "llm_model_server",
+    sourceHandle: "llm-llm_model_server-source",
     selectable: false,
   },
   {

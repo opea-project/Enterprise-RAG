@@ -79,13 +79,13 @@ docker compose down
     # list loaded models
     curl http://localhost:8091/models
 
-    # inference; replace bge-large-en-v1.5 with the desired model identifier from the loaded models
-    curl http://localhost:8090/predictions/bge-large-en-v1.5 \
+    # inference; replace bge-base-en-v1.5 with the desired model identifier from the loaded models
+    curl http://localhost:8090/predictions/bge-base-en-v1.5 \
       -H "Content-Type: application/json" \
       -d '{"inputs": ["What is machine learning?"]}'
 
     # inference with custom parameters; request pooling layer output
-    curl http://localhost:8090/predictions/bge-large-en-v1.5 \
+    curl http://localhost:8090/predictions/bge-base-en-v1.5 \
       -H "Content-Type: application/json" \
       -d '{"inputs": ["What is machine learning?"], "parameters": {"return_pooling": true}}'
     ```

@@ -4,6 +4,7 @@ docker_context: "../"
 dependencies:
   - pip-manual
   - apt
+  - manual
 pip-manual:
   packages:
     - transformers
@@ -13,6 +14,12 @@ pip-manual:
     - packaging
 base-image:
   override:
-    - python:3.11-slim-bookworm
+    - python:3.11-slim-trixie
 apt:
-  base-image-override: python:3.11-slim-bookworm
+  base-image-override: python:3.11-slim-trixie
+manual:
+  packages:
+# Added because of manual copy from UV image in Dockerfile
+    - name: astral-sh/uv
+      origin: github
+      license: MIT

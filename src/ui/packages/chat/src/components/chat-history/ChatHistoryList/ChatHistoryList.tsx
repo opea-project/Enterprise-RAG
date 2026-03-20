@@ -17,6 +17,7 @@ import type { OnExportChatHandler } from "@/components/chat-history/ExportChatDi
 import type { OnRenameChatHandler } from "@/components/chat-history/RenameChatDialog/RenameChatDialog";
 import { usePinnedChats } from "@/hooks/usePinnedChats";
 import { ChatHistoryItemData } from "@/types";
+import { groupChatsByTime } from "@/utils/groupByTime";
 
 export type IsItemActiveHandler = (id: string) => boolean;
 
@@ -62,7 +63,7 @@ export const ChatHistoryList = ({
     "chat-history-list--empty": isChatHistoryEmpty,
   });
 
-  const { pinnedChats, unpinnedChats } = useMemo(() => {
+  const { pinnedChats, groupedUnpinnedChats } = useMemo(() => {
     const pinned: ChatHistoryItemData[] = [];
     const unpinned: ChatHistoryItemData[] = [];
 
@@ -83,7 +84,10 @@ export const ChatHistoryList = ({
       });
     }
 
-    return { pinnedChats: pinned, unpinnedChats: unpinned };
+    return {
+      pinnedChats: pinned,
+      groupedUnpinnedChats: groupChatsByTime(unpinned),
+    };
   }, [isLoading, filteredData, pinnedIds]);
 
   const hasPinnedChats = pinnedChats.length > 0;
@@ -127,11 +131,13 @@ export const ChatHistoryList = ({
                 </div>
               </div>
             )}
-            {unpinnedChats.length > 0 && (
-              <div className="chat-history-list__section">
-                <p className="chat-history-list__section-title">Chats</p>
+            {groupedUnpinnedChats.map((group) => (
+              <div key={group.label} className="chat-history-list__section">
+                <p className="chat-history-list__section-title">
+                  {group.label}
+                </p>
                 <div className="chat-history-list__items">
-                  {unpinnedChats.map((item) => (
+                  {group.items.map((item) => (
                     <ChatHistoryItem
                       key={item.id}
                       itemData={item}
@@ -146,7 +152,7 @@ export const ChatHistoryList = ({
                   ))}
                 </div>
               </div>
-            )}
+            ))}
           </>
         )}
       </div>

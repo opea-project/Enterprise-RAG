@@ -4,3 +4,10 @@ docker_context: "../../../../"
 dependencies:
   - pip-uv
   - apt
+  - manual
+manual:
+  packages:
+# Added because of manual copy from UV image in Dockerfile
+    - name: astral-sh/uv
+      origin: github
+      license: MIT

@@ -1,0 +1,182 @@
+{
+  "metadata": {
+    "description": "Example Q&A pairs demonstrating benefits of metadata filtering and enhanced LLM prompts",
+    "version": "1.0",
+    "date": "2026-01-26",
+    "purpose": "Shows how extracted metadata (file_title, author, creation_date, ingestion_date, last_update_date) improves RAG responses",
+    "fields": ["file_title", "author", "creation_date", "ingestion_date", "last_update_date"],
+    "languages": ["en", "pl"]
+  },
+  "english_examples": [
+    {
+      "id": "en-meta-001",
+      "category": "author_attribution",
+      "user_question": "Who wrote the latest financial report?",
+      "metadata_used": ["author", "creation_date"],
+      "llm_context_with_metadata": "[1] (finance-bucket/Q3_Financial_Report.pdf) \"Q3 Financial Report\" by Alice Johnson (created: 2025-09-15, updated: 2025-10-01, ingested: 2025-10-05)\nSection: Executive Summary\nContent: Revenue increased by 15% compared to Q2...",
+      "enhanced_answer": "The Q3 Financial Report was written by Alice Johnson. It was created on September 15, 2025, and last updated on October 1, 2025.",
+      "answer_without_metadata": "The financial report discusses a 15% revenue increase. (No author or date attribution possible)"
+    },
+    {
+      "id": "en-meta-002",
+      "category": "document_freshness",
+      "user_question": "Are these documents up to date?",
+      "metadata_used": ["creation_date", "last_update_date", "ingestion_date"],
+      "llm_context_with_metadata": "[1] (tech-bucket/API_Specification_v2.docx) \"API Specification v2\" by John Smith (created: 2024-03-10, updated: 2025-11-20, ingested: 2025-11-21)\nContent: This document describes the REST API endpoints...",
+      "enhanced_answer": "The API Specification v2 by John Smith is current - it was originally created in March 2024 and last updated on November 20, 2025. It was ingested into the system on November 21, 2025, so the information is very recent.",
+      "answer_without_metadata": "The API specification describes REST endpoints. (No way to determine if information is current)"
+    },
+    {
+      "id": "en-meta-003",
+      "category": "source_identification",
+      "user_question": "What documents do we have from the engineering team?",
+      "metadata_used": ["file_title", "author"],
+      "llm_context_with_metadata": "[1] (eng-bucket/Architecture_Design.pdf) \"System Architecture Design\" by Bob Lee (created: 2025-01-15)\n[2] (eng-bucket/Performance_Test_Results.xlsx) \"Q4 Performance Benchmarks\" by Carol White (created: 2025-12-01)",
+      "enhanced_answer": "I found two documents from the engineering team:\n1. \"System Architecture Design\" by Bob Lee (January 2025)\n2. \"Q4 Performance Benchmarks\" by Carol White (December 2025)",
+      "answer_without_metadata": "I found documents about system architecture and performance tests. (Cannot attribute authors)"
+    },
+    {
+      "id": "en-meta-004",
+      "category": "temporal_filtering",
+      "user_question": "Show me reports from 2024",
+      "metadata_used": ["creation_date"],
+      "filter_applied": "Num('creation_date') >= 1704067200 & Num('creation_date') <= 1735689599",
+      "llm_context_with_metadata": "[1] \"Annual Report 2024\" by CFO Team (created: 2024-12-15)\n[2] \"Q2 Sales Summary\" by Sales Dept (created: 2024-06-30)",
+      "enhanced_answer": "Here are the reports from 2024:\n1. \"Annual Report 2024\" - created December 15, 2024\n2. \"Q2 Sales Summary\" - created June 30, 2024",
+      "answer_without_metadata": "Found reports about annual data and sales. (Cannot confirm they are from 2024)"
+    },
+    {
+      "id": "en-meta-005",
+      "category": "author_specific_query",
+      "user_question": "Find all documents by John Smith",
+      "metadata_used": ["author", "file_title"],
+      "filter_applied": "Text('author') == 'John Smith'",
+      "llm_context_with_metadata": "[1] \"Technical Specification v3\" by John Smith (created: 2025-08-01)\n[2] \"API Migration Guide\" by John Smith (created: 2025-07-15)\n[3] \"Security Best Practices\" by John Smith (created: 2025-06-01)",
+      "enhanced_answer": "John Smith has authored three documents in the system:\n1. \"Technical Specification v3\" (August 2025)\n2. \"API Migration Guide\" (July 2025)\n3. \"Security Best Practices\" (June 2025)",
+      "answer_without_metadata": "Found technical documents about specifications, migration, and security. (Cannot confirm authorship)"
+    },
+    {
+      "id": "en-meta-006",
+      "category": "combined_filter",
+      "user_question": "Find quarterly reports by Alice Johnson from 2025",
+      "metadata_used": ["file_title", "author", "creation_date"],
+      "filter_applied": "(Text('file_title') % '*quarterly*') & (Text('author') == 'Alice Johnson') & (Num('creation_date') >= 1735689600)",
+      "llm_context_with_metadata": "[1] \"Q1 Quarterly Report\" by Alice Johnson (created: 2025-03-31)\n[2] \"Q2 Quarterly Report\" by Alice Johnson (created: 2025-06-30)",
+      "enhanced_answer": "Alice Johnson authored two quarterly reports in 2025:\n1. Q1 Quarterly Report (March 31, 2025)\n2. Q2 Quarterly Report (June 30, 2025)"
+    },
+    {
+      "id": "en-meta-007",
+      "category": "ingestion_recency",
+      "user_question": "What documents were added to the system this month?",
+      "metadata_used": ["ingestion_date", "file_title", "author"],
+      "filter_applied": "Num('ingestion_date') >= 1737331200",
+      "llm_context_with_metadata": "[1] \"Budget Forecast 2026\" by Finance Team (ingested: 2026-01-20)\n[2] \"New Employee Handbook\" by HR (ingested: 2026-01-18)",
+      "enhanced_answer": "Two documents were added to the system this month (January 2026):\n1. \"Budget Forecast 2026\" by Finance Team - added January 20\n2. \"New Employee Handbook\" by HR - added January 18"
+    },
+    {
+      "id": "en-meta-008",
+      "category": "update_tracking",
+      "user_question": "Which documents have been updated recently?",
+      "metadata_used": ["last_update_date", "file_title", "author"],
+      "filter_applied": "Num('last_update_date') >= 1735689600",
+      "llm_context_with_metadata": "[1] \"Product Roadmap 2026\" by PM Team (created: 2025-11-01, updated: 2026-01-15)\n[2] \"Customer FAQ\" by Support (created: 2024-01-01, updated: 2026-01-10)",
+      "enhanced_answer": "Two documents were recently updated:\n1. \"Product Roadmap 2026\" - originally from November 2025, updated January 15, 2026\n2. \"Customer FAQ\" - created in 2024 but recently updated on January 10, 2026"
+    }
+  ],
+  "polish_examples": [
+    {
+      "id": "pl-meta-001",
+      "category": "author_attribution",
+      "user_question": "Kto napisał najnowszy raport finansowy?",
+      "metadata_used": ["author", "creation_date"],
+      "llm_context_with_metadata": "[1] (finanse-bucket/Raport_Q3.pdf) \"Raport Finansowy Q3\" by Anna Nowak (created: 2025-09-15, updated: 2025-10-01, ingested: 2025-10-05)\nSection: Podsumowanie\nContent: Przychody wzrosły o 15% w porównaniu z Q2...",
+      "enhanced_answer": "Raport Finansowy Q3 został napisany przez Annę Nowak. Dokument został utworzony 15 września 2025 roku i ostatnio zaktualizowany 1 października 2025.",
+      "answer_without_metadata": "Raport finansowy omawia wzrost przychodów o 15%. (Brak możliwości przypisania autora lub daty)"
+    },
+    {
+      "id": "pl-meta-002",
+      "category": "document_freshness",
+      "user_question": "Czy te dokumenty są aktualne?",
+      "metadata_used": ["creation_date", "last_update_date", "ingestion_date"],
+      "llm_context_with_metadata": "[1] (tech-bucket/Specyfikacja_API_v2.docx) \"Specyfikacja API v2\" by Jan Kowalski (created: 2024-03-10, updated: 2025-11-20, ingested: 2025-11-21)\nContent: Ten dokument opisuje punkty końcowe REST API...",
+      "enhanced_answer": "Specyfikacja API v2 autorstwa Jana Kowalskiego jest aktualna - została pierwotnie utworzona w marcu 2024 i ostatnio zaktualizowana 20 listopada 2025. Została dodana do systemu 21 listopada 2025, więc informacje są bardzo świeże.",
+      "answer_without_metadata": "Specyfikacja API opisuje punkty końcowe REST. (Brak możliwości określenia aktualności informacji)"
+    },
+    {
+      "id": "pl-meta-003",
+      "category": "source_identification",
+      "user_question": "Jakie dokumenty mamy od zespołu inżynieryjnego?",
+      "metadata_used": ["file_title", "author"],
+      "llm_context_with_metadata": "[1] (inz-bucket/Architektura_Systemu.pdf) \"Projekt Architektury Systemu\" by Piotr Wiśniewski (created: 2025-01-15)\n[2] (inz-bucket/Wyniki_Testow.xlsx) \"Wyniki Testów Wydajności Q4\" by Katarzyna Zielińska (created: 2025-12-01)",
+      "enhanced_answer": "Znalazłem dwa dokumenty od zespołu inżynieryjnego:\n1. \"Projekt Architektury Systemu\" autorstwa Piotra Wiśniewskiego (styczeń 2025)\n2. \"Wyniki Testów Wydajności Q4\" autorstwa Katarzyny Zielińskiej (grudzień 2025)",
+      "answer_without_metadata": "Znalazłem dokumenty o architekturze systemu i testach wydajności. (Nie można przypisać autorów)"
+    },
+    {
+      "id": "pl-meta-004",
+      "category": "temporal_filtering",
+      "user_question": "Pokaż mi raporty z 2024 roku",
+      "metadata_used": ["creation_date"],
+      "filter_applied": "Num('creation_date') >= 1704067200 & Num('creation_date') <= 1735689599",
+      "llm_context_with_metadata": "[1] \"Raport Roczny 2024\" by Zespół CFO (created: 2024-12-15)\n[2] \"Podsumowanie Sprzedaży Q2\" by Dział Sprzedaży (created: 2024-06-30)",
+      "enhanced_answer": "Oto raporty z 2024 roku:\n1. \"Raport Roczny 2024\" - utworzony 15 grudnia 2024\n2. \"Podsumowanie Sprzedaży Q2\" - utworzone 30 czerwca 2024",
+      "answer_without_metadata": "Znaleziono raporty o danych rocznych i sprzedaży. (Nie można potwierdzić, że są z 2024 roku)"
+    },
+    {
+      "id": "pl-meta-005",
+      "category": "author_specific_query",
+      "user_question": "Znajdź wszystkie dokumenty autorstwa Jana Kowalskiego",
+      "metadata_used": ["author", "file_title"],
+      "filter_applied": "Text('author') == 'Jan Kowalski'",
+      "llm_context_with_metadata": "[1] \"Specyfikacja Techniczna v3\" by Jan Kowalski (created: 2025-08-01)\n[2] \"Przewodnik Migracji API\" by Jan Kowalski (created: 2025-07-15)\n[3] \"Najlepsze Praktyki Bezpieczeństwa\" by Jan Kowalski (created: 2025-06-01)",
+      "enhanced_answer": "Jan Kowalski jest autorem trzech dokumentów w systemie:\n1. \"Specyfikacja Techniczna v3\" (sierpień 2025)\n2. \"Przewodnik Migracji API\" (lipiec 2025)\n3. \"Najlepsze Praktyki Bezpieczeństwa\" (czerwiec 2025)",
+      "answer_without_metadata": "Znaleziono dokumenty techniczne o specyfikacjach, migracji i bezpieczeństwie. (Nie można potwierdzić autorstwa)"
+    },
+    {
+      "id": "pl-meta-006",
+      "category": "combined_filter",
+      "user_question": "Znajdź raporty kwartalne autorstwa Anny Nowak z 2025 roku",
+      "metadata_used": ["file_title", "author", "creation_date"],
+      "filter_applied": "(Text('file_title') % '*kwartaln*') & (Text('author') == 'Anna Nowak') & (Num('creation_date') >= 1735689600)",
+      "llm_context_with_metadata": "[1] \"Raport Kwartalny Q1\" by Anna Nowak (created: 2025-03-31)\n[2] \"Raport Kwartalny Q2\" by Anna Nowak (created: 2025-06-30)",
+      "enhanced_answer": "Anna Nowak jest autorką dwóch raportów kwartalnych w 2025 roku:\n1. Raport Kwartalny Q1 (31 marca 2025)\n2. Raport Kwartalny Q2 (30 czerwca 2025)"
+    },
+    {
+      "id": "pl-meta-007",
+      "category": "ingestion_recency",
+      "user_question": "Jakie dokumenty zostały dodane do systemu w tym miesiącu?",
+      "metadata_used": ["ingestion_date", "file_title", "author"],
+      "filter_applied": "Num('ingestion_date') >= 1737331200",
+      "llm_context_with_metadata": "[1] \"Prognoza Budżetowa 2026\" by Zespół Finansów (ingested: 2026-01-20)\n[2] \"Nowy Podręcznik Pracownika\" by HR (ingested: 2026-01-18)",
+      "enhanced_answer": "Dwa dokumenty zostały dodane do systemu w tym miesiącu (styczeń 2026):\n1. \"Prognoza Budżetowa 2026\" od Zespołu Finansów - dodana 20 stycznia\n2. \"Nowy Podręcznik Pracownika\" od HR - dodany 18 stycznia"
+    },
+    {
+      "id": "pl-meta-008",
+      "category": "update_tracking",
+      "user_question": "Które dokumenty były ostatnio aktualizowane?",
+      "metadata_used": ["last_update_date", "file_title", "author"],
+      "filter_applied": "Num('last_update_date') >= 1735689600",
+      "llm_context_with_metadata": "[1] \"Roadmapa Produktu 2026\" by Zespół PM (created: 2025-11-01, updated: 2026-01-15)\n[2] \"FAQ dla Klientów\" by Wsparcie (created: 2024-01-01, updated: 2026-01-10)",
+      "enhanced_answer": "Dwa dokumenty były ostatnio aktualizowane:\n1. \"Roadmapa Produktu 2026\" - pierwotnie z listopada 2025, zaktualizowana 15 stycznia 2026\n2. \"FAQ dla Klientów\" - utworzona w 2024 roku, ale ostatnio zaktualizowana 10 stycznia 2026"
+    }
+  ],
+  "summary": {
+    "metadata_fields": {
+      "file_title": "Enables precise document identification and title-based filtering",
+      "author": "Enables author attribution in responses and author-based filtering",
+      "creation_date": "Enables temporal filtering and helps assess document age",
+      "last_update_date": "Enables freshness assessment and update-based filtering",
+      "ingestion_date": "Enables tracking of when documents were added to the RAG system"
+    },
+    "benefits": [
+      "LLM can provide accurate author attribution in responses",
+      "LLM can assess and communicate document freshness",
+      "Pre-filtering reduces noise and improves retrieval precision",
+      "Users can query by author, date ranges, or document titles",
+      "Combined filters enable precise, multi-criteria searches"
+    ],
+    "prompt_format": {
+      "description": "Compact format with ISO dates for token efficiency",
+      "example": "[1] (source) \"Title\" by Author (created: YYYY-MM-DD, updated: YYYY-MM-DD, ingested: YYYY-MM-DD)"
+    }
+  }
+}

@@ -32,7 +32,8 @@ const MenuItem = ({ className, children, ...rest }: AriaMenuItemProps) => (
 );
 
 interface MenuTriggerProps
-  extends Omit<AriaMenuTriggerProps, "children" | "trigger">,
+  extends
+    Omit<AriaMenuTriggerProps, "children" | "trigger">,
     PropsWithChildren {
   /** Element that triggers the menu */
   trigger: ReactNode;

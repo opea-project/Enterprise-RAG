@@ -18,6 +18,7 @@ spec:
         - cluster.local/ns/auth-apisix/sa/auth-apisix
         - cluster.local/ns/monitoring/sa/telemetry-kube-prometheus-prometheus
         - cluster.local/ns/chatqa/sa/prmpt-tmpl-usvc
+        - cluster.local/ns/chatqa/sa/query-rewrite-usvc
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

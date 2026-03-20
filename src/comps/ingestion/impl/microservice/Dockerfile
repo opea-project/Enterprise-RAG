@@ -43,7 +43,7 @@ COPY --chown=user:user ./comps/vectorstores/impl/requirements/pyproject.toml ../
 
 # --locked will fail when any changes in pyproject.toml were introduced
 # Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
-RUN uv sync --locked --no-cache
+RUN uv sync --locked --no-cache --group security-overrides
 ENV PATH="/home/user/comps/ingestion/impl/microservice/.venv/bin:$PATH"
 
 WORKDIR /home/user
@@ -55,10 +55,6 @@ COPY --chown=user:user ./comps/ingestion/impl/microservice/.env ./comps/ingestio
 COPY --chown=user:user ./comps/ingestion/opea_ingestion_microservice.py ./comps/ingestion/opea_ingestion_microservice.py
 
 WORKDIR /home/user/comps/ingestion/impl/microservice/.venv/lib/python3.11/site-packages
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-20250603_160239.patch /tmp/issue-346-20250603_160239.patch
-RUN git apply /tmp/issue-346-20250603_160239.patch
-COPY --chown=user:user ./comps/vectorstores/impl/issue-346-custom.patch /tmp/issue-346-custom.patch
-RUN git apply /tmp/issue-346-custom.patch
 
 WORKDIR /home/user/comps/ingestion
 CMD ["python", "opea_ingestion_microservice.py"]

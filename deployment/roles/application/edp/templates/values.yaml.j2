@@ -171,6 +171,9 @@ ingestion:
   tag: {{ tag }}
   repository: {{ registry }}
   config:
+{% if edp.ingestion.config is defined %}
+{{ edp.ingestion.config | to_nice_yaml | indent(4, true) }}
+{% endif %}
     embedding_model_name: *embedding_model_name
 {% if edp.hierarchical_indices.enabled is true %}
     use_hierarchical_indices: "True"

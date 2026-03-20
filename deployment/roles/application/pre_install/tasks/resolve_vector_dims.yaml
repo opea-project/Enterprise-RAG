@@ -1,0 +1,64 @@
+# Copyright (C) 2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+# Automatically detect the hidden_size of the configured embedding model and
+# set vector_databases.vector_dims accordingly, so the user does not need to
+# keep that value in sync with the model manually.
+#
+# Resolution order (first match wins):
+#   1. Built-in lookup table of well-known models (works offline)
+#   2. HuggingFace Hub API (skipped when offline_model is true)
+#
+# If none of the above resolves the value and vector_databases.vector_dims is
+# still set in config.yaml, that value is used as a fallback (with a warning).
+
+- name: Resolve vector_dims for embedding model
+  no_log: "{{ secure_logs }}"
+  block:
+    - name: Run resolve_vector_dims script
+      ansible.builtin.shell: |
+        python3 {{ playbook_dir }}/../scripts/resolve_vector_dims.py \
+          --embedding-model-name '{{ embedding_model_name }}' \
+          {% if offline_model | default(false) | bool %}
+          --offline \
+          {% endif %}
+          {% if huggingToken is defined and huggingToken | length > 0 %}
+          --hf-token '{{ huggingToken }}' \
+          {% endif %}
+          --fallback-dims {{ vector_databases.vector_dims | default(768) | int }}
+      register: _resolve_vector_dims_result
+      changed_when: false
+      tags:
+        - install
+        - display-configuration
+        - pre-upgrade
+        - update-configuration
+
+    - name: Apply auto-detected vector_dims
+      no_log: "{{ secure_logs }}"
+      ansible.builtin.set_fact:
+        vector_databases: >-
+          {{
+            vector_databases | combine({
+              'vector_dims': (_resolve_vector_dims_result.stdout | from_json).vector_dims | int,
+              '_vector_dims_source': (_resolve_vector_dims_result.stdout | from_json).source
+            })
+          }}
+      tags:
+        - install
+        - display-configuration
+        - pre-upgrade
+        - update-configuration
+
+    - name: Show vector_dims resolution result
+      ansible.builtin.debug:
+        msg: >-
+          vector_dims={{ vector_databases.vector_dims }} for model
+          '{{ embedding_model_name }}'
+          (source: {{ vector_databases._vector_dims_source }})
+      tags:
+        - install
+        - display-configuration
+        - pre-upgrade
+        - update-configuration

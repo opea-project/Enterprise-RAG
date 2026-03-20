@@ -6,7 +6,7 @@ import "./ServiceStatusIndicator.scss";
 import { Tooltip } from "@intel-enterprise-rag-ui/components";
 import classNames from "classnames";
 
-import { ServiceStatus } from "@/types";
+import { ServiceStatus } from "@/types/index";
 
 interface ServiceStatusIndicatorProps {
   status?: ServiceStatus;

@@ -16,7 +16,8 @@
 }
 
 .config-panel-wrapper {
-  @apply overflow-hidden;
+  @apply absolute right-0 top-0 w-[22rem];
+  @apply h-full overflow-hidden;
   @apply transition-transform duration-300 ease-in-out;
 
   &--visible {
@@ -24,30 +25,26 @@
   }
 
   &--hidden {
-    @apply translate-x-[22rem];
+    @apply translate-x-full;
   }
 }
 
 .config-panel-toggle-wrapper {
   @apply absolute right-[22rem] top-4 z-20;
-  @apply transition-all duration-300 ease-in-out;
+  @apply transition-transform duration-300 ease-in-out;
 
   &--panel-hidden {
-    @apply right-0;
+    @apply translate-x-[22rem];
   }
 }
 
 .config-panel-toggle-button {
   @apply flex items-center justify-center;
   @apply h-10 w-8;
-  @apply bg-light-bg-2 dark:bg-dark-bg-2;
-  @apply border-light-border dark:border-dark-border border;
-  @apply border-r-0;
-  @apply rounded-l-md;
-  @apply text-light-text-primary dark:text-dark-text-primary;
-  @apply hover:bg-light-bg-1/80 dark:hover:bg-dark-bg-1/80;
-  @apply cursor-pointer;
-  @apply shadow-md;
+  @apply bg-light-primary dark:bg-dark-primary;
+  @apply rounded-l-md rounded-r-none;
+  @apply text-white;
+  @apply hover:bg-light-primary/80 dark:hover:bg-dark-primary/80;
 }
 
 .graph-wrapper {
@@ -68,27 +65,6 @@
       @apply rounded-none border-b-0;
       @apply bg-light-primary text-light-text-inverse;
       @apply dark:bg-light-bg-1 dark:text-dark-text-inverse;
-    }
-  }
-}
-
-.graph-legend {
-  @apply absolute z-10 ml-12 mt-4 flex flex-col gap-2 rounded p-4;
-  @apply bg-light-bg-1/50 dark:bg-dark-bg-1/70;
-
-  & .graph-legend__item {
-    @apply flex items-center gap-2;
-
-    & > p {
-      @apply text-xs;
-    }
-
-    &:last-of-type {
-      @apply mt-3;
-
-      & svg {
-        @apply text-xs;
-      }
     }
   }
 }

@@ -54,6 +54,7 @@ export default defineConfig({
             "@intel-enterprise-rag-ui/markdown",
           ],
           "intel-enterprise-rag-ui-utils": ["@intel-enterprise-rag-ui/utils"],
+          "docx-vendor": ["docx"],
         },
       },
     },

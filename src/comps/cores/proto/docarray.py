@@ -31,6 +31,7 @@ class ChatHistory(BaseModel):
 class ChatHistoryName(BaseModel):
     id: str
     history_name: str
+    created_at: Optional[str] = None
 
 class PrevQuestionDetails(BaseDoc):
     question: str
@@ -38,6 +39,7 @@ class PrevQuestionDetails(BaseDoc):
 
 class TextDoc(BaseDoc, TopologyInfo):
     text: str
+    original_query: Optional[str] = None
     metadata: Optional[dict] = {}
     history_id: Optional[str] = None
     return_pooling: Optional[bool] = None
@@ -347,6 +349,7 @@ class TextDocList(BaseDoc):
     return_pooling: Optional[bool] = None
     summary_type: Optional[str] = None
     stream: Optional[bool] = True
+    max_new_tokens: PositiveInt = 1024
 
 class LateChunkingInput(BaseDoc):
     docs: List[TextDoc]
@@ -362,6 +365,7 @@ class LLMParamsDoc(BaseDoc):
     messages: List[LLMPromptTemplate]
     model: Optional[str] = None  # for openai and ollama
     max_new_tokens: PositiveInt = 1024
+    max_completion_tokens: Optional[PositiveInt] = None # Required for compatibility with newer OpenAI SDK clients which use max_completion_tokens instead of max_new_tokens
     top_k: PositiveInt = 10
     top_p: NonNegativeFloat = 0.95
     typical_p: NonNegativeFloat = 0.95

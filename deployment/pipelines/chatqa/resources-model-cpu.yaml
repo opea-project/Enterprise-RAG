@@ -118,6 +118,15 @@ modelConfigs:
   "CYFRAGOVPL/PLLuM-12B-instruct":
     <<: *generic_base_cpu
 
+  "speakleash/Bielik-1.5B-v3.0-Instruct":
+    <<: *generic_base_cpu
+
+  "speakleash/Bielik-4.5B-v3.0-Instruct":
+    <<: *generic_base_cpu
+
+  "speakleash/Bielik-11B-v3.0-Instruct":
+    <<: *generic_base_cpu
+
 # Default arguments if the model ID is not found
 defaultModelConfigs:
   configMapValues:

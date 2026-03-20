@@ -29,6 +29,11 @@
         kube_version: "{{ k8s_version | default('1.33.5') }}"
         supplementary_addresses_in_ssl_keys: "{{ ['10.233.0.1'] + (groups['kube_control_plane'] | default([]) | map('extract', hostvars, ['ansible_host']) | select('defined') | list) }}"
 
+    - name: Set kube_network_plugin for TDX one_td
+      ansible.builtin.set_fact:
+        kube_network_plugin: flannel
+      when: (tdx.one_td.enabled | default(false)) and (kube_network_plugin is not defined)
+
 - name: Pre-setup tasks
   become: false
   hosts: localhost

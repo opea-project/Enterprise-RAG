@@ -42,6 +42,8 @@ export interface LinkSource extends Source {
 export type SourceDocumentType = FileSource | LinkSource;
 
 export interface ChatHistoryItemData {
-  name: string;
   id: string;
+  name: string;
+  createdAt: string;
+  isPinned?: boolean;
 }

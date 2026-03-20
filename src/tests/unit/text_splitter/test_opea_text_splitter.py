@@ -167,3 +167,27 @@ def test_semantic_chunk_params_handling(mock_sanitize_env, reset_singleton):
     # Reset mock
     mock_sanitize_env.reset_mock()
 
+
+@patch('comps.text_splitter.utils.opea_textsplitter.TableAwareSplitter')
+def test_docx_uses_table_aware_splitter(MockTableAwareSplitter, reset_singleton, mock_env_vars):
+    """Test that .docx documents are routed to TableAwareSplitter."""
+    mock_splitter_instance = MockTableAwareSplitter.return_value
+    mock_splitter_instance.split_text.return_value = ["chunk1", "chunk2"]
+
+    splitter = OPEATextSplitter(chunk_size=100, chunk_overlap=10, use_semantic_chunking=False)
+
+    docs = [TextDoc(text="| A | B |\n| --- | --- |\n| 1 | 2 |", metadata={"filename": "report.docx"})]
+
+    result = splitter.split_docs(docs)
+
+    # Check TableAwareSplitter was initialized correctly
+    MockTableAwareSplitter.assert_called_once_with(chunk_size=100, chunk_overlap=10)
+
+    # Check split was called
+    mock_splitter_instance.split_text.assert_called_once()
+
+    # Check results
+    assert len(result) == 2
+    assert result[0].text == "chunk1"
+    assert result[1].text == "chunk2"
+

@@ -21,6 +21,21 @@
     - always
     - update-configuration
 
+- name: Resolve vector_dims from embedding model
+  ansible.builtin.include_tasks:
+    file: resolve_vector_dims.yaml
+    apply:
+      tags:
+        - install
+        - display-configuration
+        - pre-upgrade
+        - update-configuration
+  tags:
+    - install
+    - display-configuration
+    - pre-upgrade
+    - update-configuration
+
 - name: Verify configuration
   ansible.builtin.include_tasks:
     file: verify_config.yaml
@@ -101,6 +116,7 @@
         • LLM Model: {{ llm_model | default('undefined') }}
         • Embedding Model: {{ embedding_model_name | default('undefined') }}
         • Reranking Model: {{ reranking_model_name | default('undefined') }}
+        • Vector Dims: {{ vector_databases.vector_dims | default('auto') }} (source: {{ vector_databases._vector_dims_source | default('pending') }})
 
 
       Ready to proceed with deployment!

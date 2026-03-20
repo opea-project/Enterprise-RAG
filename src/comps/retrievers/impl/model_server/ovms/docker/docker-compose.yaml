@@ -1,0 +1,63 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  retriever-ner-ovms:
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    image: retriever-ner-ovms:cpu
+    container_name: retriever-ner-ovms
+    ports:
+      - "${NER_OVMS_PORT}:9001"
+    environment:
+      NER_MODEL_NAME: ${NER_MODEL_NAME}
+      NER_WEIGHT_FORMAT: ${NER_WEIGHT_FORMAT}
+      HF_TOKEN: ${HF_TOKEN}
+      OVMS_INTERNAL_PORT: 9000
+      GATEWAY_PORT: 9001
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+    volumes:
+      - ner-model-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9001/v2/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    runtime: runc
+    ipc: host
+
+  retriever_usvc:
+    build:
+      context: ../../../../../../
+      dockerfile: ./comps/retrievers/impl/microservice/Dockerfile
+    container_name: retriever-ovms-microservice
+    environment:
+      NO_PROXY: ${NO_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      VECTOR_STORE: ${VECTOR_STORE:-redis}
+      REDIS_URL: ${REDIS_URL:-redis://localhost:6379/0}
+      VECTOR_DIMS: ${VECTOR_DIMS:-768}
+      NER_ENDPOINT: http://localhost:${NER_OVMS_PORT}
+      METADATA_FILTERING_ENABLED: ${METADATA_FILTERING_ENABLED:-true}
+      METADATA_EXTRACTION_MODE: ${METADATA_EXTRACTION_MODE:-hybrid}
+      METADATA_LANGUAGE: ${METADATA_LANGUAGE:-en}
+    ipc: host
+    runtime: runc
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      retriever-ner-ovms:
+        condition: service_healthy
+
+volumes:
+  ner-model-data:
+    name: ner-model-data

@@ -113,6 +113,10 @@ function print_log() {
     echo "-->$1"
 }
 
+function print_warn() {
+    echo "-->WARNING: $1" >&2
+}
+
 function get_access_token() {
 
     ACCESS_TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
@@ -597,7 +601,9 @@ function create_oidc_config() {
             "jwksUrl": "'$oidc_jwks_url'",
             "useJwksUrl": "true"
         },
-        "providerId": "oidc"
+        "providerId": "oidc",
+        "storeToken": "true",
+        "addReadTokenRoleOnCreate": "true"
     }'
 
     if curl_keycloak "$url" "$NEW_IDENTITY_PROVIDER"; then
@@ -613,17 +619,21 @@ function create_oidc_mapper() {
     local realm_name=$1
     local oidc_alias=$2
     local mapper_name=$3
-    local group_name=$4
+    local claim_name=$4
+    local claim_value=$5
+    local role_name=$6
 
     local url="$KEYCLOAK_URL/admin/realms/$realm_name/identity-provider/instances/$oidc_alias/mappers"
 
     NEW_MAPPER='{
         "config": {
-            "group": "/erag-admin-group",
-            "syncMode": "INHERIT"
+            "claim": "'$claim_name'",
+            "claim.value": "'$claim_value'",
+            "role": "'$role_name'",
+            "syncMode": "FORCE"
         },
         "identityProviderAlias": "'$oidc_alias'",
-        "identityProviderMapper": "oidc-hardcoded-group-idp-mapper",
+        "identityProviderMapper": "oidc-role-idp-mapper",
         "name": "'$mapper_name'"
     }'
 
@@ -716,6 +726,36 @@ function assign_user_realm_role() {
         print_log "Realm role '$role_name' already assigned to user '$username'"
     else
         print_log "Failed to assign realm role '$role_name' to user '$username' with '$HTTP_CODE'"
+    fi
+}
+
+function assign_role_realm_role() {
+    local realm_name=$1
+    local realm_role_name=$2
+    local client_name=$3
+    local role_name=$4
+
+    local user_id=""
+    local role_id=""
+    local client_id=""
+
+    role_id=$(get_client_role_id "$realm_name" "$role_name" "$client_name")
+    client_id=$(get_client_id "$realm_name" "$client_name")
+    realm_role_id=$(get_realm_role_id "$realm_name" "$realm_role_name")
+
+    local url="${KEYCLOAK_URL}/admin/realms/${realm_name}/roles-by-id/${realm_role_id}/composites"
+
+    NEW_ROLE_MAPPING_JSON='[{
+        "id": "'$role_id'",
+        "name": "'$role_name'"
+    }]'
+
+    if curl_keycloak "$url" "$NEW_ROLE_MAPPING_JSON"; then
+        print_log "$client_name role '$role_name' assigned to Realm Role '$realm_role_name'"
+    elif [[ $HTTP_CODE == 409 ]]; then
+        print_log "$client_name r role '$role_name' already assigned to Realm Role '$realm_role_name'"
+    else
+        print_log "Failed to assign client '$client_name' role '$role_name' to Realm Role '$realm_role_name' with '$HTTP_CODE'"
     fi
 }
 
@@ -1087,11 +1127,39 @@ map_client_role_to_group "$KEYCLOAK_REALM" "erag-user-group" "EnterpriseRAG-oidc
 # oidc
 if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
     create_oidc_config "$KEYCLOAK_REALM" "$OIDC_ENDPOINT" "$OIDC_ALIAS" "Enterprise SSO Login" "$OIDC_CLIENT_ID" "$OIDC_CLIENT_SECRET"
-    if [[ -n "$OIDC_ADMIN_GID" ]]; then
-        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_ADMIN_GID" "erag-admin-group"
+
+    create_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin" "EnterpriseRAG-oidc" "ERAG-admin"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin" "EnterpriseRAG-oidc-backend" "ERAG-admin"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin" "EnterpriseRAG-oidc-minio" "erag-admin-group"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Admin" "EnterpriseRAG-oidc-minio" "consoleAdmin"
+
+    create_role "$KEYCLOAK_REALM" "ERAG-SSO-User"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-User" "EnterpriseRAG-oidc" "ERAG-user"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-User" "EnterpriseRAG-oidc-backend" "ERAG-user"
+    assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-User" "EnterpriseRAG-oidc-minio" "erag-user-group"
+
+    create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "SSO-Admin-Mapper" "roles" "EnterpriseRAG.AdminAccess" "ERAG-SSO-Admin"
+    create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "SSO-User-Mapper" "roles" "EnterpriseRAG.UserAccess" "ERAG-SSO-User"
+
+    # Validate the identity provider was created and can reach the upstream OIDC endpoint
+    print_log "Validating OIDC identity provider '${OIDC_ALIAS}'..."
+    get_access_token
+    HTTP_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+        "${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/identity-provider/instances/${OIDC_ALIAS}")
+    if [[ "$HTTP_STATUS" == "200" ]]; then
+        print_log "OIDC identity provider '${OIDC_ALIAS}' validated successfully."
+    else
+        print_warn "OIDC identity provider validation returned HTTP ${HTTP_STATUS}. Check the alias and Keycloak logs."
     fi
-    if [[ -n "$OIDC_ADMIN_GID" ]]; then
-        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_USER_GID" "erag-user-group"
+
+    # Validate that the upstream OIDC metadata endpoint is reachable from this host
+    METADATA_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "${OIDC_ENDPOINT}")
+    if [[ "$METADATA_STATUS" == "200" ]]; then
+        print_log "Upstream OIDC metadata endpoint '${OIDC_ENDPOINT}' is reachable (HTTP 200)."
+    else
+        print_warn "Upstream OIDC metadata endpoint returned HTTP ${METADATA_STATUS}. SSO logins may fail if Keycloak cannot reach Entra ID."
     fi
 fi
 

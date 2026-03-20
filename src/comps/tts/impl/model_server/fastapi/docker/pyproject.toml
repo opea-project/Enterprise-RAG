@@ -3,11 +3,11 @@
 
 [project]
 name = "Intel-Enterprise-RAG-TTS_FastAPI_Modelserver"
-version = "2.1.1"
+version = "2.1.0"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
-    "aiohttp==3.12.14",
+    "aiohttp==3.13.3",
     "docarray[full]==0.40.0",
     "python-dotenv==1.1.0",
     "fastapi==0.120.2",
@@ -23,6 +23,12 @@ dependencies = [
     "sentencepiece==0.2.1", # dependency of SpeechT5
     "numba==0.63.1", # dependency of qwen_tts
     "llvmlite==0.46.0", # dependency of qwen_tts
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
+  "protobuf>=6.33.5",
 ]
 
 [tool.uv.sources]

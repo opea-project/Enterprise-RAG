@@ -2,10 +2,16 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+# Set to true to skip the HuggingFace Hub API call in air-gapped environments.
+offline_model: false
+
 vector_databases:
   namespace: vdb
   vector_store: redis-cluster
   vector_datatype: FLOAT32
+  # vector_dims is auto-detected from the embedding model's hidden_size.
+  # This default acts as a fallback when auto-detection fails for unknown models.
+  # Override only when deploying a custom model not found by the auto-detection.
   vector_dims: 768
 
   helm:

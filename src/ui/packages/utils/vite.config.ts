@@ -17,6 +17,16 @@ export default defineConfig({
       name: "intel-enterprise-rag-ui-utils",
       fileName: "intel-enterprise-rag-ui-utils",
     },
+    rollupOptions: {
+      external: ["react", "react-dom", "react-router-dom"],
+      output: {
+        globals: {
+          react: "React",
+          "react-dom": "ReactDOM",
+          "react-router-dom": "ReactRouterDOM",
+        },
+      },
+    },
   },
   plugins: [dts(), viteTsconfigPaths()],
   resolve: {

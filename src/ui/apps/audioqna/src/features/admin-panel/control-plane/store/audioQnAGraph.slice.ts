@@ -1,7 +1,12 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ServiceStatus } from "@intel-enterprise-rag-ui/control-plane";
+import {
+  FetchedServiceDetails,
+  FetchedServicesData,
+  ServiceData,
+  updateNodes,
+} from "@intel-enterprise-rag-ui/control-plane";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   addEdge,
@@ -17,17 +22,9 @@ import {
 import {
   graphEdges,
   graphNodes,
+  llmModelServerNodePositionNoGuards,
   llmNodePositionNoGuards,
-  vllmNodePositionNoGuards,
 } from "@/features/admin-panel/control-plane/config/graph";
-import {
-  ServiceData,
-  ServiceDetails,
-} from "@/features/admin-panel/control-plane/types";
-import {
-  FetchedServiceDetails,
-  FetchedServicesData,
-} from "@/features/admin-panel/control-plane/types/api";
 import { RootState } from "@/store/index";
 
 interface AudioQnAGraphState {
@@ -36,6 +33,7 @@ interface AudioQnAGraphState {
   isLoading: boolean;
   selectedServiceNode: Node<ServiceData> | null;
   isRenderable: boolean;
+  isAutorefreshEnabled: boolean;
 }
 
 const initialState: AudioQnAGraphState = {
@@ -44,6 +42,7 @@ const initialState: AudioQnAGraphState = {
   isLoading: false,
   selectedServiceNode: null,
   isRenderable: false,
+  isAutorefreshEnabled: false,
 };
 
 export const resetAudioQnAGraph = createAsyncThunk(
@@ -56,65 +55,12 @@ export const resetAudioQnAGraph = createAsyncThunk(
 
 export const setupAudioQnAGraph = createAsyncThunk(
   "audioQnAGraph/setupAudioQnAGraph",
-  ({ details }: FetchedServicesData, { dispatch }) => {
-    dispatch(setAudioQnAGraphNodes({ details }));
+  ({ details, parameters }: FetchedServicesData, { dispatch }) => {
+    dispatch(setAudioQnAGraphNodes({ details, parameters }));
     dispatch(setAudioQnAGraphEdges(details));
     dispatch(setAudioQnAGraphIsRenderable(true));
   },
 );
-
-const updateNodes = (fetchedServicesData: FetchedServicesData) => {
-  const updatedNodes = graphNodes
-    .map((node) => updateNodeDetails(node, fetchedServicesData))
-    .filter((node) => node.data.status);
-
-  const updatedNodesIds = updatedNodes.map(({ id }) => id);
-  const llmNodeIndex = updatedNodes.findIndex(({ id }) => id === "llm");
-  const vllmNodeIndex = updatedNodes.findIndex(({ id }) => id === "vllm");
-
-  if (
-    !updatedNodesIds.includes("input_guard") &&
-    !updatedNodesIds.includes("output_guard") &&
-    llmNodeIndex !== -1
-  ) {
-    updatedNodes[llmNodeIndex].position = llmNodePositionNoGuards;
-  }
-
-  if (
-    !updatedNodesIds.includes("input_guard") &&
-    !updatedNodesIds.includes("output_guard") &&
-    vllmNodeIndex !== -1
-  ) {
-    updatedNodes[vllmNodeIndex].position = vllmNodePositionNoGuards;
-  }
-
-  return updatedNodes;
-};
-
-const updateNodeDetails = (
-  node: Node<ServiceData>,
-  fetchedServicesData: FetchedServicesData,
-): Node<ServiceData> => {
-  const nodeId = node.data.id;
-  let nodeDetails: ServiceDetails = {};
-  let nodeStatus: ServiceStatus | undefined;
-
-  const { details: serviceDetails } = fetchedServicesData;
-  if (serviceDetails[nodeId]) {
-    const { details, status } = serviceDetails[nodeId];
-    nodeDetails = details || {};
-    nodeStatus = status as ServiceStatus;
-  }
-
-  return {
-    ...node,
-    data: {
-      ...node.data,
-      details: nodeDetails,
-      status: nodeStatus,
-    },
-  };
-};
 
 export const audioQnAGraphSlice = createSlice({
   name: "audioQnAGraph",
@@ -158,7 +104,12 @@ export const audioQnAGraphSlice = createSlice({
       action: PayloadAction<FetchedServicesData>,
     ) => {
       const fetchedServicesData = action.payload;
-      state.nodes = updateNodes(fetchedServicesData) as typeof state.nodes;
+      state.nodes = updateNodes(
+        graphNodes,
+        fetchedServicesData,
+        llmNodePositionNoGuards,
+        llmModelServerNodePositionNoGuards,
+      ) as typeof state.nodes;
     },
     setAudioQnAGraphSelectedServiceNode: (
       state,
@@ -187,6 +138,12 @@ export const audioQnAGraphSlice = createSlice({
     setAudioQnAGraphIsRenderable: (state, action: PayloadAction<boolean>) => {
       state.isRenderable = action.payload;
     },
+    setAudioQnAGraphIsAutorefreshEnabled: (
+      state,
+      action: PayloadAction<boolean>,
+    ) => {
+      state.isAutorefreshEnabled = action.payload;
+    },
     resetAudioQnAGraphSlice: () => initialState,
   },
 });
@@ -200,6 +157,7 @@ export const {
   setAudioQnAGraphIsLoading,
   setAudioQnAGraphSelectedServiceNode,
   setAudioQnAGraphIsRenderable,
+  setAudioQnAGraphIsAutorefreshEnabled,
   resetAudioQnAGraphSlice,
 } = audioQnAGraphSlice.actions;
 
@@ -213,5 +171,7 @@ export const audioQnAGraphSelectedServiceNodeSelector = (state: RootState) =>
   state.audioQnAGraph.selectedServiceNode;
 export const audioQnAGraphIsRenderableSelector = (state: RootState) =>
   state.audioQnAGraph.isRenderable;
+export const audioQnAGraphIsAutorefreshEnabledSelector = (state: RootState) =>
+  state.audioQnAGraph.isAutorefreshEnabled;
 
 export default audioQnAGraphSlice.reducer;

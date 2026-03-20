@@ -83,6 +83,10 @@ images:
     image_name: prompt_template
     dockerfile_path: src/comps/prompt_template/impl/microservice/Dockerfile
     docker_context: src
+  queryRewriteUsvc:
+    image_name: query-rewrite
+    dockerfile_path: src/comps/query_rewrite/impl/microservice/Dockerfile
+    docker_context: src
   rerankingUsvc:
     image_name: reranking
     dockerfile_path: src/comps/reranks/impl/microservice/Dockerfile

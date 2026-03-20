@@ -7,3 +7,4 @@
 | `cpu-tei-inguard-outguard.yaml`              | Xeon     | A Xeon pipeline for chatQnA that includes LLMGuard for input and output scanning. Uses Text Embeddings Inference for embeddings. |
 | `cpu-torchserve.yaml`                             | Xeon    | Basic ChatQnA pipeline for Xeon using TorchServe for embeddings           |
 | `cpu-torchserve-inguard-outguard.yaml`            | Xeon     | Similar to the Xeon Torch pipeline but includes LLMGuard for both input and output scanning. Uses TorchServe for embeddings. |
+| `cpu-queryrewrite.yaml`                            | Xeon     | ChatQnA pipeline with query rewriting that improves retrieval by reformulating user queries, using an additional dedicated vLLM instance for the rewriting step. |

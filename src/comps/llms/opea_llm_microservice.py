@@ -25,6 +25,7 @@ from comps import (
 )
 from comps.llms.utils.opea_llm import OPEALlm
 from comps.cores.mega.utils import get_access_token
+from fastapi.responses import JSONResponse
 
 # Define the unique service name for the microservice
 USVC_NAME='opea_service@llm'
@@ -118,6 +119,46 @@ async def process(input: LLMParamsDoc) -> Response:
 
     statistics_dict[USVC_NAME].append_latency(time.time() - start, None)
     return res
+
+
+@register_microservice(
+    name=USVC_NAME,
+    service_type=ServiceType.LLM,
+    endpoint=str(MegaServiceEndpoint.CHAT_MODELS),
+    http_method="GET",
+    host='0.0.0.0',
+    port=int(os.getenv('LLM_USVC_PORT', default=9000)),
+    validate_methods=[opea_llm._connector._validate]
+)
+@register_statistics(names=[USVC_NAME])
+async def get_models() -> JSONResponse:
+    """
+    Proxy the /v1/models endpoint from the underlying model server.
+    """
+    try:
+        models = await opea_llm.get_models()
+        return JSONResponse(content=models)
+    except ValueError as e:
+        error_message = f"A ValueError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
+    except BadRequestError as e:
+        error_message = f"A BadRequestError occured while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=400, detail=error_message)
+    except RequestException as e:
+        error_code = e.response.status_code if e.response else 500
+        error_message = f"A RequestException occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=error_code, detail=error_message)
+    except NotImplementedError as e:
+        error_message = f"A NotImplementedError occurred while processing: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=501, detail=error_message)
+    except Exception as e:
+        error_message = f"Failed to retrieve models: {str(e)}"
+        logger.exception(error_message)
+        raise HTTPException(status_code=502, detail=error_message)
 
 
 if __name__ == "__main__":

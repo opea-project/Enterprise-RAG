@@ -8,8 +8,10 @@ import { useRef } from "react";
 import { Button, ButtonColor } from "@/Button/Button";
 import { Dialog, DialogProps, DialogRef } from "@/Dialog/Dialog";
 
-interface ActionDialogProps
-  extends Omit<DialogProps, "footer" | "isCentered" | "hasPlainHeader"> {
+interface ActionDialogProps extends Omit<
+  DialogProps,
+  "footer" | "isCentered" | "hasPlainHeader"
+> {
   /** Label for the confirm button */
   confirmLabel?: string;
   /** Label for the cancel button */

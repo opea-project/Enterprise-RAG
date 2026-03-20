@@ -47,7 +47,7 @@ class LoadDoc(AbstractLoader):
     
     Extracts:
         - Body text with heading hierarchy (markdown format)
-        - Tables (pipe-delimited format)
+        - Tables (markdown table format)
         - Headers and footers
         - Comments (inline, after commented text)
         - Footnotes and endnotes
@@ -283,17 +283,25 @@ class LoadDoc(AbstractLoader):
                 logger.debug(f"[{self.file_path}] Removed temp image {img_path}")
 
     def _extract_table_text(self, table: Table, zf: zipfile.ZipFile) -> str:
-        """Extract text from a table in pipe-delimited format."""
+        """Extract text from a table in markdown table format."""
+        # Single-cell tables should not be formatted as markdown tables
+        if len(table.rows) == 1 and len(table.rows[0].cells) == 1:
+            return "".join(
+                self._extract_paragraph_text(p, zf)
+                for p in table.rows[0].cells[0].paragraphs
+            )
         rows: list[str] = []
-        for row in table.rows:
+        for i, row in enumerate(table.rows):
             cells: list[str] = []
             for cell in row.cells:
                 cell_text = "".join(
                     self._extract_paragraph_text(p, zf).strip()
                     for p in cell.paragraphs
                 ).strip()
-                cells.append(cell_text)
-            rows.append(" | ".join(cells))
+                cells.append(cell_text.replace('|', '\\|'))
+            rows.append("| " + " | ".join(cells) + " |")
+            if i == 0:
+                rows.append("| " + " | ".join("---" for _ in row.cells) + " |")
         return "\n".join(rows) + "\n"
 
     def _get_heading_prefix(self, paragraph: Paragraph) -> str:
@@ -664,3 +672,22 @@ class LoadDoc(AbstractLoader):
         self.file_path = docx_path
         self.file_type = "docx"
         logger.info(f"[{doc_path}] Converted to docx")
+
+    def extract_metadata(self):
+        """Extract rich metadata from DOCX document properties."""
+        metadata = super().extract_metadata()
+        
+        try:
+            props = docx.Document(self.file_path).core_properties
+            if props.title:
+                metadata['file_title'] = props.title
+            if props.author:
+                metadata['author'] = props.author
+            if props.created:
+                metadata['creation_date'] = int(props.created.timestamp())
+            if props.modified:
+                metadata['last_update_date'] = int(props.modified.timestamp())
+        except Exception as e:
+            logger.error(f"[{self.file_path}] DOCX metadata extraction failed: {e}")
+        
+        return metadata

@@ -1,0 +1,52 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  query-rewrite-vllm-model-server:
+    image: public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
+    container_name: query-rewrite-vllm-model-server
+    volumes:
+      - "./data:/data"
+    environment:
+      HF_TOKEN: ${HF_TOKEN}
+      HTTP_PROXY: ${HTTP_PROXY}
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      NO_PROXY: ${NO_PROXY}
+      VLLM_CPU_KVCACHE_SPACE: ${VLLM_CPU_KVCACHE_SPACE}
+    ipc: host
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${QUERY_REWRITE_VLLM_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    command: "--model $QUERY_REWRITE_VLLM_MODEL_NAME \
+              --tensor-parallel-size $VLLM_TP_SIZE \
+              --pipeline-parallel-size $VLLM_PP_SIZE \
+              --dtype $VLLM_DTYPE --max-num-seqs $VLLM_MAX_NUM_SEQS \
+              --max-model-len $VLLM_MAX_MODEL_LEN \
+              --quantization $VLLM_QUANTIZATION \
+              --enforce-eager \
+              --download_dir /data \
+              --host 0.0.0.0 --port ${QUERY_REWRITE_VLLM_PORT}"
+
+  query_rewrite_usvc:
+    build:
+      context: ../../../../../
+      dockerfile: ./comps/query_rewrite/impl/microservice/Dockerfile
+    image: opea/query-rewrite:latest
+    container_name: query-rewrite-microservice
+    ipc: host
+    runtime: runc
+    network_mode: host
+    environment:
+      HTTPS_PROXY: ${HTTPS_PROXY}
+      HTTP_PROXY: ${HTTP_PROXY}
+      QUERY_REWRITE_LLM_ENDPOINT: http://localhost:${QUERY_REWRITE_VLLM_PORT}
+      CHAT_HISTORY_ENDPOINT: ${CHAT_HISTORY_ENDPOINT}
+      NO_PROXY: ${NO_PROXY}
+    restart: unless-stopped
+    depends_on:
+      query-rewrite-vllm-model-server:
+        condition: service_healthy

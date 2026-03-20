@@ -1,0 +1,54 @@
+// Copyright (C) 2024-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+import {
+  CheckboxInput,
+  CheckboxInputChangeHandler,
+} from "@intel-enterprise-rag-ui/components";
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  OnArgumentValueChangeHandler,
+  ServiceArgumentCheckboxValue,
+} from "@/types/index";
+
+interface ServiceArgumentCheckboxProps {
+  value: ServiceArgumentCheckboxValue;
+  name: string;
+  tooltipText?: string;
+  onArgumentValueChange: OnArgumentValueChangeHandler;
+}
+
+export const ServiceArgumentCheckbox = ({
+  value,
+  name,
+  tooltipText,
+  onArgumentValueChange,
+}: ServiceArgumentCheckboxProps) => {
+  const [isSelected, setIsSelected] =
+    useState<ServiceArgumentCheckboxValue>(value);
+
+  useEffect(() => {
+    setIsSelected(value);
+  }, [value]);
+
+  const handleChange: CheckboxInputChangeHandler = useCallback(
+    (isSelected) => {
+      setIsSelected(isSelected);
+      onArgumentValueChange(name, isSelected);
+    },
+    [name, onArgumentValueChange],
+  );
+
+  return (
+    <CheckboxInput
+      data-testid={`service-argument-checkbox-${name}`}
+      label={name}
+      size="sm"
+      tooltipText={tooltipText}
+      isSelected={isSelected}
+      name={name}
+      onChange={handleChange}
+    />
+  );
+};

@@ -61,20 +61,21 @@ class ConnectorRedis(VectorStoreConnector):
         metadata_schema = [{"name": field, "type": "text"} for field in base_fields]
         metadata_schema.append({"name": "start_index", "type": "numeric"})
 
-        # Find and update the bucket_name field to include index_missing attribute
-        for field in metadata_schema:
-            if field["name"] == "file_id":
-                field["attrs"] = {"index_missing": True}
-            if field["name"] == "link_id":
-                field["attrs"] = {"index_missing": True}  
+        # Document metadata fields for filtering (text for exact match and wildcard search, numeric for range queries)
+        metadata_schema.extend([{"name": f, "type": "text"} for f in ["file_title", "author"]])
+        metadata_schema.extend([{"name": f, "type": "numeric"} for f in ["creation_date", "ingestion_date", "last_update_date"]])
 
-        if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true":
-            hierarchical_fields = [
+        # Mark optional fields for index_missing support
+        for field in metadata_schema:
+            if field["name"] in ("file_id", "link_id"):
+                field["attrs"] = {"index_missing": True}
+
+        if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES", "false")).lower() == "true":
+            metadata_schema.extend([
                 {"name": "doc_id", "type": "text"},
                 {"name": "page", "type": "numeric"},
                 {"name": "summary", "type": "numeric"},
-            ]
-            metadata_schema.extend(hierarchical_fields)
+            ])
 
         return metadata_schema
 
@@ -526,6 +527,121 @@ class ConnectorRedis(VectorStoreConnector):
 
         logger.debug(f"Final sibling docs: {all_sibling_docs}")
         return SearchedDoc(retrieved_docs=primary_docs, sibling_docs=all_sibling_docs, user_prompt=input_text)
+
+    def get_author_filter_expression(self, authors: Union[str, List[str]]) -> FilterExpression:
+        """
+        Constructs a filter expression for one or more authors.
+        Args:
+            authors (Union[str, List[str]]): Single author name or list of author names to filter by.
+        Returns:
+            FilterExpression: The filter expression for author(s) - uses OR logic for multiple authors.
+        Raises:
+            ValueError: If authors is empty, contains only whitespace, or is an empty list.
+        """
+        # Normalize to list
+        author_list = [authors] if isinstance(authors, str) else authors
+        
+        if not author_list or (len(author_list) == 1 and not author_list[0].strip()):
+            raise ValueError("Author(s) cannot be empty")
+        
+        # Filter out empty strings and strip whitespace
+        author_list = [a.strip() for a in author_list if a and a.strip()]
+        
+        if not author_list:
+            raise ValueError("Author(s) cannot be empty after filtering")
+        
+        logger.debug(f"Adding author filter expression for {len(author_list)} author(s): {author_list}")
+        
+        result = Text("author") == author_list[0]
+        for author in author_list[1:]:
+            result |= Text("author") == author
+        return result
+
+    def get_text_exclude_filter_expression(self, field: str, value: str) -> FilterExpression:
+        """
+        Constructs a negated filter expression for any text field (NOT match).
+        Args:
+            field (str): The text field name (e.g. 'author', 'file_title').
+            value (str): The value to exclude.
+        Returns:
+            FilterExpression: The negated filter expression (e.g. -@author:"name").
+        Raises:
+            ValueError: If field or value is empty or whitespace.
+        """
+        if not field or not field.strip():
+            raise ValueError("Field name cannot be empty")
+        if not value or not value.strip():
+            raise ValueError("Exclusion value cannot be empty")
+        value = value.strip()
+        logger.debug(f"Adding exclusion filter expression for {field}: {value}")
+        return Text(field) != value
+
+    # File extensions that indicate the query value is a filename (not a document title)
+    _FILENAME_EXTENSIONS = frozenset({
+        "pdf", "docx", "xlsx", "pptx", "doc", "xls", "ppt",
+        "txt", "md", "json", "yaml", "yml", "csv", "html", "xml", "log",
+    })
+
+    @staticmethod
+    def _looks_like_filename(value: str) -> bool:
+        """Return True if *value* has a recognised file extension."""
+        dot = value.rfind(".")
+        return dot > 0 and value[dot + 1:].lower() in ConnectorRedis._FILENAME_EXTENSIONS
+
+    def get_title_filter_expression(self, title_pattern: str, exact_match: bool = False) -> FilterExpression:
+        """
+        Constructs a filter expression for file_title field.
+
+        When the pattern looks like a filename (e.g. ``report.pptx``), the
+        expression also searches the ``object_name`` field with OR logic so
+        that files stored by their original name can be found.
+
+        Args:
+            title_pattern (str): The title or pattern to filter by.
+            exact_match (bool): If True, use exact match; if False, use wildcard contains.
+        Returns:
+            FilterExpression: The filter expression for file_title (and optionally object_name).
+        Raises:
+            ValueError: If title_pattern is empty.
+        """
+        if not title_pattern or not title_pattern.strip():
+            raise ValueError("Title pattern cannot be empty")
+        title_pattern = title_pattern.strip()
+        logger.debug(f"Adding title filter expression: {title_pattern}, exact_match={exact_match}")
+
+        if exact_match:
+            title_filter = Text("file_title") == title_pattern
+        else:
+            title_filter = Text("file_title") % f"*{title_pattern}*"
+
+        # When the value is a filename, also search object_name (stores the
+        # original uploaded file name / object key in the bucket).
+        if ConnectorRedis._looks_like_filename(title_pattern):
+            object_filter = Text("object_name") % f"*{title_pattern}*"
+            logger.debug(f"Filename detected — also searching object_name for: {title_pattern}")
+            return title_filter | object_filter
+
+        return title_filter
+
+    def get_date_range_filter_expression(self, field: str, start: int = None, end: int = None) -> FilterExpression:
+        """
+        Constructs a filter expression for date range filtering.
+        Args:
+            field (str): The date field to filter by. Must be one of: creation_date, ingestion_date, or last_update_date.
+            start (int): Optional start timestamp (inclusive). If None, only end is used.
+            end (int): Optional end timestamp (inclusive). If None, only start is used.
+        Returns:
+            FilterExpression: The filter expression for the date range.
+        Raises:
+            ValueError: If field is invalid or both start and end are None.
+        """
+        if field not in ("creation_date", "ingestion_date", "last_update_date"):
+            raise ValueError(f"Invalid date field: {field}")
+        if start is None and end is None:
+            raise ValueError("At least one of start or end timestamp required")
+        if start is not None and end is not None:
+            return (Num(field) >= start) & (Num(field) <= end)
+        return Num(field) >= start if start is not None else Num(field) <= end
 
     @staticmethod
     def format_url_from_env():

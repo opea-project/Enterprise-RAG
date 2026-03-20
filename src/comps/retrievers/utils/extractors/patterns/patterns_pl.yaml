@@ -1,0 +1,499 @@
+---
+# Metadata Query Parsing - Polish Regex Patterns
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# Patterns are processed by priority (higher first), first match wins per field.
+# 'group'/'groups': capture group number(s). 'value': preset when no capture group.
+# Polish patterns handle grammatical declensions (cases).
+# Date patterns use a single 'date' category; DateNormalizer handles field disambiguation.
+#
+# Character class shortcuts used in comments:
+#   PL = [a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]   NT = Uppercase-start name token
+#   SW = stop-word lookahead             AT = any-case 2+ char token
+
+version: "2.1"
+language: "pl"
+
+patterns:
+  # ===========================================================================
+  # AUTHOR PATTERNS (WZORCE AUTORÓW)
+  # ===========================================================================
+  author:
+    # Title implies authorship — no keyword needed (e.g. "prof. Kowalski")
+    - name: "author_title_implicit"
+      regex: '((?:dr\.?|prof\.?|mgr\.?|inż\.?)\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[\-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 15
+      examples:
+        - "prace prof. Tomasza Zielińskiego"
+
+    # Team/dept + person OR (bidirectional, titled names allowed)
+    - name: "author_team_person_or"
+      regex: '(?:od|przez)\s+(?:((?:zespołu?|działu?)\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})*)\s+(?:lub|albo|i|oraz)\s+((?:dr\.?\s+|prof\.?\s+)?[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[\-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*)|((?:dr\.?\s+|prof\.?\s+)?[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[\-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*)\s+(?:lub|albo|i|oraz)\s+((?:zespołu?|działu?)\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})*))'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2, 3, 4]
+      priority: 14
+      flags: "IGNORECASE"
+      examples:
+        - "od zespołu technicznego lub Marka Lewandowskiego"
+
+    # Filler words between keyword and names ("od liderów jak X lub Y")
+    - name: "author_or_filler"
+      regex: '(?:od|przez)\s+(?:[a-ząćęłńóśźż]+\s+){1,3}(?:jak\s+)?([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]*(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)\s+(?:lub|albo|i|oraz)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]*(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 13
+      examples:
+        - "od zewnętrznych konsultantów jak Deloitte lub PwC"
+
+    # Comma-separated list: "od A, B, lub C"
+    - name: "author_or_list"
+      regex: '(?:od|autorstwa|przez)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]*(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})?),\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]*(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})?),?\s+(?:lub|albo|i|oraz)\s+([a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2, 3]
+      priority: 13
+      flags: "IGNORECASE"
+      examples:
+        - "od Agnieszki, Michała, lub Ewy"
+
+    # Two authors with OR (uppercase start required)
+    - name: "author_or_explicit"
+      regex: '(?:autorstwa|napisane?\s+przez|przez|od)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[\-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)\s+(?:lub|albo|bądź|czy|i|oraz|&)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[\-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 12
+      examples:
+        - "autorstwa Kowalskiego lub Nowaka"
+
+    # Question: "Co napisał X?"
+    - name: "author_question"
+      regex: '[Cc]o\s+(?:napisał[a]?|stworzył[a]?|zrobił[a]?)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 11
+      examples:
+        - "Co napisał Jan Kowalski"
+
+    # Keyword + title captures "dr./prof." as part of name
+    - name: "author_with_title"
+      regex: '(?:autorstwa|napisane?\s+przez|przez|od\s+autora|od|autora?)\s+((?:dr\.?|prof\.?|mgr\.?|inż\.?)\s*[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 11
+      examples:
+        - "autorstwa prof. Jana Kowalskiego"
+
+    # Author with explicit keyword (nominative + genitive forms)
+    - name: "author_explicit"
+      regex: '(?:autorstwa|napisane?\s+przez|stworzone?\s+przez|przygotowane?\s+przez|opracowane?\s+przez|przez|od\s+autora|od|autora?)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[-\s][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 10
+      examples:
+        - "autorstwa Jana Kowalskiego"
+
+    # Exclusion: "nie autorstwa X", "oprócz Y"
+    - name: "author_exclude"
+      regex: '(?:nie\s+(?:autorstwa|przez|od)|oprócz|z\s+wyjątkiem|poza|lecz\s+nie|ale\s+nie\s+(?:od|przez))\s+(?:zespołu?\s+)?([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)*)'
+      field: "author"
+      operator: "!="
+      group: 1
+      priority: 9
+      examples:
+        - "nie autorstwa Kowalskiego"
+
+    # Department/team: "z działu X", "od zespołu Y"
+    - name: "author_team"
+      regex: '(?:pliki\s+)?(?:od|przez|z)\s+((?:zespołu?|działu?)\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})*)'
+      field: "author"
+      operator: "contains"
+      group: 1
+      priority: 9
+      flags: "IGNORECASE"
+      examples:
+        - "z działu finansów"
+
+    # "albo X albo Y" / "czy to X czy Y"
+    - name: "author_either_or"
+      regex: '(?:albo\s+)?([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)?)\s+(?:albo|czy)\s+([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:\s+[A-ZĄĆĘŁŃÓŚŹŻ]?[a-ząćęłńóśźż]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 8
+      examples:
+        - "albo Kowalski albo Nowak"
+
+    # Uppercase acronym (HR, CFO). Stop-word boundary.
+    - name: "author_acronym"
+      regex: '(?:od|przez|autorstwa)\s+([A-Z]{2,})(?=\s+(?:utworzon|zaktualizowan|z\s+|w\s+|od\s+|do\s+)|[,;!?]|\s*$)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 8
+      examples:
+        - "od HR utworzone w 2024"
+
+    # Lowercase role/dept OR with stop-word lookahead
+    - name: "author_role_or"
+      regex: '(?:od|przez|napisane?\s+przez)\s+([a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})?)\s+(?:lub|albo|i|oraz)\s+([a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,}(?:\s+[a-ząćęłńóśźżA-ZĄĆĘŁŃÓŚŹŻ]{2,})?)(?=\s+(?:utworzon|zaktualizowan|zaimportowan|z\s+\d|w\s+\d|od\s+\d|z\s+ostatni|w\s+ostatni|z\s+[IQ])|[,;!?]|\s*$)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 7
+      flags: "IGNORECASE"
+      examples:
+        - "od inżynierii lub zarządzania produktem utworzone w 2024"
+
+    # Single lowercase role with stop-word lookahead
+    - name: "author_role"
+      regex: '(?:od|przez|autorstwa)\s+([a-ząćęłńóśźż]{3,})(?=\s+(?:utworzon|zaktualizowan|zaimportowan|przesłan|zmienion|z\s+|w\s+|od\s+|do\s+|na\s+|po\s+|przed\s+|między\s+)|[,;!?]|\s*$)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 6
+      examples:
+        - "od prawników zaimportowany w ostatnim tygodniu"
+
+  # ===========================================================================
+  # DATE PATTERNS (WZORCE DAT)
+  # Default field: creation_date (DateNormalizer disambiguates)
+  # ===========================================================================
+  date:
+    # Year range: "między 2020 a 2024", "z lat 2019-2023"
+    - name: "date_range"
+      regex: '(?:(?:między|pomiędzy|od)\s+|z\s+lat\s+)?(\d{4})\s*(?:a|do|-|–|i)\s*(\d{4})'
+      field: "creation_date"
+      operator: "range"
+      groups: [1, 2]
+      priority: 10
+      examples:
+        - "między 2020 a 2024"
+
+    # After/since: "po 2020", "nowsze niż 2021"
+    - name: "date_after"
+      regex: '(?:po|od|nie\s+starsze?\s+niż|nowsze?\s+niż)\s+(\d{4})'
+      field: "creation_date"
+      operator: ">="
+      group: 1
+      priority: 9
+
+    # Before: "przed 2024", "starsze niż 2022"
+    - name: "date_before"
+      regex: '(?:przed|do|sprzed|starsze?\s+niż)\s+(\d{4})'
+      field: "creation_date"
+      operator: "<="
+      group: 1
+      priority: 9
+
+    # Exact year: "w 2024", "z roku 2021"
+    - name: "date_exact_year"
+      regex: '(?:w\s+roku|z\s+roku|w|z)\s+(\d{4})'
+      field: "creation_date"
+      operator: "range"
+      group: 1
+      priority: 8
+
+    # Quarter range — Q format and Roman numerals (merged)
+    - name: "date_quarter_range"
+      regex: '(?:[Qq]([1-4])\s*[-–]\s*[Qq]([1-4])|([IViv]{1,3})\s*[-–]\s*([IViv]{1,3})\s*(?:kwartał[eua]?)?)\s+(\d{4})'
+      field: "creation_date"
+      operator: "quarter_range"
+      groups: [1, 2, 3, 4, 5]
+      priority: 10
+
+    # Single quarter — Q format and Roman numerals (merged)
+    - name: "date_quarter"
+      regex: '(?:[Qq]([1-4])|([IViv]{1,3})\.?\s*kwartał[eua]?)\s+(\d{4})'
+      field: "creation_date"
+      operator: "quarter"
+      groups: [1, 2, 3]
+      priority: 9
+
+    # Ordinal quarter: "pierwszy kwartał 2024"
+    - name: "date_quarter_ordinal"
+      regex: '(?:pierwszy|pierwszego|drugi|drugiego|trzeci|trzeciego|czwarty|czwartego)\s+kwartał[eua]?\s+(\d{4})'
+      field: "creation_date"
+      operator: "quarter"
+      group: 1
+      priority: 9
+
+    # Last quarter (all declensions)
+    - name: "date_fuzzy_last_quarter"
+      regex: '(?:ostatni(?:ego|emu|m)?|poprzedni(?:ego|emu|m)?)\s+kwartał[eua]?'
+      field: "creation_date"
+      operator: "fuzzy_last_quarter"
+      priority: 7
+
+    # Recent (all declensions)
+    - name: "date_fuzzy_recent"
+      regex: '(?:ostatni(?:o|ch|e|mi)?|najnowsz(?:e|ych|ymi)?|śwież(?:e|ych)?)\s*(?:dokument|plik|raport|dan)?[yeaói]?'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      priority: 6
+
+    # Today
+    - name: "date_today"
+      regex: '\b(?:dzisiaj|dziś|dzisiejsz[ey])\b'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      value: "today"
+      priority: 8
+
+    # Yesterday
+    - name: "date_yesterday"
+      regex: '\bwczoraj\b'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      value: "yesterday"
+      priority: 8
+
+    # Last year (all declensions)
+    - name: "date_fuzzy_last_year"
+      regex: '(?:zeszł(?:y|ego|ym|emu)|ubiegł(?:y|ego|ym|emu)|poprzedni(?:ego|emu|m)?)\s+rok[ua]?'
+      field: "creation_date"
+      operator: "fuzzy_last_year"
+      priority: 7
+
+    # This year
+    - name: "date_fuzzy_this_year"
+      regex: '(?:z\s+(?:tego|bieżącego)\s+roku|(?:ten|bieżąc(?:y|ego|ym)|obecn(?:y|ego|ym)|tegoroczn(?:e|ych|ymi)?)\s*rok[ua]?)'
+      field: "creation_date"
+      operator: "fuzzy_this_year"
+      priority: 7
+
+    # Last N days/weeks/months (all declensions)
+    - name: "date_fuzzy_last_n"
+      regex: '(?:ostatni(?:ch|e|emi)?|z\s+ostatnich|w\s+ciągu\s+ostatnich)\s+(\d+)\s+(dni|dnia|tygodn(?:i|ie|iu|ia)|miesiąc[eóya]?|miesięc[yi]?)'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 7
+
+    # Last week (singular, all declensions)
+    - name: "date_fuzzy_last_week"
+      regex: '(?:ostatni(?:ego|emu|m)?|poprzedni(?:ego|emu|m)?|zeszł(?:y|ego|ym)?|w\s+zeszłym)\s+tygodn(?:iu|ia|iem)?'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      value: ["7", "dni"]
+      priority: 8
+
+    # Last month (singular, all declensions)
+    - name: "date_fuzzy_last_month"
+      regex: '(?:ostatni(?:ego|emu|m)?|poprzedni(?:ego|emu|m)?|zeszł(?:y|ego|ym)?|w\s+zeszłym|w\s+ostatnim)\s+miesiąc[eua]?'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      value: ["1", "miesiąc"]
+      priority: 8
+
+    # Updated in YYYY → last_update_date (all declensions)
+    - name: "date_updated_year"
+      regex: '(?:zaktualizowan[eya]|zmodyfikowan[eya]|zmienion[eya]|edytowan[eya]|poprawion[eya])\s+(?:w|w\s+roku)\s+(\d{4})'
+      field: "last_update_date"
+      operator: "range"
+      group: 1
+      priority: 9
+
+    # Updated since → last_update_date >=
+    - name: "date_updated_since"
+      regex: '(?:zaktualizowan[eya]|zmodyfikowan[eya]|zmienion[eya]|poprawion[eya])\s+(?:od|po)\s+(\w+\s+\d{4}|\d{4})'
+      field: "last_update_date"
+      operator: ">="
+      group: 1
+      priority: 9
+
+    # Updated recently → last_update_date
+    - name: "date_updated_recently"
+      regex: '(?:ostatnio\s+)?(?:zaktualizowan[eya]|zmodyfikowan[eya]|zmienion[eya]|edytowan[eya])\s*(?:ostatnio)?'
+      field: "last_update_date"
+      operator: "fuzzy_recent"
+      priority: 7
+
+    # Ingested in last N → ingestion_date
+    - name: "date_ingested_last_n"
+      regex: '(?:zaimportowan[eya]|wgran[eya]|dodan[eya]|przesłan[eya]|dodane)\s+(?:w\s+)?(?:ciągu\s+)?(?:ostatni(?:ch|m)?)\s+(\d+)\s*(dni|tygodn(?:i|iu)|miesiąc[eya]?)'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 8
+
+    # Ingested recently → ingestion_date
+    - name: "date_ingested_recently"
+      regex: '(?:ostatnio\s+)?(?:zaimportowan[eya]|wgran[eya]|dodan[eya]|przesłan[eya])\s*(?:ostatnio)?'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      priority: 7
+
+    # Month range: "od stycznia do marca 2024"
+    - name: "date_month_range"
+      regex: '(?:od\s+)?(\w+)\s+(?:do|-|–)\s+(\w+)\s+(\d{4})'
+      field: "creation_date"
+      operator: "month_range"
+      groups: [1, 2, 3]
+      priority: 9
+
+    # Updated last N → last_update_date
+    - name: "date_updated_last_n"
+      regex: '(?:zaktualizowan[eya]|zmodyfikowan[eya]|zmienion[eya]|edytowan[eya])\s+(?:w\s+)?(?:ciągu\s+)?(?:ostatni(?:ch|m)?)\s+(\d+)\s*(dni|tygodn(?:i|iu)|miesiąc[eya]?)'
+      field: "last_update_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 8
+
+  # ===========================================================================
+  # TITLE PATTERNS (WZORCE TYTUŁÓW)
+  # ===========================================================================
+  title:
+    # Title OR (ASCII + Unicode quotes)
+    - name: "title_or"
+      regex: "(?:zatytułowan[ey]|o\\s+tytule|o\\s+nazwie)\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]\\s+(?:lub|albo)\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 11
+
+    # Quoted title with keyword (ASCII + Unicode quotes)
+    - name: "title_quoted"
+      regex: "(?:zatytułowan[ey]|o\\s+tytule|o\\s+nazwie|z\\s+tytułem|pod\\s+nazwą)\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "=="
+      group: 1
+      priority: 10
+
+    # Bare quoted title (ASCII + Unicode quotes, min 3 chars)
+    - name: "title_quoted_bare"
+      regex: "[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]{3,})[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "contains"
+      group: 1
+      priority: 5
+
+    # Filename with extension
+    - name: "filename"
+      regex: '([\w\-\.]+\.(?:pdf|docx|xlsx|pptx|doc|xls|ppt|txt|md|json|yaml|yml|csv|html|xml|log))'
+      field: "file_title"
+      operator: "=="
+      group: 1
+      priority: 10
+      flags: "IGNORECASE"
+
+# ===========================================================================
+# DATE FIELD CONTEXT KEYWORDS (SŁOWA KONTEKSTOWE DLA DAT)
+# Used by DateNormalizer to disambiguate date field assignment.
+# Stem-based: "utworzon" matches utworzone/utworzony/utworzona etc.
+# ===========================================================================
+date_context:
+  creation_date:
+    - "utworzon"
+    - "napisan"
+    - "opublikowan"
+    - "stworzon"
+    - "powsta"
+    - "z roku"
+    - "z dnia"
+  last_update_date:
+    - "zaktualizowan"
+    - "zmodyfikowan"
+    - "zmienion"
+    - "poprawion"
+    - "edytowan"
+    - "updejtowan"
+  ingestion_date:
+    - "dodan"
+    - "wgran"
+    - "zaimportowan"
+    - "zaindeksowan"
+    - "przesłan"
+    - "wrzucon"
+
+# ===========================================================================
+# OR KEYWORDS (SŁOWA KLUCZOWE DLA OPERATORA OR)
+# ===========================================================================
+or_keywords:
+  - "lub"
+  - "albo"
+  - "bądź"
+  - "czy"
+  - "i"
+  - "oraz"
+  - "&"
+  - ","
+
+# ===========================================================================
+# MONTH NAMES (all declensions) → month number (1-12)
+# ===========================================================================
+months:
+  # Nominative
+  styczeń: 1
+  luty: 2
+  marzec: 3
+  kwiecień: 4
+  maj: 5
+  czerwiec: 6
+  lipiec: 7
+  sierpień: 8
+  wrzesień: 9
+  październik: 10
+  listopad: 11
+  grudzień: 12
+  # Genitive
+  stycznia: 1
+  lutego: 2
+  marca: 3
+  kwietnia: 4
+  maja: 5
+  czerwca: 6
+  lipca: 7
+  sierpnia: 8
+  września: 9
+  października: 10
+  listopada: 11
+  grudnia: 12
+  # Instrumental
+  styczniem: 1
+  lutym: 2
+  marcem: 3
+  kwietniem: 4
+  majem: 5
+  czerwcem: 6
+  lipcem: 7
+  sierpniem: 8
+  wrześniem: 9
+  październikiem: 10
+  listopadem: 11
+  grudniem: 12
+  # Locative
+  styczniu: 1
+  marcu: 3
+  kwietniu: 4
+  maju: 5
+  czerwcu: 6
+  lipcu: 7
+  sierpniu: 8
+  wrześniu: 9
+  październiku: 10
+  listopadzie: 11
+  grudniu: 12
+
+# ===========================================================================
+# TIME UNITS (all declensions) → day multiplier
+# ===========================================================================
+time_units:
+  dnia: 1
+  dni: 1
+  tygodnia: 7
+  tygodni: 7
+  tygodnie: 7
+  miesiąca: 30
+  miesiąc: 30
+  miesiące: 30
+  miesięcy: 30

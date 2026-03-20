@@ -58,14 +58,29 @@ async def process(input: Union[EmbedDoc, EmbedDocList], request: Request) -> Sea
     req_data = await request.json()
     search_by = retriever.generate_search_by(req_data)
     rbac_by = retriever.generate_rbac(request.headers.get("Authorization")) if retriever.rbac_enabled else None
+    
+    # Analyze query to extract metadata constraints for filtering
+    query_analysis = await retriever.analyze_query(vector.text)
+    metadata_filter = retriever.filter_expression_from_query_analysis(query_analysis)
+    
+    if query_analysis and query_analysis.has_filters:
+        logger.info(f"Query analysis: {query_analysis.extraction_count} metadata filters extracted in {query_analysis.latency_ms:.2f}ms")
+    
     result_vectors = None
     try:
         if (sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES")).lower() == "true"):
             k_summaries = int(sanitize_env(os.getenv("K_SUMMARIES")))
             k_chunks = int(sanitize_env(os.getenv("K_CHUNKS")))
-            result_vectors = await retriever.hierarchical_retrieve(vector, k_summaries, k_chunks, search_by=search_by, rbac_by=rbac_by)
+            result_vectors = await retriever.hierarchical_retrieve(
+                vector, k_summaries, k_chunks, 
+                search_by=search_by, rbac_by=rbac_by, 
+                metadata_filter=metadata_filter
+            )
         else:
-            result_vectors = await retriever.retrieve(input=vector, search_by=search_by, rbac_by=rbac_by)
+            result_vectors = await retriever.retrieve(
+                input=vector, search_by=search_by, rbac_by=rbac_by,
+                metadata_filter=metadata_filter
+            )
     except ValueError as e:
         logger.exception(f"A ValueError occured while validating the input in retriever: {str(e)}")
         raise HTTPException(status_code=400,

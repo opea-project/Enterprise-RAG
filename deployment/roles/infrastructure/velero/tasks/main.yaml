@@ -556,12 +556,12 @@
     - post-delete
     - velero-delete
 
-- name: Wait for velero pods to be deleted
+- name: Wait for velero and seaweedfs pods to be deleted
   kubernetes.core.k8s_info:
     kind: Pod
     namespace: "{{ velero.namespace }}"
     label_selectors:
-      - app.kubernetes.io/name=velero
+      - app.kubernetes.io/name in (velero,seaweedfs)
   register: velero_pods_info
   until: velero_pods_info.resources | length == 0
   retries: 30

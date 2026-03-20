@@ -153,8 +153,17 @@ class Evaluator:
         ground_truth_text = self.get_ground_truth_text(data)
         data["ground_truth_text"] = ground_truth_text
 
-        bleu_avg, bleu1, bleu2, bleu3, bleu4 = bleu_score(
-            generated_text, ground_truth_text)
+        # Handle missing ground truth - compute metrics only if available
+        if ground_truth_text and ground_truth_text.strip():
+            bleu_result = bleu_score(generated_text, ground_truth_text)
+            if bleu_result:
+                bleu_avg, bleu1, bleu2, bleu3, bleu4 = bleu_result
+            else:
+                bleu_avg, bleu1, bleu2, bleu3, bleu4 = 0.0, 0.0, 0.0, 0.0, 0.0
+            rouge_l = rougeL_score(generated_text, ground_truth_text) or 0.0
+        else:
+            bleu_avg, bleu1, bleu2, bleu3, bleu4 = 0.0, 0.0, 0.0, 0.0, 0.0
+            rouge_l = 0.0
 
         return {
             "metrics": {
@@ -163,7 +172,7 @@ class Evaluator:
                 "bleu-2": bleu2 or 0.0,
                 "bleu-3": bleu3 or 0.0,
                 "bleu-4": bleu4 or 0.0,
-                "rouge-L": rougeL_score(generated_text, ground_truth_text) or 0.0,
+                "rouge-L": rouge_l,
                 "LLM-score": 0.0,
                 "length": len(generated_text),
             },
@@ -193,6 +202,35 @@ class Evaluator:
         # Extract just the text for metrics calculation
         retrieved_texts = [doc["text"] for doc in retrieved_documents]
         reranked_texts = [doc["text"] for doc in reranked_documents]
+        # If golden_context is empty, skip metric calculation and return zeros
+        if not golden_context or len(golden_context) == 0:
+            logger.warning(f"Empty golden_context for query '{query}', returning zero metrics")
+            return {
+                "retrieval_metrics": {
+                    "Hits@10": 0.0,
+                    "Hits@4": 0.0,
+                    "MAP@10": 0.0,
+                    "MRR@10": 0.0,
+                    "Hits@10_retrieved": 0.0,
+                    "Hits@4_retrieved": 0.0,
+                    "MAP@10_retrieved": 0.0,
+                    "MRR@10_retrieved": 0.0,
+                    "gain_Hits@10": 0.0,
+                    "gain_Hits@4": 0.0,
+                    "gain_MAP@10": 0.0,
+                    "gain_MRR@10": 0.0,
+                },
+                "log": {
+                    "query": self.get_query(data),
+                    "query_type": self.get_question_type(data),
+                    "golden_context": golden_context,
+                    "num_retrieved_documents": len(retrieved_documents),
+                    "num_reranked_documents": len(reranked_documents),
+                    "reranked_documents": reranked_documents,
+                    "evaluateDatetime": str(datetime.now()),
+                },
+                "valid": True,
+            }
 
         # Measure metrics using documents after reranking
         results = metric.measure({

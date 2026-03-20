@@ -3,15 +3,22 @@
 
 import { addNotification } from "@intel-enterprise-rag-ui/components";
 import {
+  API_ENDPOINTS,
+  ChangeArgumentsRequest,
+  ERROR_MESSAGES,
+  GetServicesDataResponse,
+  GetServicesDetailsResponse,
+  GetServicesParametersResponse,
+  parseServiceDetails,
+  parseServicesParameters,
+  PostRetrieverQueryRequest,
+} from "@intel-enterprise-rag-ui/control-plane";
+import {
   createApi,
   fetchBaseQuery,
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query/react";
 
-import {
-  API_ENDPOINTS,
-  ERROR_MESSAGES,
-} from "@/features/admin-panel/control-plane/config/api";
 import {
   resetChatQnAGraph,
   setChatQnAGraphIsLoading,
@@ -19,15 +26,8 @@ import {
   setupChatQnAGraph,
 } from "@/features/admin-panel/control-plane/store/chatQnAGraph.slice";
 import {
-  ChangeArgumentsRequest,
-  GetServicesDataResponse,
-  GetServicesDetailsResponse,
-  GetServicesParametersResponse,
-  PostRetrieverQueryRequest,
-} from "@/features/admin-panel/control-plane/types/api";
-import {
-  parseServiceDetailsResponseData,
-  parseServicesParameters,
+  SERVICE_NAME_NODE_ID_MAP,
+  SERVICE_NODE_IDS,
 } from "@/features/admin-panel/control-plane/utils/api";
 import { getErrorMessage, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
@@ -57,7 +57,7 @@ export const controlPlaneApi = createApi({
             body: JSON.stringify({ text: "" }),
           }),
           fetchWithBQ({
-            url: API_ENDPOINTS.GET_SERVICES_DETAILS,
+            url: API_ENDPOINTS.GET_CHATQNA_STATUS,
             headers: {
               Authorization: keycloakService.getToken(),
             },
@@ -84,13 +84,17 @@ export const controlPlaneApi = createApi({
         if (getServicesDetails.error) {
           const error = transformErrorMessage(
             getServicesDetails.error as FetchBaseQueryError,
-            ERROR_MESSAGES.GET_SERVICES_DETAILS,
+            ERROR_MESSAGES.GET_STATUS,
           );
           return { error };
         }
 
-        const details = parseServiceDetailsResponseData(
+        const details = parseServiceDetails(
           getServicesDetails.data as GetServicesDetailsResponse,
+          {
+            serviceNameNodeIdMap: SERVICE_NAME_NODE_ID_MAP,
+            serviceNodeIds: SERVICE_NODE_IDS,
+          },
         );
 
         const parameters = parseServicesParameters(
@@ -100,8 +104,16 @@ export const controlPlaneApi = createApi({
 
         return { data: { details, parameters }, error: undefined };
       },
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        dispatch(resetChatQnAGraph());
+      onQueryStarted: async (
+        _,
+        { dispatch, queryFulfilled, getCacheEntry },
+      ) => {
+        const cacheEntry = getCacheEntry();
+        const isInitialLoad = !cacheEntry?.data;
+
+        if (isInitialLoad) {
+          dispatch(resetChatQnAGraph());
+        }
 
         try {
           const { data } = await queryFulfilled;
@@ -114,7 +126,9 @@ export const controlPlaneApi = createApi({
           dispatch(addNotification({ severity: "error", text: errorMessage }));
           dispatch(setChatQnAGraphIsRenderable(false));
         } finally {
-          dispatch(setChatQnAGraphIsLoading(false));
+          if (isInitialLoad) {
+            dispatch(setChatQnAGraphIsLoading(false));
+          }
         }
       },
       providesTags: ["Services Data"],
@@ -140,6 +154,8 @@ export const controlPlaneApi = createApi({
             ERROR_MESSAGES.CHANGE_ARGUMENTS,
           );
           dispatch(addNotification({ severity: "error", text: errorMessage }));
+        } finally {
+          dispatch(setChatQnAGraphIsLoading(false));
         }
       },
       transformErrorResponse: (error) =>
@@ -165,6 +181,7 @@ export const controlPlaneApi = createApi({
 
 export const {
   useGetServicesDataQuery,
+  useLazyGetServicesDataQuery,
   useChangeArgumentsMutation,
   usePostRetrieverQueryMutation,
 } = controlPlaneApi;

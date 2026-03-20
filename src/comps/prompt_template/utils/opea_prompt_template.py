@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+from datetime import datetime, timezone
+from typing import Optional
 
 from comps import (
     LLMParamsDoc,
@@ -18,6 +20,7 @@ from comps.prompt_template.utils.chat_history_handler import ChatHistoryHandler
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 AVAILABLE_LANGUAGES = ["en", "pl"]
+
 
 class OPEAPromptTemplate:
     def __init__(self, chat_history_endpoint: str = None, prompt_template_language: str = "en") -> None:
@@ -145,14 +148,8 @@ class OPEAPromptTemplate:
 
     def _parse_reranked_docs(self, reranked_docs: list, header_separator=" > ") -> str:
         """
-        Parse reranked documents and format them to display source and section information.
-        If docs do not have valid metadata or text, they are skipped with an error logged.
-
-        Args:
-            reranked_docs (list): List of document dictionaries containing metadata and text
-
-        Returns:
-            str: Output string with formatted document information including source and section headers.
+        Format reranked documents with source, metadata (title, author, dates), and section info.
+        Output: [id] (source) "Title" by Author (created: YYYY-MM-DD, updated: ..., ingested: ...)
         """
         formatted_docs = []
 
@@ -184,6 +181,29 @@ class OPEAPromptTemplate:
                 # Cannot reference this document in any way
                 logger.warning(f"Document {doc} does not contain valid source information.")
 
+            # Build document title & author line ("Title" by Author OR "Title" if no author OR by Author if no title)
+            file_title = doc.metadata.get("file_title") or doc.metadata.get("filename", "")
+            author = doc.metadata.get("author", "")
+            
+            title_author_part = ""
+            if file_title:
+                title_author_part = f'"{file_title}"'
+                if author:
+                    title_author_part += f" by {author}"
+            elif author:
+                title_author_part = f"by {author}"
+
+            # Build date metadata (compact ISO format)
+            date_parts = []
+            if creation_date := format_timestamp_iso(doc.metadata.get("creation_date")):
+                date_parts.append(f"created: {creation_date}")
+            if last_update_date := format_timestamp_iso(doc.metadata.get("last_update_date")):
+                date_parts.append(f"updated: {last_update_date}")
+            if ingestion_date := format_timestamp_iso(doc.metadata.get("ingestion_date")):
+                date_parts.append(f"ingested: {ingestion_date}")
+            date_part = f" ({', '.join(date_parts)})" if date_parts else ""
+            logger.debug(f"Formatted document metadata: title_author={title_author_part}, dates={date_part}")
+
             # Collect header information if available
             headers = []
             for i in range(1, 8):  # Check for Header1 through Header7
@@ -195,9 +215,14 @@ class OPEAPromptTemplate:
             header_part = f"\nSection: {header_separator.join(headers)}" if len(headers) > 0 else ""
 
             if source_info["type"] == "unknown":
-                formatted_doc = f"{header_part}{doc.text}"
+                # Build with metadata but no citation ID
+                metadata_line = f"{title_author_part}{date_part}" if title_author_part else ""
+                formatted_doc = f"{metadata_line}{header_part}\nContent: {doc.text}" if metadata_line else f"{header_part}{doc.text}"
             else:
-                formatted_doc = f"[{doc.metadata['citation_id']}] ({source_info['source']}){header_part}\nContent: {doc.text}"
+                # Full format with citation ID, source, metadata, headers, and content
+                citation_id = doc.metadata.get('citation_id', '')
+                metadata_line = f" {title_author_part}{date_part}" if title_author_part else date_part
+                formatted_doc = f"[{citation_id}] ({source_info['source']}){metadata_line}{header_part}\nContent: {doc.text}"
             formatted_docs.append(formatted_doc)
 
         return "\n\n".join(formatted_docs)
@@ -249,10 +274,12 @@ class OPEAPromptTemplate:
         # Get conversation history
         if self._if_conv_history_in_prompt:
             params = {}
-            prompt_data[self._chat_history_placeholder] = self.ch_handler.parse_chat_history(input.history_id,
-                                                                                                             input.chat_history_parse_type,
-                                                                                                             access_token,
-                                                                                                             params)
+            prompt_data[self._chat_history_placeholder] = self.ch_handler.parse_chat_history(
+                input.history_id,
+                input.chat_history_parse_type,
+                access_token,
+                params
+            )
 
         # Generate the final prompt
         try:
@@ -314,3 +341,17 @@ def extract_text_from_nested_dict(data: any) -> str:
         else:
             logger.error(f"Cannot extract text from nested item(s), unsupported data type: {type(data)}")
             raise ValueError(f"Cannot extract text from nested item(s), unsupported data type: {type(data)}")
+
+
+MISSING_DATE = -1  # Sentinel for unavailable dates
+
+def format_timestamp_iso(timestamp) -> Optional[str]:
+    """Convert Unix timestamp to ISO date (YYYY-MM-DD). Returns None if invalid."""
+    if timestamp is None or timestamp == MISSING_DATE:
+        return None
+    try:
+        ts = int(timestamp) if isinstance(timestamp, str) else timestamp
+        return datetime.fromtimestamp(ts, tz=timezone.utc).strftime('%Y-%m-%d') if ts >= 0 else None
+    except (OSError, ValueError, OverflowError, TypeError) as e:
+        logger.error(f"Failed to format timestamp {timestamp}: {e}")
+        return None

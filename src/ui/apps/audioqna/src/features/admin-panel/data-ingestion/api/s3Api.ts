@@ -6,9 +6,9 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { PostFileRequest } from "@/features/admin-panel/data-ingestion/types/api";
 import { RootState } from "@/store";
+import { getChatQnAAppEnv } from "@/utils";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
-import { getChatQnAAppEnv } from "@/utils";
 
 const s3ApiBaseQuery = fetchBaseQuery({
   prepareHeaders: (headers) => {

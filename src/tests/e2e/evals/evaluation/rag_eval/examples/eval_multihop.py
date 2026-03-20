@@ -36,10 +36,14 @@ logging.getLogger("httpcore").setLevel(logging.ERROR) #disabling mass loging for
 class MultiHop_Evaluator(Evaluator):
 
     def get_ground_truth_text(self, data: dict):
-        return data["answer"]
+        return data.get("answer", "")
 
     def get_query(self, data: dict):
-        return data["query"]
+        query = data.get("query") or data.get("question")
+        if not query:
+            available_keys = list(data.keys())
+            raise ValueError(f"Query is missing or empty. Available keys in data: {available_keys}. Expected 'query' or 'question' field.")
+        return query
 
     def get_question_type(self, data: dict):
         return data.get("question_type") or "unknown"
@@ -48,7 +52,10 @@ class MultiHop_Evaluator(Evaluator):
         return None
 
     def get_golden_context(self, data):
-        return [each["fact"] for each in data["evidence_list"]]
+        evidence_list = data.get("evidence_list", [])
+        if not evidence_list:
+            return []
+        return [each["fact"] for each in evidence_list]
 
     def evaluate(self, all_queries, arguments):
         if arguments.resume_checkpoint:
@@ -206,9 +213,18 @@ class MultiHop_Evaluator(Evaluator):
     def prepare_ragas_record(self, data, arguments):
         query = self.get_query(data)
         question_type = self.get_question_type(data)
-        generated_text = self.send_request(query, arguments, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
+        ground_truth = self.get_ground_truth_text(data)
+        golden_context = self.get_golden_context(data)
 
         try:
+            # send request to get generated answer
+            generated_text = self.send_request(query, arguments, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
+        except (ConnectionError, ValueError) as e:
+            logger.error(f"Failed to send request to generate answer for RAGAS evaluation on query '{query}': {e}")
+            raise
+
+        try:
+            # retrieve documents
             retrieved_documents = self.get_reranked_documents(query, bucket_names=arguments.bucket_names if hasattr(arguments, 'bucket_names') else None)
         except (ConnectionError, ValueError) as e:
             logger.error(f"Failed to retrieve documents for RAGAS evaluation on query '{query}': {e}")
@@ -217,12 +233,21 @@ class MultiHop_Evaluator(Evaluator):
         # Extract just text for RAGAS metrics
         retrieved_texts = [doc["text"] for doc in retrieved_documents]
 
+        # Use empty string if ground_truth is missing, and empty list if golden_context is missing
+        if not ground_truth:
+            ground_truth = ""
+            logger.warning(f"Missing ground_truth for query '{query}', using empty string for RAGAS evaluation.")
+
+        if not golden_context:
+            golden_context = []
+            logger.warning(f"Missing golden_context for query '{query}', using empty list for RAGAS evaluation.")
+
         return {
             "query": query,
             "question_type": question_type,
             "generated_text": generated_text,
-            "ground_truth": self.get_ground_truth_text(data),
-            "golden_context": self.get_golden_context(data),
+            "ground_truth": ground_truth,
+            "golden_context": golden_context,
             "retrieved_documents_texts": retrieved_texts,  # for RAGAS metrics
             "retrieved_documents_full": retrieved_documents  # for logging with metadata
         }
@@ -476,6 +501,36 @@ def load_or_download(filepath):
 
     return data
 
+def load_jsonl(filepath):
+    """Load JSONL file and return list of parsed JSON objects."""
+    if not os.path.exists(filepath):
+        logger.error(f"File {filepath} not found")
+        return None
+
+    try:
+        data = []
+        with open(filepath, "r", encoding="utf-8") as file:
+            logger.info(f"Reading JSONL data from: {filepath}")
+            for line_num, line in enumerate(file, 1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data.append(json.loads(line))
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Skipping invalid JSON at line {line_num}: {e}")
+                    continue
+        return data
+
+    except FileNotFoundError as e:
+        logger.error(f"File {filepath} not found: {e}")
+        return None
+
+    except Exception as e:
+        logger.error(f"Error reading file {filepath}: {str(e)}")
+        return None
+
+
 def filter_category_null_queries(queries):
     """
     Remove queries with question type 'null_query' from the list.
@@ -541,27 +596,38 @@ def main():
         logger.error(f"Failed to connect to RAG, err={e}")
         return
 
-    documents = []
-    doc_data = load_or_download(args.docs_path)
-    if doc_data is None:
-        logger.error(f"Failed to load Multihop RAG documents corpus from {args.docs_path}.")
-        return
-
-    for doc in doc_data:
-        # NOTE: nothing happens with metadata, just body is used in the GenAIEval code
-        # metadata = {"title": doc["title"], "published_at": doc["published_at"], "source": doc["source"]}
-        documents.append(doc["body"])
-
-    logger.info(f"Total corpus documents: {len(documents)}")
-
     if args.ingest_docs:
+        # Load documents - check format based on file extension
+        if args.docs_path.endswith('.jsonl'):
+            doc_data = load_jsonl(args.docs_path)
+        else:
+            # Use original format (JSON with "body" field)
+            doc_data = load_or_download(args.docs_path)
+
+        if doc_data is None:
+            logger.error(f"Failed to load documents corpus from {args.docs_path}.")
+            return
+
+        # Extract document text content from source files
+        # Supports both formats: "body" field (original Multihop format) or "contents" field (JSONL)
+        documents = []
+        for doc in doc_data:
+            text = doc.get("body") or doc.get("contents", "")
+            if text:
+                documents.append(text)
+
+        logger.info(f"Total corpus documents: {len(documents)}")
+
+        # Create single tmp file with all documents separated by newlines
         tmp_corpus_file = "tmp_corpus.txt"
-        with open(tmp_corpus_file, "w") as f:
+
+        with open(tmp_corpus_file, "w", encoding="utf-8") as f:
             for doc in documents:
                 f.write(doc + "\n")
 
         try:
             evaluator.ingest_docs(tmp_corpus_file)
+            logger.info(f"Successfully ingested {tmp_corpus_file}")
         except Exception as e:
             logger.error(f"Error during file upload: {str(e)}")
             logger.error("Please check the following steps:\n" +
@@ -571,10 +637,24 @@ def main():
             )
             return
 
-    all_queries = load_or_download(args.dataset_path)  # Load documents corpus
-    if all_queries is None:
-        logger.error(f"Failed to load queries from {args.dataset_path}")
-        return
+    # Load queries dataset - check format based on file extension
+    if args.dataset_path.endswith('.jsonl'):
+        all_queries = load_jsonl(args.dataset_path)
+        if all_queries is None:
+            logger.error(f"Failed to load queries from {args.dataset_path}")
+            return
+
+        # Augment queries with "custom" question_type if missing to avoid filtering
+        for query in all_queries:
+            if "question_type" not in query:
+                query["question_type"] = "custom"
+
+        logger.info(f"Loaded {len(all_queries)} queries from JSONL file")
+    else:
+        all_queries = load_or_download(args.dataset_path)  # Load JSON format
+        if all_queries is None:
+            logger.error(f"Failed to load queries from {args.dataset_path}")
+            return
 
     logger.info(f"Total queries in dataset: {len(all_queries)}")
 

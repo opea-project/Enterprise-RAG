@@ -135,7 +135,7 @@ cd ../../../../../../src/comps/embeddings/impl/model_server/tei
 
 # (Optional) Customize port and model if needed
 export TEI_PORT=8090
-export TEI_MODEL_NAME=BAAI/bge-large-en-v1.5
+export TEI_MODEL_NAME=BAAI/bge-base-en-v1.5
 
 # Start the embedding service
 ./run_tei.sh

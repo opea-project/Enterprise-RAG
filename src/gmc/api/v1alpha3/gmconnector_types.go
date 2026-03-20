@@ -81,6 +81,8 @@ const (
 	VLLMGaudi StepNameType = "VLLMGaudi"
 	// VLLM
 	VLLM StepNameType = "VLLM"
+	// VLLMQueryRewrite
+	VLLMQueryRewrite StepNameType = "VLLMQueryRewrite"
 	// Language-Detection
 	LanguageDetection StepNameType = "LanguageDetection"
 	// TextExtractor
@@ -91,6 +93,8 @@ const (
 	TextSplitter StepNameType = "TextSplitter"
 	// DocSum
 	DocSum StepNameType = "DocSum"
+	// QueryRewrite
+	QueryRewrite StepNameType = "QueryRewrite"
 )
 
 type Executor struct {

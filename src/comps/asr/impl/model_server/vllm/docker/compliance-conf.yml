@@ -4,6 +4,7 @@ docker_context: "./../../"
 dependencies:
   - apt
   - pip-manual
+  - manual
 base-image:
   override:
     - public.ecr.aws/q9t5s3a7/vllm-cpu-release-repo:v0.14.0
@@ -84,3 +85,9 @@ pip-manual:
     - wheel
     - jinja2
     - regex
+manual:
+  packages:
+# Added because of manual copy from UV image in Dockerfile
+    - name: astral-sh/uv
+      origin: github
+      license: MIT

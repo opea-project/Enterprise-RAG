@@ -21,7 +21,7 @@ from tests.e2e.validation.constants import DATAPREP_UPLOAD_DIR
 logger = logging.getLogger(__name__)
 
 LINK_DELETION_TIMEOUT_S = 60
-FILE_UPLOAD_TIMEOUT_S = 10800  # 3 hours
+FILE_UPLOAD_TIMEOUT_S = 300  # 5 minutes
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
 DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "late_chunking", "ingested"]
 
@@ -221,8 +221,10 @@ class EdpHelper(ApiRequestHelper):
         logger.debug(f"Attempting to upload file {file_path} using presigned URL")
         try:
             headers = {}
-            if "authorization" in self.get_headers(as_user):
-                headers["authorization"] = self.get_headers(as_user)["authorization"]
+            if (cfg.get("edp", {}).get("storageType") == "seaweedfs"
+                    and cfg.get("edp", {}).get("rbac", {}).get("enabled", False)):
+                if "authorization" in self.get_headers(as_user):
+                    headers["authorization"] = self.get_headers(as_user)["authorization"]
 
             with open(file_path, 'rb') as f:
                 response = requests.put(presigned_url, data=f, verify=False, headers=headers)
@@ -301,6 +303,7 @@ class EdpHelper(ApiRequestHelper):
                         break
             if not file_found:
                 logger.warning(f"File {filename} is not present in the list of files")
+                time.sleep(1)
 
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
@@ -357,11 +360,12 @@ class EdpHelper(ApiRequestHelper):
             )
 
     def upload_file_and_wait_for_ingestion(self, file_path, bucket=None):
-        response = self.generate_presigned_url(file_path, bucket=bucket)
+        file_name = os.path.basename(file_path)
+        response = self.generate_presigned_url(file_name, bucket=bucket)
         presigned_url = response.json().get("url")
         response = self.upload_file(file_path, presigned_url)
         assert response.status_code == 200
-        return self.wait_for_file_upload(file_path, "ingested", timeout=180)
+        return self.wait_for_file_upload(file_name, "ingested", timeout=180)
 
     @contextmanager
     def ephemeral_upload(self, file_path, desired_status="ingested", bucket=None, timeout=180):
@@ -408,8 +412,10 @@ class EdpHelper(ApiRequestHelper):
         logger.info("Attempting to delete file using presigned URL")
 
         headers = {}
-        if "authorization" in self.get_headers():
-            headers["authorization"] = self.get_headers()["authorization"]
+        if (cfg.get("edp", {}).get("storageType") == "seaweedfs"
+                and cfg.get("edp", {}).get("rbac", {}).get("enabled", False)):
+            if "authorization" in self.get_headers():
+                headers["authorization"] = self.get_headers()["authorization"]
 
         return requests.delete(presigned_url, verify=False, headers=headers)
 
@@ -417,8 +423,10 @@ class EdpHelper(ApiRequestHelper):
         """Delete files asynchronously."""
 
         headers = {}
-        if "authorization" in self.get_headers():
-            headers["authorization"] = self.get_headers()["authorization"]
+        if (cfg.get("edp", {}).get("storageType") == "seaweedfs"
+                and cfg.get("edp", {}).get("rbac", {}).get("enabled", False)):
+            if "authorization" in self.get_headers():
+                headers["authorization"] = self.get_headers()["authorization"]
 
         async with aiohttp.ClientSession() as session:
             for presigned_url in presigned_urls:

@@ -156,7 +156,7 @@ def test_edp_reupload_file_after_deletion(edp_helper):
 
         response = edp_helper.generate_presigned_url(file_basename, "DELETE")
         edp_helper.delete_file(response.json().get("url"))
-        time.sleep(5)
+        time.sleep(15)
 
         temp_file.write("additional data")
         temp_file.flush()

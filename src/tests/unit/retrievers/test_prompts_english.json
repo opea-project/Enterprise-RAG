@@ -1,0 +1,1334 @@
+{
+  "metadata": {
+    "description": "English test prompts for metadata filtering validation",
+    "version": "3.0",
+    "date": "2026-01-25",
+    "total_cases": 78,
+    "fields": [
+      "file_title",
+      "author",
+      "creation_date",
+      "ingestion_date",
+      "last_update_date"
+    ],
+    "distribution": {
+      "author_focused": 15,
+      "date_focused": 15,
+      "title_focused": 15,
+      "multi_field": 15,
+      "fuzzy_date_extended": 18
+    }
+  },
+  "test_cases": [
+    {
+      "id": "en-001",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Show me reports by John Smith",
+      "expected_extraction": {
+        "author": {
+          "value": "John Smith",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'John Smith'",
+      "expected_filter_string": "@author:{John Smith}"
+    },
+    {
+      "id": "en-002",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Find all documents by Maria Garcia",
+      "expected_extraction": {
+        "author": {
+          "value": "Maria Garcia",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Maria Garcia'",
+      "expected_filter_string": "@author:{Maria Garcia}"
+    },
+    {
+      "id": "en-003",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Documents written by Dr. Emily Chen",
+      "expected_extraction": {
+        "author": {
+          "value": "Dr. Emily Chen",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Dr. Emily Chen'",
+      "expected_filter_string": "@author:{Dr. Emily Chen}"
+    },
+    {
+      "id": "en-004",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "What did Robert Johnson write?",
+      "expected_extraction": {
+        "author": {
+          "value": "Robert Johnson",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Robert Johnson'",
+      "expected_filter_string": "@author:{Robert Johnson}"
+    },
+    {
+      "id": "en-005",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Show documents authored by Lisa Williams",
+      "expected_extraction": {
+        "author": {
+          "value": "Lisa Williams",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Lisa Williams'",
+      "expected_filter_string": "@author:{Lisa Williams}"
+    },
+    {
+      "id": "en-006",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Reports by either John Smith or Alice Johnson",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "John Smith",
+            "Alice Johnson"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'John Smith') | (Text('author') == 'Alice Johnson')",
+      "expected_filter_string": "(@author:{John Smith}|@author:{Alice Johnson})"
+    },
+    {
+      "id": "en-007",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Documents by the technical team or David Lee",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "technical team",
+            "David Lee"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*technical team*') | (Text('author') == 'David Lee')",
+      "expected_filter_string": "(@author:*technical team*|@author:{David Lee})"
+    },
+    {
+      "id": "en-008",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Find work by Prof. Michael Brown excluding drafts",
+      "expected_extraction": {
+        "author": {
+          "value": "Prof. Michael Brown",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Prof. Michael Brown'",
+      "expected_filter_string": "@author:{Prof. Michael Brown}"
+    },
+    {
+      "id": "en-009",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Show files from the marketing department",
+      "expected_extraction": {
+        "author": {
+          "value": "marketing department",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('author') % '*marketing department*'",
+      "expected_filter_string": "@author:*marketing department*"
+    },
+    {
+      "id": "en-010",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Documents by Sarah, Michael, or Jennifer",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "Sarah",
+            "Michael",
+            "Jennifer"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*Sarah*') | (Text('author') % '*Michael*') | (Text('author') % '*Jennifer*')",
+      "expected_filter_string": "(@author:*Sarah*|@author:*Michael*|@author:*Jennifer*)"
+    },
+    {
+      "id": "en-011",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Research papers by either the AI team or Dr. Wang from Stanford",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "AI team",
+            "Dr. Wang"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*AI team*') | (Text('author') == 'Dr. Wang')",
+      "expected_filter_string": "(@author:*AI team*|@author:{Dr. Wang})"
+    },
+    {
+      "id": "en-012",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Anything written by legal counsel or compliance officers",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "legal counsel",
+            "compliance"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*legal counsel*') | (Text('author') % '*compliance*')",
+      "expected_filter_string": "(@author:*legal counsel*|@author:*compliance*)"
+    },
+    {
+      "id": "en-013",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Publications by Dr. James Wilson, PhD excluding conference proceedings",
+      "expected_extraction": {
+        "author": {
+          "value": "Dr. James Wilson",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Dr. James Wilson'",
+      "expected_filter_string": "@author:{Dr. James Wilson}"
+    },
+    {
+      "id": "en-014",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Cross-team documents by engineering or product management",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "engineering",
+            "product management"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*engineering*') | (Text('author') % '*product management*')",
+      "expected_filter_string": "(@author:*engineering*|@author:*product management*)"
+    },
+    {
+      "id": "en-015",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Documents from external consultants like Accenture or McKinsey",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "Accenture",
+            "McKinsey"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*Accenture*') | (Text('author') % '*McKinsey*')",
+      "expected_filter_string": "(@author:*Accenture*|@author:*McKinsey*)"
+    },
+    {
+      "id": "en-016",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Find documents created after 2022",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2022,
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "Num('creation_date') >= 1640995200",
+      "expected_filter_string": "@creation_date:[1640995200 +inf]"
+    },
+    {
+      "id": "en-017",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Documents from 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "en-018",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Get all documents updated in 2025",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599)",
+      "expected_filter_string": "@last_update_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "en-019",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Documents before 2020",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2020,
+          "operator": "<="
+        }
+      },
+      "expected_filter_python": "Num('creation_date') <= 1577836799",
+      "expected_filter_string": "@creation_date:[-inf 1577836799]"
+    },
+    {
+      "id": "en-020",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Files ingested in the last month",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "last_month",
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1734912000",
+      "expected_filter_string": "@ingestion_date:[1734912000 +inf]"
+    },
+    {
+      "id": "en-021",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Documents from Q3 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": [
+            "3",
+            "2024"
+          ],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1719792000) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1719792000 1735689599]"
+    },
+    {
+      "id": "en-022",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Show files from last quarter",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1727740800) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "en-023",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Documents updated since January 2024",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "2024-01",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1704067200",
+      "expected_filter_string": "@last_update_date:[1704067200 +inf]"
+    },
+    {
+      "id": "en-024",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Files created in December 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "2023-12",
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1701388800) & (Num('creation_date') <= 1704067199)",
+      "expected_filter_string": "@creation_date:[1701388800 1704067199]"
+    },
+    {
+      "id": "en-025",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Documents from this year",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "this_year",
+          "operator": "fuzzy_this_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1735689600) & (Num('creation_date') <= 1767225599)",
+      "expected_filter_string": "@creation_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "en-026",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Documents from Q1-Q3 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": [
+            "1",
+            "3",
+            "2024"
+          ],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1727740799)",
+      "expected_filter_string": "@creation_date:[1704067200 1727740799]"
+    },
+    {
+      "id": "en-027",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Files updated between March and June 2024",
+      "expected_extraction": {
+        "last_update_date": {
+          "min": "2024-03",
+          "max": "2024-06",
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1709251200) & (Num('last_update_date') <= 1719792000)",
+      "expected_filter_string": "@last_update_date:[1709251200 1719792000]"
+    },
+    {
+      "id": "en-028",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Documents created between 2020 and 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "min": 2020,
+          "max": 2023,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1577836800) & (Num('creation_date') <= 1704067199)",
+      "expected_filter_string": "@creation_date:[1577836800 1704067199]"
+    },
+    {
+      "id": "en-029",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Files ingested in the last 7 days",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": [
+            "7",
+            "days"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737504000",
+      "expected_filter_string": "@ingestion_date:[1737504000 +inf]"
+    },
+    {
+      "id": "en-030",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Documents updated in the last 3 months",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": [
+            "3",
+            "months"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1729382400",
+      "expected_filter_string": "@last_update_date:[1729382400 +inf]"
+    },
+    {
+      "id": "en-031",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Search for 'Quarterly Financial Report'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Quarterly Financial Report",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Quarterly Financial Report*'",
+      "expected_filter_string": "@file_title:*Quarterly Financial Report*"
+    },
+    {
+      "id": "en-032",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Find the 'Annual Budget'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Annual Budget",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Annual Budget*'",
+      "expected_filter_string": "@file_title:*Annual Budget*"
+    },
+    {
+      "id": "en-033",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Get 'Employee Handbook'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Employee Handbook",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Employee Handbook*'",
+      "expected_filter_string": "@file_title:*Employee Handbook*"
+    },
+    {
+      "id": "en-034",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Show me 'Project Status Update'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Project Status Update",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Project Status Update*'",
+      "expected_filter_string": "@file_title:*Project Status Update*"
+    },
+    {
+      "id": "en-035",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Find 'Technical Specification v2.0'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Technical Specification v2.0",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Technical Specification v2.0*'",
+      "expected_filter_string": "@file_title:*Technical Specification v2.0*"
+    },
+    {
+      "id": "en-036",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Search for 'User Guide' or 'Quick Start'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "User Guide",
+            "Quick Start"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*User Guide*') | (Text('file_title') % '*Quick Start*')",
+      "expected_filter_string": "(@file_title:*User Guide*|@file_title:*Quick Start*)"
+    },
+    {
+      "id": "en-037",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Find 'API Documentation' or 'Integration Guide'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "API Documentation",
+            "Integration Guide"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*API Documentation*') | (Text('file_title') % '*Integration Guide*')",
+      "expected_filter_string": "(@file_title:*API Documentation*|@file_title:*Integration Guide*)"
+    },
+    {
+      "id": "en-038",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Get 'Release Notes' for any version",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Release Notes",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Release Notes*'",
+      "expected_filter_string": "@file_title:*Release Notes*"
+    },
+    {
+      "id": "en-039",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Search for 'Security Policy' or 'Privacy Statement'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Security Policy",
+            "Privacy Statement"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Security Policy*') | (Text('file_title') % '*Privacy Statement*')",
+      "expected_filter_string": "(@file_title:*Security Policy*|@file_title:*Privacy Statement*)"
+    },
+    {
+      "id": "en-040",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Find 'Meeting Minutes - January'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Meeting Minutes - January",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Meeting Minutes - January*'",
+      "expected_filter_string": "@file_title:*Meeting Minutes - January*"
+    },
+    {
+      "id": "en-041",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Get 'Architecture Design Document (Final Draft)'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Architecture Design Document (Final Draft)",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Architecture Design Document (Final Draft)*'",
+      "expected_filter_string": "@file_title:*Architecture Design Document (Final Draft)*"
+    },
+    {
+      "id": "en-042",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Search for 'Q4 2024 Financial Results - Confidential'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Q4 2024 Financial Results - Confidential",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Q4 2024 Financial Results - Confidential*'",
+      "expected_filter_string": "@file_title:*Q4 2024 Financial Results - Confidential*"
+    },
+    {
+      "id": "en-043",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Find 'Employee Performance Review Template v3.1'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Employee Performance Review Template v3.1",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Employee Performance Review Template v3.1*'",
+      "expected_filter_string": "@file_title:*Employee Performance Review Template v3.1*"
+    },
+    {
+      "id": "en-044",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Get 'Data Migration Plan (Phase 2 - Production)'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Data Migration Plan (Phase 2 - Production)",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Data Migration Plan (Phase 2 - Production)*'",
+      "expected_filter_string": "@file_title:*Data Migration Plan (Phase 2 - Production)*"
+    },
+    {
+      "id": "en-045",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Search for 'Board of Directors Meeting - Q1 2025 Strategy'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Board of Directors Meeting - Q1 2025 Strategy",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Board of Directors Meeting - Q1 2025 Strategy*'",
+      "expected_filter_string": "@file_title:*Board of Directors Meeting - Q1 2025 Strategy*"
+    },
+    {
+      "id": "en-046",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Documents by Alice Johnson from 2023",
+      "expected_extraction": {
+        "author": {
+          "value": "Alice Johnson",
+          "operator": "=="
+        },
+        "creation_date": {
+          "value": 2023,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Alice Johnson') & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1704067199))",
+      "expected_filter_string": "(@author:{Alice Johnson} @creation_date:[1672531200 1704067199])"
+    },
+    {
+      "id": "en-047",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Find 'Budget Report' by Bob Lee",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Budget Report",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "Bob Lee",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Budget Report*') & (Text('author') == 'Bob Lee')",
+      "expected_filter_string": "(@file_title:*Budget Report* @author:{Bob Lee})"
+    },
+    {
+      "id": "en-048",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "'Annual Review' documents created before 2020",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Annual Review",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2020,
+          "operator": "<="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Annual Review*') & (Num('creation_date') <= 1577836799)",
+      "expected_filter_string": "(@file_title:*Annual Review* @creation_date:[-inf 1577836799])"
+    },
+    {
+      "id": "en-049",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Reports by Jennifer Lee updated in 2025",
+      "expected_extraction": {
+        "author": {
+          "value": "Jennifer Lee",
+          "operator": "=="
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Jennifer Lee') & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@author:{Jennifer Lee} @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "en-050",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "'Technical Specification' from Q1 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Technical Specification",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": [
+            "1",
+            "2024"
+          ],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Technical Specification*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1719791999))",
+      "expected_filter_string": "(@file_title:*Technical Specification* @creation_date:[1704067200 1719791999])"
+    },
+    {
+      "id": "en-051",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Meeting Minutes' by David Chen from 2023 or 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Meeting Minutes",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "David Chen",
+          "operator": "=="
+        },
+        "creation_date": {
+          "values": [
+            2023,
+            2024
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Meeting Minutes*') & (Text('author') == 'David Chen') & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "(@file_title:*Meeting Minutes* @author:{David Chen} @creation_date:[1672531200 1735689599])"
+    },
+    {
+      "id": "en-052",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "Find 'Project Plan' or 'Roadmap' by the engineering team from 2024",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Project Plan",
+            "Roadmap"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "value": "engineering team",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Project Plan*') | (Text('file_title') % '*Roadmap*')) & (Text('author') % '*engineering team*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "((@file_title:*Project Plan*|@file_title:*Roadmap*) @author:*engineering team* @creation_date:[1704067200 1735689599])"
+    },
+    {
+      "id": "en-053",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Security Audit' documents by either Alice or Bob updated since March 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Security Audit",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "Alice",
+            "Bob"
+          ],
+          "operator": "OR"
+        },
+        "last_update_date": {
+          "value": "2024-03",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Security Audit*') & ((Text('author') % '*Alice*') | (Text('author') % '*Bob*')) & (Num('last_update_date') >= 1709251200)",
+      "expected_filter_string": "(@file_title:*Security Audit* (@author:*Alice*|@author:*Bob*) @last_update_date:[1709251200 +inf])"
+    },
+    {
+      "id": "en-054",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Training Materials' by HR created in 2024 and updated in 2025",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Training Materials",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "HR",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Training Materials*') & (Text('author') % '*HR*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)) & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@file_title:*Training Materials* @author:*HR* @creation_date:[1704067200 1735689599] @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "en-055",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Compliance Report' by legal ingested in the last week",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Compliance Report",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "legal",
+          "operator": "contains"
+        },
+        "ingestion_date": {
+          "value": [
+            "7",
+            "days"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Compliance Report*') & (Text('author') % '*legal*') & (Num('ingestion_date') >= 1737504000)",
+      "expected_filter_string": "(@file_title:*Compliance Report* @author:*legal* @ingestion_date:[1737504000 +inf])"
+    },
+    {
+      "id": "en-056",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Financial Report' or 'Budget Analysis' by CFO or finance team from 2023 updated in the last 3 months",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Financial Report",
+            "Budget Analysis"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "CFO",
+            "finance team"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": 2023,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": [
+            "3",
+            "months"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Financial Report*') | (Text('file_title') % '*Budget Analysis*')) & ((Text('author') % '*CFO*') | (Text('author') % '*finance team*')) & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1704067199)) & (Num('last_update_date') >= 1729382400)",
+      "expected_filter_string": "((@file_title:*Financial Report*|@file_title:*Budget Analysis*) (@author:*CFO*|@author:*finance team*) @creation_date:[1672531200 1704067199] @last_update_date:[1729382400 +inf])"
+    },
+    {
+      "id": "en-057",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Strategic Plan' by either CEO, COO, or board members from Q2-Q4 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Strategic Plan",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "CEO",
+            "COO",
+            "board"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": [
+            "2",
+            "4",
+            "2024"
+          ],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Strategic Plan*') & ((Text('author') % '*CEO*') | (Text('author') % '*COO*') | (Text('author') % '*board*')) & ((Num('creation_date') >= 1711929600) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "(@file_title:*Strategic Plan* (@author:*CEO*|@author:*COO*|@author:*board*) @creation_date:[1711929600 1735689599])"
+    },
+    {
+      "id": "en-058",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Product Requirements' or 'Feature Specification' by product or engineering created after 2022 and ingested this month",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Product Requirements",
+            "Feature Specification"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "product",
+            "engineering"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": 2022,
+          "operator": ">="
+        },
+        "ingestion_date": {
+          "value": "this_month",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Product Requirements*') | (Text('file_title') % '*Feature Specification*')) & ((Text('author') % '*product*') | (Text('author') % '*engineering*')) & (Num('creation_date') >= 1640995200) & (Num('ingestion_date') >= 1737676800)",
+      "expected_filter_string": "((@file_title:*Product Requirements*|@file_title:*Feature Specification*) (@author:*product*|@author:*engineering*) @creation_date:[1640995200 +inf] @ingestion_date:[1737676800 +inf])"
+    },
+    {
+      "id": "en-059",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'System Architecture' by tech leads John Smith or Alice Johnson created between 2021 and 2024 updated in 2025",
+      "expected_extraction": {
+        "file_title": {
+          "value": "System Architecture",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "John Smith",
+            "Alice Johnson"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "min": 2021,
+          "max": 2024,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*System Architecture*') & ((Text('author') == 'John Smith') | (Text('author') == 'Alice Johnson')) & ((Num('creation_date') >= 1609459200) & (Num('creation_date') <= 1735689599)) & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@file_title:*System Architecture* (@author:{John Smith}|@author:{Alice Johnson}) @creation_date:[1609459200 1735689599] @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "en-060",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Risk Assessment' or 'Mitigation Plan' by compliance, legal, or security from last year ingested in the last 2 weeks",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Risk Assessment",
+            "Mitigation Plan"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "compliance",
+            "legal",
+            "security"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        },
+        "ingestion_date": {
+          "value": [
+            "2",
+            "weeks"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Risk Assessment*') | (Text('file_title') % '*Mitigation Plan*')) & ((Text('author') % '*compliance*') | (Text('author') % '*legal*') | (Text('author') % '*security*')) & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)) & (Num('ingestion_date') >= 1736294400)",
+      "expected_filter_string": "((@file_title:*Risk Assessment*|@file_title:*Mitigation Plan*) (@author:*compliance*|@author:*legal*|@author:*security*) @creation_date:[1704067200 1735689599] @ingestion_date:[1736294400 +inf])"
+    },
+    {
+      "id": "en-061",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Show me documents from the past 2 weeks",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["2", "weeks"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1736294400",
+      "expected_filter_string": "@ingestion_date:[1736294400 +inf]"
+    },
+    {
+      "id": "en-062",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Files from the last 5 days",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["5", "days"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737676800",
+      "expected_filter_string": "@ingestion_date:[1737676800 +inf]"
+    },
+    {
+      "id": "en-063",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Documents added within the last 14 days",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["14", "days"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1736899200",
+      "expected_filter_string": "@ingestion_date:[1736899200 +inf]"
+    },
+    {
+      "id": "en-064",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Reports from the last week",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["1", "week"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "en-065",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Files uploaded in the past 6 months",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["6", "months"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1721520000",
+      "expected_filter_string": "@ingestion_date:[1721520000 +inf]"
+    },
+    {
+      "id": "en-066",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Show me documents from last year",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "en-067",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Documents created in the previous year",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "en-068",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Files from the current year",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "this_year",
+          "operator": "fuzzy_this_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1735689600) & (Num('creation_date') <= 1767225599)",
+      "expected_filter_string": "@creation_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "en-069",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Show the most recent documents",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "en-070",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Get the latest reports",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "en-071",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Documents from the first quarter of 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["1", "2024"],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1719791999)",
+      "expected_filter_string": "@creation_date:[1704067200 1719791999]"
+    },
+    {
+      "id": "en-072",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Reports from Q4 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["4", "2023"],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1696118400) & (Num('creation_date') <= 1711929599)",
+      "expected_filter_string": "@creation_date:[1696118400 1711929599]"
+    },
+    {
+      "id": "en-073",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Show documents from the last quarter",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1727740800) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "en-074",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Files from Q2 through Q4 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["2", "4", "2024"],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1711929600) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1711929600 1735689599]"
+    },
+    {
+      "id": "en-075",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Show recently updated documents",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1737590400",
+      "expected_filter_string": "@last_update_date:[1737590400 +inf]"
+    },
+    {
+      "id": "en-076",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Files modified in the previous quarter",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1727740800) & (Num('last_update_date') <= 1735689599)",
+      "expected_filter_string": "@last_update_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "en-077",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Get documents added in the last 30 days",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["30", "days"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1735516800",
+      "expected_filter_string": "@ingestion_date:[1735516800 +inf]"
+    },
+    {
+      "id": "en-078",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Documents ingested within the past 3 weeks",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["3", "weeks"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1735689600",
+      "expected_filter_string": "@ingestion_date:[1735689600 +inf]"
+    }
+  ]
+}

@@ -594,11 +594,57 @@ func TestMalformedURL(t *testing.T) {
 func TestPrepareErrorResponse(t *testing.T) {
 	err := errors.New("test error")
 	errorMessage := "Test error message"
-	expectedResponse := []byte(`{"error":"Test error message","cause":"test error"}`)
+	expectedResponse := []byte(`{"error":"Test error message","cause":"test error","user_message":"test error"}`)
 
 	response := prepareErrorResponse(err, errorMessage)
 
 	assert.Equal(t, expectedResponse, response)
+}
+
+func TestExtractUserMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		cause    string
+		expected string
+	}{
+		{
+			name:     "double-quoted message field",
+			cause:    `Error occured for step (stepName=Llm) with statusCode=400. Stopping pipeline execution. Error details: A BadRequestError occured while processing: Error code: 400 - {'object': 'error', 'message': "This model's maximum context length is 4096 tokens. However, you requested 4207 tokens (3183 in the messages, 1024 in the completion). Please reduce the length of the messages or completion. None", 'type': 'BadRequestError', 'param': None, 'code': 400}`,
+			expected: "This model's maximum context length is 4096 tokens. However, you requested 4207 tokens (3183 in the messages, 1024 in the completion). Please reduce the length of the messages or completion. None",
+		},
+		{
+			name:     "single-quoted message field",
+			cause:    `Error details: {'message': 'Some error occurred', 'type': 'Error'}`,
+			expected: "Some error occurred",
+		},
+		{
+			name:     "json-style double-quoted message field",
+			cause:    `Error details: {"message": "Token limit exceeded", "code": 400}`,
+			expected: "Token limit exceeded",
+		},
+		{
+			name:     "json-style no-space message field (vLLM format)",
+			cause:    `Error occured for step (stepName=Embedding) with statusCode=400. Stopping pipeline execution. Error details: ValueError occured while validating the input: vLLM returned an error response: 400 - {"error":{"message":"This model's maximum context length is 512 tokens. However, your request has 5729 input tokens. Please reduce the length of the input messages. (parameter=input_tokens, value=5729)","type":"BadRequestError","param":null,"code":400}}`,
+			expected: "This model's maximum context length is 512 tokens. However, your request has 5729 input tokens. Please reduce the length of the input messages. (parameter=input_tokens, value=5729)",
+		},
+		{
+			name:     "no message field but has Error details prefix",
+			cause:    "Error occured for step (stepName=Llm) with statusCode=500. Stopping pipeline execution. Error details: Internal server error",
+			expected: "Internal server error",
+		},
+		{
+			name:     "no known pattern",
+			cause:    "some unexpected error format",
+			expected: "some unexpected error format",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := extractUserMessage(tc.cause)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
 
 func TestMcGraphHandler(t *testing.T) {

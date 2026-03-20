@@ -130,7 +130,7 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -158,6 +158,7 @@ images:
 {% endif %}
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
+      METADATA_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
 {% if edp.hierarchical_indices.enabled is true %}
       USE_HIERARCHICAL_INDICES: "True"
       K_SUMMARIES: {{ edp.hierarchical_indices.kSummaries }}
@@ -208,13 +209,21 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if 'PLLuM' in llm_model else 'en' }}"
+      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
   chat-history-usvc:
     image: "erag-chat-history"
     repository: *repo
     tag: *tag
   docsum-usvc:
     image: "erag-docsum"
+    repository: *repo
+    tag: *tag
+  query-rewrite-usvc:
+    image: "erag-query-rewrite"
+    repository: *repo
+    tag: *tag
+  vllm_query_rewrite:
+    image: "erag-vllm-cpu"
     repository: *repo
     tag: *tag
   init-container:

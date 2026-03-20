@@ -34,7 +34,7 @@ COPY ./comps/guardrails/llm_guard_dataprep_guardrail/impl/microservice/uv.lock u
 
 # --locked will fail when any changes in pyproject.toml were introduced
 # Source: https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md#checking-if-the-lockfile-is-up-to-date
-RUN uv sync --locked --no-cache
+RUN uv sync --locked --no-cache --group security-overrides
 ENV PATH="/home/user/.venv/bin:$PATH"
 
 COPY --chown=user:user ./comps/cores ./comps/cores

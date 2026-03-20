@@ -1,0 +1,474 @@
+---
+# Metadata Query Parsing - English Regex Patterns
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+# Patterns are processed by priority (higher first), first match wins per field.
+# 'group'/'groups': capture group number(s). 'value': preset when no capture group.
+# Date patterns use a single 'date' category; DateNormalizer handles field disambiguation.
+
+version: "2.1"
+language: "en"
+
+patterns:
+  # ===========================================================================
+  # AUTHOR PATTERNS
+  # ===========================================================================
+  author:
+    # Title implies authorship — no keyword needed (e.g. "Dr. Chen")
+    - name: "author_title_implicit"
+      regex: '((?:Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+[A-Z][a-zA-Z]+(?:[\-\s][A-Z][a-zA-Z]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 15
+      examples:
+        - "publications by Dr. Emily Chen"
+
+    # Team/dept + person OR (bidirectional, titled names allowed)
+    - name: "author_team_person_or"
+      regex: '(?:by|from)\s+(?:either\s+)?(?:(?:the\s+)?(\w+(?:\s+\w+)*\s+(?:team|department|group|division|unit))\s+(?:or|and)\s+((?:Dr\.?\s+|Prof\.?\s+)?[A-Z]\w+(?:\s+[A-Z]\w+)?)(?=\s+(?:from|in|at|since|created|updated|excluding)\b|[,;!?.]|\s*$)|((?:Dr\.?\s+|Prof\.?\s+)?[A-Z]\w+(?:\s+[A-Z]\w+)?)\s+(?:or|and)\s+(?:the\s+)?(\w+(?:\s+\w+)*\s+(?:team|department|group|division|unit)))'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2, 3, 4]
+      priority: 14
+      flags: "IGNORECASE"
+      examples:
+        - "by the AI team or Dr. Wang from Stanford"
+
+    # Filler words between keyword and names ("from consultants like X or Y")
+    - name: "author_or_filler"
+      regex: '(?:by|from)\s+(?:[a-z]+\s+){1,3}(?:like\s+|such\s+as\s+)?([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+(?:or|and)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 13
+      examples:
+        - "from external consultants like Accenture or McKinsey"
+
+    # Comma-separated list: "by A, B, or C"
+    - name: "author_or_list"
+      regex: '(?:by|from)\s+(?:either\s+)?([A-Za-z][a-zA-Z]*(?:\s+[a-zA-Z]+)?),\s+([A-Za-z][a-zA-Z]*(?:\s+[a-zA-Z]+)?),?\s+(?:or|and)\s+([A-Za-z][a-zA-Z]*(?:\s+[a-zA-Z]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2, 3]
+      priority: 12
+      examples:
+        - "by Sarah, Michael, or Jennifer"
+
+    # Keyword + title captures "Dr./Prof." as part of name (before author_explicit)
+    - name: "author_with_title"
+      regex: '(?:by|authored?\s+by|written\s+by|from\s+author|from)\s+((?:Dr\.?|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+[A-Z][a-zA-Z]+(?:[\-\s][A-Z][a-zA-Z]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 11
+      examples:
+        - "written by Dr. Emily Chen"
+
+    # Two authors with explicit OR/AND
+    - name: "author_or_explicit"
+      regex: '(?:by|from)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+(?:or|and|&)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 11
+      examples:
+        - "by John Smith or Alice Johnson"
+
+    # Author with explicit keyword
+    - name: "author_explicit"
+      regex: '(?:by|authored?\s+by|written\s+by|from\s+author)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 10
+      examples:
+        - "authored by Jane Doe"
+
+    # Question: "What did X write?"
+    - name: "author_question"
+      regex: '(?:[Ww]hat\s+(?:did|has)\s+|papers?\s+(?:from|of)\s+)([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)(?=\s+(?:write|create|publish|do|produce|submit)\b|[?]|\s*$)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 9
+      examples:
+        - "What did John Smith write?"
+
+    # Exclusion: "not by X", "excluding Y"
+    - name: "author_exclude"
+      regex: '(?:not\s+(?:by|from)|except|excluding|without|but\s+not\s+(?:by|from))\s+(?:the\s+)?([A-Za-z][a-zA-Z\s]*(?:team|department|group|division)?|[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)'
+      field: "author"
+      operator: "!="
+      group: 1
+      priority: 9
+      flags: "IGNORECASE"
+      examples:
+        - "but not from the legal team"
+
+    # Uppercase acronym (HR, CEO). Stop-word boundary.
+    - name: "author_acronym"
+      regex: '(?:by|from)\s+([A-Z]{2,})(?=\s+(?:created|updated|modified|uploaded|from\s+|in\s+|since\s+|before\s+)|[,;!?]|\s*$)'
+      field: "author"
+      operator: "=="
+      group: 1
+      priority: 8
+      examples:
+        - "by HR created in 2024"
+
+    # Bare "X or Y" without keyword prefix
+    - name: "author_either_or"
+      regex: '(?:either\s+)?([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+or\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 8
+      examples:
+        - "either Smith or Jones"
+
+    # Possessive: "Smith's papers"
+    - name: "author_possessive"
+      regex: "\\b((?!(?:Get|Find|Show|Search|List|Give|What|It)\\b)[A-Za-z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)*)'s\\s+(?:paper|report|document|work|article|file|writing|research|presentation|analysis|analyses|latest|recent)"
+      field: "author"
+      operator: "contains"
+      group: 1
+      priority: 7
+      flags: "IGNORECASE"
+      examples:
+        - "Smith's papers"
+
+    # Department/team with keyword
+    - name: "author_team"
+      regex: '(?:from|by)\s+(?:the\s+)?(\w+(?:\s+\w+)*\s+(?:team|department|group|division|unit))'
+      field: "author"
+      operator: "contains"
+      group: 1
+      priority: 7
+      flags: "IGNORECASE"
+      examples:
+        - "from the marketing team"
+
+    # Lowercase role/dept OR with stop-word lookahead
+    - name: "author_role_or"
+      regex: '(?:by|from|written\s+by)\s+([a-zA-Z]{2,}(?:\s+[a-zA-Z]{2,})?)\s+(?:or|and)\s+([a-zA-Z]{2,}(?:\s+[a-zA-Z]{2,})?)(?=\s+(?:created|updated|modified|uploaded|ingested|from\s+\d|in\s+\d|since\s+\d|between\s+)|[,;!?]|\s*$)'
+      field: "author"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 7
+      flags: "IGNORECASE"
+      examples:
+        - "by legal counsel or compliance created in 2024"
+
+    # Single lowercase role with stop-word lookahead
+    - name: "author_role"
+      regex: '(?:by|from)\s+([a-z]{3,})(?=\s+(?:created|updated|modified|uploaded|ingested|from\s+|in\s+|since\s+|before\s+|between\s+)|[,;!?]|\s*$)'
+      field: "author"
+      operator: "contains"
+      group: 1
+      priority: 6
+      examples:
+        - "by legal ingested in the last week"
+
+  # ===========================================================================
+  # DATE PATTERNS — default field: creation_date (DateNormalizer disambiguates)
+  # ===========================================================================
+  date:
+    # Year range: "between 2020 and 2024", "2019–2023"
+    - name: "date_range"
+      regex: '(?:(?:between|from)\s+)?(\d{4})\s*(?:and|to|-|–)\s*(\d{4})'
+      field: "creation_date"
+      operator: "range"
+      groups: [1, 2]
+      priority: 10
+      examples:
+        - "between 2020 and 2024"
+
+    # After/since: "after 2020"
+    - name: "date_after"
+      regex: '(?:after|since|from|no\s+older\s+than|newer\s+than)\s+(\d{4})'
+      field: "creation_date"
+      operator: ">="
+      group: 1
+      priority: 9
+
+    # Before/until: "before 2024"
+    - name: "date_before"
+      regex: '(?:before|until|up\s+to|prior\s+to|older\s+than)\s+(\d{4})'
+      field: "creation_date"
+      operator: "<="
+      group: 1
+      priority: 9
+
+    # Exact year: "in 2024"
+    - name: "date_exact_year"
+      regex: '(?:in|from|during)\s+(\d{4})'
+      field: "creation_date"
+      operator: "range"
+      group: 1
+      priority: 8
+
+    # Quarter range: "Q1-Q3 2024"
+    - name: "date_quarter_range"
+      regex: '[Qq]([1-4])\s*[-–]\s*[Qq]([1-4])\s+(\d{4})'
+      field: "creation_date"
+      operator: "quarter_range"
+      groups: [1, 2, 3]
+      priority: 10
+
+    # Single quarter: "Q3 2024"
+    - name: "date_quarter"
+      regex: '[Qq]([1-4])\s+(\d{4})'
+      field: "creation_date"
+      operator: "quarter"
+      groups: [1, 2]
+      priority: 9
+
+    # Ordinal quarter: "first quarter of 2024"
+    - name: "date_quarter_ordinal"
+      regex: '(?:first|1st|second|2nd|third|3rd|fourth|4th)\s+quarter\s+(?:of\s+)?(\d{4})'
+      field: "creation_date"
+      operator: "quarter"
+      groups: [1]
+      priority: 9
+
+    # Last quarter
+    - name: "date_fuzzy_last_quarter"
+      regex: '(?:last|previous|prior)\s+quarter'
+      field: "creation_date"
+      operator: "fuzzy_last_quarter"
+      priority: 7
+
+    # Recent/latest/newest
+    - name: "date_fuzzy_recent"
+      regex: '(?:recent(?:ly)?|latest|new(?:est)?|fresh)\s*(?:document|file|paper|report|data)?s?'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      priority: 6
+
+    # Today
+    - name: "date_today"
+      regex: '\btoday\b'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      value: "today"
+      priority: 8
+
+    # Yesterday
+    - name: "date_yesterday"
+      regex: '\byesterday\b'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      value: "yesterday"
+      priority: 8
+
+    # Last year
+    - name: "date_fuzzy_last_year"
+      regex: '(?:last|previous|prior)\s+year'
+      field: "creation_date"
+      operator: "fuzzy_last_year"
+      priority: 7
+
+    # This year
+    - name: "date_fuzzy_this_year"
+      regex: "(?:this|current)\\s+year(?:'s)?"
+      field: "creation_date"
+      operator: "fuzzy_this_year"
+      priority: 7
+
+    # Last N days/weeks/months: "past 2 weeks"
+    - name: "date_fuzzy_last_n"
+      regex: '(?:last|past|within\s+(?:the\s+)?(?:last|past)?)\s+(\d+)\s+(day|week|fortnight|month)s?'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 7
+
+    # Last week (singular)
+    - name: "date_fuzzy_last_week"
+      regex: '(?:last|past|previous)\s+week'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      value: ["7", "days"]
+      priority: 8
+
+    # Last month (singular)
+    - name: "date_fuzzy_last_month"
+      regex: '(?:last|past|previous)\s+month'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      value: ["1", "month"]
+      priority: 8
+
+    # Updated/modified in YYYY → last_update_date
+    - name: "date_updated_year"
+      regex: '(?:updated|modified|changed|revised|edited)\s+(?:in|during)\s+(\d{4})'
+      field: "last_update_date"
+      operator: "range"
+      group: 1
+      priority: 9
+
+    # Updated since → last_update_date >=
+    - name: "date_updated_since"
+      regex: '(?:updated|modified|changed|revised|edited)\s+(?:since|after)\s+(\w+\s+\d{4}|\d{4})'
+      field: "last_update_date"
+      operator: ">="
+      group: 1
+      priority: 9
+
+    # Updated recently → last_update_date
+    - name: "date_updated_recently"
+      regex: '(?:recently\s+)?(?:updated|modified|changed|edited)\s*(?:recently)?'
+      field: "last_update_date"
+      operator: "fuzzy_recent"
+      priority: 7
+
+    # Ingested in last N → ingestion_date
+    - name: "date_ingested_last_n"
+      regex: '(?:ingested|uploaded|imported|added|indexed)\s+(?:in\s+)?(?:the\s+)?(?:last|past)\s+(\d+)\s*(day|week|month)s?'
+      field: "ingestion_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 8
+
+    # Ingested recently → ingestion_date
+    - name: "date_ingested_recently"
+      regex: '(?:recently\s+)?(?:ingested|uploaded|imported|added)\s*(?:recently)?'
+      field: "ingestion_date"
+      operator: "fuzzy_recent"
+      priority: 7
+
+    # Month range: "January to March 2024"
+    - name: "date_month_range"
+      regex: '(?:from\s+)?(\w+)\s+(?:to|through|thru|-)\s+(\w+)\s+(\d{4})'
+      field: "creation_date"
+      operator: "month_range"
+      groups: [1, 2, 3]
+      priority: 9
+
+    # Updated last N → last_update_date
+    - name: "date_updated_last_n"
+      regex: '(?:updated|modified|changed|edited)\s+(?:in\s+)?(?:the\s+)?(?:last|past)\s+(\d+)\s*(day|week|month)s?'
+      field: "last_update_date"
+      operator: "fuzzy_last_n"
+      groups: [1, 2]
+      priority: 8
+
+  # ===========================================================================
+  # TITLE PATTERNS
+  # ===========================================================================
+  title:
+    # Title OR: 'Report A' or 'Report B' (ASCII + Unicode quotes)
+    - name: "title_or"
+      regex: "(?:titled?|named?|called)\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]\\s+or\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "OR"
+      groups: [1, 2]
+      priority: 11
+
+    # Quoted title with keyword (ASCII + Unicode quotes)
+    - name: "title_quoted"
+      regex: "(?:titled?|named?|called)\\s+[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]+)[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "=="
+      group: 1
+      priority: 10
+
+    # Bare quoted title (ASCII + Unicode quotes, min 3 chars)
+    - name: "title_quoted_bare"
+      regex: "[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]([^\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]{3,})[\"'\\u2018\\u2019\\u201c\\u201d\\u00ab\\u00bb\\u201e]"
+      field: "file_title"
+      operator: "contains"
+      group: 1
+      priority: 5
+
+    # Filename with extension
+    - name: "filename"
+      regex: '([\w\-\.]+\.(?:pdf|docx|xlsx|pptx|doc|xls|ppt|txt|md|json|yaml|yml|csv|html|xml|log))'
+      field: "file_title"
+      operator: "=="
+      group: 1
+      priority: 10
+      flags: "IGNORECASE"
+
+# ===========================================================================
+# DATE FIELD CONTEXT KEYWORDS
+# Used by DateNormalizer to disambiguate date field assignment.
+# ===========================================================================
+date_context:
+  creation_date:
+    - "created"
+    - "authored"
+    - "written"
+    - "published"
+    - "from"
+    - "made"
+    - "composed"
+    - "drafted"
+  last_update_date:
+    - "updated"
+    - "modified"
+    - "revised"
+    - "changed"
+    - "edited"
+    - "amended"
+    - "corrected"
+  ingestion_date:
+    - "ingested"
+    - "uploaded"
+    - "imported"
+    - "added"
+    - "indexed"
+    - "synced"
+    - "synchronized"
+
+# ===========================================================================
+# OR KEYWORDS
+# ===========================================================================
+or_keywords:
+  - "or"
+  - "and"
+  - "either"
+  - "&"
+  - ","
+
+# ===========================================================================
+# MONTH NAMES → month number (1-12)
+# ===========================================================================
+months:
+  january: 1
+  february: 2
+  march: 3
+  april: 4
+  may: 5
+  june: 6
+  july: 7
+  august: 8
+  september: 9
+  october: 10
+  november: 11
+  december: 12
+  jan: 1
+  feb: 2
+  mar: 3
+  apr: 4
+  jun: 6
+  jul: 7
+  aug: 8
+  sep: 9
+  oct: 10
+  nov: 11
+  dec: 12
+
+# ===========================================================================
+# TIME UNITS → day multiplier
+# ===========================================================================
+time_units:
+  day: 1
+  days: 1
+  week: 7
+  weeks: 7
+  fortnight: 14
+  fortnights: 14
+  month: 30
+  months: 30

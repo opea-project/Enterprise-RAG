@@ -2,10 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from typing import Optional
+
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc
 from comps.vectorstores.utils.opea_vectorstore import OPEAVectorStore
 from comps.cores.mega.logger import get_opea_logger, change_opea_logger_level
 from comps.vectorstores.utils.opea_rbac import retrieve_bucket_list
+from comps.retrievers.utils.query_metadata_parser import QueryMetadataParser
+from comps.retrievers.utils.models import QueryAnalysisResult
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"))
@@ -26,6 +30,23 @@ class OPEARetriever:
     def _initialize(self, vector_store: str, rbac_enabled: bool = False):
         self.vector_store = OPEAVectorStore(vector_store)
         self.rbac_enabled = rbac_enabled
+        
+        # Initialize query metadata parser for metadata-aware filtering
+        self._query_parser: Optional[QueryMetadataParser] = None
+        self._query_parsing_enabled = os.getenv("METADATA_FILTERING_ENABLED", "true").lower() in ('true', '1', 'yes')
+        
+        if self._query_parsing_enabled:
+            try:
+                # OPEAVectorStore.vector_store is the underlying ConnectorRedis instance
+                redis_connector = getattr(self.vector_store, 'vector_store', None)
+                self._query_parser = QueryMetadataParser.from_env(
+                    redis_connector=redis_connector
+                )
+                logger.info("Query metadata parsing enabled")
+            except Exception as e:
+                logger.warning(f"Failed to initialize query parser, disabling: {e}")
+                self._query_parser = None
+                self._query_parsing_enabled = False
 
     def filter_expression_from_rbac_by(self, rbac_by: dict = None):
         if rbac_by is not None and 'bucket_names' in rbac_by: # bucket_names can be empty meaning no access
@@ -117,14 +138,36 @@ class OPEARetriever:
         logger.debug(f"Generated filter expression for hierarchical retrieval: {str(new_filter_expression)}")
         return new_filter_expression
 
-    async def retrieve(self, input: EmbedDoc, search_by: dict = None, rbac_by: dict = None) -> SearchedDoc:
-        filter_expression = self.filter_expression_from_search_by(search_by=search_by)
+    async def retrieve(
+        self, 
+        input: EmbedDoc, 
+        search_by: dict = None, 
+        rbac_by: dict = None,
+        metadata_filter: Optional[object] = None
+    ) -> SearchedDoc:
+        """Retrieve documents matching the query, combining search/RBAC/metadata filters."""
+        # Combine search_by filter with metadata filter
+        search_filter = self.filter_expression_from_search_by(search_by=search_by)
+        combined_filter = self.combine_filter_expressions(search_filter, metadata_filter)
+        
         rbac_filter_expression = self.filter_expression_from_rbac_by(rbac_by=rbac_by)
-        retrieve_filter_expression = self.generate_retrieve_filter_expression(filter_expression, rbac_filter_expression)
+        retrieve_filter_expression = self.generate_retrieve_filter_expression(combined_filter, rbac_filter_expression)
         return await self.vector_store.search(input=input, filter_expression=retrieve_filter_expression)
 
-    async def hierarchical_retrieve(self, input: EmbedDoc, k_summaries: int, k_chunks: int, search_by: dict = None, rbac_by: dict = None) -> SearchedDoc:
-        filter_expression = self.filter_expression_from_search_by(search_by=search_by)
+    async def hierarchical_retrieve(
+        self, 
+        input: EmbedDoc, 
+        k_summaries: int, 
+        k_chunks: int, 
+        search_by: dict = None, 
+        rbac_by: dict = None,
+        metadata_filter: Optional[object] = None
+    ) -> SearchedDoc:
+        """Hierarchical retrieval: summary-then-chunk with combined filters."""
+        # Combine search_by filter with metadata filter
+        search_filter = self.filter_expression_from_search_by(search_by=search_by)
+        filter_expression = self.combine_filter_expressions(search_filter, metadata_filter)
+        
         rbac_filter_expression = self.filter_expression_from_rbac_by(rbac_by=rbac_by)
 
         # Fetch summaries using filter expression
@@ -168,3 +211,45 @@ class OPEARetriever:
         except ValueError as e:
             logger.error(f"Returning empty list of buckets due to RBAC request error: {e}")
             return { 'bucket_names': [] }
+
+    async def analyze_query(self, query: str) -> Optional[QueryAnalysisResult]:
+        """Parse query to extract metadata constraints and build filter expressions."""
+        if not self._query_parsing_enabled or self._query_parser is None:
+            return None
+        
+        try:
+            result = await self._query_parser.parse(query)
+            if result.has_filters:
+                logger.info(
+                    f"Query analysis extracted {result.extraction_count} metadata constraints "
+                    f"in {result.latency_ms:.2f}ms"
+                )
+            return result
+        except Exception as e:
+            logger.warning(f"Query analysis failed, continuing without metadata filter: {e}")
+            return None
+    
+    def filter_expression_from_query_analysis(
+        self, 
+        query_analysis: Optional[QueryAnalysisResult]
+    ) -> Optional[object]:
+        """Extract filter expression from query analysis result (None if no constraints)."""
+        if query_analysis is None or not query_analysis.has_filters:
+            return None
+        return query_analysis.filter_expression
+    
+    def combine_filter_expressions(
+        self,
+        search_filter: Optional[object],
+        metadata_filter: Optional[object]
+    ) -> Optional[object]:
+        """Combine search_by and metadata filters with AND logic."""
+        if search_filter is None and metadata_filter is None:
+            return None
+        if search_filter is None:
+            return metadata_filter
+        if metadata_filter is None:
+            return search_filter
+        
+        # Combine with AND
+        return search_filter & metadata_filter

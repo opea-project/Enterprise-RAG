@@ -25,9 +25,14 @@ import { Label } from "@/Label/Label";
 import { Tooltip } from "@/Tooltip/Tooltip";
 
 type SelectInputSize = "sm";
-export type SelectInputChangeHandler<T = AriaKey> = (item: T) => void;
+export type SelectInputChangeHandler<T extends AriaKey = AriaKey> = (
+  item: T,
+) => void;
 
-interface SelectInputProps<T = AriaKey> extends AriaSelectProps {
+interface SelectInputProps<T extends AriaKey = AriaKey> extends Omit<
+  AriaSelectProps,
+  "onChange"
+> {
   /** Selected value */
   value?: T | null;
   /** List of selectable items */

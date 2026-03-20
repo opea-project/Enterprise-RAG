@@ -1,0 +1,33 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+- name: Render NRI device-injector manifests
+  ansible.builtin.command:
+    cmd: kubectl kustomize "https://github.com/containerd/nri/contrib/kustomize/device-injector?ref={{ nri_device_injector_version }}"
+  register: nri_device_injector_manifest
+  tags:
+    - install
+    - uninstall
+
+- name: Create NRI device-injector resource
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ nri_device_injector_manifest.stdout }}"
+  register: helm_nri_device_injector_install_result
+  until: helm_nri_device_injector_install_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - install
+
+- name: Delete NRI device-injector resource
+  kubernetes.core.k8s:
+    state: absent
+    definition: "{{ nri_device_injector_manifest.stdout }}"
+  register: helm_nri_device_injector_uninstall_result
+  until: helm_nri_device_injector_uninstall_result is succeeded
+  retries: 5
+  delay: 15
+  tags:
+    - uninstall

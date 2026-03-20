@@ -76,11 +76,11 @@ const graphNodes: Node<ServiceNodeData>[] = [
     selectable: false,
   },
   {
-    id: "vllm",
+    id: "llm_model_server",
     position: { x: 600, y: 288 },
     data: {
-      id: "vllm",
-      displayName: "vLLM Model Server",
+      id: "llm_model_server",
+      displayName: "LLM Model Server",
       targetPosition: Position.Top,
       selected: false,
     },
@@ -116,9 +116,9 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm-vllm",
+    id: "llm-llm_model_server",
     source: "llm",
-    target: "vllm",
+    target: "llm_model_server",
     selectable: false,
   },
 ];

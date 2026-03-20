@@ -10,6 +10,7 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 from langchain_classic.chains.summarize import load_summarize_chain
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage
 from langchain_core.outputs import LLMResult
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
@@ -33,36 +34,36 @@ SUPPORTED_SUMMARY_TYPES = ["map_reduce", "refine", "stuff"]
 
 class ConcurrencyLimitedChatOpenAI(ChatOpenAI):
     """ChatOpenAI with concurrency limiting for batch operations."""
-    
+
     _semaphore: asyncio.Semaphore
-    
+
     def __init__(self, semaphore: asyncio.Semaphore, **kwargs):
         """
         Initialize the concurrency-limited ChatOpenAI client.
-        
+
         Args:
             semaphore: The semaphore to use for concurrency control
             **kwargs: All other arguments passed to ChatOpenAI
         """
         super().__init__(**kwargs)
         object.__setattr__(self, '_semaphore', semaphore)
-    
+
     async def agenerate_prompt(self, prompts, stop=None, callbacks=None, **kwargs) -> LLMResult:
         """
         Override agenerate_prompt to add concurrency control.
         This is the method called by LangChain's old chain API (aapply).
-        
+
         Args:
             prompts: List of prompts to process
             stop: Stop sequences
             callbacks: Callbacks
             **kwargs: Additional keyword arguments
-            
+
         Returns:
             LLMResult with generations
         """
         logger.debug(f"agenerate_prompt called with {len(prompts)} prompts, max_concurrency={self._semaphore._value}")
-        
+
         async def process_single(prompt):
             async with self._semaphore:
                 logger.debug(f"Processing prompt (semaphore acquired, {self._semaphore._value} remaining)")
@@ -71,11 +72,11 @@ class ConcurrencyLimitedChatOpenAI(ChatOpenAI):
                     [prompt], stop=stop, callbacks=callbacks, **kwargs
                 )
                 return result.generations[0]
-        
+
         # Process all prompts with concurrency control
         tasks = [process_single(prompt) for prompt in prompts]
         generations = await asyncio.gather(*tasks)
-        
+
         return LLMResult(generations=list(generations))
 
 
@@ -108,6 +109,7 @@ class OPEADocsum:
             self.llm_usvc_endpoint = self.llm_usvc_endpoint.rstrip("/") + "/v1"
 
         self._validate()
+        self._model_context_length = self._retrieve_model_context_length()
 
     def _validate(self) -> None:
         """Validate the configuration by making a test call to the LLM microservice."""
@@ -123,6 +125,21 @@ class OPEADocsum:
             raise ConnectionError(f"Failed to connect to LLM microservice at {self.llm_usvc_endpoint}: {e}")
 
         logger.info("OPEADocsum configuration validated successfully.")
+
+    def _retrieve_model_context_length(self) -> Optional[int]:
+        model_context_length = None
+        try:
+            models_response = requests.get(f"{self.llm_usvc_endpoint}/models", timeout=10)
+            models_response.raise_for_status()
+            for model in models_response.json().get("data", []):
+                if "max_model_len" in model:
+                    model_context_length = model["max_model_len"]
+                    logger.info(f"Fetched model context length: {model_context_length} tokens")
+            if model_context_length is None:
+                logger.info("Model context length not available from /v1/models; token pre-validation will be skipped.")
+        except Exception as e:
+            logger.warning(f"Could not fetch model context length from {self.llm_usvc_endpoint}/models: {e}. Token pre-validation will be skipped.")
+        return model_context_length
 
     async def run(self, input: TextDocList, raw_request: Optional[Request] = None) -> Union[GeneratedDoc, StreamingResponse]:
         """
@@ -148,12 +165,14 @@ class OPEADocsum:
             base_url=self.llm_usvc_endpoint,
             api_key="dummy",
             timeout=300,
-            max_retries=1
+            max_retries=1,
+            max_tokens=input.max_new_tokens
         )
 
         logger.debug(f"Input documents count: {len(input.docs)}")
         logger.debug(f"Using summary_type: {summary_type}")
         logger.debug(f"Streaming response: {use_stream}")
+        logger.debug(f"Max new tokens: {input.max_new_tokens}")
 
         prompt = PromptTemplate.from_template(templ_en)
         if summary_type == "map_reduce":
@@ -180,6 +199,20 @@ class OPEADocsum:
             raise ValueError(f"Unsupported summary_type: {summary_type}. Supported types are: {SUPPORTED_SUMMARY_TYPES}")
 
         docs = [Document(page_content=t.text) for t in input.docs]
+
+        if summary_type == "stuff":
+            # For stuff type the entire input is sent in a single LLM call, so pre-validate the token
+            # count here, before streaming starts.
+            combined_text = "\n\n".join([doc.page_content for doc in docs])
+            formatted_prompt = prompt.format(text=combined_text)
+            num_tokens = client.get_num_tokens_from_messages([HumanMessage(content=formatted_prompt)])
+            if self._model_context_length is not None and num_tokens + input.max_new_tokens >= self._model_context_length:
+                raise ValueError(
+                    f"Input exceeds model's maximum context length. Input requires approximately {num_tokens} tokens "
+                    f"and with max_new_tokens={input.max_new_tokens} the total would be {num_tokens + input.max_new_tokens} tokens, "
+                    f"but the model's maximum context length is {self._model_context_length} tokens. "
+                    f"Please reduce the input size, limit max_new_tokens or switch to a different summary_type (e.g. 'map_reduce')."
+                )
 
         if use_stream:
             async def stream_generator():

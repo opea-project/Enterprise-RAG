@@ -21,7 +21,8 @@ This service internally uses VectorStore class which has to be appropriately con
      - 3.4.1. [Query parameters](#query-parameters)
    - 3.5. [Example output](#example-output)
 4. [Additional Information](#additional-information)
-   - 4.1. [Project Structure](#project-structure)
+   - 4.1. [Metadata-Aware Query Filtering (OVMS NER)](#metadata-aware-query-filtering-ovms-ner)
+   - 4.2. [Project Structure](#project-structure)
 
 ## Configuration options
 
@@ -32,6 +33,7 @@ Configuration is done by selecting the desired vector store type. In addition, t
 | `VECTOR_STORE`          | `redis`           | Vector Store database type                                                                       |
 | `RETRIEVER_USVC_PORT`          | `6620`           | (Optional) Retriever microservice port         |
 | `USE_HIERARCHICAL_INDICES` | `False`        | Enable/disable Hierarchical Indices Advanced RAG Technique         |
+| `METADATA_FILTERING_ENABLED` | `true`      | Enable/disable metadata-aware query filtering (see [OVMS NER](impl/model_server/ovms/README.md)) |
 
 ### Vector Store Support Matrix
 
@@ -145,6 +147,33 @@ Alternatively, you can pass multiple docs but this will limit the retrieval only
 ```
 
 ## Additional Information
+
+### Metadata-Aware Query Filtering
+
+The retriever supports metadata-aware query filtering, which extracts structured metadata (authors, dates, document titles) from natural language queries and applies them as filters during vector search. This feature is **enabled by default** in **hybrid** mode (regex + NER). If the NER OVMS container is not deployed, the retriever falls back to regex-only extraction automatically.
+
+See the [OVMS NER README](impl/model_server/ovms/README.md) for NER model server setup and docker-compose configuration.
+
+**Retriever metadata settings** (set in [impl/microservice/.env](impl/microservice/.env)):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `METADATA_FILTERING_ENABLED` | `true` | Enable/disable metadata-aware query filtering |
+| `METADATA_LANGUAGE` | `en` | Language for regex patterns and name lemmatization (`en` or `pl`) |
+| `NER_ENDPOINT` | `http://retriever-ner-ovms:9001` | URL of the NER OVMS Gateway. Unset to use regex-only extraction |
+| `METADATA_EXTRACTION_MODE` | `hybrid` | `hybrid` (regex+NER), `regex_only`, or `ner_only` |
+
+> [!NOTE]
+> If the NER OVMS container is not running, the retriever falls back to regex-only mode automatically. To disable metadata filtering entirely, set `METADATA_FILTERING_ENABLED=false`.
+
+#### NER Endpoint Behavior
+
+| Scenario | `NER_ENDPOINT` | Behavior | Log Level |
+|----------|---------------|----------|-----------|
+| **Not defined** | _(unset)_ | Regex-only extraction, NER skipped entirely | `INFO`: _"NER disabled (NER_ENDPOINT not set), using regex-only mode"_ |
+| **Defined but unreachable** | `http://...:9001` (container down) | First request falls back to regex-only with guidance; subsequent failures logged at DEBUG | `INFO` (first): _"NER endpoint unreachable … Check that retriever-ner-ovms container is running"_ |
+| **Defined and reachable** | `http://...:9001` (healthy) | Hybrid extraction: regex + NER merge | `INFO`: _"NERExtractor initialized: endpoint=…"_ |
+
 ### Project Structure
 
 The project is organized into several directories:

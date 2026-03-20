@@ -19,9 +19,6 @@ RUN apt-get -y update                           \
     numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \
- && apt-get install -y --only-upgrade           \
-    openssl=3.5.4-1~deb13u2                     \
-    libssl3=3.5.4-1~deb13u2                     \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean
@@ -44,7 +41,7 @@ ENV HF_HOME="/home/user/tmp"
 WORKDIR /home/user/
 COPY ./docker/pyproject.toml pyproject.toml
 COPY ./docker/uv.lock uv.lock
-RUN uv sync --locked --no-cache
+RUN uv sync --locked --no-cache --group security-overrides
 ENV PATH="/home/user/.venv/bin:$PATH"
 
 # Add TS entrypoint

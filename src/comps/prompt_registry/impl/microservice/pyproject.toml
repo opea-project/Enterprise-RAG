@@ -3,7 +3,7 @@
 
 [project]
 name = "Intel-Enterprise-RAG-Prompt_Registry_Microservice"
-version = "2.1.1"
+version = "2.1.0"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
@@ -17,7 +17,6 @@ dependencies = [
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
     "opentelemetry-semantic-conventions==0.46b0",
-    "Pillow==11.3.0",
     "prometheus-fastapi-instrumentator==7.0.0",
     "pymongo==4.8.0",
     "pyyaml==6.0.1",
@@ -41,4 +40,9 @@ test = [
     "opentelemetry-api==1.25.0",
     "opentelemetry-exporter-otlp==1.25.0",
     "opentelemetry-sdk==1.25.0",
+]
+
+[dependency-groups]
+security-overrides = [
+  "pillow>=12.1.1",
 ]

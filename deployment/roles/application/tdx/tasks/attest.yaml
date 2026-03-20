@@ -2,25 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Load KBS address
-  ansible.builtin.set_fact:
-    KBS_ADDRESS: "{{ lookup('env', 'KBS_ADDRESS') }}"
-  tags:
-    - install
-
-- name: Fail if  KBS address does not exist
-  ansible.builtin.fail:
-    msg: "KBS_ADDRESS is not set. Please set the KBS_ADDRESS environment variable."
-  when: KBS_ADDRESS is not defined or KBS_ADDRESS | length == 0
-  tags:
-    - install
-
 - name: Create namespace TDX
   kubernetes.core.k8s:
     api_version: v1
     kind: Namespace
     name: tdx
     state: present
+  tags:
+    - install
+
+- name: Install NRI device injector
+  ansible.builtin.include_tasks:
+    file: manage_nri_device_injector.yaml
   tags:
     - install
 
@@ -58,3 +51,17 @@
     - install
   when: '"ATTESTATION COMPLETED SUCCESSFULLY" not in tdx_attestation_logs.log'
 
+- name: Delete attestation pod
+  vars:
+    KBS_ADDRESS: ""  # content of the variable does not matter for uninstallation
+  kubernetes.core.k8s:
+    state: absent
+    template: attest.yaml.j2
+  tags:
+    - uninstall
+
+- name: Uninstall NRI device injector
+  ansible.builtin.include_tasks:
+    file: manage_nri_device_injector.yaml
+  tags:
+    - uninstall

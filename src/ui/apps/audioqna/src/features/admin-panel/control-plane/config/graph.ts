@@ -1,12 +1,19 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import {
+  llmArgumentsDefault,
+  llmInputGuardArgumentsDefault,
+  llmOutputGuardArgumentsDefault,
+  promptTemplateArgumentsDefault,
+  rerankerArgumentsDefault,
+  retrieverArgumentsDefault,
+  ServiceData,
+} from "@intel-enterprise-rag-ui/control-plane";
 import { Edge, Node, Position } from "@xyflow/react";
 
-import { ServiceData } from "@/features/admin-panel/control-plane/types";
-
 export const llmNodePositionNoGuards = { x: 840, y: 144 };
-export const vllmNodePositionNoGuards = { x: 840, y: 288 };
+export const llmModelServerNodePositionNoGuards = { x: 840, y: 288 };
 
 const graphNodes: Node<ServiceData>[] = [
   {
@@ -45,16 +52,17 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "retriever",
       displayName: "Retriever",
+      retrieverArgs: retrieverArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalTargetPosition: Position.Top,
       additionalTargetId: "retriever-vectordb-target",
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
     id: "vectordb",
@@ -76,16 +84,17 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "reranker",
       displayName: "Reranker",
+      rerankerArgs: rerankerArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalSourcePosition: Position.Bottom,
       additionalSourceId: "reranker-reranker_model_server-source",
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
     id: "reranker_model_server",
@@ -107,14 +116,15 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "prompt_template",
       displayName: "Prompt Template",
+      promptTemplateArgs: promptTemplateArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
     id: "input_guard",
@@ -122,14 +132,15 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "input_guard",
       displayName: "LLM Input Guard",
+      inputGuardArgs: llmInputGuardArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
     id: "llm",
@@ -137,23 +148,24 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "llm",
       displayName: "LLM",
+      llmArgs: llmArgumentsDefault,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       additionalSourcePosition: Position.Bottom,
-      additionalSourceId: "llm-vllm-source",
+      additionalSourceId: "llm-llm_model_server-source",
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
-    id: "vllm",
+    id: "llm_model_server",
     position: { x: 1040, y: 288 },
     data: {
-      id: "vllm",
-      displayName: "vLLM Model Server",
+      id: "llm_model_server",
+      displayName: "LLM Model Server",
       targetPosition: Position.Top,
       selected: false,
       configurable: false,
@@ -168,13 +180,14 @@ const graphNodes: Node<ServiceData>[] = [
     data: {
       id: "output_guard",
       displayName: "LLM Output Guard",
+      outputGuardArgs: llmOutputGuardArgumentsDefault,
       targetPosition: Position.Left,
       selected: false,
-      configurable: false,
+      configurable: true,
     },
     type: "serviceNode",
-    focusable: false,
-    selectable: false,
+    focusable: true,
+    selectable: true,
   },
   {
     id: "asr",
@@ -293,10 +306,10 @@ const graphEdges: Edge[] = [
     selectable: false,
   },
   {
-    id: "llm-vllm",
+    id: "llm-llm_model_server",
     source: "llm",
-    target: "vllm",
-    sourceHandle: "llm-vllm-source",
+    target: "llm_model_server",
+    sourceHandle: "llm-llm_model_server-source",
     selectable: false,
   },
   {

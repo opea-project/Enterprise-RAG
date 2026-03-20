@@ -1,0 +1,1454 @@
+{
+  "metadata": {
+    "description": "Polish test prompts for metadata filtering validation",
+    "version": "3.0",
+    "date": "2026-01-25",
+    "total_cases": 86,
+    "fields": [
+      "file_title",
+      "author",
+      "creation_date",
+      "ingestion_date",
+      "last_update_date"
+    ],
+    "distribution": {
+      "author_focused": 15,
+      "date_focused": 15,
+      "title_focused": 15,
+      "multi_field": 15,
+      "fuzzy_date_extended": 18
+    }
+  },
+  "test_cases": [
+    {
+      "id": "pl-001",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Pokaż mi raporty napisane przez Jana Kowalskiego",
+      "expected_extraction": {
+        "author": {
+          "value": "Jan Kowalski",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Jan Kowalski'",
+      "expected_filter_string": "@author:{Jan Kowalski}"
+    },
+    {
+      "id": "pl-002",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Znajdź wszystkie dokumenty autorstwa Marii Nowak",
+      "expected_extraction": {
+        "author": {
+          "value": "Maria Nowak",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Maria Nowak'",
+      "expected_filter_string": "@author:{Maria Nowak}"
+    },
+    {
+      "id": "pl-003",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Dokumenty napisane przez dr. Annę Wiśniewską",
+      "expected_extraction": {
+        "author": {
+          "value": "dr. Anna Wiśniewska",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'dr. Anna Wiśniewska'",
+      "expected_filter_string": "@author:{dr. Anna Wiśniewska}"
+    },
+    {
+      "id": "pl-004",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Co napisał Piotr Wójcik?",
+      "expected_extraction": {
+        "author": {
+          "value": "Piotr Wójcik",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Piotr Wójcik'",
+      "expected_filter_string": "@author:{Piotr Wójcik}"
+    },
+    {
+      "id": "pl-005",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Pokaż dokumenty stworzone przez Katarzynę Mazur",
+      "expected_extraction": {
+        "author": {
+          "value": "Katarzyna Mazur",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Katarzyna Mazur'",
+      "expected_filter_string": "@author:{Katarzyna Mazur}"
+    },
+    {
+      "id": "pl-006",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Raporty napisane przez Jana Kowalskiego lub Annę Nowak",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "Jan Kowalski",
+            "Anna Nowak"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Jan Kowalski') | (Text('author') == 'Anna Nowak')",
+      "expected_filter_string": "(@author:{Jan Kowalski}|@author:{Anna Nowak})"
+    },
+    {
+      "id": "pl-007",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Dokumenty od zespołu technicznego albo Marka Lewandowskiego",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "zespół techniczny",
+            "Marek Lewandowski"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*zespół techniczny*') | (Text('author') == 'Marek Lewandowski')",
+      "expected_filter_string": "(@author:*zespół techniczny*|@author:{Marek Lewandowski})"
+    },
+    {
+      "id": "pl-008",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Znajdź prace prof. Tomasza Zielińskiego bez wersji roboczych",
+      "expected_extraction": {
+        "author": {
+          "value": "prof. Tomasz Zieliński",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'prof. Tomasz Zieliński'",
+      "expected_filter_string": "@author:{prof. Tomasz Zieliński}"
+    },
+    {
+      "id": "pl-009",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Pokaż pliki z działu marketingu",
+      "expected_extraction": {
+        "author": {
+          "value": "dział marketingu",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('author') % '*dział marketingu*'",
+      "expected_filter_string": "@author:*dział marketingu*"
+    },
+    {
+      "id": "pl-010",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Dokumenty od Agnieszki, Michała lub Ewy",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "Agnieszka",
+            "Michał",
+            "Ewa"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*Agnieszka*') | (Text('author') % '*Michał*') | (Text('author') % '*Ewa*')",
+      "expected_filter_string": "(@author:*Agnieszka*|@author:*Michał*|@author:*Ewa*)"
+    },
+    {
+      "id": "pl-011",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Artykuły naukowe od zespołu AI lub dr. Wang z Stanfordu",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "zespół AI",
+            "dr. Wang"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*zespół AI*') | (Text('author') == 'dr. Wang')",
+      "expected_filter_string": "(@author:*zespół AI*|@author:{dr. Wang})"
+    },
+    {
+      "id": "pl-012",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Cokolwiek napisane przez radcę prawnego lub compliance",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "radca prawny",
+            "compliance"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*radca prawny*') | (Text('author') % '*compliance*')",
+      "expected_filter_string": "(@author:*radca prawny*|@author:*compliance*)"
+    },
+    {
+      "id": "pl-013",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Publikacje prof. Krzysztofa Adamskiego bez referatów konferencyjnych",
+      "expected_extraction": {
+        "author": {
+          "value": "prof. Krzysztof Adamski",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'prof. Krzysztof Adamski'",
+      "expected_filter_string": "@author:{prof. Krzysztof Adamski}"
+    },
+    {
+      "id": "pl-014",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Dokumenty międzyzespołowe od inżynierii lub zarządzania produktem",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "inżynieria",
+            "zarządzanie produktem"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*inżynieria*') | (Text('author') % '*zarządzanie produktem*')",
+      "expected_filter_string": "(@author:*inżynieria*|@author:*zarządzanie produktem*)"
+    },
+    {
+      "id": "pl-015",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Dokumenty od zewnętrznych konsultantów jak Deloitte lub PwC",
+      "expected_extraction": {
+        "author": {
+          "values": [
+            "Deloitte",
+            "PwC"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') % '*Deloitte*') | (Text('author') % '*PwC*')",
+      "expected_filter_string": "(@author:*Deloitte*|@author:*PwC*)"
+    },
+    {
+      "id": "pl-016",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Znajdź dokumenty stworzone po 2022",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2022,
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "Num('creation_date') >= 1640995200",
+      "expected_filter_string": "@creation_date:[1640995200 +inf]"
+    },
+    {
+      "id": "pl-017",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Dokumenty z 2024 roku",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "pl-018",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Pokaż wszystkie dokumenty zaktualizowane w 2025",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599)",
+      "expected_filter_string": "@last_update_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "pl-019",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Dokumenty sprzed 2020",
+      "expected_extraction": {
+        "creation_date": {
+          "value": 2020,
+          "operator": "<="
+        }
+      },
+      "expected_filter_python": "Num('creation_date') <= 1577836799",
+      "expected_filter_string": "@creation_date:[-inf 1577836799]"
+    },
+    {
+      "id": "pl-020",
+      "category": "date",
+      "complexity": "simple",
+      "prompt": "Pliki zaimportowane w ostatnim miesiącu",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "last_month",
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1734912000",
+      "expected_filter_string": "@ingestion_date:[1734912000 +inf]"
+    },
+    {
+      "id": "pl-021",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Dokumenty z Q3 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": [
+            "3",
+            "2024"
+          ],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1719792000) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1719792000 1735689599]"
+    },
+    {
+      "id": "pl-022",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Pokaż pliki z ostatniego kwartału",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1727740800) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "pl-023",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Dokumenty zaktualizowane od stycznia 2024",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "2024-01",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1704067200",
+      "expected_filter_string": "@last_update_date:[1704067200 +inf]"
+    },
+    {
+      "id": "pl-024",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Pliki utworzone w grudniu 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "2023-12",
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1701388800) & (Num('creation_date') <= 1704067199)",
+      "expected_filter_string": "@creation_date:[1701388800 1704067199]"
+    },
+    {
+      "id": "pl-025",
+      "category": "date",
+      "complexity": "medium",
+      "prompt": "Dokumenty z tego roku",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "this_year",
+          "operator": "fuzzy_this_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1735689600) & (Num('creation_date') <= 1767225599)",
+      "expected_filter_string": "@creation_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "pl-026",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Dokumenty z I-III kwartał 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": [
+            "1",
+            "3",
+            "2024"
+          ],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1727740799)",
+      "expected_filter_string": "@creation_date:[1704067200 1727740799]"
+    },
+    {
+      "id": "pl-027",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Pliki zaktualizowane między marcem a czerwcem 2024",
+      "expected_extraction": {
+        "last_update_date": {
+          "min": "2024-03",
+          "max": "2024-06",
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1709251200) & (Num('last_update_date') <= 1719792000)",
+      "expected_filter_string": "@last_update_date:[1709251200 1719792000]"
+    },
+    {
+      "id": "pl-028",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Dokumenty utworzone między 2020 a 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "min": 2020,
+          "max": 2023,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1577836800) & (Num('creation_date') <= 1704067199)",
+      "expected_filter_string": "@creation_date:[1577836800 1704067199]"
+    },
+    {
+      "id": "pl-029",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Pliki zaimportowane w ostatnich 7 dniach",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": [
+            "7",
+            "dni"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737504000",
+      "expected_filter_string": "@ingestion_date:[1737504000 +inf]"
+    },
+    {
+      "id": "pl-030",
+      "category": "date",
+      "complexity": "high",
+      "prompt": "Dokumenty zaktualizowane w ostatnich 3 miesiącach",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": [
+            "3",
+            "miesiące"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1729382400",
+      "expected_filter_string": "@last_update_date:[1729382400 +inf]"
+    },
+    {
+      "id": "pl-031",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Szukaj 'Kwartalny Raport Finansowy'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Kwartalny Raport Finansowy",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Kwartalny Raport Finansowy*'",
+      "expected_filter_string": "@file_title:*Kwartalny Raport Finansowy*"
+    },
+    {
+      "id": "pl-032",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Znajdź 'Roczny Budżet'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Roczny Budżet",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Roczny Budżet*'",
+      "expected_filter_string": "@file_title:*Roczny Budżet*"
+    },
+    {
+      "id": "pl-033",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Pokaż 'Podręcznik Pracownika'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Podręcznik Pracownika",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Podręcznik Pracownika*'",
+      "expected_filter_string": "@file_title:*Podręcznik Pracownika*"
+    },
+    {
+      "id": "pl-034",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Pokaż mi 'Status Projektu'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Status Projektu",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Status Projektu*'",
+      "expected_filter_string": "@file_title:*Status Projektu*"
+    },
+    {
+      "id": "pl-035",
+      "category": "title",
+      "complexity": "simple",
+      "prompt": "Znajdź 'Specyfikacja Techniczna v2.0'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Specyfikacja Techniczna v2.0",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Specyfikacja Techniczna v2.0*'",
+      "expected_filter_string": "@file_title:*Specyfikacja Techniczna v2.0*"
+    },
+    {
+      "id": "pl-036",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Szukaj 'Przewodnik Użytkownika' lub 'Szybki Start'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Przewodnik Użytkownika",
+            "Szybki Start"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Przewodnik Użytkownika*') | (Text('file_title') % '*Szybki Start*')",
+      "expected_filter_string": "(@file_title:*Przewodnik Użytkownika*|@file_title:*Szybki Start*)"
+    },
+    {
+      "id": "pl-037",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Znajdź 'Dokumentacja API' lub 'Przewodnik Integracji'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Dokumentacja API",
+            "Przewodnik Integracji"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Dokumentacja API*') | (Text('file_title') % '*Przewodnik Integracji*')",
+      "expected_filter_string": "(@file_title:*Dokumentacja API*|@file_title:*Przewodnik Integracji*)"
+    },
+    {
+      "id": "pl-038",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Pokaż 'Notatki Wydania' dla dowolnej wersji",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Notatki Wydania",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Notatki Wydania*'",
+      "expected_filter_string": "@file_title:*Notatki Wydania*"
+    },
+    {
+      "id": "pl-039",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Szukaj 'Polityka Bezpieczeństwa' lub 'Oświadczenie o Prywatności'",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Polityka Bezpieczeństwa",
+            "Oświadczenie o Prywatności"
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Polityka Bezpieczeństwa*') | (Text('file_title') % '*Oświadczenie o Prywatności*')",
+      "expected_filter_string": "(@file_title:*Polityka Bezpieczeństwa*|@file_title:*Oświadczenie o Prywatności*)"
+    },
+    {
+      "id": "pl-040",
+      "category": "title",
+      "complexity": "medium",
+      "prompt": "Znajdź 'Protokół ze Spotkania - Styczeń'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Protokół ze Spotkania - Styczeń",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Protokół ze Spotkania - Styczeń*'",
+      "expected_filter_string": "@file_title:*Protokół ze Spotkania - Styczeń*"
+    },
+    {
+      "id": "pl-041",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Pokaż 'Dokument Projektowy Architektury (Wersja Ostateczna)'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Dokument Projektowy Architektury (Wersja Ostateczna)",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Dokument Projektowy Architektury (Wersja Ostateczna)*'",
+      "expected_filter_string": "@file_title:*Dokument Projektowy Architektury (Wersja Ostateczna)*"
+    },
+    {
+      "id": "pl-042",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Szukaj 'Wyniki Finansowe Q4 2024 - Poufne'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Wyniki Finansowe Q4 2024 - Poufne",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Wyniki Finansowe Q4 2024 - Poufne*'",
+      "expected_filter_string": "@file_title:*Wyniki Finansowe Q4 2024 - Poufne*"
+    },
+    {
+      "id": "pl-043",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Znajdź 'Szablon Oceny Pracowniczej v3.1'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Szablon Oceny Pracowniczej v3.1",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Szablon Oceny Pracowniczej v3.1*'",
+      "expected_filter_string": "@file_title:*Szablon Oceny Pracowniczej v3.1*"
+    },
+    {
+      "id": "pl-044",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Pokaż 'Plan Migracji Danych (Faza 2 - Produkcja)'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Plan Migracji Danych (Faza 2 - Produkcja)",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Plan Migracji Danych (Faza 2 - Produkcja)*'",
+      "expected_filter_string": "@file_title:*Plan Migracji Danych (Faza 2 - Produkcja)*"
+    },
+    {
+      "id": "pl-045",
+      "category": "title",
+      "complexity": "high",
+      "prompt": "Szukaj 'Spotkanie Zarządu - Strategia Q1 2025'",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Spotkanie Zarządu - Strategia Q1 2025",
+          "operator": "contains"
+        }
+      },
+      "expected_filter_python": "Text('file_title') % '*Spotkanie Zarządu - Strategia Q1 2025*'",
+      "expected_filter_string": "@file_title:*Spotkanie Zarządu - Strategia Q1 2025*"
+    },
+    {
+      "id": "pl-046",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Dokumenty autorstwa Anny Kowalskiej z 2023",
+      "expected_extraction": {
+        "author": {
+          "value": "Anna Kowalska",
+          "operator": "=="
+        },
+        "creation_date": {
+          "value": 2023,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Anna Kowalska') & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1704067199))",
+      "expected_filter_string": "(@author:{Anna Kowalska} @creation_date:[1672531200 1704067199])"
+    },
+    {
+      "id": "pl-047",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Znajdź 'Raport Budżetowy' autorstwa Marka Nowaka",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Raport Budżetowy",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "Marek Nowak",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Raport Budżetowy*') & (Text('author') == 'Marek Nowak')",
+      "expected_filter_string": "(@file_title:*Raport Budżetowy* @author:{Marek Nowak})"
+    },
+    {
+      "id": "pl-048",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "'Przegląd Roczny' dokumenty utworzone przed 2020",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Przegląd Roczny",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2020,
+          "operator": "<="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Przegląd Roczny*') & (Num('creation_date') <= 1577836799)",
+      "expected_filter_string": "(@file_title:*Przegląd Roczny* @creation_date:[-inf 1577836799])"
+    },
+    {
+      "id": "pl-049",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "Raporty autorstwa Katarzyny Wiśniewskiej zaktualizowane w 2025",
+      "expected_extraction": {
+        "author": {
+          "value": "Katarzyna Wiśniewska",
+          "operator": "=="
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Katarzyna Wiśniewska') & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@author:{Katarzyna Wiśniewska} @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "pl-050",
+      "category": "multi_field",
+      "complexity": "medium",
+      "prompt": "'Specyfikacja Techniczna' z Q1 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Specyfikacja Techniczna",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": [
+            "1",
+            "2024"
+          ],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Specyfikacja Techniczna*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1719791999))",
+      "expected_filter_string": "(@file_title:*Specyfikacja Techniczna* @creation_date:[1704067200 1719791999])"
+    },
+    {
+      "id": "pl-051",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Protokoły ze Spotkań' autorstwa Tomasza Lewandowskiego z 2023 lub 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Protokoły ze Spotkań",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "Tomasz Lewandowski",
+          "operator": "=="
+        },
+        "creation_date": {
+          "values": [
+            2023,
+            2024
+          ],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Protokoły ze Spotkań*') & (Text('author') == 'Tomasz Lewandowski') & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "(@file_title:*Protokoły ze Spotkań* @author:{Tomasz Lewandowski} @creation_date:[1672531200 1735689599])"
+    },
+    {
+      "id": "pl-052",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "Znajdź 'Plan Projektu' lub 'Roadmapa' od zespołu inżynierów z 2024",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Plan Projektu",
+            "Roadmapa"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "value": "zespół inżynierów",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Plan Projektu*') | (Text('file_title') % '*Roadmapa*')) & (Text('author') % '*zespół inżynierów*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "((@file_title:*Plan Projektu*|@file_title:*Roadmapa*) @author:*zespół inżynierów* @creation_date:[1704067200 1735689599])"
+    },
+    {
+      "id": "pl-053",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Audyt Bezpieczeństwa' dokumenty od Agnieszki lub Pawła zaktualizowane od marca 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Audyt Bezpieczeństwa",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "Agnieszka",
+            "Paweł"
+          ],
+          "operator": "OR"
+        },
+        "last_update_date": {
+          "value": "2024-03",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Audyt Bezpieczeństwa*') & ((Text('author') % '*Agnieszka*') | (Text('author') % '*Paweł*')) & (Num('last_update_date') >= 1709251200)",
+      "expected_filter_string": "(@file_title:*Audyt Bezpieczeństwa* (@author:*Agnieszka*|@author:*Paweł*) @last_update_date:[1709251200 +inf])"
+    },
+    {
+      "id": "pl-054",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Materiały Szkoleniowe' od HR utworzone w 2024 i zaktualizowane w 2025",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Materiały Szkoleniowe",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "HR",
+          "operator": "contains"
+        },
+        "creation_date": {
+          "value": 2024,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Materiały Szkoleniowe*') & (Text('author') % '*HR*') & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)) & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@file_title:*Materiały Szkoleniowe* @author:*HR* @creation_date:[1704067200 1735689599] @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "pl-055",
+      "category": "multi_field",
+      "complexity": "high",
+      "prompt": "'Raport Zgodności' od prawników zaimportowany w ostatnim tygodniu",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Raport Zgodności",
+          "operator": "contains"
+        },
+        "author": {
+          "value": "prawnik",
+          "operator": "contains"
+        },
+        "ingestion_date": {
+          "value": [
+            "7",
+            "dni"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Raport Zgodności*') & (Text('author') % '*prawnik*') & (Num('ingestion_date') >= 1737504000)",
+      "expected_filter_string": "(@file_title:*Raport Zgodności* @author:*prawnik* @ingestion_date:[1737504000 +inf])"
+    },
+    {
+      "id": "pl-056",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Raport Finansowy' lub 'Analiza Budżetowa' od CFO lub zespołu finansowego z 2023 zaktualizowane w ostatnich 3 miesiącach",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Raport Finansowy",
+            "Analiza Budżetowa"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "CFO",
+            "zespół finansowy"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": 2023,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": [
+            "3",
+            "miesiące"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Raport Finansowy*') | (Text('file_title') % '*Analiza Budżetowa*')) & ((Text('author') % '*CFO*') | (Text('author') % '*zespół finansowy*')) & ((Num('creation_date') >= 1672531200) & (Num('creation_date') <= 1704067199)) & (Num('last_update_date') >= 1729382400)",
+      "expected_filter_string": "((@file_title:*Raport Finansowy*|@file_title:*Analiza Budżetowa*) (@author:*CFO*|@author:*zespół finansowy*) @creation_date:[1672531200 1704067199] @last_update_date:[1729382400 +inf])"
+    },
+    {
+      "id": "pl-057",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Plan Strategiczny' od CEO, COO lub członków zarządu z II-IV kwartału 2024",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Plan Strategiczny",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "CEO",
+            "COO",
+            "zarząd"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": [
+            "2",
+            "4",
+            "2024"
+          ],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Plan Strategiczny*') & ((Text('author') % '*CEO*') | (Text('author') % '*COO*') | (Text('author') % '*zarząd*')) & ((Num('creation_date') >= 1711929600) & (Num('creation_date') <= 1735689599))",
+      "expected_filter_string": "(@file_title:*Plan Strategiczny* (@author:*CEO*|@author:*COO*|@author:*zarząd*) @creation_date:[1711929600 1735689599])"
+    },
+    {
+      "id": "pl-058",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Wymagania Produktowe' lub 'Specyfikacja Funkcji' od produktu lub inżynierii utworzone po 2022 i zaimportowane w tym miesiącu",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Wymagania Produktowe",
+            "Specyfikacja Funkcji"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "produkt",
+            "inżynieria"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": 2022,
+          "operator": ">="
+        },
+        "ingestion_date": {
+          "value": "this_month",
+          "operator": ">="
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Wymagania Produktowe*') | (Text('file_title') % '*Specyfikacja Funkcji*')) & ((Text('author') % '*produkt*') | (Text('author') % '*inżynieria*')) & (Num('creation_date') >= 1640995200) & (Num('ingestion_date') >= 1737676800)",
+      "expected_filter_string": "((@file_title:*Wymagania Produktowe*|@file_title:*Specyfikacja Funkcji*) (@author:*produkt*|@author:*inżynieria*) @creation_date:[1640995200 +inf] @ingestion_date:[1737676800 +inf])"
+    },
+    {
+      "id": "pl-059",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Architektura Systemu' od liderów technicznych Jana Kowalskiego lub Anny Nowak utworzone między 2021 a 2024 zaktualizowane w 2025",
+      "expected_extraction": {
+        "file_title": {
+          "value": "Architektura Systemu",
+          "operator": "contains"
+        },
+        "author": {
+          "values": [
+            "Jan Kowalski",
+            "Anna Nowak"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "min": 2021,
+          "max": 2024,
+          "operator": "range"
+        },
+        "last_update_date": {
+          "value": 2025,
+          "operator": "range"
+        }
+      },
+      "expected_filter_python": "(Text('file_title') % '*Architektura Systemu*') & ((Text('author') == 'Jan Kowalski') | (Text('author') == 'Anna Nowak')) & ((Num('creation_date') >= 1609459200) & (Num('creation_date') <= 1735689599)) & ((Num('last_update_date') >= 1735689600) & (Num('last_update_date') <= 1767225599))",
+      "expected_filter_string": "(@file_title:*Architektura Systemu* (@author:{Jan Kowalski}|@author:{Anna Nowak}) @creation_date:[1609459200 1735689599] @last_update_date:[1735689600 1767225599])"
+    },
+    {
+      "id": "pl-060",
+      "category": "multi_field",
+      "complexity": "extreme",
+      "prompt": "'Ocena Ryzyka' lub 'Plan Mitygacji' od compliance, prawników lub bezpieczeństwa z zeszłego roku zaimportowane w ostatnich 2 tygodniach",
+      "expected_extraction": {
+        "file_title": {
+          "values": [
+            "Ocena Ryzyka",
+            "Plan Mitygacji"
+          ],
+          "operator": "OR"
+        },
+        "author": {
+          "values": [
+            "compliance",
+            "prawnik",
+            "bezpieczeństwo"
+          ],
+          "operator": "OR"
+        },
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        },
+        "ingestion_date": {
+          "value": [
+            "2",
+            "tygodnie"
+          ],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "((Text('file_title') % '*Ocena Ryzyka*') | (Text('file_title') % '*Plan Mitygacji*')) & ((Text('author') % '*compliance*') | (Text('author') % '*prawnik*') | (Text('author') % '*bezpieczeństwo*')) & ((Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)) & (Num('ingestion_date') >= 1736294400)",
+      "expected_filter_string": "((@file_title:*Ocena Ryzyka*|@file_title:*Plan Mitygacji*) (@author:*compliance*|@author:*prawnik*|@author:*bezpieczeństwo*) @creation_date:[1704067200 1735689599] @ingestion_date:[1736294400 +inf])"
+    },
+    {
+      "id": "pl-061",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pokaż mi dokumenty z ostatnich 2 tygodni",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["2", "tygodni"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1736294400",
+      "expected_filter_string": "@ingestion_date:[1736294400 +inf]"
+    },
+    {
+      "id": "pl-062",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pliki z ostatnich 5 dni",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["5", "dni"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737676800",
+      "expected_filter_string": "@ingestion_date:[1737676800 +inf]"
+    },
+    {
+      "id": "pl-063",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Dokumenty dodane w ciągu ostatnich 14 dni",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["14", "dni"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1736899200",
+      "expected_filter_string": "@ingestion_date:[1736899200 +inf]"
+    },
+    {
+      "id": "pl-064",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Raporty z ostatniego tygodnia",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["1", "tydzień"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "pl-065",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pliki wgrane w ciągu ostatnich 6 miesięcy",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["6", "miesięcy"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1721520000",
+      "expected_filter_string": "@ingestion_date:[1721520000 +inf]"
+    },
+    {
+      "id": "pl-066",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Pokaż mi dokumenty z zeszłego roku",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "pl-067",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Dokumenty utworzone w ubiegłym roku",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_year",
+          "operator": "fuzzy_last_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1704067200 1735689599]"
+    },
+    {
+      "id": "pl-068",
+      "category": "fuzzy_date_extended",
+      "complexity": "simple",
+      "prompt": "Pliki z bieżącego roku",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "this_year",
+          "operator": "fuzzy_this_year"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1735689600) & (Num('creation_date') <= 1767225599)",
+      "expected_filter_string": "@creation_date:[1735689600 1767225599]"
+    },
+    {
+      "id": "pl-069",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pokaż najnowsze dokumenty",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "pl-070",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pobierz ostatnie raporty",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1737590400",
+      "expected_filter_string": "@ingestion_date:[1737590400 +inf]"
+    },
+    {
+      "id": "pl-071",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Dokumenty z pierwszego kwartału 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["1", "2024"],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1704067200) & (Num('creation_date') <= 1719791999)",
+      "expected_filter_string": "@creation_date:[1704067200 1719791999]"
+    },
+    {
+      "id": "pl-072",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Raporty z IV kwartału 2023",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["4", "2023"],
+          "operator": "quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1696118400) & (Num('creation_date') <= 1711929599)",
+      "expected_filter_string": "@creation_date:[1696118400 1711929599]"
+    },
+    {
+      "id": "pl-073",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Pokaż dokumenty z ostatniego kwartału",
+      "expected_extraction": {
+        "creation_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1727740800) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "pl-074",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Pliki z II do IV kwartału 2024",
+      "expected_extraction": {
+        "creation_date": {
+          "value": ["2", "4", "2024"],
+          "operator": "quarter_range"
+        }
+      },
+      "expected_filter_python": "(Num('creation_date') >= 1711929600) & (Num('creation_date') <= 1735689599)",
+      "expected_filter_string": "@creation_date:[1711929600 1735689599]"
+    },
+    {
+      "id": "pl-075",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Pokaż ostatnio zaktualizowane dokumenty",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "recent",
+          "operator": "fuzzy_recent"
+        }
+      },
+      "expected_filter_python": "Num('last_update_date') >= 1737590400",
+      "expected_filter_string": "@last_update_date:[1737590400 +inf]"
+    },
+    {
+      "id": "pl-076",
+      "category": "fuzzy_date_extended",
+      "complexity": "high",
+      "prompt": "Pliki zmodyfikowane w poprzednim kwartale",
+      "expected_extraction": {
+        "last_update_date": {
+          "value": "last_quarter",
+          "operator": "fuzzy_last_quarter"
+        }
+      },
+      "expected_filter_python": "(Num('last_update_date') >= 1727740800) & (Num('last_update_date') <= 1735689599)",
+      "expected_filter_string": "@last_update_date:[1727740800 1735689599]"
+    },
+    {
+      "id": "pl-077",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Pobierz dokumenty dodane w ostatnich 30 dniach",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["30", "dni"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1735516800",
+      "expected_filter_string": "@ingestion_date:[1735516800 +inf]"
+    },
+    {
+      "id": "pl-078",
+      "category": "fuzzy_date_extended",
+      "complexity": "medium",
+      "prompt": "Dokumenty zaimportowane w ciągu ostatnich 3 tygodni",
+      "expected_extraction": {
+        "ingestion_date": {
+          "value": ["3", "tygodni"],
+          "operator": "fuzzy_last_n"
+        }
+      },
+      "expected_filter_python": "Num('ingestion_date') >= 1735689600",
+      "expected_filter_string": "@ingestion_date:[1735689600 +inf]"
+    },
+    {
+      "id": "pl-079",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Dokumenty napisane przez Tomasza Wiśniewskiego",
+      "expected_extraction": {
+        "author": {
+          "value": "Tomasz Wiśniewski",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Tomasz Wiśniewski'",
+      "expected_filter_string": "@author:{Tomasz Wiśniewski}",
+      "notes": "Genitive masculine -ego/-skiego → nominative -i/-ski"
+    },
+    {
+      "id": "pl-080",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Raporty stworzone przez Małgorzatę Kowalską",
+      "expected_extraction": {
+        "author": {
+          "value": "Małgorzata Kowalska",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Małgorzata Kowalska'",
+      "expected_filter_string": "@author:{Małgorzata Kowalska}",
+      "notes": "Accusative feminine -ę/-ą → nominative -a"
+    },
+    {
+      "id": "pl-081",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Dokumenty autorstwa Pawła Nowakiem",
+      "expected_extraction": {
+        "author": {
+          "value": "Paweł Nowak",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Paweł Nowak'",
+      "expected_filter_string": "@author:{Paweł Nowak}",
+      "notes": "Instrumental masculine -em → nominative consonant-ending"
+    },
+    {
+      "id": "pl-082",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Dokumenty napisane przez Jana Kowalskiego lub Katarzynę Nowak",
+      "expected_extraction": {
+        "author": {
+          "value": ["Jan Kowalski", "Katarzyna Nowak"],
+          "operator": "OR"
+        }
+      },
+      "expected_filter_python": "(Text('author') == 'Jan Kowalski') | (Text('author') == 'Katarzyna Nowak')",
+      "expected_filter_string": "(@author:{Jan Kowalski}|@author:{Katarzyna Nowak})",
+      "notes": "OR with mixed gender declensions, both should lemmatize"
+    },
+    {
+      "id": "pl-083",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Pliki autorstwa Agnieszki Dąbrowskiej",
+      "expected_extraction": {
+        "author": {
+          "value": "Agnieszka Dąbrowska",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Agnieszka Dąbrowska'",
+      "expected_filter_string": "@author:{Agnieszka Dąbrowska}",
+      "notes": "Genitive feminine -i/-iej → nominative -a"
+    },
+    {
+      "id": "pl-084",
+      "category": "author",
+      "complexity": "simple",
+      "prompt": "Co napisał Robert Chen?",
+      "expected_extraction": {
+        "author": {
+          "value": "Robert Chen",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Robert Chen'",
+      "expected_filter_string": "@author:{Robert Chen}",
+      "notes": "Foreign surname — should pass through unchanged"
+    },
+    {
+      "id": "pl-085",
+      "category": "author",
+      "complexity": "medium",
+      "prompt": "Raporty od Marcina Lewandowskiego",
+      "expected_extraction": {
+        "author": {
+          "value": "Marcin Lewandowski",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'Marcin Lewandowski'",
+      "expected_filter_string": "@author:{Marcin Lewandowski}",
+      "notes": "Genitive masculine first+last name"
+    },
+    {
+      "id": "pl-086",
+      "category": "author",
+      "complexity": "high",
+      "prompt": "Dokumenty autorstwa prof. Andrzeja Zielińskiego",
+      "expected_extraction": {
+        "author": {
+          "value": "prof. Andrzej Zieliński",
+          "operator": "=="
+        }
+      },
+      "expected_filter_python": "Text('author') == 'prof. Andrzej Zieliński'",
+      "expected_filter_string": "@author:{prof. Andrzej Zieliński}",
+      "notes": "Academic title + genitive — title preserved, name lemmatized"
+    }
+  ]
+}

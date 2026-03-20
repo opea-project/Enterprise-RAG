@@ -56,11 +56,13 @@ var (
 		"LLMGuardOutput",
 		"VLLMGaudi",
 		"VLLM",
+		"VLLMQueryRewrite",
 		"LanguageDetection",
 		"TextExtractor",
 		"TextCompression",
 		"TextSplitter",
 		"DocSum",
+		"QueryRewrite",
 	}
 )
 

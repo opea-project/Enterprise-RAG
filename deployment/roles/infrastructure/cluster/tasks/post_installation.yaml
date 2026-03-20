@@ -41,7 +41,6 @@
   tags:
     - install
     - post-install
-    - post-delete
 
 - name: NetApp Trident CSI role
   ansible.builtin.include_role:
@@ -81,6 +80,7 @@
   when: install_csi == "nfs"
   tags:
     - delete
+    - post-delete
 
 - name: Uninstall NetApp Trident
   ansible.builtin.include_role:

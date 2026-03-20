@@ -1,10 +1,16 @@
 ---
 dockerfile: "Dockerfile"
-docker_context: "../"
+docker_context: "../../../"
 dependencies:
   - pnpm
+  - manual
 container_distribution: DockerHub
 dockerfile_distribution: GitHub
 comments: ""
 pnpm:
   src_dir: "../.."
+manual:
+  packages:
+    - name: libpng
+      origin: apk
+      license: "libpng license"

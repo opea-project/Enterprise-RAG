@@ -7,6 +7,7 @@ from comps.cores.proto.docarray import EmbedDoc, SearchedDoc
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}")
 
+
 class OPEAVectorStore():
     """
     A class representing a vector store for OPEA.
@@ -142,6 +143,16 @@ class OPEAVectorStore():
 
     def get_hierarchical_chunk_filter_expression(self, doc_id, page):
         return self.vector_store.get_hierarchical_chunk_filter_expression(doc_id, page)
+
+    # Document metadata filter methods (for metadata extracted at ingestion time)
+    def get_author_filter_expression(self, authors):
+        return self.vector_store.get_author_filter_expression(authors)
+
+    def get_title_filter_expression(self, title_pattern: str, exact_match: bool = False):
+        return self.vector_store.get_title_filter_expression(title_pattern, exact_match)
+
+    def get_date_range_filter_expression(self, field: str, start_timestamp: int = None, end_timestamp: int = None):
+        return self.vector_store.get_date_range_filter_expression(field, start_timestamp, end_timestamp)
 
     def _import_redis(self):
         """

@@ -141,7 +141,7 @@ export const transformChatErrorResponse = (
     default:
       return {
         status: statusCode,
-        data: DEFAULT_ERROR_MESSAGE,
+        data: parseUserMessage(responseError) ?? DEFAULT_ERROR_MESSAGE,
       };
   }
 };
@@ -161,6 +161,21 @@ const isAbortResponseError = (errorResponse: ChatErrorResponse) => {
     errorResponse.originalStatus === 200 &&
     containsBrowserAbortMessage;
   return isFetchAbortError || isParsingAbortError;
+};
+
+const parseUserMessage = (responseError: ChatErrorResponse): string | null => {
+  try {
+    const data = isChatErrorResponseDataString(responseError.data)
+      ? JSON.parse(responseError.data)
+      : responseError.data;
+
+    if (data && typeof data.user_message === "string") {
+      return data.user_message;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 };
 
 const parseGuardrailsResponseErrorDetail = (

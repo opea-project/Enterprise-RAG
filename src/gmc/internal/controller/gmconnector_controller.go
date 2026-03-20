@@ -82,12 +82,14 @@ const (
 	Ingestion                = "Ingestion"
 	VLLMGaudi                = "VLLMGaudi"
 	VLLM                     = "VLLM"
+	VLLMQueryRewrite         = "VLLMQueryRewrite"
 	LanguageDetection        = "LanguageDetection"
 	TextExtractor            = "TextExtractor"
 	TextCompression          = "TextCompression"
 	TextSplitter			 = "TextSplitter"
 	DocSum				     = "DocSum"
 	LateChunking             = "LateChunking"
+	QueryRewrite             = "QueryRewrite"
 )
 
 // sanitizeK8sName converts a string to a valid Kubernetes name by replacing
@@ -145,12 +147,14 @@ var yamlDict = map[string]string{
 	Ingestion:           yaml_dir + "ingestion-usvc.yaml",
 	VLLMGaudi:           yaml_dir + "vllm_gaudi.yaml",
 	VLLM:                yaml_dir + "vllm.yaml",
+	VLLMQueryRewrite:    yaml_dir + "vllm_query_rewrite.yaml",
 	LanguageDetection:   yaml_dir + "langdtct-usvc.yaml",
 	TextExtractor:       yaml_dir + "text-extractor-usvc.yaml",
 	TextCompression:     yaml_dir + "text-compression-usvc.yaml",
 	TextSplitter:        yaml_dir + "text-splitter-usvc.yaml",
 	DocSum:              yaml_dir + "docsum-usvc.yaml",
 	LateChunking:        yaml_dir + "late_chunking_usvc.yaml",
+	QueryRewrite:        yaml_dir + "query-rewrite-usvc.yaml",
 }
 
 var (
@@ -548,7 +552,8 @@ func isDownStreamEndpointKey(keyname string) bool {
 		keyname == "DOCSUM_LLM_USVC_ENDPOINT" ||
 		keyname == "ASR_ENDPOINT" ||
 		keyname == "TTS_ENDPOINT" ||
-		keyname == "TEI_ENDPOINT"
+		keyname == "TEI_ENDPOINT" ||
+		keyname == "QUERY_REWRITE_LLM_ENDPOINT"
 }
 
 func findDownStreamService(dsName string, stepCfg *mcv1alpha3.Step, nodeCfg *mcv1alpha3.Router) *mcv1alpha3.Step {

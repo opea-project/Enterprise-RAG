@@ -54,7 +54,7 @@ def resolve_from_hf_api(model_name, hf_token=None):
         headers["Authorization"] = f"Bearer {hf_token}"
     try:
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as response:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=15) as response:  # nosec B310
             config = json.loads(response.read().decode("utf-8"))
         return config.get("hidden_size")
     except (urllib.error.URLError, json.JSONDecodeError, OSError):

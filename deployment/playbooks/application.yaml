@@ -19,7 +19,6 @@
     log_dir: "{{ deployment_dir }}/ansible-logs"
     tmp_dir: "{{ log_dir }}/tmp"
     secure_logs: true
-    tdx_post_renderer_executable: "{{ playbook_dir }}/../renderer/customize.sh"
 
     # Upload-optimized pipeline configuration (used when upload_pipelines=true)
     # This is the default configuration for upload mode, applied when upload_pipelines flag is set

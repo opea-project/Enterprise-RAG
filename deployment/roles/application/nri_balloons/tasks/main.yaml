@@ -109,11 +109,6 @@
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"
-#   This is a method to use a post-renderer script to modify the rendered manifests before they are applied to the cluster.
-#   Commented due to unknown issue with balloon while enabling TDX
-#    post_renderer:
-#      "{{ tdx_post_renderer_executable ~ ' --post-renderer-args \"' ~ balloons.namespace ~ ' ' ~ KBS_ADDRESS ~ '\"'
-#       if tdx.coco.enabled else omit }}"
   register: helm_repo_add_result
   until: helm_repo_add_result is succeeded
   retries: 3

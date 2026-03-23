@@ -284,13 +284,5 @@ labels:
   {{- $defaultValues = index $values "services" $filename "resources" }}
 {{- end -}}
 
-{{- $isTDXEnabled := hasKey $values "tdx" -}}
-{{- $isGaudiService := regexMatch "(?i)gaudi" $filename -}}
-
-{{- if and $isTDXEnabled (not $isGaudiService) }}
-  {{- include "manifest.tdx.getResourceValues" (dict "defaultValues" $defaultValues "filename" $filename "values" $values) }}
-{{- else }}
-  {{- $defaultValues | toYaml }}
+{{- $defaultValues | toYaml }}
 {{- end -}}
-{{- end -}}
-

@@ -178,10 +178,8 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
 * `chatqa`
 * `chat-history`
-* `edp`
 * `fingerprint`
 * `rag-ui`
-* `vdb`
 
 ## Advanced configuration
 

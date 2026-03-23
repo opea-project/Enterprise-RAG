@@ -113,8 +113,18 @@
         tasks_from: verify_variables.yaml
       tags:
         - install
+        - uninstall
         - display-configuration
         - pre-upgrade
+
+    - name: TDX - Kata install
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: install_kata.yaml
+      when: tdx.coco.enabled and tdx.coco.install_kata
+      tags:
+        - install
+        - uninstall
 
     - name: TDX Attest
       ansible.builtin.include_role:

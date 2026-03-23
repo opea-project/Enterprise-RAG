@@ -91,6 +91,7 @@ tdx: # enables Intel® Trust Domain Extensions
     enabled: false  # incompatible with coco
   coco:
     enabled: false  # incompatible with one_td
+    install_kata: false
     runtime_class_name: kata-qemu-tdx
   attestation:
     enabled: false

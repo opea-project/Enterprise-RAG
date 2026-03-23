@@ -1,0 +1,63 @@
+---
+- name: Render kata values
+  ansible.builtin.template:
+    src: kata-values.yaml.j2
+    dest: kata-values.yaml
+  delegate_to: localhost
+  tags:
+    - install
+    - uninstall
+
+- name: Setup Kata containers
+  kubernetes.core.helm:
+    name: kata
+    chart_ref: oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy
+    release_namespace: coco-system
+    create_namespace: true
+    state: present
+    values_files: [ kata-values.yaml ]
+    timeout: "{{ helm_timeout }}"
+  tags:
+    - install
+
+- name: Wait for Kata deploy DaemonSet to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: DaemonSet
+    name: kata-deploy
+    namespace: coco-system
+  register: kata_daemonset
+  until:
+    - kata_daemonset.resources | length > 0
+    - kata_daemonset.resources[0].status.desiredNumberScheduled is defined
+    - kata_daemonset.resources[0].status.numberReady is defined
+    - kata_daemonset.resources[0].status.numberReady == kata_daemonset.resources[0].status.desiredNumberScheduled
+  retries: 5
+  delay: 60
+  tags:
+    - install
+
+- name: Wait for RuntimeClass to be available
+  kubernetes.core.k8s_info:
+    api_version: node.k8s.io/v1
+    kind: RuntimeClass
+    name: "{{ tdx.coco.runtime_class_name }}"
+  register: runtimeclass_result
+  until:
+    - runtimeclass_result.resources | length > 0
+  retries: 5
+  delay: 20
+  tags:
+    - install
+
+- name: Remove Kata containers
+  kubernetes.core.helm:
+    name: kata
+    chart_ref: oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy
+    release_namespace: coco-system
+    create_namespace: true
+    state: absent
+    values_files: [ kata-values.yaml ]
+  ignore_errors: true
+  tags:
+    - uninstall

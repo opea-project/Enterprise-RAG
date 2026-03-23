@@ -96,7 +96,10 @@ Follow the below steps on the server node with Intel Xeon Processor:
 
 1. Follow the steps to [deploy kubernetes cluster](cluster_deployment_guide.md).
 
-2. `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
+2. `[OPTIONAL]` `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
+
+> [!NOTE]
+> Kata is installed automatically if `tdx.coco.install_kata` is enabled in config file.
 
 3. [Install Attestation Components](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-attestation-components).
 
@@ -120,7 +123,8 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
        enabled: true|false  # Set accordingly to your deployment case. 
      coco:
        enabled: true|false  # Set accordingly to your deployment case. 
-       runtime_class_name: kata-qemu-tdx
+       install_kata: true|false  # Set to true for automatic kata installation
+       runtime_class_name: kata-qemu-tdx  # kata-qemu-nvidia-gpu-tdx for setups with confidential GPU
      attestation:
        enabled: true|false  # Set to true to enable attestation via KBS.
        kbs_address: ""      # Protocol, address IP and port to connect to KBS. E.g. http://127.0.0.1:8080

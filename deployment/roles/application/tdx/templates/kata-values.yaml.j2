@@ -1,0 +1,34 @@
+architecture: x86_64
+kata-as-coco-runtime:
+  imagePullPolicy: Always
+  snapshotter:
+    setup: ["nydus"]
+  shims:
+    disableAll: true
+    qemu-tdx:
+      enabled: true
+      supportedArches:
+        - amd64
+      containerd:
+        snapshotter: nydus
+        forceGuestPull: false
+      crio:
+        guestPull: true
+      agent:
+        httpsProxy: "{{ httpsProxy | default('') }}"
+        noProxy: "{{ noProxy | default('') }}"
+
+    qemu-nvidia-gpu-tdx:
+      enabled: true
+      supportedArches:
+        - amd64
+      containerd:
+        snapshotter: nydus
+        forceGuestPull: false
+      crio:
+        guestPull: true
+      agent:
+        httpsProxy: "{{ httpsProxy | default('') }}"
+        noProxy: "{{ noProxy | default('') }}"
+  defaultShim:
+    amd64: qemu-tdx

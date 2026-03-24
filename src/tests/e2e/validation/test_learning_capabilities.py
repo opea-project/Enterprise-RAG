@@ -7,7 +7,6 @@ import allure
 import logging
 import os
 import pytest
-import time
 from types import SimpleNamespace
 import yaml
 
@@ -232,10 +231,10 @@ def test_content_is_forgotten_after_file_deletion(edp_helper, chatqa_api_helper,
     response = ask_question(chatqa_api_helper, question)
     assert chatqa_api_helper.words_in_response(expected, response), UNRELATED_RESPONSE_MSG
 
-    response = delete_file(edp_helper, file_path)
+    response = delete_file(edp_helper, file_name)
     assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
-    logger.debug("Sleeping to make sure the file is deleted")
-    time.sleep(10)
+    logger.debug("Waiting for file to be deleted from the system")
+    edp_helper.wait_for_file_deletion(file_name)
     logger.debug("Asking question once again after file deletion")
     response = ask_question(chatqa_api_helper, question)
     assert not chatqa_api_helper.words_in_response(expected, response), UNRELATED_RESPONSE_MSG

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 LINK_DELETION_TIMEOUT_S = 60
 FILE_UPLOAD_TIMEOUT_S = 300  # 5 minutes
+FILE_DELETION_TIMEOUT_S = 120  # 2 minutes
 LINK_UPLOAD_TIMEOUT = 300  # 5 minutes
 DATAPREP_STATUS_FLOW = ["uploaded", "processing", "text_extracting", "text_compression", "text_splitting", "embedding", "late_chunking", "ingested"]
 
@@ -307,6 +308,25 @@ class EdpHelper(ApiRequestHelper):
 
         raise UploadTimeoutException(
             f"Timed out after {timeout} seconds while waiting for the file to be uploaded")
+
+    def wait_for_file_deletion(self, filename, timeout=FILE_DELETION_TIMEOUT_S):
+        """Wait for the file to be deleted and no longer present in the list of files"""
+        sleep_interval = 5
+        start_time = time.time()
+        while time.time() < start_time + timeout:
+            files = self.list_files().json()
+            file_found = any(file.get("object_name") == filename for file in files)
+
+            if not file_found:
+                logger.info(f"File {filename} has been deleted. "
+                      f"Elapsed time: {round(time.time() - start_time, 1)}s")
+                return True
+            else:
+                logger.info(f"Waiting {sleep_interval}s for file {filename} to be deleted. ")
+                time.sleep(sleep_interval)
+
+        raise DeleteTimeoutException(
+            f"Timed out after {timeout} seconds while waiting for the file to be deleted")
 
     def wait_for_all_files_ingestion(self, filenames: set, timeout=FILE_UPLOAD_TIMEOUT_S) -> None:
         """Wait for all files to be uploaded and ingested.

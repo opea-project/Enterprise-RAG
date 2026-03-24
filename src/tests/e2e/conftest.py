@@ -31,7 +31,8 @@ from tests.e2e.helpers.k8s_helper import K8sHelper
 from tests.e2e.helpers.keycloak_helper import KeycloakHelper
 
 # List of namespaces to fetch logs from
-NAMESPACES = ["auth-apisix", "chatqa",  "docsum", "edp", "fingerprint", "dataprep", "system", "istio-system", "rag-ui"]
+NAMESPACES = ["auth", "auth-apisix", "chat-history", "chatqa", "docsum", "edp", "fingerprint",
+              "ingress-nginx", "istio-system", "rag-ui", "seaweedfs", "system", "vdb"]
 TEST_LOGS_DIR = "test_logs"
 
 logger = logging.getLogger(__name__)

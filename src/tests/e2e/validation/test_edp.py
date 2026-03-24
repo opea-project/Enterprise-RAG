@@ -78,9 +78,7 @@ def test_edp_delete_file(edp_helper):
     response = edp_helper.generate_presigned_url(file_basename, "DELETE")
     response = edp_helper.delete_file(response.json().get("url"))
     assert response.status_code == 204, f"Failed to delete file. Response: {response.text}"
-    files = edp_helper.list_files()
-    assert file_basename not in [item['object_name'] for item in files.json()], \
-        f"File {file} is still in the list of files"
+    edp_helper.wait_for_file_deletion(file_basename)
 
 
 @allure.testcase("IEASG-T123")

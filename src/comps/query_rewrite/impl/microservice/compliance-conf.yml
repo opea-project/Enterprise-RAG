@@ -1,0 +1,18 @@
+---
+dockerfile: "Dockerfile"
+docker_context: "../../../../"
+dependencies:
+  - apt
+  - manual
+  - pip-uv
+base-image:
+  override:
+    - python:3.11-slim-trixie
+apt:
+  base-image-override: python:3.11-slim-trixie
+manual:
+  packages:
+# Added because of manual copy from UV image in Dockerfile
+    - name: astral-sh/uv
+      origin: github
+      license: MIT

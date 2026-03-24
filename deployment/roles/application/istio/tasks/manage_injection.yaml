@@ -24,7 +24,26 @@
           erag-istio-protected: "true"
           istio.io/dataplane-mode: "ambient"
   loop: "{{ enabled_namespaces }}"
-  when: istio_injection
+  when: istio_injection and not tdx.coco.enabled
+  tags:
+    - install
+
+- name: Add TDX-compatible labels for enabled namespaces
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+        labels:
+          pod-security.kubernetes.io/enforce: "baseline"
+          pod-security.kubernetes.io/audit: "restricted"
+          pod-security.kubernetes.io/warn: "restricted"
+          istio.io/dataplane-mode: none
+          istio-injection: "true"
+  loop: "{{ enabled_namespaces }}"
+  when: istio_injection and tdx.coco.enabled
   tags:
     - install
 

@@ -3,9 +3,6 @@
 This document outlines the deployment process of ChatQnA components on Intel® Xeon® Processors where the microservices
 are protected by [Intel TDX](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html).
 
-> [!NOTE]
-> `[CoCo]` deployment is not supported since release-2.1.0.
-
 ## Table of Contents
 
 1. [What is Intel TDX](#what-is-intel-tdx)

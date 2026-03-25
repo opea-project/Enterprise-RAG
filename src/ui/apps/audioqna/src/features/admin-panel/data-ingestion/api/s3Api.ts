@@ -6,14 +6,14 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { PostFileRequest } from "@/features/admin-panel/data-ingestion/types/api";
 import { RootState } from "@/store";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
 
 const s3ApiBaseQuery = fetchBaseQuery({
   prepareHeaders: (headers) => {
     const token = keycloakService.getToken();
-    const s3SendBearerTokenEnv = getChatQnAAppEnv("S3_SEND_BEARER_TOKEN");
+    const s3SendBearerTokenEnv = getAudioQnAAppEnv("S3_SEND_BEARER_TOKEN");
 
     if (token && s3SendBearerTokenEnv === "true") {
       headers.set("Authorization", `Bearer ${token}`);

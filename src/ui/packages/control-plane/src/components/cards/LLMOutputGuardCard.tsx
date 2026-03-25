@@ -18,6 +18,7 @@ import { ControlPlaneCardProps } from "@/types/cards";
 export const LLMOutputGuardCard = ({
   data: { id, status, displayName, outputGuardArgs, details },
   changeArguments,
+  isReadOnly = false,
 }: ControlPlaneCardProps) => {
   const config = llmOutputGuardFormConfig;
 
@@ -32,32 +33,38 @@ export const LLMOutputGuardCard = ({
       serviceName={displayName}
       serviceDetails={details}
       footerProps={footerProps}
+      isReadOnly={isReadOnly}
     >
       <ScannersArgumentsTitle>Scanners Arguments</ScannersArgumentsTitle>
       <BanSubstringsScannerInputs
         config={config.ban_substrings}
         previousArgumentsValues={argumentsForm.ban_substrings}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <CodeScannerInputs
         config={config.code}
         previousArgumentsValues={argumentsForm.code}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <BiasScannerInputs
         config={config.bias}
         previousArgumentsValues={argumentsForm.bias}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <RelevanceScannerInputs
         config={config.relevance}
         previousArgumentsValues={argumentsForm.relevance}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <MaliciousURLsScannerInputs
         config={config.malicious_urls}
         previousArgumentsValues={argumentsForm.malicious_urls}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
     </SelectedServiceCard>
   );

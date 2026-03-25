@@ -18,6 +18,7 @@ export const BanTopicsScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<BanTopicsScannerArgs, BanTopicsScannerConfig>) => {
   const {
     titleCasedName,
@@ -32,18 +33,21 @@ export const BanTopicsScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentTextInput
         {...config.topics}
         value={previousArgumentsValues.topics}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

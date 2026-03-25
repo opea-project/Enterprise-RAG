@@ -17,6 +17,7 @@ export const MaliciousURLsScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<
   MaliciousURLsScannerArgs,
   MaliciousURLsScannerConfig
@@ -34,12 +35,14 @@ export const MaliciousURLsScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

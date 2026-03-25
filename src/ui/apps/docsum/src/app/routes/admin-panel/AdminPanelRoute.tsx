@@ -12,6 +12,7 @@ import {
 } from "@/components/AppHeaderContent/AppHeaderContent";
 import ControlPlaneTab from "@/features/admin-panel/control-plane/components/ControlPlaneTab/ControlPlaneTab";
 import TelemetryAuthenticationTab from "@/features/admin-panel/telemetry-authentication/components/TelemetryAuthenticationTab/TelemetryAuthenticationTab";
+import { keycloakService } from "@/utils/auth";
 
 const adminPanelTabs = [
   {
@@ -29,23 +30,31 @@ const adminPanelTabs = [
 ];
 
 const AdminPanelRoute = () => {
-  const [selectedTab, setSelectedTab] = useState<TabId>(adminPanelTabs[0].path);
+  // Filter tabs based on user role
+  const isMaintainerOnly =
+    keycloakService.isMaintainerUser() && !keycloakService.isAdminUser();
+  const visibleTabs = isMaintainerOnly
+    ? adminPanelTabs.filter((tab) => tab.id !== "telemetry-authentication")
+    : adminPanelTabs;
+
+  const [selectedTab, setSelectedTab] = useState<TabId>(visibleTabs[0].path);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     const path = location.pathname.split("/").pop();
-    const tab = adminPanelTabs.find((tab) => tab.path === path);
+    const tab = visibleTabs.find((tab) => tab.path === path);
     if (tab !== undefined) {
       setSelectedTab(tab.id as TabId);
     } else {
-      navigate(`/admin-panel/${adminPanelTabs[0].path}`, { replace: true });
+      // Navigate to default tab (if maintainer tries to access restricted tab)
+      navigate(`/admin-panel/${visibleTabs[0].path}`, { replace: true });
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, visibleTabs]);
 
   const handleTabSelectionChange = (id: TabId) => {
     setSelectedTab(id);
-    const tab = adminPanelTabs.find((tab) => tab.id === id);
+    const tab = visibleTabs.find((tab) => tab.id === id);
     const queryParams = location.search;
     if (!tab) return;
 
@@ -64,7 +73,7 @@ const AdminPanelRoute = () => {
       }}
     >
       <Tabs
-        tabs={adminPanelTabs}
+        tabs={visibleTabs}
         selectedTab={selectedTab}
         onSelectionChange={handleTabSelectionChange}
       />

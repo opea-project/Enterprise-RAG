@@ -19,6 +19,7 @@ export const initializeKeycloak = (onInitialized: () => void) => {
       clientId: getDocSumAppEnv("KEYCLOAK_CLIENT_ID"),
     },
     adminResourceRole: getDocSumAppEnv("ADMIN_RESOURCE_ROLE"),
+    maintainerResourceRole: getDocSumAppEnv("MAINTAINER_RESOURCE_ROLE"),
     loginOptions: {
       redirectUri: location.origin,
     },

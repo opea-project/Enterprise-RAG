@@ -18,6 +18,7 @@ export const RegexScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<RegexScannerArgs, RegexScannerConfig>) => {
   const {
     titleCasedName,
@@ -32,22 +33,26 @@ export const RegexScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentTextInput
         {...config.patterns}
         value={previousArgumentsValues.patterns}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
         value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentCheckbox
         {...config.redact}
         value={previousArgumentsValues.redact}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

@@ -7,7 +7,7 @@ import {
 } from "@intel-enterprise-rag-ui/auth";
 
 import { paths } from "@/config/paths";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 import { onRefreshTokenFailed } from "@/utils/api";
 
 export const keycloakService = new KeycloakService();
@@ -15,11 +15,12 @@ export const keycloakService = new KeycloakService();
 export const initializeKeycloak = (onInitialized: () => void) => {
   const config: KeycloakServiceConfig = {
     keycloakConfig: {
-      url: getChatQnAAppEnv("KEYCLOAK_URL"),
-      realm: getChatQnAAppEnv("KEYCLOAK_REALM"),
-      clientId: getChatQnAAppEnv("KEYCLOAK_CLIENT_ID"),
+      url: getAudioQnAAppEnv("KEYCLOAK_URL"),
+      realm: getAudioQnAAppEnv("KEYCLOAK_REALM"),
+      clientId: getAudioQnAAppEnv("KEYCLOAK_CLIENT_ID"),
     },
-    adminResourceRole: getChatQnAAppEnv("ADMIN_RESOURCE_ROLE"),
+    adminResourceRole: getAudioQnAAppEnv("ADMIN_RESOURCE_ROLE"),
+    maintainerResourceRole: getAudioQnAAppEnv("MAINTAINER_RESOURCE_ROLE"),
     loginOptions: {
       redirectUri: location.origin + paths.chat,
     },

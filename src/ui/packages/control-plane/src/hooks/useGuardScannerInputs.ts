@@ -19,6 +19,7 @@ export interface ScannerInputsProps<TValues, TConfig> {
       scannerName: string,
     ) => OnArgumentValidityChangeHandler;
   };
+  isReadOnly?: boolean;
 }
 
 export const useGuardScannerInputs = (

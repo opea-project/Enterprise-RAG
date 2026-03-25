@@ -26,8 +26,8 @@
     &:is(:disabled),
     &[data-disabled] {
       @apply border-light-border dark:border-dark-border;
-      @apply bg-light-bg-disabled dark:bg-dark-bg-disabled;
-      @apply text-light-text-disabled dark:text-dark-text-disabled;
+      @apply text-light-text-primary dark:text-dark-text-primary;
+      @apply pointer-events-none cursor-default bg-transparent;
     }
 
     &:is(:focus, :focus-within, :focus-visible),

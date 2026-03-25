@@ -37,7 +37,7 @@ const ViewSwitchButton = () => {
   const lastSelectedChatId = useAppSelector(selectLastSelectedChatId);
   const lastSelectedAdminTab = useAppSelector(selectLastSelectedAdminTab);
 
-  if (!keycloakService.isAdminUser()) {
+  if (!keycloakService.isAdminUser() && !keycloakService.isMaintainerUser()) {
     return null;
   }
 

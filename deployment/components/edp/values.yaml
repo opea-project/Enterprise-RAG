@@ -87,6 +87,8 @@ seaweedfs:
         role: "arn:aws:iam::role/S3AdminRole"
       - value: "erag-admin-group"
         role: "arn:aws:iam::role/S3UserRole"
+      - value: "erag-maintainer-group"
+        role: "arn:aws:iam::role/S3UserRole"
       - value: "erag-user-group"
         role: "arn:aws:iam::role/S3ReadOnlyRole"
     defaultRole: "arn:aws:iam::role/S3ReadOnlyRole"

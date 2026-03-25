@@ -5,5 +5,5 @@ import { getAppEnv } from "@intel-enterprise-rag-ui/utils";
 
 import { AppEnvKey } from "@/types";
 
-export const getChatQnAAppEnv = (envKey: AppEnvKey) =>
+export const getAudioQnAAppEnv = (envKey: AppEnvKey) =>
   getAppEnv(import.meta.env, window, envKey);

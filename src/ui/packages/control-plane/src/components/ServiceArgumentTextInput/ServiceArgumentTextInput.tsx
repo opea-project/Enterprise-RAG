@@ -22,6 +22,7 @@ interface ServiceArgumentTextInputProps {
   supportedValues?: string[];
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
+  isDisabled?: boolean;
 }
 
 export const ServiceArgumentTextInput = ({
@@ -33,6 +34,7 @@ export const ServiceArgumentTextInput = ({
   supportedValues,
   onArgumentValueChange,
   onArgumentValidityChange,
+  isDisabled = false,
 }: ServiceArgumentTextInputProps) => {
   const [displayValue, setDisplayValue] = useState(value ?? "");
   const [isInvalid, setIsInvalid] = useState(false);
@@ -89,6 +91,7 @@ export const ServiceArgumentTextInput = ({
       value={displayValue}
       size="sm"
       isInvalid={isInvalid}
+      isDisabled={isDisabled}
       placeholder={placeholder}
       tooltipText={tooltipText}
       errorMessage={errorMessage}

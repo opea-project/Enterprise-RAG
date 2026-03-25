@@ -29,7 +29,7 @@ const ViewSwitchButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  if (!keycloakService.isAdminUser()) {
+  if (!keycloakService.isAdminUser() && !keycloakService.isMaintainerUser()) {
     return null;
   }
 

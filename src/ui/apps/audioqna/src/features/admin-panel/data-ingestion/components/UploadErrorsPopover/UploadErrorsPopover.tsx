@@ -12,9 +12,9 @@ import { ErrorIcon } from "@intel-enterprise-rag-ui/icons";
 import { titleCaseString } from "@intel-enterprise-rag-ui/utils";
 
 import { UploadErrors } from "@/features/admin-panel/data-ingestion/types";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 
-const s3Url = getChatQnAAppEnv("S3_URL");
+const s3Url = getAudioQnAAppEnv("S3_URL");
 
 const UndeterminedNetworkErrorMessage = (
   <>

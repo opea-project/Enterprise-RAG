@@ -36,6 +36,7 @@ export const RetrieverCard = ({
   rerankerArgs,
   onPostRetrieverQuery,
   onGetErrorMessage,
+  isReadOnly = false,
 }: RetrieverCardProps) => {
   const config = retrieverFormConfig;
 
@@ -73,12 +74,14 @@ export const RetrieverCard = ({
       serviceName={displayName}
       footerProps={footerProps}
       DebugDialog={DebugDialog}
+      isReadOnly={isReadOnly}
     >
       <ServiceArgumentsTitle>Service Arguments</ServiceArgumentsTitle>
       <ServiceArgumentSelectInput
         {...config.search_type}
         value={argumentsForm.search_type}
         onArgumentValueChange={onArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       {visibleArgumentInputs.includes(config.k.name) && (
         <ServiceArgumentNumberInput
@@ -86,6 +89,7 @@ export const RetrieverCard = ({
           value={argumentsForm.k}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
+          isDisabled={isReadOnly}
         />
       )}
       {visibleArgumentInputs.includes(config.distance_threshold.name) && (
@@ -94,6 +98,7 @@ export const RetrieverCard = ({
           value={argumentsForm.distance_threshold}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
+          isDisabled={isReadOnly}
         />
       )}
       {visibleArgumentInputs.includes(config.fetch_k.name) && (
@@ -102,6 +107,7 @@ export const RetrieverCard = ({
           value={argumentsForm.fetch_k}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
+          isDisabled={isReadOnly}
         />
       )}
       {visibleArgumentInputs.includes(config.lambda_mult.name) && (
@@ -110,6 +116,7 @@ export const RetrieverCard = ({
           value={argumentsForm.lambda_mult}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
+          isDisabled={isReadOnly}
         />
       )}
       {visibleArgumentInputs.includes(config.score_threshold.name) && (
@@ -118,6 +125,7 @@ export const RetrieverCard = ({
           value={argumentsForm.score_threshold}
           onArgumentValueChange={onArgumentValueChange}
           onArgumentValidityChange={onArgumentValidityChange}
+          isDisabled={isReadOnly}
         />
       )}
     </SelectedServiceCard>

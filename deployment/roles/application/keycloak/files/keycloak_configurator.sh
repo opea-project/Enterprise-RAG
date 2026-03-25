@@ -627,6 +627,7 @@ function create_oidc_mapper() {
 
     NEW_MAPPER='{
         "config": {
+            "group": "/'$group_name'",
             "claim": "'$claim_name'",
             "claim.value": "'$claim_value'",
             "role": "'$role_name'",
@@ -1082,17 +1083,25 @@ create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "ERAG-admin"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "ERAG-user"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "ERAG-admin"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "ERAG-user"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc" "ERAG-maintainer"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "ERAG-maintainer"
 
 get_or_create_and_store_credentials KEYCLOAK_ERAG_ADMIN erag-admin ""
 create_user "$KEYCLOAK_REALM" "erag-admin" "testadmin@example.com" "Test" "Admin" "${NEW_PASSWORD}"
 get_or_create_and_store_credentials KEYCLOAK_ERAG_USER erag-user ""
 create_user "$KEYCLOAK_REALM" "erag-user" "testuser@example.com" "Test" "User" "${NEW_PASSWORD}"
+get_or_create_and_store_credentials KEYCLOAK_ERAG_MAINTAINER erag-maintainer ""
+create_user "$KEYCLOAK_REALM" "erag-maintainer" "maintainer@example.com" "Test" "Maintainer" "${NEW_PASSWORD}"
 
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "ERAG-admin" "EnterpriseRAG-oidc"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "ERAG-user" "EnterpriseRAG-oidc"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "ERAG-user" "EnterpriseRAG-oidc"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "ERAG-maintainer" "EnterpriseRAG-oidc"
 
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "ERAG-admin" "EnterpriseRAG-oidc-backend"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "ERAG-user" "EnterpriseRAG-oidc-backend"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "ERAG-user" "EnterpriseRAG-oidc-backend"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "ERAG-maintainer" "EnterpriseRAG-oidc-backend"
 
 set_realm_signature_algorithms "$KEYCLOAK_REALM"
 set_realm_signature_algorithms "$KEYCLOAK_DEFAULT_REALM"
@@ -1103,26 +1112,36 @@ set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 create_client "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "authorization='false' authentication='true' clientauthentication='true' directAccess='false' rootUrl='https://$minio_domain' baseUrl='https://$minio_domain' redirectUris='https://$minio_domain/oauth_callback'"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 # create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readonly"
-# create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "readwrite"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-admin-group"
 create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-user-group"
+create_client_role "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio" "erag-maintainer-group"
 
 add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-minio-dedicated" "EnterpriseRAG-oidc-minio" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
 add_client_scope_mapper "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-dedicated" "EnterpriseRAG-oidc" "minio_roles" "client roles" "EnterpriseRAG-oidc-minio"
 
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "consoleAdmin" "EnterpriseRAG-oidc-minio"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-admin" "erag-admin-group" "EnterpriseRAG-oidc-minio"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "erag-user-group" "EnterpriseRAG-oidc-minio"
+assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "erag-maintainer-group" "EnterpriseRAG-oidc-minio"
 #assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "readonly" "EnterpriseRAG-oidc-minio"
 assign_user_client_role "$KEYCLOAK_REALM" "erag-user" "erag-user-group" "EnterpriseRAG-oidc-minio"
 
 # groups
 create_group "$KEYCLOAK_REALM" "erag-user-group"
 create_group "$KEYCLOAK_REALM" "erag-admin-group"
+create_group "$KEYCLOAK_REALM" "erag-maintainer-group"
 map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc" "ERAG-admin"
 map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc-backend" "ERAG-admin"
 map_client_role_to_group "$KEYCLOAK_REALM" "erag-admin-group" "EnterpriseRAG-oidc-minio" "consoleAdmin"
 map_client_role_to_group "$KEYCLOAK_REALM" "erag-user-group" "EnterpriseRAG-oidc" "ERAG-user"
 map_client_role_to_group "$KEYCLOAK_REALM" "erag-user-group" "EnterpriseRAG-oidc-backend" "ERAG-user"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc" "ERAG-maintainer"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc" "ERAG-user"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc-backend" "ERAG-maintainer"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc-backend" "ERAG-user"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc-minio" "erag-user-group"
+map_client_role_to_group "$KEYCLOAK_REALM" "erag-maintainer-group" "EnterpriseRAG-oidc-minio" "erag-maintainer-group"
 
 # oidc
 if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
@@ -1153,7 +1172,12 @@ if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
     else
         print_warn "OIDC identity provider validation returned HTTP ${HTTP_STATUS}. Check the alias and Keycloak logs."
     fi
-
+    if [[ -n "$OIDC_MAINTAINER_GID" ]]; then
+        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_MAINTAINER_GID" "erag-maintainer-group"
+    fi
+    if [[ -n "$OIDC_USER_GID" ]]; then
+        create_oidc_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "$OIDC_USER_GID" "erag-user-group"
+    fi
     # Validate that the upstream OIDC metadata endpoint is reachable from this host
     METADATA_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "${OIDC_ENDPOINT}")
     if [[ "$METADATA_STATUS" == "200" ]]; then
@@ -1166,10 +1190,13 @@ fi
 # RBAC
 create_client_resource "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin" "admin-access"
 create_client_resource "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user" "user-access"
+create_client_resource "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "maintainer" "maintainer-access"
 create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin-policy" "ERAG-admin"
 create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-policy" "ERAG-user"
+create_client_policy "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "maintainer-policy" "ERAG-maintainer"
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "admin-permission" "admin" "admin-policy"
 create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "user-permission" "user" "user-policy"
+create_client_permission "$KEYCLOAK_REALM" "EnterpriseRAG-oidc-backend" "maintainer-permission" "maintainer" "maintainer-policy"
 
 # Active Directory Federation
 if [[ "$FEDERATION_ENDPOINT" =~ ^ldaps?:// ]]; then

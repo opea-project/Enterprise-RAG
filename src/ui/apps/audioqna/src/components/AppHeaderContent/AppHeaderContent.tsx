@@ -20,12 +20,12 @@ import ViewSwitchButton from "@/components/ViewSwitchButton/ViewSwitchButton";
 import { paths } from "@/config/paths";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetStore } from "@/store/utils";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 import { keycloakService } from "@/utils/auth";
 
 const APP_NAME = "Intel® AI for Enterprise RAG";
 const APP_VERSION =
-  getChatQnAAppEnv("ERAG_VERSION") || import.meta.env.VITE_APP_VERSION;
+  getAudioQnAAppEnv("ERAG_VERSION") || import.meta.env.VITE_APP_VERSION;
 const USER_GUIDE_URL =
   "https://github.com/opea-project/Enterprise-RAG/blob/main/docs/Intel_AI_for_Enterprise_RAG_User_Guide_2.0.0.pdf";
 
@@ -67,7 +67,7 @@ export const AppHeaderRightSideContent = ({
       {isSpecificChatRoute && onNewChat && (
         <NewChatButton onPress={onNewChat} />
       )}
-      {keycloakService.isAdminUser() && <ViewSwitchButton />}
+      <ViewSwitchButton />
       <ColorSchemeSwitch />
       <AboutDialog
         appName={APP_NAME}

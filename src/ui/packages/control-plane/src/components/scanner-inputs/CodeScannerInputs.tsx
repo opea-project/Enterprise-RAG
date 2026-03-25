@@ -15,6 +15,7 @@ export const CodeScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<CodeScannerArgs, CodeScannerConfig>) => {
   const {
     titleCasedName,
@@ -29,18 +30,21 @@ export const CodeScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentTextInput
         {...config.languages}
         value={previousArgumentsValues.languages}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

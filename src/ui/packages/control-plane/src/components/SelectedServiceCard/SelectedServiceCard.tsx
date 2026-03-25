@@ -23,6 +23,7 @@ export interface SelectedServiceCardProps extends PropsWithChildren {
   serviceDetails?: ServiceDetails;
   footerProps?: SelectedServiceCardFooterProps;
   DebugDialog?: ReactNode;
+  isReadOnly?: boolean;
 }
 
 export const SelectedServiceCard = ({
@@ -32,12 +33,13 @@ export const SelectedServiceCard = ({
   footerProps,
   DebugDialog,
   children,
+  isReadOnly = false,
 }: SelectedServiceCardProps) => {
   const contentClassNames = classNames([
     "selected-service-card__content",
     {
-      "selected-service-card__content--no-footer": !footerProps,
-      "selected-service-card__content--with-footer": footerProps,
+      "selected-service-card__content--no-footer": !footerProps || isReadOnly,
+      "selected-service-card__content--with-footer": footerProps && !isReadOnly,
     },
   ]);
 
@@ -57,7 +59,9 @@ export const SelectedServiceCard = ({
           )}
           {children}
         </div>
-        {footerProps && <SelectedServiceCardFooter {...footerProps} />}
+        {footerProps && !isReadOnly && (
+          <SelectedServiceCardFooter {...footerProps} />
+        )}
       </div>
     </div>
   );

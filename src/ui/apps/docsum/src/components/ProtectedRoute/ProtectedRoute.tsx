@@ -11,7 +11,11 @@ const ProtectedRoute = ({ children }: PropsWithChildren) => {
   const location = useLocation();
   const isAdminPanelRoute = location.pathname === paths.adminPanel;
 
-  if (isAdminPanelRoute && !keycloakService.isAdminUser()) {
+  if (
+    isAdminPanelRoute &&
+    !keycloakService.isAdminUser() &&
+    !keycloakService.isMaintainerUser()
+  ) {
     return <Navigate to={paths.docsum} replace />;
   } else {
     return children;

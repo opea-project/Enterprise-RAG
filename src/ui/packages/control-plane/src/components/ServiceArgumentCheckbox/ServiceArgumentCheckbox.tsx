@@ -17,6 +17,7 @@ interface ServiceArgumentCheckboxProps {
   name: string;
   tooltipText?: string;
   onArgumentValueChange: OnArgumentValueChangeHandler;
+  isDisabled?: boolean;
 }
 
 export const ServiceArgumentCheckbox = ({
@@ -24,6 +25,7 @@ export const ServiceArgumentCheckbox = ({
   name,
   tooltipText,
   onArgumentValueChange,
+  isDisabled = false,
 }: ServiceArgumentCheckboxProps) => {
   const [isSelected, setIsSelected] =
     useState<ServiceArgumentCheckboxValue>(value);
@@ -47,6 +49,7 @@ export const ServiceArgumentCheckbox = ({
       size="sm"
       tooltipText={tooltipText}
       isSelected={isSelected}
+      isDisabled={isDisabled}
       name={name}
       onChange={handleChange}
     />

@@ -18,6 +18,7 @@ export const ToxicityScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<ToxicityScannerArgs, ToxicityScannerConfig>) => {
   const {
     titleCasedName,
@@ -32,17 +33,20 @@ export const ToxicityScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
         value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

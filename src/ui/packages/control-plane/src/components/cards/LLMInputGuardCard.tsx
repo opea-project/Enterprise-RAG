@@ -23,6 +23,7 @@ import { ControlPlaneCardProps } from "@/types/cards";
 export const LLMInputGuardCard = ({
   data: { id, status, displayName, inputGuardArgs, details },
   changeArguments,
+  isReadOnly = false,
 }: ControlPlaneCardProps) => {
   const config = llmInputGuardFormConfig;
 
@@ -37,57 +38,68 @@ export const LLMInputGuardCard = ({
       serviceName={displayName}
       serviceDetails={details}
       footerProps={footerProps}
+      isReadOnly={isReadOnly}
     >
       <ScannersArgumentsTitle>Scanners Arguments</ScannersArgumentsTitle>
       <PromptInjectionScannerInputs
         config={config.prompt_injection}
         previousArgumentsValues={argumentsForm.prompt_injection}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <BanSubstringsScannerInputs
         config={config.ban_substrings}
         previousArgumentsValues={argumentsForm.ban_substrings}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <CodeScannerInputs
         config={config.code}
         previousArgumentsValues={argumentsForm.code}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <InvisibleTextScannerInputs
         config={config.invisible_text}
         previousArgumentsValues={argumentsForm.invisible_text}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <RegexScannerInputs
         config={config.regex}
         previousArgumentsValues={argumentsForm.regex}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <BanTopicsScannerInputs
         config={config.ban_topics}
         previousArgumentsValues={argumentsForm.ban_topics}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <SecretsScannerInputs
         config={config.secrets}
         previousArgumentsValues={argumentsForm.secrets}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <SentimentScannerInputs
         config={config.sentiment}
         previousArgumentsValues={argumentsForm.sentiment}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <TokenLimitScannerInputs
         config={config.token_limit}
         previousArgumentsValues={argumentsForm.token_limit}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
       <ToxicityScannerInputs
         config={config.toxicity}
         previousArgumentsValues={argumentsForm.toxicity}
         handlers={handlers}
+        isReadOnly={isReadOnly}
       />
     </SelectedServiceCard>
   );

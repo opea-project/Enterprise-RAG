@@ -29,6 +29,7 @@ export const PromptTemplateCard = ({
   },
   changeArguments,
   validatePromptTemplateForm,
+  isReadOnly = false,
 }: PromptTemplateCardProps) => {
   const config = promptTemplateFormConfig;
 
@@ -89,6 +90,7 @@ export const PromptTemplateCard = ({
         isConfirmChangesButtonDisabled:
           footerProps.isConfirmChangesButtonDisabled || isInvalid,
       }}
+      isReadOnly={isReadOnly}
     >
       <div className="form-container">
         <ServiceArgumentTextArea
@@ -97,6 +99,7 @@ export const PromptTemplateCard = ({
           isInvalid={showInvalid}
           inputConfig={config.system_prompt_template}
           onChange={handleChange}
+          isDisabled={isReadOnly}
         />
         <ServiceArgumentTextArea
           value={promptTemplateForm.user_prompt_template ?? ""}
@@ -104,6 +107,7 @@ export const PromptTemplateCard = ({
           isInvalid={showInvalid}
           inputConfig={config.user_prompt_template}
           onChange={handleChange}
+          isDisabled={isReadOnly}
         />
         <div>
           <p className="error error-message">{error}</p>

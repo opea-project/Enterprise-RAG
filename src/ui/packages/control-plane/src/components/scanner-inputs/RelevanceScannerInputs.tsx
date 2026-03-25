@@ -17,6 +17,7 @@ export const RelevanceScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<RelevanceScannerArgs, RelevanceScannerConfig>) => {
   const {
     titleCasedName,
@@ -31,12 +32,14 @@ export const RelevanceScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

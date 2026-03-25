@@ -25,7 +25,7 @@ export const AppHeaderLeftSideContent = () => {
 export const AppHeaderRightSideContent = () => {
   return (
     <>
-      {keycloakService.isAdminUser() && <ViewSwitchButton />}
+      <ViewSwitchButton />
       <ColorSchemeSwitch />
       <AboutDialog appName={APP_NAME} appVersion={APP_VERSION} />
       <UsernameText username={keycloakService.getUsername()} />

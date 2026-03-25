@@ -12,6 +12,7 @@ import { ControlPlaneCardProps } from "@/types/cards";
 export const LLMCard = ({
   data: { id, status, displayName, llmArgs, details },
   changeArguments,
+  isReadOnly = false,
 }: ControlPlaneCardProps) => {
   const config = llmFormConfig;
 
@@ -28,6 +29,7 @@ export const LLMCard = ({
       serviceName={displayName}
       serviceDetails={details}
       footerProps={footerProps}
+      isReadOnly={isReadOnly}
     >
       <ServiceArgumentsTitle>Service Arguments</ServiceArgumentsTitle>
       <ServiceArgumentNumberInput
@@ -35,41 +37,48 @@ export const LLMCard = ({
         value={argumentsForm.max_new_tokens}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.top_k}
         value={argumentsForm.top_k}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.top_p}
         value={argumentsForm.top_p}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.typical_p}
         value={argumentsForm.typical_p}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.temperature}
         value={argumentsForm.temperature}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.repetition_penalty}
         value={argumentsForm.repetition_penalty}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentCheckbox
         {...config.stream}
         value={argumentsForm.stream}
         onArgumentValueChange={onArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </SelectedServiceCard>
   );

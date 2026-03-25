@@ -18,6 +18,7 @@ export const PromptInjectionScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<
   PromptInjectionScannerArgs,
   PromptInjectionScannerConfig
@@ -35,17 +36,20 @@ export const PromptInjectionScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.threshold}
         value={previousArgumentsValues.threshold}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentSelectInput
         {...config.match_type}
         value={previousArgumentsValues.match_type}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

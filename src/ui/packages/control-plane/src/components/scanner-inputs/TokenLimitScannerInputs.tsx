@@ -17,6 +17,7 @@ export const TokenLimitScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<TokenLimitScannerArgs, TokenLimitScannerConfig>) => {
   const {
     titleCasedName,
@@ -31,12 +32,14 @@ export const TokenLimitScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.limit}
         value={previousArgumentsValues.limit}
         onArgumentValueChange={handleArgumentValueChange}
         onArgumentValidityChange={handleArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

@@ -3,10 +3,10 @@
 
 import { AnchorCard } from "@intel-enterprise-rag-ui/components";
 
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 
-const grafanaDashboardUrl = getChatQnAAppEnv("GRAFANA_DASHBOARD_URL");
-const keycloakAdminPanelUrl = getChatQnAAppEnv("KEYCLOAK_ADMIN_PANEL_URL");
+const grafanaDashboardUrl = getAudioQnAAppEnv("GRAFANA_DASHBOARD_URL");
+const keycloakAdminPanelUrl = getAudioQnAAppEnv("KEYCLOAK_ADMIN_PANEL_URL");
 
 const TelemetryAuthenticationTab = () => (
   <div className="grid grid-cols-1 gap-4 px-16 py-8 md:grid-cols-2 lg:grid-cols-3">

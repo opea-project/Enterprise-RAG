@@ -35,7 +35,7 @@ import {
 import { useTextToSpeech } from "@/features/chat/hooks/useTextToSpeech";
 import { useSpeechToTextHandlers } from "@/hooks/useSpeechToTextHandlers";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 
 const InitialChatRoute = () => {
   // React store, RTK Query, and react-router hooks
@@ -110,7 +110,7 @@ const InitialChatRoute = () => {
 
   const { playingTurnId, playingState, onPlayMessage } = useTextToSpeech();
 
-  const chatDisclaimer = getChatQnAAppEnv("CHAT_DISCLAIMER_TEXT") ?? "";
+  const chatDisclaimer = getAudioQnAAppEnv("CHAT_DISCLAIMER_TEXT") ?? "";
 
   const handleFileDownload = async (fileName: string, bucketName: string) => {
     const { data: presignedUrl } = await getFilePresignedUrl({

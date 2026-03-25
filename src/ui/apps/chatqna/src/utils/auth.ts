@@ -20,6 +20,7 @@ export const initializeKeycloak = (onInitialized: () => void) => {
       clientId: getChatQnAAppEnv("KEYCLOAK_CLIENT_ID"),
     },
     adminResourceRole: getChatQnAAppEnv("ADMIN_RESOURCE_ROLE"),
+    maintainerResourceRole: getChatQnAAppEnv("MAINTAINER_RESOURCE_ROLE"),
     loginOptions: {
       redirectUri: location.origin + paths.chat,
     },

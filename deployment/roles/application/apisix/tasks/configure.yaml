@@ -44,7 +44,7 @@
           'service_port': 8080,
           'service_path': '/',
           'rate_limit_count': 30,
-          'permissions': ['admin#admin-access', 'user#user-access']
+          'permissions': ['admin#admin-access', 'user#user-access', 'maintainer#maintainer-access']
         }]
       }}
   loop: "{{ pipelines | default([]) }}"
@@ -83,7 +83,7 @@
           'service_port': 443,
           'scheme': 'https',
           'service_path': '/apis/gmc.opea.io/v1alpha3/namespaces/' ~ item.namespace ~ '/gmconnectors/' ~ item.namespace ~ '/status',
-          'permissions': ['admin#admin-access']
+          'permissions': ['admin#admin-access', 'maintainer#maintainer-access']
         }]
       }}
   loop: "{{ pipelines | default([]) }}"
@@ -122,7 +122,7 @@
           'service_port': 9009,
           'service_path': '/v1/audio/transcriptions',
           'rate_limit_count': 30,
-          'permissions': ['admin#admin-access', 'user#user-access']
+          'permissions': ['admin#admin-access', 'user#user-access', 'maintainer#maintainer-access']
         }]
       }}
   when:
@@ -145,7 +145,7 @@
           'service_port': 9009,
           'service_path': '/v1/audio/speech',
           'rate_limit_count': 30,
-          'permissions': ['admin#admin-access', 'user#user-access']
+          'permissions': ['admin#admin-access', 'user#user-access', 'maintainer#maintainer-access']
         }]
       }}
   when:
@@ -168,7 +168,7 @@
           'service_port': 9010,
           'service_path': '/v1/audio/status',
           'rate_limit_count': 30,
-          'permissions': ['admin#admin-access']
+          'permissions': ['admin#admin-access', 'maintainer#maintainer-access']
         }]
       }}
   when:

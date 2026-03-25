@@ -16,6 +16,7 @@ interface ServiceArgumentTextAreaProps {
     tooltipText?: string;
   };
   onChange: ChangeEventHandler<HTMLTextAreaElement>;
+  isDisabled?: boolean;
 }
 
 export const ServiceArgumentTextArea = ({
@@ -26,6 +27,7 @@ export const ServiceArgumentTextArea = ({
   titleCaseLabel = true,
   inputConfig: { name, tooltipText },
   onChange,
+  isDisabled = false,
 }: ServiceArgumentTextAreaProps) => {
   const label = titleCaseLabel ? formatSnakeCaseToTitleCase(name) : name;
 
@@ -38,6 +40,7 @@ export const ServiceArgumentTextArea = ({
       placeholder={placeholder}
       rows={rows}
       isInvalid={isInvalid}
+      disabled={isDisabled}
       tooltipText={tooltipText}
       onChange={onChange}
     />

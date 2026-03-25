@@ -11,6 +11,7 @@ import { ControlPlaneCardProps } from "@/types/cards";
 export const RerankerCard = ({
   data: { id, status, details, displayName, rerankerArgs },
   changeArguments,
+  isReadOnly = false,
 }: ControlPlaneCardProps) => {
   const config = rerankerFormConfig;
 
@@ -27,6 +28,7 @@ export const RerankerCard = ({
       serviceName={displayName}
       serviceDetails={details}
       footerProps={footerProps}
+      isReadOnly={isReadOnly}
     >
       <ServiceArgumentsTitle>Service Arguments</ServiceArgumentsTitle>
       <ServiceArgumentNumberInput
@@ -34,12 +36,14 @@ export const RerankerCard = ({
         value={argumentsForm.top_n}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentNumberInput
         {...config.rerank_score_threshold}
         value={argumentsForm.rerank_score_threshold}
         onArgumentValueChange={onArgumentValueChange}
         onArgumentValidityChange={onArgumentValidityChange}
+        isDisabled={isReadOnly}
       />
     </SelectedServiceCard>
   );

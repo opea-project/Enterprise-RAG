@@ -17,6 +17,7 @@ export const SecretsScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<SecretsScannerArgs, SecretsScannerConfig>) => {
   const { titleCasedName, handleArgumentValueChange } = useGuardScannerInputs(
     "secrets",
@@ -30,11 +31,13 @@ export const SecretsScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
       <ServiceArgumentSelectInput
         {...config.redact_mode}
         value={previousArgumentsValues.redact_mode}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

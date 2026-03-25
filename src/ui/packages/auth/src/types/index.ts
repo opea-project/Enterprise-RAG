@@ -11,6 +11,7 @@ export interface KeycloakServiceConfig {
   keycloakConfig: KeycloakConfig;
   loginOptions?: KeycloakLoginOptions;
   adminResourceRole?: string;
+  maintainerResourceRole?: string;
   initOptions?: KeycloakInitOptions;
   minTokenValidity?: number;
   onRefreshTokenFailed?: () => void;

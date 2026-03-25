@@ -18,6 +18,7 @@ import {
   selectLastSelectedAdminTab,
   setLastSelectedAdminTab,
 } from "@/store/viewNavigation.slice";
+import { keycloakService } from "@/utils/auth";
 
 const adminPanelTabs = [
   {
@@ -44,14 +45,21 @@ const AdminPanelRoute = () => {
   const dispatch = useAppDispatch();
   const lastSelectedAdminTab = useAppSelector(selectLastSelectedAdminTab);
 
+  // Filter tabs based on user role
+  const isMaintainerOnly =
+    keycloakService.isMaintainerUser() && !keycloakService.isAdminUser();
+  const visibleTabs = isMaintainerOnly
+    ? adminPanelTabs.filter((tab) => tab.id !== "telemetry-authentication")
+    : adminPanelTabs;
+
   // Initialize selected tab from store to prevent blinking on navigation
   const [selectedTab, setSelectedTab] = useState<TabId>(() => {
     const path = window.location.pathname.split("/").pop();
-    const tab = adminPanelTabs.find((tab) => tab.path === path);
+    const tab = visibleTabs.find((tab) => tab.path === path);
     return (
       (tab?.id as TabId) ||
       (lastSelectedAdminTab as TabId) ||
-      adminPanelTabs[0].path
+      visibleTabs[0].path
     );
   });
 
@@ -60,14 +68,18 @@ const AdminPanelRoute = () => {
 
   useEffect(() => {
     const path = location.pathname.split("/").pop();
-    const tab = adminPanelTabs.find((tab) => tab.path === path);
+    const tab = visibleTabs.find((tab) => tab.path === path);
     if (tab !== undefined) {
       setSelectedTab(tab.id as TabId);
       // Update last selected admin tab in store
       dispatch(setLastSelectedAdminTab(tab.path));
     } else {
-      // Navigate to last selected tab or default tab
-      const defaultTab = lastSelectedAdminTab || adminPanelTabs[0].path;
+      // Navigate to last selected tab or default tab (if maintainer tries to access restricted tab)
+      const defaultTab = visibleTabs.find(
+        (t) => t.path === lastSelectedAdminTab,
+      )
+        ? lastSelectedAdminTab
+        : visibleTabs[0].path;
       navigate(`/admin-panel/${defaultTab}`, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,7 +87,7 @@ const AdminPanelRoute = () => {
 
   const handleTabSelectionChange = (id: TabId) => {
     setSelectedTab(id);
-    const tab = adminPanelTabs.find((tab) => tab.id === id);
+    const tab = visibleTabs.find((tab) => tab.id === id);
     const queryParams = location.search;
     if (!tab) return;
 
@@ -95,7 +107,7 @@ const AdminPanelRoute = () => {
     >
       <Tabs
         data-testid="admin-panel-tabs"
-        tabs={adminPanelTabs}
+        tabs={visibleTabs}
         selectedTab={selectedTab}
         onSelectionChange={handleTabSelectionChange}
       />

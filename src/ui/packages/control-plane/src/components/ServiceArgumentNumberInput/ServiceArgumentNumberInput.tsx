@@ -24,6 +24,7 @@ interface ServiceArgumentNumberInputProps {
   isNullable?: boolean;
   onArgumentValueChange: OnArgumentValueChangeHandler;
   onArgumentValidityChange: OnArgumentValidityChangeHandler;
+  isDisabled?: boolean;
 }
 
 export const ServiceArgumentNumberInput = ({
@@ -34,6 +35,7 @@ export const ServiceArgumentNumberInput = ({
   isNullable = false,
   onArgumentValueChange,
   onArgumentValidityChange,
+  isDisabled = false,
 }: ServiceArgumentNumberInputProps) => {
   // Ensure 0 renders and preserve user format while editing
   const [displayValue, setDisplayValue] = useState<string>(
@@ -133,6 +135,7 @@ export const ServiceArgumentNumberInput = ({
       value={displayValue}
       size="sm"
       isInvalid={isInvalid}
+      isDisabled={isDisabled}
       placeholder={placeholder}
       tooltipText={tooltipText}
       errorMessage={errorMessage}

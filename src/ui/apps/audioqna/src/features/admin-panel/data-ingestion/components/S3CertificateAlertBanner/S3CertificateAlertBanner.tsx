@@ -9,9 +9,9 @@ import {
   selectS3Api,
 } from "@/features/admin-panel/data-ingestion/api/s3Api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { getChatQnAAppEnv } from "@/utils";
+import { getAudioQnAAppEnv } from "@/utils";
 
-const s3Url = getChatQnAAppEnv("S3_URL");
+const s3Url = getAudioQnAAppEnv("S3_URL");
 
 const S3CertificateAlertBanner = () => {
   const [hasErrors, setHasErrors] = useState(false);

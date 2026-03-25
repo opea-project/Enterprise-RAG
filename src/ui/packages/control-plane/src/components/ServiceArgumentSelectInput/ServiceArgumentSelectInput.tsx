@@ -18,6 +18,7 @@ interface ServiceArgumentSelectInputProps {
   options: string[];
   tooltipText?: string;
   onArgumentValueChange: OnArgumentValueChangeHandler;
+  isDisabled?: boolean;
 }
 
 export const ServiceArgumentSelectInput = ({
@@ -26,6 +27,7 @@ export const ServiceArgumentSelectInput = ({
   options,
   tooltipText,
   onArgumentValueChange,
+  isDisabled = false,
 }: ServiceArgumentSelectInputProps) => {
   const [selected, setSelected] =
     useState<ServiceArgumentSelectInputValue>(value);
@@ -50,6 +52,7 @@ export const ServiceArgumentSelectInput = ({
       name={name}
       size="sm"
       tooltipText={tooltipText}
+      isDisabled={isDisabled}
       onChange={handleChange}
       fullWidth
     />

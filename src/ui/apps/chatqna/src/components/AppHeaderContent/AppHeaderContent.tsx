@@ -72,7 +72,7 @@ export const AppHeaderRightSideContent = ({
       {isSpecificChatRoute && onNewChat && (
         <NewChatButton onPress={onNewChat} />
       )}
-      {keycloakService.isAdminUser() && <ViewSwitchButton />}
+      <ViewSwitchButton />
       <ColorSchemeSwitch />
       <AboutDialog
         appName={APP_NAME}

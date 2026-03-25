@@ -11,6 +11,7 @@ import { KeycloakServiceConfig } from "@/types";
 export class KeycloakService {
   private keycloak: Keycloak | null = null;
   private adminResourceRole: string = "";
+  private maintainerResourceRole: string = "";
   private loginOptions: KeycloakLoginOptions = {};
   private config?: KeycloakServiceConfig;
   private minTokenValidity: number = 30;
@@ -26,6 +27,7 @@ export class KeycloakService {
     this.config = config;
     this.loginOptions = config.loginOptions || {};
     this.adminResourceRole = config.adminResourceRole ?? "";
+    this.maintainerResourceRole = config.maintainerResourceRole ?? "";
     this.minTokenValidity = config.minTokenValidity ?? 30;
     this.onRefreshTokenFailed = config.onRefreshTokenFailed;
 
@@ -107,10 +109,30 @@ export class KeycloakService {
   getUsername = () => this.keycloak?.tokenParsed?.name;
 
   /**
+   * Checks if the user has a specific resource role.
+   * @param {string} role - The role to check.
+   * @returns {boolean} True if user has the role, otherwise false.
+   */
+  hasResourceRole = (role: string) =>
+    this.keycloak?.hasResourceRole(role) ?? false;
+
+  /**
    * Checks if the current user has the admin resource role.
-   * @returns {boolean|undefined} True if user is admin, otherwise false or undefined.
+   * @returns {boolean} True if user is admin, otherwise false.
    */
   isAdminUser = () =>
-    this.adminResourceRole &&
-    this.keycloak?.hasResourceRole(this.adminResourceRole);
+    Boolean(
+      this.adminResourceRole &&
+      this.keycloak?.hasResourceRole(this.adminResourceRole),
+    );
+
+  /**
+   * Checks if the current user has the maintainer resource role.
+   * @returns {boolean} True if user is maintainer, otherwise false.
+   */
+  isMaintainerUser = () =>
+    Boolean(
+      this.maintainerResourceRole &&
+      this.keycloak?.hasResourceRole(this.maintainerResourceRole),
+    );
 }

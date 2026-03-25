@@ -16,6 +16,7 @@ export const InvisibleTextScannerInputs = ({
   previousArgumentsValues,
   config,
   handlers,
+  isReadOnly = false,
 }: ScannerInputsProps<
   InvisibleTextScannerArgs,
   InvisibleTextScannerConfig
@@ -32,6 +33,7 @@ export const InvisibleTextScannerInputs = ({
         {...config.enabled}
         value={previousArgumentsValues.enabled}
         onArgumentValueChange={handleArgumentValueChange}
+        isDisabled={isReadOnly}
       />
     </>
   );

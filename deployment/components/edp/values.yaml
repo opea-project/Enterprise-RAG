@@ -495,10 +495,10 @@ celery:
   resources:
     requests:
       cpu: "512m"
-      memory: "6Gi"
+      memory: "4Gi"
     limits:
       cpu: "2"
-      memory: "12Gi"
+      memory: "8Gi"
 
 flower:
   enabled: true

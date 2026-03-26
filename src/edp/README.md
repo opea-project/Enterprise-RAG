@@ -249,6 +249,9 @@ If you want to utilize all functionality, depending on the application server yo
 |         | DATABASE_NAME              | Name of PostgreSQL database |
 |         | DATABASE_USER              | User for PostgreSQL database |
 |         | DATABASE_PASSWORD          | Password for PostgreSQL database |
+|         | BATCH_SIZE                 | Number of document chunks sent per request to the embedding service (default: `32`) |
+|         | MAX_NEW_WORKERS            | Maximum number of parallel workers used for concurrent embedding and ingestion requests (default: `8`) |
+|         | EMBEDDING_REQUEST_TIMEOUT_SECONDS | Timeout in seconds for a single embedding HTTP request (default: `120`) |
 | Flower  | CELERY_BROKER_URL          | URL for Celery broker |
 |         | CELERY_BACKEND_URL         | URL for Celery backend |
 |         | DATABASE_HOST              | Host for PostgreSQL database |

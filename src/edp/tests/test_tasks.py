@@ -22,6 +22,7 @@ def test_response_error_json_reply():
 
 def test_process_file_task_success():
     with patch('app.tasks.requests.post') as mock_post, \
+         patch('app.tasks._keepalive_session') as mock_keepalive, \
          patch('app.tasks.WithEDPTask.minio') as minio, \
          patch('app.tasks.WithEDPTask.db') as mock_db:
 
@@ -48,10 +49,14 @@ def test_process_file_task_success():
         embedding_response.json.return_value = {'embedded_docs': [{'text': 'chunk1', 'embedding': [0.1, 0.2]}]}
         ingestion_response = MagicMock(status_code=200)
 
-        # Configure mock_post to return different responses for different calls
+        # _keepalive_session returns a mock session used for the text extractor call
+        mock_session = MagicMock()
+        mock_session.post.return_value = text_extractor_response
+        mock_keepalive.return_value = mock_session
+
+        # Configure mock_post to return different responses for remaining requests.post calls
         mock_post.side_effect = [
             delete_response,           # Delete existing data
-            text_extractor_response,   # Text extractor
             text_compression_response, # Text compression
             text_splitter_response,    # Text splitter
             embedding_response,        # First embedding batch
@@ -70,7 +75,8 @@ def test_process_file_task_success():
         assert mock_db.commit.call_count > 0
 
         # Verify all API endpoints were called
-        assert mock_post.call_count == 6  # Based on our side_effect setup
+        assert mock_post.call_count == 5  # 5 calls via requests.post (delete, compression, splitter, embedding, ingestion)
+        assert mock_session.post.call_count == 1  # 1 call via keepalive session (text extractor)
 
 def test_process_file_task_file_not_found():
     with patch('app.tasks.WithEDPTask.db') as mock_db:
@@ -103,6 +109,7 @@ def test_delete_file_task_file_not_found():
 
 def test_process_link_task_success():
     with patch('app.tasks.requests.post') as mock_post, \
+         patch('app.tasks._keepalive_session') as mock_keepalive, \
          patch('app.tasks.WithEDPTask.db') as mock_db:
 
         mock_link_db = MagicMock()
@@ -122,10 +129,14 @@ def test_process_link_task_success():
         embedding_response.json.return_value = {'embedded_docs': [{'text': 'chunk1', 'embedding': [0.1, 0.2]}]}
         ingestion_response = MagicMock(status_code=200)
 
-        # Configure mock_post to return different responses for different calls
+        # _keepalive_session returns a mock session used for the text extractor call
+        mock_session = MagicMock()
+        mock_session.post.return_value = text_extractor_response
+        mock_keepalive.return_value = mock_session
+
+        # Configure mock_post to return different responses for remaining requests.post calls
         mock_post.side_effect = [
             delete_response,           # Delete existing data
-            text_extractor_response,   # Text extractor
             text_compression_response, # Text compression
             text_splitter_response,    # Text splitter
             embedding_response,        # First embedding batch
@@ -143,7 +154,8 @@ def test_process_link_task_success():
         assert mock_db.commit.call_count > 0
 
         # Verify all API endpoints were called
-        assert mock_post.call_count == 6  # Based on our side_effect setup
+        assert mock_post.call_count == 5  # 5 calls via requests.post (delete, compression, splitter, embedding, ingestion)
+        assert mock_session.post.call_count == 1  # 1 call via keepalive session (text extractor)
 
 def test_process_link_task_link_not_found():
     with patch('app.tasks.WithEDPTask.db') as mock_db:

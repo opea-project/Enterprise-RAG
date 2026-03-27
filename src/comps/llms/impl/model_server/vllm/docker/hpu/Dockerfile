@@ -1,29 +1,75 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-FROM vault.habana.ai/gaudi-docker/1.22.2/ubuntu22.04/habanalabs/pytorch-installer-2.7.1:latest
+# Parameterize base image components
+ARG DOCKER_URL=vault.habana.ai/gaudi-docker
+ARG VERSION=1.23.0
+ARG BASE_NAME=ubuntu24.04
+ARG PT_VERSION=2.9.0
+ARG REVISION=1.23.0-695
+ARG REPO_TYPE=habanalabs
+ARG TORCH_TYPE_SUFFIX
 
-ENV LANG=en_US.UTF-8
+FROM ${DOCKER_URL}/${VERSION}/${BASE_NAME}/${REPO_TYPE}/pytorch-${TORCH_TYPE_SUFFIX}installer-${PT_VERSION}:${REVISION}
 
-# create user and folders
-RUN useradd -u 1000 -m -s /bin/bash user
-ENV PATH="$PATH:/home/user/.local/bin"
-WORKDIR /home/user/
+# Parameterize commit/branch for vllm-project & vllm-gaudi checkout
+ARG VLLM_GAUDI_COMMIT=v0.16.0
+# leave empty to use last-good-commit-for-vllm-gaudi
+ARG VLLM_PROJECT_COMMIT=v0.16.0
+ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
 
-ENV VLLM_TARGET_DEVICE="hpu"
-# VLLM doesn't share any prebuilt HPU packages (https://docs.vllm.ai/en/latest/getting_started/installation/cpu.html#pre-built-wheels)
-# So it is impossible to easily freeze the whole vllm environment with uv
-RUN pip install --upgrade pip==25.0.1
+# There's already a non-root user in the base image
+ENV PATH="$PATH:/home/ubuntu/.local/bin"
 
-RUN git clone -b v0.9.0.1.post1+Gaudi-1.22.2 --single-branch https://github.com/HabanaAI/vllm-fork.git
-WORKDIR /home/user/vllm-fork
-RUN pip install --upgrade pip && \
-    pip install -v -r requirements-hpu.txt
+RUN apt update && \
+    apt install -y --no-install-recommends gettext moreutils jq && \
+    ln -sf /usr/bin/python3 /usr/bin/python
+WORKDIR /root
 
-RUN pip install huggingface-hub==0.35.3
-RUN VLLM_TARGET_DEVICE=hpu python3 setup.py install
+ENV VLLM_PATH=/workspace/vllm-project
+ENV VLLM_PATH2=/workspace/vllm-gaudi
+ENV HABANA_VISIBLE_DEVICES=all
 
-USER user
-WORKDIR /home/user/
+RUN echo "dash dash/sh boolean false" | debconf-set-selections && \
+    DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+ENV ENV=~/.profile
 
-CMD ["/bin/bash"]
+# Clone the vllm-project repository and install inside the container
+# --- START: COMBINED RUN COMMAND ---
+RUN \
+    # Clone vllm-gaudi and get the commit hash for the vllm-project/vllm
+    set -e && \
+    mkdir -p $VLLM_PATH2 && \
+    git clone https://github.com/vllm-project/vllm-gaudi.git $VLLM_PATH2 && \
+    cd $VLLM_PATH2 && \
+    if [ -z "${VLLM_PROJECT_COMMIT}" ]; then \
+       VLLM_PROJECT_COMMIT=$(git show "origin/vllm/last-good-commit-for-vllm-gaudi:VLLM_STABLE_COMMIT" 2>/dev/null) && \
+       echo "Found vLLM commit hash: ${VLLM_PROJECT_COMMIT}"; \
+    else \
+       echo "Using vLLM commit : ${VLLM_PROJECT_COMMIT}"; \
+    fi && \
+    mkdir -p $VLLM_PATH && \
+    # Clone vllm-project/vllm and use configured or last good commit hash
+    git clone https://github.com/vllm-project/vllm.git $VLLM_PATH && \
+    cd $VLLM_PATH && \
+    git remote add upstream https://github.com/vllm-project/vllm.git && \
+    git fetch upstream --tags || true && \
+    git checkout ${VLLM_PROJECT_COMMIT} && \
+    # Install vllm-project/vllm
+    bash -c "pip install -r <(sed '/^torch/d' requirements/build.txt)" && \
+    VLLM_TARGET_DEVICE=empty pip install --no-build-isolation . && \
+    # Install vllm-gaudi plugin
+    cd $VLLM_PATH2 && \
+    git checkout ${VLLM_GAUDI_COMMIT} && \
+    VLLM_TARGET_DEVICE=hpu pip install -v . --no-build-isolation
+# --- END: COMBINED RUN COMMAND ---
+
+# Allow non-root user to list /root so pip's legacy-editable scan doesn't fail
+# with PermissionError (habana base image installs leave .pth refs under /root)
+RUN chmod 755 /root
+
+USER ubuntu
+WORKDIR /home/ubuntu/
+
+# Set entrypoint script
+ENTRYPOINT ["python3", "-m", "entrypoints.entrypoint_main"]

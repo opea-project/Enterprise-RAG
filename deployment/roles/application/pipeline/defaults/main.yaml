@@ -15,6 +15,11 @@ gmc:
     default_resources_file: "{{ pipelines_dir }}/chatqa/resources-reference-cpu.yaml"
     default_model_config_file: "{{ pipelines_dir }}/chatqa/resources-model-cpu.yaml"
     tdx_resources_file: "{{ pipelines_dir }}/../components/gmc/resources-tdx.yaml"
+  # Extended wait (minutes) for vLLM Gaudi pods to become ready on first deployment.
+  # Model weights (e.g. Mixtral 87G) are downloaded once and cached on the shared PVC;
+  # all replicas block on the same filelock so only one downloads at a time.
+  # Increase if your network bandwidth is limited.
+  vllm_model_download_timeout_minutes: 90
   pvc:
     accessMode: ReadWriteOnce
     models:

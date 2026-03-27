@@ -137,9 +137,9 @@ spec:
               name: model-volume
             - mountPath: /tmp
               name: tmp
-            - mountPath: /.cache
+            - mountPath: /home/ubuntu/.cache
               name: cache
-            - mountPath: /home/user/.config
+            - mountPath: /home/ubuntu/.config
               name: config
             - mountPath: /var/log
               name: var-log

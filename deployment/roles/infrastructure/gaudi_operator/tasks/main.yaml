@@ -24,33 +24,38 @@
     - install
     - post-install
 
-- name: Create proxy ConfigMap
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: proxy-config
-        namespace: habana-ai-operator
-      data:
-        http_proxy: "{{ httpProxy }}"
-        https_proxy: "{{ httpsProxy }}"
-        no_proxy: "{{ noProxy }}"
-  tags:
-    - install
-    - post-install
-
 - name: Add and update Helm repo for Habana AI Operator
   kubernetes.core.helm_repository:
     name: gaudi-helm
     repo_url: https://vault.habana.ai/artifactory/api/helm/gaudi-helm
     state: present
+    force_update: true
   tags:
     - install
     - post-install
 
-- name: Install or upgrade Habana AI Operator using Helm with values file
+- name: Pre-install Habana AI Operator CRDs
+  ansible.builtin.shell: >-
+    helm show crds gaudi-helm/habana-ai-operator
+    --version {{ habana_driver_version }} | kubectl apply -f -
+  register: crd_pre_install
+  changed_when: "'created' in crd_pre_install.stdout or 'configured' in crd_pre_install.stdout"
+  tags:
+    - install
+    - post-install
+
+- name: Wait for Habana AI Operator API group to be available
+  ansible.builtin.shell: kubectl api-resources --api-group=habanalabs.habana.ai
+  register: api_check
+  until: api_check.rc == 0 and 'ClusterPolicy' in api_check.stdout
+  retries: 12
+  delay: 5
+  changed_when: false
+  tags:
+    - install
+    - post-install
+
+- name: Install or upgrade Habana AI Operator using Helm
   kubernetes.core.helm:
     name: habana-ai-operator
     chart_ref: gaudi-helm/habana-ai-operator
@@ -60,34 +65,6 @@
     state: present
     wait: true
     timeout: "{{ helm_timeout }}"
-  tags:
-    - install
-    - post-install
-
-- name: Wait for ClusterPolicy to be created
-  kubernetes.core.k8s_info:
-    api_version: habanalabs.habana.ai/v1
-    kind: ClusterPolicy
-  register: clusterpolicy_info
-  until: clusterpolicy_info.resources | selectattr('metadata.name', 'equalto', 'habana-ai') | list | length > 0
-  retries: 5
-  delay: 5
-  tags:
-    - install
-    - post-install
-
-- name: Patch ClusterPolicy to set proxy config_map_name
-  kubernetes.core.k8s:
-    state: present
-    api_version: habanalabs.habana.ai/v1
-    kind: ClusterPolicy
-    name: habana-ai
-    definition:
-      metadata:
-        name: habana-ai
-      spec:
-        proxy:
-          config_map_name: proxy-config
   tags:
     - install
     - post-install
@@ -172,7 +149,7 @@
     map(attribute='status.containerStatuses') | sum(start=[]) |
     selectattr('ready', 'equalto', false) | list | length == 0
   retries: "{{ wait_retries }}"
-  delay: 15
+  delay: 30
   failed_when: false
   tags:
     - install
@@ -225,10 +202,19 @@
     - install
     - post-install
 
-- name: Get all nodes
+- name: Wait for Gaudi resources to be advertised in node status
   kubernetes.core.k8s_info:
     kind: Node
   register: habana_nodes
+  until: >
+    habana_nodes.resources | length > 0 and
+    habana_nodes.resources
+    | map(attribute='status.allocatable') | select('defined')
+    | map('dict2items') | flatten
+    | selectattr('key', 'equalto', 'habana.ai/gaudi')
+    | selectattr('value', 'ne', '0') | list | length > 0
+  retries: 15
+  delay: 10
   tags:
     - install
     - post-install
@@ -244,9 +230,13 @@
   set_fact:
     gaudi_nodes: "{{ gaudi_nodes + [item] }}"
   loop: "{{ habana_nodes.resources }}"
-  when: item.metadata.labels is defined and
-        item.metadata.labels['habana.ai/device.family'] is defined and
-        item.metadata.labels['habana.ai/device.family'] == 'gaudi'
+  when: >
+    item.status.allocatable is defined and
+    (item.status.allocatable | dict2items
+     | selectattr('key', 'equalto', 'habana.ai/gaudi') | list | length) > 0 and
+    (item.status.allocatable | dict2items
+     | selectattr('key', 'equalto', 'habana.ai/gaudi')
+     | map(attribute='value') | first | default('0') | int) > 0
   no_log: "{{ secure_logs }}"
   tags:
     - install
@@ -259,11 +249,25 @@
     - install
     - post-install
 
+- name: Initialize total Gaudi cards counter
+  set_fact:
+    total_gaudi_cards: 0
+  tags:
+    - install
+    - post-install
+
 - name: Count total Gaudi cards manually
   set_fact:
-    total_gaudi_cards: "{{ total_gaudi_cards | default(0) + (item.status.capacity['habana.ai/gaudi'] | int) }}"
+    total_gaudi_cards: >-
+      {{ total_gaudi_cards | int +
+         (item.status.allocatable | dict2items
+          | selectattr('key', 'equalto', 'habana.ai/gaudi')
+          | map(attribute='value') | first | default('0') | int) }}
   loop: "{{ gaudi_nodes }}"
-  when: item.status.capacity is defined and item.status.capacity['habana.ai/gaudi'] is defined
+  when: >
+    item.status.allocatable is defined and
+    (item.status.allocatable | dict2items
+     | selectattr('key', 'equalto', 'habana.ai/gaudi') | list | length) > 0
   no_log: "{{ secure_logs }}"
   tags:
     - install
@@ -279,13 +283,15 @@
 - name: Find nodes with incorrect Habana Gaudi capacity
   set_fact:
     invalid_nodes: >-
-      {{
-        gaudi_nodes
-        | selectattr("status.capacity['habana.ai/gaudi']", "defined")
-        | selectattr("status.capacity['habana.ai/gaudi']", "ne", "8")
-        | map(attribute="metadata.name")
-        | list
-      }}
+      {%- set result = [] -%}
+      {%- for node in gaudi_nodes -%}
+        {%- if node.status.allocatable is defined
+              and 'habana.ai/gaudi' in node.status.allocatable
+              and node.status.allocatable['habana.ai/gaudi'] != '8' -%}
+          {%- set _ = result.append(node.metadata.name) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ result }}
   tags:
     - install
     - post-install
@@ -296,10 +302,9 @@
       The following nodes do not have the correct Habana Gaudi capacity:
       {% for node in gaudi_nodes %}
         {% if node.metadata.name in invalid_nodes %}
-          - {{ node.metadata.name }} (actual: {{ node.status.capacity['habana.ai/gaudi'] }}, expected: 8)
+          - {{ node.metadata.name }} (actual: {{ node.status.allocatable['habana.ai/gaudi'] }}, expected: 8)
         {% endif %}
       {% endfor %}
-      {% set message = gaudi_nodes | selectattr("metadata.name", "in", invalid_nodes") %}
   when: invalid_nodes | length > 0
   tags:
     - install

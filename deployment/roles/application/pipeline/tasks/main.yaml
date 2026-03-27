@@ -229,6 +229,58 @@
     - install
     - update-configuration
 
+- name: Wait for vLLM Gaudi pods to become ready (model download may take up to {{ gmc.vllm_model_download_timeout_minutes }} minutes)
+  # Triggered statically when the pipeline uses HPU resources — avoids a race with
+  # GMC controller reconciliation that would leave the pod list empty right after
+  # "Apply pipeline".  GMC creates pods a few seconds after the Pipeline CR is applied;
+  # the poll loop below handles the initial "no pods yet" phase automatically.
+  when: "'hpu' in effective_resources_path"
+  block:
+    - name: Poll vLLM Gaudi pod readiness with download-aware extended timeout
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ item.namespace }}"
+        label_selectors:
+          - "app.kubernetes.io/name=vllm_gaudi"
+      register: vllm_gaudi_pods_status
+      until: >
+        (vllm_gaudi_pods_status.resources | length > 0)
+        and
+        (
+          (vllm_gaudi_pods_status.resources
+           | selectattr('status.containerStatuses', 'defined')
+           | map(attribute='status.containerStatuses') | flatten
+           | selectattr('ready', 'equalto', false) | list | length == 0)
+          or
+          (vllm_gaudi_pods_status.resources
+           | selectattr('status.containerStatuses', 'defined')
+           | map(attribute='status.containerStatuses') | flatten
+           | selectattr('state.waiting.reason', 'defined')
+           | selectattr('state.waiting.reason', 'in',
+               ['CrashLoopBackOff', 'Error', 'OOMKilled',
+                'RunContainerError', 'CreateContainerError', 'CreateContainerConfigError'])
+           | list | length > 0)
+        )
+      retries: "{{ (gmc.vllm_model_download_timeout_minutes | int * 2) | int }}"
+      delay: 30
+
+    - name: Fail if vLLM Gaudi pods are in a crash state (not just waiting for model download)
+      fail:
+        msg: >
+          One or more vLLM Gaudi pods in namespace '{{ item.namespace }}' are in a crash state.
+          Run: kubectl logs -n {{ item.namespace }} -l app.kubernetes.io/name=vllm_gaudi
+      when: >
+        vllm_gaudi_pods_status.resources
+        | selectattr('status.containerStatuses', 'defined')
+        | map(attribute='status.containerStatuses') | flatten
+        | selectattr('state.waiting.reason', 'defined')
+        | selectattr('state.waiting.reason', 'in',
+            ['CrashLoopBackOff', 'Error', 'OOMKilled',
+             'RunContainerError', 'CreateContainerError', 'CreateContainerConfigError'])
+        | list | length > 0
+  tags:
+    - install
+
 - name: Remove obsolete dynamically-generated resources
   ansible.builtin.include_role:
     name: utils

@@ -1,0 +1,58 @@
+---
+- name: Add Kyverno Helm repository
+  kubernetes.core.helm_repository:
+    name: kyverno
+    repo_url: https://kyverno.github.io/kyverno/
+  tags:
+    - install
+
+- name: Install Kyverno
+  kubernetes.core.helm:
+    name: kyverno
+    chart_ref: kyverno/kyverno
+    release_namespace: kyverno
+    create_namespace: true
+    state: present
+    timeout: "{{ helm_timeout | default('20m0s') }}"
+  tags:
+    - install
+
+- name: Wait for Kyverno admission controller to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: kyverno-admission-controller
+    namespace: kyverno
+  register: kyverno_deployment
+  until:
+    - kyverno_deployment.resources | length > 0
+    - kyverno_deployment.resources[0].status.readyReplicas is defined
+    - kyverno_deployment.resources[0].status.readyReplicas == kyverno_deployment.resources[0].status.replicas
+  retries: 5
+  delay: 30
+  tags:
+    - install
+
+- name: Apply TDX MutatingPolicy
+  kubernetes.core.k8s:
+    state: present
+    template: default-kyverno-policy.yaml.j2
+  tags:
+    - install
+
+- name: Remove TDX MutatingPolicy
+  kubernetes.core.k8s:
+    state: absent
+    template: default-kyverno-policy.yaml.j2
+  ignore_errors: true
+  tags:
+    - uninstall
+
+- name: Uninstall Kyverno
+  kubernetes.core.helm:
+    name: kyverno
+    release_namespace: kyverno
+    state: absent
+  ignore_errors: true
+  tags:
+    - uninstall

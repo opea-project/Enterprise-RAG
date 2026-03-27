@@ -27,16 +27,6 @@
     - display-configuration
     - pre-upgrade
 
-# Load KBS_ADDRESS from config, if not provided read from env
-- name: Load KBS_ADDRESS environment variable
-  ansible.builtin.set_fact:
-    KBS_ADDRESS: "{{ tdx.attestation.kbs_address | default(lookup('ansible.builtin.env', 'KBS_ADDRESS'), true) }}"
-  when: tdx.attestation.enabled
-  tags:
-    - install
-    - display-configuration
-    - pre-upgrade
-
 - name: Verify if KBS address is provided
   ansible.builtin.assert:
     that:

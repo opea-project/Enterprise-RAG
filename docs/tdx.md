@@ -1,7 +1,8 @@
 # Running Intel® AI for Enterprise RAG with Intel® Trust Domain Extensions (Intel® TDX)
 
 This document outlines the deployment process of ChatQnA components on Intel® Xeon® Processors where the microservices
-are protected by [Intel TDX](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html).
+are protected
+by [Intel TDX](https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/overview.html).
 
 ## Table of Contents
 
@@ -31,11 +32,12 @@ virtual machines, allowing Cloud Native workloads to leverage confidential compu
 
 ### System Requirements
 
-| Category           | Details                                                                                                                          |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| Operating System   | Ubuntu 24.04                                                                                                                     |
-| Hardware Platforms | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors |
-| Kubernetes Version | 1.31+                                                                                                                            |
+| Category             | Details                                                                                                                          |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Operating System     | Ubuntu 24.04                                                                                                                     |
+| Hardware Platforms   | 4th Gen Intel® Xeon® Scalable processors<br>5th Gen Intel® Xeon® Scalable processors<br>6th Gen Intel® Xeon® Scalable processors |
+| RAM Memory Available | 500GB                                                                                                                            |
+| Kubernetes Version   | 1.31+                                                                                                                            |
 
 This guide assumes that:
 
@@ -93,7 +95,8 @@ Follow the below steps on the server node with Intel Xeon Processor:
 
 1. Follow the steps to [deploy kubernetes cluster](cluster_deployment_guide.md).
 
-2. `[OPTIONAL]` `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
+2. `[OPTIONAL]`
+   `[CoCo]` [Install Confidential Containers Operator](https://cc-enabling.trustedservices.intel.com/intel-confidential-containers-guide/02/infrastructure_setup/#install-confidential-containers-operator).
 
 > [!NOTE]
 > Kata is installed automatically if `tdx.coco.install_kata` is enabled in config file.
@@ -105,9 +108,9 @@ Follow the below steps on the server node with Intel Xeon Processor:
 Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
 1. Update config
-   
-   - For ChatQnA and Audio ChatQnA: `inventory/sample/config.yaml`
-   - For Docsum: `inventory/sample/config_docsum.yaml`
+
+    - For ChatQnA and Audio ChatQnA: `inventory/sample/config.yaml`
+    - For Docsum: `inventory/sample/config_docsum.yaml`
 
    ```yaml
    huggingToken: "<HUGGING_FACE_TOKEN>" # [OPTIONAL] Provide your Hugging Face token here - required for gated/private models
@@ -128,9 +131,11 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
    ```
    There is no support for enabling `one_td` and `coco` at once.
 
-   Setting `attestation.enabled` enforces TDX attestation as a prerequisite for a successful Intel® AI for Enterprise RAG
+   Setting `attestation.enabled` enforces TDX attestation as a prerequisite for a successful Intel® AI for Enterprise
+   RAG
    deployment.    
-   To learn more about TDX attestation head to [Confidential Containers Attestation](https://confidentialcontainers.org/docs/attestation/).
+   To learn more about TDX attestation head
+   to [Confidential Containers Attestation](https://confidentialcontainers.org/docs/attestation/).
 
 2. `[OPTIONAL]` `[one TD]` Provide attestation infrastructure:
 
@@ -147,19 +152,20 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
 3. Deploy Intel® AI for Enterprise RAG:
 
-   If `tdx.kbs_address` is not provided in config file, variable may be passed via environment variable `KBS_ADDRESS`, 
-   which points to the Key Broker Service ([KBS](https://confidentialcontainers.org/docs/attestation/architecture/#key-broker-service)).
+   If `tdx.kbs_address` is not provided in config file, variable may be passed via environment variable `KBS_ADDRESS`,
+   which points to the Key Broker
+   Service ([KBS](https://confidentialcontainers.org/docs/attestation/architecture/#key-broker-service)).
    KBS can be deployed on any trusted machine. The most common cases are described below.
 
-   - `CoCo` - if KBS was deployed on the same kubernetes node as whole cluster, that is simply: 
+    - `CoCo` - if KBS was deployed on the same kubernetes node as whole cluster, that is simply:
 
-       ```bash
-        export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
-       ```
-   - `one-TD` - the most common case is when KBS runs on host of the TD:
         ```bash
-        export KBS_ADDRESS=http://<HOST IP ADDRESS>:8080
+         export KBS_ADDRESS=http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'):$(kubectl get svc kbs -n coco-tenant -o jsonpath='{.spec.ports[0].nodePort}')
         ```
+    - `one-TD` - the most common case is when KBS runs on host of the TD:
+         ```bash
+         export KBS_ADDRESS=http://<HOST IP ADDRESS>:8080
+         ```
 
    Now you can deploy Intel® AI for Enterprise RAG:
 
@@ -175,8 +181,13 @@ Follow the steps below to deploy Intel® AI for Enterprise RAG:
 
 * `chatqa`
 * `chat-history`
+* `edp`
+* `default` (rag-utils)
 * `fingerprint`
+* `gmc`
 * `rag-ui`
+* `seaweedfs`
+* `vdb`
 
 ## Advanced configuration
 
@@ -205,12 +216,13 @@ There are two mechanisms used to customize the deployment with Intel TDX:
 
 ## Limitations
 
-1. `[CoCo]` Intel® AI for Enterprise RAG cannot be used with Intel® TDX with local registry or a registry with custom SSL certificate,
+1. `[CoCo]` Intel® AI for Enterprise RAG cannot be used with Intel® TDX with local registry or a registry with custom
+   SSL certificate,
    see [this issue](https://github.com/kata-containers/kata-containers/issues/10507).
 2. Only `*cpu*` pipelines are supported with Intel TDX.
 
 > [!NOTE]
-> `[CoCo]` deployment path is experimental and not fully supported for all the microservices yet due to lack of support 
-> for port forwarding support in kata VM, 
+> `[CoCo]` deployment path is experimental and not fully supported for all the microservices yet due to lack of support
+> for port forwarding support in kata VM,
 > [see this issue](https://github.com/kata-containers/kata-containers/issues/1693).
 

@@ -4,7 +4,6 @@ kata-as-coco-runtime:
   snapshotter:
     setup: ["nydus"]
   shims:
-    disableAll: true
     qemu-tdx:
       enabled: true
       supportedArches:
@@ -30,5 +29,25 @@ kata-as-coco-runtime:
       agent:
         httpsProxy: "{{ httpsProxy | default('') }}"
         noProxy: "{{ noProxy | default('') }}"
+
+    clh:
+      enabled: false
+    cloud-hypervisor:
+      enabled: false
+    dragonball:
+      enabled: false
+    fc:
+      enabled: false
+    qemu:
+      enabled: false
+    qemu-runtime-rs:
+      enabled: false
+    qemu-snp:
+      enabled: false
+    qemu-coco-dev:
+      enabled: false
+    qemu-coco-dev-runtime-rs:
+      enabled: false
+
   defaultShim:
     amd64: qemu-tdx

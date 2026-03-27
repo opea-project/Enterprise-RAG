@@ -134,6 +134,15 @@
         - install
         - uninstall
 
+    - name: TDX Install kyverno
+      ansible.builtin.include_role:
+        name: tdx
+        tasks_from: manage_kyverno.yaml
+      when: tdx.coco.enabled
+      tags:
+        - install
+        - uninstall
+
     - name: Install NRI balloons policy
       include_role:
         name: nri_balloons

@@ -1,0 +1,140 @@
+# Kyverno MutatingPolicy for Kata TDX runtime
+#
+# This policy automatically configures pods in TDX-enabled namespaces to run
+# inside Intel TDX (Trust Domain Extensions) confidential VMs using Kata Containers.
+#
+# TDX VM Memory Calculation:
+# ==========================
+# Kata TDX is configured with static_sandbox_resource_mgmt=true, which means
+# VM memory must be sized correctly at creation time (no runtime hot-add).
+# This is a common configuration for confidential computing workloads.
+#
+# Memory is calculated as follows:
+#   1. Sum memory requests from all containers (resources.requests.memory)
+#   2. Sum memory requests from all initContainers
+#   3. Convert total bytes to MB
+#   4. Apply per-pod overrides from tdx_memory_override dict (matched by pod name prefix)
+#   5. Apply 256MB minimum floor (Kata TDX VM requirement)
+#   6. Fall back to tdx_default_memory_mb (default: 512MB) if no requests specified
+#
+# TDX VM vCPU Calculation:
+# ========================
+#   1. Sum CPU requests from all containers (resources.requests.cpu) in millicores
+#   2. Sum CPU requests from all initContainers
+#   3. Round up to whole vCPUs: ceil(totalMillicores / 1000)
+#   4. Fall back to tdx_default_vcpus (default: 1) if no requests specified
+#
+# Pod Name Handling:
+# ==================
+# Pods created by ReplicaSets/Deployments may only have generateName (not name)
+# at admission time. The policy uses whichever is available for prefix matching.
+#
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: kata-tdx-defaults
+spec:
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+      - key: kubernetes.io/metadata.name
+        operator: In
+        values:
+{{ tdx_enabled_namespaces | to_nice_yaml | indent(8, first=true) }}
+    resourceRules:
+    - apiGroups: ['']
+      apiVersions: ['v1']
+      operations: ['CREATE', 'UPDATE']
+      resources: ['pods']
+  variables:
+    # Step 1: Sum memory requests from all containers (in bytes)
+    - name: containerMemoryBytes
+      expression: |
+        object.spec.containers.map(c,
+          has(c.resources) && has(c.resources.requests) && has(c.resources.requests.memory)
+            ? int(quantity(c.resources.requests.memory).asApproximateFloat())
+            : 0
+        ).sum()
+    # Step 2: Sum memory requests from all initContainers (in bytes)
+    - name: initContainerMemoryBytes
+      expression: |
+        has(object.spec.initContainers)
+          ? object.spec.initContainers.map(c,
+              has(c.resources) && has(c.resources.requests) && has(c.resources.requests.memory)
+                ? int(quantity(c.resources.requests.memory).asApproximateFloat())
+                : 0
+            ).sum()
+          : 0
+    # Step 3: Convert total memory to MB
+    - name: totalMemoryMB
+      expression: |
+        int((variables.containerMemoryBytes + variables.initContainerMemoryBytes) / 1048576)
+    # Get pod name (or generateName for ReplicaSet-managed pods) for override matching
+    - name: podName
+      expression: |
+        has(object.metadata.name) ? object.metadata.name : (has(object.metadata.generateName) ? object.metadata.generateName : "")
+    # Step 4-6: Apply overrides, 256MB floor, or default
+    # Priority: per-pod override > calculated from requests (min 256MB) > default ({{ tdx_default_memory_mb | default(512) }}MB)
+    - name: defaultMemoryMB
+      expression: |
+{% for pod_prefix, memory_mb in tdx_memory_override.items() %}
+        variables.podName.startsWith("{{ pod_prefix }}") ? {{ memory_mb }} :
+{% endfor %}
+        (variables.totalMemoryMB == 0 ? {{ tdx_default_memory_mb | default(512) }} : (variables.totalMemoryMB >= 256 ? variables.totalMemoryMB : 256))
+    # CPU Step 1: Sum CPU requests from all containers (in millicores)
+    - name: containerCpuMillis
+      expression: |
+        object.spec.containers.map(c,
+          has(c.resources) && has(c.resources.requests) && has(c.resources.requests.cpu)
+            ? int(quantity(c.resources.requests.cpu).asApproximateFloat() * 1000.0)
+            : 0
+        ).sum()
+    # CPU Step 2: Sum CPU requests from all initContainers (in millicores)
+    - name: initContainerCpuMillis
+      expression: |
+        has(object.spec.initContainers)
+          ? object.spec.initContainers.map(c,
+              has(c.resources) && has(c.resources.requests) && has(c.resources.requests.cpu)
+                ? int(quantity(c.resources.requests.cpu).asApproximateFloat() * 1000.0)
+                : 0
+            ).sum()
+          : 0
+    # CPU Step 3: Total millicores
+    - name: totalCpuMillis
+      expression: |
+        variables.containerCpuMillis + variables.initContainerCpuMillis
+    # CPU Step 4: Round up to whole vCPUs (ceiling division)
+    - name: totalVcpus
+      expression: |
+        int((variables.totalCpuMillis + 999) / 1000)
+    # CPU Step 5: Apply default if no CPU requests specified
+    - name: defaultVcpus
+      expression: |
+        variables.totalVcpus > 0 ? variables.totalVcpus : {{ tdx_default_vcpus | default(1) }}
+  mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: |
+        Object{
+          metadata: Object.metadata{
+            annotations: {{
+              (tdx_helm_override_values.podAnnotations | combine({
+                'io.katacontainers.config.hypervisor.default_memory': '__MEM__',
+                'io.katacontainers.config.hypervisor.default_vcpus': '__CPU__'
+              })) | to_json
+                | replace('"__MEM__"', 'string(variables.defaultMemoryMB)')
+                | replace('"__CPU__"', 'string(variables.defaultVcpus)')
+            }}
+          },
+          spec: Object.spec{
+            runtimeClassName: "{{ tdx_helm_override_values.runtimeClassName }}",
+            containers: object.spec.containers.map(c, Object.spec.containers{
+              name: c.name,
+              imagePullPolicy: "Always"
+            }),
+            initContainers: has(object.spec.initContainers) ? object.spec.initContainers.map(c, Object.spec.initContainers{
+              name: c.name,
+              imagePullPolicy: "Always"
+            }) : []
+          }
+        }

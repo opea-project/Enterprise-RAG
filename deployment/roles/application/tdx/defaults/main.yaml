@@ -15,3 +15,48 @@ tdx:
   attestation:
     enabled: false
     kbs_address: ""
+
+tdx_enabled_namespaces:
+  - chatqa
+  - chat-history
+  - edp
+  - default
+  - fingerprint
+  - gmc
+  - rag-ui
+  - seaweedfs
+  - vdb
+
+# Default memory in MB for TDX VMs (fallback when pod has no limits defined)
+tdx_default_memory_mb: 512
+
+# Default vCPUs for TDX VMs (fallback when pod has no CPU limits defined)
+tdx_default_vcpus: 1
+
+tdx_memory_override:
+  chat-history-mongodb-postgresql: 4096
+  chat-history-svc: 2048
+  edp-text-compression: 2048
+  edp-ingestion: 2048
+  edp-text-splitter: 4096
+  fingerprint-mongodb-postgresql: 4096
+  fgp-svc: 1024
+  fingerprint-svc: 2048
+  rag-utils-watcher: 512
+
+# 1. load KBS_ADDRESS from config,
+# 2. if not provided read from environment,
+# 3. if not provided and CoCo => set default kubernetes value (http://kbs.coco-tenant.svc:8080)
+
+_default_kbs_address: "{{ 'http://kbs.coco-tenant.svc:8080' if tdx.coco.enabled else '' }}"
+KBS_ADDRESS: >-
+  {{ tdx.attestation.kbs_address
+  | default(lookup('ansible.builtin.env', 'KBS_ADDRESS'), true)
+  | default(_default_kbs_address, true) }}
+
+tdx_helm_override_values:
+  runtimeClassName: "{{ tdx.coco.runtime_class_name }}"
+  podAnnotations:
+    io.containerd.cri.runtime-handler: "{{ tdx.coco.runtime_class_name }}"
+    io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
+    io.katacontainers.config.runtime.create_container_timeout: "1800"

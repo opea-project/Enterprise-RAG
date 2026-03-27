@@ -267,9 +267,6 @@ labels:
   {{- else }}
   {{- include "helm-edp.selectorLabels" $context | nindent 2 }}
   {{- end }}
-{{- if $context.Values.tdx }}
-  {{- include "manifest.tdx.labels" (list $deploymentName $context) | nindent 2 }}
-{{- end }}
 {{- end }}
 
 {{- /*

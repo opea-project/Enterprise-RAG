@@ -8,9 +8,9 @@ This module provides:
 - E2E file-based credential loading (like main e2e tests)
 - Conditional video recording (only on failures)
 """
+import logging
 import os
 import shutil
-import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -18,10 +18,36 @@ import pytest
 import pytest_asyncio
 from playwright.async_api import async_playwright
 
-from tests.e2e.helpers.ui_helper import ChatUIHelper, DocSumUIHelper, AudioChatUIHelper
+from tests.e2e.helpers.ui_helper import (AudioChatUIHelper, ChatUIHelper,
+                                         DocSumUIHelper)
 from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
+
+# Parse viewport dimensions once at module level — reused by browser & context fixtures.
+_viewport_env = os.getenv('VIEWPORT', '1920x1080')
+try:
+    VIEWPORT_WIDTH, VIEWPORT_HEIGHT = (int(v) for v in _viewport_env.split('x'))
+except (ValueError, AttributeError):
+    logger.warning(f"Invalid VIEWPORT '{_viewport_env}', falling back to 1920x1080")
+    VIEWPORT_WIDTH, VIEWPORT_HEIGHT = 1920, 1080
+
+
+def _has_pipeline(pipeline_type: str) -> bool:
+    """Check whether a pipeline of the given type is deployed."""
+    return any(p.get("type") == pipeline_type for p in cfg.get("pipelines", []))
+
+
+# Shared skip markers — import these in test modules instead of copy-pasting
+# the for/else config loop.
+requires_chatqa = pytest.mark.skipif(
+    not _has_pipeline("chatqa"),
+    reason="ChatQA pipeline is not deployed",
+)
+requires_docsum = pytest.mark.skipif(
+    not _has_pipeline("docsum"),
+    reason="DocSum pipeline is not deployed",
+)
 
 # Artifact directories
 ARTIFACT_BASE = Path(__file__).parent.parent.parent.parent.parent / "test-results"
@@ -137,7 +163,9 @@ async def browser(playwright_instance):
     headless = headless_env in ('true', '1', 'yes')
     display = os.getenv('DISPLAY')
 
-    logger.info(f"Launching Firefox browser... (headless={headless}, display={display})")
+    vp_width, vp_height = VIEWPORT_WIDTH, VIEWPORT_HEIGHT
+
+    logger.info(f"Launching Firefox browser... (headless={headless}, display={display}, viewport={vp_width}x{vp_height})")
 
     # Configure launch arguments
     launch_args = [
@@ -150,8 +178,8 @@ async def browser(playwright_instance):
     # Add window size arguments for non-headless mode to fit screen
     if not headless:
         launch_args.extend([
-            "--width=1920",
-            "--height=1080"
+            f"--width={vp_width}",
+            f"--height={vp_height}"
         ])
 
     # Firefox preferences for audio testing - auto-grant microphone permissions
@@ -186,10 +214,12 @@ async def context(browser, request):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     video_path = VIDEO_DIR / f"test_{test_name}_{timestamp}"
 
+    vp_width, vp_height = VIEWPORT_WIDTH, VIEWPORT_HEIGHT
+
     context = await browser.new_context(
-        viewport={"width": 1920, "height": 1080},
+        viewport={"width": vp_width, "height": vp_height},
         record_video_dir=str(video_path),
-        record_video_size={"width": 1920, "height": 1080},
+        record_video_size={"width": vp_width, "height": vp_height},
         ignore_https_errors=True  # Ignore SSL errors for testing
     )
 

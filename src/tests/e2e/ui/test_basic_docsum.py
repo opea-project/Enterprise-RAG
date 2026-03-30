@@ -17,20 +17,16 @@ Entry Point: {domain}/docsum redirects to {domain}/docsum/paste-text
 Authentication: Reuses existing Keycloak authentication flow
 """
 
-import allure
 import logging
+
+import allure
 import pytest
 
-from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.ui.conftest import requires_docsum
 
 logger = logging.getLogger(__name__)
 
-# Skip all tests if docsum pipeline is not deployed
-for pipeline in cfg.get("pipelines", []):
-    if pipeline.get("type") == "docsum":
-        break
-else:
-    pytestmark = pytest.mark.skip(reason="DocSum pipeline is not deployed")
+pytestmark = requires_docsum
 
 
 # Sample text for summary generation
@@ -57,14 +53,25 @@ async def test_paste_text_tab_rendered(docsum_ui_helper):
     Test that the Paste Text tab is rendered in DocSum UI.
     
     Verifies: User can see the Paste Text tab after login.
+    Uses data-testid="docsum-tabs" to verify tab container, then aria-label fallback
+    for the specific tab (Paste Text tab has no dedicated data-testid).
     """
     logger.info("Test: Paste Text Tab Rendering")
     
-    tab_rendered = await docsum_ui_helper.check_element_rendered(
-        aria_label="Paste Text Tab",
+    # Primary check: docsum-tabs container renders via data-testid
+    tabs_rendered = await docsum_ui_helper.check_element_rendered(
+        data_testid="docsum-tabs",
+        check_children=True,
         timeout=10000
     )
+    assert tabs_rendered, "DocSum tabs container (data-testid='docsum-tabs') not found or empty"
+    logger.info("DocSum tabs container rendered with children")
     
+    # Secondary check: specific Paste Text tab via aria-label
+    tab_rendered = await docsum_ui_helper.check_element_rendered(
+        aria_label="Paste Text Tab",
+        timeout=5000
+    )
     assert tab_rendered, "Paste Text tab (aria-label='Paste Text Tab') not found"
     logger.info("Paste Text tab is rendered")
 
@@ -76,27 +83,24 @@ async def test_user_can_fill_textarea(docsum_ui_helper):
     """
     Test that user can fill text into the textarea.
     
-    Verifies: Textarea exists, is editable, and accepts text input.
+    Verifies: Textarea exists via data-testid, is editable, and accepts text input.
+    Uses data-testid="paste-text-textarea-input" (added in PR #1819).
     """
     logger.info("Test: User Can Fill Textarea")
     
-    # Check textarea exists
+    # Check textarea exists via data-testid (preferred)
     textarea_rendered = await docsum_ui_helper.check_element_rendered(
-        element_id="paste-text",
+        data_testid="paste-text-textarea-input",
         timeout=10000
     )
-    assert textarea_rendered, "Textarea (id='paste-text') not found"
+    assert textarea_rendered, "Textarea (data-testid='paste-text-textarea-input') not found"
     
-    # Check textarea is editable
-    is_editable = await docsum_ui_helper.is_element_editable("paste-text")
-    assert is_editable, "Textarea should be editable"
-    
-    # Fill text and verify
+    # Fill text and verify via data-testid helpers
     test_text = "Test input for DocSum."
-    fill_success = await docsum_ui_helper.fill_textarea("paste-text", test_text)
+    fill_success = await docsum_ui_helper.fill_by_testid("paste-text-textarea-input", test_text)
     assert fill_success, "Failed to fill textarea"
     
-    current_value = await docsum_ui_helper.get_textarea_value("paste-text")
+    current_value = await docsum_ui_helper.get_input_value_by_testid("paste-text-textarea-input")
     assert current_value == test_text, f"Text mismatch: got '{current_value}'"
     
     logger.info("User can fill textarea successfully")
@@ -126,8 +130,8 @@ async def test_user_can_generate_summary(docsum_ui_helper):
     for strategy, strategy_label in strategies:
         logger.info(f"--- Testing strategy: {strategy_label} ---")
         
-        # Step 1: Fill textarea with sample text
-        fill_success = await docsum_ui_helper.fill_textarea("paste-text", SAMPLE_TEXT)
+        # Step 1: Fill textarea with sample text (using data-testid)
+        fill_success = await docsum_ui_helper.fill_by_testid("paste-text-textarea-input", SAMPLE_TEXT)
         assert fill_success, f"[{strategy_label}] Failed to fill textarea"
         logger.info(f"[{strategy_label}] Step 1: Filled textarea with text")
         
@@ -148,7 +152,9 @@ async def test_user_can_generate_summary(docsum_ui_helper):
         assert click_success, f"[{strategy_label}] Failed to click Generate Summary button"
         logger.info(f"[{strategy_label}] Step 3: Clicked Generate Summary button")
         
-        # Step 4: Wait for and verify summary generation
+        # Step 4: Wait for and verify summary generation (data-testid fallback to CSS class)
+        # Note: wait_for_summary still uses CSS class internally;
+        # generated-summary-content data-testid can be verified separately
         summary_text = await docsum_ui_helper.wait_for_summary(
             content_class="generated-summary__content",
             timeout=60000

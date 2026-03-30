@@ -17,8 +17,9 @@ These tests ensure the Control Plane interface renders correctly
 and interactive elements are functional.
 """
 
-import allure
 import logging
+
+import allure
 import pytest
 
 from tests.e2e.validation.buildcfg import cfg
@@ -166,41 +167,41 @@ async def test_control_plane_panel_rendered(chat_ui_helper):
 @allure.testcase("IEASG-T286")
 @pytest.mark.ui
 @pytest.mark.asyncio
-async def test_chatqa_graph_legend_rendered(chat_ui_helper):
+async def test_chatqa_graph_controls_rendered(chat_ui_helper):
     """
-    Test if ChatQnA graph legend is rendered with child elements.
+    Test if ChatQnA graph controls are rendered with child elements.
     
     Steps:
     1. Login as admin (handled by fixture)
     2. Navigate to Control Plane
-    3. Check if div with class "graph-legend" exists
+    3. Check if div with data-testid "graph-controls" exists
     4. Verify it has child elements
     
     Success criteria:
-    - Graph legend element is visible
-    - Legend contains child elements (legend items)
+    - Graph controls element is visible
+    - Element contains child elements
     
-    Note: The UI uses 'graph-legend' class for the service status legend
+    Note: The UI uses 'graph-controls' data-testid for the control plane controls
     """
-    logger.info("Test 4: ChatQnA Graph Legend Rendering")
+    logger.info("Test 4: ChatQnA Graph Controls Rendering")
     
     # Navigate to Control Plane
     navigation_success = await chat_ui_helper.navigate_to_control_plane()
     assert navigation_success, "Failed to navigate to Control Plane"
     logger.info("Navigated to Control Plane")
     
-    # Check if graph-legend is rendered with children using data-testid
-    legend_rendered = await chat_ui_helper.check_element_rendered(
-        data_testid="graph-legend",
+    # Check if graph-controls is rendered with children using data-testid
+    controls_rendered = await chat_ui_helper.check_element_rendered(
+        data_testid="graph-controls",
         check_children=True,
         timeout=10000
     )
     
-    # Assert: Legend is rendered with children
-    assert legend_rendered, "Graph legend not rendered or has no children"
-    logger.info("Assert: Graph legend rendered with child elements")
+    # Assert: Graph controls are rendered with children
+    assert controls_rendered, "Graph controls not rendered or has no children"
+    logger.info("Assert: Graph controls rendered with child elements")
     
-    logger.info("Test completed: ChatQnA graph legend validated")
+    logger.info("Test completed: ChatQnA graph controls validated")
 
 
 @allure.testcase("IEASG-T287")

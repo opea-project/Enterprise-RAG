@@ -17,6 +17,7 @@ This module follows SOLID principles:
 
 import logging
 from typing import Optional, Tuple
+
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
@@ -217,11 +218,11 @@ class BaseUIHelper:
     
     async def check_element_rendered(
         self,
-        selector: str = None,
-        aria_label: str = None,
-        css_class: str = None,
-        element_id: str = None,
-        data_testid: str = None,
+        selector: Optional[str] = None,
+        aria_label: Optional[str] = None,
+        css_class: Optional[str] = None,
+        element_id: Optional[str] = None,
+        data_testid: Optional[str] = None,
         check_children: bool = False,
         timeout: int = 10000
     ) -> bool:
@@ -405,6 +406,192 @@ class BaseUIHelper:
             logger.error(f"Failed to click button: {e}")
             return False
 
+    # =========================================================================
+    # data-testid convenience methods (DRY wrappers for test automation)
+    # =========================================================================
+
+    async def click_by_testid(self, testid: str, timeout: int = 5000, force: bool = False) -> bool:
+        """Click an element identified by data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+            force: Force click even if element is obscured (e.g. animations)
+
+        Returns:
+            True if click successful, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            await el.click(force=force)
+            logger.info(f"Clicked element [data-testid='{testid}']")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to click [data-testid='{testid}']: {e}")
+            return False
+
+    async def click_nth_by_testid(self, testid: str, index: int = 0, timeout: int = 5000) -> bool:
+        """Click the Nth element matching a data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            index: Zero-based index of the element to click
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if click successful, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]').nth(index)
+            await el.wait_for(state="visible", timeout=timeout)
+            await el.click()
+            logger.info(f"Clicked element [data-testid='{testid}'] at index {index}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to click [data-testid='{testid}'] at index {index}: {e}")
+            return False
+
+    async def fill_by_testid(self, testid: str, text: str, timeout: int = 5000) -> bool:
+        """Fill an input/textarea identified by data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            text: Text to fill into the element
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if fill successful, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            await el.fill(text)
+            logger.info(f"Filled [data-testid='{testid}'] with {len(text)} chars")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to fill [data-testid='{testid}']: {e}")
+            return False
+
+    async def get_text_by_testid(self, testid: str, timeout: int = 5000) -> Optional[str]:
+        """Get text content of an element identified by data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            Text content or None on failure
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            return await el.text_content()
+        except Exception as e:
+            logger.error(f"Failed to get text from [data-testid='{testid}']: {e}")
+            return None
+
+    async def get_input_value_by_testid(self, testid: str, timeout: int = 5000) -> Optional[str]:
+        """Get input value of an input/textarea identified by data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            Input value or None on failure
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            return await el.input_value()
+        except Exception as e:
+            logger.error(f"Failed to get input value from [data-testid='{testid}']: {e}")
+            return None
+
+    async def is_visible_by_testid(self, testid: str, timeout: int = 5000) -> bool:
+        """Check if an element with given data-testid is visible.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if element is visible, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    async def is_enabled_by_testid(self, testid: str, timeout: int = 5000) -> bool:
+        """Check if an element with given data-testid is enabled.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if element is enabled, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="visible", timeout=timeout)
+            return await el.is_enabled()
+        except Exception:
+            return False
+
+    async def count_by_testid(self, testid: str) -> int:
+        """Count elements matching a data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+
+        Returns:
+            Number of matching elements
+        """
+        return await self.page.locator(f'[data-testid="{testid}"]').count()
+
+    async def hover_nth_by_testid(self, testid: str, index: int = 0, timeout: int = 5000) -> bool:
+        """Hover over the Nth element matching a data-testid.
+
+        Args:
+            testid: The data-testid attribute value
+            index: Zero-based index of the element to hover
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if hover successful, False otherwise
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]').nth(index)
+            await el.wait_for(state="visible", timeout=timeout)
+            await el.hover()
+            logger.info(f"Hovered over [data-testid='{testid}'] at index {index}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to hover [data-testid='{testid}'] at index {index}: {e}")
+            return False
+
+    async def wait_for_testid_hidden(self, testid: str, timeout: int = 5000) -> bool:
+        """Wait for an element with data-testid to become hidden or detached.
+
+        Args:
+            testid: The data-testid attribute value
+            timeout: Maximum time to wait in milliseconds
+
+        Returns:
+            True if element became hidden, False on timeout
+        """
+        try:
+            el = self.page.locator(f'[data-testid="{testid}"]')
+            await el.wait_for(state="hidden", timeout=timeout)
+            return True
+        except Exception:
+            return False
+
 
 # ==================== Chat UI Helper ====================
 
@@ -449,7 +636,7 @@ class ChatUIHelper(BaseUIHelper):
             logger.debug(f"_extract_message_text failed: {e}")
             return None
 
-    async def login_as_admin(self, username: str, password: str) -> str:
+    async def login_as_admin(self, username: str, password: str) -> None:
         """Login as admin user"""
         await self.ui_helper.login_as_admin(username, password)
 
@@ -666,6 +853,320 @@ class ChatUIHelper(BaseUIHelper):
             logger.error(f"Failed to verify URL: {e}")
             return False
 
+    # =========================================================================
+    # Sidebar Management Methods
+    # =========================================================================
+
+    async def is_sidebar_open(self) -> bool:
+        """Check whether the sidebar is currently open.
+
+        Uses the aria-label on side-menu-icon-button to determine state.
+        When sidebar is open, aria-label is 'Close Side Menu'.
+        When sidebar is closed, aria-label is 'Open Side Menu'.
+
+        Returns:
+            True if sidebar is open, False otherwise
+        """
+        try:
+            btn = self.page.locator('[data-testid="side-menu-icon-button"]')
+            aria = await btn.get_attribute("aria-label")
+            return aria == "Close Side Menu"
+        except Exception as e:
+            logger.warning(f"Could not determine sidebar state: {e}")
+            return False
+
+    async def open_sidebar(self) -> bool:
+        """Open the sidebar if it is currently closed.
+
+        Returns:
+            True if sidebar is open after this call, False on failure
+        """
+        try:
+            if await self.is_sidebar_open():
+                logger.info("Sidebar already open")
+                return True
+
+            await self.click_by_testid("side-menu-icon-button")
+            await self.page.wait_for_timeout(500)
+
+            # Verify it opened
+            if await self.is_sidebar_open():
+                logger.info("Sidebar opened successfully")
+                return True
+
+            logger.error("Sidebar did not open after click")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to open sidebar: {e}")
+            return False
+
+    async def close_sidebar(self) -> bool:
+        """Close the sidebar if it is currently open.
+
+        Returns:
+            True if sidebar is closed after this call, False on failure
+        """
+        try:
+            if not await self.is_sidebar_open():
+                logger.info("Sidebar already closed")
+                return True
+
+            await self.click_by_testid("side-menu-icon-button")
+            await self.page.wait_for_timeout(500)
+
+            if not await self.is_sidebar_open():
+                logger.info("Sidebar closed successfully")
+                return True
+
+            logger.error("Sidebar did not close after click")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to close sidebar: {e}")
+            return False
+
+    async def ensure_sidebar_open(self) -> bool:
+        """Ensure the sidebar is open, opening it if necessary.
+
+        Returns:
+            True if sidebar is open, False on failure
+        """
+        return await self.open_sidebar()
+
+    # =========================================================================
+    # Chat History Methods (data-testid driven)
+    # =========================================================================
+
+    async def start_new_chat(self) -> bool:
+        """Click the New Chat button to start a fresh conversation.
+
+        The new-chat-button only appears after at least one message has been
+        sent. This method checks visibility first and returns False gracefully
+        if the button is not present.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            visible = await self.is_visible_by_testid("new-chat-button", timeout=3000)
+            if not visible:
+                logger.warning("new-chat-button not visible (appears only after first message)")
+                return False
+            return await self.click_by_testid("new-chat-button")
+        except Exception as e:
+            logger.warning(f"start_new_chat failed: {e}")
+            return False
+
+    async def get_chat_history_count(self) -> int:
+        """Get the number of chat history items in the sidebar.
+
+        Automatically opens the sidebar if closed.
+
+        Returns:
+            Count of chat-history-item elements
+        """
+        await self.ensure_sidebar_open()
+        return await self.count_by_testid("chat-history-item")
+
+    async def open_chat_history_menu(self, index: int = 0) -> bool:
+        """Hover over a chat history item and open its context menu.
+
+        Automatically opens the sidebar if closed.
+
+        Args:
+            index: Zero-based index of the chat history item
+
+        Returns:
+            True if menu opened, False otherwise
+        """
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                await self.ensure_sidebar_open()
+
+                # Locate the Nth chat-history-item
+                item = self.page.locator('[data-testid="chat-history-item"]').nth(index)
+                await item.wait_for(state="visible", timeout=5000)
+
+                # Scroll the item into view so hover/click works reliably
+                await item.scroll_into_view_if_needed()
+                await self.page.wait_for_timeout(200)
+
+                # Hover over the item to reveal the menu button
+                await item.hover()
+                await self.page.wait_for_timeout(300)
+
+                # The menu button appears on hover. Items and their buttons
+                # share the same positional index in the DOM (flat structure),
+                # so we use nth(index) to select the correct button.
+                button = self.page.locator(
+                    '[data-testid="chat-history-item-menu-button"]'
+                ).nth(index)
+                await button.wait_for(state="visible", timeout=5000)
+
+                # Move mouse away briefly to dismiss any tooltip that may
+                # have appeared on hover (the tooltip overlays the button
+                # and intercepts pointer events in headless mode).
+                await self.page.mouse.move(0, 0)
+                await self.page.wait_for_timeout(300)
+
+                # Hover directly over the button and click.  Use force=True
+                # as a safety net in case a tooltip still intercepts events.
+                await button.hover()
+                await self.page.wait_for_timeout(200)
+                await button.click(force=True, timeout=5000)
+                logger.info(f"Opened chat history menu for item at index {index}")
+                return True
+            except Exception as e:
+                logger.warning(
+                    f"Attempt {attempt + 1}/{max_attempts} to open chat history "
+                    f"menu at index {index} failed: {e}"
+                )
+                if attempt < max_attempts - 1:
+                    # Move mouse away and wait before retrying
+                    await self.page.mouse.move(0, 0)
+                    await self.page.wait_for_timeout(500)
+
+        logger.error(f"Failed to open chat history menu at index {index} after {max_attempts} attempts")
+        return False
+
+    async def click_chat_menu_action(self, action: str) -> bool:
+        """Click a menu action in the chat history item menu.
+
+        Args:
+            action: One of 'rename', 'export', 'pin', 'delete'
+
+        Returns:
+            True if clicked, False otherwise
+        """
+        testid_map = {
+            "rename": "rename-chat-menu-item",
+            "export": "export-chat-menu-item",
+            "pin": "pin-chat-menu-item",
+            "delete": "delete-chat-menu-item",
+        }
+        testid = testid_map.get(action)
+        if not testid:
+            logger.error(f"Unknown chat menu action: {action}")
+            return False
+        return await self.click_by_testid(testid)
+
+    async def rename_chat(self, new_name: str, item_index: int = 0) -> bool:
+        """Rename a chat from the history sidebar.
+
+        Args:
+            new_name: New name for the chat
+            item_index: Index of the chat history item
+
+        Returns:
+            True if rename succeeded, False otherwise
+        """
+        try:
+            if not await self.open_chat_history_menu(item_index):
+                return False
+            await self.page.wait_for_timeout(300)
+
+            if not await self.click_chat_menu_action("rename"):
+                return False
+            await self.page.wait_for_timeout(300)
+
+            # Fill the rename input — use triple-click to select-all then
+            # type the new name so React's onChange fires properly.
+            rename_input = self.page.locator('[data-testid="rename-chat-input"]')
+            await rename_input.wait_for(state="visible", timeout=5000)
+            await rename_input.click(click_count=3)
+            await rename_input.press_sequentially(new_name, delay=30)
+            await self.page.wait_for_timeout(500)
+
+            # Confirm rename (ActionDialog confirm button)
+            confirm_btn = self.page.locator('button:has-text("Confirm")')
+            await confirm_btn.wait_for(state="visible", timeout=5000)
+            # Wait for the button to become enabled (React may disable it
+            # briefly while validating the new name).
+            try:
+                await self.page.wait_for_timeout(300)
+                if await confirm_btn.is_disabled():
+                    await self.page.wait_for_timeout(1000)
+            except Exception:
+                pass
+            await confirm_btn.click()
+            await self.page.wait_for_timeout(500)
+
+            logger.info(f"Renamed chat at index {item_index} to '{new_name}'")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to rename chat: {e}")
+            return False
+
+    async def search_chat_history(self, query: str) -> bool:
+        """Type into the chat history search bar.
+
+        The search input inside the sidebar does not have a data-testid.
+        This method opens the sidebar and locates the search input via
+        the ``aside input`` selector as a fallback.
+
+        Args:
+            query: Search query text
+
+        Returns:
+            True if fill succeeded, False otherwise
+        """
+        try:
+            await self.ensure_sidebar_open()
+
+            # The search bar has no data-testid; locate via aside > input
+            search_input = self.page.locator('aside input[type="text"], aside input:not([type])')
+            await search_input.first.wait_for(state="visible", timeout=5000)
+            await search_input.first.fill(query)
+            logger.info(f"Filled sidebar search bar with: {query}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to fill sidebar search bar: {e}")
+            return False
+
+    async def navigate_to_admin_tab(self, tab_name: str) -> bool:
+        """Navigate to a specific admin panel tab.
+
+        Admin panel tabs use ``role="tab"`` with dynamic React-Aria IDs
+        (e.g. ``react-aria…-tab-data-ingestion``). This method locates
+        tabs by their visible text label instead of by ID.
+
+        Args:
+            tab_name: Tab identifier - 'control-plane', 'data-ingestion',
+                      or 'telemetry-authentication'
+
+        Returns:
+            True if navigation succeeded, False otherwise
+        """
+        _TAB_LABELS = {
+            "control-plane": "Control Plane",
+            "data-ingestion": "Data Ingestion",
+            "telemetry-authentication": "Telemetry & Authentication",
+        }
+
+        try:
+            # First navigate to admin panel if not already there
+            if "/admin-panel" not in self.page.url:
+                if not await self.navigate_to_control_plane():
+                    return False
+
+            label = _TAB_LABELS.get(tab_name)
+            if not label:
+                logger.error(f"Unknown admin tab name: {tab_name}")
+                return False
+
+            # Locate tab by role + visible text (handles dynamic React-Aria IDs)
+            tab = self.page.locator('[role="tab"]').filter(has_text=label)
+            await tab.wait_for(state="visible", timeout=5000)
+            await tab.click()
+            await self.page.wait_for_load_state("networkidle")
+            await self.page.wait_for_timeout(1000)
+
+            logger.info(f"Navigated to admin tab: {tab_name} ({label})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to navigate to admin tab '{tab_name}': {e}")
+            return False
+
 
 # ==================== DocSum UI Helper ====================
 
@@ -736,6 +1237,20 @@ class DocSumUIHelper(BaseUIHelper):
             logger.error(f"Failed to login and navigate to DocSum: {e}")
             return False
     
+    @staticmethod
+    async def _extract_paragraph_text(content_div) -> str:
+        """Extract joined text from <p> children, falling back to text_content."""
+        paragraphs = content_div.locator('p')
+        p_count = await paragraphs.count()
+        if p_count > 0:
+            texts = []
+            for i in range(p_count):
+                text = await paragraphs.nth(i).text_content()
+                if text:
+                    texts.append(text.strip())
+            return ' '.join(texts)
+        return await content_div.text_content() or ""
+
     async def wait_for_summary(
         self,
         content_class: str = "generated-summary__content",
@@ -767,23 +1282,8 @@ class DocSumUIHelper(BaseUIHelper):
             
             while stable_count < max_stable_checks:
                 await self.page.wait_for_timeout(500)
-                
-                # Get all paragraph text
-                paragraphs = content_div.locator('p')
-                p_count = await paragraphs.count()
-                
-                if p_count > 0:
-                    texts = []
-                    for i in range(p_count):
-                        text = await paragraphs.nth(i).text_content()
-                        if text:
-                            texts.append(text.strip())
-                    current_text = ' '.join(texts)
-                    current_length = len(current_text)
-                else:
-                    # Fallback to all text content
-                    current_text = await content_div.text_content()
-                    current_length = len(current_text) if current_text else 0
+                current_text = await self._extract_paragraph_text(content_div)
+                current_length = len(current_text)
                 
                 if current_length == previous_length and current_length > 0:
                     stable_count += 1
@@ -793,21 +1293,9 @@ class DocSumUIHelper(BaseUIHelper):
                 previous_length = current_length
             
             # Get final summary text
-            paragraphs = content_div.locator('p')
-            p_count = await paragraphs.count()
-            
-            if p_count > 0:
-                texts = []
-                for i in range(p_count):
-                    text = await paragraphs.nth(i).text_content()
-                    if text:
-                        texts.append(text.strip())
-                summary_text = ' '.join(texts)
-            else:
-                summary_text = await content_div.text_content()
+            summary_text = (await self._extract_paragraph_text(content_div)).strip()
             
             if summary_text:
-                summary_text = summary_text.strip()
                 logger.info(f"Summary generated: {len(summary_text)} characters")
                 return summary_text
             
@@ -878,8 +1366,10 @@ class DocSumUIHelper(BaseUIHelper):
             True if click successful, False otherwise
         """
         try:
-            # The main button has class 'dropdown-button__main'
-            button = self.page.locator('.dropdown-button__main')
+            # Prefer data-testid; fall back to CSS class for compatibility
+            button = self.page.locator(
+                '[data-testid="generate-summary-dropdown-button"], .dropdown-button__main'
+            ).first
             await button.wait_for(state="visible", timeout=timeout)
             
             if not await button.is_enabled():
@@ -904,7 +1394,9 @@ class DocSumUIHelper(BaseUIHelper):
             True if button is enabled, False otherwise
         """
         try:
-            button = self.page.locator('.dropdown-button__main')
+            button = self.page.locator(
+                '[data-testid="generate-summary-dropdown-button"], .dropdown-button__main'
+            ).first
             await button.wait_for(state="visible", timeout=timeout)
             
             is_enabled = await button.is_enabled()
@@ -913,6 +1405,50 @@ class DocSumUIHelper(BaseUIHelper):
             
         except Exception as e:
             logger.error(f"Failed to check Generate Summary button state: {e}")
+            return False
+
+    async def open_summary_history_menu(self, index: int = 0) -> bool:
+        """Hover over a summary history item and open its context menu.
+
+        Handles React Aria tooltip dismissal — hovering the history item
+        triggers a tooltip that can intercept pointer events on the menu
+        button. Pressing Escape dismisses the tooltip while the CSS :hover
+        state keeps the menu button visible.
+
+        Args:
+            index: Zero-based index of the history item
+
+        Returns:
+            True if menu opened, False otherwise
+        """
+        try:
+            item = self.page.locator('[data-testid="history-item"]').nth(index)
+            await item.wait_for(state="visible", timeout=5000)
+            await item.scroll_into_view_if_needed()
+            await self.page.wait_for_timeout(200)
+
+            # Hover to reveal the menu button
+            await item.hover()
+            await self.page.wait_for_timeout(300)
+
+            # Dismiss any tooltip that may overlay the menu button
+            await self.page.keyboard.press("Escape")
+            await self.page.wait_for_timeout(200)
+
+            # Click the menu button (same positional index in flat DOM)
+            button = self.page.locator(
+                '[data-testid="history-item-menu-button"]'
+            ).nth(index)
+            await button.wait_for(state="visible", timeout=5000)
+            await button.click()
+            logger.info(
+                f"Opened summary history menu for item at index {index}"
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to open summary history menu at index {index}: {e}"
+            )
             return False
 
 
@@ -1372,26 +1908,21 @@ class AudioChatUIHelper(ChatUIHelper):
     Provides unified interface for chat + audio interactions.
     """
     
-    def __init__(self, page: Page, base_url: str, credentials: dict = None):
+    def __init__(self, page: Page, base_url: str, credentials: Optional[dict] = None):
         """Initialize with Page, base URL, and optional credentials."""
         super().__init__(page, base_url)
         self.credentials = credentials or {}
         self.audio = AudioUIHelper(page)
     
     async def send_text_and_wait_response(self, text: str, timeout: int = 60000) -> Optional[str]:
-        """Send text message and wait for bot response."""
-        try:
-            textarea = self.page.locator(self.audio.TEXTAREA_SELECTOR)
-            await textarea.fill(text)
-            
-            send_button = self.page.locator(self.audio.SEND_BUTTON_SELECTOR)
-            await send_button.click()
-            
-            bot_message = self.page.locator(self.audio.BOT_MESSAGE_SELECTOR).last
-            await bot_message.wait_for(state="visible", timeout=timeout)
-            await self.page.wait_for_timeout(3000)  # Wait for streaming
-            
-            return await bot_message.inner_text()
-        except Exception as e:
-            logger.error(f"Failed to send text and get response: {e}")
+        """Send text message and wait for bot response.
+
+        Delegates to :meth:`ChatUIHelper.send_message` which handles streaming
+        stabilization.  The *timeout* parameter is currently unused because
+        ``send_message`` uses its own internal timeout for ``wait_for_response``.
+        """
+        success, response = await self.send_message(text, wait_for_response=True)
+        if not success:
+            logger.error("Failed to send text and get response")
             return None
+        return response

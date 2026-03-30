@@ -227,7 +227,7 @@ You can preview the topology calculation results without deploying the infrastru
 - Discovers node topology for each cluster node
 - Calculates optimal replica distribution
 - Displays detailed results per node
-- Saves output to `deployment/ansible-logs/tmp/inference_pods_distribution.yaml`
+- Saves output to `deployment/ansible-logs/tolopology-preview-report.yaml`
 - Does not modify real topology state
 
 **To run topology preview:**

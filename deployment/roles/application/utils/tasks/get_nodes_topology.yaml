@@ -386,7 +386,7 @@
 - name: Save replicas calculation output to file
   copy:
     content: "{{ replicas_calculation_result.stdout | from_json | to_nice_json }}"
-    dest: "{{ tmp_dir }}/inference_pods_distribution.yaml"
+    dest: "{{ log_dir }}/topology_preview_report.yaml"
     mode: '0644'
   tags:
   - install
@@ -398,7 +398,7 @@
     prompt: |
       ============================================================
       Topology calculation complete!
-      Results saved to: {{ tmp_dir }}/inference_pods_distribution.yaml
+      Results saved to: {{ log_dir }}/topology_preview_report.yaml
 
       Review the results below and press ENTER to continue...
       ============================================================

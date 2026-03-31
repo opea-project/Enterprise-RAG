@@ -100,9 +100,13 @@ These are minimal requirements to run Intel® AI for Enterprise RAG with default
 
 ### Deployment on Xeon only
 To deploy the solution using Xeon only, you will need access to any platform with Intel® Xeon® Scalable processor that meet below requirements:
--  **logical cores**: A minimum of `88` logical cores
--  **RAM memory**: A minimum of `250GB` of RAM
+-  **logical cores**: A minimum of `60` logical cores
+-  **RAM memory**: A minimum of `128GB` of RAM
 -  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
+
+> [!NOTE]
+> A limited single-user deployment is also possible on **32 cores / 64 GB RAM**.
+> See [docs/minimum_requirements.md](docs/minimum_requirements.md) for the required configuration changes.
 
 > [!NOTE]
 > By default, Intel® AI for Enterprise RAG uses the NRI plugin for performance optimization. For more info: [NRI plugin](deployment/components/nri-plugin/README.md)
@@ -112,7 +116,7 @@ To deploy the solution using Xeon only, you will need access to any platform wit
 To deploy the solution on a platform with Gaudi® AI Accelerator you need to have access to instance with minimal requirements:
 
 -  **logical cores**: A minimum of `56` logical cores
--  **RAM memory**: A minimum of `250GB` of RAM though this is highly dependent on database size
+-  **RAM memory**: A minimum of `128GB` of RAM though this is highly dependent on database size
 -  **Disk Space**: `500GB` of disk space is generally recommended, though this is highly dependent on the model size and database size
 -  **Gaudi cards**: `8`
 -  **Gaudi driver**: `1.23.0`

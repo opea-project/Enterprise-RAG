@@ -6,6 +6,9 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 
 ### Deployment and Configuration
 
+- **[minimum_requirements.md](minimum_requirements.md)**
+  Minimum hardware requirements for deploying Intel® AI for Enterprise RAG, including the limited single-user deployment option (32 cores / 64 GB RAM).
+
 - **[cluster_deployment_guide.md](cluster_deployment_guide.md)**
   Step-by-step guide for deploying Kubernetes clusters for Intel® AI for Enterprise RAG with both single-node and multi-node configurations.
 

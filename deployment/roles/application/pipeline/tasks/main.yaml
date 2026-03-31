@@ -14,7 +14,11 @@
       {{
         (upload_pipelines_config | selectattr('type', 'equalto', item.type) | map(attribute='resourcesPath') | first)
         if (upload_pipelines | default(false) | bool)
-        else item.resourcesPath
+        else (
+          item.resourcesPath | regex_replace('resources-reference-cpu', 'minimal-resources-reference-cpu')
+          if (minimal_configuration | default(false) | bool) and 'cpu' in item.resourcesPath
+          else item.resourcesPath
+        )
       }}
   tags:
     - install

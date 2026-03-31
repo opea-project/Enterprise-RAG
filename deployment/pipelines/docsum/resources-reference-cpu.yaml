@@ -44,23 +44,24 @@ services:
     replicas: 2
     resources:
       requests:
-        cpu: 1
-        memory: 2Gi
+        cpu: 200m
+        memory: 200Mi
       limits:
-        cpu: 4
-        memory: 6Gi
+        cpu: 1
+        memory: 1Gi
   vllm:
     replicas: 1
     # NOTE:
-    # The resources block below is used for vllm ONLY if the balloons policy is NOT enabled.
+    # When balloons policy is NOT enabled, CPU from the resources block below is applied.
+    # Memory is always computed dynamically by the template:
+    #   memory request = base (16 Gi AWQ / 32 Gi non-AWQ) + VLLM_CPU_KVCACHE_SPACE
+    #   memory limit   = 2 × request
     # If balloons policy is enabled, vllm resources must be defined in the inventory config.yaml as balloons.services.vllm.resources
     resources:
       requests:
         cpu: 32
-        memory: 64Gi
       limits:
         cpu: 32
-        memory: 100Gi
     hpa:
       minReplicas: 1
       maxReplicas: 2

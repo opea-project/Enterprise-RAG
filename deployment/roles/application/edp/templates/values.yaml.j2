@@ -13,6 +13,19 @@ alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
 balloonsEnabled: {{ balloons.enabled | default(false) }}
+{% if (minimal_configuration is defined and minimal_configuration) or (edp.minimal_configuration is defined and edp.minimal_configuration) %}
+{% if "cpu" in pipelines[0].samplePath %}
+minimalConfiguration: true
+celery:
+  resources:
+    requests:
+      cpu: "100m"
+textExtractor:
+  resources:
+    requests:
+      cpu: "1"
+{% endif %}
+{% endif %}
 
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
 

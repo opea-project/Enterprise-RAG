@@ -95,7 +95,7 @@ To use a custom model or adjust the configuration of an existing one:
       "casperhansen/llama-3-8b-instruct-awq":
         configMapValues:
           VLLM_SKIP_WARMUP: "false"
-          VLLM_CPU_KVCACHE_SPACE: "40"
+          VLLM_CPU_KVCACHE_SPACE: "10"
           VLLM_DTYPE: "bfloat16"
           VLLM_MAX_NUM_SEQS: "256"
           VLLM_TP_SIZE: "1"
@@ -137,7 +137,7 @@ modelConfigs:
   generic-base-awq-cpu: &generic_base_awq_cpu
     configMapValues:
       VLLM_SKIP_WARMUP: "false"
-      VLLM_CPU_KVCACHE_SPACE: "40"
+      VLLM_CPU_KVCACHE_SPACE: "10"
       VLLM_DTYPE: "bfloat16"
       VLLM_MAX_NUM_SEQS: "256"
       VLLM_TP_SIZE: "1"
@@ -157,7 +157,7 @@ modelConfigs:
   "casperhansen/llama-3-8b-instruct-awq":
     configMapValues:
       VLLM_SKIP_WARMUP: "false"
-      VLLM_CPU_KVCACHE_SPACE: "60"  # changed value
+      VLLM_CPU_KVCACHE_SPACE: "40"  # changed value
       VLLM_DTYPE: "bfloat16"
       VLLM_MAX_NUM_SEQS: "256"
       VLLM_TP_SIZE: "1"

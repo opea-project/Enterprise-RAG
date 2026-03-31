@@ -78,8 +78,11 @@ spec:
         - {{.GRAPH_JSON}}
         ` -}}
         resources:
-          {{- $defaultValues := "{requests: {cpu: '1', memory: '1Gi'}, limits: {cpu: '1', memory: '1Gi'}}" -}}
-          {{- include "manifest.getResource" (list "gmc-router" $defaultValues .Values) | nindent 12 }}
+          {{- if and .Values.services (index .Values.services "gmc-router") (index .Values.services "gmc-router" "resources") }}
+          {{- index .Values.services "gmc-router" "resources" | toYaml | nindent 12 }}
+          {{- else }}
+          {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
 ---
 apiVersion: v1
 kind: Service

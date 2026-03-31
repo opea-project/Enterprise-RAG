@@ -1,15 +1,22 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# resources-reference-cpu.yaml is a file that contains the resource requests and limits for each microservice in the microservices-connector deployment.
+# minimal-resources-reference-cpu.yaml
+# Minimal resource profile for deployment on hardware with 65 vCPUs and 128 GB RAM.
+# For configuration instructions see: docs/minimum_requirements.md
+#
+# Key changes vs resources-reference-cpu.yaml:
+#   - vllm: 16 CPU cores, 1 replica, HPA min/max = 1, memory capped at 16 Gi
+#   - All other inference services: replicas=1, HPA min/max=1
+#   IMPORTANT: Set VLLM_CPU_KVCACHE_SPACE: "1" in pipelines/chatqa/resources-model-cpu.yaml
 
 services:
   embedding-usvc:
-    replicas: 2
+    replicas: 1
     resources:
       requests:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 50m
+        memory: 128Mi
       limits:
         cpu: 1
         memory: 1Gi
@@ -36,26 +43,23 @@ services:
     resources:
       requests:
         cpu: 16
-        memory: 64Gi
+        memory: 16Gi
       limits:
         cpu: 16
-        memory: 100Gi
+        memory: 16Gi
   in-guard-usvc:
     replicas: 1
     resources:
       requests:
-        cpu: 2
-        memory: 4Gi
+        cpu: 500n
+        memory: 1Gi
       limits:
-        cpu: 8
-        memory: 12Gi
+        cpu: 4
+        memory: 8Gi
     hpa:
       minReplicas: 1
-      maxReplicas: 3
+      maxReplicas: 1
       AverageValue: 1
-      # this is average time of request processing in input guardrails service.
-      # this time is dependent on enabled scanners and # of requests
-      # metric used for scaling avg(rate(http_request_duration_seconds_sum{service="input-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>) / (0.001 + avg(rate(http_request_duration_seconds_count{service="input-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>))'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 120
@@ -77,11 +81,11 @@ services:
             value: 1
             periodSeconds: 60
   llm-usvc:
-    replicas: 2
+    replicas: 1
     resources:
       requests:
-        cpu: 200m
-        memory: 200Mi
+        cpu: 50m
+        memory: 100Mi
       limits:
         cpu: 1
         memory: 1Gi
@@ -96,11 +100,8 @@ services:
         memory: 16Gi
     hpa:
       minReplicas: 1
-      maxReplicas: 3
+      maxReplicas: 1
       AverageValue: 5
-      # this is average time of request processing in output guardrails service.
-      # this time is dependent on enabled scanners and # of requests
-      # metric used for scaling 'avg(rate(http_request_duration_seconds_sum{service="output-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>) / (0.001 + avg(rate(http_request_duration_seconds_count{service="output-scan-svc", namespace="chatqa", handler!~"/metrics|/v1/health_check|none"}[1m])) by (<<.GroupBy>>))'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 60
@@ -159,11 +160,8 @@ services:
         memory: 32Gi
     hpa:
       minReplicas: 1
-      maxReplicas: 3
+      maxReplicas: 1
       AverageValue: 2
-      # this is average time of processing singlr request in re-ranker
-      # depends on hardware used and number of requests
-      # metric used: 'sum(rate(te_request_duration_sum{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(te_request_duration_count{namespace="chatqa",service="tei-reranking-svc"}[1m])) by (<<.GroupBy>>))'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180
@@ -191,7 +189,7 @@ services:
         cpu: 16
         memory: 16Gi
   torchserve_embedding:
-    replicas: 4
+    replicas: 1
     resources:
       requests:
         cpu: 4
@@ -200,13 +198,9 @@ services:
         cpu: 4
         memory: 16Gi
     hpa:
-      minReplicas: 4
-      maxReplicas: 10
+      minReplicas: 1
+      maxReplicas: 1
       targetValue: 0.5
-      # this value represents average processing time of single request (Queue Latency + interference latency)
-      # will increase when embedding documents with high number of chunks
-      # depends on used hardware and embedding model used
-      # metric used for scale up 'avg(rate(ts_inference_requests_total{namespace="chatqa",service="torchserve-embedding-svc"}[2m])) by (<<.GroupBy>>)'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180
@@ -225,21 +219,18 @@ services:
             value: 1
             periodSeconds: 15
   vllm_embedding:
-    replicas: 4
+    replicas: 1
     resources:
       requests:
         cpu: 4
-        memory: 4Gi
+        memory: 2Gi
       limits:
         cpu: 4
-        memory: 16Gi
+        memory: 8Gi
     hpa:
-      minReplicas: 4
-      maxReplicas: 10
+      minReplicas: 1
+      maxReplicas: 1
       targetValue: 50
-      # average request queue waiting time in seconds
-      # high queue time indicates service is overloaded and needs more replicas
-      # metric used: 'avg(rate(vllm:request_queue_time_seconds_sum{service="vllm-embedding-svc"}[2m])) by (<<.GroupBy>>)'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180
@@ -255,7 +246,7 @@ services:
             value: 1
             periodSeconds: 90
   torchserve_reranking:
-    replicas: 2
+    replicas: 1
     resources:
       requests:
         cpu: 4
@@ -264,12 +255,9 @@ services:
         cpu: 4
         memory: 16Gi
     hpa:
-      minReplicas: 2
-      maxReplicas: 3
+      minReplicas: 1
+      maxReplicas: 1
       targetValue: 1000m
-      # this is average requests queue latency in miliseconds
-      # depends on hardware used and number of requests
-      # metric used: 'avg(rate(ts_queue_latency_microseconds{namespace="chatqa",service="torchserve-reranking-svc"}[1m])) by (<<.GroupBy>>) / 1000000'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180
@@ -290,26 +278,21 @@ services:
   vllm:
     replicas: 1
     # NOTE:
-    # When balloons policy is NOT enabled, CPU from the resources block below is applied.
-    # Memory is always computed dynamically by the template:
-    #   memory request = base (16 Gi AWQ / 32 Gi non-AWQ) + VLLM_CPU_KVCACHE_SPACE
-    #   memory limit   = 2 × request
-    # If balloons policy is enabled, vllm resources must be defined in the inventory config.yaml as balloons.services.vllm.resources
+    # When balloons policy is NOT enabled, CPU and memory from the resources block below are applied.
+    # When balloons policy is enabled, vllm resources must be defined in inventory config.yaml as balloons.services.vllm.resources
+    # IMPORTANT: Set VLLM_CPU_KVCACHE_SPACE: "1" in pipelines/chatqa/resources-model-cpu.yaml
+    #            to limit KV cache memory usage on minimum hardware.
     resources:
       requests:
-        cpu: 32
+        cpu: 16
+        memory: 16Gi
       limits:
-        cpu: 32
+        cpu: 16
+        memory: 16Gi
     hpa:
       minReplicas: 1
-      maxReplicas: 2
-        # setting max replicas to 2 as to get good performance numbers we need either to:
-        #  use multinode and spread vllm instances accross the nodes or to pin the cores/memory to socket
+      maxReplicas: 1
       targetValue: 100m
-      # average processing time of single token
-      # 1/target value would mean tokens/sec
-      # depends on used LLM model and hardware platform used
-      # 'sum(rate(vllm:time_per_output_token_seconds_sum{service="vllm-service-m"}[1m])) by (<<.GroupBy>>) / (0.001 + sum(rate(vllm:time_per_output_token_seconds_count{service="vllm-service-m"}[1m])) by (<<.GroupBy>>))'
       behavior:
         scaleDown:
           stabilizationWindowSeconds: 180

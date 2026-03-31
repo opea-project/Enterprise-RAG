@@ -64,11 +64,17 @@ config:
 # Resources
 resources:
   requests:
-    cpu: "{{ vector_databases[vector_databases.vector_store].resources.requests.cpu | default('500m') }}"
+    cpu: "{{ '100m' if (minimal_configuration is defined and minimal_configuration) else vector_databases[vector_databases.vector_store].resources.requests.cpu | default('500m') }}"
     memory: "{{ vector_databases[vector_databases.vector_store].resources.requests.memory | default('512Mi') }}"
   limits:
     cpu: "{{ vector_databases[vector_databases.vector_store].resources.limits.cpu | default('2000m') }}"
     memory: "{{ vector_databases[vector_databases.vector_store].resources.limits.memory | default('4Gi') }}"
+
+redis-cluster:
+  redis:
+    resources:
+      requests:
+        cpu: "{{ '100m' if (minimal_configuration is defined and minimal_configuration) else vector_databases[vector_databases.vector_store].resources.requests.cpu | default('500m') }}"
 
 # Persistence
 persistence:

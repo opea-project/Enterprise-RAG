@@ -74,6 +74,9 @@ labels:
 
 {{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "resources") }}
   {{- $defaultValues = index $values "services" $filename "resources" }}
+{{- else if and $values.minimalConfiguration (index $values "minimalResources" $filename) }}
+  {{- $minimalCpu := index $values "minimalResources" $filename "requests" "cpu" }}
+  {{- $defaultValues = mergeOverwrite $defaultValues (dict "requests" (dict "cpu" $minimalCpu)) }}
 {{- end -}}
 
 {{- $isTDXEnabled := hasKey $values "tdx" -}}

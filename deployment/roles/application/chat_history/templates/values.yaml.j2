@@ -31,3 +31,11 @@ ferretdb:
 {% if chat_history.additional_values is defined %}
 {{ chat_history.additional_values | to_nice_yaml }}
 {% endif %}
+
+{% if (minimal_configuration is defined and minimal_configuration) and "cpu" in pipelines[0].samplePath %}
+minimalConfiguration: true
+minimalResources:
+  chat-history-svc:
+    requests:
+      cpu: "50m"
+{% endif %}

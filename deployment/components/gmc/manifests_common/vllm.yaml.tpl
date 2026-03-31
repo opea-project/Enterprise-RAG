@@ -5,6 +5,21 @@
 {{- $modelName := required "Please specify a valid llm_model name in your Helm chart values" .Values.llm_model }}
 {{- $modelChatTemplate := (index (default dict .Values.modelConfigs) $modelName).modelChatTemplate | default .Values.defaultModelConfigs.modelChatTemplate }}
 {{- $port := "8000" }}
+{{- $vllmReplicas := include "getReplicas" (list .filename .Values) | trim -}}
+{{- /*
+    Compute memory request and limit from model configuration:
+      - VLLM_CPU_KVCACHE_SPACE (Gi) is read from the model's configMapValues (default: 10)
+      - Base memory: 16 Gi for AWQ-quantized models, 32 Gi for all others
+      - Memory request  = base + kvcache
+      - Memory limit    = 2 × request
+*/ -}}
+{{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default ((index .Values).defaultModelConfigs).configMapValues -}}
+{{- $modelExtraArgs := (index (default dict .Values.modelConfigs) $modelName).extraCmdArgs | default .Values.defaultModelConfigs.extraCmdArgs | default list -}}
+{{- $isAwq := has "awq" $modelExtraArgs -}}
+{{- $kvCacheGi := int (index ($configMapValues | default dict) "VLLM_CPU_KVCACHE_SPACE" | default "10") -}}
+{{- $baseMemGi := ternary 16 32 $isAwq -}}
+{{- $memRequestGi := add $baseMemGi $kvCacheGi -}}
+{{- $memLimitGi := mul 2 $memRequestGi }}
 
 apiVersion: v1
 kind: ConfigMap
@@ -14,7 +29,6 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 data:
   {{- include "manifest.addEnvsAndEnvFile" (list .filename .) | nindent 2 }}
-  {{- $configMapValues := (index (default dict .Values.modelConfigs) $modelName).configMapValues | default ((index .Values).defaultModelConfigs).configMapValues }}
   {{- if $configMapValues }}
     {{- range $key, $value := $configMapValues }}
       {{- printf "%s: %s" $key ($value | quote) | nindent 2 }}
@@ -243,10 +257,10 @@ spec:
               port: http
           resources:
             limits:
-              memory: 100Gi
+              memory: {{ printf "%dGi" $memLimitGi }}
               cpu: {{ .VLLM_CPU | default "32" }}
             requests:
-              memory: 64Gi
+              memory: {{ printf "%dGi" $memRequestGi }}
               cpu: {{ .VLLM_CPU | default "32" }}
       volumes:
         - name: model-volume
@@ -275,6 +289,7 @@ spec:
 ---
 {{- end }}
 {{- else }}
+{{- if ne $vllmReplicas "0" }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -297,7 +312,7 @@ metadata:
     {{- include "manifest.labels" (list .filename .) | nindent 4 }}
 spec:
   serviceName: "vllm-service-m"
-  replicas: {{ include "getReplicas" (list .filename .Values) | default 1 }}
+  replicas: {{ $vllmReplicas | default 1 }}
   selector:
     matchLabels:
     {{- include "manifest.selectorLabels" (list .filename .) | nindent 6 }}
@@ -441,8 +456,20 @@ spec:
               path: /health
               port: http
           resources:
-            {{- $defaultValues := "{requests: {cpu: '32', memory: '64Gi'}, limits: {cpu: '32', memory: '100Gi'}}" -}}
-            {{- include "manifest.getResource" (list .filename $defaultValues .Values) | nindent 12 }}
+            {{- $vllmRes := dict -}}
+            {{- if and .Values.services (index .Values.services .filename) (index .Values.services .filename "resources") -}}
+              {{- $vllmRes = index .Values.services .filename "resources" -}}
+            {{- end -}}
+            {{- $vllmResReqs := index ($vllmRes | default dict) "requests" | default dict -}}
+            {{- $vllmResLims := index ($vllmRes | default dict) "limits" | default dict -}}
+            {{- $cpuReq := index $vllmResReqs "cpu" | default "32" -}}
+            {{- $cpuLim := index $vllmResLims "cpu" | default "32" }}
+            requests:
+              cpu: {{ $cpuReq }}
+              memory: {{ printf "%dGi" $memRequestGi }}
+            limits:
+              cpu: {{ $cpuLim }}
+              memory: {{ printf "%dGi" $memLimitGi }}
       volumes:
         - name: model-volume
           persistentVolumeClaim:
@@ -469,8 +496,9 @@ spec:
         {{- end }}
 ---
 {{- end }}
+{{- end }}
 
-{{- if and .Values.hpaEnabled (not .Values.balloons.enabled) }}
+{{- if and .Values.hpaEnabled (not .Values.balloons.enabled) (ne $vllmReplicas "0") }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

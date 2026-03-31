@@ -172,7 +172,7 @@ ARG TARGETARCH
 #   - Controls the number of threads used by PyTorch's TorchInductor compiler for optimization.
 # - VLLM_ALLOW_LONG_MAX_MODEL_LEN
 #   - Bypasses vLLM's safety check that enforces the model's maximum sequence length limit.
-ARG VLLM_CPU_KVCACHE_SPACE=40
+ARG VLLM_CPU_KVCACHE_SPACE=10
 ARG VLLM_CPU_OMP_THREADS_BIND=auto
 ARG VLLM_CPU_NUM_OF_RESERVED_CPU=1
 ARG CPU_VISIBLE_MEMORY_NODES

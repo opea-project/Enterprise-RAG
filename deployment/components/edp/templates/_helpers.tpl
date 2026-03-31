@@ -279,6 +279,9 @@ labels:
 
 {{- if and ($values.services) (index $values "services" $filename) (index $values "services" $filename "resources") }}
   {{- $defaultValues = index $values "services" $filename "resources" }}
+{{- else if and $values.minimalConfiguration (index $values "minimalResources" $filename) }}
+  {{- $minimalCpu := index $values "minimalResources" $filename "requests" "cpu" }}
+  {{- $_ := set (index $defaultValues "requests") "cpu" $minimalCpu }}
 {{- end -}}
 
 {{- $defaultValues | toYaml }}

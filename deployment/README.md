@@ -60,6 +60,16 @@ Before proceeding with the deployment, it's recommended to validate that your ha
 
 An example inventory.ini file structure and detailed instructions are provided in the [Cluster Deployment Guide](../docs/cluster_deployment_guide.md).
 
+Minimum hardware requirements:
+| Platform | CPU Cores | RAM | Disk |
+|---|---|---|---|
+| **CPU only (Xeon)** | 60 cores | 128 GB | 200 GB |
+| **CPU + HPU (Gaudi)** | 48 cores | 128 GB | 500 GB |
+
+> [!NOTE]
+> A limited single-user deployment is also possible on **32 cores / 64 GB RAM**.
+> See [docs/minimum_requirements.md](../docs/minimum_requirements.md) for the required configuration changes to lower resource usage.
+
 Once you have created the inventory.ini file, you can validate your hardware resources using the validate playbook located at `playbooks/validate.yaml`:
 
 ```sh

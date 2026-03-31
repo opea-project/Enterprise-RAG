@@ -330,6 +330,19 @@ postgresql:
     enabled: true
     size: "10Gi"
 
+# When minimalConfiguration is true, resource requests/limits for celery and
+# textExtractor are reduced to values suitable for a 32-core / 64 GB single-user
+# deployment. Set via edp.minimal_configuration: true in config.yaml.
+# Individual services.<name>.resources overrides still take priority.
+minimalConfiguration: false
+minimalResources:
+  edp-celery:
+    requests:
+      cpu: "100m"
+  edp-text-extractor:
+    requests:
+      cpu: "1"
+
 celery:
   nameOverride: "edp-celery"
   name: "erag-enhanced-dataprep"
@@ -1023,7 +1036,7 @@ vllm:
   enabled: false
   config:
     modelName: "Intel/neural-chat-7b-v3-3"
-    cpuKvcacheSpace: "40"
+    cpuKvcacheSpace: "10"
     dtype: "bfloat16"
     maxNumSeqs: "256"
     skipWarmup: "true"

@@ -43,7 +43,7 @@ vllmAudioCpu:
   enabled: true
   config:
     modelName: "openai/whisper-small"
-    cpuKvcacheSpace: "40"
+    cpuKvcacheSpace: "10"
     dtype: "bfloat16"
     maxNumSeqs: "256"
     skipWarmup: "false"

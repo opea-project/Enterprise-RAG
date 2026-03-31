@@ -32,6 +32,15 @@ chat_history:
 hpaEnabled: {{ hpaEnabled }}
 {% endif %}
 
+{% if (minimal_configuration is defined and minimal_configuration) and "cpu" in item.samplePath %}
+resources:
+  requests:
+    cpu: "100m"
+    memory: "64Mi"
+  limits:
+    memory: "128Mi"
+{% endif %}
+
 {% if tdx is defined and tdx.coco is defined and tdx.coco.enabled %}
 tdx:
   common:

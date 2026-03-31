@@ -1,45 +1,15 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-- name: Ensure topology-discovery namespace exists
+- name: Create a topology discovery daemonset in default namespace
   kubernetes.core.k8s:
     state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: topology-discovery
-  tags:
-  - install
-  - topology-preview
-  - update-configuration
-
-- name: label topology-discovery namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: topology-discovery
-        labels:
-          pod-security.kubernetes.io/enforce: "privileged"
-  when: enforcePSS
-  tags:
-  - install
-  - topology-preview
-  - update-configuration
-
-- name: Create a topology discovery daemonset
-  kubernetes.core.k8s:
-    state: present
-    namespace: topology-discovery
     definition:
       apiVersion: apps/v1
       kind: DaemonSet
       metadata:
         name: node-topology-debugger
-        namespace: topology-discovery
+        namespace: default
       spec:
         selector:
           matchLabels:
@@ -57,9 +27,14 @@
               seccompProfile:
                 type: RuntimeDefault
             containers:
-            - name: ubuntu
-              image: ubuntu
+            - name: debian
+              image: debian@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a # debian:bookworm-slim
               command: ["sleep", "infinity"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                  - ALL
             restartPolicy: Always
   tags:
   - install
@@ -69,7 +44,7 @@
 - name: Wait for node-topology-debugger pods to be ready
   kubernetes.core.k8s_info:
     kind: Pod
-    namespace: topology-discovery
+    namespace: default
     label_selectors:
     - app=node-topology-debugger
   register: pods_info
@@ -352,18 +327,7 @@
     state: absent
     kind: DaemonSet
     name: node-topology-debugger
-    namespace: topology-discovery
-  tags:
-  - install
-  - uninstall
-  - topology-preview
-  - update-configuration
-
-- name: Delete topology-discovery namespace
-  kubernetes.core.k8s:
-    state: absent
-    kind: Namespace
-    name: topology-discovery
+    namespace: default
   tags:
   - install
   - uninstall

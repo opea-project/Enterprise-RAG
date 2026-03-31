@@ -1,8 +1,8 @@
 - name: Get CPU to NUMA node mapping
   kubernetes.core.k8s_exec:
     pod: "{{ pod_name }}"
-    container: ubuntu
-    namespace: topology-discovery
+    container: debian
+    namespace: default
     command: lscpu -p=NODE,CPU
   register: cpu_numa_mapping
   tags:
@@ -68,8 +68,8 @@
 - name: Check for AMX support
   kubernetes.core.k8s_exec:
     pod: "{{ pod_name }}"
-    container: ubuntu
-    namespace: topology-discovery
+    container: debian
+    namespace: default
     command: bash -c "lscpu | grep -i amx"
   register: amx_check
   ignore_errors: true
@@ -106,8 +106,8 @@
 - name: Get total memory in GiB
   kubernetes.core.k8s_exec:
     pod: "{{ pod_name }}"
-    container: ubuntu
-    namespace: topology-discovery
+    container: debian
+    namespace: default
     command: bash -c "grep MemTotal /proc/meminfo | awk '{print int($2/1024/1024)}'"
   register: total_memory_GiB
   tags:
@@ -118,8 +118,8 @@
 - name: Get threads per core
   kubernetes.core.k8s_exec:
     pod: "{{ pod_name }}"
-    container: ubuntu
-    namespace: topology-discovery
+    container: debian
+    namespace: default
     command: bash -c "lscpu | grep 'Thread(s) per core' | awk '{print $NF}'"
   register: threads_per_core_result
   tags:

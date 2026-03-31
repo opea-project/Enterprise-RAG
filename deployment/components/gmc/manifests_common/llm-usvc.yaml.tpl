@@ -63,9 +63,7 @@ spec:
   template:
     metadata:
       {{- include "manifest.podLabels" (list .filename .) | nindent 6 }}
-      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
-      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       serviceAccountName: llm-usvc
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -142,7 +140,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 60
           startupProbe:
-            failureThreshold: {{ include "manifest.tdx.values" (dict "default" 120 "name" .filename "Values" .Values "type" "startupProbe.failureThreshold") | trim }}
+            failureThreshold: {{ if and (hasKey .Values "startupProbe") (hasKey .Values.startupProbe "failureThreshold") }}{{ .Values.startupProbe.failureThreshold }}{{ else }}120{{ end }}
             httpGet:
               path: v1/health_check
               port: llm-usvc

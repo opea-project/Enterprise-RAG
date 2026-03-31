@@ -38,7 +38,6 @@ The resource configurations are defined in separate YAML files for each pipeline
 **ChatQA Pipeline:**
 - [`resources-reference-cpu.yaml`](../deployment/pipelines/chatqa/resources-reference-cpu.yaml)
 - [`resources-reference-hpu.yaml`](../deployment/pipelines/chatqa/resources-reference-hpu.yaml)
-- [`resources-tdx.yaml`](../deployment/components/gmc/microservices-connector/helm/resources-tdx.yaml)
 
 **Docsum Pipeline:**
 - [`resources-reference-cpu.yaml`](../deployment/pipelines/docsum/resources-reference-cpu.yaml)

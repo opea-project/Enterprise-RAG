@@ -37,11 +37,6 @@ service:
 {% if use_alternate_tagging is defined %}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
-{% if tdx.coco.enabled %}
-tdx:
-  common:
-    kbsAddress: {{ KBS_ADDRESS }}
-{% endif %}
 {% if tag is defined %}
 image:
   ui:

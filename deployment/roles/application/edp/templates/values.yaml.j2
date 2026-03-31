@@ -107,23 +107,6 @@ sharepointClientSecret: "{{ keycloak.oidc.client_secret | default('') }}"
 keycloakBrokerIdpAlias: "{{ keycloak.oidc.alias | default('') }}"
 {% endif %}
 
-{% if tdx.coco.enabled %}
-tdx:
-  common:
-    kbsAddress: {{ KBS_ADDRESS }}
-minio:
-  podAnnotations:
-    io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
-postgresql:
-  primary:
-    podAnnotations:
-      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
-redis:
-  edp-redis:
-    podAnnotations:
-      io.katacontainers.config.hypervisor.kernel_params: "agent.guest_components_rest_api=all agent.aa_kbc_params=cc_kbc::{{ KBS_ADDRESS }}"
-{% endif %}
-
 celery:
   tag: {{ tag }}
   repository: {{ registry }}

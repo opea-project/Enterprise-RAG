@@ -24,10 +24,7 @@ spec:
         app: router-service
         app.kubernetes.io/name: router-service
         app.kubernetes.io/version: "v0.8"
-        {{- include "manifest.tdx.labels" (list "gmc-router" .) | nindent 8 }}
-      {{- include "manifest.tdx.annotations" (list "gmc-router" .) | nindent 6 }}
     spec:
-      {{- include "manifest.tdx.runtimeClassName" (list "gmc-router" .) | nindent 6 }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       serviceAccountName: default

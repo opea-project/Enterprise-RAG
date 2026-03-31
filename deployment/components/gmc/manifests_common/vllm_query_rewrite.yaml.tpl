@@ -114,9 +114,7 @@ spec:
       labels:
         {{- include "manifest.selectorLabels" (list $.filename $) | nindent 8 }}
         query-rewrite-node: {{ .name }}
-      {{- include "manifest.tdx.annotations" (list $.filename $) | nindent 6 }}
     spec:
-      {{- include "manifest.tdx.runtimeClassName" (list $.filename $) | nindent 6 }}
       nodeSelector:
         {{- toYaml .nodeSelector | nindent 8 }}
       affinity:
@@ -245,9 +243,7 @@ spec:
   template:
     metadata:
       {{- include "manifest.podLabels" (list .filename .) | nindent 6 }}
-      {{- include "manifest.tdx.annotations" (list .filename .) | nindent 6 }}
     spec:
-      {{- include "manifest.tdx.runtimeClassName" (list .filename .) | nindent 6 }}
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

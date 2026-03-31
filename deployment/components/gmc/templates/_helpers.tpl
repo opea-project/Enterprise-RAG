@@ -95,9 +95,6 @@ Generic pod label definition
 {{- $context := index . 1 -}}
 labels:
   {{- include "manifest.selectorLabels" (list $deploymentName $context) | nindent 2 }}
-{{- if $context.Values.tdx }}
-  {{- include "manifest.tdx.labels" (list $deploymentName $context) | nindent 2 }}
-{{- end }}
 {{- end }}
 
 
@@ -150,14 +147,7 @@ Helper for adding environment variables and env files
   {{- $defaultValues = index $values "services" $filename "resources" }}
 {{- end -}}
 
-{{- $isTDXEnabled := hasKey $values "tdx" -}}
-{{- $isGaudiService := regexMatch "(?i)gaudi" $filename -}}
-
-{{- if and $isTDXEnabled (not $isGaudiService) }}
-  {{- include "manifest.tdx.getResourceValues" (dict "defaultValues" $defaultValues "filename" $filename "values" $values) }}
-{{- else }}
-  {{- $defaultValues | toYaml }}
-{{- end -}}
+{{- $defaultValues | toYaml }}
 {{- end -}}
 
 {{- /*

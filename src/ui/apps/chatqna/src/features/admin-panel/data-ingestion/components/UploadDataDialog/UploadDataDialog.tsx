@@ -8,23 +8,28 @@ import {
   Dialog,
   DialogRef,
   IconButton,
+  Label,
+  SelectInput,
   SelectInputChangeHandler,
   Tooltip,
 } from "@intel-enterprise-rag-ui/components";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { useGetFilePresignedUrlMutation } from "@/api";
 import {
+  useGetS3BucketsListQuery,
+  useGetSharePointSitesQuery,
   useLazyGetFilesQuery,
   useLazyGetLinksQuery,
   usePostLinksMutation,
+  usePostSharePointUploadMutation,
 } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { usePostFileMutation } from "@/features/admin-panel/data-ingestion/api/s3Api";
-import BucketsDropdown from "@/features/admin-panel/data-ingestion/components/BucketsDropdown/BucketsDropdown";
 import FilesIngestionPanel from "@/features/admin-panel/data-ingestion/components/FilesIngestionPanel/FilesIngestionPanel";
 import LinksIngestionPanel from "@/features/admin-panel/data-ingestion/components/LinksIngestionPanel/LinksIngestionPanel";
 import UploadDataDialogFooter from "@/features/admin-panel/data-ingestion/components/UploadDataDialogFooter/UploadDataDialogFooter";
 import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
+import useIsSharePointEnabled from "@/features/admin-panel/data-ingestion/hooks/useIsSharePointEnabled";
 import {
   LinkForIngestion,
   UploadErrors,
@@ -33,6 +38,10 @@ import {
   createToBeUploadedMessage,
   isUploadDisabled,
 } from "@/features/admin-panel/data-ingestion/utils";
+import {
+  S3_BUCKET_EMOJI,
+  SHAREPOINT_SITE_EMOJI,
+} from "@/features/admin-panel/utils";
 import { useAppDispatch } from "@/store/hooks";
 import { getErrorMessage } from "@/utils/api";
 
@@ -47,10 +56,17 @@ const UploadDataDialog = () => {
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
   const [postFile] = usePostFileMutation();
   const [postLinks] = usePostLinksMutation();
+  const [postSharePointUpload] = usePostSharePointUploadMutation();
+
+  const { data: bucketsList, isFetching: isFetchingBuckets } =
+    useGetS3BucketsListQuery();
+  const { data: spSites } = useGetSharePointSitesQuery();
+  const isSharePointEnabled = useIsSharePointEnabled();
+  const hasSites = isSharePointEnabled && spSites && spSites.length > 0;
 
   const [files, setFiles] = useState<File[]>([]);
   const [links, setLinks] = useState<LinkForIngestion[]>([]);
-  const [selectedBucket, setSelectedBucket] = useState<string>("");
+  const [selectedDestination, setSelectedDestination] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadErrors, setUploadErrors] =
     useState<UploadErrors>(initialUploadErrors);
@@ -59,8 +75,37 @@ const UploadDataDialog = () => {
 
   const dispatch = useAppDispatch();
 
-  const onBucketChange: SelectInputChangeHandler<string> = (value) => {
-    setSelectedBucket(value);
+  const destinationItems = useMemo(() => {
+    const buckets = (bucketsList ?? []).map((b) => `${S3_BUCKET_EMOJI}${b}`);
+    if (!hasSites) return buckets;
+    const sites = spSites!.map(
+      (s) => `${SHAREPOINT_SITE_EMOJI}${s.display_name || s.name}`,
+    );
+    return [...buckets, ...sites];
+  }, [bucketsList, spSites, hasSites]);
+
+  const effectiveBucket = useMemo(() => {
+    if (!selectedDestination) return "";
+    if (selectedDestination.startsWith(SHAREPOINT_SITE_EMOJI)) {
+      return "";
+    }
+    return selectedDestination.slice(S3_BUCKET_EMOJI.length);
+  }, [selectedDestination]);
+
+  const selectedSharePointSiteId = useMemo(() => {
+    if (!selectedDestination) return "";
+    if (!selectedDestination.startsWith(SHAREPOINT_SITE_EMOJI)) return "";
+    const siteName = selectedDestination.slice(SHAREPOINT_SITE_EMOJI.length);
+    const site = spSites?.find((s) => (s.display_name || s.name) === siteName);
+    return site?.id ?? "";
+  }, [selectedDestination, spSites]);
+
+  const isSharePointDestination = selectedSharePointSiteId !== "";
+
+  const hasFileTarget = effectiveBucket !== "" || isSharePointDestination;
+
+  const onDestinationChange: SelectInputChangeHandler<string> = (value) => {
+    setSelectedDestination(value);
   };
 
   const resetUploadErrors = () => {
@@ -81,30 +126,47 @@ const UploadDataDialog = () => {
     let filesUploadError = "";
     let linksUploadError = "";
 
-    if (files.length && selectedBucket !== "") {
+    if (files.length && hasFileTarget) {
       let error;
-      for (const file of files) {
-        const { data: presignedUrl, error: getFilePresignedUrlError } =
-          await getFilePresignedUrl({
-            fileName: file.name,
-            method: "PUT",
-            bucketName: selectedBucket,
-          });
 
-        if (getFilePresignedUrlError) {
-          error = getFilePresignedUrlError;
-          break;
-        }
-
-        if (presignedUrl) {
-          const { error: postFileError } = await postFile({
-            url: presignedUrl,
+      if (isSharePointDestination) {
+        // Upload files directly to SharePoint via the dedicated endpoint
+        for (const file of files) {
+          const { error: uploadError } = await postSharePointUpload({
+            site_id: selectedSharePointSiteId,
             file,
           });
 
-          if (postFileError) {
-            error = postFileError;
+          if (uploadError) {
+            error = uploadError;
             break;
+          }
+        }
+      } else {
+        // S3 bucket upload via presigned URL
+        for (const file of files) {
+          const { data: presignedUrl, error: getFilePresignedUrlError } =
+            await getFilePresignedUrl({
+              fileName: file.name,
+              method: "PUT",
+              bucketName: effectiveBucket,
+            });
+
+          if (getFilePresignedUrlError) {
+            error = getFilePresignedUrlError;
+            break;
+          }
+
+          if (presignedUrl) {
+            const { error: postFileError } = await postFile({
+              url: presignedUrl,
+              file,
+            });
+
+            if (postFileError) {
+              error = postFileError;
+              break;
+            }
           }
         }
       }
@@ -149,9 +211,12 @@ const UploadDataDialog = () => {
 
   const toBeUploadedMessage = createToBeUploadedMessage(
     files,
-    selectedBucket,
+    hasFileTarget ? "selected" : "",
     links,
   );
+
+  const isSelectDisabled = isFetchingBuckets || destinationItems.length === 0;
+  const isSelectInvalid = files.length > 0 && !selectedDestination;
 
   return (
     <Dialog
@@ -175,7 +240,7 @@ const UploadDataDialog = () => {
           toBeUploadedMessage={toBeUploadedMessage}
           isUploadDisabled={isUploadDisabled(
             files,
-            selectedBucket,
+            hasFileTarget ? "selected" : "",
             links,
             isUploading,
           )}
@@ -187,10 +252,25 @@ const UploadDataDialog = () => {
       onClose={onDialogClose}
     >
       <div className="upload-dialog__content">
-        <BucketsDropdown
-          files={files}
-          selectedBucket={selectedBucket}
-          onBucketChange={onBucketChange}
+        <div className="px-4 pt-3">
+          <Label>Upload to</Label>
+          {hasSites && (
+            <div className="text-light-text-primary dark:text-dark-text-primary flex gap-4 pt-1 text-xs">
+              <span>{S3_BUCKET_EMOJI} S3 Bucket</span>
+              <span>{SHAREPOINT_SITE_EMOJI} SharePoint Site</span>
+            </div>
+          )}
+        </div>
+        <SelectInput
+          data-testid="destination-dropdown"
+          value={selectedDestination || undefined}
+          items={destinationItems}
+          name="upload-destination"
+          isDisabled={isSelectDisabled}
+          isInvalid={isSelectInvalid}
+          placeholder="Please select destination to upload files"
+          className="px-4 pt-1"
+          onChange={onDestinationChange}
         />
         <div className="upload-dialog__ingestion-panels-grid">
           <FilesIngestionPanel files={files} setFiles={setFiles} />

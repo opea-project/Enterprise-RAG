@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import asyncio
 import socket
 import threading
 from contextlib import contextmanager
@@ -211,10 +212,27 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     minio_response = None
     file_base64 = None
     try:
-        minio_response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
-        file_data = minio_response.read()
-        file_base64 = base64.b64encode(file_data).decode('ascii')
-        logger.debug(f"[{file_db.id}] Retrieved file from S3 storage.")
+        if file_db.site_name:
+            # SharePoint-sourced file — download from SP on demand
+            from app.sharepoint import download_sp_file_by_path
+            from app.models import SharePointSiteRecord
+            from sqlalchemy import or_
+            sp_record = self.db.query(SharePointSiteRecord).filter(
+                or_(
+                    SharePointSiteRecord.display_name == file_db.site_name,
+                    SharePointSiteRecord.name == file_db.site_name,
+                )
+            ).first()
+            if not sp_record:
+                raise Exception(f"SharePoint site record not found for site_name='{file_db.site_name}'")
+            file_data = asyncio.run(download_sp_file_by_path(sp_record.graph_site_id, file_db.object_name))
+            file_base64 = base64.b64encode(file_data).decode('ascii')
+            logger.debug(f"[{file_db.id}] Retrieved file from SharePoint site '{file_db.site_name}'.")
+        else:
+            minio_response = self.minio.get_object(bucket_name=file_db.bucket_name, object_name=file_db.object_name)
+            file_data = minio_response.read()
+            file_base64 = base64.b64encode(file_data).decode('ascii')
+            logger.debug(f"[{file_db.id}] Retrieved file from S3 storage.")
     except S3Error as e:
         file_db.status = 'error'
         file_db.job_message = f"Error downloading file. {e}"
@@ -358,7 +376,10 @@ def process_file_task(self, file_id: Any, *args, **kwargs):
     # 4.1 Update the metadata info from database
     for doc in dataprep_docs:
         doc['metadata']['etag'] = file_db.etag
-        doc['metadata']['bucket_name'] = file_db.bucket_name
+        if file_db.site_name:
+            doc['metadata']['site_name'] = file_db.site_name
+        else:
+            doc['metadata']['bucket_name'] = file_db.bucket_name
         doc['metadata']['object_name'] = file_db.object_name
         doc['metadata']['file_id'] = str(file_db.id).replace('-', '') # uuid w/o hyphens because redis does not support search with hypens
 
@@ -719,6 +740,26 @@ def delete_file_task(self, file_id: Any, *args, **kwargs):
         self.safe_commit()
         raise Exception(f"Error encountered while data clean up. {response_err(response)}")
 
+    # Step 1.5 - If the file came from SharePoint, delete it from the SP site too
+    if file_db.site_name:
+        from app.sharepoint import delete_sp_file_by_path
+        from app.models import SharePointSiteRecord
+        from sqlalchemy import or_
+        sp_record = self.db.query(SharePointSiteRecord).filter(
+            or_(
+                SharePointSiteRecord.display_name == file_db.site_name,
+                SharePointSiteRecord.name == file_db.site_name,
+            )
+        ).first()
+        if sp_record:
+            try:
+                asyncio.run(delete_sp_file_by_path(sp_record.graph_site_id, file_db.object_name))
+                logger.info(f"[{file_db.id}] Deleted file from SharePoint site '{file_db.site_name}'.")
+            except Exception as e:
+                logger.warning(f"[{file_db.id}] Failed to delete from SharePoint site: {e}")
+        else:
+            logger.warning(f"[{file_db.id}] SP site record not found for '{file_db.site_name}', skipping SP delete.")
+
     # Step 2 - Delete the file from database
     id = file_db.id
     self.db.delete(file_db)
@@ -1061,7 +1102,14 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
         logger.info(f"Adding periodic sync task each {edp_sync_seconds} seconds")
         sender.add_periodic_task(int(edp_sync_seconds), sync_files_task.s(), name='Sync files between storage and db')
     else:
-        logger.info("No periodic tasks registered")
+        logger.info("No periodic S3 sync task registered")
+
+    sp_sync_seconds = os.environ.get('EDP_SP_SYNC_TASK_TIME_SECONDS', None)
+    if sp_sync_seconds and sp_sync_seconds != "":
+        logger.info(f"Adding periodic SharePoint sync task each {sp_sync_seconds} seconds")
+        sender.add_periodic_task(int(sp_sync_seconds), sync_sharepoint_task.s(), name='Sync SharePoint files')
+    else:
+        logger.info("No periodic SharePoint sync task registered")
 
 @shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 1})
 def sync_files_task(self, *Args, **kwargs):
@@ -1069,10 +1117,54 @@ def sync_files_task(self, *Args, **kwargs):
 
     logger.debug("Started File Sync process")
 
+    def _sync_add(bucket_name, object_name, etag, content_type, size):
+        add_new_file(object_name, etag, content_type, size, bucket_name=bucket_name)
+
+    def _sync_delete(bucket_name, object_name):
+        delete_existing_file(object_name, bucket_name=bucket_name)
+
     try:
-        sync_files(minio_internal, add_new_file, add_new_file, delete_existing_file)
+        sync_files(minio_internal, _sync_add, _sync_add, _sync_delete)
     except Exception as e:
         logger.error(f"Error syncing files: {e}")
 
     logger.debug("Ended File Sync process")
+    return True
+
+
+@shared_task(base=WithEDPTask, bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={'max_retries': 1})
+def sync_sharepoint_task(self, *Args, **kwargs):
+    from app.main import add_new_file
+    from app.sharepoint import sharepoint_enabled, build_sharepoint_sync_plan, delete_sp_file, sp_sync_lock
+
+    if not sharepoint_enabled():
+        logger.debug("SharePoint integration not configured, skipping sync")
+        return True
+
+    logger.debug("Started SharePoint Sync process")
+    try:
+        with sp_sync_lock(blocking=False) as acquired:
+            if not acquired:
+                logger.info("SharePoint sync lock is held by another process, skipping scheduled sync")
+                return True
+
+            async def _do_sync():
+                actions, _ = await build_sharepoint_sync_plan()
+                for action, sn, object_name, file_info, graph_site_id in actions:
+                    if action in ('add', 'update'):
+                        add_new_file(
+                            object_name,
+                            file_info.get('etag', ''),
+                            file_info.get('content_type', 'application/octet-stream'),
+                            file_info.get('size', 0),
+                            site_name=sn,
+                        )
+                    elif action == 'delete':
+                        delete_sp_file(sn, object_name)
+
+            asyncio.run(_do_sync())
+    except Exception as e:
+        logger.error(f"Error syncing SharePoint files: {e}")
+
+    logger.debug("Ended SharePoint Sync process")
     return True

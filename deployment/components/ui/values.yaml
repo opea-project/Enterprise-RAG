@@ -34,6 +34,7 @@ extraUiConfigVars:
   keycloakRealm: "EnterpriseRAG"
   keycloakClientId: "EnterpriseRAG-oidc"
   adminResourceRole: "ERAG-admin"
+  userResourceRole: "ERAG-user"
   maintainerResourceRole: "ERAG-maintainer"
   grafanaDomainName: "grafana.erag.com"
   keycloakAdminPanelDomainName: "auth.erag.com"

@@ -54,7 +54,7 @@ class ConnectorRedis(VectorStoreConnector):
 
     def _metadata_schema(self):
         base_fields = [
-            "id", "bucket_name", "object_name", "file_id", "link_id", "url", "timestamp",
+            "id", "bucket_name", "site_name", "object_name", "file_id", "link_id", "url", "timestamp",
             "Header1", "Header2", "Header3", "Header4", "Header5", "Header6"
         ]
 
@@ -67,7 +67,7 @@ class ConnectorRedis(VectorStoreConnector):
 
         # Mark optional fields for index_missing support
         for field in metadata_schema:
-            if field["name"] in ("file_id", "link_id"):
+            if field["name"] in ("file_id", "link_id", "site_name"):
                 field["attrs"] = {"index_missing": True}
 
         if sanitize_env(os.getenv("USE_HIERARCHICAL_INDICES", "false")).lower() == "true":
@@ -329,6 +329,24 @@ class ConnectorRedis(VectorStoreConnector):
 
         logger.debug(f"Filter expression for bucket names: {str(bucket_name_filter)}")
         return bucket_name_filter
+
+    def get_site_name_filter_expression(self, site_names: List[str]) -> FilterExpression:
+        """
+        Constructs a filter expression for SharePoint site names.
+        Args:
+            site_names (List[str]): List of site names to filter by.
+        Returns:
+            FilterExpression: The filter expression for the site names.
+        """
+        logger.debug(f"Site names in filter expression: {site_names}")
+        if len(site_names) == 0:
+            raise ValueError("Site names list cannot be empty")
+        site_name_filter = Text("site_name") == site_names[0]
+        for sn in site_names[1:]:
+            site_name_filter |= Text("site_name") == sn
+
+        logger.debug(f"Filter expression for site names: {str(site_name_filter)}")
+        return site_name_filter
 
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str) -> FilterExpression:
         """

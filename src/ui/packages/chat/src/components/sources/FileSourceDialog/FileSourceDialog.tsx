@@ -8,24 +8,33 @@ import { FileSource } from "@/types";
 
 interface FileSourceDialogProps {
   source: FileSource;
-  onDownload: (fileName: string, bucketName: string) => void;
+  onDownload: (
+    fileName: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
 }
 
 export const FileSourceDialog = ({
-  source: { object_name: fileName, bucket_name: bucketName, citations },
+  source: {
+    object_name: fileName,
+    bucket_name: bucketName,
+    site_name: siteName,
+    citations,
+  },
   onDownload,
 }: FileSourceDialogProps) => {
-  const handleDownloadBtnPress = () => {
-    onDownload(fileName, bucketName);
+  const handleActionBtnPress = () => {
+    onDownload(fileName, bucketName, siteName);
   };
 
   return (
     <SourceDialog
       name={fileName}
       triggerIcon={<FileIcon />}
-      actionLabel="Download"
+      actionLabel={siteName ? "Open" : "Download"}
       citations={citations}
-      onAction={handleDownloadBtnPress}
+      onAction={handleActionBtnPress}
     />
   );
 };

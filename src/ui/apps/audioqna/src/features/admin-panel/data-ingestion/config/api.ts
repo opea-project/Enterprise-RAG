@@ -18,6 +18,15 @@ export const API_ENDPOINTS = {
   DELETE_LINK: "/link/{uuid}",
 
   GET_S3_BUCKETS_LIST: "/list_buckets",
+
+  GET_SHAREPOINT_SITES: "/sharepoint/sites",
+  POST_SHAREPOINT_SITE: "/sharepoint/sites",
+  DELETE_SHAREPOINT_SITE: "/sharepoint/sites",
+  GET_SHAREPOINT_SYNC: "/sharepoint/sync",
+  POST_SHAREPOINT_SYNC: "/sharepoint/sync",
+  POST_SHAREPOINT_FILE: "/sharepoint/files",
+  DELETE_SHAREPOINT_FILE: "/sharepoint/files",
+  POST_SHAREPOINT_FILE_URL: "/sharepoint/file-url",
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -37,6 +46,15 @@ export const ERROR_MESSAGES = {
   DELETE_LINK: "Failed to delete link",
 
   GET_S3_BUCKETS_LIST: "Failed to fetch S3 buckets list",
+
+  GET_SHAREPOINT_SITES: "Failed to fetch SharePoint sites",
+  POST_SHAREPOINT_SITE: "Failed to add SharePoint site",
+  DELETE_SHAREPOINT_SITE: "Failed to disconnect SharePoint site",
+  GET_SHAREPOINT_SYNC: "Failed to fetch SharePoint sync status",
+  POST_SHAREPOINT_SYNC: "Failed to synchronize SharePoint files",
+  POST_SHAREPOINT_FILE: "Failed to upload file to SharePoint site",
+  POST_SHAREPOINT_FILE_URL: "Failed to get SharePoint file URL",
+  DELETE_SHAREPOINT_FILE: "Failed to delete SharePoint file",
 } as const;
 
 export const END_DATA_STATUSES: DataStatus[] = [

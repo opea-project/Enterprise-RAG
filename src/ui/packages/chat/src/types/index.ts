@@ -30,7 +30,8 @@ interface Source {
 
 export interface FileSource extends Source {
   type: "file";
-  bucket_name: string;
+  bucket_name: string | null;
+  site_name: string | null;
   object_name: string;
 }
 

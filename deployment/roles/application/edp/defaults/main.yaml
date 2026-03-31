@@ -96,3 +96,8 @@ edp:
   late_chunking:
     # NOTE: If enabled, embedding_model_name must be 'jinaai/jina-embeddings-v2-base-en' for late chunking to work.
     enabled: false
+
+  scheduledSync:
+    enabled: false
+    syncPeriodSeconds: "60"
+    sharepointSyncPeriodSeconds: "60"

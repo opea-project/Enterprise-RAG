@@ -59,11 +59,13 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
 - **[multifactor_authentication.md](multifactor_authentication.md)**
   Configuration guide for implementing multi-factor authentication in Intel® AI for Enterprise RAG systems.
 
-- **[single_sign_on_configuration_on_keycloak.md](single_sign_on_configuration_on_keycloak.md)**
-  Instructions for configuring Single Sign-On integration using Microsoft Entra ID with Keycloak for enterprise authentication.
-
 - **[ad_federation_on_keycloak.md](ad_federation_on_keycloak.md)**
   Instructions for configuring Keycloak user federation using Microsoft Active Directory for enterprise authentication.
+
+### Integrations
+
+- **[sso_and_sharepoint_integration.md](sso_and_sharepoint_integration.md)**
+  Guide covering Single Sign-On configuration using Microsoft Entra ID with Keycloak, and SharePoint Online integration for document ingestion into the knowledge base.
 
 ### Service Mesh and Security
 

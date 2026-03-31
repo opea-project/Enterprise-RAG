@@ -5,4 +5,5 @@ export const paths = {
   root: "/",
   docsum: "/docsum",
   adminPanel: "/admin-panel",
+  unauthorized: "/unauthorized",
 } as const;

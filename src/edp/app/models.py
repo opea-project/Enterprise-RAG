@@ -139,10 +139,11 @@ class ObjectResponse(BaseModel):
 
 class FileResponse(ObjectResponse):
     id: str
-    bucket_name: str
+    bucket_name: Optional[str] = None
     object_name: str
     size: int
     etag: str
+    site_name: Optional[str] = None
 
 class LinkResponse(ObjectResponse):
     id: str
@@ -221,11 +222,12 @@ class ObjectStatus(Base):
 class FileStatus(ObjectStatus):
     __tablename__ = "files"
 
-    bucket_name = Column(String, index=True)
+    bucket_name = Column(String, index=True, nullable=True)
     object_name = Column(String, index=True)
     etag = Column(String, index=False)
     content_type = Column(String, index=False)
     size = Column(Integer, index=False)
+    site_name = Column(String, index=True, nullable=True)
 
     def to_response(self):
       obj = super().to_response(
@@ -234,6 +236,7 @@ class FileStatus(ObjectStatus):
         object_name = self.object_name,
         etag = self.etag or "",
         size = self.size or 0,
+        site_name = self.site_name,
       )
       return obj
 
@@ -248,3 +251,36 @@ class LinkStatus(ObjectStatus):
         uri = self.uri
       )
       return obj
+
+
+# ---------------------------------------------------------------------------
+# SharePoint models
+# ---------------------------------------------------------------------------
+
+class SharePointSiteRecord(Base):
+    """Persistent record of a SharePoint site the app should track."""
+    __tablename__ = "sharepoint_sites"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    site_url = Column(String, unique=True, nullable=False, index=True)
+    graph_site_id = Column(String, nullable=False)
+    name = Column(String, nullable=True)
+    display_name = Column(String, nullable=True)
+    web_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class SharePointSiteAddRequest(BaseModel):
+    """Request body for adding a new SharePoint site."""
+    site_url: str
+
+
+class SharePointSiteItem(BaseModel):
+    id: str
+    name: str
+    display_name: Optional[str] = None
+    web_url: Optional[str] = None
+
+
+class SharePointSitesResponse(BaseModel):
+    sites: List[SharePointSiteItem]

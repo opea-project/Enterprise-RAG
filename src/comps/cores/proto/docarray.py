@@ -54,16 +54,17 @@ class TextDoc(BaseDoc, TopologyInfo):
                 citation_id=self.metadata.get('citation_id', 0)
             )
 
-        if self.metadata and 'bucket_name' in self.metadata and 'object_name' in self.metadata:
+        if self.metadata and 'object_name' in self.metadata and ('bucket_name' in self.metadata or 'site_name' in self.metadata):
             return RerankedFileDoc(
                 text=self.text,
                 bucket_name=self.metadata.get('bucket_name'),
                 object_name=self.metadata.get('object_name'),
+                site_name=self.metadata.get('site_name'),
                 vector_distance=self.metadata.get('vector_distance', 1.0),
                 reranker_score=self.metadata.get('reranker_score', 0.0),
                 citation_id=self.metadata.get('citation_id', 0)
             )
-        raise ValueError("TextDoc must have either 'url' or both 'bucket_name' and 'object_name' in metadata to convert to RerankedDoc.")
+        raise ValueError("TextDoc must have either 'url' or both 'bucket_name'/'site_name' and 'object_name' in metadata to convert to RerankedDoc.")
 
 class RerankedBaseDoc(BaseDoc):
     text: str = "" # chunk text
@@ -73,8 +74,9 @@ class RerankedBaseDoc(BaseDoc):
 
 class RerankedFileDoc(RerankedBaseDoc):
     type: str = "file"
-    bucket_name: str
+    bucket_name: Optional[str] = None
     object_name: str
+    site_name: Optional[str] = None
 
 class RerankedLinkDoc(RerankedBaseDoc):
     type: str = "link"

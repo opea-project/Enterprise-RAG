@@ -14,7 +14,11 @@ const VISIBLE_SOURCES_OFFSET = 3;
 
 interface SourcesGridProps {
   sources: SourceDocumentType[];
-  onFileDownload: (fileName: string, bucketName: string) => void;
+  onFileDownload: (
+    fileName: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
 }
 
 export const SourcesGrid = ({ sources, onFileDownload }: SourcesGridProps) => {

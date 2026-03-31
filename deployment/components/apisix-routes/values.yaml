@@ -107,6 +107,16 @@ endpoints:
       - /api/retrieve
       - ^/api/v1/edp/files/sync
       - /api/files/sync
+      - ^/api/v1/edp/sharepoint/sites$
+      - /api/sharepoint/sites
+      - ^/api/v1/edp/sharepoint/sites/([^/]+)$
+      - /api/sharepoint/sites/$1
+      - ^/api/v1/edp/sharepoint/sync$
+      - /api/sharepoint/sync
+      - ^/api/v1/edp/sharepoint/file-url$
+      - /api/sharepoint/file-url
+      - ^/api/v1/edp/sharepoint/files$
+      - /api/sharepoint/files
     permissions:
       - "admin#admin-access"
       - "maintainer#maintainer-access"

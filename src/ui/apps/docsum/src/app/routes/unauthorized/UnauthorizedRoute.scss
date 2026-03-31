@@ -1,0 +1,15 @@
+// Copyright (C) 2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.unauthorized-route__layout {
+  @apply h-screen w-full;
+  @apply flex flex-col items-center justify-center gap-4;
+
+  & h1 {
+    @apply text-2xl font-semibold;
+  }
+
+  & p {
+    @apply text-light-text-primary dark:text-dark-text-primary max-w-md text-center text-sm;
+  }
+}

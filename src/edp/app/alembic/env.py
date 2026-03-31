@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from app.database import engine, Base, DATABASE_URL
 # Unused imports but required to register in Base.metadata
-from app.models import FileStatus, LinkStatus # noqa: F401
+from app.models import FileStatus, LinkStatus, SharePointSiteRecord # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

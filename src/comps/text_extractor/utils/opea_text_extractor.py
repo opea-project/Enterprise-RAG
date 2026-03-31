@@ -96,7 +96,7 @@ class OPEATextExtractor:
                 logger.info(f"Saved file {file.filename} to {saved_path}")
 
                 # Parse file and extract metadata using the loader pattern
-                parser = FileParser(saved_path)
+                parser = FileParser(saved_path, self.asr_endpoint)
                 doc_metadata = parser.parse_metadata()
                 logger.debug(f"Extracted metadata for {file.filename}: {doc_metadata}")
 

@@ -135,7 +135,7 @@ def test_load_files(mock_save_file, mock_file_parser, reset_singleton, mock_uplo
     result = text_extractor._load_files([mock_uploadfile])
 
     mock_save_file.assert_called_once_with(mock_uploadfile)
-    mock_file_parser.assert_called_once_with("/tmp/test_document.txt")
+    mock_file_parser.assert_called_once_with("/tmp/test_document.txt", None)
     assert len(result) == 1
     assert isinstance(result[0], TextDoc)
     assert result[0].text == "Parsed text content"

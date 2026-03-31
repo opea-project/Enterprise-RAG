@@ -31,3 +31,38 @@ export interface PostFileRequest {
   url: string;
   file: File;
 }
+
+export interface SharePointSiteItem {
+  id: string;
+  name: string;
+  display_name: string | null;
+  web_url: string | null;
+}
+
+export interface SharePointSitesResponse {
+  sites: SharePointSiteItem[];
+}
+
+export interface PostSharePointSiteRequest {
+  site_url: string;
+}
+
+export interface SharePointSyncDataItem {
+  action: FileSyncAction;
+  site_name: string;
+  object_name: string;
+}
+
+export interface SharePointUploadRequest {
+  site_id: string;
+  file: File;
+}
+
+export interface SharePointFileUrlRequest {
+  site_name: string;
+  object_name: string;
+}
+
+export interface SharePointFileUrlResponse {
+  url: string;
+}

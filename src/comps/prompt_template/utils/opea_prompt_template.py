@@ -176,6 +176,11 @@ class OPEAPromptTemplate:
                     "type": "File",
                     "source": "/".join([doc.metadata["bucket_name"], doc.metadata["object_name"]])
                 }
+            elif "site_name" in doc.metadata and "object_name" in doc.metadata:
+                source_info = {
+                    "type": "File",
+                    "source": "/".join([doc.metadata["site_name"], doc.metadata["object_name"]])
+                }
 
             if source_info["type"] == "unknown":
                 # Cannot reference this document in any way

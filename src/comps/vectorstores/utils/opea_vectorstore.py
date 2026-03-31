@@ -135,6 +135,9 @@ class OPEAVectorStore():
     def get_bucket_name_filter_expression(self, bucket_names: List[str]):
         return self.vector_store.get_bucket_name_filter_expression(bucket_names)
 
+    def get_site_name_filter_expression(self, site_names: List[str]):
+        return self.vector_store.get_site_name_filter_expression(site_names)
+
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str):
         return self.vector_store.get_object_name_filter_expression(bucket_name, object_name)
 

@@ -100,6 +100,13 @@ redisPassword: "{{ EDP_REDIS_PASSWORD }}"
 postgresDatabasePassword: {{ EDP_POSTGRESQL_PASSWORD }}
 postgresAdminPassword: {{ EDP_POSTGRESQL_ADMIN_PASSWORD }}
 
+{% if keycloak.oidc is defined %}
+sharepointTenantId: "{{ keycloak.oidc.tenant_id | default('') }}"
+sharepointClientId: "{{ keycloak.oidc.client_id | default('') }}"
+sharepointClientSecret: "{{ keycloak.oidc.client_secret | default('') }}"
+keycloakBrokerIdpAlias: "{{ keycloak.oidc.alias | default('') }}"
+{% endif %}
+
 {% if tdx.coco.enabled %}
 tdx:
   common:
@@ -120,6 +127,13 @@ redis:
 celery:
   tag: {{ tag }}
   repository: {{ registry }}
+{% if edp.scheduledSync is defined and edp.scheduledSync.enabled is true %}
+  config:
+    scheduledSync:
+      enabled: true
+      syncPeriodSeconds: "{{ edp.scheduledSync.syncPeriodSeconds | default('60') }}"
+      sharepointSyncPeriodSeconds: "{{ edp.scheduledSync.sharepointSyncPeriodSeconds | default(edp.scheduledSync.syncPeriodSeconds | default('60')) }}"
+{% endif %}
 flower:
   tag: {{ tag }}
   repository: {{ registry }}

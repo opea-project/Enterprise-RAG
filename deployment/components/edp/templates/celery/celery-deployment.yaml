@@ -128,6 +128,8 @@ spec:
           {{- if .Values.celery.config.scheduledSync.enabled }}
             - name: EDP_SYNC_TASK_TIME_SECONDS
               value: {{ .Values.celery.config.scheduledSync.syncPeriodSeconds | quote }}
+            - name: EDP_SP_SYNC_TASK_TIME_SECONDS
+              value: {{ .Values.celery.config.scheduledSync.sharepointSyncPeriodSeconds | default .Values.celery.config.scheduledSync.syncPeriodSeconds | quote }}
           {{- end }}
             - name: OPEA_LOGGER_LEVEL
               value: {{ .Values.celery.config.opeaLoggerLevel | quote }}

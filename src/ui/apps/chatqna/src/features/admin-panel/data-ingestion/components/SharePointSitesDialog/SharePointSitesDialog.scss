@@ -1,0 +1,53 @@
+// Copyright (C) 2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+.sharepoint-sites-dialog__content {
+  @apply h-full w-full px-4 py-3 text-sm;
+}
+
+.sharepoint-sites-dialog__add-form {
+  @apply mb-4 flex flex-col gap-2;
+}
+
+.sharepoint-sites-dialog__add-form-row {
+  @apply flex items-center justify-end gap-3;
+}
+
+.sharepoint-sites-dialog__error-trigger {
+  @apply flex items-center gap-2 text-sm;
+
+  & .sharepoint-sites-dialog__error-trigger--icon {
+    @apply text-light-text-error dark:text-dark-text-error;
+  }
+
+  & .sharepoint-sites-dialog__error-trigger--text {
+    @apply cursor-pointer font-semibold underline;
+    @apply text-light-text-error dark:text-dark-text-error;
+  }
+}
+
+.sharepoint-sites-dialog__error-section {
+  @apply max-w-80 rounded p-3 shadow-lg;
+  @apply bg-light-status-error dark:bg-dark-status-error text-xs;
+  @apply text-light-text-inverse dark:text-dark-text-primary;
+  @apply [overflow-wrap:anywhere];
+}
+
+.sharepoint-sites-dialog__sync-section {
+  @apply border-light-border dark:border-dark-border mt-6 border-t pt-4;
+}
+
+.sharepoint-sites-dialog__sync-title {
+  @apply mb-2 text-base font-semibold;
+}
+
+.sharepoint-sites-dialog__sites-table {
+  th:last-child,
+  td:last-child {
+    @apply w-28 text-right;
+  }
+}
+
+.sharepoint-sites-dialog__footer {
+  @apply flex items-center justify-end gap-4 text-sm;
+}

@@ -11,11 +11,24 @@ import FileTextExtractionDialog from "@/features/admin-panel/data-ingestion/comp
 import ProcessingTimePopover from "@/features/admin-panel/data-ingestion/components/ProcessingTimePopover/ProcessingTimePopover";
 import { FileDataItem } from "@/features/admin-panel/data-ingestion/types";
 import { formatStatusForFilter } from "@/features/admin-panel/data-ingestion/utils/data-tables/utils";
+import {
+  S3_BUCKET_EMOJI,
+  SHAREPOINT_SITE_EMOJI,
+} from "@/features/admin-panel/utils";
 
 interface FileActionsHandlers {
-  downloadHandler: (name: string, bucketName: string) => void;
+  downloadHandler: (
+    name: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
   retryHandler: (id: string) => void;
-  deleteHandler: (name: string, bucketName: string) => void;
+  deleteHandler: (
+    name: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
+  sourceMap?: Record<string, string>;
 }
 
 export const getFilesTableColumns = ({
@@ -35,7 +48,25 @@ export const getFilesTableColumns = ({
   },
   {
     accessorKey: "bucket_name",
-    header: "Bucket",
+    header: "Source",
+    cell: ({
+      row: {
+        original: { bucket_name, site_name },
+      },
+    }) => {
+      if (site_name) {
+        return (
+          <>
+            {SHAREPOINT_SITE_EMOJI} {site_name}
+          </>
+        );
+      }
+      return (
+        <>
+          {S3_BUCKET_EMOJI} {bucket_name}
+        </>
+      );
+    },
   },
   {
     accessorKey: "object_name",
@@ -112,16 +143,16 @@ export const getFilesTableColumns = ({
     header: () => <p className="w-full text-center">Actions</p>,
     cell: ({
       row: {
-        original: { object_name, status, id, bucket_name },
+        original: { object_name, status, id, bucket_name, site_name },
       },
     }) => (
       <div className="flex items-center justify-center gap-2">
         <Button
           data-testid="download-file-button"
           size="sm"
-          onPress={() => downloadHandler(object_name, bucket_name)}
+          onPress={() => downloadHandler(object_name, bucket_name, site_name)}
         >
-          Download
+          {site_name ? "Open" : "Download"}
         </Button>
         <FileTextExtractionDialog uuid={id} fileName={object_name} />
         {status === "error" && (
@@ -134,14 +165,16 @@ export const getFilesTableColumns = ({
             Retry
           </Button>
         )}
-        <Button
-          data-testid="delete-file-button"
-          size="sm"
-          color="error"
-          onPress={() => deleteHandler(object_name, bucket_name)}
-        >
-          Delete
-        </Button>
+        {(bucket_name || site_name) && (
+          <Button
+            data-testid="delete-file-button"
+            size="sm"
+            color="error"
+            onPress={() => deleteHandler(object_name, bucket_name, site_name)}
+          >
+            Delete
+          </Button>
+        )}
       </div>
     ),
   },

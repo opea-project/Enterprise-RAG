@@ -23,6 +23,7 @@ import {
   AppHeaderRightSideContent,
 } from "@/components/AppHeaderContent/AppHeaderContent";
 import { paths } from "@/config/paths";
+import { usePostSharePointFileUrlMutation } from "@/features/admin-panel/data-ingestion/api/edpApi";
 import { usePostPromptMutation } from "@/features/chat/api/audioQnA.api";
 import {
   useChangeChatNameMutation,
@@ -47,6 +48,7 @@ const InitialChatRoute = () => {
     useGetAllChatsQuery();
   const [downloadFile] = useLazyDownloadFileQuery();
   const [getFilePresignedUrl] = useGetFilePresignedUrlMutation();
+  const [postSharePointFileUrl] = usePostSharePointFileUrlMutation();
 
   // Custom hook for ASR handlers
   const { handleSpeechToText, handleSpeechToTextError } =
@@ -112,7 +114,24 @@ const InitialChatRoute = () => {
 
   const chatDisclaimer = getAudioQnAAppEnv("CHAT_DISCLAIMER_TEXT") ?? "";
 
-  const handleFileDownload = async (fileName: string, bucketName: string) => {
+  const handleFileDownload = async (
+    fileName: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => {
+    if (siteName) {
+      const { data } = await postSharePointFileUrl({
+        site_name: siteName,
+        object_name: fileName,
+      });
+      if (data?.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+
+    if (!bucketName) return;
+
     const { data: presignedUrl } = await getFilePresignedUrl({
       fileName,
       method: "GET",

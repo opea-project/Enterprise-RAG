@@ -70,6 +70,9 @@ class VectorStoreConnector(ABC):
     def get_bucket_name_filter_expression(self, bucket_names: List[str]):
         raise NotImplementedError
 
+    def get_site_name_filter_expression(self, site_names: List[str]):
+        raise NotImplementedError
+
     def get_object_name_filter_expression(self, bucket_name: str, object_name: str):
         raise NotImplementedError
 

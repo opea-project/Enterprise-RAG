@@ -23,7 +23,11 @@ type BotMessageProps = Pick<
   "id" | "answer" | "error" | "isPending" | "sources"
 > & {
   playingState?: PlaySpeechButtonState;
-  onFileDownload: (fileName: string, bucketName: string) => void;
+  onFileDownload: (
+    fileName: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
   onPlayMessage?: (turnId: string) => Promise<void>;
 };
 

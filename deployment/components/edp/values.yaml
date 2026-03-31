@@ -29,6 +29,11 @@ bucketNameRegexFilter: '.*'
 presignedUrlCredentialsSystemFallback: "false"
 embedding_model_name: &embedding_model_name "BAAI/bge-base-en-v1.5"
 
+sharepointTenantId: ""
+sharepointClientId: ""
+sharepointClientSecret: ""
+keycloakBrokerIdpAlias: ""
+
 
 s3ApiDomain: &s3ApiDomain "s3.erag.com"
 uiBrowserDomain: &uiBrowserDomain "seaweedfs.erag.com"
@@ -367,6 +372,7 @@ celery:
     scheduledSync:
       enabled: false
       syncPeriodSeconds: "60"
+      sharepointSyncPeriodSeconds: "60"
   environment:
     - name: EDP_EXTERNAL_URL
       valueFrom:
@@ -503,6 +509,31 @@ celery:
         configMapKeyRef:
           name: edp-configmap
           key: CELERY_BATCH_SIZE
+    - name: SHAREPOINT_TENANT_ID
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_TENANT_ID
+    - name: SHAREPOINT_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_CLIENT_ID
+    - name: SHAREPOINT_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_CLIENT_SECRET
+    - name: KEYCLOAK_BROKER_IDP_ALIAS
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: KEYCLOAK_BROKER_IDP_ALIAS
+    - name: EDP_OIDC_CONFIG_URL
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CONFIG_URL
 
   replicas: 1
   resources:
@@ -700,6 +731,31 @@ backend:
         configMapKeyRef:
           name: edp-configmap
           key: USE_BEARER_TOKEN_AUTH
+    - name: SHAREPOINT_TENANT_ID
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_TENANT_ID
+    - name: SHAREPOINT_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_CLIENT_ID
+    - name: SHAREPOINT_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: SHAREPOINT_CLIENT_SECRET
+    - name: KEYCLOAK_BROKER_IDP_ALIAS
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: KEYCLOAK_BROKER_IDP_ALIAS
+    - name: EDP_OIDC_CONFIG_URL
+      valueFrom:
+        secretKeyRef:
+          name: edp-access-secret
+          key: EDP_OIDC_CONFIG_URL
   config:
     opeaLoggerLevel: "INFO" # "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"
     rbac:

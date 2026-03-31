@@ -14,6 +14,8 @@ import {
 } from "react-router-dom";
 
 import ErrorRoute from "@/app/routes/error/ErrorRoute";
+import UnauthorizedRoute from "@/app/routes/unauthorized/UnauthorizedRoute";
+import AccessGuard from "@/components/AccessGuard/AccessGuard";
 import ProtectedRoute from "@/components/ProtectedRoute/ProtectedRoute";
 import { paths } from "@/config/paths";
 
@@ -34,7 +36,15 @@ const router = createBrowserRouter([
     errorElement: <ErrorRoute />,
   },
   {
-    element: <RootLayout />,
+    path: paths.unauthorized,
+    element: <UnauthorizedRoute />,
+  },
+  {
+    element: (
+      <AccessGuard>
+        <RootLayout />
+      </AccessGuard>
+    ),
     children: [
       {
         path: paths.chat,

@@ -1105,6 +1105,13 @@ assign_user_client_role "$KEYCLOAK_REALM" "erag-maintainer" "ERAG-maintainer" "E
 
 set_realm_signature_algorithms "$KEYCLOAK_REALM"
 set_realm_signature_algorithms "$KEYCLOAK_DEFAULT_REALM"
+
+# When SSO is enabled, Microsoft enforces a ~4800s token timeout that cannot be changed
+# and Keycloak does not yet support automatic token refreshes, so cap the session lifespan
+# to 4200s to avoid stale sessions.
+if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
+    SSO_SESSION_MAX_LIFESPAN=4200
+fi
 set_realm_timeouts "$KEYCLOAK_REALM"
 set_realm_timeouts "$KEYCLOAK_DEFAULT_REALM"
 

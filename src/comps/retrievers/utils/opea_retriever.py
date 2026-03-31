@@ -49,13 +49,27 @@ class OPEARetriever:
                 self._query_parsing_enabled = False
 
     def filter_expression_from_rbac_by(self, rbac_by: dict = None):
-        if rbac_by is not None and 'bucket_names' in rbac_by: # bucket_names can be empty meaning no access
+        if rbac_by is None:
+            return None
+
+        bucket_filter = None
+        site_filter = None
+
+        if 'bucket_names' in rbac_by:
             try:
-                return self.vector_store.get_bucket_name_filter_expression(bucket_names=rbac_by['bucket_names'])
+                bucket_filter = self.vector_store.get_bucket_name_filter_expression(bucket_names=rbac_by['bucket_names'])
             except ValueError:
                 logger.warning("No access due rbac with empty bucket_names value")
-                return None
-        return None
+
+        if 'site_names' in rbac_by:
+            try:
+                site_filter = self.vector_store.get_site_name_filter_expression(site_names=rbac_by['site_names'])
+            except ValueError:
+                logger.debug("No SharePoint site names in RBAC filter")
+
+        if bucket_filter and site_filter:
+            return bucket_filter | site_filter
+        return bucket_filter or site_filter
 
     def filter_expression_from_search_by(self, search_by: dict = {}):
         logger.debug(f"Generating filter expression from search_by: {search_by}")
@@ -205,12 +219,13 @@ class OPEARetriever:
 
     def generate_rbac(self, auth_header: str = "") -> dict:
         try:
-            items = retrieve_bucket_list(auth_header)
-            items = items['buckets'] if items and 'buckets' in items else []
-            return { 'bucket_names': items }
+            result = retrieve_bucket_list(auth_header)
+            bucket_names = result.get('buckets', []) if result else []
+            site_names = result.get('sites', []) if result else []
+            return { 'bucket_names': bucket_names, 'site_names': site_names }
         except ValueError as e:
             logger.error(f"Returning empty list of buckets due to RBAC request error: {e}")
-            return { 'bucket_names': [] }
+            return { 'bucket_names': [], 'site_names': [] }
 
     async def analyze_query(self, query: str) -> Optional[QueryAnalysisResult]:
         """Parse query to extract metadata constraints and build filter expressions."""

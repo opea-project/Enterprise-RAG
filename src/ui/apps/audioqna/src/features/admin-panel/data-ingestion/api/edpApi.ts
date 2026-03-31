@@ -16,6 +16,13 @@ import {
   FileSyncDataItem,
   GetS3BucketsListResponseData,
   PostFileToExtractTextRequest,
+  PostSharePointSiteRequest,
+  SharePointFileUrlRequest,
+  SharePointFileUrlResponse,
+  SharePointSiteItem,
+  SharePointSitesResponse,
+  SharePointSyncDataItem,
+  SharePointUploadRequest,
 } from "@/features/admin-panel/data-ingestion/types/api";
 import { handleOnQueryStarted, transformErrorMessage } from "@/utils/api";
 import { keycloakService } from "@/utils/auth";
@@ -32,7 +39,7 @@ const edpBaseQuery = fetchBaseQuery({
 export const edpApi = createApi({
   reducerPath: "edpApi",
   baseQuery: edpBaseQuery,
-  tagTypes: ["Files", "Links"],
+  tagTypes: ["Files", "Links", "SharePointSites"],
   endpoints: (builder) => ({
     getFiles: builder.query<FileDataItem[], void>({
       query: () => API_ENDPOINTS.GET_FILES,
@@ -195,6 +202,135 @@ export const edpApi = createApi({
         );
       },
     }),
+    getSharePointSites: builder.query<SharePointSiteItem[], void>({
+      query: () => API_ENDPOINTS.GET_SHAREPOINT_SITES,
+      transformResponse: (response: SharePointSitesResponse) =>
+        response.sites ?? [],
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.GET_SHAREPOINT_SITES),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.GET_SHAREPOINT_SITES,
+        );
+      },
+      providesTags: ["SharePointSites"],
+    }),
+    postSharePointSite: builder.mutation<
+      SharePointSiteItem,
+      PostSharePointSiteRequest
+    >({
+      query: (body) => ({
+        url: API_ENDPOINTS.POST_SHAREPOINT_SITE,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_SHAREPOINT_SITE),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.POST_SHAREPOINT_SITE,
+        );
+      },
+      invalidatesTags: ["SharePointSites"],
+    }),
+    deleteSharePointSite: builder.mutation<void, string>({
+      query: (siteId) => ({
+        url: `${API_ENDPOINTS.DELETE_SHAREPOINT_SITE}/${siteId}`,
+        method: "DELETE",
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.DELETE_SHAREPOINT_SITE),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.DELETE_SHAREPOINT_SITE,
+        );
+      },
+      invalidatesTags: ["SharePointSites", "Files"],
+    }),
+    getSharePointSync: builder.query<SharePointSyncDataItem[], void>({
+      query: () => API_ENDPOINTS.GET_SHAREPOINT_SYNC,
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.GET_SHAREPOINT_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.GET_SHAREPOINT_SYNC,
+        );
+      },
+    }),
+    postSharePointSync: builder.mutation<void, void>({
+      query: () => ({
+        url: API_ENDPOINTS.POST_SHAREPOINT_SYNC,
+        method: "POST",
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_SHAREPOINT_SYNC),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.POST_SHAREPOINT_SYNC,
+        );
+      },
+    }),
+    postSharePointUpload: builder.mutation<void, SharePointUploadRequest>({
+      query: ({ site_id, file }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return {
+          url: `${API_ENDPOINTS.POST_SHAREPOINT_FILE}?site_id=${encodeURIComponent(site_id)}`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_SHAREPOINT_FILE),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.POST_SHAREPOINT_FILE,
+        );
+      },
+    }),
+    postSharePointFileUrl: builder.mutation<
+      SharePointFileUrlResponse,
+      SharePointFileUrlRequest
+    >({
+      query: (body) => ({
+        url: API_ENDPOINTS.POST_SHAREPOINT_FILE_URL,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.POST_SHAREPOINT_FILE_URL),
+    }),
+    deleteSharePointFile: builder.mutation<void, SharePointFileUrlRequest>({
+      query: (body) => ({
+        url: API_ENDPOINTS.DELETE_SHAREPOINT_FILE,
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      transformErrorResponse: (error) =>
+        transformErrorMessage(error, ERROR_MESSAGES.DELETE_SHAREPOINT_FILE),
+      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
+        await handleOnQueryStarted(
+          queryFulfilled,
+          dispatch,
+          ERROR_MESSAGES.DELETE_SHAREPOINT_FILE,
+        );
+      },
+    }),
   }),
 });
 
@@ -214,4 +350,13 @@ export const {
   useDeleteLinkMutation,
   useGetS3BucketsListQuery,
   useLazyGetS3BucketsListQuery,
+  useGetSharePointSitesQuery,
+  useLazyGetSharePointSitesQuery,
+  usePostSharePointSiteMutation,
+  useDeleteSharePointSiteMutation,
+  useLazyGetSharePointSyncQuery,
+  usePostSharePointSyncMutation,
+  usePostSharePointUploadMutation,
+  usePostSharePointFileUrlMutation,
+  useDeleteSharePointFileMutation,
 } = edpApi;

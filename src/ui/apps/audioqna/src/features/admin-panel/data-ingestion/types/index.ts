@@ -39,10 +39,11 @@ export interface FileDataItem {
   embedding_duration: number;
   ingestion_duration: number;
   processing_duration: number;
-  bucket_name: string;
+  bucket_name: string | null;
   object_name: string;
   size: number;
   etag: string;
+  site_name: string | null;
 }
 
 export interface LinkDataItem {

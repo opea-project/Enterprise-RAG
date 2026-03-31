@@ -9,29 +9,36 @@ import FilesDataTable from "@/features/admin-panel/data-ingestion/components/Fil
 import LinksDataTable from "@/features/admin-panel/data-ingestion/components/LinksDataTable/LinksDataTable";
 import RefreshButton from "@/features/admin-panel/data-ingestion/components/RefreshButton/RefreshButton";
 import S3CertificateAlertBanner from "@/features/admin-panel/data-ingestion/components/S3CertificateAlertBanner/S3CertificateAlertBanner";
+import SharePointSitesDialog from "@/features/admin-panel/data-ingestion/components/SharePointSitesDialog/SharePointSitesDialog";
 import UploadDataDialog from "@/features/admin-panel/data-ingestion/components/UploadDataDialog/UploadDataDialog";
+import useIsSharePointEnabled from "@/features/admin-panel/data-ingestion/hooks/useIsSharePointEnabled";
 
-const DataIngestionTab = () => (
-  <div className="data-ingestion-tab">
-    <S3CertificateAlertBanner />
-    <header>
-      <h2>Stored Data</h2>
-      <div className="data-ingestion-tab__actions">
-        <DataIngestionSettingsDialog />
-        <RefreshButton />
-        <BucketSynchronizationDialog />
-        <UploadDataDialog />
-      </div>
-    </header>
-    <section className="mb-4">
-      <h3>Files</h3>
-      <FilesDataTable />
-    </section>
-    <section className="mb-4">
-      <h3>Links</h3>
-      <LinksDataTable />
-    </section>
-  </div>
-);
+const DataIngestionTab = () => {
+  const isSharePointEnabled = useIsSharePointEnabled();
+
+  return (
+    <div className="data-ingestion-tab">
+      <S3CertificateAlertBanner />
+      <header>
+        <h2>Stored Data</h2>
+        <div className="data-ingestion-tab__actions">
+          <DataIngestionSettingsDialog />
+          <RefreshButton />
+          <BucketSynchronizationDialog />
+          {isSharePointEnabled && <SharePointSitesDialog />}
+          <UploadDataDialog />
+        </div>
+      </header>
+      <section className="mb-4">
+        <h3>Files</h3>
+        <FilesDataTable />
+      </section>
+      <section className="mb-4">
+        <h3>Links</h3>
+        <LinksDataTable />
+      </section>
+    </div>
+  );
+};
 
 export default DataIngestionTab;

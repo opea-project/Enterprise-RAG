@@ -244,3 +244,6 @@ class ConnectorMssql(VectorStoreConnector):
 
     def get_bucket_name_filter_expression(self, bucket_names: List[str]):
         return None # not supported, but defined so that it does not raise
+
+    def get_site_name_filter_expression(self, site_names: List[str]):
+        return None # not supported, but defined so that it does not raise

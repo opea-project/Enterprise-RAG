@@ -9,7 +9,7 @@ import urllib3
 import validators
 from datetime import timedelta
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
@@ -17,7 +17,16 @@ from minio.error import S3Error
 from urllib.parse import unquote_plus
 from app.utils import generate_presigned_url, get_local_minio_client, get_remote_minio_client, filtered_list_bucket, get_local_minio_client_using_token_credentials
 from app.database import get_db
-from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse, SeaweedFSEventData
+from app.models import FileResponse, FileStatus, LinkRequest, LinkResponse, LinkStatus, PresignedRequest, MinioEventData, S3EventData, PresignedResponse, SeaweedFSEventData, SharePointSiteItem, SharePointSitesResponse, SharePointSiteAddRequest, SharePointSiteRecord
+from app.sharepoint import (
+    sharepoint_enabled, GraphApiError, SpSyncLockError,
+    site_display_name, get_graph_token,
+    resolve_single_sharepoint_site, get_tracked_sp_site_names,
+    upload_sharepoint_file, get_sharepoint_file_url,
+    build_sharepoint_sync_plan, delete_sp_file,
+    sp_sync_lock, filter_sp_sites_for_user,
+    download_sp_file_by_path
+)
 from app.tasks import process_file_task, delete_file_task, process_link_task, delete_link_task, celery
 from app.rbac import RBACFactory, get_seaweedfs_client_using_bearer_token
 from celery.result import AsyncResult
@@ -338,21 +347,37 @@ async def list_bucket_with_permissions(request: Request):
         logger.debug("No bucket permission validation is set.")
         bucket_names = filtered_list_bucket(minio_internal)
 
-    logger.debug(f"User has access to {len(bucket_names)} buckets.")
-    logger.debug(f"List: {bucket_names}")
-    return JSONResponse(content={'buckets': bucket_names})
+    if sharepoint_enabled():
+        sp_site_names = get_tracked_sp_site_names()
+        if rbac_type:
+            user_token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            accessible = await filter_sp_sites_for_user(user_token, sp_site_names)
+            sp_site_names = accessible
+    else:
+        sp_site_names = []
+
+    logger.info(f"User has access to {len(bucket_names)} buckets and {len(sp_site_names)} sites.")
+    logger.debug(f"Buckets: {bucket_names}, Sites: {sp_site_names}")
+    return JSONResponse(content={'buckets': bucket_names, 'sites': sp_site_names})
 
 # -------------- Event processing ------------
 
 
-def add_new_file(bucket_name, object_name, etag, content_type, size):
+def add_new_file(object_name, etag, content_type, size, bucket_name=None, site_name=None):
     file_status = None
     task = None
+
+    # Build the filter to find existing files with the same identity
+    if site_name:
+        identity_filter = [FileStatus.site_name == site_name, FileStatus.object_name == object_name]
+    else:
+        identity_filter = [FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name]
+
     with get_db() as db:
         try:
-            old_files = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name).all()
+            old_files = db.query(FileStatus).filter(*identity_filter).all()
             for old_file in old_files:
-                delete_existing_file(old_file.bucket_name, old_file.object_name)
+                delete_existing_file(old_file.object_name, bucket_name=old_file.bucket_name, site_name=old_file.site_name)
         except Exception as e:
             logger.error(f"Error deleting existing file: {e}")
             db.rollback()
@@ -365,13 +390,15 @@ def add_new_file(bucket_name, object_name, etag, content_type, size):
                 etag=etag,
                 content_type=content_type,
                 size=size,
+                site_name=site_name,
                 status='uploaded',
                 created_at=datetime.now(timezone.utc)
             )
             db.add(file_status)
             db.flush()
 
-            logger.debug(f"Added file {bucket_name}/{object_name} to database with id {file_status.id}")
+            source_label = f"{site_name}/{object_name}" if site_name else f"{bucket_name}/{object_name}"
+            logger.debug(f"Added file {source_label} to database with id {file_status.id}")
 
             # Save DB and enqueue file processing job
             task = process_file_task.delay(file_id=file_status.id, countdown=1) # delay by 1 second
@@ -390,20 +417,26 @@ def add_new_file(bucket_name, object_name, etag, content_type, size):
     return file_status
 
 
-def delete_existing_file(bucket_name, object_name):
+def delete_existing_file(object_name, bucket_name=None, site_name=None):
     """
     Marks an existing file for deletion and schedules a task to delete the file.
 
     Args:
-        bucket_name (str): The name of the bucket where the file is stored.
         object_name (str): The name of the file to be deleted.
+        bucket_name (str, optional): The name of the bucket (for S3 files).
+        site_name (str, optional): The name of the site (for SharePoint files).
 
     Returns:
         None
     """
+    if site_name:
+        identity_filter = [FileStatus.site_name == site_name, FileStatus.object_name == object_name]
+    else:
+        identity_filter = [FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name]
+
     with get_db() as db:
         try:
-            file_statuses = db.query(FileStatus).filter(FileStatus.bucket_name == bucket_name, FileStatus.object_name == object_name, FileStatus.marked_for_deletion == False).all() # noqa: E712
+            file_statuses = db.query(FileStatus).filter(*identity_filter, FileStatus.marked_for_deletion == False).all() # noqa: E712
             for file_status in file_statuses:
                 task = None
                 try:
@@ -572,7 +605,10 @@ def sync_files(client, add_file_func, update_file_func, delete_file_func, skip_f
         db.commit()
 
     with get_db() as db:
-        objects_from_buckets_in_db_but_not_in_storage = db.query(FileStatus).filter(FileStatus.bucket_name.notin_(bucket_names))
+        objects_from_buckets_in_db_but_not_in_storage = db.query(FileStatus).filter(
+            FileStatus.bucket_name.notin_(bucket_names),
+            FileStatus.site_name.is_(None),  # exclude SharePoint files
+        )
         for obj in objects_from_buckets_in_db_but_not_in_storage:
             if callable(delete_file_func):
                 delete_file_func(obj.bucket_name, obj.object_name)
@@ -607,7 +643,7 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
                 logger.debug(f"Skipping directory marker: {object_name} in bucket {bucket_name}")
                 return JSONResponse(content={'message': 'Directory marker ignored'})
             try:
-                add_new_file(bucket_name, object_name, etag, content_type, size)
+                add_new_file(object_name, etag, content_type, size, bucket_name=bucket_name)
             except Exception as e:
                 logger.error(f"Error adding file to database: {e}")
             files_added += 1
@@ -617,7 +653,7 @@ def process_minio_event(event: Union[S3EventData, MinioEventData], request: Requ
             bucket_name = unquote_plus(record.s3.bucket.name)
             object_name = unquote_plus(record.s3.object.key)
             try:
-                delete_existing_file(bucket_name, object_name)
+                delete_existing_file(object_name, bucket_name=bucket_name)
             except Exception as e:
                 logger.error(f"Error deleting existing file: {e}")
             files_deleted += 1
@@ -653,6 +689,11 @@ def process_seaweedfs_event(event: SeaweedFSEventData):
 
     key_parts = event.key.strip('/').split('/', 2)
 
+    if len(key_parts) < 3:
+        # Bucket-level event (e.g. bucket create/delete) — no file to process
+        logger.debug(f"Bucket-level SeaweedFS event (no object): {event.key}")
+        return JSONResponse(content={'message': 'Bucket-level event ignored'})
+
     bucket_name = unquote_plus(key_parts[1])
     object_name = unquote_plus(key_parts[2])
 
@@ -675,7 +716,7 @@ def process_seaweedfs_event(event: SeaweedFSEventData):
             return JSONResponse(content={'message': 'Directory marker ignored'})
 
         try:
-            add_new_file(bucket_name, object_name, str(etag), content_type, size)
+            add_new_file(object_name, str(etag), content_type, size, bucket_name=bucket_name)
             return JSONResponse(content={'message': 'File uploaded successfully'})
         except Exception as e:
             logger.error(f"Error adding file to database: {e}")
@@ -683,7 +724,7 @@ def process_seaweedfs_event(event: SeaweedFSEventData):
 
     elif event.event_type == 'delete':
         try:
-            delete_existing_file(bucket_name, object_name)
+            delete_existing_file(object_name, bucket_name=bucket_name)
             return JSONResponse(content={'message': 'File deleted successfully'})
         except Exception as e:
             logger.error(f"Error deleting existing file: {e}")
@@ -996,7 +1037,13 @@ def api_sync(request: Request):
         HTTPException: If an error occurs during the synchronization process.
     """
     try:
-        sync_files(minio_internal, add_new_file, add_new_file, delete_existing_file)
+        def _sync_add(bucket_name, object_name, etag, content_type, size):
+            add_new_file(object_name, etag, content_type, size, bucket_name=bucket_name)
+
+        def _sync_delete(bucket_name, object_name):
+            delete_existing_file(object_name, bucket_name=bucket_name)
+
+        sync_files(minio_internal, _sync_add, _sync_add, _sync_delete)
     except Exception as e:
         logger.error(f"Error during sync: {e}")
         raise HTTPException(status_code=400, detail="Error during sync")
@@ -1015,16 +1062,36 @@ def api_file_text_extract(file_uuid: str, request: Request):
 
     with get_db() as db:
         file = db.query(FileStatus).filter(FileStatus.id == file_id).first()
+        if not file:
+            raise HTTPException(status_code=404, detail="File not found")
 
+        minio_response = None
         try:
             import base64
             import requests
 
-            minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
-            file_data = minio_response.read()
-            file_base64 = base64.b64encode(file_data).decode('ascii')
-            file_name = os.path.basename(file.object_name)
-            logger.debug(f"[{file.id}] Retrieved file from S3 storage.")
+            if file.site_name:
+                # SharePoint file — download via Graph API
+                import asyncio
+                from sqlalchemy import or_
+                sp_record = db.query(SharePointSiteRecord).filter(
+                    or_(
+                        SharePointSiteRecord.display_name == file.site_name,
+                        SharePointSiteRecord.name == file.site_name,
+                    )
+                ).first()
+                if not sp_record:
+                    raise HTTPException(status_code=404, detail=f"SharePoint site record not found for '{file.site_name}'")
+                file_data = asyncio.run(download_sp_file_by_path(sp_record.graph_site_id, file.object_name))
+                file_base64 = base64.b64encode(file_data).decode('ascii')
+                file_name = os.path.basename(file.object_name)
+                logger.debug(f"[{file.id}] Retrieved file from SharePoint site '{file.site_name}'.")
+            else:
+                minio_response = minio_internal.get_object(bucket_name=file.bucket_name, object_name=file.object_name)
+                file_data = minio_response.read()
+                file_base64 = base64.b64encode(file_data).decode('ascii')
+                file_name = os.path.basename(file.object_name)
+                logger.debug(f"[{file.id}] Retrieved file from S3 storage.")
 
             HIERARCHICAL_DATAPREP_ENDPOINT = os.environ.get('HIERARCHICAL_DATAPREP_ENDPOINT')
             if HIERARCHICAL_DATAPREP_ENDPOINT is not None and HIERARCHICAL_DATAPREP_ENDPOINT != "":
@@ -1084,8 +1151,9 @@ def api_file_text_extract(file_uuid: str, request: Request):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error downloading file. {e}")
         finally:
-            minio_response.close()
-            minio_response.release_conn()
+            if minio_response is not None:
+                minio_response.close()
+                minio_response.release_conn()
 
 @app.post("/api/link/{link_uuid}/extract")
 def api_link_text_extract(link_uuid: str, request: Request):
@@ -1209,3 +1277,328 @@ async def api_retrieve(request: Request):
             return JSONResponse(content={'docs': response.json()})
     except Exception as e:
         return JSONResponse(content={'details': f"Something went wrong: {e}"})
+
+
+# -------------- SharePoint integration endpoints ------------
+
+
+def _extract_bearer_token(request: Request) -> str:
+    """Extract and return the raw Bearer token from the request, or raise 401."""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing.")
+    return auth_header.replace('Bearer ', '')
+
+
+def _require_sharepoint():
+    """Raise 404 if SharePoint integration is not configured."""
+    if not sharepoint_enabled():
+        raise HTTPException(
+            status_code=404,
+            detail="SharePoint integration is not configured."
+        )
+
+
+@app.get('/api/sharepoint/sites', response_model=SharePointSitesResponse)
+async def sharepoint_list_sites(request: Request):
+    """List SharePoint sites stored in the database."""
+    _extract_bearer_token(request)
+    _require_sharepoint()
+    search_term = request.query_params.get('search', '*')
+
+    try:
+        with get_db() as db:
+            records = db.query(SharePointSiteRecord).all()
+
+        sites = [
+            SharePointSiteItem(
+                id=rec.graph_site_id,
+                name=rec.name or '',
+                display_name=rec.display_name,
+                web_url=rec.web_url,
+            )
+            for rec in records
+        ]
+
+        if search_term and search_term != '*':
+            q = search_term.lower()
+            sites = [
+                s for s in sites
+                if q in (s.name or '').lower() or q in (s.display_name or '').lower()
+            ]
+
+        logger.info(f"Returned {len(sites)} SharePoint sites from DB (filter='{search_term}').")
+        return SharePointSitesResponse(sites=sites)
+    except Exception as e:
+        logger.error(f"SharePoint sites error: {e}")
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.post('/api/sharepoint/sites', status_code=201)
+async def sharepoint_add_site(body: SharePointSiteAddRequest, request: Request):
+    """Register a new SharePoint site for tracking."""
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    site_url = body.site_url.strip()
+    if not site_url:
+        raise HTTPException(status_code=400, detail="site_url must not be empty.")
+
+    with get_db() as db:
+        existing = db.query(SharePointSiteRecord).filter(
+            SharePointSiteRecord.site_url == site_url
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Site already registered: {site_url}"
+            )
+
+    try:
+        ms_token = await get_graph_token()
+        site_data = await resolve_single_sharepoint_site(ms_token, site_url)
+    except GraphApiError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Cannot access SharePoint site: {e}")
+
+    graph_site_id = site_data.get('id', '')
+    if not graph_site_id:
+        raise HTTPException(status_code=502, detail="Graph API returned no site ID for the given URL.")
+
+    with get_db() as db:
+        record = SharePointSiteRecord(
+            site_url=site_url,
+            graph_site_id=graph_site_id,
+            name=site_data.get('name', ''),
+            display_name=site_data.get('displayName'),
+            web_url=site_data.get('webUrl'),
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+
+    logger.info(f"Registered SharePoint site: {site_url} (graph_id={graph_site_id})")
+
+    return SharePointSiteItem(
+        id=graph_site_id,
+        name=site_data.get('name', ''),
+        display_name=site_data.get('displayName'),
+        web_url=site_data.get('webUrl'),
+    )
+
+
+@app.delete('/api/sharepoint/sites/{site_id}', status_code=200)
+async def sharepoint_disconnect_site(site_id: str, request: Request):
+    """Disconnect a SharePoint site from tracking."""
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    with get_db() as db:
+        record = db.query(SharePointSiteRecord).filter(
+            SharePointSiteRecord.graph_site_id == site_id
+        ).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="SharePoint site not found.")
+
+    sn = site_display_name(record)
+
+    with get_db() as db:
+        db.query(SharePointSiteRecord).filter(
+            SharePointSiteRecord.graph_site_id == site_id
+        ).delete()
+        db.commit()
+
+    deleted_count = 0
+    with get_db() as db:
+        files = db.query(FileStatus).filter(
+            FileStatus.site_name == sn,
+            FileStatus.marked_for_deletion == False,  # noqa: E712
+        ).all()
+        for f in files:
+            try:
+                delete_existing_file(f.object_name, site_name=f.site_name)
+                deleted_count += 1
+            except Exception as e:
+                logger.warning(f"Error deleting file {f.object_name}: {e}")
+
+    logger.info(f"Disconnected SharePoint site '{sn}' (id={site_id}), deleted {deleted_count} files.")
+    return {
+        "message": f"Site disconnected. {deleted_count} file(s) deleted from the knowledge base.",
+        "deleted_files": deleted_count,
+    }
+
+
+@app.get('/api/sharepoint/sync')
+async def sharepoint_sync_diff(request: Request):
+    """Show the difference between tracked SharePoint sites and the database."""
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    try:
+        actions, _ = await build_sharepoint_sync_plan()
+    except GraphApiError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error during SharePoint sync diff: {e}")
+        raise HTTPException(status_code=500, detail="Error generating SharePoint sync diff")
+
+    # Filter out actions for sites that may have been disconnected
+    tracked = set(get_tracked_sp_site_names())
+    actions = [a for a in actions if a[1] in tracked]
+
+    return JSONResponse(content=[
+        {
+            'action': a[0],
+            'site_name': a[1],
+            'object_name': a[2],
+        }
+        for a in actions
+    ])
+
+
+@app.post('/api/sharepoint/sync')
+async def sharepoint_sync(request: Request):
+    """Synchronize files from tracked SharePoint sites."""
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    try:
+        with sp_sync_lock(blocking=True):
+            actions, ms_token = await build_sharepoint_sync_plan()
+
+            # Re-check tracked sites inside the lock to guard against
+            # concurrent disconnects from another browser tab / session.
+            tracked = set(get_tracked_sp_site_names())
+            actions = [a for a in actions if a[1] in tracked]
+
+            for action, sn, object_name, file_info, graph_site_id in actions:
+                if action in ('add', 'update'):
+                    add_new_file(
+                        object_name,
+                        file_info['etag'], file_info['content_type'], file_info['size'],
+                        site_name=sn,
+                    )
+                elif action == 'delete':
+                    delete_sp_file(sn, object_name)
+    except SpSyncLockError:
+        raise HTTPException(
+            status_code=409,
+            detail="SharePoint synchronization is already in progress. Please wait and try again.",
+        )
+    except GraphApiError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error during SharePoint sync: {e}")
+        raise HTTPException(status_code=500, detail="Error during SharePoint sync")
+
+    return JSONResponse(content={'message': 'SharePoint files synced successfully'})
+
+
+@app.post('/api/sharepoint/files')
+async def sharepoint_upload_file(file: UploadFile, request: Request, site_id: str = None):
+    """Upload a file to a SharePoint site using app permissions.
+
+    The file is placed in the default Documents library of the given site.
+    Synchronization must be triggered separately for the file to appear in
+    the knowledge base.
+    """
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    if not site_id:
+        raise HTTPException(status_code=400, detail="site_id query parameter is required.")
+
+    with get_db() as db:
+        record = db.query(SharePointSiteRecord).filter(
+            SharePointSiteRecord.graph_site_id == site_id
+        ).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="SharePoint site not found.")
+
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="A file must be provided.")
+
+    try:
+        ms_token = await get_graph_token()
+        file_bytes = await file.read()
+        content_type = file.content_type or 'application/octet-stream'
+        result = await upload_sharepoint_file(ms_token, site_id, file.filename, file_bytes, content_type)
+        logger.info(f"Uploaded '{file.filename}' to SharePoint site {site_id}")
+        return JSONResponse(content={
+            'message': f"File '{file.filename}' uploaded to SharePoint site.",
+            'web_url': result.get('webUrl', ''),
+        })
+    except GraphApiError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        logger.error(f"Error uploading file to SharePoint: {e}")
+        raise HTTPException(status_code=500, detail="Error uploading file to SharePoint")
+
+
+@app.delete('/api/sharepoint/files')
+async def sharepoint_delete_file(request: Request):
+    """Delete a file that originated from a SharePoint site.
+
+    Expects JSON body: {"site_name": "...", "object_name": "..."}
+
+    Removes the file from the vector knowledge base, the database,
+    and the SharePoint site itself.
+    """
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    body = await request.json()
+    site_name = body.get('site_name')
+    object_name = body.get('object_name')
+    if not site_name or not object_name:
+        raise HTTPException(status_code=400, detail="site_name and object_name are required.")
+
+    delete_existing_file(object_name, site_name=site_name)
+    return JSONResponse(content={'message': f"File '{object_name}' deletion initiated."})
+
+
+@app.post('/api/sharepoint/file-url')
+async def sharepoint_file_url(request: Request):
+    """Return the SharePoint web URL for a file so the UI can open it.
+
+    Expects JSON body: {"site_name": "...", "object_name": "..."}
+
+    The returned URL points to the file on the SharePoint site. Access
+    control is handled by SharePoint - if the user has permission they
+    can view the file, otherwise SharePoint shows a 403.
+    """
+    _extract_bearer_token(request)
+    _require_sharepoint()
+
+    body = await request.json()
+    sn = body.get('site_name', '')
+    object_name = body.get('object_name', '')
+
+    if not sn or not object_name:
+        raise HTTPException(status_code=400, detail="site_name and object_name are required.")
+
+    # Resolve graph_site_id from site_name via DB
+    with get_db() as db:
+        from sqlalchemy import or_
+        record = db.query(SharePointSiteRecord).filter(
+            or_(
+                SharePointSiteRecord.display_name == sn,
+                SharePointSiteRecord.name == sn,
+            )
+        ).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="SharePoint site not found for the given site_name.")
+
+    try:
+        url = await get_sharepoint_file_url(record.graph_site_id, object_name)
+        if not url:
+            raise HTTPException(status_code=404, detail="Could not resolve SharePoint URL for this file.")
+        return JSONResponse(content={'url': url})
+    except GraphApiError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving SharePoint file URL: {e}")
+        raise HTTPException(status_code=500, detail="Error resolving SharePoint file URL")

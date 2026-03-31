@@ -1,6 +1,7 @@
 // Copyright (C) 2024-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+import { ERROR_MESSAGES } from "@/features/admin-panel/data-ingestion/config/api";
 import { LinkForIngestion } from "@/features/admin-panel/data-ingestion/types";
 
 const createToBeUploadedMessage = (
@@ -41,3 +42,36 @@ const isUploadDisabled = (
 };
 
 export { createToBeUploadedMessage, isUploadDisabled };
+
+export const parseSharePointError = (error: unknown): string => {
+  if (typeof error !== "object" || error === null) {
+    return ERROR_MESSAGES.POST_SHAREPOINT_SITE;
+  }
+
+  const { status, data } = error as { status?: unknown; data?: unknown };
+  const detail =
+    typeof data === "object" && data !== null
+      ? ((data as { detail?: string }).detail ?? null)
+      : null;
+
+  if (
+    typeof detail === "string" &&
+    detail.toLowerCase().includes("cannot parse hostname")
+  ) {
+    return "Invalid URL format. Please enter a valid SharePoint site URL.";
+  }
+
+  if (status === 403) {
+    return "Access denied. The application does not have permission to access this SharePoint site.";
+  }
+
+  if (status === 400) {
+    return "The provided URL does not point to a valid SharePoint site.";
+  }
+
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  return ERROR_MESSAGES.POST_SHAREPOINT_SITE;
+};

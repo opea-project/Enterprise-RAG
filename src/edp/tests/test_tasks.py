@@ -31,6 +31,7 @@ def test_process_file_task_success():
         mock_file_db.bucket_name = 'test_bucket'
         mock_file_db.object_name = 'test_file.txt'
         mock_file_db.etag = 'test_etag'
+        mock_file_db.site_name = None
         mock_db.query().filter().first.return_value = mock_file_db
 
         minio_response_mock = MagicMock()

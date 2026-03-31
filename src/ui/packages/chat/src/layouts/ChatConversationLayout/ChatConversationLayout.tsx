@@ -22,7 +22,11 @@ interface ChatConversationLayoutProps {
   onPromptChange: ChangeEventHandler<HTMLTextAreaElement>;
   onPromptSubmit: () => void;
   onRequestAbort: () => void;
-  onFileDownload: (fileName: string, bucketName: string) => void;
+  onFileDownload: (
+    fileName: string,
+    bucketName: string | null,
+    siteName: string | null,
+  ) => void;
   onPlayMessage?: (turnId: string) => Promise<void>;
   onSpeechToText?: (audioBlob: Blob) => Promise<string>;
   onSpeechToTextError?: (error: Error) => void;

@@ -5,7 +5,7 @@
 # This Dockerfile is used to build the container image for the RAG LLM microservice.
 
 ARG python_version=3.11
-ARG python_image_version=${python_version}-slim-bookworm
+ARG python_image_version=${python_version}-slim-trixie
 
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
@@ -13,11 +13,8 @@ ENV LANG=C.UTF-8
 ARG python_version
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends --fix-missing \
-    libgl1-mesa-glx \
+    libgl1 \
     libjemalloc-dev && \
-    apt-get install -y --only-upgrade \
-      openssl=3.0.18-1~deb12u2 \
-      libssl3=3.0.18-1~deb12u2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN rm -f /usr/bin/dmesg /usr/bin/base64 /usr/bin/perl

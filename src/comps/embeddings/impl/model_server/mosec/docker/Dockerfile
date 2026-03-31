@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG python_version=3.11
-ARG python_image_version=${python_version}-slim-bookworm
+ARG python_image_version=${python_version}-slim-trixie
 
 FROM python:${python_image_version}
 COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /uvx /bin/
@@ -15,13 +15,10 @@ ENV MKL_THREADING_LAYER=GNU
 
 RUN apt-get -y update                           \
  && apt-get install -y                          \
-    openjdk-17-jdk                              \
+    openjdk-21-jdk                              \
     numactl                                     \
     libjemalloc-dev                             \
     google-perftools                            \
- && apt-get install -y --only-upgrade           \
-  openssl=3.0.18-1~deb12u2                      \
-  libssl3=3.0.18-1~deb12u2                      \
  && apt-get autoremove -y                       \
  && rm -rf /var/lib/apt/lists/*                 \
  && apt-get clean

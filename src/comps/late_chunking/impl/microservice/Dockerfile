@@ -11,7 +11,7 @@ ARG python_version
 
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends --fix-missing \
-    libgl1-mesa-glx \
+    libgl1 \
     libjemalloc-dev \
     vim && \
     apt-get clean && rm -rf /var/lib/apt/lists/*

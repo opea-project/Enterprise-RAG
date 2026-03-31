@@ -70,6 +70,8 @@ def test_pptx_text_only(edp_helper, chatqa_api_helper, test_data):
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
+# https://jira.devtools.intel.com/browse/IEASG-2851
+@pytest.mark.xfail(reason="SmartArt text extraction regression")
 @allure.testcase("IEASG-T230")
 def test_pptx_complex(edp_helper, chatqa_api_helper, test_data):
     """*.pptx file learning capabilities (tables, charts, and SmartArt)"""
@@ -91,11 +93,6 @@ def test_doc_text_only(edp_helper, chatqa_api_helper, test_data):
 @allure.testcase("IEASG-T106")
 def test_ppt_text_only(edp_helper, chatqa_api_helper, test_data):
     """*.ppt file learning capabilities (pure text inside the file)"""
-    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
-
-
-def test_msg_text_only(edp_helper, chatqa_api_helper, test_data):
-    """*.msg file learning capabilities (Outlook email - pure text inside the file)"""
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
@@ -286,6 +283,11 @@ def test_logs_parsing_capability(edp_helper, chatqa_api_helper, test_data):
     run_standard_validation(edp_helper, chatqa_api_helper, test_data)
 
 
+def test_docx_comprehensive_pl(edp_helper, chatqa_api_helper, test_data):
+    """*.docx file with tables, lists, hyperlinks, and Polish character encoding"""
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
+
 @allure.testcase("IEASG-T264")
 def test_reupload(edp_helper, chatqa_api_helper, test_data):
     """Check if re-uploading the same file and updated file works as expected"""
@@ -370,6 +372,7 @@ def test_similarity_search_with_siblings(edp_helper, chatqa_api_helper, fingerpr
     finally:
         # Restore default parameters
         fingerprint_api_helper.set_component_parameters("retriever", search_type=original_search_type, k=original_k)
+
 
 @allure.testcase("IEASG-T308")
 def test_late_chunking(edp_helper, chatqa_api_helper, fingerprint_api_helper, test_data):

@@ -1,17 +1,20 @@
 # Minimum Requirements Configuration Guide
 
-This guide describes how to configure Intel® AI for Enterprise RAG for a **minimum hardware setup** (60 CPU cores / 128 GB RAM).
+This guide describes how to configure Intel® AI for Enterprise RAG for a **minimum hardware setup** (60 CPU logical cores / 128 GB RAM).
+
+> [!NOTE]
+> All CPU core counts in this guide refer to **logical cores** (also known as hardware threads or vCPUs), not physical cores.
 
 ## Standard Minimum Requirements
 
-| CPU Cores | RAM | Disk |
+| CPU Logical Cores | RAM | Disk |
 |---|---|---|
-| 60 cores | 128 GB | 200 GB |
+| 60 logical cores | 128 GB | 200 GB |
 
 > [!NOTE]
-> A **limited single-user deployment** is also possible with as little as **32 cores and 64 GB RAM**.
+> A **limited single-user deployment** is also possible with as little as **32 logical cores and 64 GB RAM**.
 > This configuration is only suitable for a single concurrent user and requires additional tuning.
-> See [Limited Single-User Deployment (32 cores / 64 GB)](#limited-single-user-deployment-32-cores--64-gb) below for required config changes.
+> See [Limited Single-User Deployment (32 logical cores / 64 GB)](#limited-single-user-deployment-32-logical-cores--64-gb) below for required config changes.
 
 ---
 
@@ -95,13 +98,13 @@ For **AWQ models** (`generic-base-awq-cpu`):
 
 ---
 
-## Limited Single-User Deployment (32 cores / 64 GB)
+## Limited Single-User Deployment (32 logical cores / 64 GB)
 
 > [!WARNING]
 > This configuration is intended **only for single-user use** (e.g., evaluation, development, or demo environments).
 > It is **not suitable for production or multi-user workloads**.
 
-It is possible to run Intel® AI for Enterprise RAG on hardware with as few as **32 CPU cores** and **64 GB of RAM**.
+It is possible to run Intel® AI for Enterprise RAG on hardware with as few as **32 CPU logical cores** and **64 GB of RAM**.
 To achieve this, the following options in your `config.yaml` and pipeline resource files must be adjusted to reduce resource consumption:
 
 ### Required config.yaml changes
@@ -123,7 +126,7 @@ modelConfigs:
       VLLM_CPU_KVCACHE_SPACE: "1"   # Reduce KV cache to 1 GB
     resources:
       limits:
-        cpu: "16"                   # Limit VLLM to 16 cores
+        cpu: "16"                   # Limit VLLM to 16 logical cores
         memory: "16Gi"              # Limit VLLM memory to 16 GB
       replicas: 1                   # Single replica only
 ```

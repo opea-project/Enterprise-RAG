@@ -105,7 +105,7 @@ To deploy the solution using Xeon only, you will need access to any platform wit
 -  **Disk Space**: `200GB` of disk space is generally recommended, though this is highly dependent on the model size
 
 > [!NOTE]
-> A limited single-user deployment is also possible on **32 cores / 64 GB RAM**.
+> A limited single-user deployment is also possible on **32 logical cores / 64 GB RAM**.
 > See [docs/minimum_requirements.md](docs/minimum_requirements.md) for the required configuration changes.
 
 > [!NOTE]

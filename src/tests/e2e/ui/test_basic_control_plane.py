@@ -40,6 +40,7 @@ else:
 
 @allure.testcase("IEASG-T283")
 @pytest.mark.ui
+@pytest.mark.ui_smoke
 @pytest.mark.asyncio
 async def test_control_plane_navigation(chat_ui_helper):
     """
@@ -284,6 +285,7 @@ async def test_control_plane_zoom_controls(chat_ui_helper):
 
 @allure.testcase("IEASG-T288")
 @pytest.mark.ui
+@pytest.mark.ui_smoke
 @pytest.mark.asyncio
 async def test_stop_button_during_streaming(chat_ui_helper):
     """

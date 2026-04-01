@@ -38,6 +38,7 @@ def _get_valid_redirect_paths() -> list:
 
 @allure.testcase("IEASG-T266")
 @pytest.mark.ui
+@pytest.mark.ui_smoke
 @pytest.mark.asyncio
 async def test_admin_login(page, admin_credentials):
     """Test admin login with KeycloakHelper credentials.

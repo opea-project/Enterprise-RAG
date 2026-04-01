@@ -59,6 +59,7 @@ BASIC_TEST_PROMPTS = [
 # ============================================================================
 
 @pytest.mark.ui
+@pytest.mark.ui_smoke
 @pytest.mark.asyncio
 @allure.testcase("IEASG-T267")
 async def test_single_prompt_response(chat_ui_helper):
@@ -326,6 +327,7 @@ async def test_chat_handles_various_question_types(chat_ui_helper):
     logger.info("Test completed: Various question types validated")
 
 @pytest.mark.ui
+@pytest.mark.ui_smoke
 @pytest.mark.asyncio
 @allure.testcase("IEASG-T289")
 async def test_user_message_display(chat_ui_helper):

@@ -188,6 +188,11 @@ def test_get_context_from_filename(edp_helper, chatqa_api_helper):
     response = upload_and_ask_question(edp_helper, chatqa_api_helper, "Zerilwyn Nactroske - CV.docx", question)
     assert chatqa_api_helper.words_in_response(["deepmind"], response), UNRELATED_RESPONSE_MSG
 
+@allure.testcase("IEASG-T534")
+def test_pdf_table(edp_helper, chatqa_api_helper, test_data):
+    """*.pdf file learning capabilities (with tables inside the file)"""
+    run_standard_validation(edp_helper, chatqa_api_helper, test_data)
+
 
 @allure.testcase("IEASG-T166")
 def test_docx_tables(edp_helper, chatqa_api_helper, test_data):

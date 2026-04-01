@@ -107,7 +107,7 @@ class TableAwareSplitter(Splitter):
     """
 
     _TABLE_ROW_RE = re.compile(r'^\|.+\|$')
-    _TABLE_SEPARATOR_RE = re.compile(r'^\|[\s-]+(\|[\s-]+)*\|$')
+    _TABLE_SEPARATOR_RE = re.compile(r'^\|[\s:-]+(\|[\s:-]+)*\|$')
 
     def split_text(self, text: str) -> List[Document]:
         segments = self._segment_text(text)
@@ -116,13 +116,15 @@ class TableAwareSplitter(Splitter):
 
         for seg_type, content in segments:
             if seg_type == 'table':
-                if len(content) <= self.chunk_size:
+                normalized_content = self._normalize_table(content)
+                logger.info(f"Processing table segment of length {len(normalized_content)} at offset {offset}")
+                if len(normalized_content) <= self.chunk_size:
                     chunks.append(Document(
-                        page_content=content,
+                        page_content=normalized_content,
                         metadata={"start_index": offset},
                     ))
                 else:
-                    for table_chunk, local_offset in self._split_table(content):
+                    for table_chunk, local_offset in self._split_table(normalized_content):
                         chunks.append(Document(
                             page_content=table_chunk,
                             metadata={"start_index": offset + local_offset},
@@ -139,6 +141,24 @@ class TableAwareSplitter(Splitter):
             offset += len(content) + 1
 
         return chunks
+
+    @staticmethod
+    def _normalize_table_cell(row: str) -> str:
+        """Strip extra whitespace from cells in a single pipe table row."""
+        parts = row.split('|')
+        return '|' + '|'.join(c.strip() for c in parts[1:-1]) + '|'
+
+    def _normalize_table(self, table_text: str) -> str:
+        """Remove separator rows and normalize cell whitespace in a pipe table."""
+        lines = []
+        for line in table_text.split('\n'):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if self._TABLE_SEPARATOR_RE.match(stripped):
+                continue  # drop |---|---| separator rows
+            lines.append(self._normalize_table_cell(stripped))
+        return '\n'.join(lines)
 
     def _segment_text(self, text: str) -> list:
         """Split text into alternating ('text', content) and ('table', content) segments."""

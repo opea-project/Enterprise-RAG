@@ -429,6 +429,29 @@ test_docx_formatted_text:
           expected_any: ["klaska", "dłoni"]
         - question: "Jak ludzie reagują, gdy słyszą, że wiatr gra cichą melodię w historii o Lunibelle Lucifelle?"
           expected_any: ["uśmiech"]
+test_pdf_table:
+  - en:
+      files: [test_pdf_table.pdf]
+      questions:
+        - question: "What are the storage conditions for tofu?"
+          expected_any: ["refrigerated", "cold"]
+        - question: "I have space in the fridge with dimensions 10 x 7 x 4. Which tofu product can I order?"
+          expected_any: ["extra soft"]
+        - question: "What is the weight of 10 packages of Planspired Baked Tofu?"
+          expected_any: ["3.5"]
+        - question: "Which products from the Plantspired offer can be stored at room temperature?"
+          expected_any: ["plant-based bolognese sauce", "plant-based chili sauce"]
+    pl:
+      files: [test_pdf_table.pdf]
+      questions:
+        - question: "Jakie są warunki przechowywania tofu?"
+          expected_any: ["chłodnia", "chłodni"]
+        - question: "Mam miejsce w lodówce o wymiarach 10 x 7 x 4. Jaki produkt tofu mogę zamówić?"
+          expected_any: ["exstra delikatne", "ekstra delikatne"]
+        - question: "Ile waży 10 paczek Tofu pieczonego?"
+          expected_any: ["3,5"]
+        - question: "Jakie produkty z oferty Ekozbiory można przechowywać w temperaturze pokojowej?"
+          expected_any: ["sos boloński roślinny", "sos chili roślinny"]
 test_docx_tables:
   - en:
       files: [test_docx_table_single_cell.docx]

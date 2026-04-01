@@ -4,13 +4,23 @@
 # activate PyMuPDF-Layout in pymupdf
 import pymupdf.layout
 import pymupdf
-import pymupdf4llm
+import tabulate
 
+import io
 import nltk
 import time
 import os
 import re
 import multiprocessing
+from typing import Any
+
+
+import pymupdf4llm.helpers.document_layout as pymupdf4llm_dl
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TesseractCliOcrOptions, TableFormerMode
+
+from docling.document_converter import DocumentConverter, PdfFormatOption, ImageFormatOption
+
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from comps.text_extractor.utils.file_loaders.abstract_loader import AbstractLoader
@@ -20,6 +30,7 @@ from comps.cores.mega.logger import get_opea_logger
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
 
 
+AVAILABLE_LANGUAGES = ["eng", "pol"]  # expects 3-letter ISO 639-2 code
 # Markers added by pymupdf4llm for OCR text
 PICTURE_TEXT_START_MARKER = "---- Start of picture text ----"
 PICTURE_TEXT_END_MARKER = "---- End of picture text -----"
@@ -54,6 +65,7 @@ def _process_single_page_from_file(file_path, page_num):
         doc = pymupdf.open(file_path)
 
         result = _extract_page(doc, page_num, log_identifier=file_path)
+
         return {
             'page_num': page_num,
             'text': result,
@@ -72,6 +84,190 @@ def _process_single_page_from_file(file_path, page_num):
             doc.close()
 
 
+def _build_docling_converter():
+    """Build a DocumentConverter instance with the appropriate pipeline options for table extraction."""
+
+    ocr_options = TesseractCliOcrOptions(lang=AVAILABLE_LANGUAGES)
+    pipeline_options = PdfPipelineOptions(do_ocr=True, ocr_options=ocr_options)
+    pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+            InputFormat.IMAGE: ImageFormatOption(pipeline_options=pipeline_options),
+        }
+    )
+
+    return converter
+
+def _extract_table_with_docling(doc: Any, page_num: int, clip=None, mode: InputFormat = InputFormat.PDF, dpi: int = 150) -> str:
+    """Extract a table region from a PDF page using Docling.
+
+    Args:
+        doc: An open pymupdf Document object.
+        page_num: Zero-indexed page number to extract the table from.
+        clip: Optional pymupdf.IRect defining the bounding box of the table region.
+              If None, the entire page is used.
+        dpi: Resolution used when mode=InputFormat.IMAGE to rasterize the region (default: 150).
+        mode: InputFormat.PDF  — crop and pass a single-page PDF stream (TesseractCli, no rasterization).
+              InputFormat.IMAGE — rasterize to PNG and pass as image stream (ImageFormatOption + TesseractCli).
+
+    Returns:
+        A Markdown-formatted string representing the extracted table(s).
+    """
+    result = ""
+    mode_label = "cropped PDF stream" if mode == InputFormat.PDF else "rasterized PNG"
+    logger.debug(f"Extracting table from page {page_num + 1} using Docling with mode: {mode_label}")
+
+    if mode == InputFormat.PDF:
+        cropped_doc = pymupdf.open()
+        cropped_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+        if clip is not None:
+            cropped_page = cropped_doc.load_page(0)
+            cropped_page.set_cropbox(pymupdf.Rect(clip))
+        data = cropped_doc.tobytes()
+        cropped_doc.close()
+        stream = DocumentStream(name="table_region.pdf", stream=io.BytesIO(data))
+    elif mode == InputFormat.IMAGE:
+        page = doc.load_page(page_num)
+        clip_pix = page.get_pixmap(dpi=dpi, clip=clip)
+        stream = DocumentStream(name="table_region.png", stream=io.BytesIO(clip_pix.tobytes("png")))
+    else:
+        raise ValueError(f"Unsupported mode '{mode}'. Expected InputFormat.PDF (cropped PDF stream, no rasterization) or InputFormat.IMAGE (rasterized PNG via pixmap).")
+
+    converter = _build_docling_converter()
+    conv_result = converter.convert(stream)
+
+    if not conv_result.document or not conv_result.document.tables:
+        raise ValueError(f"Docling found no tables in the clipped region (mode: {mode_label})")
+
+    for tbl in conv_result.document.tables:
+        table_df = tbl.export_to_dataframe(doc=conv_result.document)
+        result += table_df.to_markdown(index=False) + "\n\n"
+
+    result = result.strip()
+    if not result:
+        raise ValueError(f"Table extracted but markdown output is empty (mode: {mode_label})")
+
+    return result
+
+
+def _parse_to_text(
+    doc: Any,
+    page_num: int,
+    header: bool = True,
+    footer: bool = True,
+    force_text: bool = True,
+    ignore_code: bool = False,
+    show_progress: bool = False,
+    ocr_dpi: int = 300,
+    use_ocr: bool = True,
+    force_ocr: bool = False,
+    ocr_language: str = "eng",
+    ocr_function=None,
+) -> str:
+    """
+    Extract text from a single page. First, obtain full layout information.
+    Then iterate over the document blocks and apply the appropriate text extraction method for each block type.
+    """
+
+    # Create a temporary single-page Document because pymupdf4llm expects a Document, not a Page.
+    single_page_doc = pymupdf.open()
+    single_page_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+
+    parsed = pymupdf4llm_dl.parse_document(
+        single_page_doc,
+        ocr_dpi=ocr_dpi,
+        force_text=force_text,
+        use_ocr=use_ocr,
+        force_ocr=force_ocr,
+        ocr_language=ocr_language,
+        ocr_function=ocr_function,
+        show_progress=show_progress,
+        image_dpi=150,
+    )
+
+    output_buffer = ""
+    for page in parsed.pages:
+        list_item_levels = pymupdf4llm_dl.create_list_item_levels(page.boxes)
+        for i, box in enumerate(page.boxes):
+            bclass = box.boxclass
+            if bclass == "page-header" and header is False:
+                continue
+            if bclass == "page-footer" and footer is False:
+                continue
+            
+            clip = pymupdf.IRect(box.x0, box.y0, box.x1, box.y1)
+
+            if bclass == "picture":
+                if box.textlines:
+                    output_buffer += pymupdf4llm_dl.picture_text_to_text(
+                            box.textlines, ignore_code=ignore_code or page.full_ocred, clip=clip)
+                else:
+                    logger.debug(f"Picture block on page {page_num + 1} has no textlines, skipping OCR text extraction for this block.")
+
+            elif bclass in ("table", "table-fallback"):
+                # Attempt table extraction with cascading fallbacks:
+                #   1. Docling via cropped PDF stream (no rasterization, native Tesseract)
+                #   2. Docling via rasterized PNG image (ImageFormatOption + Tesseract)
+                #   3. pymupdf4llm wrap_table_for_tabulate (grid text fallback)
+
+                # Note:
+                # Docling should operate on the original `doc`, not parsed.pages, to preserve full PDF fidelity;
+                # the clip only narrows the table region while the source remains the original document for best results.
+
+                table_text = None
+
+                try:
+                    table_text = _extract_table_with_docling(doc, page_num, clip=clip, mode=InputFormat.PDF)
+                    logger.info(f"Table on page {page_num + 1} successfully extracted by Docling via cropped PDF stream")
+                except Exception as e:
+                    logger.warning(f"Docling via cropped PDF stream failed for table on page {page_num + 1}: {e}. Trying rasterized PNG.")
+
+                if table_text is None:
+                    try:
+                        table_text = _extract_table_with_docling(doc, page_num, clip=clip, mode=InputFormat.IMAGE)
+                        logger.info(f"Table on page {page_num + 1} successfully extracted by Docling via rasterized PNG")
+                    except Exception as e:
+                        logger.warning(f"Docling via rasterized PNG failed for table on page {page_num + 1}: {e}. Entering fallback options.")
+
+                if table_text is None:
+                    # fallback options if docling extraction fails (can still produce something, just less structured and accurate)
+                    try:
+                        # fallback 1: use pymupdf4llm's built-in table extraction
+                        wrapped_table = pymupdf4llm_dl.wrap_table_for_tabulate(
+                            box.table["extract"],
+                            max_width=100,
+                            min_col_width=10,
+                        )
+                        table_text = tabulate.tabulate(wrapped_table, tablefmt="grid")
+                        logger.info("Fallback table extraction successful.")
+
+                    except Exception as e:
+                        logger.warning(f"Fallback table extraction failed for table on page {page_num + 1}: {e}. Trying textline fallback.")
+
+                        # fallback 2: use textline fallback
+                        if box.textlines:
+                            table_text = pymupdf4llm_dl.fallback_text_to_text(
+                                box.textlines, ignore_code=ignore_code or page.full_ocred, clip=clip)
+
+
+                # to avoid None concatenation
+                if table_text:
+                    output_buffer += table_text + "\n\n"
+                else:
+                    logger.error(f"All extraction methods failed for table on page {page_num + 1}. No text extracted for this block.")
+
+            elif bclass == "list-item":
+                output_buffer += pymupdf4llm_dl.list_item_to_text(box.textlines, list_item_levels[i])
+            elif bclass == "footnote":
+                output_buffer += pymupdf4llm_dl.footnote_to_text(box.textlines)
+            else:
+                output_buffer += pymupdf4llm_dl.text_to_text(
+                    box.textlines, ignore_code=ignore_code or page.full_ocred)
+
+    return _remove_pymupdf4llm_markers(output_buffer)
+
+
 def _extract_page(doc, page_num, log_identifier=""):
     """
     Extract text from a single page using an already opened document.
@@ -87,18 +283,14 @@ def _extract_page(doc, page_num, log_identifier=""):
 
     page = doc.load_page(page_num)
     result = ""
-
-    # Create a temporary single-page Document because pymupdf4llm.to_text() expects a Document, not a Page.
-    single_page_doc = pymupdf.open()
-    single_page_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
-
-    result = pymupdf4llm.to_text(single_page_doc, header=False, footer=False, use_ocr=True, force_text=True, table_format="simple")
-    result = _remove_pymupdf4llm_markers(result)
+      
+    result = _parse_to_text(doc, page_num, header=False, footer=False, use_ocr=True, force_text=True, ocr_language="+".join(AVAILABLE_LANGUAGES))
 
     # https://pymupdf.readthedocs.io/en/latest/page.html#description-of-get-links-entries
     for link in page.links():
         if link.get("uri"):
             result = result + f" {link.get('uri')}"
+
 
     # https://pymupdf.readthedocs.io/en/latest/recipes-images.html#how-to-extract-images-pdf-documents
     images = page.get_images(full=False)
@@ -150,7 +342,18 @@ class LoadPdf(AbstractLoader):
     def extract_text(self):
         """
         Load the pdf file with parallel page processing.
-        
+
+        NOTE: This method is NOT called by the production microservice.
+        opea_text_extractor_microservice.py bypasses LoadPdf entirely and calls
+        _process_single_page_from_file() directly via a shared ProcessPoolExecutor,
+        dispatching one pool task per page. This avoids nested process pools
+        (which would OOM the pod) and keeps the asyncio event loop free for
+        health checks and concurrent requests.
+        This method exists for standalone use and unit tests only.
+        Any debug code or logging added here will NOT appear in pod logs.
+        To instrument production behaviour, modify _process_single_page_from_file()
+        or _extract_page() instead.
+
         Environment variables:
         - PDF_PARALLEL_PROCESSING: Enable/disable parallel processing (default: true)
         - TEXT_EXTRACTOR_MAX_WORKERS: Maximum number of parallel workers (default: 12; injected automatically from pod CPU limit via Kubernetes Downward API)
@@ -238,6 +441,7 @@ class LoadPdf(AbstractLoader):
         
         end_time = time.time()
         logger.info(f"[{self.file_path}] Total processing time: {end_time - start_time:.2f} seconds for {page_count} pages")
+
         return result
 
     def extract_metadata(self):

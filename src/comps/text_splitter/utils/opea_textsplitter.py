@@ -88,7 +88,7 @@ class OPEATextSplitter:
                 if extension in [".adoc", ".md", ".html"]:
                     logger.info(f"Using MarkdownSplitter for document: {doc.metadata}")
                     chunks = md_splitter.split_text(doc.text, extension)
-                elif extension in [".docx", ".doc"]:
+                elif extension in [".docx", ".doc", ".pdf"]:
                     logger.info(f"Using TableAwareSplitter for document: {doc.metadata}")
                     chunks = table_splitter.split_text(doc.text)
                 else:

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from comps.vectorstores.utils.connectors.connector_redis import ConnectorRedis
+import os
 import pytest
 from unittest import mock
 from comps.cores.proto.docarray import EmbedDoc, SearchedDoc, TextDoc
@@ -453,3 +454,44 @@ async def test_hierarchical_retrieve():
         result = await retriever.hierarchical_retrieve(input=input, k_summaries=1, k_chunks=1, search_by={}, rbac_by=None)
         mock_retrieve.assert_called()
         assert result is not None
+        def test_initialize_basic():
+            OPEARetriever._instance = None
+            retriever = OPEARetriever(vector_store="redis")
+            assert retriever.vector_store is not None
+            assert retriever.rbac_enabled is False
+            assert retriever._query_parsing_enabled is True
+            assert retriever._query_parser is None
+
+        def test_initialize_with_rbac_enabled():
+            OPEARetriever._instance = None
+            retriever = OPEARetriever(vector_store="redis", rbac_enabled=True)
+            assert retriever.vector_store is not None
+            assert retriever.rbac_enabled is True
+            assert retriever._query_parsing_enabled is True
+
+        def test_initialize_with_metadata_filtering_disabled():
+            OPEARetriever._instance = None
+            with mock.patch.dict(os.environ, {"METADATA_FILTERING_ENABLED": "true"}):
+                retriever = OPEARetriever(vector_store="redis")
+                assert retriever._query_parsing_enabled is False
+
+        def test_initialize_with_metadata_filtering_enabled_via_env():
+            OPEARetriever._instance = None
+            with mock.patch.dict(os.environ, {"METADATA_FILTERING_ENABLED": "false"}):
+                retriever = OPEARetriever(vector_store="redis")
+                assert retriever._query_parsing_enabled is True
+
+        def test_initialize_query_parser_initialization_failure():
+            OPEARetriever._instance = None
+            with mock.patch.dict(os.environ, {"METADATA_FILTERING_ENABLED": "false"}):
+                with mock.patch('comps.retrievers.utils.opea_retriever.QueryMetadataParser.from_env', side_effect=Exception("Parser init failed")):
+                    retriever = OPEARetriever(vector_store="redis")
+                    assert retriever._query_parsing_enabled is False
+                    assert retriever._query_parser is None
+
+        def test_initialize_singleton_pattern():
+            OPEARetriever._instance = None
+            retriever1 = OPEARetriever(vector_store="redis")
+            retriever2 = OPEARetriever(vector_store="redis", rbac_enabled=True)
+            assert retriever1 is retriever2
+            assert retriever1.rbac_enabled is False

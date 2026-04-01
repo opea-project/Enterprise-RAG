@@ -20,12 +20,14 @@ logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_micros
 SUPPORTED_MEDIA_FORMATS = ["mp3", "wav"]
 CHUNK_SIZE = 128
 PARALLEL_BATCH_SIZE = 4
+DEFAULT_MAX_INPUT_CHARACTERS = 8192
 
 class OPEATTS:
     def __init__(
         self,
         model_server: str,
-        model_server_endpoint: str
+        model_server_endpoint: str,
+        max_input_characters: int = DEFAULT_MAX_INPUT_CHARACTERS
     ):
         """
         Initialize the OPEATTS instance with the given parameters.
@@ -38,6 +40,7 @@ class OPEATTS:
         """
         self._model_server = model_server
         self._model_server_endpoint = model_server_endpoint
+        self._max_input_characters = max_input_characters
         if not self._model_server_endpoint.endswith("/v1"):
             self._model_server_endpoint = self._model_server_endpoint.rstrip("/") + "/v1"
 
@@ -297,6 +300,12 @@ class OPEATTS:
 
         logger.info(f"Received TTS request: text_length={len(input_text)}, voice={voice}, format={response_format}, streaming={streaming}")
         logger.info(input_text)
+
+        if len(input_text) > self._max_input_characters:
+            raise ValueError(
+                f"Input text is too long ({len(input_text)} characters). "
+                f"Maximum allowed length is {self._max_input_characters} characters."
+            )
 
         if response_format not in SUPPORTED_MEDIA_FORMATS:
             raise ValueError(f"Unsupported media format '{response_format}'. Supported formats are: {', '.join(SUPPORTED_MEDIA_FORMATS)}")

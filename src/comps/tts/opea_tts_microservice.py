@@ -37,7 +37,8 @@ change_opea_logger_level(logger, log_level=os.getenv("OPEA_LOGGER_LEVEL", "INFO"
 # Initialize an instance of the OPEATTS class with environment variables.
 opea_tts = OPEATTS(
     model_server=sanitize_env(os.getenv('TTS_MODEL_SERVER')),
-    model_server_endpoint=sanitize_env(os.getenv('TTS_MODEL_SERVER_ENDPOINT'))
+    model_server_endpoint=sanitize_env(os.getenv('TTS_MODEL_SERVER_ENDPOINT')),
+    max_input_characters=int(os.getenv('TTS_MAX_INPUT_CHARACTERS', '8192'))
 )
 
 

@@ -11,4 +11,5 @@ metadata:
 data:
   TTS_MODEL_SERVER: "fastapi"
   TTS_MODEL_SERVER_ENDPOINT: "http://{{ .Values.ttsFastapiModelServer.nameOverride }}.{{ .Release.Namespace }}.svc:{{ .Values.ttsFastapiModelServer.service.port }}"
+  TTS_MAX_INPUT_CHARACTERS: "8192"
 {{- end }}

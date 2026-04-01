@@ -40,6 +40,7 @@ The configuration for the TTS Microservice is specified in the [impl/microservic
 | `TTS_USVC_PORT`                 | The port of the microservice                          | 9009                     |
 | `TTS_MODEL_SERVER`              | Specifies the type of model server (e.g., "fastapi")     | fastapi                  |
 | `TTS_MODEL_SERVER_ENDPOINT`     | URL of the model server endpoint                      | http://localhost:8008    |
+| `TTS_MAX_INPUT_CHARACTERS`      | Maximum allowed input text length in characters. Requests exceeding this limit are rejected with HTTP 400. Set to match max output token size of the LLM in the ChatQnA pipeline. | 8192 |
 | `OPEA_LOGGER_LEVEL`             | Logger level for the microservice                     | INFO                     |
 
 ## Getting Started

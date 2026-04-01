@@ -201,13 +201,14 @@ helm upgrade --install kserve oci://ghcr.io/kserve/charts/kserve \
 
 #### Prometheus Stack
 
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  --create-namespace
-```
+> [!WARNING]
+> Do **not** install the Prometheus stack separately when deploying alongside Intel® AI for Enterprise RAG, as their telemetry components collide. Instead, when installing NAI Core, pass the following flag to point NAI at the existing eRAG Prometheus instance:
+>
+> ```
+> --set naiApi.naiMonitoringUrl=http://telemetry-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+> ```
+>
+> See the [Install Nutanix Enterprise AI Core](#install-nutanix-enterprise-ai-core) section below for the full helm command.
 
 ---
 
@@ -256,6 +257,7 @@ helm upgrade --install nai-core ntnx-charts/nai-core \
   --insecure-skip-tls-verify \
   --set naiApi.storageClassName=efs-sc \
   --set defaultStorageClassName=gp2 \
+  --set naiApi.naiMonitoringUrl=http://telemetry-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090 \
   -f ./nai-core/aws-values.yaml
 ```
 

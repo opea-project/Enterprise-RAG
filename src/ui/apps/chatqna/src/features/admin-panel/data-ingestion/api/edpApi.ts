@@ -208,13 +208,6 @@ export const edpApi = createApi({
         response.sites ?? [],
       transformErrorResponse: (error) =>
         transformErrorMessage(error, ERROR_MESSAGES.GET_SHAREPOINT_SITES),
-      onQueryStarted: async (_, { dispatch, queryFulfilled }) => {
-        await handleOnQueryStarted(
-          queryFulfilled,
-          dispatch,
-          ERROR_MESSAGES.GET_SHAREPOINT_SITES,
-        );
-      },
       providesTags: ["SharePointSites"],
     }),
     postSharePointSite: builder.mutation<
@@ -280,6 +273,7 @@ export const edpApi = createApi({
           ERROR_MESSAGES.POST_SHAREPOINT_SYNC,
         );
       },
+      invalidatesTags: ["Files"],
     }),
     postSharePointUpload: builder.mutation<void, SharePointUploadRequest>({
       query: ({ site_id, file }) => {
@@ -300,6 +294,7 @@ export const edpApi = createApi({
           ERROR_MESSAGES.POST_SHAREPOINT_FILE,
         );
       },
+      invalidatesTags: ["Files"],
     }),
     postSharePointFileUrl: builder.mutation<
       SharePointFileUrlResponse,

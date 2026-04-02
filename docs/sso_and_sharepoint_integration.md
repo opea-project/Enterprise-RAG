@@ -184,11 +184,76 @@ During synchronization, files are downloaded from SharePoint, processed, and ing
 
 ### Uploading Files via UI
 
-Users can upload files directly to a tracked SharePoint site through the Intel® AI for Enterprise RAG UI. Files uploaded this way are stored in the SharePoint site's default document library (`Documents/`) and then ingested into the knowledge base.
+Users can upload files directly to a tracked SharePoint site through the Intel® AI for Enterprise RAG UI or via the API. Files uploaded this way are stored in the SharePoint site's default document library (`Documents/`). A synchronization must be triggered separately for the uploaded file to appear in the knowledge base.
+
+**API request:**
+```
+POST https://<FQDN>/api/v1/edp/sharepoint/files?site_id=<graph_site_id>
+Content-Type: multipart/form-data
+Authorization: Bearer <token>
+
+file: <binary>
+```
+
+| Parameter | Location | Description |
+|---|---|---|
+| `site_id` | Query string | The Microsoft Graph site ID of the tracked SharePoint site |
+| `file` | Form data | The file to upload |
+
+**Response:**
+```json
+{
+  "message": "File 'report.pdf' uploaded to SharePoint site.",
+  "web_url": "https://contoso.sharepoint.com/sites/my-team-site/Shared%20Documents/report.pdf"
+}
+```
+
+> [!NOTE]
+> This differs from S3 bucket uploads, which use presigned URLs. SharePoint file uploads go through the EDP backend, which forwards them to the Microsoft Graph API to handler any permission validation.
+
+### Fetching a File URL
+
+For files originating from SharePoint, the system provides a web URL that opens the file directly on the SharePoint site. The returned URL points to the file on the SharePoint site. Access control is handled by SharePoint itself — only users with appropriate permissions on the site can open the file.
+
+**API request:**
+```
+POST https://<FQDN>/api/v1/edp/sharepoint/file-url
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "site_name": "My Team Site",
+  "object_name": "Documents/Reports/Q1.pdf"
+}
+```
+
+| Field | Description |
+|---|---|
+| `site_name` | The display name of the tracked SharePoint site |
+| `object_name` | The path of the file within the site, in the format `{drive_name}/{relative_path}` |
+
+**Response:**
+```json
+{
+  "url": "https://contoso.sharepoint.com/sites/my-team-site/Shared%20Documents/Reports/Q1.pdf"
+}
+```
 
 ### Removing a File
 
-Deleting a SharePoint file via the UI removes it from both the vector knowledge base and the SharePoint site itself.
+Deleting a SharePoint file via the UI or API removes it from both the vector knowledge base and the SharePoint site itself.
+
+**API request:**
+```
+DELETE https://<FQDN>/api/v1/edp/sharepoint/files
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "site_name": "My Team Site",
+  "object_name": "Documents/Reports/Q1.pdf"
+}
+```
 
 ### Disconnecting a Site
 

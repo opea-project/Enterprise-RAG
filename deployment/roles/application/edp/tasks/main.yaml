@@ -81,10 +81,12 @@
     - install
     - update-configuration
 
-# Creates client_secret_id
+# Creates keycloak-minio-secret with client-secret key directly in edp namespace
 - name: Get client_secret_id keycloak
   vars:
-    client_id: "{{ edp.client_id }}"
+    get_secret_client_id: "{{ edp.client_id }}"
+    get_secret_ns: "{{ edp.namespace }}"
+    get_secret_secret_name: "keycloak-minio-secret"
   ansible.builtin.include_role:
     name: keycloak
     tasks_from: get_secret_id

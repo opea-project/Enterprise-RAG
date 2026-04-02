@@ -2,53 +2,140 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-- name: Set up port forwarding for Keycloak service
-  ansible.builtin.command: >
-    kubectl port-forward svc/keycloak-http -n {{ keycloak.namespace }} {{ keycloak.fport }}:80
-  async: 180
-  poll: 0
-  register: port_forward_job
-  environment:
-    KUBECONFIG: "{{ kubeconfig }}"
+# Job-based Keycloak configuration - runs inside the cluster, no port-forward needed
+
+- name: Set init container image reference
+  ansible.builtin.set_fact:
+    init_container_image: "{{ registry if use_alternate_tagging else registry ~ '/erag-init-container' }}:{{ 'erag-init-container_' ~ tag if use_alternate_tagging else tag }}"
+  tags:
+    - install
+    - pre-upgrade
+    - update-configuration
+
+- name: Set configurator variables
+  ansible.builtin.set_fact:
+    keycloak_namespace: "{{ keycloak.namespace }}"
+    keycloak_admin_user: "{{ keycloak.auth.admin.username }}"
+    keycloak_admin_secret_name: "{{ keycloak.auth.admin.password_secret_name }}"
+    minio_domain: "{{ edp.minio.domainName }}"
+    credentials_secret_name: "erag-credentials"
+    configurator_job_name: "keycloak-configurator-{{ ansible_date_time.epoch }}"
+    # OIDC configuration (optional)
+    keycloak_oidc_endpoint: "{{ keycloak.oidc.endpoint | default('') }}"
+    keycloak_oidc_alias: "{{ keycloak.oidc.alias | default('enterprise-sso') }}"
+    keycloak_oidc_client_id: "{{ keycloak.oidc.client_id | default('') }}"
+    keycloak_oidc_client_secret: "{{ keycloak.oidc.client_secret | default('') }}"
+    keycloak_oidc_admin_gid: "{{ keycloak.oidc.admin_gid | default('') }}"
+    keycloak_oidc_maintainer_gid: "{{ keycloak.oidc.maintainer_gid | default('') }}"
+    keycloak_oidc_user_gid: "{{ keycloak.oidc.user_gid | default('') }}"
+    # Federation/LDAP configuration (optional)
+    keycloak_federation_endpoint: "{{ keycloak.federation.endpoint | default('') }}"
+    keycloak_federation_bind_dn: "{{ keycloak.federation.bind_dn | default('') }}"
+    keycloak_federation_bind_password: "{{ keycloak.federation.bind_password | default('') }}"
+    keycloak_federation_users_dn: "{{ keycloak.federation.users_dn | default('') }}"
+    keycloak_federation_user_attribute: "{{ keycloak.federation.user_attribute | default('sAMAccountName') }}"
+    keycloak_federation_groups_dn: "{{ keycloak.federation.groups_dn | default('') }}"
+    keycloak_federation_user_group_ldap_filter: "{{ keycloak.federation.user_group_ldap_filter | default('(cn=erag-user-group)') }}"
+    keycloak_federation_maintainer_group_ldap_filter: "{{ keycloak.federation.maintainer_group_ldap_filter | default('(cn=erag-maintainer-group)') }}"
+    keycloak_federation_admin_group_ldap_filter: "{{ keycloak.federation.admin_group_ldap_filter | default('(cn=erag-admin-group)') }}"
   tags:
     - install
 
-- name: Wait for port forwarding to be established
-  ansible.builtin.wait_for:
-    port: "{{ keycloak.fport }}"
-    host: localhost
-    delay: 5
-    timeout: 30
+- name: Generate configurator Job manifest
+  ansible.builtin.template:
+    src: configurator-job.yaml.j2
+    dest: "{{ tmp_dir }}/keycloak-configurator-job.yaml"
+    mode: '0600'
   tags:
     - install
 
-- name: Initial keycloak configuration
-  ansible.builtin.command: >
-    bash {{ role_path }}/files/keycloak_configurator.sh {{ KEYCLOAK_REALM_ADMIN_PASSWORD }} {{ edp.minio.domainName }}
-  environment:
-    KEYCLOAK_FPORT: "{{ keycloak.fport }}"
-    OIDC_ENDPOINT: "{{ keycloak.oidc.endpoint | default('') }}"
-    OIDC_ALIAS: "{{ keycloak.oidc.alias | default('') }}"
-    OIDC_CLIENT_ID: "{{ keycloak.oidc.client_id | default('') }}"
-    OIDC_CLIENT_SECRET: "{{ keycloak.oidc.client_secret | default('') }}"
-    OIDC_ADMIN_GID: "{{ keycloak.oidc.admin_gid | default('') }}"
-    OIDC_MAINTAINER_GID: "{{ keycloak.oidc.maintainer_gid | default('') }}"
-    OIDC_USER_GID: "{{ keycloak.oidc.user_gid | default('') }}"
-    FEDERATION_ENDPOINT: "{{ keycloak.federation.endpoint | default('') }}"
-    FEDERATION_BIND_DN: "{{ keycloak.federation.bind_dn | default('') }}"
-    FEDERATION_BIND_PASSWORD: "{{ keycloak.federation.bind_password | default('') }}"
-    FEDERATION_USERS_DN: "{{ keycloak.federation.users_dn | default('') }}"
-    FEDERATION_USER_ATTRIBUTE: "{{ keycloak.federation.user_attribute | default('sAMAccountName') }}"
-    FEDERATION_GROUPS_DN: "{{ keycloak.federation.groups_dn | default('') }}"
-    FEDERATION_USER_GROUP_LDAP_FILTER: "{{ keycloak.federation.user_group_ldap_filter | default('(cn=erag-user-group)') }}"
-    FEDERATION_MAINTAINER_GROUP_LDAP_FILTER: "{{ keycloak.federation.maintainer_group_ldap_filter | default('(cn=erag-maintainer-group)') }}"
-    FEDERATION_ADMIN_GROUP_LDAP_FILTER: "{{ keycloak.federation.admin_group_ldap_filter | default('(cn=erag-admin-group)') }}"
+- name: Apply configurator Job
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ tmp_dir }}/keycloak-configurator-job.yaml"
+    wait: false
+  register: configurator_job
+  tags:
+    - install
+
+- name: Wait for configurator Job to complete
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    name: "{{ configurator_job_name }}"
+    namespace: "{{ keycloak.namespace }}"
+  register: job_status
+  until: >
+    (job_status.resources | length > 0) and
+    ((job_status.resources[0].status.succeeded is defined and job_status.resources[0].status.succeeded >= 1) or
+    (job_status.resources[0].status.failed is defined and job_status.resources[0].status.failed >= 1))
+  retries: 60
+  delay: 10
+  tags:
+    - install
+
+- name: Check if configurator Job succeeded
+  ansible.builtin.fail:
+    msg: "Keycloak configurator Job failed. Check logs: kubectl logs -n {{ keycloak.namespace }} job/{{ configurator_job_name }}"
+  when: >
+    job_status.resources[0].status.failed is defined and
+    job_status.resources[0].status.failed >= 1
+  tags:
+    - install
+
+- name: Get Job logs for debugging
+  kubernetes.core.k8s_log:
+    api_version: batch/v1
+    kind: Job
+    name: "{{ configurator_job_name }}"
+    namespace: "{{ keycloak.namespace }}"
+  register: job_logs
+  tags:
+    - install
+
+- name: Display configurator Job output
+  ansible.builtin.debug:
+    msg: "{{ job_logs.log_lines }}"
+  when: job_logs.log_lines | length > 0
+  tags:
+    - install
+
+- name: Clean up sensitive credentials secret
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    name: keycloak-configurator-sensitive
+    namespace: "{{ keycloak.namespace }}"
+  when: (keycloak_oidc_endpoint | default('')) or (keycloak_federation_endpoint | default(''))
+  tags:
+    - install
+
+- name: Read erag-credentials secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ credentials_secret_name }}"
+    namespace: "{{ keycloak_namespace }}"
+  register: erag_credentials_secret
   no_log: "{{ secure_logs }}"
   tags:
     - install
 
-- name: Stop port forwarding
-  ansible.builtin.command: >
-    pkill -f "kubectl port-forward svc/keycloak-http -n {{ keycloak.namespace }} {{ keycloak.fport }}:80"
+- name: Write default_credentials.txt from erag-credentials secret
+  ansible.builtin.copy:
+    dest: "{{ log_dir }}/default_credentials.txt"
+    mode: '0600'
+    content: |
+      # Keycloak default credentials - generated {{ ansible_date_time.iso8601 }}
+      # Remove this file after first successful login.
+      KEYCLOAK_ERAG_ADMIN_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_ADMIN_USERNAME'] | b64decode }}
+      KEYCLOAK_ERAG_ADMIN_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_ADMIN_PASSWORD'] | b64decode }}"
+      KEYCLOAK_ERAG_USER_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_USER_USERNAME'] | b64decode }}
+      KEYCLOAK_ERAG_USER_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_USER_PASSWORD'] | b64decode }}"
+      KEYCLOAK_ERAG_MAINTAINER_USERNAME={{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_MAINTAINER_USERNAME'] | b64decode }}
+      KEYCLOAK_ERAG_MAINTAINER_PASSWORD="{{ erag_credentials_secret.resources[0].data['KEYCLOAK_ERAG_MAINTAINER_PASSWORD'] | b64decode }}"
+  no_log: "{{ secure_logs }}"
+  when: erag_credentials_secret.resources | length > 0
   tags:
     - install

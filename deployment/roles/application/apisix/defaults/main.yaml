@@ -14,11 +14,6 @@ apisix:
     release_name: "auth-apisix"
     default_values_file: "{{ playbook_dir }}/../components/apisix/values.yaml"
 
-  secrets:
-    secret_name: "apisix-secret"
-
-  client_id: "EnterpriseRAG-oidc-backend"
-
 apisix_routes:
   namespace: "auth-apisix"
   helm:

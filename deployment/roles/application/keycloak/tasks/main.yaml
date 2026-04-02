@@ -138,6 +138,10 @@
 - name: Update Helm dependencies for Keycloak chart
   ansible.builtin.command:
     cmd: helm dependency build {{ keycloak.helm.chart_ref }}
+  register: helm_dependency_update_result
+  until: helm_dependency_update_result is succeeded
+  retries: 5
+  delay: 15
   tags:
     - install
     - pre-upgrade

@@ -34,17 +34,6 @@
     - install
     - pre-upgrade
 
-# Creates client_secret_id
-- name: Get client_id keycloak
-  vars:
-    client_id: "{{ apisix.client_id }}"
-  ansible.builtin.include_role:
-    name: keycloak
-    tasks_from: get_secret_id.yaml
-  tags:
-    - install
-    - pre-upgrade
-
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     state: present
@@ -67,21 +56,6 @@
         labels:
           pod-security.kubernetes.io/enforce: "privileged"
   when: enforcePSS
-  tags:
-    - install
-
-- name: Create generic secret
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: "{{ apisix.secrets.secret_name }}"
-        namespace: "{{ apisix.namespace }}"
-      data:
-        CLIENT_SECRET: "{{ client_secret_id.stdout | b64encode }}"
-  no_log: "{{ secure_logs }}"
   tags:
     - install
 

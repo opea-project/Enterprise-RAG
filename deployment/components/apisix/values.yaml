@@ -38,13 +38,6 @@ apisix:
             sleep 3
           done
           echo "etcd is ready!"
-  extraEnvVars:
-    - name: CLIENT_SECRET
-      valueFrom:
-        secretKeyRef:
-          name: apisix-secret
-          key: CLIENT_SECRET
-
   apisix:
     nginx:
       configurationSnippet:

@@ -16,7 +16,7 @@ dependencies = [
     "filelock == 3.20.3", # dependency of huggingface_hub
     "intel-extension-for-pytorch==2.8.0",
     "setuptools == 80.10.2",     # security update
-    "requests == 2.32.5",
+    "requests == 2.33.1",
     "urllib3 == 2.6.3",
     "hypothesis==6.82.0",
     "cmake>=3.13.0",

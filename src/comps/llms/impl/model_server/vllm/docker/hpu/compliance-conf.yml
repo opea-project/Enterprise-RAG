@@ -32,3 +32,8 @@ pip-manual:
     - regex
     - build
     - protobuf
+# sec updates
+    - urllib3
+    - jaraco.context
+    - wheel
+    - xgrammar

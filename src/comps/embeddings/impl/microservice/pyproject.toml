@@ -15,22 +15,19 @@ dependencies = [
     "prometheus-fastapi-instrumentator == 7.0.0",
     "shortuuid == 1.0.13",
     "uvicorn == 0.30.1",
-    "langchain == 0.3.27",
-    "langchain-core == 0.3.81",
-    "langchain-huggingface == 0.1.2",
+    "langchain == 1.2.2",
+    "langchain-huggingface == 1.2.0",
     "langsmith == 0.3.45",
-    "huggingface_hub == 0.30.0",
-    "filelock == 3.20.3", # dependency of huggingface_hub
-    "torch == 2.8.0",  # transitive: langchain-huggingface -> sentence-transformers -> torch
+    "huggingface_hub == 0.33.4",
     "transformers == 4.53.3",
     "setuptools == 80.10.2",
     "starlette==0.49.1",
     "jinja2 == 3.1.6",
     "python-dotenv == 1.1.0",
     "h11==0.16.0",
-    "requests == 2.32.5",
+    "requests == 2.33.1",
     "urllib3 == 2.6.3",
-    "aiohttp == 3.13.3",
+    "aiohttp == 3.13.5",
 ]
 
 [project.optional-dependencies]
@@ -51,15 +48,3 @@ security-overrides = [
   "protobuf>=6.33.5",
   "nltk>=3.9.3",
 ]
-
-# torch is explicitly pinned to the CPU-only index. Without this, pip/uv resolves to
-# the default GPU-enabled wheel, which inflates the Docker image size significantly
-[tool.uv.sources]
-torch = [
-    { index = "pytorch-cpu" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true

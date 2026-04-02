@@ -86,8 +86,11 @@ class TEIConnector(EmbeddingConnector):
                 "The 'return_pooling' argument is not supported for TEI Connector and will be ignored."
                 )
         try:
-            
-            self._embedder.model_kwargs = kwargs
+            # Filter out non-standard kwargs that are not supported by the HuggingFace
+            # feature_extraction API (e.g., return_pooling) to avoid TypeError
+            supported_keys = {"normalize", "prompt_name", "truncate", "truncation_direction"}
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in supported_keys}
+            self._embedder.model_kwargs = filtered_kwargs
             output = await self._embedder.aembed_documents(texts)
         except Exception as e:
             logger.exception(f"Error embedding documents: {e}")

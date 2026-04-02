@@ -7,7 +7,7 @@ version = "2.1.0"
 requires-python = ">=3.11,<3.12"
 
 dependencies = [
-    "aiohttp==3.13.3",
+    "aiohttp==3.13.5",
     "fastapi==0.120.2",
     "opentelemetry-api==1.39.1",
     "opentelemetry-exporter-otlp==1.39.1",
@@ -24,14 +24,14 @@ dependencies = [
     "langchain-community==0.4.1",
     "langchain-text-splitters==1.1.0",
     "langsmith==0.3.45",
-    "pypdf==6.4.0",
+    "pypdf==6.9.2",
     "openai==1.77.0",
     "shortuuid==1.0.13",
     "pathvalidate==3.2.2",
     "torch==2.8.0",
     "torchvision==0.23.0",
     "starlette==0.49.1",
-    "requests == 2.32.5",
+    "requests == 2.33.1",
     "urllib3 == 2.6.3",
 ]
 

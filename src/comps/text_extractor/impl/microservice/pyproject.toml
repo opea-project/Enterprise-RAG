@@ -23,7 +23,7 @@ dependencies = [
     "marshmallow==3.26.2", # dependency of langchain_community
     "langchain-text-splitters==1.1.0",
     "langsmith==0.3.45",
-    "markdown==3.0.0",
+    "markdown==3.10.2",
     "olefile==0.47",
     "pandas==2.2.2",
     "pymupdf==1.27.2.2",
@@ -38,8 +38,8 @@ dependencies = [
     "shortuuid==1.0.13",
     "unstructured[all-docs]==0.18.18",
     "pdfminer-six==20260107", # dependency of all-docs
-    "pyasn1==0.6.2", # dependency of unstructured
-    "cairosvg==2.7.1",
+    "pyasn1==0.6.3", # dependency of unstructured
+    "cairosvg==2.9.0",
     "python-magic==0.4.27",
     "pathvalidate==3.2.2",
     "langchain-experimental==0.4.1",
@@ -53,10 +53,10 @@ dependencies = [
     "transformers==4.53.0",
     "markitdown==0.1.2",
     "setuptools == 80.10.2",     # security update
-    "requests == 2.32.5",
+    "requests == 2.33.1",
     "urllib3 == 2.6.3",
     "opencv-python==4.12.0.88",
-    "aiohttp == 3.13.3",
+    "aiohttp == 3.13.5",
     "docling==2.80.0",
     "tabulate==0.10.0",
 ]
@@ -79,7 +79,7 @@ security-overrides = [
   "pillow>=12.1.1",
   "protobuf>=6.33.5",
   "nltk>=3.9.3",
-  "cryptography==46.0.5",
+  "cryptography==46.0.6",
 ]
 
 [tool.uv.sources]

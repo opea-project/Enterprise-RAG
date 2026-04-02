@@ -21,8 +21,10 @@ ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
 # There's already a non-root user in the base image
 ENV PATH="$PATH:/home/ubuntu/.local/bin"
 
-RUN apt update && \
-    apt install -y --no-install-recommends gettext moreutils jq && \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends gettext moreutils jq && \
+    rm -f /usr/lib/python*/EXTERNALLY-MANAGED && \
     ln -sf /usr/bin/python3 /usr/bin/python
 WORKDIR /root
 
@@ -63,6 +65,13 @@ RUN \
     git checkout ${VLLM_GAUDI_COMMIT} && \
     VLLM_TARGET_DEVICE=hpu pip install -v . --no-build-isolation
 # --- END: COMBINED RUN COMMAND ---
+
+# Fix known Python package CVEs
+RUN pip install --no-cache-dir --upgrade \
+    "urllib3==2.6.3" \
+    "setuptools==82.0.1" \
+    "wheel==0.46.2" \
+    "xgrammar==0.1.32"
 
 # Allow non-root user to list /root so pip's legacy-editable scan doesn't fail
 # with PermissionError (habana base image installs leave .pth refs under /root)

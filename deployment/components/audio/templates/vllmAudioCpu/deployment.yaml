@@ -81,7 +81,6 @@ spec:
             - "$(VLLM_MAX_MODEL_LEN)"
             - --max-num-seqs
             - "$(VLLM_MAX_NUM_SEQS)"
-            - --disable-log-requests
           ports:
             - name: http
               containerPort: 8008

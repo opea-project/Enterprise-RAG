@@ -36,10 +36,14 @@ class KeycloakHelper:
         self.k8s_helper = k8s_helper
         self._access_token = None
         self._admin_access_token = None
+        self._ci_username = None
+        self._ci_password = None
         self._admin_pass = self.k8s_helper.retrieve_admin_password(secret_name="keycloak", namespace="auth")
 
     @property
     def access_token(self):
+        if self._ci_username is not None:
+            return self.get_user_access_token(self._ci_username, self._ci_password)
         return self.get_access_token()
 
     @property
@@ -219,9 +223,11 @@ class KeycloakHelper:
         payload = {
             "username": username,
             "enabled": True,
+            "emailVerified": True,
             "firstName": first_name,
             "lastName": last_name,
             "email": email,
+            "requiredActions": [],
             "credentials": [{
                 "type": "password",
                 "value": password,
@@ -248,3 +254,43 @@ class KeycloakHelper:
         exists = len(users) > 0
         logger.info(f"User '{username}' exists: {exists}")
         return exists
+
+    def assign_client_role(self, username, role_name, client_name):
+        """Assign a client role to a user"""
+        logger.info(f"Assigning client role '{role_name}' ({client_name}) to user '{username}'")
+        admin_token = self.admin_access_token
+        headers = {
+            "Authorization": f"Bearer {admin_token}",
+            "Content-Type": "application/json"
+        }
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/clients?clientId={client_name}"
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200 or not response.json():
+            raise Exception(f"Failed to find client '{client_name}' (status {response.status_code})")
+        client_uuid = response.json()[0]["id"]
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/clients/{client_uuid}/roles/{role_name}"
+        response = requests.get(url, headers=headers, verify=False)
+        if response.status_code != 200:
+            raise Exception(f"Failed to find role '{role_name}' in client '{client_name}' (status {response.status_code})")
+        role = response.json()
+        user_id = self._get_user_id(admin_token, username)
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/users/{user_id}/role-mappings/clients/{client_uuid}"
+        response = requests.post(url, json=[role], headers=headers, verify=False)
+        if response.status_code != 204:
+            raise Exception(f"Failed to assign role '{role_name}' to user '{username}' (status {response.status_code}): {response.text}")
+        logger.info(f"Role '{role_name}' ({client_name}) assigned to user '{username}'")
+
+    def delete_user(self, username):
+        """Delete a user from Keycloak"""
+        logger.info(f"Deleting user '{username}' from Keycloak")
+        admin_token = self.admin_access_token
+        user_id = self._get_user_id(admin_token, username)
+        url = f"{self.erag_auth_domain}/admin/realms/{VITE_KEYCLOAK_REALM}/users/{user_id}"
+        headers = {
+            "Authorization": f"Bearer {admin_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.delete(url, headers=headers, verify=False)
+        if response.status_code != 204:
+            raise Exception(f"Failed to delete user '{username}' (status {response.status_code}): {response.text}")
+        logger.info(f"User '{username}' deleted successfully")

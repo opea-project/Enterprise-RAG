@@ -211,10 +211,25 @@ def keycloak_helper(request, k8s_helper, suppress_logging):
 
 
 @pytest.fixture(scope="session", autouse=True)
+def validation_user_persistent(keycloak_helper, suppress_logging):
+    """
+    No-op by default. Overridden in lifecycle/conftest.py for backup-restore tests.
+
+    Backup-restore tests require a permanent validation user that survives the restore
+    cycle (erag-admin password is reset during restore, breaking token-based auth).
+    Regular e2e/e2e-ui tests use erag-admin credentials via the standard flow.
+    """
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
 def temporarily_remove_user_required_actions(keycloak_helper, suppress_logging):
     """
     Disable the required actions for the erag-admin user temporarily to allow obtaining the access token without
     forcing to change the password. Get it back after the tests are done.
+
+    Note: Still autouse because UI tests log in as erag-admin via the browser,
+    bypassing keycloak_helper token management.
     """
     required_actions = keycloak_helper.read_current_required_actions(keycloak_helper.admin_access_token,
                                                                      keycloak_helper.erag_admin_username)
@@ -249,12 +264,16 @@ def temporarily_remove_regular_user_required_actions(keycloak_helper):
 def disable_guards_at_startup(guard_helper, suppress_logging, temporarily_remove_user_required_actions):
     """
     Disable all guards at the beginning of the test suite.
-    Note that supress_logging fixture is deliberately placed here to ensure that it is executed
-    before this fixture (otherwise we'd see a lot of unwanted logs at startup)
+    Note that suppress_logging fixture is deliberately placed here to ensure that it is executed
+    before this fixture (otherwise we'd see a lot of unwanted logs at startup).
     """
     fingerprint_enabled = cfg.get("fingerprint", {}).get("enabled")
-    if fingerprint_enabled:
-        guard_helper.disable_all_guards()
+    if not fingerprint_enabled:
+        yield
+        return
+
+    logger.info("Disabling all guards using permanent validation user")
+    guard_helper.disable_all_guards()
     yield
 
 
@@ -299,27 +318,27 @@ def collect_k8s_logs(request):
 
 
 @pytest.fixture(scope="session")
-def edp_helper(keycloak_helper):
+def edp_helper(keycloak_helper, validation_user_persistent):
     return EdpHelper(keycloak_helper=keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def chatqa_api_helper(keycloak_helper):
+def chatqa_api_helper(keycloak_helper, validation_user_persistent):
     return ChatQaApiHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def chat_history_helper(keycloak_helper):
+def chat_history_helper(keycloak_helper, validation_user_persistent):
     return ChatHistoryHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def docsum_helper(keycloak_helper):
+def docsum_helper(keycloak_helper, validation_user_persistent):
     return DocSumHelper(keycloak_helper)
 
 
 @pytest.fixture(scope="session")
-def fingerprint_api_helper(keycloak_helper):
+def fingerprint_api_helper(keycloak_helper, validation_user_persistent):
     return FingerprintApiHelper(keycloak_helper)
 
 

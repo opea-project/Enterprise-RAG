@@ -484,8 +484,9 @@ class EdpHelper(ApiRequestHelper):
         """Write data to the temp file until we reach the desired size"""
         chunk_size = 1024   # Write in chunks of 1KB
         current_size = 0
+        line = "The quick brown fox jumps over the lazy dog. " * 23 + "\n"  # ~1035 chars
         while current_size < size:
-            chunk = 'A' * chunk_size
+            chunk = line[:chunk_size]
             temp_file.write(chunk)
             current_size += chunk_size
             temp_file.flush()

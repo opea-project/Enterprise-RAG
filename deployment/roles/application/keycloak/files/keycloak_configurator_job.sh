@@ -158,22 +158,22 @@ curl_keycloak() {
   local method=${3:-POST}
   local retry_count=${4:-0}
 
-  local response
-  response=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" "$url" \
+  local http_code
+  http_code=$(curl -s -o /dev/null -w "%{http_code}" -X "$method" "$url" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d "$json")
 
-  if [[ "$response" =~ ^2 ]]; then
+  if [[ "$http_code" =~ ^2 ]]; then
     return 0
-  elif [[ "$response" == 401 && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
+  elif [[ "$http_code" == 401 && "$retry_count" -lt "$CURL_RETRY_LIMIT" ]]; then
     get_access_token
     curl_keycloak "$url" "$json" "$method" $((retry_count + 1))
-  elif [[ "$response" == 409 ]]; then
-    HTTP_CODE=$response
+  elif [[ "$http_code" == 409 ]]; then
+    HTTP_CODE=$http_code
     return 1
   else
-    HTTP_CODE=$response
+    HTTP_CODE=$http_code
     return 1
   fi
 }
@@ -550,6 +550,8 @@ add_client_scope_mapper() {
     log_success "Mapper '$mapper_name' created for '$client_name'"
   elif [[ $HTTP_CODE == 409 ]]; then
     log_info "Mapper '$mapper_name' already exists"
+  else
+    log_error "Failed to create mapper '$mapper_name' (HTTP $HTTP_CODE)"
   fi
 }
 
@@ -695,6 +697,14 @@ create_oidc_mapper() {
 
   local url="${KEYCLOAK_URL}/admin/realms/$realm_name/identity-provider/instances/$oidc_alias/mappers"
 
+  # Check if mapper already exists
+  local existing
+  existing=$(curl_get "$url" | jq -r --arg name "$group_id" '.[] | select(.name == $name) | .name')
+  if [[ -n "$existing" ]]; then
+    log_info "OIDC mapper '$group_id' already exists, skipping"
+    return 0
+  fi
+
   local json='{
     "config": {
       "group": "/'$group_name'",
@@ -708,9 +718,9 @@ create_oidc_mapper() {
   if curl_keycloak "$url" "$json"; then
     log_success "OIDC mapper for group '$group_name' created"
   elif [[ $HTTP_CODE == 409 ]]; then
-    log_info "OIDC mapper already exists"
+    log_info "OIDC mapper '$group_id' already exists"
   else
-    log_error "Failed to create OIDC mapper (HTTP $HTTP_CODE)"
+    log_error "Failed to create OIDC mapper '$group_id' (HTTP $HTTP_CODE)"
   fi
 }
 
@@ -724,6 +734,14 @@ create_oidc_role_mapper() {
   local role_name=$6
 
   local url="${KEYCLOAK_URL}/admin/realms/$realm_name/identity-provider/instances/$oidc_alias/mappers"
+
+  # Check if mapper already exists (Keycloak returns 400 not 409 for duplicate IdP mappers)
+  local existing
+  existing=$(curl_get "$url" | jq -r --arg name "$mapper_name" '.[] | select(.name == $name) | .name')
+  if [[ -n "$existing" ]]; then
+    log_info "OIDC role mapper '$mapper_name' already exists, skipping"
+    return 0
+  fi
 
   local json='{
     "config": {

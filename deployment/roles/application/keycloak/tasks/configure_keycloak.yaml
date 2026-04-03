@@ -41,6 +41,33 @@
   tags:
     - install
 
+- name: Find previous configurator Jobs
+  kubernetes.core.k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: "{{ keycloak_namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name=keycloak-configurator"
+  register: old_configurator_jobs
+  tags:
+    - install
+
+- name: Delete previous configurator Jobs
+  kubernetes.core.k8s:
+    api_version: batch/v1
+    kind: Job
+    name: "{{ item.metadata.name }}"
+    namespace: "{{ keycloak_namespace }}"
+    state: absent
+    delete_options:
+      propagationPolicy: Background
+  loop: "{{ old_configurator_jobs.resources | default([]) }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+  when: old_configurator_jobs.resources | default([]) | length > 0
+  tags:
+    - install
+
 - name: Generate configurator Job manifest
   ansible.builtin.template:
     src: configurator-job.yaml.j2

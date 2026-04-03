@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Enterprise RAG Debug Tool
+Intel® AI for Enterprise RAG Debug Tool
 Collects comprehensive diagnostic information from a Kubernetes cluster including pod logs,
 resource descriptions, version info, and deployment configuration (with sensitive data redacted).
 """
@@ -483,7 +483,7 @@ class EnterpriseRAGDebugger:
         """Execute all debug collection steps and produce the final archive."""
         self.setup_logging()
 
-        self._log_section("Enterprise RAG Debug Tool")
+        self._log_section("Intel® AI for Enterprise RAG Debug Tool")
 
         self.setup_workspace()
         self.collect_config()

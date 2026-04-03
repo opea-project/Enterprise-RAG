@@ -1,4 +1,4 @@
-# Enterprise RAG Debug Tool
+# Intel® AI for Enterprise RAG Debug Tool
 
 Collects comprehensive diagnostic information from a Kubernetes cluster including pod logs, resource descriptions, and deployment configuration (with sensitive data redacted).
 
@@ -6,10 +6,11 @@ Collects comprehensive diagnostic information from a Kubernetes cluster includin
 
 ### Using existing virtual environment
 
-The debug tool requires Python dependencies to run. During the initial deployment, a virtual environment was created at `../erag-venv/`. You can reuse this environment:
+The debug tool requires Python dependencies to run. During the initial deployment, a virtual environment was created at `deployment/erag-venv/`. You can reuse this environment:
 
 ```bash
-source ../erag-venv/bin/activate
+cd deployment/
+source .erag-venv/bin/activate
 ```
 
 If the virtual environment was deleted or is no longer available, you can recreate it following the instructions below.
@@ -31,6 +32,7 @@ After running these commands, the virtual environment will be ready to use for f
 ## Usage
 
 ```bash
+cd deployment/
 python tools/debug_tool.py [--output-dir <dir>] [--config /path/to/config.yaml]
 ```
 

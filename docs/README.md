@@ -34,7 +34,7 @@ Welcome to the Intel® AI for Enterprise RAG documentation! This repository cont
   Guide for building Docker images locally for Intel® AI for Enterprise RAG components and pushing them to registries.
 
 - **[debug_tool.md](debug_tool.md)**
-  Guide for using the Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster for troubleshooting deployment issues.
+  Guide for using the Intel® AI for Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster for troubleshooting deployment issues.
 
 
 

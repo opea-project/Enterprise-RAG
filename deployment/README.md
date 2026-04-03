@@ -139,7 +139,7 @@ For detailed instructions on how to configure backup functionality, create backu
 
 ## Troubleshooting
 
-If you encounter issues during or after deployment, use the Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster.
+If you encounter issues during or after deployment, use the Intel® AI for Enterprise RAG Debug Tool to collect comprehensive diagnostic information from your Kubernetes cluster.
 
 For detailed instructions on using the debug tool, refer to the [Debug Tool Guide](../docs/debug_tool.md).
 

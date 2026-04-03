@@ -1,1 +1,0 @@
-{"detail":"A ValueError occurred while processing: Unsupported speaker ryan for model microsoft/speecht5_tts. Supported speakers: ['awb', 'bdl', 'clb', 'jmk', 'ksp', 'rms', 'slt']. Check https://huggingface.co/datasets/Matthijs/cmu-arctic-xvectors for more details."}

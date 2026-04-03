@@ -170,8 +170,14 @@ def test_table_aware_splitter_text_only():
 def test_table_aware_splitter_small_table_kept_whole():
     """Test that a table fitting within chunk_size is kept as a single chunk."""
     table = (
+        "| Name                     | Age               |\n"
+        "| :----------------------: | :---------------: |\n"
+        "| Alice                     | 30               |\n"
+        "| Bob                       | 25               |"
+    )
+    # Expected output: separator row is removed during normalization
+    expected = (
         "| Name | Age |\n"
-        "| --- | --- |\n"
         "| Alice | 30 |\n"
         "| Bob | 25 |"
     )
@@ -180,14 +186,14 @@ def test_table_aware_splitter_small_table_kept_whole():
 
     assert len(chunks) == 1
     assert isinstance(chunks[0], Document)
-    assert chunks[0].page_content == table
+    assert chunks[0].page_content == expected
     assert chunks[0].metadata["start_index"] == 0
 
 
 def test_table_aware_splitter_large_table_header_propagation():
     """Test that a table exceeding chunk_size is split with header propagated."""
-    header = "| Product | Price | Category |"
-    separator = "| --- | --- | --- |"
+    header = "| Product                | Price         | Category          |"
+    separator = "| :-----------------: | :-----------: | :---------------: |"
     rows = [f"| Product{i} | {i}.99 | Cat{i} |" for i in range(20)]
     table = "\n".join([header, separator] + rows)
 
@@ -196,22 +202,25 @@ def test_table_aware_splitter_large_table_header_propagation():
 
     assert len(chunks) > 1, f"Expected multiple chunks, got {len(chunks)}"
 
-    # Every chunk must start with the header and separator
+    # Header is normalized removing extra spaces
+    expected_header = "| Product | Price | Category |"
+
+    # Every chunk must start with the normalized header (separator row is removed during normalization)
     for i, chunk in enumerate(chunks):
         lines = chunk.page_content.split('\n')
-        assert lines[0] == header, f"Chunk {i} missing header row"
-        assert lines[1] == separator, f"Chunk {i} missing separator row"
-        assert len(lines) > 2, f"Chunk {i} has no data rows"
+        assert lines[0] == expected_header, f"Chunk {i} missing header row"
+        # Note: separator rows are removed during normalization
+        assert len(lines) > 1, f"Chunk {i} has no data rows"
 
 
 def test_table_aware_splitter_mixed_content():
     """Test splitting text with both prose and a table."""
     text = (
         "Introduction paragraph.\n\n"
-        "| Col1 | Col2 |\n"
-        "| --- | --- |\n"
-        "| A | B |\n"
-        "| C | D |\n"
+        "| Col1             | Col2          |\n"
+        "| ---------------  | ------------- |\n"
+        "| A1               | B1            |\n"
+        "| C                | D             |\n"
         "\nConclusion paragraph."
     )
     splitter = TableAwareSplitter(chunk_size=1500, chunk_overlap=10)
@@ -220,9 +229,11 @@ def test_table_aware_splitter_mixed_content():
     contents = [c.page_content for c in chunks]
 
     # Should have text chunk, table chunk, and text chunk
-    assert any("Introduction" in c for c in contents)
+    assert any("Introduction paragraph." in c for c in contents)
     assert any("| Col1 | Col2 |" in c for c in contents)
-    assert any("Conclusion" in c for c in contents)
+    assert any("| A1 | B1 |" in c for c in contents)
+    assert any("| C | D |" in c for c in contents)
+    assert any("Conclusion paragraph." in c for c in contents)
 
 
 def test_table_aware_splitter_segment_text():

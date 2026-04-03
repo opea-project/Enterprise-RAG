@@ -146,7 +146,7 @@ class TableAwareSplitter(Splitter):
     def _normalize_table_cell(row: str) -> str:
         """Strip extra whitespace from cells in a single pipe table row."""
         parts = row.split('|')
-        return '|' + '|'.join(c.strip() for c in parts[1:-1]) + '|'
+        return '| ' + ' | '.join(c.strip() for c in parts[1:-1]) + ' |'
 
     def _normalize_table(self, table_text: str) -> str:
         """Remove separator rows and normalize cell whitespace in a pipe table."""

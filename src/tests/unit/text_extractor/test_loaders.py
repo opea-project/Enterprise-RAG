@@ -18,7 +18,7 @@ import os
 
 def abs_file_path(file_name):
     file_path = '../../e2e/files/dataprep_upload/'
-    return os.path.join(os.path.dirname(__file__), file_path, file_name)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), file_path, file_name)
 
 def test_adoc_loader():
     file_name = 'test_dataprep.adoc'

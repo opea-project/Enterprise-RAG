@@ -35,16 +35,19 @@ kube-prometheus-stack:
           datasourceUid: tempo
           traceIdLabelName: traceID
     ingress:
-      enabled: true
-      ingressClassName: "nginx"
-      pathType: Prefix
-      hosts:
-        - grafana.erag.com
-      path: /
-      tls:
-        - hosts:
-            - grafana.erag.com
-          secretName: tls-secret
+      enabled: false          # DEPRECATED — replaced by httpRoute below
+
+# Gateway API HTTPRoute (replaces legacy grafana subchart Ingress)
+httpRoute:
+  enabled: true
+  gatewayRef:
+    name: erag-gateway
+    namespace: erag-gateway
+  hostnames:
+    - "grafana.erag.com"
+  backendRef:
+    name: telemetry-grafana
+    port: 80
   prometheus:
     prometheusSpec:
       enableRemoteWriteReceiver: true

@@ -8,5 +8,5 @@ annotations:
 
 dependencies:
   - name: apisix
-    version: 2.10.0
+    version: 2.13.0
     repository: https://charts.apiseven.com

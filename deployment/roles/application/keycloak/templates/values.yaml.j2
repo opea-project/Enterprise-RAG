@@ -14,23 +14,22 @@ postgresql:
       cpu: "100m"
 {% endif %}
 
+# Gateway API HTTPRoute (replaces legacy keycloakx subchart Ingress)
+httpRoute:
+  enabled: true
+  gatewayRef:
+    name: erag-gateway
+    namespace: erag-gateway
+  hostnames:
+    - {{ keycloak.domainName }}
+  backendRef:
+    name: keycloak-http
+    port: 80
+
 keycloakx:
-  # Ingress configuration (environment-specific domain)
+  # Legacy Ingress disabled — replaced by Gateway API HTTPRoute
   ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
-    rules:
-      - host: {{ keycloak.domainName }}
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - hosts:
-          - {{ keycloak.domainName }}
-        secretName: {{ keycloak.tls.secret_name }}
+    enabled: false
 
 {% if keycloak.hostAliases is defined and keycloak.hostAliases | length > 0 %}
   hostAliases:

@@ -209,28 +209,9 @@ minio:
   enabled: {{ "true" if storage == "minio" else "false" }}
 {% if storage == "minio" %}
   ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *minioBrowserDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *minioBrowserDomain
-      secretName: tls-secret
+    enabled: false
   apiIngress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *minioApiDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *minioApiDomain
-    annotations:
-      nginx.ingress.kubernetes.io/enable-cors: "true"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-      nginx.ingress.kubernetes.io/cors-allow-headers: "Access-Control-Allow-Origin,DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    enabled: false
   extraEnvVars:
     - name: "MINIO_DOMAIN"
       value: *minioApiDomain

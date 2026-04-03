@@ -1,0 +1,40 @@
+{#
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+#}
+gateway:
+  serviceType: {{ gateway.service_type }}
+  hostPort:
+    enabled: {{ gateway.hostport.enabled | lower }}
+    httpPort: {{ gateway.hostport.http_port }}
+    httpsPort: {{ gateway.hostport.https_port }}
+
+image:
+  repository: {{ registry }}
+  name: erag-init-container
+  tag: {{ tag }}
+
+routes:
+  - name: seaweedfs-admin-route
+    enabled: {{ ((edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
+    namespace: seaweedfs
+    hostnames:
+      - "{{ (edp.uiBrowserDomainPrefix | default('seaweedfs')) ~ '.' ~ FQDN }}"
+    rules:
+      - path: /
+        pathType: PathPrefix
+        backendRef:
+          name: seaweedfs-admin
+          port: 23646
+
+  - name: seaweedfs-s3-route
+    enabled: {{ ((edp.storageType | default('seaweedfs')) == 'seaweedfs') | lower }}
+    namespace: seaweedfs
+    hostnames:
+      - "{{ (edp.s3DomainPrefix | default('s3')) ~ '.' ~ FQDN }}"
+    rules:
+      - path: /
+        pathType: PathPrefix
+        backendRef:
+          name: seaweedfs-s3
+          port: 8333

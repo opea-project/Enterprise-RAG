@@ -61,6 +61,14 @@
   tags:
     - install
 
+- name: Install Gateway API CRDs
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ istio.gateway_api.crds_url }}"
+  tags:
+    - install
+    - pre-upgrade
+
 - name: Set values_files list
   ansible.builtin.set_fact:
     values_files: >

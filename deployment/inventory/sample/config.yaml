@@ -43,8 +43,8 @@ ontap_svm: ""                         # Storage Virtual Machine (SVM) name
 ontap_username: ""                    # ONTAP username with admin privileges
 ontap_password: ""                    # ONTAP password
 
-# Set to true to expose the external storage backend (ontap_data_lif) through the ingress controller
-# as a reverse proxy at s3.<FQDN>. Requires ontap_data_lif and ingress.enabled to be set.
+# Set to true to expose the external storage backend (ontap_data_lif) through the gateway
+# as a reverse proxy at s3.<FQDN>. Requires ontap_data_lif and gateway.enabled to be set.
 reverse_proxy_storage: false          # Enable reverse proxy for external storage backend
 
 huggingToken: "" # Huggingface token is required for gated/private models
@@ -149,9 +149,8 @@ gmc:
         name: model-volume-reranker
         storage: 10Gi
 
-ingress:
+gateway:
   enabled: true
-  service_type: NodePort # Set it accordingly to environment if LoadBalancer is supported
 
 keycloak:
   enabled: true

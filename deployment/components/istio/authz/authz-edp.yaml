@@ -118,7 +118,7 @@ spec:
         notPrincipals:
         - cluster.local/ns/edp/sa/edp-minio
         - cluster.local/ns/edp/sa/edp-chart
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/erag-gateway/sa/erag-gateway-istio
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy

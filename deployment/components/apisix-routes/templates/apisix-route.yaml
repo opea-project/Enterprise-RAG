@@ -10,9 +10,14 @@ metadata:
   name: {{ printf "%s-route" .name }}
   namespace: {{ .namespace }}
 spec:
+  ingressClassName: {{ $.Values.ingressClassName }}
   http:
   - name: {{ printf "%s-route" .name }}
     match:
+      {{- if $.Values.routeHost }}
+      hosts:
+        - {{ $.Values.routeHost | quote }}
+      {{- end }}
       paths:
       - {{ .path }}
     backends:

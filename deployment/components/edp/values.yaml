@@ -159,28 +159,9 @@ minio:
       - ports:
         - port: 15008
   ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *uiBrowserDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *uiBrowserDomain
-      secretName: tls-secret
+    enabled: false
   apiIngress:
-    enabled: true
-    ingressClassName: "nginx"
-    hostname: *s3ApiDomain
-    path: /
-    tls: true
-    extraTls:
-    - hosts:
-        - *s3ApiDomain
-    annotations:
-      nginx.ingress.kubernetes.io/enable-cors: "true"
-      nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-      nginx.ingress.kubernetes.io/cors-allow-headers: "Access-Control-Allow-Origin,DNT,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    enabled: false
   # bitnami helm chart does not have direct mappings to minio's oidc helm config, therefore env variables are used
   # reference: https://min.io/docs/minio/linux/reference/minio-server/settings/iam/openid.html
   extraEnvVars:

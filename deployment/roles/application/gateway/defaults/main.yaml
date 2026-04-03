@@ -1,0 +1,17 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+---
+gateway:
+  enabled: false
+  namespace: "erag-gateway"
+  service_type: "ClusterIP"    # ClusterIP for hostPort, LoadBalancer for cloud
+  hostport:
+    enabled: true              # bare-metal: bind :80/:443 directly on the node
+    http_port: 80
+    https_port: 443
+  helm:
+    chart_name: "erag-gateway"
+    chart_directory: "{{ playbook_dir }}/../components/gateway"
+    release_name: "erag-gateway"
+    default_values_file: "{{ playbook_dir }}/../components/gateway/values.yaml"

@@ -1,0 +1,38 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+ReferenceGrant — allows the Gateway in apisix-gateway namespace to reference
+secrets and services from other namespaces. Required for cross-namespace routing.
+*/ -}}
+{{- $gatewayNs := .Values.gateway.namespace }}
+{{- $namespaces := list }}
+{{- range .Values.routes }}
+{{- if and .enabled (ne .namespace $gatewayNs) }}
+{{- $namespaces = append $namespaces .namespace }}
+{{- end }}
+{{- end }}
+{{- $namespaces = $namespaces | uniq }}
+{{- range $ns := $namespaces }}
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-gateway-refs
+  namespace: {{ $ns }}
+  labels:
+    {{- include "erag-gateway.labels" $ | nindent 4 }}
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: {{ $ns }}
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      namespace: {{ $gatewayNs }}
+  to:
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: Secret
+{{- end }}

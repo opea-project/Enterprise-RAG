@@ -5,6 +5,10 @@ auth:
   resource_registration_endpoint: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/authz/protection/resource_set"
   token_endpoint: "http://keycloak-http.auth.svc/realms/EnterpriseRAG/protocol/openid-connect/token"
 
+ingressClassName: apisix
+
+routeHost: ""
+
 # K8s API RBAC for APISIX ServiceAccount (for K8s API status routes)
 k8s_api_rbac:
   enabled: true

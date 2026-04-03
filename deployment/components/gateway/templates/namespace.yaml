@@ -1,0 +1,16 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+Namespace for the Gateway.
+Skipped when gateway.namespace matches the Helm release namespace (--create-namespace handles it).
+Created only when the Gateway lives in a DIFFERENT namespace than the release.
+*/ -}}
+{{- if ne .Values.gateway.namespace .Release.Namespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.gateway.namespace }}
+  labels:
+    {{- include "erag-gateway.labels" . | nindent 4 }}
+{{- end }}

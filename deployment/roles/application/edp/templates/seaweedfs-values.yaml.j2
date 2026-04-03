@@ -38,21 +38,7 @@ s3:
 
 
   ingress:
-    enabled: true
-    className: "nginx"
-    host: "{{ s3_host }}"
-    path: "/"
-    pathType: "Prefix"
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: '0'
-      nginx.ingress.kubernetes.io/proxy-connect-timeout: '600'
-      nginx.ingress.kubernetes.io/proxy-send-timeout: '600'
-      nginx.ingress.kubernetes.io/proxy-read-timeout: '600'
-      nginx.ingress.kubernetes.io/enable-cors: 'true'
-      nginx.ingress.kubernetes.io/cors-allow-origin: '*'
-      nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
-      nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type,Authorization"
-      nginx.ingress.kubernetes.io/preserve-host: 'true'
+    enabled: false
 
 
 filer:
@@ -112,11 +98,4 @@ admin:
     userKey: "adminUser"
     pwKey: "adminPassword"
   ingress:
-    enabled: true
-    className: "nginx"
-    host: "{{ admin_host }}"
-    path: "/"
-    pathType: "Prefix"
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: '0'
-      nginx.ingress.kubernetes.io/enable-cors: 'true'
+    enabled: false

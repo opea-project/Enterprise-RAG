@@ -85,5 +85,17 @@ postgresql:
       cpu: "1000m"
       memory: "1Gi"
 
+# Gateway API HTTPRoute (replaces legacy keycloakx subchart Ingress)
+httpRoute:
+  enabled: true
+  gatewayRef:
+    name: erag-gateway
+    namespace: erag-gateway
+  hostnames:
+    - "auth.erag.com"
+  backendRef:
+    name: keycloak-http
+    port: 80
+
 global:
   parentChartDefined: true

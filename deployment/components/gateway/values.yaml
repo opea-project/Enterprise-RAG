@@ -1,0 +1,79 @@
+# Copyright (C) 2024-2026 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+# Gateway API configuration for Enterprise RAG
+# Replaces ingress-nginx with standard Kubernetes Gateway API
+# Backend-agnostic: works with APISIX, Envoy Gateway, Istio, etc.
+
+gatewayClass:
+  # Use the built-in Istio GatewayClass (already ACCEPTED on the cluster).
+  # To swap to another backend (Envoy, APISIX, Cilium), change name + controllerName.
+  # HTTPRoutes stay IDENTICAL regardless.
+  name: istio
+  controllerName: istio.io/gateway-controller
+
+gateway:
+  name: erag-gateway
+  namespace: erag-gateway
+  listeners:
+    http:
+      name: http
+      port: 80
+      protocol: HTTP
+    https:
+      enabled: true
+      name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRef:
+          name: tls-secret
+  # Bare-metal exposure mode:
+  #   hostPort  — bind :80/:443 directly on the node (no LB needed, single-node)
+  #   NodePort  — use high-port NodePort (30080/30443)
+  #   LoadBalancer — use MetalLB / kube-vip / cloud LB
+  serviceType: ClusterIP            # ClusterIP when using hostPort
+  hostPort:
+    enabled: true                   # patch the Istio-provisioned deployment with hostPort
+    httpPort: 80
+    httpsPort: 443
+
+# HTTP → HTTPS redirect (301)
+# A catch-all HTTPRoute on the HTTP listener that redirects all traffic to HTTPS.
+httpToHttpsRedirect:
+  enabled: true
+
+image:
+  repository: "docker.io/opea"
+  name: "erag-init-container"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# HTTPRoutes managed by the gateway chart.
+# Only services WITHOUT their own component chart are listed here.
+# UI, Keycloak, Grafana HTTPRoutes are now owned by their respective component charts.
+routes:
+  - name: seaweedfs-admin-route
+    enabled: true
+    namespace: seaweedfs
+    hostnames:
+      - "seaweedfs.erag.com"
+    rules:
+      - path: /
+        pathType: PathPrefix
+        backendRef:
+          name: seaweedfs-admin
+          port: 23646
+
+  - name: seaweedfs-s3-route
+    enabled: true
+    namespace: seaweedfs
+    hostnames:
+      - "s3.erag.com"
+    rules:
+      - path: /
+        pathType: PathPrefix
+        backendRef:
+          name: seaweedfs-s3
+          port: 8333

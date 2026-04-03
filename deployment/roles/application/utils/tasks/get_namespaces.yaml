@@ -27,7 +27,7 @@
     enabled_namespaces: >
       {{
         [
-          ingress.namespace if ingress.enabled else None,
+          gateway.namespace if gateway.enabled else None,
           keycloak.namespace if keycloak.enabled else None,
           apisix.namespace if apisix.enabled else None,
           telemetry.monitoring.namespace if telemetry.enabled else None,

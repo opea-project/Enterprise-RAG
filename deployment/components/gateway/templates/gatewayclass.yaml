@@ -1,0 +1,18 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+GatewayClass — cluster-scoped, tells K8s which controller handles this class.
+When using Istio, the GatewayClass "istio" is automatically created by istiod.
+Only create a custom GatewayClass if gatewayClass.create is explicitly true.
+*/ -}}
+{{- if .Values.gatewayClass.create | default false }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ .Values.gatewayClass.name }}
+  labels:
+    {{- include "erag-gateway.labels" . | nindent 4 }}
+spec:
+  controllerName: {{ .Values.gatewayClass.controllerName }}
+{{- end }}

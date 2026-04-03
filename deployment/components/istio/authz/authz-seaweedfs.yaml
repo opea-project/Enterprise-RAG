@@ -16,4 +16,4 @@ spec:
     - source:
         notPrincipals:
         - cluster.local/ns/edp/sa/edp-chart
-        - cluster.local/ns/ingress-nginx/sa/ingress-nginx
+        - cluster.local/ns/erag-gateway/sa/erag-gateway-istio

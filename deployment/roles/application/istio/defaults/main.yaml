@@ -5,6 +5,11 @@
 istio:
   enabled: false
   namespace: "istio-system"
+  gateway_api:
+    # Gateway API CRDs must be installed before istiod starts (required since Istio 1.22).
+    # Version must be compatible with the Istio release (Istio 1.27.x → Gateway API v1.2.x).
+    crds_version: "v1.2.1"
+    crds_url: "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml"
   helm:
     version: "{{ helm_version }}"
     repo_name: "istio"

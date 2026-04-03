@@ -16,6 +16,7 @@ spec:
   - from:
     - source:
         notPrincipals:
+        - cluster.local/ns/auth-apisix/sa/auth-apisix
         - cluster.local/ns/auth-apisix/sa/auth-apisix-ingress-controller
         - cluster.local/ns/rag-ui/sa/ui-app
 ---

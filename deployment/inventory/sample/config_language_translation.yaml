@@ -74,10 +74,8 @@ gmc:
   enabled: true
   namespace: system
 
-ingress:
+gateway:
   enabled: true
-  service_type: NodePort # Set it accordingly to environment if Loadbalancer is supported
-  namespace: ingress-nginx
 
 keycloak:
   enabled: true

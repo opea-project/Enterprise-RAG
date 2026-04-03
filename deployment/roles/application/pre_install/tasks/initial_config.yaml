@@ -16,7 +16,7 @@
         file: "{{ playbook_dir }}/../roles/application/{{ item }}/defaults/main.yaml"
       loop:
         - istio
-        - ingress
+        - gateway
         - keycloak
         - apisix
         - telemetry

@@ -5,20 +5,16 @@ SPDX-License-Identifier: Apache-2.0
 
 namespace: {{ pipelines[0].namespace }}
 
+httpRoute:
+  enabled: true
+  hostnames:
+    - {{ telemetry.domainName }}
+
 kube-prometheus-stack:
     grafana:
 {% if telemetry.additional_values.ingress is not defined %}
         ingress:
-            enabled: true
-            ingressClassName: "nginx"
-            pathType: Prefix
-            hosts:
-                - {{ telemetry.domainName }}
-            path: /
-            tls:
-                - hosts:
-                    - {{ telemetry.domainName }}
-                  secretName: {{ telemetry.grafana.tls.secret_name }}
+            enabled: false
 {% endif %}
         admin:
             existingSecret: "{{ telemetry.grafana.auth.admin.password_secret_name }}"

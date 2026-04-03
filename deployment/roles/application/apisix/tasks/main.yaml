@@ -34,6 +34,24 @@
     - install
     - pre-upgrade
 
+- name: Extract APISIX CRDs from subchart
+  ansible.builtin.shell:
+    cmd: >
+      tar xzf {{ apisix.helm.chart_directory }}/charts/apisix-*.tgz
+      -C {{ tmp_dir }}
+      apisix/charts/apisix-ingress-controller/crds/apisixic-crds.yaml
+  tags:
+    - install
+    - pre-upgrade
+
+- name: Apply APISIX CRDs
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ tmp_dir }}/apisix/charts/apisix-ingress-controller/crds/apisixic-crds.yaml"
+  tags:
+    - install
+    - pre-upgrade
+
 - name: Ensure namespace exists
   kubernetes.core.k8s:
     state: present

@@ -239,7 +239,10 @@
     merged_apisix_values: >-
       {{
         apisix_routes_raw_config
-        | combine({'endpoints': merged_endpoints}, recursive=True)
+        | combine({
+            'endpoints': merged_endpoints,
+            'routeHost': (ui.domainName if (ui is defined and ui.domainName is defined and ui.domainName | length > 0) else '')
+          }, recursive=True)
       }}
   when: apisix.enabled
   tags:

@@ -51,23 +51,15 @@ image:
     repository: {{ registry }}
 {% endif %}
 ingress:
+  enabled: false
+
+httpRoute:
   enabled: true
-  className: nginx
-  annotations: {}
-  tls:
-    - hosts:
-      - *dname
-      secretName: *tsecret
-  hosts:
-    - host: *dname
-      paths:
-        - pathType: Prefix
-          path: /
-          backend:
-            service:
-              name: *svcName
-              port:
-                number: *svcPort
+  gatewayRef:
+    name: erag-gateway
+    namespace: erag-gateway
+  hostnames:
+    - *dname
 {% if ui.additional_values is defined %}
 {{ ui.additional_values | to_nice_yaml }}
 {% endif %}

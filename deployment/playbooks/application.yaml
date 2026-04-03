@@ -251,10 +251,10 @@
         - pre-upgrade
         - update-configuration
 
-    - name: Ingress role
+    - name: Gateway role
       ansible.builtin.include_role:
-        name: ingress
-      when: ingress.enabled or "pre-upgrade" in ansible_run_tags
+        name: gateway
+      when: gateway.enabled or "pre-upgrade" in ansible_run_tags
       tags:
         - install
         - uninstall

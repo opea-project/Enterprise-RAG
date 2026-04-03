@@ -1,0 +1,34 @@
+{{- /*
+Copyright (C) 2024-2026 Intel Corporation
+SPDX-License-Identifier: Apache-2.0
+
+HTTPRoute — routes traffic from the shared Gateway to the UI service.
+Replaces the legacy Ingress template.  Backend-agnostic (works with Istio,
+Envoy Gateway, APISIX, or any conformant Gateway API controller).
+*/ -}}
+{{- if .Values.httpRoute.enabled }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "helm-ui.fullname" . }}-route
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helm-ui.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: {{ .Values.httpRoute.gatewayRef.name }}
+      namespace: {{ .Values.httpRoute.gatewayRef.namespace }}
+      sectionName: {{ .Values.httpRoute.gatewayRef.sectionName | default "https" }}
+  hostnames:
+    {{- range .Values.httpRoute.hostnames }}
+    - {{ . | quote }}
+    {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ .Values.service.name }}
+          port: {{ .Values.service.port }}
+{{- end }}

@@ -87,11 +87,9 @@ securityContext:
   readOnlyRootFilesystem: true
 
 ingress:
-  enabled: true
+  enabled: false          # DEPRECATED — replaced by httpRoute below
   className: nginx
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   tls:
     - hosts:
       - *dname
@@ -106,6 +104,15 @@ ingress:
               name: *svcName
               port:
                 number: *svcPort
+
+# Gateway API HTTPRoute (replaces legacy Ingress)
+httpRoute:
+  enabled: true
+  gatewayRef:
+    name: erag-gateway
+    namespace: erag-gateway
+  hostnames:
+    - *dname
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

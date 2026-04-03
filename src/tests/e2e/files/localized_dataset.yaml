@@ -461,8 +461,8 @@ test_docx_tables:
     pl:
       files: [test_docx_table_single_cell.docx]
       questions:
-        - question: "Jaki był zawód osoby o imieniu Trenvahir?"
-          expected_any: ["zegarmistrz"]
+        - question: "Jaki był zawód osoby, która wyszeptała imię Trenvahir?"
+          expected_any: ["zegarmistrz", "zegar"]
   - en:
       files: [test_docx_table.docx]
       questions:
@@ -484,10 +484,10 @@ test_docx_with_images:
     pl:
       files: [story_docx_pictures.docx]
       questions:
-        - question: "Co robił Vellimer, gdy nadciągała burza?"
+        - question: "Co robił Vellimer, gdy nadeszła burza?"
           expected_any: ["dach", "pręt", "czeka"]
-        - question: "Jak wioska Fernloft wspomina dziś Vellimera? Jakie znaki wskazują, że może wciąż być w pobliżu?"
-          expected_any: ["miotł", "pogod", "Quorchleff"]
+        - question: "Jak mieszkańcy Fernloft wspominają dziś Vellimera? Jakie znaki wskazują, że wciąż może być w pobliżu?"
+          expected_any: ["miotła", "pogoda", "Quorchleff"]
 test_docx_multi_paragraph:
   - en:
       files: [Front-end Intern_example.docx]
@@ -524,7 +524,7 @@ test_logs_parsing_capability:
           expected_any: ["3", "trzy"]
         - question: "O której godzinie wystąpił błąd ERROR z InventoryService?"
           expected_any: ["10:01:47"]
-        - question: "Jakie było ostatnie ostrzeżenie WARNING z PaymentService? Podaj pełną linię logu. Powinna zawierać ciąg [PaymentService]."
+        - question: "Znajdź najnowszy wpis logu zaczynający się dokładnie od „[PaymentService] WARNING” (nie wpisy innych serwisów wspominające PaymentService). Podaj pełną treść tego wpisu."
           expected_any: ["transaction tx1005 delayed due to network latency"]
 test_docx_comprehensive_pl:
   # TODO: en not yet implemented - PL-only document

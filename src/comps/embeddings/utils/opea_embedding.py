@@ -131,6 +131,7 @@ class OPEAEmbedding:
             
             async def multithreaded_embed_query(i, batch, semaphore):
                 async with semaphore:
+                    logger.debug(f"Processing batch {i+1}/{len(batches)} with {len(batch)} texts")
                     texts = [doc.text for doc in batch]
                     res_vectors = await self._connector.embed_documents(texts=texts, return_pooling=input.return_pooling)
 

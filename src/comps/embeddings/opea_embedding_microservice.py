@@ -22,8 +22,6 @@ from comps import (
     statistics_dict,
 )
 from comps.cores.proto.docarray import EmbedDoc, EmbedDocList, TextDoc, TextDocList
-
-# from utils import opea_embedding
 from comps.embeddings.utils.opea_embedding import OPEAEmbedding
 
 # Define the unique service name for the microservice
@@ -76,9 +74,9 @@ async def process(input: Union[TextDoc, TextDocList]) -> Union[EmbedDoc, EmbedDo
         res = await opea_embedding.run(input)
 
     except ValueError as e:
-        logger.exception(f"ValueError occured while validating the input: {str(e)}")
+        logger.exception(f"ValueError occurred while validating the input: {str(e)}")
         raise HTTPException(status_code=400,
-                            detail=f"ValueError occured while validating the input: {str(e)}"
+                            detail=f"ValueError occurred while validating the input: {str(e)}"
         )
     except requests.exceptions.HTTPError as e:
         if hasattr(e.response, "status_code") and e.response.status_code == 413:

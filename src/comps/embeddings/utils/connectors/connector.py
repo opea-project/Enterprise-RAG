@@ -32,6 +32,7 @@ class EmbeddingConnector(ABC):
         self._endpoint = endpoint
         self._model_name = model_name
 
+    @staticmethod
     def _sanitize_input(value: str) -> str:
         """
         Sanitizes the input value to remove potentially harmful content.

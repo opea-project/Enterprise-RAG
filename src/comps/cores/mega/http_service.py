@@ -1,6 +1,7 @@
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import inspect
+import os
 import time
 
 from typing import Optional
@@ -94,14 +95,21 @@ class HTTPService(BaseService):
         if self.cors:
             from fastapi.middleware.cors import CORSMiddleware
 
+            cors_origins = [
+                origin.strip()
+                for origin in os.environ.get("CORS_ALLOW_ORIGINS", "*").split(",")
+                if origin.strip()
+            ]
+            allow_all = cors_origins == ["*"]
+
             app.add_middleware(
                 CORSMiddleware,
-                allow_origins=["*"],
-                allow_credentials=True,
+                allow_origins=cors_origins,
+                allow_credentials=not allow_all,
                 allow_methods=["*"],
                 allow_headers=["*"],
             )
-            self.logger.info("CORS is enabled.")
+            self.logger.info(f"CORS is enabled. Origins: {cors_origins}, Credentials: {not allow_all}")
 
         @app.get(
             path="/v1/health_check",

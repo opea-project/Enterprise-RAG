@@ -185,6 +185,7 @@ Submit questions, feature requests, and bug reports on the GitHub Issues page.
 # Publications
 
 Feel free to checkout articles about Intel® AI for Enterprise RAG:
+* [Lenovo Validated Design: AI POD Mini for Enterprise RAG Implementation](https://lenovopress.lenovo.com/lp2417-lenovo-validated-design-ai-pod-mini-for-enterprise-rag-implementation)
 * [Give Your RAG a Voice: Building an Audio Q&A Experience with Intel® AI for Enterprise RAG](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Give-Your-RAG-a-Voice-Building-an-Audio-Q-A-Experience-with/post/1739148)
 * [Accelerate AI Value Creation with Nutanix and Intel® AI for Enterprise RAG](https://www.youtube.com/watch?v=7ghQiKXrzew)
 * [Converging Paradigms: Architecting a Hybrid and Open Platform for Unified HPC and AI Workloads](https://www.intel.com/content/www/us/en/content-details/913576/converging-paradigms-architecting-a-hybrid-and-open-platform-for-unified-hpc-and-ai-workloads.html)

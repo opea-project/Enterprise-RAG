@@ -75,7 +75,7 @@ ENABLED_SCANNERS = [
     'url_reachability'
 ]
 
-from comps.guardrails.utils.scanners import OPEABanSubstrings, OPEARegexScanner
+from comps.guardrails.utils.scanners import OPEABanSubstrings, OPEACode, OPEARegexScanner
 from comps import get_opea_logger, sanitize_env
 logger = get_opea_logger("opea_llm_guard_output_guardrail_microservice")
 
@@ -565,7 +565,7 @@ class OutputScannersConfig:
             except ValueError as e:
                 raise ValueError(f"Threshold value is not valid for Code scanner. Please provide a float value. Provided threshold: {threshold}") from e
         logger.info(f"Creating Code scanner with params: {code_params}")
-        return Code(**code_params)
+        return OPEACode(**code_params)
 
     def _create_deanonymize_scanner(self, scanner_config, vault):
         if not vault:

@@ -1,8 +1,9 @@
 import re
 
 from collections.abc import Iterable
-from llm_guard.input_scanners import BanSubstrings, Regex
+from llm_guard.input_scanners import BanSubstrings, Code, Regex
 from llm_guard.input_scanners.regex import MatchType
+from llm_guard.util import calculate_risk_score
 from presidio_anonymizer.core.text_replace_builder import TextReplaceBuilder
 
 from comps import get_opea_logger
@@ -74,3 +75,48 @@ class OPEARegexScanner(Regex):
 
         logger.warning("None of the patterns matched the text")
         return text_replace_builder.output_text, False, 1.0
+
+
+# LLM Guard's Code scanner processes the entire prompt as a single block when no markdown
+# fencing is found. This causes the ML classifier to dilute confidence across mixed-language
+# inputs (e.g. Python + Scala in one prompt), failing to detect either language above the threshold.
+# OPEACode works around this by also splitting on blank-line boundaries.
+class OPEACode(Code):
+    _CHUNK_SEPARATOR = re.compile(r'\n\s*\n')
+
+    def scan(self, prompt: str, output: str = None) -> tuple[str, bool, float]:
+        text = output if output is not None else prompt
+
+        if text.strip() == "":
+            return text, True, 0.0
+
+        # Extract markdown code blocks (same as parent)
+        code_blocks = self._extract_code_blocks(text)
+        if len(code_blocks) == 0:
+            code_blocks = [text]
+
+            chunks = [c.strip() for c in self._CHUNK_SEPARATOR.split(text) if c.strip()]
+            if len(chunks) > 1:
+                code_blocks.extend(chunks)
+
+        results = self._pipeline(code_blocks)
+        logger.info(code_blocks)
+        for languages in results:
+            for language in languages:
+                score = round(language["score"], 2)
+
+                if score < self._threshold or language["label"] not in self._languages:
+                    continue
+
+                if self._is_blocked:
+                    logger.warning(f"Language is not allowed: {language['label']} (score={score})")
+                    return text, False, calculate_risk_score(score, self._threshold)
+
+                if not self._is_blocked:
+                    return text, True, 0.0
+
+        if self._is_blocked:
+            return text, True, 0.0
+
+        logger.warning("No allowed languages detected")
+        return text, False, 1.0

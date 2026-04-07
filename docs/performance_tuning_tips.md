@@ -48,7 +48,7 @@ vector_databases:
 
 ### Redis Vector Database Performance Settings
 
-Starting with Redis 8.2, use `SVS-VAMANA` as the recommended default vector index backend for Enterprise RAG deployments, especially for medium/large datasets. It is optimized for better memory efficiency and query throughput while keeping high recall.
+Starting with Redis 8.2, use `SVS-VAMANA` as the recommended vector index backend for Intel® AI for Enterprise RAG deployments, especially for medium/large datasets. It is optimized for better memory efficiency and query throughput while keeping high recall.
 
 This is configurable via `deployment/inventory/**/config.yaml` as follows:
 

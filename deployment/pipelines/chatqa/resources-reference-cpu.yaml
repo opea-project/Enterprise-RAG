@@ -44,11 +44,11 @@ services:
     replicas: 1
     resources:
       requests:
-        cpu: 2
-        memory: 4Gi
+        cpu: 4
+        memory: 8Gi
       limits:
         cpu: 8
-        memory: 12Gi
+        memory: 16Gi
     hpa:
       minReplicas: 1
       maxReplicas: 3

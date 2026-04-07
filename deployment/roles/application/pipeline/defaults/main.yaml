@@ -19,7 +19,7 @@ gmc:
   # Model weights (e.g. Mixtral 87G) are downloaded once and cached on the shared PVC;
   # all replicas block on the same filelock so only one downloads at a time.
   # Increase if your network bandwidth is limited.
-  vllm_model_download_timeout_minutes: 90
+  vllm_model_download_timeout_minutes: 120
   pvc:
     accessMode: ReadWriteOnce
     models:

@@ -18,6 +18,11 @@ MINIO_DOMAIN="${MINIO_DOMAIN:-minio.erag.com}"
 CREDENTIALS_SECRET_NAME="${CREDENTIALS_SECRET_NAME:-erag-credentials}"
 CREDENTIALS_SECRET_NAMESPACE="${CREDENTIALS_SECRET_NAMESPACE:-auth}"
 
+# Ensure the Kubernetes API server is excluded from proxy to avoid TLS issues with kubectl
+if [ -n "${KUBERNETES_SERVICE_HOST:-}" ] && [ -n "${no_proxy:-}" ]; then
+  export no_proxy="${no_proxy},${KUBERNETES_SERVICE_HOST}"
+fi
+
 # OIDC Configuration
 OIDC_ENDPOINT="${OIDC_ENDPOINT:-}"
 OIDC_ALIAS="${OIDC_ALIAS:-}"
@@ -676,7 +681,9 @@ create_oidc_config() {
       "jwksUrl": "'$oidc_jwks_url'",
       "useJwksUrl": "true"
     },
-    "providerId": "oidc"
+    "providerId": "oidc",
+    "storeToken": "true",
+    "addReadTokenRoleOnCreate": "true"
   }'
 
   if curl_keycloak "$url" "$json"; then
@@ -998,9 +1005,18 @@ if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
   assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-User" "EnterpriseRAG-oidc-backend" "ERAG-user"
   assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-User" "EnterpriseRAG-oidc-minio" "erag-user-group"
 
+  create_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc" "ERAG-user"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc" "ERAG-maintainer"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc-backend" "ERAG-user"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc-backend" "ERAG-maintainer"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc-minio" "erag-user-group"
+  assign_role_realm_role "$KEYCLOAK_REALM" "ERAG-SSO-Maintainer" "EnterpriseRAG-oidc-minio" "erag-maintainer-group"
+
   # Create SSO claim-to-role mappers
   create_oidc_role_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "SSO-Admin-Mapper" "roles" "EnterpriseRAG.AdminAccess" "ERAG-SSO-Admin"
   create_oidc_role_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "SSO-User-Mapper" "roles" "EnterpriseRAG.UserAccess" "ERAG-SSO-User"
+  create_oidc_role_mapper "$KEYCLOAK_REALM" "$OIDC_ALIAS" "SSO-Maintainer-Mapper" "roles" "EnterpriseRAG.MaintainerAccess" "ERAG-SSO-Maintainer"
 
   # Validate OIDC identity provider
   log_info "Validating OIDC identity provider '$OIDC_ALIAS'..."
@@ -1026,7 +1042,7 @@ if [[ "$OIDC_ENDPOINT" =~ ^https?:// ]]; then
   fi
 
   # Validate upstream OIDC metadata endpoint
-  METADATA_STATUS=$(curl -sk -o /dev/null -w "%{http_code}" "${OIDC_ENDPOINT}")
+  METADATA_STATUS=$(curl -sk --max-time 10 -o /dev/null -w "%{http_code}" "${OIDC_ENDPOINT}" || true)
   if [[ "$METADATA_STATUS" == "200" ]]; then
     log_info "Upstream OIDC metadata endpoint is reachable (HTTP 200)"
   else

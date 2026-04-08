@@ -27,7 +27,7 @@
 > **App Registration is required for every Intel® AI for Enterprise RAG deployment that uses SSO.** Even if your organisation already has Entra ID SSO configured for other applications, you must create a dedicated App Registration for Enterprise RAG so that Keycloak can act as an OIDC client towards Entra ID.
 
 1. Configured and working Microsoft Entra ID:
-    - two new groups - one for `erag-admins`, one for `erag-users`
+    - three new groups - one for `erag-admins`, one for `erag-users`, and one for `erag-maintainers`
 2. Registered a new Azure `App registration`:
     - In **Microsoft Entra ID → App registrations → New registration**:
         - Set a name (e.g. `Enterprise RAG`)
@@ -43,9 +43,9 @@
 
     The `alias` is a free-form identifier you choose yourself (e.g. `enterprise-sso`), but be sure to match the element of redirect URL inputed in App Registration.
 
-3. App roles created both for Enterprise RAG Admin and for Enterprise RAG User. Field `Value` should match `EnterpriseRAG.AdminAccess` for Admin role and `EnterpriseRAG.UserAccess` for User role (any custom value changes require modifications in [keycloak_configurator.sh line 1140](../deployment/roles/application/keycloak/files/keycloak_configurator.sh)). Check out following instructions for more details: [here](https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-app-roles-in-apps#assign-users-and-groups-to-roles).
+3. App roles created for Enterprise RAG Admin, User, and Maintainer. Field `Value` should match `EnterpriseRAG.AdminAccess` for Admin role, `EnterpriseRAG.UserAccess` for User role, and `EnterpriseRAG.MaintainerAccess` for Maintainer role (any custom value changes require modifications in [keycloak_configurator.sh](../deployment/roles/application/keycloak/files/keycloak_configurator_job.sh)). Check out following instructions for more details: [here](https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-app-roles-in-apps#assign-users-and-groups-to-roles).
 4. Assignments created between the app and the groups based on appropriate app roles. Check out instructions from the previous point.
-5. Users added to the newly created groups, either `erag-admins` or `erag-users` in Microsoft Entra ID.
+5. Users added to the newly created groups - `erag-admins`, `erag-users`, or `erag-maintainers` - in Microsoft Entra ID.
 
 ## Keycloak Configuration via Ansible
 
@@ -71,7 +71,7 @@ To configure Intel® AI for Enterprise RAG SSO using Azure Single Sign-On, follo
      - Field `Alias` - enter your SSO alias, for example `enterprise-sso`
      - Field `Display name` - enter your link display name to redirect to external SSO, for example `Enterprise SSO`
      - Field `Discovery endpoint` - enter your `OpenID Connect metadata document`. Configuration fields should autopopulate
-4. Create two `Realm roles` in the left menu.
+4. Create three `Realm roles` in the left menu.
      1. `ERAG-SSO-Admin` and assign following roles:
           - `(EnterpriseRAG-oidc) ERAG-admin`
           - `(EnterpriseRAG-oidc-backend) ERAG-admin`
@@ -81,7 +81,14 @@ To configure Intel® AI for Enterprise RAG SSO using Azure Single Sign-On, follo
           - `(EnterpriseRAG-oidc) ERAG-user`
           - `(EnterpriseRAG-oidc-backend) ERAG-user`
           - `(EnterpriseRAG-oidc-minio) erag-user-group`
-5. Configure two `Identity mappers` in `Mappers` under the created `Identity provider`:
+     3. `ERAG-SSO-Maintainer` and assign following roles:
+          - `(EnterpriseRAG-oidc) ERAG-user`
+          - `(EnterpriseRAG-oidc) ERAG-maintainer`
+          - `(EnterpriseRAG-oidc-backend) ERAG-user`
+          - `(EnterpriseRAG-oidc-backend) ERAG-maintainer`
+          - `(EnterpriseRAG-oidc-minio) erag-user-group`
+          - `(EnterpriseRAG-oidc-minio) erag-maintainer-group`
+5. Configure three `Identity mappers` in `Mappers` under the created `Identity provider`:
      1. Add Identity Provider Mapper - for realm role `ERAG-SSO-Admin`:
           - Field `Name` - type in your mapper name
           - Field `Sync mode override` - select `Force`
@@ -94,10 +101,16 @@ To configure Intel® AI for Enterprise RAG SSO using Azure Single Sign-On, follo
           - Field `Mapper type` - enter `Claim to Role`
           - Filed `Claim` - enter `roles`
           - Field `Group` - select `ERAG-SSO-User`
+     3. Add Identity Provider Mapper - for realm role `ERAG-SSO-Maintainer`:
+          - Field `Name` - type in your mapper name
+          - Field `Sync mode override` - select `Force`
+          - Field `Mapper type` - enter `Claim to Role`
+          - Filed `Claim` - enter `roles`
+          - Field `Group` - select `ERAG-SSO-Maintainer`
 
 After this configuration, the Keycloak login page should have an additional link at the bottom of the login form - named `Enterprise SSO`. This should redirect you to the Azure login page.
 
-Depending on users' group membership in Microsoft Entra ID (either `erag-admins` or `erag-users`), users will have appropriate permissions mapped. For example, `erag-admins` will have access to the admin panel.
+Depending on users' group membership in Microsoft Entra ID (`erag-admins`, `erag-users`, or `erag-maintainers`), users will have appropriate permissions mapped. For example, `erag-admins` will have full access to the admin panel, while `erag-maintainers` will have access to the upload panel and read-only status view of microservices.
 
 ---
 

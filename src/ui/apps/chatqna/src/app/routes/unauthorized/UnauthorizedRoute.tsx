@@ -17,8 +17,8 @@ const UnauthorizedRoute = () => {
       <h1>Access Required</h1>
       <p>
         Your account does not have the required permissions to access this
-        application. Please contact your administrator to request either an
-        admin or user role.
+        application. Please contact your administrator to request an
+        admin, user, or maintainer role.
       </p>
       <Button variant="outlined" onPress={handleLogout}>
         Sign Out

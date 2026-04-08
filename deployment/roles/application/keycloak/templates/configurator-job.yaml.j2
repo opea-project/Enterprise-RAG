@@ -151,6 +151,18 @@ spec:
             - name: FEDERATION_ADMIN_GROUP_LDAP_FILTER
               value: "{{ keycloak_federation_admin_group_ldap_filter | default('(cn=erag-admin-group)') }}"
 {% endif %}
+{% if httpProxy is defined and httpProxy != "" %}
+            - name: http_proxy
+              value: "{{ httpProxy }}"
+{% endif %}
+{% if httpsProxy is defined and httpsProxy != "" %}
+            - name: https_proxy
+              value: "{{ httpsProxy }}"
+{% endif %}
+{% if noProxy is defined and noProxy != "" %}
+            - name: no_proxy
+              value: "{{ noProxy }}"
+{% endif %}
           volumeMounts:
             - name: scripts
               mountPath: /scripts

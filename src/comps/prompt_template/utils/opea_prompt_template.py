@@ -13,31 +13,27 @@ from comps import (
     get_opea_logger
 )
 
-from comps.prompt_template.utils.templates import template_system_english as default_system_template
-from comps.prompt_template.utils.templates import template_user_english as default_user_template
+from comps.prompt_template.utils.language import PromptLanguage
+import comps.prompt_template.utils.languages  # noqa: F401 — trigger registration
 from comps.prompt_template.utils.chat_history_handler import ChatHistoryHandler
 
 logger = get_opea_logger(f"{__file__.split('comps/')[1].split('/', 1)[0]}_microservice")
-
-AVAILABLE_LANGUAGES = ["en", "pl"]
 
 
 class OPEAPromptTemplate:
     def __init__(self, chat_history_endpoint: str = None, prompt_template_language: str = "en") -> None:
         self._if_conv_history_in_prompt = False
         self._chat_history_placeholder = "conversation_history"
+        self._using_contextual_templates = True
 
-        self.prompt_template_language = prompt_template_language.lower()
-        if self.prompt_template_language not in AVAILABLE_LANGUAGES:
-            err_msg = f"Prompt template language '{self.prompt_template_language}' is not supported. Available languages: {AVAILABLE_LANGUAGES}"
-            logger.error(err_msg)
-            raise ValueError(err_msg)
+        self.language = PromptLanguage.get(prompt_template_language)
+        self.prompt_template_language = self.language.language_name
 
-        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint, prompt_template_language=self.prompt_template_language)
+        self.ch_handler = ChatHistoryHandler(chat_history_endpoint=chat_history_endpoint, language=self.language)
         try:
-            self._validate(default_system_template, default_user_template)
-            self.system_prompt_template = default_system_template
-            self.user_prompt_template = default_user_template
+            self._validate(self.language.default_system_template, self.language.default_user_template)
+            self.system_prompt_template = self.language.default_system_template
+            self.user_prompt_template = self.language.default_user_template
         except ValueError as e:
             logger.error(f"Default prompt template validation failed, err={e}")
             raise ValueError(f"Default prompt template validation failed, err={e}")
@@ -146,11 +142,35 @@ class OPEAPromptTemplate:
 
         return system_prompt, user_prompt
 
+    def _is_default_template(self, system_template: str) -> bool:
+        """Check if a system template is equivalent to the current language's default template.
+
+        Uses normalized whitespace comparison to handle minor formatting differences.
+        """
+        return self.language.is_default_template(system_template)
+
+    def _select_system_template(self, has_docs: bool, has_history: bool) -> str:
+        """Select the appropriate system prompt template based on available context.
+
+        When using contextual templates, the system prompt is chosen to match the
+        available context (search results and/or chat history) to avoid irrelevant
+        instructions (e.g. citation instructions when no search results exist).
+
+        Args:
+            has_docs: Whether non-empty search results are available.
+            has_history: Whether non-empty conversation history is available.
+
+        Returns:
+            str: The selected system prompt template string.
+        """
+        return self.language.get_contextual_system_template(has_docs, has_history)
+
     def _parse_reranked_docs(self, reranked_docs: list, header_separator=" > ") -> str:
         """
         Format reranked documents with source, metadata (title, author, dates), and section info.
         Output: [id] (source) "Title" by Author (created: YYYY-MM-DD, updated: ..., ingested: ...)
         """
+        labels = self.language.metadata_labels
         formatted_docs = []
 
         for doc in reranked_docs:
@@ -189,23 +209,23 @@ class OPEAPromptTemplate:
             # Build document title & author line ("Title" by Author OR "Title" if no author OR by Author if no title)
             file_title = doc.metadata.get("file_title") or doc.metadata.get("filename", "")
             author = doc.metadata.get("author", "")
-            
+
             title_author_part = ""
             if file_title:
                 title_author_part = f'"{file_title}"'
                 if author:
-                    title_author_part += f" by {author}"
+                    title_author_part += f" {labels['by']} {author}"
             elif author:
-                title_author_part = f"by {author}"
+                title_author_part = f"{labels['by']} {author}"
 
             # Build date metadata (compact ISO format)
             date_parts = []
             if creation_date := format_timestamp_iso(doc.metadata.get("creation_date")):
-                date_parts.append(f"created: {creation_date}")
+                date_parts.append(f"{labels['created']}: {creation_date}")
             if last_update_date := format_timestamp_iso(doc.metadata.get("last_update_date")):
-                date_parts.append(f"updated: {last_update_date}")
+                date_parts.append(f"{labels['updated']}: {last_update_date}")
             if ingestion_date := format_timestamp_iso(doc.metadata.get("ingestion_date")):
-                date_parts.append(f"ingested: {ingestion_date}")
+                date_parts.append(f"{labels['ingested']}: {ingestion_date}")
             date_part = f" ({', '.join(date_parts)})" if date_parts else ""
             logger.debug(f"Formatted document metadata: title_author={title_author_part}, dates={date_part}")
 
@@ -217,17 +237,17 @@ class OPEAPromptTemplate:
                     headers.append(doc.metadata[header_key])
 
             # Build the formatted string
-            header_part = f"\nSection: {header_separator.join(headers)}" if len(headers) > 0 else ""
+            header_part = f"\n{labels['section']}: {header_separator.join(headers)}" if len(headers) > 0 else ""
 
             if source_info["type"] == "unknown":
                 # Build with metadata but no citation ID
                 metadata_line = f"{title_author_part}{date_part}" if title_author_part else ""
-                formatted_doc = f"{metadata_line}{header_part}\nContent: {doc.text}" if metadata_line else f"{header_part}{doc.text}"
+                formatted_doc = f"{metadata_line}{header_part}\n{labels['content']}: {doc.text}" if metadata_line else f"{header_part}{doc.text}"
             else:
                 # Full format with citation ID, source, metadata, headers, and content
                 citation_id = doc.metadata.get('citation_id', '')
                 metadata_line = f" {title_author_part}{date_part}" if title_author_part else date_part
-                formatted_doc = f"[{citation_id}] ({source_info['source']}){metadata_line}{header_part}\nContent: {doc.text}"
+                formatted_doc = f"[{citation_id}] ({source_info['source']}){metadata_line}{header_part}\n{labels['content']}: {doc.text}"
             formatted_docs.append(formatted_doc)
 
         return "\n\n".join(formatted_docs)
@@ -250,19 +270,27 @@ class OPEAPromptTemplate:
         # Update prompt template if a new one is provided in the input and logs the update.
         if input.system_prompt_template is not None and input.user_prompt_template is not None:
             if self._changed(input.system_prompt_template, input.user_prompt_template, keys):
-                logger.info("The prompt template has been updated.")
+                # Check if the "new" template is actually the known default (e.g. injected by fingerprint).
+                # If so, keep contextual template selection active.
+                if self._is_default_template(input.system_prompt_template):
+                    self._using_contextual_templates = True
+                    logger.info("Received default template (e.g. from fingerprint). Contextual template selection remains active.")
+                else:
+                    self._using_contextual_templates = False
+                    logger.info("The prompt template has been updated to a custom template. Contextual template selection disabled.")
                 logger.debug(f"System Prompt:\n{self.system_prompt_template}")
                 logger.debug(f"User Prompt:\n{self.user_prompt_template}")
             else:
                 logger.debug("The prompt template has not been updated.")
                 # Ensure the input data keys match the expected placeholders
                 # even if the prompt template has not changed
-                expected_placeholders_system = extract_placeholders_from_template(self.system_prompt_template)
-                expected_placeholders_user = extract_placeholders_from_template(self.user_prompt_template)
-                expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._chat_history_placeholder])
-                if keys != expected_placeholders:
-                    logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
-                    raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
+                if not self._using_contextual_templates:
+                    expected_placeholders_system = extract_placeholders_from_template(self.system_prompt_template)
+                    expected_placeholders_user = extract_placeholders_from_template(self.user_prompt_template)
+                    expected_placeholders = expected_placeholders_system.union(expected_placeholders_user) - set([self._chat_history_placeholder])
+                    if keys != expected_placeholders:
+                        logger.error(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
+                        raise ValueError(f"Input data keys do not match the expected placeholders: has {keys}, expected {expected_placeholders}")
 
         # Build the prompt data based on the input data by extracting text from nested dictionaries if needed
         final_system_prompt = ""
@@ -277,18 +305,29 @@ class OPEAPromptTemplate:
             logger.debug(f"Extracted text for key {key}: {prompt_data[key]}")
 
         # Get conversation history
-        if self._if_conv_history_in_prompt:
-            params = {}
-            prompt_data[self._chat_history_placeholder] = self.ch_handler.parse_chat_history(
+        history_text = ""
+        if self._using_contextual_templates or self._if_conv_history_in_prompt:
+            history_text = self.ch_handler.parse_chat_history(
                 input.history_id,
                 input.chat_history_parse_type,
                 access_token,
-                params
+                {}
             )
 
         # Generate the final prompt
         try:
-            final_system_prompt, final_user_prompt = self._get_prompt(**prompt_data)
+            if self._using_contextual_templates:
+                has_docs = prompt_data.get("reranked_docs", "").strip() != ""
+                has_history = history_text.strip() != ""
+                prompt_data[self._chat_history_placeholder] = history_text
+                selected_template = self._select_system_template(has_docs, has_history)
+                final_system_prompt = selected_template.format(**prompt_data).strip()
+                final_user_prompt = self.user_prompt_template.format(**prompt_data).strip()
+                logger.info(f"Contextual template selected: has_docs={has_docs}, has_history={has_history}")
+            else:
+                if self._if_conv_history_in_prompt:
+                    prompt_data[self._chat_history_placeholder] = history_text
+                final_system_prompt, final_user_prompt = self._get_prompt(**prompt_data)
             logger.debug(f"Final System Prompt: {final_system_prompt}")
             logger.debug(f"Final User Prompt: {final_user_prompt}")
         except KeyError as e:
@@ -298,6 +337,7 @@ class OPEAPromptTemplate:
             logger.error(f"Failed to get prompt from template, err={e}")
             raise
 
+        logger.info(final_system_prompt)
         response = LLMParamsDoc(
             messages=[
                 LLMPromptTemplate(role="system", content=final_system_prompt),

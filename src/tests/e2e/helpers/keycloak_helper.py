@@ -33,6 +33,8 @@ class KeycloakHelper:
         self.erag_admin_password = credentials["KEYCLOAK_ERAG_ADMIN_PASSWORD"]
         self.erag_user_username = credentials["KEYCLOAK_ERAG_USER_USERNAME"]
         self.erag_user_password = credentials["KEYCLOAK_ERAG_USER_PASSWORD"]
+        self.erag_maintainer_username = credentials.get("KEYCLOAK_ERAG_MAINTAINER_USERNAME", "")
+        self.erag_maintainer_password = credentials.get("KEYCLOAK_ERAG_MAINTAINER_PASSWORD", "")
         self.k8s_helper = k8s_helper
         self._access_token = None
         self._admin_access_token = None

@@ -406,7 +406,7 @@ async def test_chat_history_search(chat_ui_helper):
     # Open sidebar
     await chat_ui_helper.ensure_sidebar_open()
 
-    # Assert 1: Search input is accessible (uses aside input fallback)
+    # Assert 1: Search input is accessible (SearchBar does not forward data-testid)
     search_input = page.locator('aside input[type="text"], aside input:not([type])')
     search_visible = await search_input.first.is_visible()
     assert search_visible, "Sidebar search input should be visible"

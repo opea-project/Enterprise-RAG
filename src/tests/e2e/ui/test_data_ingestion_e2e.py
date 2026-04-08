@@ -276,6 +276,27 @@ async def _wait_for_row_in_table(chat_ui_helper, identifier: str,
     return False
 
 
+async def _wait_for_row_to_appear(chat_ui_helper, identifier: str,
+                                  timeout_ms: int = 30_000) -> bool:
+    """
+    Poll the Data Ingestion table until a row containing *identifier* appears.
+
+    Returns True if the row was found within the timeout, False otherwise.
+    """
+    page = chat_ui_helper.page
+    elapsed = 0
+    while elapsed < timeout_ms:
+        await chat_ui_helper.click_by_testid("refresh-button")
+        await page.wait_for_timeout(POLL_INTERVAL_MS)
+        elapsed += POLL_INTERVAL_MS
+        row = page.locator(f'tr:has-text("{identifier}")')
+        if await row.count() > 0:
+            logger.info(f"Row '{identifier}' appeared in table after ~{elapsed / 1000:.0f}s")
+            return True
+    logger.warning(f"Row '{identifier}' did not appear within {timeout_ms / 1000:.0f}s")
+    return False
+
+
 async def _delete_row_via_table(chat_ui_helper, identifier: str,
                                  delete_testid: str = "delete-file-button"):
     """
@@ -364,12 +385,8 @@ async def test_upload_file_via_ui(chat_ui_helper):
         # Step 6: Verify file appears in the table (any status).
         # The "ingested" status depends on backend processing which may
         # fail for infrastructure reasons outside the UI's control.
-        await chat_ui_helper.click_by_testid("refresh-button")
-        await page.wait_for_timeout(3000)
-        row = page.locator(f'tr:has-text("{file_name}")')
-        assert await row.count() > 0, (
-            f"File '{file_name}' did not appear in the table after upload"
-        )
+        row_appeared = await _wait_for_row_to_appear(chat_ui_helper, file_name, timeout_ms=30_000)
+        assert row_appeared, f"File '{file_name}' did not appear in the table after upload"
         logger.info(f"Assert: File '{file_name}' appeared in the table")
 
         # Wait for file to reach "ingested" (includes retry on error)
@@ -490,12 +507,8 @@ async def test_delete_ingested_file_via_ui(chat_ui_helper):
     await chat_ui_helper.wait_for_testid_hidden("upload-data-dialog", timeout=15000)
 
     # Wait for the file to appear in the table (any status)
-    await chat_ui_helper.click_by_testid("refresh-button")
-    await page.wait_for_timeout(3000)
-    row = page.locator(f'tr:has-text("{file_name}")')
-    assert await row.count() > 0, (
-        f"Precondition failed: file '{file_name}' not in table after upload"
-    )
+    row_appeared = await _wait_for_row_to_appear(chat_ui_helper, file_name, timeout_ms=30_000)
+    assert row_appeared, f"Precondition failed: file '{file_name}' not in table after upload"
 
     # Try to wait for ingested status, but don't fail — the delete test
     # validates the UI delete action regardless of processing status.

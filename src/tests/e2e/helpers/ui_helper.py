@@ -175,19 +175,23 @@ class UIHelper:
         """Navigate to the login page."""
         await self.actions.navigate_to(self.base_url)
     
-    async def login_as_admin(self, username: str, password: str) -> str:
-        """Login as admin user.
-        
+    async def login(self, username: str, password: str) -> str:
+        """Login with the given credentials (role-agnostic).
+
         Args:
-            username: Admin username
-            password: Admin password
-            
+            username: Username
+            password: Password
+
         Returns:
             Final URL after login
         """
         await self.navigate_to_login()
         expected_url = f"{self.base_url}/chat"
         return await self.login_manager.perform_login(username, password, expected_url)
+
+    async def login_as_admin(self, username: str, password: str) -> str:
+        """Login as admin user. Alias for :meth:`login`."""
+        return await self.login(username, password)
 
 
 # ==================== Base UI Helper (DRY - Shared Methods) ====================
@@ -636,9 +640,13 @@ class ChatUIHelper(BaseUIHelper):
             logger.debug(f"_extract_message_text failed: {e}")
             return None
 
+    async def login(self, username: str, password: str) -> None:
+        """Login with the given credentials (role-agnostic)."""
+        await self.ui_helper.login(username, password)
+
     async def login_as_admin(self, username: str, password: str) -> None:
-        """Login as admin user"""
-        await self.ui_helper.login_as_admin(username, password)
+        """Login as admin user. Alias for :meth:`login`."""
+        await self.login(username, password)
 
     async def send_message(
         self,
@@ -1798,17 +1806,16 @@ class AudioUIHelper:
                 elif body[:4] == b'OggS':
                     is_valid_audio = True
             
-            # Store validation result
-            await self.page.evaluate(f"""
-                () => {{
-                    window.__ttsApiResponse = {{
-                        status: {response.status},
-                        contentType: '{response.headers.get("content-type", "")}',
-                        size: {len(body)},
-                        isValidAudio: {str(is_valid_audio).lower()}
-                    }};
-                }}
-            """)
+            # Store validation result (pass data as argument to avoid JS injection)
+            await self.page.evaluate(
+                "(data) => { window.__ttsApiResponse = data; }",
+                {
+                    "status": response.status,
+                    "contentType": response.headers.get("content-type", ""),
+                    "size": len(body),
+                    "isValidAudio": is_valid_audio,
+                },
+            )
             
             await route.fulfill(response=response)
         

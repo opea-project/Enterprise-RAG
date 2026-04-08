@@ -29,176 +29,26 @@ SOLID/DRY Principles:
 
 import allure
 import logging
-import os
-import subprocess  # nosec B404 - subprocess used for PulseAudio capture (parec, pactl)
-import tempfile
-import wave
-from typing import Optional
 
 import pytest
 
 from tests.e2e.helpers.audioqa_api_helper import AudioApiHelper, AudioData
-from tests.e2e.helpers.ui_helper import AudioChatUIHelper
-from tests.e2e.ui.test_audio_prompting import (
+from tests.e2e.helpers.audio_test_helpers import (
+    PulseAudioOutputCapture,
     TranscriptionAccuracyEvaluator,
-    # Import fixtures to be shared (pytest will pick them up)
-    sherpa_tts,  # noqa: F401
-    virtual_mic_player,  # noqa: F401
-    unified_audio_input,  # noqa: F401
 )
 from tests.e2e.validation.buildcfg import cfg
 
 logger = logging.getLogger(__name__)
 
-
-# =============================================================================
-# PulseAudio Output Capture (for TTS verification)
-# =============================================================================
-
-class PulseAudioOutputCapture:
-    """
-    Captures audio output from PulseAudio default sink.
-    
-    Uses parec to record audio playing through the system's audio output,
-    allowing verification that TTS audio is actually played and audible.
-    
-    Usage:
-        capture = PulseAudioOutputCapture()
-        capture.start()
-        # ... trigger TTS playback ...
-        audio_bytes = capture.stop()
-        # Send to ASR for verification
-    """
-    
-    def __init__(self, sample_rate: int = 16000, channels: int = 1):
-        self.sample_rate = sample_rate
-        self.channels = channels
-        self._process = None
-        self._temp_file = None
-        self._monitor_source = None
-    
-    def _get_default_sink_monitor(self) -> Optional[str]:
-        """Get the monitor source for the default audio sink."""
-        try:
-            # Get default sink name
-            result = subprocess.run(
-                ["pactl", "get-default-sink"],
-                capture_output=True, text=True, timeout=5
-            )
-            if result.returncode != 0:
-                logger.warning(f"Failed to get default sink: {result.stderr}")
-                return None
-            
-            default_sink = result.stdout.strip()
-            monitor_source = f"{default_sink}.monitor"
-            logger.info(f"Using monitor source: {monitor_source}")
-            return monitor_source
-            
-        except Exception as e:
-            logger.error(f"Failed to get sink monitor: {e}")
-            return None
-    
-    def start(self) -> bool:
-        """Start capturing audio output."""
-        try:
-            self._monitor_source = self._get_default_sink_monitor()
-            if not self._monitor_source:
-                logger.error("Could not find audio monitor source")
-                return False
-            
-            # Create temp file for capture
-            self._temp_file = tempfile.NamedTemporaryFile(
-                suffix=".wav", delete=False
-            )
-            self._temp_file.close()
-            
-            # Start parec to capture from monitor
-            # Using raw format and will convert to wav later
-            cmd = [
-                "parec",
-                f"--device={self._monitor_source}",
-                "--file-format=wav",
-                f"--rate={self.sample_rate}",
-                f"--channels={self.channels}",
-                self._temp_file.name
-            ]
-            
-            self._process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE
-            )
-            
-            logger.info(f"Started audio capture to {self._temp_file.name}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Failed to start audio capture: {e}")
-            return False
-    
-    def stop(self) -> Optional[bytes]:
-        """Stop capturing and return audio bytes."""
-        if not self._process:
-            logger.warning("No capture process running")
-            return None
-        
-        try:
-            # Send SIGTERM to stop recording
-            self._process.terminate()
-            self._process.wait(timeout=5)
-            
-            # Read captured audio
-            if os.path.exists(self._temp_file.name):
-                with open(self._temp_file.name, 'rb') as f:
-                    audio_bytes = f.read()
-                
-                # Get duration for logging
-                try:
-                    with wave.open(self._temp_file.name, 'rb') as wf:
-                        frames = wf.getnframes()
-                        rate = wf.getframerate()
-                        duration = frames / rate
-                        logger.info(f"Captured {duration:.2f}s of audio ({len(audio_bytes)} bytes)")
-                except Exception:
-                    pass
-                
-                # Cleanup temp file
-                os.unlink(self._temp_file.name)
-                
-                return audio_bytes
-            else:
-                logger.error("Capture file not found")
-                return None
-                
-        except Exception as e:
-            logger.error(f"Failed to stop audio capture: {e}")
-            return None
-        finally:
-            self._process = None
-            self._temp_file = None
-    
-    def is_available(self) -> bool:
-        """Check if PulseAudio capture is available."""
-        try:
-            result = subprocess.run(
-                ["pactl", "info"],
-                capture_output=True, timeout=5
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
-
-# Skip all tests if audio is not enabled
-audio_config = cfg.get("audio", {})
-if not audio_config.get("enabled", False):
-    pytestmark = pytest.mark.skip(reason="Audio/TTS is not enabled in deployment")
-
-# Also check if chatqa pipeline is deployed
-for pipeline in cfg.get("pipelines", []):
-    if pipeline.get("type") == "chatqa":
-        break
-else:
-    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
+# Skip all tests if audio is not enabled or chatqa is not deployed
+_skip_marks = []
+if not cfg.get("audio", {}).get("enabled", False):
+    _skip_marks.append(pytest.mark.skip(reason="Audio/TTS is not enabled in deployment"))
+if not any(p.get("type") == "chatqa" for p in cfg.get("pipelines", [])):
+    _skip_marks.append(pytest.mark.skip(reason="ChatQA pipeline is not deployed"))
+if _skip_marks:
+    pytestmark = _skip_marks
 
 
 # =============================================================================
@@ -217,67 +67,6 @@ TTS_TEST_QUESTIONS = [
         "min_tts_duration": 0.5,
     },
 ]
-
-
-# =============================================================================
-# Helper Functions
-# =============================================================================
-
-async def send_question_and_get_response(
-    helper: AudioChatUIHelper,
-    question: str,
-    response_timeout: int = 60000
-) -> Optional[str]:
-    """Send a text question and wait for bot response.
-    
-    Args:
-        helper: AudioChatUIHelper instance
-        question: Question to send
-        response_timeout: Timeout for bot response
-        
-    Returns:
-        Bot response text or None on failure
-    """
-    try:
-        # Wait for any pending response to complete (send button becomes enabled)
-        send_button = helper.page.locator(helper.audio.SEND_BUTTON_SELECTOR)
-        try:
-            await send_button.wait_for(state="attached", timeout=5000)
-            # Wait for button to be enabled (not disabled)
-            for _ in range(30):  # Max 15 seconds
-                is_disabled = await send_button.get_attribute("disabled")
-                if is_disabled is None:
-                    break
-                await helper.page.wait_for_timeout(500)
-        except Exception:
-            pass  # Button may already be ready
-        
-        # Fill in the question
-        textarea = helper.page.locator(helper.audio.TEXTAREA_SELECTOR)
-        await textarea.fill(question)
-        
-        # Wait a moment for send button to enable after text entry
-        await helper.page.wait_for_timeout(500)
-        
-        # Click send (use force in case of minor UI timing issues)
-        await send_button.click(force=True)
-        logger.info(f"Sent question: {question}")
-        
-        # Wait for bot response
-        bot_message = helper.page.locator(helper.audio.BOT_MESSAGE_SELECTOR).last
-        await bot_message.wait_for(state="visible", timeout=response_timeout)
-        
-        # Wait for streaming to complete (content stabilization)
-        await helper.page.wait_for_timeout(3000)
-        
-        response_text = await bot_message.inner_text()
-        logger.info(f"Bot response received: {len(response_text)} chars")
-        
-        return response_text
-        
-    except Exception as e:
-        logger.error(f"Failed to get bot response: {e}")
-        return None
 
 
 # =============================================================================
@@ -302,8 +91,8 @@ async def test_play_speech_button_appears_on_response(audio_chat_ui_helper):
     question = test_case["question"]
     
     # Send question and get response
-    response = await send_question_and_get_response(audio_chat_ui_helper, question)
-    assert response is not None, "Should receive bot response"
+    _ok, response = await audio_chat_ui_helper.send_message(question, wait_for_response=True)
+    assert _ok and response, "Should receive bot response"
     assert len(response) >= test_case["min_response_length"], \
         f"Response too short: {len(response)} chars"
     
@@ -334,8 +123,8 @@ async def test_tts_state_transitions(audio_chat_ui_helper):
     
     try:
         # Send question and get response
-        response = await send_question_and_get_response(audio_chat_ui_helper, question)
-        assert response is not None, "Should receive bot response"
+        _ok, response = await audio_chat_ui_helper.send_message(question, wait_for_response=True)
+        assert _ok and response, "Should receive bot response"
         
         # Get first play button turn_id
         turn_id = await audio_chat_ui_helper.audio.click_first_play_speech_button()
@@ -413,8 +202,8 @@ async def test_tts_audio_plays_completely(audio_chat_ui_helper):
     
     try:
         # Send question and get response
-        response = await send_question_and_get_response(audio_chat_ui_helper, question)
-        assert response is not None, "Should receive bot response"
+        _ok, response = await audio_chat_ui_helper.send_message(question, wait_for_response=True)
+        assert _ok and response, "Should receive bot response"
         
         # Click play button
         turn_id = await audio_chat_ui_helper.audio.click_first_play_speech_button()
@@ -470,8 +259,8 @@ async def test_tts_audio_has_valid_duration(audio_chat_ui_helper):
     
     try:
         # Send question and get response
-        response = await send_question_and_get_response(audio_chat_ui_helper, question)
-        assert response is not None, "Should receive bot response"
+        _ok, response = await audio_chat_ui_helper.send_message(question, wait_for_response=True)
+        assert _ok and response, "Should receive bot response"
         
         # Click play button
         turn_id = await audio_chat_ui_helper.audio.click_first_play_speech_button()
@@ -530,12 +319,12 @@ async def test_tts_abort_on_new_playback(audio_chat_ui_helper):
     
     try:
         # Send first question
-        response1 = await send_question_and_get_response(audio_chat_ui_helper, questions[0])
-        assert response1 is not None, "Should receive first bot response"
-        
+        _ok1, response1 = await audio_chat_ui_helper.send_message(questions[0], wait_for_response=True)
+        assert _ok1 and response1, "Should receive first bot response"
+
         # Send second question
-        response2 = await send_question_and_get_response(audio_chat_ui_helper, questions[1])
-        assert response2 is not None, "Should receive second bot response"
+        _ok2, response2 = await audio_chat_ui_helper.send_message(questions[1], wait_for_response=True)
+        assert _ok2 and response2, "Should receive second bot response"
         
         # Wait for play buttons to appear (TTS backend may be slow)
         await audio_chat_ui_helper.page.wait_for_timeout(2000)

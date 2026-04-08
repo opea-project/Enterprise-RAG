@@ -20,6 +20,15 @@ common_registry: &repo {{ registry }}
 alternateTagging: {{ use_alternate_tagging }}
 {% endif %}
 
+{# Resolve solution language: explicit value or auto-detect from LLM model name #}
+{% if solution_language is defined and solution_language != "auto" %}
+{%   set resolved_language = solution_language %}
+{% elif 'PLLuM' in llm_model or 'Bielik' in llm_model %}
+{%   set resolved_language = 'pl' %}
+{% else %}
+{%   set resolved_language = 'en' %}
+{% endif %}
+
 llm_model: &cpu_model {{ llm_model }}
 llm_model_gaudi: &hpu_model {{ llm_model_gaudi }}
 embedding_model_name: &embedding_model_name {{ embedding_model_name }}
@@ -140,7 +149,7 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      PROMPT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
+      PROMPT_TEMPLATE_LANGUAGE: "{{ resolved_language }}"
   torchserve_embedding:
     image: "erag-torchserve_embedding"
     repository: *repo
@@ -168,7 +177,7 @@ images:
 {% endif %}
     envs:
       EMBEDDING_MODEL_NAME: *embedding_model_name
-      METADATA_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
+      METADATA_LANGUAGE: "{{ resolved_language }}"
 {% if ner is defined and ner.enabled is defined and ner.enabled is true %}
       METADATA_EXTRACTION_MODE: "hybrid"
       NER_ENDPOINT: "http://retriever-ner-ovms-svc:9001"
@@ -225,7 +234,7 @@ images:
     repository: *repo
     tag: *tag
     envs:
-      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ 'pl' if ('PLLuM' in llm_model or 'Bielik' in llm_model) else 'en' }}"
+      SYSTEM_FINGERPRINT_TEMPLATE_LANGUAGE: "{{ resolved_language }}"
   chat-history-usvc:
     image: "erag-chat-history"
     repository: *repo

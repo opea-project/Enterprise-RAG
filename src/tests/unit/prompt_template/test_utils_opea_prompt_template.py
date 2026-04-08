@@ -12,7 +12,14 @@ from comps import (
     TextDoc,
 )
 from comps.prompt_template.utils.opea_prompt_template import OPEAPromptTemplate
-from comps.prompt_template.utils.templates import template_system_english, template_user_english
+from comps.prompt_template.utils.languages.english import EnglishLanguage
+
+template_system_english = EnglishLanguage.TEMPLATE_DOCS_AND_HISTORY
+template_system_english_docs_and_history = EnglishLanguage.TEMPLATE_DOCS_AND_HISTORY
+template_system_english_docs_only = EnglishLanguage.TEMPLATE_DOCS_ONLY
+template_system_english_history_only = EnglishLanguage.TEMPLATE_HISTORY_ONLY
+template_system_english_no_context = EnglishLanguage.TEMPLATE_NO_CONTEXT
+template_user_english = EnglishLanguage.TEMPLATE_USER
 
 """
 To execute these tests with coverage report, navigate to the `src` folder and run the following command:
@@ -44,10 +51,9 @@ def mock_default_input_data():
 
 @pytest.fixture
 def mock_default_response_data():
-    """Fixture to provide mock response data."""
-    st = template_system_english.format(
+    """Fixture to provide mock response data (docs present, no history -> docs_only template)."""
+    st = template_system_english_docs_only.format(
         reranked_docs="Document1\n\nDocument2\n\nDocument3",
-        conversation_history="",
     ).strip()
     ut = template_user_english.format(
         user_prompt="This is my sample query?"
@@ -89,18 +95,17 @@ def test_opea_prompt_template_initialization_succeeds():
     assert isinstance(OPEAPromptTemplate(), OPEAPromptTemplate), "Instance was not created successfully."
 
 
-@patch('comps.prompt_template.utils.opea_prompt_template.default_system_template', '')
-@patch('comps.prompt_template.utils.opea_prompt_template.default_user_template', '')
 def test_opea_prompt_template_initialization_without_default_should_fail():
-    with pytest.raises(ValueError, match="Prompt template cannot be empty"):
-        OPEAPromptTemplate()
+    with patch.object(EnglishLanguage, 'default_system_template', new_callable=lambda: property(lambda self: '')), \
+         patch.object(EnglishLanguage, 'default_user_template', new_callable=lambda: property(lambda self: '')):
+        with pytest.raises(ValueError, match="Prompt template cannot be empty"):
+            OPEAPromptTemplate()
 
-@patch('comps.prompt_template.utils.opea_prompt_template.default_system_template', 'invalid_template')
-@patch('comps.prompt_template.utils.opea_prompt_template.default_user_template', 'invalid_template')
 def test_opea_prompt_template_initializationwith_invalid_template_should_fail():
-
-     with pytest.raises(ValueError, match="Default prompt template validation failed, err=The prompt template does not contain any placeholders"):
-        OPEAPromptTemplate()
+    with patch.object(EnglishLanguage, 'default_system_template', new_callable=lambda: property(lambda self: 'invalid_template')), \
+         patch.object(EnglishLanguage, 'default_user_template', new_callable=lambda: property(lambda self: 'invalid_template')):
+        with pytest.raises(ValueError, match="Default prompt template validation failed, err=The prompt template does not contain any placeholders"):
+            OPEAPromptTemplate()
 
 
 @pytest.mark.parametrize("system_template, user_template, placeholders", [
@@ -474,3 +479,225 @@ def test_parse_reranked_docs(test_class):
     assert "H3" in result
     assert "[1]" in result
     assert "[2]" in result
+
+
+# =============================================================================
+# Contextual Template Selection Tests
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_contextual_template_no_docs_no_history(test_class):
+    """Case 4: No search results, no chat history -> no_context template (no citation instructions)."""
+    mock_input = PromptTemplateInput(
+        data={
+            "user_prompt": "What is deep learning?",
+            "reranked_docs": [],
+        }
+    )
+
+    result = await test_class.run(mock_input)
+
+    expected_system = template_system_english_no_context.format().strip()
+    expected_user = template_user_english.format(user_prompt="What is deep learning?").strip()
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    assert system_msg.content == expected_system
+    assert user_msg.content == expected_user
+    # Ensure no citation instructions leak into the prompt
+    assert "Include corresponding in-text citation IDs" not in system_msg.content
+    assert "Search results" not in system_msg.content
+    assert "Conversation history" not in system_msg.content
+
+
+@pytest.mark.asyncio
+@patch('comps.prompt_template.utils.chat_history_handler.requests.get')
+async def test_contextual_template_no_docs_with_history(mock_get):
+    """Case 3: No search results, chat history available -> history_only template (no citation instructions)."""
+    mock_health_response = Mock()
+    mock_health_response.status_code = 200
+    mock_health_response.text = "chat_history service is healthy"
+
+    mock_history_response = Mock()
+    mock_history_response.status_code = 200
+    mock_history_response.json.return_value = {
+        "history": [
+            {"question": "What is ML?", "answer": "Machine Learning is a subset of AI."},
+        ]
+    }
+
+    def side_effect(url, **kwargs):
+        if "health_check" in url:
+            return mock_health_response
+        elif "chat_history/get" in url:
+            return mock_history_response
+        else:
+            raise ValueError(f"Unexpected URL: {url}")
+
+    mock_get.side_effect = side_effect
+
+    test_class = OPEAPromptTemplate(chat_history_endpoint="http://test-endpoint")
+
+    mock_input = PromptTemplateInput(
+        data={
+            "user_prompt": "Tell me more about it",
+            "reranked_docs": [],
+        },
+        history_id="test-history-id"
+    )
+
+    result = await test_class.run(mock_input, access_token="test-token")
+
+    expected_history = "User: What is ML?\nAssistant: Machine Learning is a subset of AI."
+    expected_system = template_system_english_history_only.format(
+        conversation_history=expected_history,
+    ).strip()
+    expected_user = template_user_english.format(user_prompt="Tell me more about it").strip()
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    assert system_msg.content == expected_system
+    assert user_msg.content == expected_user
+    # Ensure no citation instructions leak into the prompt
+    assert "Include corresponding in-text citation IDs" not in system_msg.content
+    assert "Search results" not in system_msg.content
+    # History should be present
+    assert "Conversation history" in system_msg.content
+    assert "What is ML?" in system_msg.content
+
+
+@pytest.mark.asyncio
+async def test_contextual_template_docs_only(test_class):
+    """Case 2: Search results available, no chat history -> docs_only template."""
+    mock_input = PromptTemplateInput(
+        data={
+            "user_prompt": "What is deep learning?",
+            "reranked_docs": [
+                TextDoc(text="Deep learning uses neural networks."),
+            ],
+        }
+    )
+
+    result = await test_class.run(mock_input)
+
+    expected_system = template_system_english_docs_only.format(
+        reranked_docs="Deep learning uses neural networks.",
+    ).strip()
+    expected_user = template_user_english.format(user_prompt="What is deep learning?").strip()
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    assert system_msg.content == expected_system
+    assert user_msg.content == expected_user
+    # Citation instructions should be present
+    assert "Include corresponding in-text citation IDs" in system_msg.content
+    assert "Search results" in system_msg.content
+    # Conversation history should NOT be present
+    assert "Conversation history" not in system_msg.content
+
+
+@pytest.mark.asyncio
+@patch('comps.prompt_template.utils.chat_history_handler.requests.get')
+async def test_contextual_template_docs_and_history(mock_get):
+    """Case 1: Search results + chat history -> full docs_and_history template."""
+    mock_health_response = Mock()
+    mock_health_response.status_code = 200
+    mock_health_response.text = "chat_history service is healthy"
+
+    mock_history_response = Mock()
+    mock_history_response.status_code = 200
+    mock_history_response.json.return_value = {
+        "history": [
+            {"question": "What is AI?", "answer": "Artificial Intelligence."},
+        ]
+    }
+
+    def side_effect(url, **kwargs):
+        if "health_check" in url:
+            return mock_health_response
+        elif "chat_history/get" in url:
+            return mock_history_response
+        else:
+            raise ValueError(f"Unexpected URL: {url}")
+
+    mock_get.side_effect = side_effect
+
+    test_class = OPEAPromptTemplate(chat_history_endpoint="http://test-endpoint")
+
+    mock_input = PromptTemplateInput(
+        data={
+            "user_prompt": "What is deep learning?",
+            "reranked_docs": [
+                TextDoc(text="Deep learning uses neural networks."),
+            ],
+        },
+        history_id="test-history-id"
+    )
+
+    result = await test_class.run(mock_input, access_token="test-token")
+
+    expected_history = "User: What is AI?\nAssistant: Artificial Intelligence."
+    expected_system = template_system_english.format(
+        reranked_docs="Deep learning uses neural networks.",
+        conversation_history=expected_history,
+    ).strip()
+    expected_user = template_user_english.format(user_prompt="What is deep learning?").strip()
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    assert system_msg.content == expected_system
+    assert user_msg.content == expected_user
+    assert "Include corresponding in-text citation IDs" in system_msg.content
+    assert "Search results" in system_msg.content
+    assert "Conversation history" in system_msg.content
+
+
+@pytest.mark.asyncio
+async def test_contextual_templates_disabled_by_custom_template(test_class):
+    """Custom templates should disable contextual selection and use the custom template as-is."""
+    custom_system = "Custom system: {reranked_docs}"
+    custom_user = "Custom user: {user_prompt}"
+
+    mock_input = PromptTemplateInput(
+        system_prompt_template=custom_system,
+        user_prompt_template=custom_user,
+        data={
+            "user_prompt": "What is deep learning?",
+            "reranked_docs": [],
+        }
+    )
+
+    result = await test_class.run(mock_input)
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    # With custom template, empty reranked_docs produces empty string but template is used as-is
+    assert system_msg.content == "Custom system:"
+    assert user_msg.content == "Custom user: What is deep learning?"
+    # Verify contextual mode is disabled
+    assert test_class._using_contextual_templates is False
+
+
+@pytest.mark.asyncio
+async def test_contextual_templates_survive_fingerprint_default(test_class):
+    """When fingerprint injects the default template (possibly with minor whitespace diffs),
+    contextual mode should remain active."""
+    # Simulate fingerprint-injected template with trailing space before \\n (as in object_document_mapper.py)
+    fingerprint_system = template_system_english_docs_and_history
+    fingerprint_user = """### Question: {user_prompt} \n
+### Answer:
+"""
+
+    mock_input = PromptTemplateInput(
+        system_prompt_template=fingerprint_system,
+        user_prompt_template=fingerprint_user,
+        data={
+            "user_prompt": "What is deep learning?",
+            "reranked_docs": [],
+        }
+    )
+
+    result = await test_class.run(mock_input)
+
+    system_msg, user_msg = get_system_and_user_messages(result.messages)
+    # Contextual mode should still be active -> no_context template (no docs, no history)
+    assert test_class._using_contextual_templates is True
+    assert "Include corresponding in-text citation IDs" not in system_msg.content
+    assert "Search results" not in system_msg.content
+    expected_system = template_system_english_no_context.format().strip()
+    assert system_msg.content == expected_system

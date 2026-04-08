@@ -19,16 +19,11 @@ import logging
 import allure
 import pytest
 
-from tests.e2e.validation.buildcfg import cfg
+from tests.e2e.ui.conftest import requires_chatqa
 
 logger = logging.getLogger(__name__)
 
-# Skip all tests if chatqa pipeline is not deployed
-for pipeline in cfg.get("pipelines", []):
-    if pipeline.get("type") == "chatqa":
-        break
-else:
-    pytestmark = pytest.mark.skip(reason="ChatQA pipeline is not deployed")
+pytestmark = requires_chatqa
 
 
 # Test prompts for basic functionality testing

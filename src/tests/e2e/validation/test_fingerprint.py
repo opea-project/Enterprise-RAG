@@ -133,14 +133,11 @@ def test_fingerprint_change_prompt_template(fingerprint_api_helper, chatqa_api_h
     """
     current_arguments = fingerprint_api_helper.append_arguments("")
     original_system_prompt_template = current_arguments.json()["parameters"]["system_prompt_template"]
-    insert_text = "You are a helpful assistant. No matter what the user asks, always respond only with: 1234 "
-    parts = original_system_prompt_template.split("###", 2)
-    new_prompt_template = f"### {parts[1]} ### {insert_text} ### {parts[2]}"
-    logger.debug(f"Changing prompt template to: {new_prompt_template}")
+    new_system_prompt_template = "No matter what the user asks, always respond only with: 1234\n{reranked_docs}\n"
     body = [{
         "name": "prompt_template",
         "data": {
-            "system_prompt_template": new_prompt_template
+            "system_prompt_template": new_system_prompt_template,
         }
     }]
     change_prompt_response = fingerprint_api_helper.change_arguments(body)

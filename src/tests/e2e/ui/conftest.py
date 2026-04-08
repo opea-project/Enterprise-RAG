@@ -18,6 +18,15 @@ import pytest
 import pytest_asyncio
 from playwright.async_api import async_playwright
 
+import pytest_asyncio as _pytest_asyncio_mod  # noqa: F401 — used for shared audio fixtures
+
+from tests.e2e.helpers.audio_test_helpers import (
+    AudioArtifactCollector,
+    UnifiedAudioInput,
+    VirtualMicAudioPlayer,
+    pulseaudio_available,
+)
+from tests.e2e.helpers.audioqa_api_helper import AudioData, SherpaTTS
 from tests.e2e.helpers.ui_helper import (AudioChatUIHelper, ChatUIHelper,
                                          DocSumUIHelper)
 from tests.e2e.validation.buildcfg import cfg
@@ -49,9 +58,21 @@ requires_docsum = pytest.mark.skipif(
     reason="DocSum pipeline is not deployed",
 )
 
+def _find_project_root() -> Path:
+    """Walk up from this file to find the project root (contains src/)."""
+    current = Path(__file__).resolve().parent
+    for _ in range(10):
+        if (current / "src").is_dir():
+            return current
+        current = current.parent
+    return Path(__file__).resolve().parent.parent.parent.parent.parent
+
+
+_PROJECT_ROOT = _find_project_root()
+
 # Artifact directories
-ARTIFACT_BASE = Path(__file__).parent.parent.parent.parent.parent / "test-results"
-UI_LOG_DIR = Path(__file__).parent.parent.parent.parent.parent / "test_logs" / "test_ui"
+ARTIFACT_BASE = _PROJECT_ROOT / "test-results"
+UI_LOG_DIR = _PROJECT_ROOT / "test_logs" / "test_ui"
 SCREENSHOT_DIR = ARTIFACT_BASE / "screenshots"
 VIDEO_DIR = ARTIFACT_BASE / "videos"
 
@@ -63,6 +84,43 @@ def admin_credentials(keycloak_helper):
         'username': keycloak_helper.erag_admin_username,
         'password': keycloak_helper.erag_admin_password,
         'user_type': 'admin'
+    }
+
+
+@pytest.fixture(scope="session")
+def maintainer_credentials(keycloak_helper):
+    """Maintainer user credentials, with required actions temporarily removed."""
+    username = keycloak_helper.erag_maintainer_username
+    if username:
+        required_actions = keycloak_helper.read_current_required_actions(
+            keycloak_helper.admin_access_token, username
+        )
+        if required_actions:
+            keycloak_helper.remove_required_actions(
+                keycloak_helper.admin_access_token, username
+            )
+    return {
+        'username': username,
+        'password': keycloak_helper.erag_maintainer_password,
+        'user_type': 'maintainer'
+    }
+
+
+@pytest.fixture(scope="session")
+def user_credentials(keycloak_helper):
+    """Regular user credentials, with required actions temporarily removed."""
+    username = keycloak_helper.erag_user_username
+    required_actions = keycloak_helper.read_current_required_actions(
+        keycloak_helper.admin_access_token, username
+    )
+    if required_actions:
+        keycloak_helper.remove_required_actions(
+            keycloak_helper.admin_access_token, username
+        )
+    return {
+        'username': username,
+        'password': keycloak_helper.erag_user_password,
+        'user_type': 'user'
     }
 
 
@@ -96,10 +154,10 @@ def rotate_artifacts(directory: Path, keep_count: int = 2):
         for i, file_to_remove in enumerate(files_to_remove):
             try:
                 if file_to_remove.is_file():
-                    file_to_remove.unlink()
+                    file_to_remove.unlink(missing_ok=True)
                     logger.debug(f"Removed file: {file_to_remove.name}")
                 elif file_to_remove.is_dir():
-                    shutil.rmtree(file_to_remove)
+                    shutil.rmtree(file_to_remove, ignore_errors=True)
                     logger.debug(f"Removed directory: {file_to_remove.name}")
 
                 # Limit to avoid hanging on large directories
@@ -258,14 +316,18 @@ async def page(context, request):
     test_name = request.node.name.replace("::", "_")
     log_file = setup_ui_logging(test_name)
 
-    # Add console logging
+    # Add console logging — open file once, close in teardown
+    log_handle = open(log_file, "a")  # noqa: SIM115
+
     def log_console(msg):
-        with open(log_file, 'a') as f:
-            f.write(f"[CONSOLE] {msg.type}: {msg.text}\n")
+        log_handle.write(f"[CONSOLE] {msg.type}: {msg.text}\n")
+        log_handle.flush()
 
     page.on("console", log_console)
 
     yield page
+
+    log_handle.close()
 
     # Take screenshot on failure
     test_failed = (
@@ -375,6 +437,30 @@ async def chat_ui_helper(page, admin_credentials):
 
 
 @pytest_asyncio.fixture
+async def chat_ui_helper_maintainer(page, maintainer_credentials):
+    """Create chat helper authenticated as maintainer."""
+    helper = ChatUIHelper(page, base_url=cfg.get('FQDN'))
+    await helper.login(
+        maintainer_credentials['username'],
+        maintainer_credentials['password'],
+    )
+    logger.info("Chat helper (maintainer) ready")
+    yield helper
+
+
+@pytest_asyncio.fixture
+async def chat_ui_helper_user(page, user_credentials):
+    """Create chat helper authenticated as regular user."""
+    helper = ChatUIHelper(page, base_url=cfg.get('FQDN'))
+    await helper.login(
+        user_credentials['username'],
+        user_credentials['password'],
+    )
+    logger.info("Chat helper (user) ready")
+    yield helper
+
+
+@pytest_asyncio.fixture
 async def docsum_ui_helper(page, admin_credentials):
     """
     Create DocSum UI helper with authenticated session.
@@ -428,3 +514,71 @@ async def audio_chat_ui_helper(page, admin_credentials):
 
     logger.info("Audio chat helper ready")
     yield helper
+
+
+# =============================================================================
+# Shared Audio Fixtures (used by test_audio_prompting and test_tts_playback)
+# =============================================================================
+
+@pytest.fixture(scope="module")
+def virtual_mic_player():
+    """PulseAudio virtual microphone player. Skips if PulseAudio unavailable."""
+    if not pulseaudio_available():
+        pytest.skip("PulseAudio not available - audio tests require PulseAudio")
+
+    player = VirtualMicAudioPlayer()
+    if player.setup():
+        logger.info("Virtual microphone player ready")
+        yield player
+        player.cleanup()
+    else:
+        pytest.skip("Failed to set up PulseAudio virtual microphone")
+
+
+@pytest.fixture(scope="module")
+def sherpa_tts():
+    """SherpaTTS instance for audio generation (module-scoped for reuse)."""
+    return SherpaTTS()
+
+
+@pytest_asyncio.fixture
+async def unified_audio_input(
+    audio_chat_ui_helper,
+    sherpa_tts,
+    virtual_mic_player,
+    request,
+):
+    """UnifiedAudioInput with PulseAudio virtual microphone and artifact collection."""
+    test_name = request.node.name.replace("::", "_")
+    artifact_collector = AudioArtifactCollector(test_name)
+
+    def collect_audio(audio_data: AudioData = None, output_bytes: bytes = None, source: str = ""):
+        if audio_data:
+            artifact_collector.collect_input_audio(audio_data)
+        if output_bytes:
+            artifact_collector.collect_output_audio(output_bytes, source)
+
+    unified = UnifiedAudioInput(
+        audio_helper=audio_chat_ui_helper,
+        tts=sherpa_tts,
+        virtual_mic_player=virtual_mic_player,
+        audio_artifacts_collector=collect_audio,
+    )
+
+    logger.info("UnifiedAudioInput ready with PulseAudio virtual microphone")
+
+    yield unified
+
+    await unified.cleanup()
+
+    test_failed = (
+        hasattr(request.node, "rep_call") and request.node.rep_call.failed
+    ) or (
+        hasattr(request.node, "rep_setup") and request.node.rep_setup.failed
+    )
+
+    if test_failed:
+        saved = artifact_collector.save_artifacts(attach_to_allure=True)
+        if saved:
+            logger.info(f"Audio artifacts saved for failed test: {list(saved.keys())}")
+        AudioArtifactCollector.rotate_old_artifacts(keep_count=10)
